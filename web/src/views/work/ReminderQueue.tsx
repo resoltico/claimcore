@@ -18,8 +18,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
-const stateChoice = queryInput("query:reminderList", "input:reminderState");
-const dueChoice = queryInput("query:reminderList", "input:reminderDue");
+const stateChoice = queryInput("reminder.list", "input:reminderState");
+const dueChoice = queryInput("reminder.list", "input:reminderDue");
 const DefaultReminderView = ({
   query,
   view,

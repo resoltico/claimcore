@@ -1,5 +1,5 @@
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
-import type { HumanReadDocument_caseList, ResponseFor } from "@contracts/client";
+import type { HumanReadDocument_case_list, ResponseFor } from "@contracts/client";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { useEndpoint } from "../../../src/hooks/useEndpoint";
@@ -13,7 +13,7 @@ const requester = {
     observation: { ...activeRequester.basis.observation, businessDate: "2026-11-04" },
   },
 };
-const document = (businessDate: string): HumanReadDocument_caseList => ({
+const document = (businessDate: string): HumanReadDocument_case_list => ({
   screen: { regions: [] },
   context: { kind: "CASES", cases: [], nextCursor: null, exactCaseId: null, tasks: [] },
   basis: {
@@ -108,7 +108,7 @@ const PageProbe = () => {
   const day = useBusinessDate(requester);
   const page = useEndpointPage<
     "case.list",
-    HumanReadDocument_caseList["context"]["cases"][number],
+    HumanReadDocument_case_list["context"]["cases"][number],
     NonNullable<ReturnType<typeof listPage>>
   >("case.list", listInput, listPage);
   return (

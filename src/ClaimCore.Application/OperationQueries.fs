@@ -10,10 +10,10 @@ module internal OperationQueries =
     let private receipt (services: ServiceContext) (tx: IReadTx) operation discloseForeign =
         task {
             let! entry = tx.FindOperation operation
-            let! caller = ExecutionFacts.authority tx services.Principal []
+            let! caller = ExecutionFacts.people tx services.Principal []
 
             match caller.Actor with
-            | _ when not (Authority.validActor services.Principal caller) ->
+            | _ when not (Access.validActor services.Principal caller) ->
                 return QueryResults.unavailable
             | None -> return QueryResults.unavailable
             | Some requester ->
@@ -24,7 +24,7 @@ module internal OperationQueries =
                     let! actor = ExecutionFacts.operationActor tx services.Principal (Some entry)
                     let own = entry.ActorId = requester.ActorId
 
-                    if not (Authority.validActor services.Principal actor) then
+                    if not (Access.validActor services.Principal actor) then
                         if own then
                             return QueryResults.unavailable
                         else

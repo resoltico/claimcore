@@ -70,12 +70,12 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   await showCaseActionMenu(page);
   if (role === "CASE_HANDLER") {
-    await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
+    await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   } else {
     await expect(
       page
         .getByRole("button")
-        .and(page.locator('button[data-act="CLOSE"]'))
+        .and(page.locator('button[data-act="case.close"]'))
         .filter({ visible: true }),
     ).toHaveCount(0);
   }

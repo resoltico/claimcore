@@ -10,7 +10,7 @@ export const timelineEntry = (
   recordedAt: "2026-11-02T12:00:00.000000Z",
   recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
   revision: 1,
-  act: "OPEN",
+  act: "case.open",
   changes: {
     kind: "DISCLOSED",
     items: [],

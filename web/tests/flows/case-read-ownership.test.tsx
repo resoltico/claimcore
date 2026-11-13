@@ -14,7 +14,7 @@ import { fields } from "../support/service-ui.fixtures";
 afterEach(() => vi.unstubAllGlobals());
 const observation = (name: string, revision: number) =>
   caseDocumentInput({
-    tasks: ["CASE:AMEND_REGISTRATION"],
+    tasks: ["case.amendRegistration"],
     caseId: current.context.caseId,
     revision,
     history: "FULL",
@@ -42,7 +42,7 @@ it("rejects an obsolete case read after A to B to A and never rebases authored r
     ({ credential }) =>
       useOperation({
         subject: "CASE",
-        kind: "AMEND_REGISTRATION",
+        kind: "case.amendRegistration",
         current,
         credential,
         onLockChange: vi.fn(),

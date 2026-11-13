@@ -34,7 +34,7 @@ const forgedCorrection = async (page: Page, reference: string) => {
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 2,
       act: {
-        kind: "CORRECT",
+        kind: "case.correct",
         groups: {
           registration: { kind: "KEEP" },
           decision: { kind: "CLEAR" },
@@ -67,7 +67,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
   );
   await page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click();
   const draft: unknown = (await sent).postDataJSON();
-  expect(draft).toMatchObject({ act: { kind: "OPEN", values: { claimedAmount: "0.10" } } });
+  expect(draft).toMatchObject({ act: { kind: "case.open", values: { claimedAmount: "0.10" } } });
   const value: unknown = await (await pending).json();
   expect(isResponseFor("operation.preview", "HUMAN", value)).toBe(true);
   if (!isResponseFor("operation.preview", "HUMAN", value)) {
@@ -124,7 +124,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     const reference = `MISSING-${randomUUID()}`;
     await openCase(page, reference);
-    await startAct(page, "CLOSE", "en");
+    await startAct(page, "case.close", "en");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
@@ -137,7 +137,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await expectCaseReadsSettled(page);
     await expectReceiptReadSettled(page);
     await expect(page.locator(".success-toast")).toContainText("Case closed.");
-    await startAct(page, "CORRECT", "en");
+    await startAct(page, "case.correct", "en");
     await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);
     const mode = page.locator('input[type="radio"][name="group:decision"]');

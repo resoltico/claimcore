@@ -24,8 +24,8 @@ let private actor =
                 ProductVersion = "synthetic"
                 Basis = Inputs.workBasis
             }
-        Capability = [ Capability.ReadAuthority ]
-        View = [ View.Authority; View.Operations ]
+        Capability = [ Capability.ReadAccess ]
+        View = [ View.People; View.Operations ]
         Offers = []
         HasScopedCases = false
     }
@@ -46,25 +46,23 @@ let tests =
     testList
         "requester human controls"
         [
-            testCase "authority reader navigation comes from advertised query tasks" (fun () ->
+            testCase "people reader navigation comes from advertised query tasks" (fun () ->
                 let value = document actor
                 let c = control value
 
                 Expect.equal
                     c.Tasks
                     [
-                        TaskId.Query QueryTaskId.AuthorityList
-                        TaskId.Query QueryTaskId.AuthorityGrants
-                        TaskId.Query QueryTaskId.AuthorityHistory
+                        TaskId.Query QueryTaskId.PeopleList
+                        TaskId.Query QueryTaskId.PeopleGrants
+                        TaskId.Query QueryTaskId.PeopleHistory
                     ]
                     "Literal read task inventory"
 
                 Expect.equal c.InstallationId (Some actor.InstallationId) "Owner installation"
                 Expect.equal c.ActorId (Some actor.ActorId) "Owner actor"
 
-                Expect.isNone
-                    c.AuthorityIssuerSeed
-                    "Read authority offers no editable authority seed"
+                Expect.isNone c.PeopleIssuerSeed "Read people offers no editable people seed"
 
                 Expect.isOk
                     (Codec.encode HumanDocumentCodecs.document value
@@ -75,24 +73,24 @@ let tests =
                 (fun () ->
                     let manager =
                         { actor with
-                            Capability = [ Capability.ReadAuthority; Capability.ManageAuthority ]
+                            Capability = [ Capability.ReadAccess; Capability.ManageAccess ]
                             Offers =
                                 [
-                                    InstallationOffer.AuthorityAct AuthorityKind.Register
-                                    InstallationOffer.AuthorityAct AuthorityKind.Admit
+                                    InstallationOffer.PeopleAct PeopleActKind.Register
+                                    InstallationOffer.PeopleAct PeopleActKind.Admit
                                 ]
                         }
 
                     let openValue = document manager
 
                     Expect.equal
-                        (control openValue).AuthorityIssuerSeed
+                        (control openValue).PeopleIssuerSeed
                         (Some "https://issuer.example/")
                         "Permitted editable issuer default"
 
                     Expect.contains
                         (control openValue).Tasks
-                        (TaskId.Query QueryTaskId.AuthorityRequests)
+                        (TaskId.Query QueryTaskId.PeopleRequests)
                         "Request review is independently offered"
 
                     let paused =
@@ -102,7 +100,7 @@ let tests =
                             }
 
                     Expect.isNone
-                        (control paused).AuthorityIssuerSeed
+                        (control paused).PeopleIssuerSeed
                         "No seed without an offered mutation"
 
                     Expect.isFalse
@@ -136,7 +134,7 @@ let tests =
                             (fun node ->
                                 node["basis"] <- JsonNode.Parse("{\"kind\":\"UNAVAILABLE\"}"))
                             (fun node ->
-                                (nonNull node["context"])["authorityIssuerSeed"] <-
+                                (nonNull node["context"])["peopleIssuerSeed"] <-
                                     JsonValue.Create "https://issuer.example/")
                         ] do
                         let node = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull

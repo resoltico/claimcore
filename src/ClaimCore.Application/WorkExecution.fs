@@ -133,14 +133,14 @@ module internal WorkExecution =
 
                 match actor with
                 | Some actor when PrincipalKey.isHuman actor.Principal ->
-                    let! authority =
-                        tx.Authority
+                    let! people =
+                        tx.Access
                             {
                                 Principal = actor.Principal
                                 CaseId = Some caseId
                             }
 
-                    return CaseWorkPolicy.eligibleAssignee actor.Principal authority caseId
+                    return CaseWorkPolicy.eligibleAssignee actor.Principal people caseId
                 | _ -> return false
             }
 

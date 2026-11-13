@@ -86,7 +86,7 @@ module internal MessageCatalogs =
             | "payment" -> CliMessage.PaymentCommands
             | "work" -> CliMessage.WorkCommands
             | "reminder" -> CliMessage.ReminderCommands
-            | "authority" -> CliMessage.AuthorityFamily
+            | "people" -> CliMessage.PeopleFamily
             | "operation" -> CliMessage.OperationFamily
             | "context" -> CliMessage.ContextFamily
             | name -> invalidOp ("Missing command-family meaning: " + name)

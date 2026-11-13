@@ -194,18 +194,18 @@ let permanentBoundaries =
             testCase "owner provisioning cannot enter ordinary authored admission" (fun () ->
                 let request =
                     {
-                        AuthorityRequest.OperationId =
+                        PeopleRequest.OperationId =
                             Guid.Parse "90000000-0000-7000-8000-000000000001"
                         Target = Inputs.principal
                         Act =
-                            (AuthorityAct.ProvisionOwner(
+                            (PeopleAct.ProvisionOwner(
                                 ClaimCore.TestSupport.Inputs.ownerProfile,
                                 []
                             ))
                     }
 
                 Expect.equal
-                    (Authority.parse request)
+                    (People.parse request)
                     (Error(Refusal.Access(AccessRefusal.ResourceUnavailable)))
                     "Provisioning is admitted exclusively through its dedicated boundary")
 

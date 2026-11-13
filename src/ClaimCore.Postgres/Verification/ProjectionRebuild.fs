@@ -61,28 +61,28 @@ module internal ProjectionRebuild =
                     do! PaymentStorage.restore connection payment token
         }
 
-    let private replaceAuthority connection (state: Replay.Scan) token =
+    let private replacePeople connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
                 do!
-                    Persistence.authority
+                    Persistence.people
                         connection
-                        (AuthorityProjection.Register(id, actor.Principal))
+                        (PeopleProjection.Register(id, actor.Principal))
                         token
 
                 do!
-                    Persistence.authority
+                    Persistence.people
                         connection
-                        (AuthorityProjection.SetEnabled(id, actor.Enabled))
+                        (PeopleProjection.SetEnabled(id, actor.Enabled))
                         token
 
                 match actor.Actor.Profile with
                 | None -> ()
                 | Some profile ->
                     do!
-                        Persistence.authority
+                        Persistence.people
                             connection
-                            (AuthorityProjection.SetProfile(id, profile))
+                            (PeopleProjection.SetProfile(id, profile))
                             token
 
         }
@@ -185,9 +185,9 @@ module internal ProjectionRebuild =
                         | Scope.Case id -> Some id
 
                     do!
-                        Persistence.authority
+                        Persistence.people
                             connection
-                            (AuthorityProjection.AddGrant(
+                            (PeopleProjection.AddGrant(
                                 id,
                                 grant.Role,
                                 caseId,
@@ -262,7 +262,7 @@ module internal ProjectionRebuild =
 
                             ()
 
-                        do! replaceAuthority connection state token
+                        do! replacePeople connection state token
                         do! replaceCases connection state token
                         do! replacePayments connection state token
                         do! replaceWork connection state token

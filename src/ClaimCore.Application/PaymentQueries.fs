@@ -37,7 +37,7 @@ module internal PaymentQueries =
 
                                             match view.Case with
                                             | Some parent when
-                                                Authority.can
+                                                Access.can
                                                     services.Principal
                                                     view.Actor
                                                     Capability.ReadCase
@@ -72,7 +72,7 @@ module internal PaymentQueries =
 
                                                     let canRemove =
                                                         not view.Maintenance.Active
-                                                        && Authority.canAct
+                                                        && Access.canAct
                                                             services.Principal
                                                             view.Actor
                                                             (Scope.Case parent.CaseId)

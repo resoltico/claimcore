@@ -721,7 +721,7 @@ export const canRestoreCreationDraft = (state: OperationState): boolean => {
     previous.target === next.target &&
     state.draft.target === next.target &&
     state.draft.entry.subject === "CASE" &&
-    state.draft.entry.kind === "OPEN" &&
+    state.draft.entry.kind === "case.open" &&
     state.disclosed.caseObservation === null &&
     state.delivery.phase.kind === "EDITING"
   );

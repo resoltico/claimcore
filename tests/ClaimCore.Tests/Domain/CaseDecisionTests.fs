@@ -347,7 +347,7 @@ let tests =
                 terminalRevisionBoundary
             testCase "raw JSON spelling preserves the accepted receipt" wireSpelling
             testCase "canonical replay preserves attribution and original identity" replay
-            testCase "current resource authority precedes replay and creation" authorization
+            testCase "current resource people precedes replay and creation" authorization
             testCase "review business date and revision use the supplied view" reviewAndTime
             testCase
                 "corruption faults and foreign identity privacy remain distinct"

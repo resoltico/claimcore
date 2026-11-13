@@ -56,7 +56,7 @@ module Service =
 
     let private admitCase = CaseExecution.prepare
 
-    let private admitAuthority = Authority.prepare
+    let private admitPeople = People.prepare
 
     let private write
         (services: ServiceContext)
@@ -186,12 +186,12 @@ module Service =
                     return QueryResults.readResult result
         }
 
-    let private previewAuthority (services: ServiceContext) request ct =
+    let private previewPeople (services: ServiceContext) request ct =
         review
             services
             ct
-            (fun () -> admitAuthority request)
-            (fun (admitted: AuthorityCommand) ->
+            (fun () -> admitPeople request)
+            (fun (admitted: PeopleCommand) ->
                 services.Store.Read
                     {
                         Work =
@@ -199,22 +199,22 @@ module Service =
                                 ExecutionFacts.target
                                     services
                                     tx
-                                    (Authority.factsNeeded admitted.Act)
+                                    (People.factsNeeded admitted.Act)
                                     admitted.OperationId
                                     admitted.Target
-                                    (AuthorityRequests.targetCases admitted)
+                                    (PeopleRequests.targetCases admitted)
                         CancellationToken = ct
                     })
-            (AuthorityExecution.review services)
-            (fun _ (view: AuthorityExecutionFacts) proposal ->
-                AuthorityReviews.describe services view proposal |> OperationReview.Authority)
+            (PeopleExecution.review services)
+            (fun _ (view: PeopleExecutionFacts) proposal ->
+                PeopleReviews.describe services view proposal |> OperationReview.People)
 
     let preview (services: ServiceContext) input ct =
         task {
             let! outcome =
                 match input with
                 | OperationInput.Case request -> previewCase services request ct
-                | OperationInput.Authority request -> previewAuthority services request ct
+                | OperationInput.People request -> previewPeople services request ct
                 | OperationInput.Work request ->
                     match WorkExecution.prepareWork request with
                     | Error refusal -> RequestRefusals.read services ct refusal
@@ -254,9 +254,9 @@ module Service =
                         ct
                         (fun () -> WorkExecution.prepareReminder request)
                         (fun prepared -> WorkExecution.run services prepared ct)
-                | OperationInput.Authority request ->
-                    write services ct (fun () -> admitAuthority request) (fun command ->
-                        AuthorityExecution.run services command ct)
+                | OperationInput.People request ->
+                    write services ct (fun () -> admitPeople request) (fun command ->
+                        PeopleExecution.run services command ct)
 
             return
                 {
@@ -297,13 +297,13 @@ module Service =
 
     let actors = Queries.actors
     let grants = Queries.grants
-    let authorityHistory = Queries.authorityHistory
+    let peopleHistory = Queries.peopleHistory
 
     let provisionOwnerInTransaction services tx operationId profile roles =
-        AuthorityExecution.provisionInTransaction services tx operationId profile roles
+        PeopleExecution.provisionInTransaction services tx operationId profile roles
 
     let provisionOwner services operationId profile roles token =
-        AuthorityExecution.provisionStore services operationId profile roles token
+        PeopleExecution.provisionStore services operationId profile roles token
 
     let accessRequests = AccessRequestQueries.page
     let dismissAccessRequest = AccessRequestQueries.dismiss

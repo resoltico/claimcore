@@ -102,7 +102,7 @@ const operationInput = {
   operationId: "019aa6a0-0000-7000-8000-000000000001",
   target: { kind: "REFERENCE", caseReference: "SYNTHETIC-CASE" },
   expectedRevision: 1,
-  act: { kind: "CLOSE" },
+  act: { kind: "case.close" },
 } as const;
 const operationReview = {
   representation: "HUMAN",
@@ -114,7 +114,7 @@ const operationReview = {
         screen: { regions: [] },
         context: {
           kind: "REVIEW",
-          task: "CASE:CLOSE",
+          task: "case.close",
           target: {
             kind: "CASE",
             caseId: "019aa6a0-0000-7000-8000-000000000002",

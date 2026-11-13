@@ -11,7 +11,7 @@ export const expectCorrection = (
   serializedLiteral: string,
   authored: Record<Group, object>,
 ) => {
-  if (actual.kind !== "CASE" || actual.act.kind !== "CORRECT") {
+  if (actual.kind !== "CASE" || actual.act.kind !== "case.correct") {
     throw new Error("Expected a case correction.");
   }
   const literal = JSON.parse(serializedLiteral) as Literal;

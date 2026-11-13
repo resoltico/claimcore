@@ -13,7 +13,7 @@ type AuthoredInput =
     | Work of operationId: Guid * expectedRevision: int64 * CaseWorkInput
     | Note of operationId: Guid * AuthoredNoteAct
     | Reminder of operationId: Guid * AuthoredReminderAct
-    | Authority of AuthorityRequest
+    | People of PeopleRequest
 
 /// A draft can omit metadata that only the current read or execution will supply.
 [<RequireQualifiedAccess>]
@@ -33,7 +33,7 @@ type AuthoredIntent =
         reference: string option *
         act: ReminderAct<int64 option>
     | Note of operationId: Guid option * reference: string option * act: AuthoredNoteAct
-    | Authority of operationId: Guid option * target: PrincipalInput * act: AuthoredAuthorityAct
+    | People of operationId: Guid option * target: PrincipalInput * act: AuthoredPeopleAct
 
 module Validation =
     let private at target parse raw =
@@ -123,7 +123,7 @@ module Validation =
                         supplied reference target
                         NoteInput.admit act |> Result.map ignore
                     ]
-            | AuthoredIntent.Authority(id, target, act) -> Authority.syntaxIntent id target act
+            | AuthoredIntent.People(id, target, act) -> People.syntaxIntent id target act
 
         match InputValidation.ordered result with
         | Error(Refusal.InvalidInput issues) -> Some issues
@@ -148,6 +148,6 @@ module Validation =
             AuthoredIntent.Work(Some id, None, Some expected, work)
         | AuthoredInput.Reminder(id, act) -> AuthoredIntent.Reminder(Some id, None, reminder act)
         | AuthoredInput.Note(id, act) -> AuthoredIntent.Note(Some id, None, act)
-        | AuthoredInput.Authority request ->
-            AuthoredIntent.Authority(Some request.OperationId, request.Target, request.Act)
+        | AuthoredInput.People request ->
+            AuthoredIntent.People(Some request.OperationId, request.Target, request.Act)
         |> syntaxIntent

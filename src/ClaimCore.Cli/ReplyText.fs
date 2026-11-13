@@ -70,16 +70,16 @@ module internal ReplyText =
             actorScreenPresenter Api.caseSummary
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) ->
             actorScreenPresenter Api.context
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityList) ->
-            actorScreenPresenter Api.authorityList
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
-            actorScreenPresenter Api.authorityGrants
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
-            actorScreenPresenter Api.authorityHistory
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
-            actorScreenPresenter Api.authorityRequests
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
-            actorScreenPresenter Api.authorityRequestsDismiss
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleList) ->
+            actorScreenPresenter Api.peopleList
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleGrants) ->
+            actorScreenPresenter Api.peopleGrants
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleHistory) ->
+            actorScreenPresenter Api.peopleHistory
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
+            actorScreenPresenter Api.peopleRequests
+        | EndpointId.Actor(ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss) ->
+            actorScreenPresenter Api.peopleRequestsDismiss
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
             presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->

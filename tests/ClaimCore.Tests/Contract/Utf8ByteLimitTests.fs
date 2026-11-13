@@ -97,7 +97,7 @@ let tests =
                         (PartyName.parse (String.replicate 200 "😀") |> Result.bind PartyName.admit)
                         "Current valid supplementary names stay admitted"
 
-                    let authored: AuthorityRequest =
+                    let authored: PeopleRequest =
                         {
                             OperationId = Guid.Parse "65f2c361-c10f-7bd9-bacf-54ce57716701"
                             Target =
@@ -107,21 +107,21 @@ let tests =
                                     Subject = "new-profile"
                                 }
                             Act =
-                                AuthorityAct.Register
+                                PeopleAct.Register
                                     {
                                         DisplayName = String('x', 1025)
                                         Contact = None
                                     }
                         }
 
-                    let raw = ClaimCore.Application.Contracts.OperationInput.Authority authored
+                    let raw = ClaimCore.Application.Contracts.OperationInput.People authored
                     let bytes = Codec.encode Api.operationExecute.Input raw
 
                     Expect.isOk
                         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input bytes)
                         "Raw authored strings still reach Application rather than read-side wire constraints"
 
-                    match Authority.parse authored with
+                    match People.parse authored with
                     | Error(Refusal.InvalidInput issues) ->
                         Expect.equal
                             (InputIssues.toList issues

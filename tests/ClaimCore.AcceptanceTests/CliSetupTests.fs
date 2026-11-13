@@ -176,7 +176,7 @@ let evidenceTests =
         ]
 
 let private acceptedFrame () =
-    use source = JsonDocument.Parse(ResponseExamples.authorityReplyBytes ())
+    use source = JsonDocument.Parse(ResponseExamples.peopleReplyBytes ())
     let reply = source.RootElement
 
     JsonSerializer.Serialize
@@ -190,41 +190,36 @@ let private acceptedFrame () =
 
 [<Tests>]
 let tests =
-    testCase
-        "published authority setup refuses incomplete or unconfirmed session replies"
-        (fun () ->
-            let accepted = acceptedFrame ()
+    testCase "published people setup refuses incomplete or unconfirmed session replies" (fun () ->
+        let accepted = acceptedFrame ()
 
-            let refused = "{\"outcome\":{\"kind\":\"REJECTED\",\"data\":{}}}"
+        let refused = "{\"outcome\":{\"kind\":\"REJECTED\",\"data\":{}}}"
 
-            let result exitCode (output: string) (errors: string) : ProcessRunner.Result =
-                {
-                    ExitCode = exitCode
-                    StandardOutput = Encoding.UTF8.GetBytes(output)
-                    StandardError = Encoding.UTF8.GetBytes(errors)
-                }
+        let result exitCode (output: string) (errors: string) : ProcessRunner.Result =
+            {
+                ExitCode = exitCode
+                StandardOutput = Encoding.UTF8.GetBytes(output)
+                StandardError = Encoding.UTF8.GetBytes(errors)
+            }
 
-            requireAcceptedReplies 2 (result 0 (accepted + accepted) "")
+        requireAcceptedReplies 2 (result 0 (accepted + accepted) "")
 
-            for incomplete in
-                [
-                    result 0 "" ""
-                    result 0 accepted ""
-                    result 0 (accepted + accepted + accepted) ""
-                    result 0 (accepted + "\n" + accepted) ""
-                    result 0 (accepted.TrimEnd('\n') + accepted) ""
-                    result 0 (refused + accepted) ""
-                    result 3 (accepted + accepted) ""
-                    result 0 (accepted + accepted) "synthetic diagnostic"
-                    result
-                        0
-                        (accepted.Replace(
-                            "\"delivery\":\"DELIVERED\"",
-                            "\"delivery\":\"UNCERTAIN\""
-                         )
-                         + accepted)
-                        ""
-                ] do
-                Expect.throws
-                    (fun () -> requireAcceptedReplies 2 incomplete)
-                    "An incomplete or unconfirmed setup cannot qualify")
+        for incomplete in
+            [
+                result 0 "" ""
+                result 0 accepted ""
+                result 0 (accepted + accepted + accepted) ""
+                result 0 (accepted + "\n" + accepted) ""
+                result 0 (accepted.TrimEnd('\n') + accepted) ""
+                result 0 (refused + accepted) ""
+                result 3 (accepted + accepted) ""
+                result 0 (accepted + accepted) "synthetic diagnostic"
+                result
+                    0
+                    (accepted.Replace("\"delivery\":\"DELIVERED\"", "\"delivery\":\"UNCERTAIN\"")
+                     + accepted)
+                    ""
+            ] do
+            Expect.throws
+                (fun () -> requireAcceptedReplies 2 incomplete)
+                "An incomplete or unconfirmed setup cannot qualify")

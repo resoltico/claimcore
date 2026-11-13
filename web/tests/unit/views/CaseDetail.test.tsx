@@ -66,7 +66,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
     {
       revision: 4,
       history: "NONE",
-      tasks: ["CASE:CORRECT", "CASE:REOPEN"],
+      tasks: ["case.correct", "case.reopen"],
       correction: correctionChoices,
     },
     {
@@ -78,8 +78,8 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
             kind: "ACTIONS",
             recommended: null,
             groups: [
-              { family: "STEWARDSHIP", acts: ["CORRECT"] },
-              { family: "BUSINESS", acts: ["REOPEN"] },
+              { family: "STEWARDSHIP", acts: ["case.correct"] },
+              { family: "BUSINESS", acts: ["case.reopen"] },
             ],
           },
         },
@@ -91,7 +91,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   render(
     <CaseDetail
       target={{ kind: "REFERENCE", caseReference: "CLOSED-1" }}
-      unavailableAct="DECIDE"
+      unavailableAct="case.decide"
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -104,9 +104,9 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
   expect(onAct).toHaveBeenCalledWith(
     expect.objectContaining<{ context: unknown }>({
-      context: expect.objectContaining({ revision: 4, tasks: ["CASE:CORRECT", "CASE:REOPEN"] }),
+      context: expect.objectContaining({ revision: 4, tasks: ["case.correct", "case.reopen"] }),
     }),
-    "REOPEN",
+    "case.reopen",
   );
   expect(callout.querySelector(".primary")).toBeNull();
 });

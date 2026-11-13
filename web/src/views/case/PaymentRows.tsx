@@ -3,12 +3,12 @@ import { useCompact } from "../../hooks/useCompact";
 import { PresentedValue } from "../../components/PresentedValue";
 import { renderCatalogKey } from "../../presentation/messages";
 import { RowDetails } from "../../ui/regions/RowDetails";
-import type { HumanReadDocument_casePayments, RegionContent } from "@contracts/client";
+import type { HumanReadDocument_case_payments, RegionContent } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { Table } from "../../ui/regions/Table";
 import { Button } from "../../ui/Button";
 
-type Handle = HumanReadDocument_casePayments["context"]["payments"][number];
+type Handle = HumanReadDocument_case_payments["context"]["payments"][number];
 export const PaymentRows = ({
   content,
   handles,
@@ -32,7 +32,7 @@ export const PaymentRows = ({
           onRemove(handle.paymentId);
         }}
       >
-        {p.text("act.REMOVE_PAYMENT.label")}
+        {p.text("task.case.removePayment.label")}
       </Button>
     );
   };

@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "../../support/presentation-test-support
 import { CaseReassignment } from "../../../src/views/worklist/CaseReassignment";
 import {
   isRequest,
-  type HumanReadDocument_caseGet,
+  type HumanReadDocument_case_get,
   type HumanReview,
   type HumanReceiptDocument,
 } from "@contracts/client";
@@ -21,7 +21,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const current: HumanReadDocument_caseGet = {
+const current: HumanReadDocument_case_get = {
   screen: { regions: [] },
   context: {
     kind: "CASE",
@@ -29,7 +29,7 @@ const current: HumanReadDocument_caseGet = {
     revision: 7,
     workRevision: 12,
     history: "NONE",
-    tasks: ["WORK:UPDATE_WORK"],
+    tasks: ["work.update"],
     editableInputs: ["field:responsibleActor"],
     correction: null,
     seeds: {
@@ -51,7 +51,7 @@ const review: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "WORK:UPDATE_WORK",
+      task: "work.update",
       target: { kind: "WORK", caseId, beforeRevision: 12 },
       inputs: [
         "input:operationId",
@@ -198,7 +198,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
     kind: "WORK",
     target: { kind: "ID", caseId },
     expectedRevision: 3,
-    act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: actorId } } },
+    act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: actorId } } },
   });
   expect(executions).toEqual([]);
   await userEvent.click(rebase);
@@ -211,7 +211,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
     kind: "WORK",
     target: { kind: "ID", caseId },
     expectedRevision: 12,
-    act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: actorId } } },
+    act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: actorId } } },
   });
   expect(executions).toEqual([]);
   await userEvent.click(screen.getByRole("button", { name: "Return to editing" }));

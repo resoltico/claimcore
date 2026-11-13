@@ -20,15 +20,15 @@ let internal rolelessAuthorship fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 10)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 CancellationToken.None
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -41,7 +41,7 @@ let internal rolelessAuthorship fixture =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let author = core fixture target
 
         let! opened =
@@ -65,7 +65,7 @@ let internal rolelessAuthorship fixture =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
 
         let readOnly =
             { new IStore with
@@ -126,12 +126,10 @@ let internal rolelessAuthorship fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id fixture 31) target AuthorityAct.Disable
-                ))
+                (OperationInput.People(peopleRequest (id fixture 31) target PeopleAct.Disable))
                 CancellationToken.None
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
 
         let! denied =
             Service.operationGet passive { OperationId = id fixture 30 } CancellationToken.None

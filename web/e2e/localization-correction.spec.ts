@@ -37,7 +37,7 @@ const expectAuthored = (bytes: Buffer, caseId: string, modes: Modes, revision: n
     target: { kind: "ID", caseId },
     expectedRevision: revision,
     act: {
-      kind: "CORRECT",
+      kind: "case.correct",
       groups: {
         registration: { kind: modes.registration },
         decision: { kind: modes.decision },
@@ -199,7 +199,9 @@ for (const status of ["CLOSED"] as const) {
           const acceptedHistory = await history(page, reference);
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
-            acceptedHistory.some((entry) => entry.kind === "CASE_FACT" && entry.act === "CORRECT"),
+            acceptedHistory.some(
+              (entry) => entry.kind === "CASE_FACT" && entry.act === "case.correct",
+            ),
           ).toBe(true);
         } else {
           expectCorrectionIssue(captured.reply, refusal);

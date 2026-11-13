@@ -55,24 +55,24 @@ module Catalog =
                     {
                         Role = role
                         MeaningId = Vocabulary.messageKey Role.vocabulary role "meaning"
-                        AdmittedScopes = Authority.roleScopes role
+                        AdmittedScopes = Access.roleScopes role
                         AdmittedPrincipalKinds =
                             Vocabulary.all PrincipalKind.vocabulary
                             |> List.filter (fun kind ->
-                                kind = PrincipalKind.Human || not (Authority.humanOnlyRole role))
+                                kind = PrincipalKind.Human || not (Access.humanOnlyRole role))
                     })
             Capabilities =
                 Capability.all
                 |> List.map (fun capability ->
                     {
                         Capability = capability
-                        AdmittedScopes = Authority.capabilityScopes capability
+                        AdmittedScopes = Access.capabilityScopes capability
                         AdmittedPrincipalKinds =
                             PrincipalKind.vocabulary
                             |> Vocabulary.all
                             |> List.filter (fun kind ->
                                 kind = PrincipalKind.Human
-                                || not (Authority.humanOnlyCapability capability))
+                                || not (Access.humanOnlyCapability capability))
                     })
             MoneyMinorUnits =
                 CurrencyMinorUnits.all

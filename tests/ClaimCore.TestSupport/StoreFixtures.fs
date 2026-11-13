@@ -47,15 +47,15 @@ let internal inspectCase fixture principal operation reference token =
         }
     )
 
-type internal AuthorityInspection =
+type internal PeopleInspection =
     {
-        Needed: AuthorityFact list
+        Needed: PeopleFact list
         OperationId: Guid
         Target: PrincipalKey
         CaseTargets: GrantTarget list
     }
 
-let internal inspectTarget fixture principal (query: AuthorityInspection) token =
+let internal inspectTarget fixture principal (query: PeopleInspection) token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
@@ -98,21 +98,21 @@ let internal inspectOperation fixture principal operation token =
                                     | ReceiptCurrent.Work(value, _, _)
                                     | ReceiptCurrent.Reminder(value, _)
                                     | ReceiptCurrent.Note(value, _) -> value
-                                    | ReceiptCurrent.Authority _ -> None
+                                    | ReceiptCurrent.People _ -> None
                             }
                     })
             CancellationToken = token
         }
     )
 
-let internal inspectAuthority fixture principal token =
+let internal inspectPeople fixture principal token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
                 (fun tx ->
-                    tx.Authority(
+                    tx.Access(
                         {
-                            AuthorityQuery.Principal = principal
+                            AccessQuery.Principal = principal
                             CaseId = None
                         }
                     ))
@@ -139,7 +139,7 @@ let internal actRequest fixture n reference revision act : UnvalidatedCaseReques
         Act = act
     }
 
-let internal authorityRequest = Inputs.authorityRequest
+let internal peopleRequest = Inputs.peopleRequest
 
 let internal registration: RegistrationInput = Inputs.registration
 
@@ -189,10 +189,10 @@ let internal replayReceipt (reply: ExecuteReply) =
     | ExecuteResult.AlreadyAccepted receipt -> receipt
     | other -> failtestf "Expected already accepted operation, received %A." other
 
-let internal acceptedAuthority outcome =
+let internal acceptedPeople outcome =
     match accepted outcome with
-    | { Subject = ReceiptSubject.Authority _ } -> ()
-    | _ -> failtest "Expected accepted authority operation."
+    | { Subject = ReceiptSubject.People _ } -> ()
+    | _ -> failtest "Expected accepted people operation."
 
 let internal caseReceipt (receipt: OperationReceipt) =
     match receipt.Subject with
@@ -209,7 +209,7 @@ let internal disclosedFields receipt =
 let internal bootstrap fixture =
     task {
         let! result =
-            AuthorityExecution.provisionStore
+            PeopleExecution.provisionStore
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile
@@ -218,7 +218,7 @@ let internal bootstrap fixture =
 
         match result with
         | Ok(Verdict.Proceed _) -> ()
-        | _ -> failtest "Initial owner must be accepted."
+        | other -> failtestf "Initial owner must be accepted: %A." other
 
         return core fixture fixture.Owner
     }
@@ -226,11 +226,11 @@ let internal bootstrap fixture =
 let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGrant) active =
     (Service.execute
         actor
-        (OperationInput.Authority(
-            authorityRequest
+        (OperationInput.People(
+            peopleRequest
                 operationId
                 target
-                ((if active then AuthorityAct.Grant else AuthorityAct.Revoke) grant)
+                ((if active then PeopleAct.Grant else PeopleAct.Revoke) grant)
         ))
         (CancellationToken.None))
 
@@ -251,7 +251,7 @@ let internal caseWorker fixture =
                     }
                     true
 
-            acceptedAuthority outcome
+            acceptedPeople outcome
 
         return owner
     }

@@ -15,7 +15,7 @@ import { isResponseFor } from "../src/protocol/client";
 const loseAcceptedClose = async (page: Page) => {
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   await openCase(page, `UNCONFIRMED-${randomUUID()}`);
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   await reviewDraft(page);
   await confirmReview(page);
   const pending = await pauseJsonReply(page, "operation.execute", true);
@@ -49,7 +49,7 @@ for (const reload of [false, true]) {
       format: 2,
       operationId,
       subject: "CASE",
-      act: "CLOSE",
+      act: "case.close",
       serviceOrigin: new URL(page.url()).origin,
     });
     expect(Object.keys(saved[0]!).sort()).toEqual([
@@ -93,7 +93,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   await openAuthenticated(page);
   const reference = `STORAGE-REFUSAL-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   const previewed = page.waitForRequest((request) =>
     request.url().endsWith("/api/operation.preview"),
   );

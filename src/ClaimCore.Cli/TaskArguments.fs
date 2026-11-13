@@ -195,16 +195,16 @@ module internal TaskArguments =
                 | true, values -> values |> List.rev |> List.choose id
                 | _ -> []
 
-            if values.Length < AuthorityAdmission.MinimumGrants then
+            if values.Length < PeopleAdmission.MinimumGrants then
                 problems.Add(UsageError.MissingOption name)
 
-            if values.Length > AuthorityAdmission.MaximumGrants then
+            if values.Length > PeopleAdmission.MaximumGrants then
                 problems.Add(
-                    UsageError.InvalidChoice(name, values[AuthorityAdmission.MaximumGrants], [])
+                    UsageError.InvalidChoice(name, values[PeopleAdmission.MaximumGrants], [])
                 )
 
             values
-            |> List.truncate AuthorityAdmission.MaximumGrants
+            |> List.truncate PeopleAdmission.MaximumGrants
             |> List.map (fun value ->
                 let separator = value.IndexOf('@')
 
@@ -241,7 +241,7 @@ module internal TaskArguments =
 
         let reference =
             match kind with
-            | ActKind.Authority _ -> None
+            | ActKind.People _ -> None
             | _ ->
                 match operands with
                 | value :: _ -> Some value
@@ -361,28 +361,28 @@ module internal TaskArguments =
                             }
 
                 AuthoredIntent.Case(operation, reference, expected, act)
-            | ActKind.Authority kind ->
+            | ActKind.People kind ->
                 let target = principal ()
 
                 let act =
                     match kind with
-                    | AuthorityKind.Register -> AuthorityAct.Register(profile ())
-                    | AuthorityKind.Admit ->
-                        AuthorityAct.Admit
+                    | PeopleActKind.Register -> PeopleAct.Register(profile ())
+                    | PeopleActKind.Admit ->
+                        PeopleAct.Admit
                             {
                                 Profile = profile ()
                                 Grants = grantRows ()
                             }
-                    | AuthorityKind.SetProfile -> AuthorityAct.SetProfile(profile ())
-                    | AuthorityKind.Grant -> AuthorityAct.Grant(singleGrant ())
-                    | AuthorityKind.Revoke -> AuthorityAct.Revoke(singleGrant ())
-                    | AuthorityKind.Enable -> AuthorityAct.Enable
-                    | AuthorityKind.Disable -> AuthorityAct.Disable
-                    | AuthorityKind.EraseProfile -> AuthorityAct.EraseProfile
-                    | AuthorityKind.ProvisionOwner ->
+                    | PeopleActKind.SetProfile -> PeopleAct.SetProfile(profile ())
+                    | PeopleActKind.Grant -> PeopleAct.Grant(singleGrant ())
+                    | PeopleActKind.Revoke -> PeopleAct.Revoke(singleGrant ())
+                    | PeopleActKind.Enable -> PeopleAct.Enable
+                    | PeopleActKind.Disable -> PeopleAct.Disable
+                    | PeopleActKind.EraseProfile -> PeopleAct.EraseProfile
+                    | PeopleActKind.ProvisionOwner ->
                         invalidOp "Owner provisioning is not a human task."
 
-                AuthoredIntent.Authority(operation, target, act)
+                AuthoredIntent.People(operation, target, act)
             | ActKind.Note kind ->
                 let act =
                     match kind with
@@ -541,11 +541,11 @@ module internal TaskArguments =
                 act
                 operation
                 None
-        | AuthoredIntent.Authority(operation, target, act) ->
+        | AuthoredIntent.People(operation, target, act) ->
             request
-                ActSubject.Authority
+                ActSubject.People
                 RequestCodecs.principal
-                RequestCodecs.authorityAct
+                RequestCodecs.peopleAct
                 target
                 act
                 operation

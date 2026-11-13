@@ -11,7 +11,7 @@ test("prefills routed metadata and confirms discard before changing acts from th
   const caseReference = `DESCRIPTORS-${randomUUID()}`;
   await openAuthenticated(page);
   await openCase(page, caseReference);
-  await startAct(page, "AMEND_REGISTRATION", "en");
+  await startAct(page, "case.amendRegistration", "en");
   await progress("metadata-amend-editor");
   await page.locator('input[data-selects-fields~="claimantName"]').check();
   const claimant = page.getByLabel("Claimant name", { exact: true });
@@ -34,7 +34,7 @@ test("prefills routed metadata and confirms discard before changing acts from th
     .first()
     .click();
   await discard.getByRole("button", { name: "Discard and leave" }).click();
-  await startAct(page, "DECIDE", "en");
+  await startAct(page, "case.decide", "en");
   await progress("metadata-discarded");
   await expect(
     page.locator('[data-field-name="paymentDecisionDate"] input[type="hidden"]'),

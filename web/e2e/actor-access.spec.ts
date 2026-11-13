@@ -1,7 +1,7 @@
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expect, test, type Page } from "@playwright/test";
-import { applyAuthority, syntheticPrincipals } from "./authority-setup";
+import { applyPeople, syntheticPrincipals } from "./people-setup";
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { login, sessionToken } from "./session-helpers";
@@ -12,22 +12,26 @@ const ownerGrants = async (page: Page, active: boolean) => {
   const changed: (typeof ownerRoles)[number][] = [];
   try {
     for (const role of ownerRoles) {
-      await applyAuthority(page, {
-        kind: "AUTHORITY",
+      await applyPeople(page, {
+        kind: "PEOPLE",
         operationId: mintOperationId(),
         target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-        act: { kind: active ? "GRANT" : "REVOKE", role, scope: { kind: "INSTALLATION" } },
+        act: {
+          kind: active ? "people.grant" : "people.revoke",
+          role,
+          scope: { kind: "INSTALLATION" },
+        },
       });
       changed.push(role);
     }
   } catch (error) {
     if (!active) {
       for (const role of changed.reverse()) {
-        await applyAuthority(page, {
-          kind: "AUTHORITY",
+        await applyPeople(page, {
+          kind: "PEOPLE",
           operationId: mintOperationId(),
           target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-          act: { kind: "GRANT", role, scope: { kind: "INSTALLATION" } },
+          act: { kind: "people.grant", role, scope: { kind: "INSTALLATION" } },
         });
       }
     }
@@ -35,7 +39,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
   }
 };
 
-test("owner-only workspace renders without inventing case authority", async ({ page }) => {
+test("owner-only workspace renders without inventing case people", async ({ page }) => {
   const fixture = await prepareRoleFixture(page);
   await ownerGrants(page, false);
   try {
@@ -60,11 +64,11 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases"
     ignoreHTTPSErrors: true,
   });
   const enable = (enabled: boolean) =>
-    applyAuthority(page, {
-      kind: "AUTHORITY",
+    applyPeople(page, {
+      kind: "PEOPLE",
       operationId: mintOperationId(),
       target: fixture.principal,
-      act: { kind: enabled ? "ENABLE" : "DISABLE" },
+      act: { kind: enabled ? "people.enable" : "people.disable" },
     });
   let disabledConfirmed = false;
   try {

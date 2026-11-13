@@ -87,7 +87,7 @@ const SelectedReminder = ({
       subject="REMINDER"
       kind={task.act}
       targetIdentity={row.reminderId}
-      {...(kind !== "REMINDER:REMINDER_COMPLETE" || selection.anchor === null
+      {...(kind !== "reminder.complete" || selection.anchor === null
         ? {}
         : { completionAnchor: selection.anchor })}
       tasks={row.tasks}

@@ -17,7 +17,7 @@ module internal ReviewDocumentParts =
             | OperationReview.Note value -> Some value.Parent
             | OperationReview.Work value -> Some value.Parent
             | OperationReview.Reminder value -> Some value.Parent
-            | OperationReview.Authority _ -> None
+            | OperationReview.People _ -> None
 
         let reminderContext =
             match review with
@@ -54,7 +54,7 @@ module internal ReviewDocumentParts =
                     ]
                     @ CaseScreen.identityFacts snapshot
                     @ reminderContext
-                | None, OperationReview.Authority value ->
+                | None, OperationReview.People value ->
                     [
                         ScreenEntries.value
                             "target"
@@ -93,7 +93,7 @@ module internal ReviewDocumentParts =
                     revision InputTarget.ExpectedReminderRevision (Reminder.revision before))
                 |> Option.toList
             | OperationReview.Note _
-            | OperationReview.Authority _ -> []
+            | OperationReview.People _ -> []
 
         let sections = described.Effects
 

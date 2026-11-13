@@ -9,8 +9,8 @@ const locked = vi.fn();
 const Workspace = ({ epoch }: { epoch: number }) => {
   const model = useOperation({
     ...recoveryOptions,
-    subject: "AUTHORITY",
-    kind: "REGISTER",
+    subject: "PEOPLE",
+    kind: "people.register",
     current: null,
     credential: "synthetic",
     onLockChange: locked,
@@ -18,7 +18,7 @@ const Workspace = ({ epoch }: { epoch: number }) => {
   return (
     <>
       <OperationDiscard model={model} />
-      <OperationPanel key={epoch} model={model} current={null} offered={["REGISTER"]} />
+      <OperationPanel key={epoch} model={model} current={null} offered={["people.register"]} />
     </>
   );
 };

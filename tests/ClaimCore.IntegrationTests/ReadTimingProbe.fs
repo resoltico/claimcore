@@ -101,8 +101,8 @@ let tests =
                             token)
 
                 do!
-                    measure "authority.history" (fun () ->
-                        Service.authorityHistory
+                    measure "people.history" (fun () ->
+                        Service.peopleHistory
                             actor
                             {
                                 TargetActorId = None

@@ -243,7 +243,7 @@ module internal Queries =
                                             let! record = ExecutionFacts.findCase tx request.Target
 
                                             let! actor =
-                                                tx.Authority
+                                                tx.Access
                                                     {
                                                         Principal = services.Principal
                                                         CaseId = record |> Option.map _.CaseId
@@ -251,12 +251,12 @@ module internal Queries =
 
                                             match record with
                                             | Some record when
-                                                Authority.can
+                                                Access.can
                                                     services.Principal
                                                     actor
                                                     Capability.ReadCase
                                                     (Scope.Case record.CaseId)
-                                                && Authority.can
+                                                && Access.can
                                                     services.Principal
                                                     actor
                                                     Capability.ManageCaseWork
@@ -277,10 +277,10 @@ module internal Queries =
                                                             {
                                                                 CaseId = record.CaseId
                                                                 ReadRoles =
-                                                                    Authority.rolesFor
+                                                                    Access.rolesFor
                                                                         Capability.ReadCase
                                                                 WorkRoles =
-                                                                    Authority.rolesFor
+                                                                    Access.rolesFor
                                                                         Capability.ManageCaseWork
                                                                 AfterActorId = after
                                                                 Limit = request.Limit
@@ -320,7 +320,7 @@ module internal Queries =
         (services: ServiceContext)
         observedAt
         (maintenance: RegisterMaintenance)
-        (actor: AuthorityView)
+        (actor: AccessView)
         (roles: ActorRoleSummary list)
         =
         let principal = services.Principal
@@ -346,7 +346,7 @@ module internal Queries =
                 Capability =
                     Capability.all
                     |> List.filter (fun capability ->
-                        Authority.can principal actor capability Scope.Installation)
+                        Access.can principal actor capability Scope.Installation)
             }
 
         let state =
@@ -408,7 +408,7 @@ module internal Queries =
                         services
                         facts.ObservedAt
                         facts.Facts.Maintenance
-                        facts.Facts.Authority
+                        facts.Facts.People
                         facts.Facts.AssignedRoles)
                 |> readResult
         }
@@ -416,7 +416,7 @@ module internal Queries =
     let selectCases installation principal basis (request: CaseListRequest) actor =
         currentActor principal actor
         |> Result.bind (fun actor ->
-            match Authority.visibility principal actor with
+            match Access.visibility principal actor with
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
             | Some visibility ->
                 CaseListFilter.admit request.Filter
@@ -431,8 +431,8 @@ module internal Queries =
                                     DateBasis = basis
                                     Visibility = visibility
                                     ActorId = actor.Actor |> Option.map _.ActorId |> Option.get
-                                    ReadRoles = Authority.readRoles principal
-                                    ForbiddenRoles = Authority.invalidRoles principal
+                                    ReadRoles = Access.readRoles principal
+                                    ForbiddenRoles = Access.invalidRoles principal
                                     Filter = filter
                                 }
                             Limit = request.Page.Limit
@@ -504,7 +504,7 @@ module internal Queries =
                 |> Map.ofList
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
-            let! actor = tx.AuthorityCases(services.Principal, records |> List.map _.CaseId)
+            let! actor = tx.AccessCases(services.Principal, records |> List.map _.CaseId)
 
             return
                 work
@@ -559,7 +559,7 @@ module internal Queries =
                     | None -> return None
                     | Some record ->
                         let! actor =
-                            tx.Authority
+                            tx.Access
                                 {
                                     Principal = services.Principal
                                     CaseId = Some record.CaseId
@@ -597,7 +597,7 @@ module internal Queries =
                                 (fun tx ->
                                     task {
                                         let! facts = tx.GlobalReadFacts principal
-                                        let actor = facts.Authority
+                                        let actor = facts.People
 
                                         match
                                             selectCases
@@ -674,7 +674,7 @@ module internal Queries =
                             fun tx ->
                                 task {
                                     let! actor =
-                                        tx.Authority
+                                        tx.Access
                                             {
                                                 Principal = services.Principal
                                                 CaseId = None
@@ -705,8 +705,8 @@ module internal Queries =
             return readResult result
         }
 
-    let selectActors = AuthorityQueries.selectActors
-    let actors = AuthorityQueries.actors
-    let selectGrants = AuthorityQueries.selectGrants
-    let grants = AuthorityQueries.grants
-    let authorityHistory = AuthorityQueries.history
+    let selectActors = PeopleQueries.selectActors
+    let actors = PeopleQueries.actors
+    let selectGrants = PeopleQueries.selectGrants
+    let grants = PeopleQueries.grants
+    let peopleHistory = PeopleQueries.history

@@ -18,7 +18,7 @@ vi.mock("../../../../src/protocol/taskCatalog", async (original) => {
       input: Parameters<typeof actual.queryInput>[1],
     ) => {
       const value = actual.queryInput(task, input);
-      return task === "query:reminderList" && input === "input:reminderState"
+      return task === "reminder.list" && input === "input:reminderState"
         ? { ...value, labelId: "label.details", choices: ["CANCELLED", "PENDING"] }
         : value;
     },

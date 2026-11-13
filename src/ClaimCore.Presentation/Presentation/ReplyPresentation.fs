@@ -37,11 +37,11 @@ module Refusals =
         | Refusal.OperationClockUnavailable _
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
-        | Refusal.Authority(AuthorityRefusal.HumanPrincipalRequired | AuthorityRefusal.RoleScopeNotApplicable) ->
+        | Refusal.People(PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable) ->
             RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
-        | Refusal.Authority(AuthorityRefusal.LastOwner | AuthorityRefusal.ActorAlreadyRegistered | AuthorityRefusal.ActorUnknown) ->
+        | Refusal.People(PeopleRefusal.LastOwner | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
             RecommendedAction.ReviewLatest
 
     let actualRevision =

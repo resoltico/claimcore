@@ -3,7 +3,7 @@ namespace ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 
-/// Presentation consequence is core policy, independent of a caller's current authority.
+/// Presentation consequence is core policy, independent of a caller's current people.
 [<RequireQualifiedAccess>]
 type Consequence =
     | Routine
@@ -27,22 +27,22 @@ module Consequence =
             | ActFamily.Business -> Consequence.Routine
             | ActFamily.Stewardship -> Consequence.Stewardship
 
-    let private authorityAct =
+    let private peopleAct =
         function
-        | AuthorityKind.Disable -> Consequence.Stewardship
-        | AuthorityKind.EraseProfile -> Consequence.Irreversible
-        | AuthorityKind.ProvisionOwner
-        | AuthorityKind.Register
-        | AuthorityKind.Admit
-        | AuthorityKind.Grant
-        | AuthorityKind.Revoke
-        | AuthorityKind.Enable -> Consequence.Routine
-        | AuthorityKind.SetProfile -> Consequence.Routine
+        | PeopleActKind.Disable -> Consequence.Stewardship
+        | PeopleActKind.EraseProfile -> Consequence.Irreversible
+        | PeopleActKind.ProvisionOwner
+        | PeopleActKind.Register
+        | PeopleActKind.Admit
+        | PeopleActKind.Grant
+        | PeopleActKind.Revoke
+        | PeopleActKind.Enable -> Consequence.Routine
+        | PeopleActKind.SetProfile -> Consequence.Routine
 
     let ofAct =
         function
         | ActKind.Case kind -> caseAct kind
-        | ActKind.Authority kind -> authorityAct kind
+        | ActKind.People kind -> peopleAct kind
         | ActKind.Note _ -> Consequence.Routine
         | ActKind.Work WorkActKind.UpdateWork -> Consequence.Routine
         | ActKind.Reminder(ReminderActKind.Create | ReminderActKind.Update | ReminderActKind.Complete | ReminderActKind.Cancel | ReminderActKind.Reopen | ReminderActKind.CompleteAndPlanNext) ->

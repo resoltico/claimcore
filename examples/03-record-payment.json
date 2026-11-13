@@ -4,7 +4,7 @@
     "kind": "CASE",
     "expectedRevision": 2,
     "act": {
-      "kind": "RECORD_PAYMENT",
+      "kind": "case.recordPayment",
       "values": {
         "paymentDate": "2026-08-20",
         "paidAmount": "750.00",

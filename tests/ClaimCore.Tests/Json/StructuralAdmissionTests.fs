@@ -198,19 +198,19 @@ let tests =
                 (fun () ->
                     let raw =
                         bytes
-                            """{"kind":"AUTHORITY","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example:bad/","subject":"person"},"act":{"kind":"ENABLE"}}"""
+                            """{"kind":"PEOPLE","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example:bad/","subject":"person"},"act":{"kind":"people.enable"}}"""
 
                     Expect.isOk
                         (Codec.validate 8192 RequestCodecs.operationInput raw)
                         "Raw authored input is structurally admissible"
 
                     match Codec.decode 8192 RequestCodecs.operationInput raw with
-                    | Ok(ClaimCore.Application.Contracts.OperationInput.Authority request) ->
+                    | Ok(ClaimCore.Application.Contracts.OperationInput.People request) ->
                         Expect.isError
-                            (Authority.parse request)
+                            (People.parse request)
                             "Canonical principal admission remains at the core"
                     | other ->
-                        failtestf "Expected structurally admitted authority input, got %A" other
+                        failtestf "Expected structurally admitted people input, got %A" other
 
                     let page =
                         bytes

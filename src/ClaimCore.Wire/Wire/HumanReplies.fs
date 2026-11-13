@@ -34,7 +34,7 @@ module HumanReplies =
                     "required"
                     (PresentedValue.Codes(
                         Vocabulary.name Role.vocabulary,
-                        Authority.rolesFor required |> List.map Role.token
+                        Access.rolesFor required |> List.map Role.token
                     ))
                     message.Arguments
             | Refusal.Case(CaseRefusal.NotOffered state) ->

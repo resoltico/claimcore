@@ -118,7 +118,7 @@ let private repairs database =
                         PrincipalKind = PrincipalKind.Human
                         Availability = ActorAvailability.Available
                     })
-                "Actor rows and authority are restored before referenced case work"
+                "Actor rows and people are restored before referenced case work"
 
             Expect.equal
                 current.Work.FollowUp
@@ -206,7 +206,7 @@ let private erasedIdentity database =
                 true
 
         match permission.Outcome with
-        | ExecuteResult.Accepted _ -> acceptedAuthority permission
+        | ExecuteResult.Accepted _ -> acceptedPeople permission
         | _ -> failtestf "Erasure grant refused: %A" permission
 
         let! erased =
@@ -427,7 +427,7 @@ let private grantSource database =
         | VerificationResult.Diverged finding ->
             Expect.equal
                 finding.Finding
-                VerificationFinding.AuthorityProjection
+                VerificationFinding.PeopleProjection
                 "A valid foreign key to the wrong event cannot pass"
         | _ -> failtest "Grant-source corruption must diverge"
 

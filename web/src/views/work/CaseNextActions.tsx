@@ -8,7 +8,7 @@ import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
 import { ReminderActions, type ReminderActHandler } from "./ReminderActions";
 import { ReminderList } from "./ReminderList";
-const stateChoice = queryInput("query:reminderList", "input:reminderState");
+const stateChoice = queryInput("reminder.list", "input:reminderState");
 type State = (typeof taskChoices.reminderState)[number];
 export const CaseNextActions = ({
   current,
@@ -56,7 +56,7 @@ export const CaseNextActions = ({
         </h2>
         {canCreate ? (
           <button id="case-reminder-add" type="button" onClick={onCreate}>
-            {p.text("act.REMINDER_CREATE.label")}
+            {p.text("task.reminder.create.label")}
           </button>
         ) : null}
       </div>

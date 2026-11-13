@@ -99,7 +99,7 @@ it.each([
   ["net::ERR_BLOCKED_BY_CLIENT", "blocked"],
   ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "blocked"],
   ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "blocked"],
-  ["net::ERR_CERT_AUTHORITY_INVALID", "tls"],
+  ["net::ERR_CERT_PEOPLE_INVALID", "tls"],
   ["PRIVATE_RAW_NETWORK", "other"],
 ])(
   "reduces callback network failures to closed categories: case %#",
@@ -312,7 +312,7 @@ it("tracks only failed issuer main-frame navigations alongside callback failures
 
 it.each([
   ["net::ERR_CONNECTION_REFUSED", "refused"],
-  ["net::ERR_CERT_AUTHORITY_INVALID", "tls"],
+  ["net::ERR_CERT_PEOPLE_INVALID", "tls"],
   ["net::ERR_PRIVATE_UNKNOWN", "other"],
 ])("reduces navigation error messages to known network labels: case %#", async (code, network) => {
   const facts = await browserReturn(issuer, undefined).report(undefined, {

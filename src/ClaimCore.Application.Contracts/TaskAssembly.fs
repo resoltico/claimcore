@@ -52,13 +52,13 @@ type CorrectionTaskDraft =
     }
 
 /// Row keys are local correlation metadata; only Grant becomes authored business content.
-type AuthorityAdmissionRow<'key> = { Key: 'key; Grant: AuthoredGrant }
+type PeopleAdmissionRow<'key> = { Key: 'key; Grant: AuthoredGrant }
 
-type AuthorityAdmissionDraft<'key> =
+type PeopleAdmissionDraft<'key> =
     {
         Target: PrincipalInput
         Profile: ActorProfileInput
-        Grants: AuthorityAdmissionRow<'key> list
+        Grants: PeopleAdmissionRow<'key> list
     }
 
 type TaskSubmission<'key> =
@@ -166,22 +166,22 @@ module TaskAssembly =
                     }
                 |> caseCommand basis))
 
-    let admitAuthority operation (draft: AuthorityAdmissionDraft<'key>) =
+    let admitPeople operation (draft: PeopleAdmissionDraft<'key>) =
         {
             Command =
-                OperationInput.Authority
+                OperationInput.People
                     {
                         OperationId = OperationId.value operation
                         Target = draft.Target
                         Act =
-                            AuthorityAct.Admit
+                            PeopleAct.Admit
                                 {
                                     Profile = draft.Profile
                                     Grants = draft.Grants |> List.map _.Grant
                                 }
                     }
             SubmittedRows =
-                Map.ofList [ TaskCollectionId.AuthorityGrants, draft.Grants |> List.map _.Key ]
+                Map.ofList [ TaskCollectionId.PeopleGrants, draft.Grants |> List.map _.Key ]
         }
 
     /// Complete acquired metadata without allocating an identity or inventing a reviewed revision.
@@ -237,10 +237,10 @@ module TaskAssembly =
                         Target = target
                         Act = act
                     })
-        | AuthoredIntent.Authority(operation, target, act) ->
+        | AuthoredIntent.People(operation, target, act) ->
             operation
             |> Option.map (fun operation ->
-                OperationInput.Authority
+                OperationInput.People
                     {
                         OperationId = operation
                         Target = target

@@ -26,7 +26,7 @@ import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
 const current: CurrentCase = caseDocumentInput(
   {
-    tasks: ["CASE:CLOSE"],
+    tasks: ["case.close"],
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 1,
     history: "FULL",
@@ -75,7 +75,7 @@ const queueDefinitionAndList = () => {
       context: {
         kind: "CASES",
         cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },
@@ -189,7 +189,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
             context: {
               kind: "CASES",
               cases: [],
-              tasks: ["CASE:OPEN"],
+              tasks: ["case.open"],
               exactCaseId: null,
               nextCursor: null,
             },

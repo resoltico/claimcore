@@ -61,7 +61,7 @@ test("records future planned work and scoped responsibility, then finds the case
   await reviewDraft(page);
   await recordWorkReview(page, "WORK");
   await page
-    .getByRole("button", { name: ui("en", "act.REMINDER_CREATE.label"), exact: true })
+    .getByRole("button", { name: ui("en", "task.reminder.create.label"), exact: true })
     .click();
   await fillBusinessField(page, "reminderAction", "Request the remaining documents");
   await fillBusinessField(page, "reminderDueDate", planned);
@@ -108,7 +108,7 @@ for (const [entered, expected] of [
     const reference = `ENTRY-${randomUUID()}`;
     await openCase(page, reference);
     await selectFormat(page, entered);
-    await startAct(page, "AMEND_REGISTRATION", "en");
+    await startAct(page, "case.amendRegistration", "en");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();
     await fillBusinessField(page, "claimedAmount", "1,234");
     const editorUrl = page.url();
@@ -129,7 +129,7 @@ for (const [entered, expected] of [
     const captured = await preview.ready;
     expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
       act: {
-        kind: "AMEND_REGISTRATION",
+        kind: "case.amendRegistration",
         values: { claimedAmount: expected, claimedCurrency: "EUR" },
       },
     });

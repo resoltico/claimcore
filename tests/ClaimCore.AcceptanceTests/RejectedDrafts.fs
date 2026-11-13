@@ -125,7 +125,7 @@ let private principalRefusals fixture =
                 fixture
                 "operation.execute"
                 {|
-                    kind = "AUTHORITY"
+                    kind = "PEOPLE"
                     operationId = id ()
                     target =
                         {|

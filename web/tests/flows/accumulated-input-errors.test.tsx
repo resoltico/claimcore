@@ -53,7 +53,7 @@ it.each([1, 2])(
       <OperationEditor
         definition={definition}
         current={null}
-        initialAct="OPEN"
+        initialAct="case.open"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}

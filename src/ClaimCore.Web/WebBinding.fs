@@ -9,7 +9,7 @@ open System.Net
 open System.Net.Sockets
 open ClaimCore.Web.Composition
 
-/// Public authority and socket binding are distinct, including through Docker port publication.
+/// Public people and socket binding are distinct, including through Docker port publication.
 [<NoEquality; NoComparison>]
 type WebBinding =
     {

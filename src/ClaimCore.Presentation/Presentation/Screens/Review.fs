@@ -180,7 +180,7 @@ module ReviewScreen =
                  |> optional (ContactText.format >> PresentedValue.Text))
         ]
 
-    let authorityStateEntries (state: AuthorityState) =
+    let peopleStateEntries (state: PeopleState) =
         [ value "enabled" "label.enabled" Prominence.Primary (boolean state.Enabled) ]
         @ profileEntries state.Profile
         @ (state.Grants
@@ -198,18 +198,18 @@ module ReviewScreen =
                        Key = identity + "." + entry.Key
                    })))
 
-    let authorityEffects (effects: AuthorityReviewEffect list) =
+    let peopleEffects (effects: PeopleReviewEffect list) =
         effects
         |> List.map (fun effect ->
             let kind, details =
                 match effect with
-                | AuthorityReviewEffect.Register principal
-                | AuthorityReviewEffect.ProvisionOwner principal ->
+                | PeopleReviewEffect.Register principal
+                | PeopleReviewEffect.ProvisionOwner principal ->
                     let kind, issuer, subject = PrincipalKey.parts principal
 
                     (match effect with
-                     | AuthorityReviewEffect.Register _ -> AuthorityKind.Register
-                     | _ -> AuthorityKind.ProvisionOwner),
+                     | PeopleReviewEffect.Register _ -> PeopleActKind.Register
+                     | _ -> PeopleActKind.ProvisionOwner),
                     [
                         value
                             "principalKind"
@@ -227,16 +227,16 @@ module ReviewScreen =
                             Prominence.Detail
                             (PresentedValue.Identifier subject)
                     ]
-                | AuthorityReviewEffect.SetProfile _ -> AuthorityKind.SetProfile, []
-                | AuthorityReviewEffect.EraseProfile -> AuthorityKind.EraseProfile, []
-                | AuthorityReviewEffect.Grant item -> AuthorityKind.Grant, grant item
-                | AuthorityReviewEffect.Revoke item -> AuthorityKind.Revoke, grant item
-                | AuthorityReviewEffect.Enable -> AuthorityKind.Enable, []
-                | AuthorityReviewEffect.Disable -> AuthorityKind.Disable, []
+                | PeopleReviewEffect.SetProfile _ -> PeopleActKind.SetProfile, []
+                | PeopleReviewEffect.EraseProfile -> PeopleActKind.EraseProfile, []
+                | PeopleReviewEffect.Grant item -> PeopleActKind.Grant, grant item
+                | PeopleReviewEffect.Revoke item -> PeopleActKind.Revoke, grant item
+                | PeopleReviewEffect.Enable -> PeopleActKind.Enable, []
+                | PeopleReviewEffect.Disable -> PeopleActKind.Disable, []
 
             section
                 "label.effect"
-                (value "act" "label.action" Prominence.Primary (code AuthorityKind.vocabulary kind)
+                (value "act" "label.action" Prominence.Primary (code PeopleActKind.vocabulary kind)
                  :: details))
 
     let sameValue before after =
@@ -334,17 +334,14 @@ module ReviewScreen =
                 Effects = []
                 Basis = review.Context.Basis
             }
-        | OperationReview.Authority review ->
+        | OperationReview.People review ->
             let changed, unchanged =
-                changes
-                    absent
-                    (authorityStateEntries review.Before)
-                    (authorityStateEntries review.After)
+                changes absent (peopleStateEntries review.Before) (peopleStateEntries review.After)
 
             {
                 Changes = changed
                 Unchanged = unchanged
-                Effects = authorityEffects review.Effects
+                Effects = peopleEffects review.Effects
                 Basis = review.Basis
             }
 
@@ -354,7 +351,7 @@ module ReviewScreen =
             let kind =
                 match input with
                 | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
-                | OperationInput.Authority item -> ActKind.Authority(AuthorityAct.kind item.Act)
+                | OperationInput.People item -> ActKind.People(PeopleAct.kind item.Act)
                 | OperationInput.Note item -> ActKind.Note(AuthoredNoteAct.kind item.Act)
                 | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
                 | OperationInput.Reminder item ->

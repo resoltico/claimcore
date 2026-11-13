@@ -8,7 +8,7 @@ open ClaimCore.RecordFormat
 [<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
     | Case of CaseCommand * CaseDecision option
-    | Authority of AuthorityEffectDescriptor * ActorProfile option
+    | People of PeopleEffectDescriptor * ActorProfile option
     | Work of WorkDecisionInput * CaseWorkSnapshot
     | Reminder of ReminderDecisionInput * ReminderEffects
     | Note of NoteDecisionInput * Note
@@ -54,15 +54,15 @@ module LedgerEntries =
     let internal canObserve principal actor =
         function
         | EntryTarget.Case(id, _, _, _) ->
-            Authority.can principal actor Capability.ReadHistory (Scope.Case id)
+            Access.can principal actor Capability.ReadHistory (Scope.Case id)
         | EntryTarget.Work subject ->
-            Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
+            Access.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.Note subject ->
-            Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
+            Access.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.Reminder subject ->
-            Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
-        | EntryTarget.Authority _ ->
-            Authority.can principal actor Capability.ReadAuthority Scope.Installation
+            Access.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
+        | EntryTarget.People _ ->
+            Access.can principal actor Capability.ReadAccess Scope.Installation
 
     let internal validate installation (entry: StoredEffect) =
         let operation = entry.Operation
@@ -79,16 +79,16 @@ module LedgerEntries =
                     Ok(EntryContent.Case(value.Command, Some value.Decision))
                 | EffectDescriptor.Case _, RetainedOperationValues.Case None ->
                     Ok EntryContent.ErasedCase
-                | EffectDescriptor.Authority(_, AuthorityEffectDescriptor.SetProfile _),
-                  RetainedOperationValues.Authority RetainedProfile.Unavailable ->
+                | EffectDescriptor.People(_, PeopleEffectDescriptor.SetProfile _),
+                  RetainedOperationValues.People RetainedProfile.Unavailable ->
                     Ok EntryContent.ErasedProfile
-                | EffectDescriptor.Authority(_, change), RetainedOperationValues.Authority profile ->
+                | EffectDescriptor.People(_, change), RetainedOperationValues.People profile ->
                     let profile =
                         match profile with
                         | RetainedProfile.Available value -> Some value
                         | _ -> None
 
-                    Ok(EntryContent.Authority(change, profile))
+                    Ok(EntryContent.People(change, profile))
                 | EffectDescriptor.Work(parent, _), RetainedOperationValues.Work(Some value) ->
                     match operation.Root.Structure.Command with
                     | CommandSkeleton.Work(_, expected) ->
@@ -168,20 +168,20 @@ module LedgerEntries =
                 ValidatedEntries = List.rev entries
             })
 
-    let internal authorityCases (entry: StoredEffect) =
+    let internal peopleCases (entry: StoredEffect) =
         match entry.Descriptor with
-        | EffectDescriptor.Authority(_,
-                                     (AuthorityEffectDescriptor.Grant { Scope = Scope.Case id } | AuthorityEffectDescriptor.Revoke {
-                                                                                                                                       Scope = Scope.Case id
-                                                                                                                                   })) ->
+        | EffectDescriptor.People(_,
+                                  (PeopleEffectDescriptor.Grant { Scope = Scope.Case id } | PeopleEffectDescriptor.Revoke {
+                                                                                                                              Scope = Scope.Case id
+                                                                                                                          })) ->
             [ id ]
         | _ -> []
 
-    let private authorityHistoryFacts cases act =
+    let private peopleHistoryFacts cases act =
         function
-        | EntryContent.ErasedProfile when act = AuthorityKind.SetProfile ->
-            Ok(AuthorityHistoryFacts.ProfileSet None)
-        | EntryContent.Authority(change, profile) ->
+        | EntryContent.ErasedProfile when act = PeopleActKind.SetProfile ->
+            Ok(PeopleHistoryFacts.ProfileSet None)
+        | EntryContent.People(change, profile) ->
             let scoped (grant: ActorGrant) =
                 match grant.Scope with
                 | Scope.Installation ->
@@ -201,36 +201,32 @@ module LedgerEntries =
                     |> Option.defaultValue (Error CoreFault.StoreIntegrityError)
 
             match change with
-            | AuthorityEffectDescriptor.Register principal ->
-                Ok(AuthorityHistoryFacts.Registered principal)
-            | AuthorityEffectDescriptor.ProvisionOwner principal ->
-                Ok(AuthorityHistoryFacts.OwnerProvisioned principal)
-            | AuthorityEffectDescriptor.SetProfile _ -> Ok(AuthorityHistoryFacts.ProfileSet profile)
-            | AuthorityEffectDescriptor.EraseProfile -> Ok AuthorityHistoryFacts.ProfileErased
-            | AuthorityEffectDescriptor.Enable -> Ok AuthorityHistoryFacts.Enabled
-            | AuthorityEffectDescriptor.Disable -> Ok AuthorityHistoryFacts.Disabled
-            | AuthorityEffectDescriptor.Grant grant ->
-                scoped grant |> Result.map AuthorityHistoryFacts.Granted
-            | AuthorityEffectDescriptor.Revoke grant ->
-                scoped grant |> Result.map AuthorityHistoryFacts.Revoked
+            | PeopleEffectDescriptor.Register principal ->
+                Ok(PeopleHistoryFacts.Registered principal)
+            | PeopleEffectDescriptor.ProvisionOwner principal ->
+                Ok(PeopleHistoryFacts.OwnerProvisioned principal)
+            | PeopleEffectDescriptor.SetProfile _ -> Ok(PeopleHistoryFacts.ProfileSet profile)
+            | PeopleEffectDescriptor.EraseProfile -> Ok PeopleHistoryFacts.ProfileErased
+            | PeopleEffectDescriptor.Enable -> Ok PeopleHistoryFacts.Enabled
+            | PeopleEffectDescriptor.Disable -> Ok PeopleHistoryFacts.Disabled
+            | PeopleEffectDescriptor.Grant grant ->
+                scoped grant |> Result.map PeopleHistoryFacts.Granted
+            | PeopleEffectDescriptor.Revoke grant ->
+                scoped grant |> Result.map PeopleHistoryFacts.Revoked
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let internal authorityHistory
-        cases
-        (actors: Map<ActorId, ActorRef>)
-        (validated: ValidatedEntry)
-        =
+    let internal peopleHistory cases (actors: Map<ActorId, ActorRef>) (validated: ValidatedEntry) =
         let entry = validated.Entry
 
         match entry.Subject with
-        | EntryTarget.Authority(target, act) ->
-            authorityHistoryFacts cases act validated.Content
+        | EntryTarget.People(target, act) ->
+            peopleHistoryFacts cases act validated.Content
             |> Result.bind (fun facts ->
                 match Map.tryFind entry.ActorId actors, Map.tryFind target actors with
                 | Some author, Some targetRef ->
                     Ok
                         {
-                            AuthorityHistoryEntry.OperationId = entry.OperationId
+                            PeopleHistoryEntry.OperationId = entry.OperationId
                             Position = entry.Position
                             OperationHash = entry.Operation.Root.Hash
                             RecordedAt = entry.RecordedAt
@@ -253,9 +249,9 @@ module LedgerEntries =
         let currentRevision = current.Snapshot.Revision
 
         if
-            Authority.can principal actor Capability.ReadHistoryFull (Scope.Case id)
+            Access.can principal actor Capability.ReadHistoryFull (Scope.Case id)
             || (currentRevision = revision
-                && Authority.can principal actor Capability.ReadCase (Scope.Case id))
+                && Access.can principal actor Capability.ReadCase (Scope.Case id))
         then
             SnapshotDisclosure.Disclosed snapshot
         else
@@ -300,7 +296,7 @@ module LedgerEntries =
         let content = validated.Content
 
         match validated.Entry.Subject with
-        | EntryTarget.Authority _
+        | EntryTarget.People _
         | EntryTarget.Work _
         | EntryTarget.Note _
         | EntryTarget.Reminder _ -> Error CoreFault.StoreIntegrityError
@@ -353,9 +349,9 @@ module LedgerEntries =
                         })
 
     let private canReadVersion principal actor parentId currentRevision revision =
-        Authority.can principal actor Capability.ReadHistoryFull (Scope.Case parentId)
+        Access.can principal actor Capability.ReadHistoryFull (Scope.Case parentId)
         || (currentRevision = Some revision
-            && Authority.can principal actor Capability.ReadCase (Scope.Case parentId))
+            && Access.can principal actor Capability.ReadCase (Scope.Case parentId))
 
     /// Only names belonging to versions disclosed by this same snapshot may be requested.
     let internal workRelations
@@ -508,13 +504,13 @@ module LedgerEntries =
                     Ok NoteDisclosure.Erased
                 | EntryContent.Note(_, note) when parent.Snapshot.State <> CaseState.Erased ->
                     if
-                        Authority.can
+                        Access.can
                             principal
                             actor
                             Capability.ReadHistoryFull
                             (Scope.Case parent.CaseId)
                         || (current = Some note
-                            && Authority.can
+                            && Access.can
                                 principal
                                 actor
                                 Capability.ReadCase
@@ -557,30 +553,28 @@ module LedgerEntries =
                 noteReceipt principal actor parent note subject content
             | EntryTarget.Reminder subject, content, ReceiptCurrent.Reminder(parent, reminders) ->
                 reminderReceipt principal actor parent reminders subject content
-            | EntryTarget.Authority(target, act),
-              (EntryContent.Authority _ | EntryContent.ErasedProfile),
-              ReceiptCurrent.Authority actorRef ->
+            | EntryTarget.People(target, act),
+              (EntryContent.People _ | EntryContent.ErasedProfile),
+              ReceiptCurrent.People actorRef ->
                 let shown =
-                    if
-                        Authority.can principal actor Capability.ReadAuthority Scope.Installation
-                    then
+                    if Access.can principal actor Capability.ReadAccess Scope.Installation then
                         match actorRef with
                         | Some reference when reference.ActorId = target ->
-                            Ok(AuthorityTargetDisclosure.Disclosed reference)
+                            Ok(PeopleTargetDisclosure.Disclosed reference)
                         | _ -> Error CoreFault.StoreIntegrityError
                     else
-                        Ok(AuthorityTargetDisclosure.Withheld target)
+                        Ok(PeopleTargetDisclosure.Withheld target)
 
                 shown
                 |> Result.map (fun shown ->
-                    ReceiptSubject.Authority
+                    ReceiptSubject.People
                         {
                             TargetActor = shown
                             Act = act
                             Effects =
                                 [
                                     {
-                                        AuthorityReceiptEffect.Act = act
+                                        PeopleReceiptEffect.Act = act
                                         Id = entry.Id
                                         Position = entry.Position
                                     }
@@ -617,26 +611,26 @@ module LedgerEntries =
                 match
                     receipt.Subject,
                     (match operation.Stored.Root.Structure.Command with
-                     | CommandSkeleton.Authority command -> Some(AuthorityAct.kind command.Act)
+                     | CommandSkeleton.People command -> Some(PeopleAct.kind command.Act)
                      | _ -> None)
                 with
-                | ReceiptSubject.Authority authority, Some kind ->
-                    ReceiptSubject.Authority
-                        { authority with
+                | ReceiptSubject.People people, Some kind ->
+                    ReceiptSubject.People
+                        { people with
                             Act = kind
                             Effects =
                                 operation.ValidatedEntries
                                 |> List.map (fun validated ->
                                     match validated.Entry.Subject with
-                                    | EntryTarget.Authority(_, act) ->
+                                    | EntryTarget.People(_, act) ->
                                         {
-                                            AuthorityReceiptEffect.Act = act
+                                            PeopleReceiptEffect.Act = act
                                             Id = validated.Entry.Id
                                             Position = validated.Entry.Position
                                         }
                                     | _ ->
                                         invalidOp
-                                            "A validated authority group contains only authority effects.")
+                                            "A validated people group contains only people effects.")
                         }
                 | subject, _ -> subject
 

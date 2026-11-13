@@ -60,7 +60,7 @@ const PaymentContext = ({ current }: { current: CurrentCase | null }) => {
 };
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
-  const creation = model.task.id === "CASE:OPEN" && current === null;
+  const creation = model.task.id === "case.open" && current === null;
   const allowed = offered.includes(model.entry.kind);
   return (
     <>
@@ -72,8 +72,8 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
         />
       )}
       <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
-      {model.task.id === "CASE:RECORD_PAYMENT" ? <PaymentContext current={current} /> : null}
-      {model.task.id === "CASE:CORRECT" ? <p>{p.text("ui.correctionHint")}</p> : null}
+      {model.task.id === "case.recordPayment" ? <PaymentContext current={current} /> : null}
+      {model.task.id === "case.correct" ? <p>{p.text("ui.correctionHint")}</p> : null}
       {offered.length === 0 && !creation ? null : (
         <TaskInputs
           task={model.task}
@@ -134,7 +134,7 @@ export const OperationForm = (props: OperationFormProps) => {
       {model.entry.subject === "CASE" || offered.length < 2 ? null : (
         <Select
           id="act-picker"
-          label={p.text("ui.authorityAction")}
+          label={p.text("ui.peopleAction")}
           value={model.entry.kind}
           disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
           options={offered.map((act) => ({

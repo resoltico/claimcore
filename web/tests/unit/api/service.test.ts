@@ -80,7 +80,7 @@ const prepared = () =>
     operationId: operation,
     target: { kind: "REFERENCE", caseReference: "CORRELATION" },
     expectedRevision: 1,
-    act: { kind: "CLOSE" },
+    act: { kind: "case.close" },
   });
 const reply = (value: unknown) =>
   new Response(JSON.stringify(value), {

@@ -17,7 +17,7 @@ type VerificationFinding =
     | StateSequence
     | ErasureIncomplete
     | PayloadWithoutErasure
-    | AuthorityFold
+    | PeopleFold
     | ActorNotEnabled
     | HumanRequired
     | OwnerRequired
@@ -35,8 +35,8 @@ type VerificationFinding =
     | CasePayableAmountProjection
     | CasePaidAmountProjection
     | CasePayableCurrencyProjection
-    | AuthorityProjection
-    | AuthorityProfileProjection
+    | PeopleProjection
+    | PeopleProfileProjection
     | Head
     | CheckpointInstallation
     | ExpiryFrontier

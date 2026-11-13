@@ -96,9 +96,9 @@ it("bounds timeline, directory and grant pages at their declared limits", () => 
   ] as const) {
     const items = Array.from({ length: count }, () => directory.actor);
     const pages = [
-      ["authority.list", { basis: directory.basis, items, nextCursor: null }],
+      ["people.list", { basis: directory.basis, items, nextCursor: null }],
       [
-        "authority.grants",
+        "people.grants",
         {
           ...directory,
           items: Array.from({ length: count }, () => ({

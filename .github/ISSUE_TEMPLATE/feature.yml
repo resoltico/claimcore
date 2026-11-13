@@ -40,7 +40,7 @@ body:
     id: proposal
     attributes:
       label: Proposed behavior
-      description: State the observable behavior and the authority or data it touches.
+      description: State the observable behavior and the people or data it touches.
     validations:
       required: true
   - type: textarea

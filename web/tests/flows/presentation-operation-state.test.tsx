@@ -38,7 +38,7 @@ it("preserves authored content, text selection and operation identity across lan
       accent: "green" as const,
     }),
   );
-  render(editor({ current: null, initialAct: "OPEN" }));
+  render(editor({ current: null, initialAct: "case.open" }));
   fillRegistrationInputs({ claimantName: " " });
   const name = document.querySelector<HTMLInputElement>('input[data-field-name="claimantName"]')!;
   const date = document.querySelector<HTMLElement>('[data-field-name="incidentDate"]')!;
@@ -60,7 +60,7 @@ it("preserves authored content, text selection and operation identity across lan
   expect(globalThis.fetch).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(globalThis.fetch).toHaveBeenCalledOnce();
-  expect(draftAt(0).act.kind).toBe("OPEN");
+  expect(draftAt(0).act.kind).toBe("case.open");
   expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue("2026-02-28");
 });
 
@@ -128,7 +128,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   const languageReady = Promise.withResolvers<void>();
   vi.spyOn(catalogs, "languageLoaded").mockImplementation((language) => language === "en");
   vi.spyOn(catalogs, "loadLanguage").mockReturnValue(languageReady.promise);
-  render(editor({ current: null, initialAct: "OPEN" }));
+  render(editor({ current: null, initialAct: "case.open" }));
   fillRegistrationInputs({ claimantName: " " });
   await setEditorLanguage(user, "lv");
   await user.click(screen.getByRole("button", { name: "Review changes" }));

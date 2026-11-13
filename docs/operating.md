@@ -97,7 +97,7 @@ Use [People and access](people-and-access.md) for account, profile and role task
 access; an Auditor with that role for all cases can review it. Inspect each account's grant pages through
 the final continuation: row summaries do not list every assignment.
 
-`claimcore authority history --actor-id ID` filters the account whose access changed, rather than the
+`claimcore people history --actor-id ID` filters the account whose access changed, rather than the
 executor. Every page rechecks current rights. Case erasure does not erase grants or access history.
 Review the exact sign-in identity, role and scope before recording access. Selecting a different person
 does not rewrite a prepared request; starting their change requires explicit discard consent.

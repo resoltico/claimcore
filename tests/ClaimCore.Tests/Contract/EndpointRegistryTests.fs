@@ -43,7 +43,7 @@ let private registry () =
             match endpoint.Token with
             | "operation.execute" -> EndpointEffect.LedgerExecution
             | "session.logout"
-            | "authority.requests.dismiss" -> EndpointEffect.OperationalWrite
+            | "people.requests.dismiss" -> EndpointEffect.OperationalWrite
             | _ -> EndpointEffect.Read
 
         Expect.equal endpoint.Effect expectedEffect "Only declared mutations write state"
@@ -90,20 +90,20 @@ let private receipt: OperationReceipt =
             }
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
-            ReceiptSubject.Authority
+            ReceiptSubject.People
                 {
-                    TargetActor = AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId id)
-                    Act = AuthorityKind.Register
+                    TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId id)
+                    Act = PeopleActKind.Register
                     Effects =
                         [
                             {
-                                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                                PeopleReceiptEffect.Act = PeopleActKind.Register
                                 Id = EffectId.create (CaseFixtures.operationId id) 0 |> Option.get
                                 Position =
                                     EffectPosition.create (CaseFixtures.sequence 2L) 0 |> Option.get
                             }
                             {
-                                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                                PeopleReceiptEffect.Act = PeopleActKind.SetProfile
                                 Id = EffectId.create (CaseFixtures.operationId id) 1 |> Option.get
                                 Position =
                                     EffectPosition.create (CaseFixtures.sequence 2L) 1 |> Option.get
@@ -112,11 +112,11 @@ let private receipt: OperationReceipt =
                 }
     }
 
-let private authorityReview =
-    OperationReview.Authority
+let private peopleReview =
+    OperationReview.People
         {
             Basis = ClaimCore.TestSupport.Inputs.workBasis
-            Effects = [ AuthorityReviewEffect.Enable ]
+            Effects = [ PeopleReviewEffect.Enable ]
             Target = None
             AccessScope = GrantScope.Installation
             Before =
@@ -138,9 +138,9 @@ let private authorityReview =
 let private mutationReplies () =
     for outcome in
         [
-            (Previewed.Reviewed >> Outcome.Succeeded) authorityReview
+            (Previewed.Reviewed >> Outcome.Succeeded) peopleReview
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
+            Outcome.Rejected(Refusal.People PeopleRefusal.LastOwner)
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         roundTrip
@@ -173,7 +173,7 @@ let private mutationReplies () =
 
     Expect.equal
         (JsonValue.tryMember "kind" scope)
-        (Some(JsonValue.String "AUTHORITY"))
+        (Some(JsonValue.String "PEOPLE"))
         "Receipt scope owns its target fields."
 
     Expect.equal

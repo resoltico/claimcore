@@ -41,15 +41,26 @@ module TaskAssemblers =
                     Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
                     None
 
+                | TaskId.Command command ->
+                    let endpoint = ActorEndpoint.Command command
+
+                    "COMMAND",
+                    None,
+                    None,
+                    ActorEndpoint.token endpoint,
+                    Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
+                    None
+
             let wireAct =
                 match task.Task with
                 | TaskId.Operation(ActKind.Case kind) -> Some(CaseActKind.token kind)
-                | TaskId.Operation(ActKind.Authority kind) -> Some(AuthorityKind.token kind)
+                | TaskId.Operation(ActKind.People kind) -> Some(PeopleActKind.token kind)
                 | TaskId.Operation(ActKind.Work kind) ->
                     Some(Vocabulary.token WorkActKind.vocabulary kind)
                 | TaskId.Operation(ActKind.Note kind) -> Some(NoteActKind.token kind)
                 | TaskId.Operation(ActKind.Reminder kind) -> Some(ReminderActKind.token kind)
-                | TaskId.Query _ -> None
+                | TaskId.Query _
+                | TaskId.Command _ -> None
 
             {|
                 id = TaskId.key task.Task
@@ -67,6 +78,11 @@ module TaskAssemblers =
                         Vocabulary.messageKey
                             ActorEndpoint.vocabulary
                             (ActorEndpoint.Query query)
+                            "meaning"
+                    | TaskId.Command command ->
+                        Vocabulary.messageKey
+                            ActorEndpoint.vocabulary
+                            (ActorEndpoint.Command command)
                             "meaning"
                 consequence = consequence
                 inputs = task.Inputs |> List.map input
@@ -145,14 +161,14 @@ module TaskAssemblers =
             "const optionalTaskInput = <T, U>(input: OptionalTaskUpdate<T>, value: (input: T | null) => U): U | Readonly<Record<string, never>> => input.kind === 'KEEP' ? {} : value(input.kind === 'CLEAR' ? null : input.value);"
             "export type TaskMoneyInput = { readonly amount: string; readonly currency: string };"
             "export type CaseTaskBasis = Pick<OperationInput_CASE, 'operationId' | 'target' | 'expectedRevision'>;"
-            "export const assembleOpenCase = (operationId:Uuid,caseReference:string,values:Registration):OperationInput_CASE => ({kind:'CASE',operationId,target:{kind:'REFERENCE',caseReference},expectedRevision:0,act:{kind:'OPEN',values}});"
-            "export const assembleCaseOperation = (basis:CaseTaskBasis,act:Exclude<OperationInput_CASE['act'],{readonly kind:'OPEN'|'AMEND_REGISTRATION'|'CORRECT'|'RECORD_PAYMENT'}>):OperationInput_CASE => ({kind:'CASE',operationId:basis.operationId,target:basis.target,expectedRevision:basis.expectedRevision,act});"
+            "export const assembleOpenCase = (operationId:Uuid,caseReference:string,values:Registration):OperationInput_CASE => ({kind:'CASE',operationId,target:{kind:'REFERENCE',caseReference},expectedRevision:0,act:{kind:'case.open',values}});"
+            "export const assembleCaseOperation = (basis:CaseTaskBasis,act:Exclude<OperationInput_CASE['act'],{readonly kind:'case.open'|'case.amendRegistration'|'case.correct'|'case.recordPayment'}>):OperationInput_CASE => ({kind:'CASE',operationId:basis.operationId,target:basis.target,expectedRevision:basis.expectedRevision,act});"
             "export type WorkTaskBasis = {readonly operationId:Uuid;readonly target:CaseSelector;readonly workRevision:number};"
             "export const assembleWorkOperation = (basis:WorkTaskBasis,act:OperationInput_WORK['act']):OperationInput_WORK => ({kind:'WORK',operationId:basis.operationId,target:basis.target,expectedRevision:basis.workRevision,act});"
             "export type CaseResourceTaskBasis = Pick<OperationInput_NOTE,'operationId'|'target'>;"
             "export const assembleNoteOperation = (basis:CaseResourceTaskBasis,act:OperationInput_NOTE['act']):OperationInput_NOTE => ({kind:'NOTE',operationId:basis.operationId,target:basis.target,act});"
             "export const assembleReminderOperation = (basis:CaseResourceTaskBasis,act:OperationInput_REMINDER['act']):OperationInput_REMINDER => ({kind:'REMINDER',operationId:basis.operationId,target:basis.target,act});"
-            "export const assembleAuthorityOperation = (operationId:Uuid,target:PrincipalInput,act:Exclude<OperationInput_AUTHORITY['act'],{readonly kind:'ADMIT'}>):OperationInput_AUTHORITY => ({kind:'AUTHORITY',operationId,target,act});"
+            "export const assemblePeopleOperation = (operationId:Uuid,target:PrincipalInput,act:Exclude<OperationInput_PEOPLE['act'],{readonly kind:'people.admit'}>):OperationInput_PEOPLE => ({kind:'PEOPLE',operationId,target,act});"
 
             "export type RegistrationAmendmentDraft = {"
             yield! required |> List.map (fun name -> "readonly " + name + ": TaskUpdate<string>;")
@@ -181,10 +197,10 @@ module TaskAssemblers =
             + ": value.currency })),"
             "});"
             "export const assembleRegistrationAmendment = (basis: CaseTaskBasis, draft: RegistrationAmendmentDraft): OperationInput_CASE => ({"
-            "kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'AMEND_REGISTRATION', values: assembleRegistrationValues(draft) } });"
+            "kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'case.amendRegistration', values: assembleRegistrationValues(draft) } });"
             "export type PaymentTaskDraft = { readonly paymentDate: string; readonly paid: TaskMoneyInput };"
             "export const assembleRecordPayment = (basis: CaseTaskBasis, draft: PaymentTaskDraft): OperationInput_CASE => ({"
-            "kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'RECORD_PAYMENT', values: {"
+            "kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'case.recordPayment', values: {"
             BusinessField.key BusinessField.PaymentDate
             + ": draft.paymentDate, "
             + BusinessField.key paidAmount
@@ -195,11 +211,11 @@ module TaskAssemblers =
             "export type CorrectionTaskDraft = { readonly registration: { readonly kind: 'KEEP' } | { readonly kind: 'UPDATE'; readonly draft: RegistrationAmendmentDraft }; readonly decision: { readonly kind: 'KEEP' } | { readonly kind: 'CLEAR' } | { readonly kind: 'UPDATE'; readonly draft: DecisionCorrectionDraft } };"
             "export const assembleDecisionValues = (draft: DecisionCorrectionDraft): DecisionUpdate => ({ ...selectedTaskInput(draft.paymentDecisionDate, value => ({ paymentDecisionDate: value })), ...selectedTaskInput(draft.payable, value => ({ payableAmount: value.amount, payableCurrency: value.currency })) });"
             "const assembleCorrectionDecision = (input: CorrectionTaskDraft['decision']): DecisionGroup => { switch (input.kind) { case 'KEEP': return { kind: 'KEEP' }; case 'CLEAR': return { kind: 'CLEAR' }; case 'UPDATE': return { kind: 'UPDATE', values: assembleDecisionValues(input.draft) }; } };"
-            "export const assembleCorrection = (basis: CaseTaskBasis, draft: CorrectionTaskDraft): OperationInput_CASE => ({ kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'CORRECT', groups: { registration: draft.registration.kind === 'KEEP' ? { kind: 'KEEP' } : { kind: 'UPDATE', values: assembleRegistrationValues(draft.registration.draft) }, decision: assembleCorrectionDecision(draft.decision) } } });"
-            "export type AuthorityAdmissionRow = { readonly key: string; readonly grant: AuthorityGrantInput };"
+            "export const assembleCorrection = (basis: CaseTaskBasis, draft: CorrectionTaskDraft): OperationInput_CASE => ({ kind: 'CASE', operationId: basis.operationId, target: basis.target, expectedRevision: basis.expectedRevision, act: { kind: 'case.correct', groups: { registration: draft.registration.kind === 'KEEP' ? { kind: 'KEEP' } : { kind: 'UPDATE', values: assembleRegistrationValues(draft.registration.draft) }, decision: assembleCorrectionDecision(draft.decision) } } });"
+            "export type PeopleAdmissionRow = { readonly key: string; readonly grant: PeopleGrantInput };"
             "const taskScope = (scope: Scope): Scope => scope.kind === 'INSTALLATION' ? { kind: 'INSTALLATION' } : { kind: 'CASE', target: scope.target.kind === 'ID' ? { kind: 'ID', caseId: scope.target.caseId } : { kind: 'REFERENCE', caseReference: scope.target.caseReference } };"
-            "export const assembleAuthorityAdmission = (operationId: Uuid, target: PrincipalInput, profile: ActorProfileInput, rows: ReadonlyArray<AuthorityAdmissionRow>) => ({"
-            "command: { kind: 'AUTHORITY', operationId, target: { kind: target.kind, issuer: target.issuer, subject: target.subject }, act: { kind: 'ADMIT', profile: { displayName: profile.displayName, ...(profile.contact === undefined ? {} : { contact: profile.contact }) }, grants: rows.map(row => ({ role: row.grant.role, scope: taskScope(row.grant.scope) })) } } satisfies OperationInput_AUTHORITY,"
-            "submittedRows: { authorityGrants: Object.freeze(rows.map(row => row.key)) } });"
+            "export const assemblePeopleAdmission = (operationId: Uuid, target: PrincipalInput, profile: ActorProfileInput, rows: ReadonlyArray<PeopleAdmissionRow>) => ({"
+            "command: { kind: 'PEOPLE', operationId, target: { kind: target.kind, issuer: target.issuer, subject: target.subject }, act: { kind: 'people.admit', profile: { displayName: profile.displayName, ...(profile.contact === undefined ? {} : { contact: profile.contact }) }, grants: rows.map(row => ({ role: row.grant.role, scope: taskScope(row.grant.scope) })) } } satisfies OperationInput_PEOPLE,"
+            "submittedRows: { peopleGrants: Object.freeze(rows.map(row => row.key)) } });"
         ]
         |> String.concat "\n"

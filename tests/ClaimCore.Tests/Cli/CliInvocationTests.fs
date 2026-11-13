@@ -330,7 +330,7 @@ let renderingTests =
             testCase "frozen admitted replies render in every language" localizedReplyRendering
         ]
 
-let private authorityPreviewInvocation verb =
+let private peoplePreviewInvocation verb =
     let role =
         if List.contains verb [ "grant"; "revoke" ] then
             [ "--role"; "CASE_READER" ]
@@ -340,7 +340,7 @@ let private authorityPreviewInvocation verb =
     let prepared =
         prepared (
             [
-                "authority"
+                "people"
                 verb
                 "--principal-kind"
                 "HUMAN"
@@ -357,15 +357,15 @@ let private authorityPreviewInvocation verb =
     Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
 
 
-let private authorityPreviewFrame input enabledBefore enabledAfter grantBefore grantAfter =
+let private peoplePreviewFrame input enabledBefore enabledAfter grantBefore grantAfter =
     let request =
         match input with
-        | OperationInput.Authority request -> request
-        | _ -> failtest "Authority input required"
+        | OperationInput.People request -> request
+        | _ -> failtest "People input required"
 
     let registering, profile =
         match request.Act with
-        | AuthorityAct.Register profile -> true, (ActorProfile.parse profile |> Fixtures.accepted)
+        | PeopleAct.Register profile -> true, (ActorProfile.parse profile |> Fixtures.accepted)
         | _ ->
             false,
             (ActorProfile.parse
@@ -395,32 +395,32 @@ let private authorityPreviewFrame input enabledBefore enabledAfter grantBefore g
             PreviewReply.OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
             Outcome =
                 (Previewed.Reviewed >> Outcome.Succeeded) (
-                    OperationReview.Authority
+                    OperationReview.People
                         {
                             Basis = ClaimCore.TestSupport.Inputs.workBasis
                             Effects =
                                 (if registering then
                                      [
-                                         AuthorityReviewEffect.Register principal
-                                         AuthorityReviewEffect.SetProfile profile
+                                         PeopleReviewEffect.Register principal
+                                         PeopleReviewEffect.SetProfile profile
                                      ]
                                  elif enabledBefore <> enabledAfter then
                                      [
                                          if enabledAfter then
-                                             AuthorityReviewEffect.Enable
+                                             PeopleReviewEffect.Enable
                                          else
-                                             AuthorityReviewEffect.Disable
+                                             PeopleReviewEffect.Disable
                                      ]
                                  elif grantBefore <> grantAfter then
                                      [
                                          if grantAfter then
-                                             AuthorityReviewEffect.Grant
+                                             PeopleReviewEffect.Grant
                                                  {
                                                      Role = Role.CaseReader
                                                      Scope = GrantScope.Installation
                                                  }
                                          else
-                                             AuthorityReviewEffect.Revoke
+                                             PeopleReviewEffect.Revoke
                                                  {
                                                      Role = Role.CaseReader
                                                      Scope = GrantScope.Installation
@@ -429,9 +429,9 @@ let private authorityPreviewFrame input enabledBefore enabledAfter grantBefore g
                                  else
                                      [
                                          if enabledAfter then
-                                             AuthorityReviewEffect.Enable
+                                             PeopleReviewEffect.Enable
                                          else
-                                             AuthorityReviewEffect.Disable
+                                             PeopleReviewEffect.Disable
                                      ])
                             Target =
                                 if registering then
@@ -477,15 +477,15 @@ let private authorityPreviewFrame input enabledBefore enabledAfter grantBefore g
 
     frame
 
-let private authorityPreviewText verb enabledBefore enabledAfter grantBefore grantAfter =
-    let invocation = authorityPreviewInvocation verb
+let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantAfter =
+    let invocation = peoplePreviewInvocation verb
 
     let input =
         Frames.value Api.operationPreview invocation
         |> Option.defaultWith (fun () -> failtest "Preview input required")
 
     let frame =
-        authorityPreviewFrame input enabledBefore enabledAfter grantBefore grantAfter
+        peoplePreviewFrame input enabledBefore enabledAfter grantBefore grantAfter
 
     for language in LocalizationPolicy.languages do
         let rendered =
@@ -616,15 +616,15 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "The scope is displayed in the correct direction"
 
 [<Tests>]
-let authorityTextTests =
+let peopleTextTests =
     testList
-        "CLI authority preview text"
+        "CLI people preview text"
         [
-            testCase "register" (fun () -> authorityPreviewText "register" false true false false)
-            testCase "enable" (fun () -> authorityPreviewText "enable" false true false false)
-            testCase "disable" (fun () -> authorityPreviewText "disable" true false false false)
-            testCase "grant" (fun () -> authorityPreviewText "grant" true true false true)
-            testCase "revoke" (fun () -> authorityPreviewText "revoke" true true true false)
+            testCase "register" (fun () -> peoplePreviewText "register" false true false false)
+            testCase "enable" (fun () -> peoplePreviewText "enable" false true false false)
+            testCase "disable" (fun () -> peoplePreviewText "disable" true false false false)
+            testCase "grant" (fun () -> peoplePreviewText "grant" true true false true)
+            testCase "revoke" (fun () -> peoplePreviewText "revoke" true true true false)
         ]
 
 [<Tests>]

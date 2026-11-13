@@ -32,15 +32,18 @@ const mount = (value: CurrentCase, act: string) => {
 };
 it("keeps the workspace and withholds an unoffered action without reconstructing state policy", async () => {
   const closed = caseDocumentInput(
-    { tasks: ["CASE:REOPEN"], history: "NONE" },
+    { tasks: ["case.reopen"], history: "NONE" },
     {
       regions: [
         ...caseIdentityScreen.regions,
-        { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "REOPEN", groups: [] } },
+        {
+          role: "RECOMMENDATION",
+          content: { kind: "ACTIONS", recommended: "case.reopen", groups: [] },
+        },
       ],
     },
   );
-  const { view, get, preview, execute } = mount(closed, "CLOSE");
+  const { view, get, preview, execute } = mount(closed, "case.close");
   expect(
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
@@ -59,7 +62,7 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
 });
 it("does not manufacture authorization advice when the supplied HUMAN document offers no task", async () => {
   const value = caseDocumentInput({ tasks: [], history: "NONE" });
-  const { view, preview, execute } = mount(value, "DECIDE");
+  const { view, preview, execute } = mount(value, "case.decide");
   await screen.findByRole("heading", {
     level: 1,
     name: (_name, element) => element.id === "case-detail-title",

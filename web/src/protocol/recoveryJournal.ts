@@ -7,7 +7,7 @@ export type RecoveryRecord = RecoveryScope & {
   readonly format: 2;
   readonly attemptId: string;
   readonly operationId: string;
-  readonly subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE";
+  readonly subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
   readonly act: string;
 };
 export type RecoveryJournal = {
@@ -27,9 +27,8 @@ const isScope = (value: Record<string, unknown>): boolean =>
 const isAttempt = (value: Record<string, unknown>): boolean =>
   uuid(value["attemptId"]) &&
   uuid(value["operationId"]) &&
-  ["CASE", "AUTHORITY", "WORK", "REMINDER", "NOTE"].includes(String(value["subject"])) &&
+  ["CASE", "PEOPLE", "WORK", "REMINDER", "NOTE"].includes(String(value["subject"])) &&
   typeof value["act"] === "string" &&
-  /^[A-Z][A-Z_]{0,39}$/u.test(value["act"]) &&
   taskDefinitions.some(
     (task) =>
       task.kind === "OPERATION" &&

@@ -76,7 +76,7 @@ SELECT snapshot IS NULL AND notified_on IS NULL AND claimed_amount IS NULL AND c
 \quit 3
 \endif
 
--- Authority projection constraints retain effect provenance.
+-- People projection constraints retain effect provenance.
 SELECT pg_temp.expect('malformed role token refused',
     format($s$INSERT INTO claimcore.grants(granted_sequence,granted_effect_index,actor_id,role,case_id) VALUES (1,0,%L,'invalid-role',NULL)$s$, :'owner'), '23514');
 SELECT pg_temp.expect('duplicate installation grant refused',

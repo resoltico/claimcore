@@ -61,52 +61,52 @@ module ReceiptCodecs =
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "snapshot" _.Snapshot disclosure
 
-    let private authorityEffect =
+    let private peopleEffect =
         (record (fun act id position ->
             {
-                AuthorityReceiptEffect.Act = act
+                PeopleReceiptEffect.Act = act
                 Id = id
                 Position = position
             })
-        : Fields<AuthorityReceiptEffect, _>)
-        |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
+        : Fields<PeopleReceiptEffect, _>)
+        |> field "act" _.Act (VocabularyCodec.create PeopleActKind.vocabulary)
         |> field "id" _.Id LedgerCodecs.effectId
         |> field "position" _.Position LedgerCodecs.effectPosition
         |> build
-        |> named "AuthorityReceiptEffect"
+        |> named "PeopleReceiptEffect"
 
-    let private authorityTarget =
+    let private peopleTarget =
         tagged
-            "AuthorityTargetDisclosure"
+            "PeopleTargetDisclosure"
             [
                 variant
                     "DISCLOSED"
-                    AuthorityTargetDisclosure.Disclosed
+                    PeopleTargetDisclosure.Disclosed
                     (function
-                    | AuthorityTargetDisclosure.Disclosed actor -> Some actor
+                    | PeopleTargetDisclosure.Disclosed actor -> Some actor
                     | _ -> None)
                     (record id |> field "actor" id ActorCodecs.actorRef)
                 variant
                     "WITHHELD"
-                    AuthorityTargetDisclosure.Withheld
+                    PeopleTargetDisclosure.Withheld
                     (function
-                    | AuthorityTargetDisclosure.Withheld actor -> Some actor
+                    | PeopleTargetDisclosure.Withheld actor -> Some actor
                     | _ -> None)
                     (record id |> field "actorId" id actorId)
             ]
 
-    let private authorityFields =
+    let private peopleFields =
         (record (fun target act effects ->
             {
-                AuthorityReceipt.TargetActor = target
+                PeopleReceipt.TargetActor = target
                 Act = act
                 Effects = effects
             })
-        : Fields<AuthorityReceipt, _>)
-        |> field "targetActor" _.TargetActor authorityTarget
-        |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
+        : Fields<PeopleReceipt, _>)
+        |> field "targetActor" _.TargetActor peopleTarget
+        |> field "act" _.Act (VocabularyCodec.create PeopleActKind.vocabulary)
 
-        |> field "effects" _.Effects (list AuthorityReceipt.MaximumEffects authorityEffect)
+        |> field "effects" _.Effects (list PeopleReceipt.MaximumEffects peopleEffect)
 
     let private caseVariant =
         variant
@@ -273,12 +273,12 @@ module ReceiptCodecs =
                     | _ -> None)
                     reminderReceiptFields
                 variant
-                    (ActSubject.token ActSubject.Authority)
-                    ReceiptSubject.Authority
+                    (ActSubject.token ActSubject.People)
+                    ReceiptSubject.People
                     (function
-                    | ReceiptSubject.Authority value -> Some value
+                    | ReceiptSubject.People value -> Some value
                     | _ -> None)
-                    authorityFields
+                    peopleFields
             ]
 
     let private header subjectCodec =

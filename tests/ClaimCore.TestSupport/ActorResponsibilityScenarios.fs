@@ -74,11 +74,11 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 do!
                     execute
                         admin
-                        (OperationInput.Authority(
-                            authorityRequest
+                        (OperationInput.People(
+                            peopleRequest
                                 registration
                                 target
-                                (AuthorityAct.Register { DisplayName = name; Contact = None })
+                                (PeopleAct.Register { DisplayName = name; Contact = None })
                         ))
 
                 return target, ActorId.ofOperationId (CaseFixtures.operationId registration)
@@ -87,7 +87,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
         let addRole target role scope =
             task {
                 let! reply = grant admin (operation ()) target { Role = role; Scope = scope } true
-                acceptedAuthority reply
+                acceptedPeople reply
             }
 
         let! staff, staffId = register "assigned-person" PrincipalKey.human
@@ -404,5 +404,5 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             Expect.equal
                 denied
                 (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "A related DTO never bypasses READ_AUTHORITY"
+                "A related DTO never bypasses READ_ACCESS"
     }

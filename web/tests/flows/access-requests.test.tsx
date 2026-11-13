@@ -3,10 +3,7 @@ import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import type { RegionRow } from "@contracts/client";
-import {
-  AccessRequests,
-  type AccessRequestControl,
-} from "../../src/views/authority/AccessRequests";
+import { AccessRequests, type AccessRequestControl } from "../../src/views/people/AccessRequests";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { render, screen, waitFor, TestSession } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";
@@ -30,10 +27,10 @@ const request: RequestFixture = {
 const succeeded = (
   items: ReadonlyArray<RequestFixture>,
   nextCursor: string | null = null,
-): ApiResult<ServiceResponse<"authority.requests">> => ({
+): ApiResult<ServiceResponse<"people.requests">> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadReply("authority.requests", {
+  value: humanReadReply("people.requests", {
     screen: {
       regions: [
         {
@@ -84,14 +81,14 @@ const setup = (available = true, busy = false) => {
   return { ...view, props, onAdmit, onDisclosureRefused };
 };
 it("never reads requests without the supplied disclosure gate", async () => {
-  const read = mockEndpoint("authority.requests");
+  const read = mockEndpoint("people.requests");
   setup(false);
   await act(() => Promise.resolve());
   expect(read).not.toHaveBeenCalled();
   expect(screen.queryByRole("heading", { name: "Access requests" })).toBeNull();
 });
 it("pages with the actual cursor and binds admission to the exact principal and hints", async () => {
-  const read = mockEndpoint("authority.requests");
+  const read = mockEndpoint("people.requests");
   read.mockResolvedValueOnce(succeeded([request], "next-request-page"));
   read.mockResolvedValueOnce(
     succeeded([{ ...request, principal: { ...request.principal, kind: "HUMAN" } }]),
@@ -124,13 +121,13 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   });
 });
 it("requires dismiss confirmation and sends the actual principal kind, issuer and subject", async () => {
-  mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
-  const dismiss = mockEndpoint("authority.requests.dismiss");
+  mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
+  const dismiss = mockEndpoint("people.requests.dismiss");
   dismiss.mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      ...humanReadReply("authority.requests.dismiss", {
+      ...humanReadReply("people.requests.dismiss", {
         screen: { regions: [] },
         context: { kind: "EMPTY" },
         basis: { kind: "UNAVAILABLE" },
@@ -155,8 +152,8 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
     expect.any(AbortSignal),
   );
 });
-it("keeps a retained authority draft from being overwritten or dismissed", async () => {
-  mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
+it("keeps a retained people draft from being overwritten or dismissed", async () => {
+  mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
   const { onAdmit } = setup(true, true);
   await screen.findByText("Unverified hint");
   expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled();
@@ -164,8 +161,8 @@ it("keeps a retained authority draft from being overwritten or dismissed", async
   expect(onAdmit).not.toHaveBeenCalled();
 });
 it("clears disclosed requests when availability is lost and ignores a late read", async () => {
-  let resolve!: (result: ApiResult<ServiceResponse<"authority.requests">>) => void;
-  const read = mockEndpoint("authority.requests").mockImplementation(
+  let resolve!: (result: ApiResult<ServiceResponse<"people.requests">>) => void;
+  const read = mockEndpoint("people.requests").mockImplementation(
     () =>
       new Promise((done) => {
         resolve = done;
@@ -183,11 +180,11 @@ it("clears disclosed requests when availability is lost and ignores a late read"
   expect(screen.queryByText("Unverified hint")).toBeNull();
 });
 it("aborts dismissal and forgets request hints on a session change", async () => {
-  mockEndpoint("authority.requests")
+  mockEndpoint("people.requests")
     .mockResolvedValueOnce(succeeded([request]))
     .mockResolvedValue(succeeded([]));
-  let resolve!: (result: ApiResult<ServiceResponse<"authority.requests.dismiss">>) => void;
-  const dismiss = mockEndpoint("authority.requests.dismiss").mockImplementation(
+  let resolve!: (result: ApiResult<ServiceResponse<"people.requests.dismiss">>) => void;
+  const dismiss = mockEndpoint("people.requests.dismiss").mockImplementation(
     () =>
       new Promise((done) => {
         resolve = done;
@@ -215,7 +212,7 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       kind: "outcome",
       status: 200,
       value: {
-        ...humanReadReply("authority.requests.dismiss", {
+        ...humanReadReply("people.requests.dismiss", {
           screen: { regions: [] },
           context: { kind: "EMPTY" },
           basis: { kind: "UNAVAILABLE" },
@@ -228,8 +225,8 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
   expect(screen.queryByText("Access request dismissed.")).toBeNull();
 });
 it("does not retry an uncertain dismissal or remove its row optimistically", async () => {
-  mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
-  const dismiss = mockEndpoint("authority.requests.dismiss").mockResolvedValue({
+  mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
+  const dismiss = mockEndpoint("people.requests.dismiss").mockResolvedValue({
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "responseTimeout" },
     dispatched: true,
@@ -248,8 +245,8 @@ it("does not retry an uncertain dismissal or remove its row optimistically", asy
   expect(screen.getByRole("alert")).toBeVisible();
 });
 it("clears requests immediately on a dismissal disclosure refusal", async () => {
-  mockEndpoint("authority.requests").mockResolvedValue(succeeded([request]));
-  mockEndpoint("authority.requests.dismiss").mockResolvedValue({
+  mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
+  mockEndpoint("people.requests.dismiss").mockResolvedValue({
     kind: "hostFailure",
     status: 401,
     failure: { code: "SESSION_REJECTED", phase: "NOT_STARTED" },
@@ -267,10 +264,8 @@ it("clears requests immediately on a dismissal disclosure refusal", async () => 
 });
 
 it("clears an open dismissal dialog on a paging disclosure refusal before a parent update", async () => {
-  let resolve!: (result: ApiResult<ServiceResponse<"authority.requests">>) => void;
-  const read = mockEndpoint("authority.requests").mockResolvedValueOnce(
-    succeeded([request], "next"),
-  );
+  let resolve!: (result: ApiResult<ServiceResponse<"people.requests">>) => void;
+  const read = mockEndpoint("people.requests").mockResolvedValueOnce(succeeded([request], "next"));
   read.mockImplementationOnce(
     () =>
       new Promise((done) => {
@@ -306,14 +301,14 @@ it("reviews and dismisses the selected page-local request without reusing an ear
       values: [{ kind: "TEXT", value: "LATER_REQUEST_CAPTION" }, ...request.row.values.slice(1)],
     },
   };
-  mockEndpoint("authority.requests")
+  mockEndpoint("people.requests")
     .mockResolvedValueOnce(succeeded([request], "next"))
     .mockResolvedValueOnce(succeeded([later]))
     .mockResolvedValueOnce(succeeded([]));
-  const dismiss = mockEndpoint("authority.requests.dismiss").mockResolvedValue({
+  const dismiss = mockEndpoint("people.requests.dismiss").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadReply("authority.requests.dismiss", {
+    value: humanReadReply("people.requests.dismiss", {
       screen: { regions: [] },
       context: { kind: "EMPTY" },
       basis: { kind: "UNAVAILABLE" },

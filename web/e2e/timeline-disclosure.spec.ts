@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
-import { applyAuthority, syntheticPrincipals } from "./authority-setup";
+import { applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId } from "../src/operation/operationId";
 import { isResponseFor, isRequest } from "../src/protocol/client";
 
@@ -13,12 +13,15 @@ test("successful summary continuation removes previously loaded full history aft
   const reference = `DISCLOSURE-${randomUUID()}`;
   await openCase(page, reference);
   for (let revision = 1; revision <= 12; revision += 1) {
-    await applyAuthority(page, {
+    await applyPeople(page, {
       kind: "CASE",
       operationId: operationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: revision,
-      act: { kind: "AMEND_REGISTRATION", values: { claimantName: `PRIVATE_HISTORY_${revision}` } },
+      act: {
+        kind: "case.amendRegistration",
+        values: { claimantName: `PRIVATE_HISTORY_${revision}` },
+      },
     });
   }
   const principals = await syntheticPrincipals();
@@ -27,21 +30,21 @@ test("successful summary continuation removes previously loaded full history aft
     issuer: principals.issuer,
     subject: principals.ownerSubject,
   } as const;
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: operationId(),
     target,
-    act: { kind: "GRANT", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
+    act: { kind: "people.grant", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
   });
   try {
     await page.reload();
     const history = page.locator(".case-timeline-panel");
     await expect(history).toContainText("PRIVATE_HISTORY_11");
-    await applyAuthority(page, {
-      kind: "AUTHORITY",
+    await applyPeople(page, {
+      kind: "PEOPLE",
       operationId: operationId(),
       target,
-      act: { kind: "REVOKE", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
+      act: { kind: "people.revoke", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
     });
     const refreshed = page.waitForResponse(async (response) => {
       if (new URL(response.url()).pathname !== "/api/case.timeline") {
@@ -76,17 +79,17 @@ test("successful summary continuation removes previously loaded full history aft
     // Tightened continuation invalidates workspace observations and reloads the bounded first page.
     await expect(history.locator(".region-timeline > li")).toHaveCount(10);
   } finally {
-    await applyAuthority(page, {
-      kind: "AUTHORITY",
+    await applyPeople(page, {
+      kind: "PEOPLE",
       operationId: operationId(),
       target,
-      act: { kind: "GRANT", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
+      act: { kind: "people.grant", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
     });
-    await applyAuthority(page, {
-      kind: "AUTHORITY",
+    await applyPeople(page, {
+      kind: "PEOPLE",
       operationId: operationId(),
       target,
-      act: { kind: "REVOKE", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
+      act: { kind: "people.revoke", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
     });
   }
 });

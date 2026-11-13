@@ -51,7 +51,7 @@ it("rebinds the declared revision without putting executable identity or authori
     },
     expectedRevision: 4,
     act: {
-      kind: "AMEND_REGISTRATION",
+      kind: "case.amendRegistration",
       values: {
         claimedAmount: "1234.56",
         claimedCurrency: "EUR",
@@ -190,7 +190,7 @@ it("refuses implicit preview and re-preparation for a different case target", ()
     },
     expectedRevision: 8,
     act: {
-      kind: "CLOSE",
+      kind: "case.close",
     },
   });
   expect(

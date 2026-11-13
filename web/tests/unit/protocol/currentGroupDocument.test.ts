@@ -28,7 +28,7 @@ const document = {
     caseId: "019aa6a0-0000-7000-8000-000000000001",
     revision: 1,
     workRevision: 0,
-    tasks: ["CASE:CORRECT"],
+    tasks: ["case.correct"],
     editableInputs: [],
     correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE"] },
     seeds: { paymentCurrency: null, registration: null, decision: null, work: null },

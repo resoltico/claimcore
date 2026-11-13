@@ -51,7 +51,7 @@
     "text": "外観",
     "source": "3907fa7f8072"
   },
-  "ui.authorityAction": {
+  "ui.peopleAction": {
     "text": "アクセス変更",
     "source": "295239c1b29a"
   },
@@ -111,7 +111,7 @@
     "text": "閉じる",
     "source": "7d9eb7acb13e"
   },
-  "ui.continueAuthorityRequest": {
+  "ui.continuePeopleRequest": {
     "text": "現在のリクエストを続行",
     "source": "ec9e7079a21a"
   },
@@ -558,10 +558,6 @@
   "ui.shell.administration": {
     "text": "管理",
     "source": "4b42c6690ebe"
-  },
-  "ui.shell.authorityHistory": {
-    "text": "権限変更履歴",
-    "source": "2023c056fe61"
   },
   "ui.shell.businessDateChanged": {
     "text": "業務日が{date}になりました。期限を更新するには再読み込みしてください。",

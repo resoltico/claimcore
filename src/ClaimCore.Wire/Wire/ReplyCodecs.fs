@@ -108,7 +108,7 @@ module ReplyCodecs =
         |> build
         |> named "CapabilityAccess"
 
-    let authorityState =
+    let peopleState =
         (record (fun profile enabled grants access ->
             {
                 Profile = profile
@@ -116,62 +116,61 @@ module ReplyCodecs =
                 Grants = grants
                 Access = access
             })
-        : Fields<AuthorityState, _>)
+        : Fields<PeopleState, _>)
         |> field "profile" _.Profile (nullable ActorCodecs.profile)
         |> field "enabled" _.Enabled boolean
-        |> field
-            "grants"
-            _.Grants
-            (list AuthorityAdmission.MaximumGrants ResponseCodecs.authorityGrant)
+        |> field "grants" _.Grants (list PeopleAdmission.MaximumGrants ResponseCodecs.peopleGrant)
         |> field "access" _.Access (list Capability.all.Length capabilityAccess)
         |> build
-        |> named "AuthorityState"
+        |> named "PeopleState"
 
-    let private authorityReviewEffect =
+    let private peopleReviewEffect =
         tagged
-            "AuthorityReviewEffect"
+            "PeopleReviewEffect"
             [
                 variant
-                    "REGISTER"
-                    AuthorityReviewEffect.Register
+                    (PeopleActKind.token PeopleActKind.Register)
+                    PeopleReviewEffect.Register
                     (function
-                    | AuthorityReviewEffect.Register value -> Some value
+                    | PeopleReviewEffect.Register value -> Some value
                     | _ -> None)
                     (record id |> field "principal" id PrincipalCodecs.key)
                 variant
-                    "PROVISION_OWNER"
-                    AuthorityReviewEffect.ProvisionOwner
+                    (PeopleActKind.token PeopleActKind.ProvisionOwner)
+                    PeopleReviewEffect.ProvisionOwner
                     (function
-                    | AuthorityReviewEffect.ProvisionOwner value -> Some value
+                    | PeopleReviewEffect.ProvisionOwner value -> Some value
                     | _ -> None)
                     (record id |> field "principal" id PrincipalCodecs.key)
                 variant
-                    "SET_PROFILE"
-                    AuthorityReviewEffect.SetProfile
+                    (PeopleActKind.token PeopleActKind.SetProfile)
+                    PeopleReviewEffect.SetProfile
                     (function
-                    | AuthorityReviewEffect.SetProfile value -> Some value
+                    | PeopleReviewEffect.SetProfile value -> Some value
                     | _ -> None)
                     (record id |> field "profile" id ActorCodecs.profile)
                 variant
-                    "GRANT"
-                    AuthorityReviewEffect.Grant
+                    (PeopleActKind.token PeopleActKind.Grant)
+                    PeopleReviewEffect.Grant
                     (function
-                    | AuthorityReviewEffect.Grant value -> Some value
+                    | PeopleReviewEffect.Grant value -> Some value
                     | _ -> None)
-                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
+                    (record id |> field "grant" id ResponseCodecs.peopleGrant)
                 variant
-                    "REVOKE"
-                    AuthorityReviewEffect.Revoke
+                    (PeopleActKind.token PeopleActKind.Revoke)
+                    PeopleReviewEffect.Revoke
                     (function
-                    | AuthorityReviewEffect.Revoke value -> Some value
+                    | PeopleReviewEffect.Revoke value -> Some value
                     | _ -> None)
-                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
-                unitVariant "ERASE_PROFILE" AuthorityReviewEffect.EraseProfile
-                unitVariant "ENABLE" AuthorityReviewEffect.Enable
-                unitVariant "DISABLE" AuthorityReviewEffect.Disable
+                    (record id |> field "grant" id ResponseCodecs.peopleGrant)
+                unitVariant
+                    (PeopleActKind.token PeopleActKind.EraseProfile)
+                    PeopleReviewEffect.EraseProfile
+                unitVariant (PeopleActKind.token PeopleActKind.Enable) PeopleReviewEffect.Enable
+                unitVariant (PeopleActKind.token PeopleActKind.Disable) PeopleReviewEffect.Disable
             ]
 
-    let private authorityReviewFields =
+    let private peopleReviewFields =
         (record (fun basis target scope before after effects ->
             {
                 Basis = basis
@@ -181,16 +180,13 @@ module ReplyCodecs =
                 Before = before
                 After = after
             })
-        : Fields<AuthorityReview, _>)
+        : Fields<PeopleReview, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "target" _.Target (nullable ResponseCodecs.actorSummary)
         |> field "accessScope" _.AccessScope ResponseCodecs.grantScope
-        |> field "before" _.Before authorityState
-        |> field "after" _.After authorityState
-        |> field
-            "effects"
-            _.Effects
-            (list (AuthorityAdmission.MaximumGrants + 2) authorityReviewEffect)
+        |> field "before" _.Before peopleState
+        |> field "after" _.After peopleState
+        |> field "effects" _.Effects (list (PeopleAdmission.MaximumGrants + 2) peopleReviewEffect)
 
     let private workReviewFields =
         (record (fun parent reference before proposed context ->
@@ -277,12 +273,12 @@ module ReplyCodecs =
                     | _ -> None)
                     ResponseCodecs.reviewFields
                 variant
-                    "AUTHORITY"
-                    OperationReview.Authority
+                    "PEOPLE"
+                    OperationReview.People
                     (function
-                    | OperationReview.Authority value -> Some value
+                    | OperationReview.People value -> Some value
                     | _ -> None)
-                    authorityReviewFields
+                    peopleReviewFields
             ]
 
     let private reviewed = record id |> field "review" id review |> build

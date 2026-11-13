@@ -1,5 +1,5 @@
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
+import type { PeopleHistory as PeopleHistoryType } from "./people/PeopleHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import type { useCaseNavigation } from "../routing/useCaseNavigation";
 import { useEffect, useState, type ComponentProps } from "react";
@@ -14,21 +14,21 @@ import { productMetadata } from "../protocol/productMetadata";
 import { isCaseAct } from "../operation/metadata";
 import { actPath, casePath, referencePath, type Route } from "../routing/routes";
 import { navigate } from "../routing/navigation";
-import type { AuthorityPanel as AuthorityPanelType } from "./AuthorityPanel";
+import type { PeoplePanel as PeoplePanelType } from "./PeoplePanel";
 import type { CaseDetail as CaseDetailType } from "./CaseDetail";
 import { ReminderQueue } from "./work/ReminderQueue";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
 
-const loadAuthorityHistory = () =>
-  import("./authority/AuthorityHistory").then((module) => module.AuthorityHistory);
-const AuthorityHistory = (props: ComponentProps<typeof AuthorityHistoryType>) => (
-  <ViewModule load={loadAuthorityHistory} viewProps={props} />
+const loadPeopleHistory = () =>
+  import("./people/PeopleHistory").then((module) => module.PeopleHistory);
+const PeopleHistory = (props: ComponentProps<typeof PeopleHistoryType>) => (
+  <ViewModule load={loadPeopleHistory} viewProps={props} />
 );
-const loadAuthorityPanel = () => import("./AuthorityPanel").then((module) => module.AuthorityPanel);
-const AuthorityPanel = (props: ComponentProps<typeof AuthorityPanelType>) => (
-  <ViewModule load={loadAuthorityPanel} viewProps={props} />
+const loadPeoplePanel = () => import("./PeoplePanel").then((module) => module.PeoplePanel);
+const PeoplePanel = (props: ComponentProps<typeof PeoplePanelType>) => (
+  <ViewModule load={loadPeoplePanel} viewProps={props} />
 );
 const loadCaseDetail = () => import("./CaseDetail").then((module) => module.CaseDetail);
 const CaseDetail = (props: ComponentProps<typeof CaseDetailType>) => (
@@ -85,7 +85,7 @@ const EditorBootstrap = ({
       current.value !== null &&
       isCurrentCase(current.value) &&
       isCaseAct(route.act) &&
-      current.value.context.tasks.includes(`CASE:${route.act}`)
+      current.value.context.tasks.includes(route.act)
     ) {
       onReady(current.value);
     }
@@ -97,11 +97,7 @@ const EditorBootstrap = ({
     return <EditorFailure message={current.message} retry={current.revalidate} />;
   }
   const { value } = current;
-  if (
-    value !== null &&
-    isCaseAct(route.act) &&
-    !value.context.tasks.includes(`CASE:${route.act}`)
-  ) {
+  if (value !== null && isCaseAct(route.act) && !value.context.tasks.includes(route.act)) {
     return (
       <CaseDetail
         target={route.target}
@@ -125,7 +121,7 @@ const RoutedEditor = (
   const [opened, setOpened] = useState<CurrentCase | null>(null);
   if (
     !isCaseAct(props.route.act) ||
-    (props.route.act === "REMOVE_PAYMENT" && props.route.paymentId === undefined)
+    (props.route.act === "case.removePayment" && props.route.paymentId === undefined)
   ) {
     return <MissingPage />;
   }
@@ -142,7 +138,7 @@ const RoutedEditor = (
         revision: opened.context.revision,
         ...(props.route.paymentId === undefined ? {} : { paymentId: props.route.paymentId }),
       }}
-      {...(props.route.act === "REMOVE_PAYMENT" && props.route.paymentId !== undefined
+      {...(props.route.act === "case.removePayment" && props.route.paymentId !== undefined
         ? {
             autoReview: true,
           }
@@ -170,7 +166,7 @@ const NewCaseEditor = ({
   <OperationEditor
     definition={productMetadata}
     current={null}
-    initialAct="OPEN"
+    initialAct="case.open"
     disclosureAvailable={disclosureAvailable}
     onClose={onClose}
     onCommitted={committed}
@@ -193,8 +189,8 @@ const AreaContent = ({
       return <ReminderQueue onLockChange={setLocked} disclosureAvailable={caseAvailable} />;
     case "recovery":
       return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
-    case "authorityHistory":
-      return <AuthorityHistory key={route.actorId} actorId={route.actorId} />;
+    case "peopleHistory":
+      return <PeopleHistory key={route.actorId} actorId={route.actorId} />;
     case "missing":
       return <MissingPage />;
     default:
@@ -206,13 +202,13 @@ export const RoutedContent = ({
   setLocked,
   committed,
   refresh,
-  authorityAvailable = true,
+  peopleAvailable = true,
   caseAvailable = true,
   caseNavigation,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
-  authorityAvailable?: boolean;
+  peopleAvailable?: boolean;
   caseAvailable?: boolean;
   caseNavigation: ReturnType<typeof useCaseNavigation>;
 }) => {
@@ -258,7 +254,7 @@ export const RoutedContent = ({
         />
       );
     case "people":
-      return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
+      return <PeoplePanel onLockChange={setLocked} disclosureAvailable={peopleAvailable} />;
     default:
       return <AreaContent route={route} setLocked={setLocked} caseAvailable={caseAvailable} />;
   }

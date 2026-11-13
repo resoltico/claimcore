@@ -238,9 +238,9 @@ let private checkDiscriminators (root: JsonElement) =
 
     for name, property, expected in
         [
-            "ReceiptSubject", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER"; "NOTE" ]
-            "OperationReview", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER"; "NOTE" ]
-            "OperationInput", "kind", [ "CASE"; "AUTHORITY"; "WORK"; "REMINDER"; "NOTE" ]
+            "ReceiptSubject", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
+            "OperationReview", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
+            "OperationInput", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
         ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"

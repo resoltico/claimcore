@@ -55,7 +55,7 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   const view = render(<RequesterContext value={requester}>{header}</RequesterContext>);
   expect(screen.getByLabelText("Roles")).toHaveTextContent("Owner");
   expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
-  expect(screen.queryByRole("link", { name: "Authority history" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "People history" })).toBeNull();
   expect(document.body).not.toHaveTextContent("https://issuer.example/");
   expect(document.body).not.toHaveTextContent(requester.context.actorId);
   view.rerender(<RequesterContext value={null}>{header}</RequesterContext>);

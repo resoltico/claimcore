@@ -33,7 +33,7 @@ const current: CurrentCase = {
     caseId: "00000000-0000-4000-8000-000000000003",
     revision: 7,
     workRevision: 2,
-    tasks: ["WORK:UPDATE_WORK"],
+    tasks: ["work.update"],
     editableInputs: ["field:responsibleActor"],
     correction: null,
     seeds: {

@@ -15,7 +15,7 @@ const authored = {
 };
 const correction = (registrationChoice: string, decisionChoice: string) => {
   const values = {
-    ...initialOperationValues("CASE", "CORRECT", current),
+    ...initialOperationValues("CASE", "case.correct", current),
     "group:registration": registrationChoice,
     "field:claimantName": authored.registration.claimantName,
     "field:claimedAmount": authored.registration.claimedAmount,
@@ -26,7 +26,7 @@ const correction = (registrationChoice: string, decisionChoice: string) => {
     "field:payableCurrency": authored.decision.payableCurrency,
   };
   return assembleOperation(
-    operationEntry({ subject: "CASE", kind: "CORRECT" }),
+    operationEntry({ subject: "CASE", kind: "case.correct" }),
     values,
     bindingFor(),
   ).command;
@@ -47,7 +47,7 @@ it("correction checks detect changed payloads and retain independent literal exp
     throw new Error("Independent replacement oracle is missing.");
   }
   const actual = correction("UPDATE", "KEEP");
-  if (actual.kind !== "CASE" || actual.act.kind !== "CORRECT") {
+  if (actual.kind !== "CASE" || actual.act.kind !== "case.correct") {
     throw new Error("Expected correction.");
   }
   const wrong = { ...authored.registration, claimantName: "Wrong authored value" };
@@ -81,17 +81,17 @@ it("correction checks detect changed payloads and retain independent literal exp
 });
 
 it("takes the selected entry from identity while request constants derive from that entry", () => {
-  const entry = operationEntry({ subject: "CASE", kind: "CLOSE" });
+  const entry = operationEntry({ subject: "CASE", kind: "case.close" });
   const values = {
-    ...initialOperationValues("CASE", "CLOSE", current),
-    kind: "AUTHORITY",
-    "act.kind": "DISABLE",
+    ...initialOperationValues("CASE", "case.close", current),
+    kind: "PEOPLE",
+    "act.kind": "people.disable",
   };
   expect(assembleOperation(entry, values, bindingFor()).command).toEqual({
     kind: "CASE",
     operationId: firstId,
     target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
     expectedRevision: 4,
-    act: { kind: "CLOSE" },
+    act: { kind: "case.close" },
   });
 });

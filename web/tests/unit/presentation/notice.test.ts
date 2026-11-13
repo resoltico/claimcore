@@ -7,7 +7,7 @@ it("renders the core-declared required role instead of a capability token", () =
     diagnostic: { code: "NOT_AUTHORIZED", action: "ASK_FOR_ACCESS", required: "RECORD_PAYMENT" },
   });
   expect(value).toBe("You need the Payment recorder role to make this change. Ask an owner.");
-  expect(value).not.toContain("RECORD_PAYMENT");
+  expect(value).not.toContain("case.recordPayment");
 });
 it("renders alternative roles from the generated core policy", () => {
   const value = renderNotice(defaults, {

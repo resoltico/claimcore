@@ -71,15 +71,15 @@ let internal assignmentAndDisclosure fixture =
             let! registered =
                 Service.execute
                     owner
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id fixture operation)
                             principal
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 
-            acceptedAuthority registered
+            acceptedPeople registered
 
         let! opened =
             execute
@@ -107,7 +107,7 @@ let internal assignmentAndDisclosure fixture =
             let! changed =
                 grant owner (id fixture operation) principal { Role = role; Scope = scope } true
 
-            acceptedAuthority changed
+            acceptedPeople changed
 
         let observations = ResizeArray<DateTimeOffset>()
 
@@ -316,7 +316,7 @@ let internal assignmentAndDisclosure fixture =
             Expect.contains
                 queue.Items.Head.Acts
                 ReminderActKind.CompleteAndPlanNext
-                "Scoped current work authority supplies actions"
+                "Scoped current work people supplies actions"
 
         let! invisiblePage =
             list
@@ -346,42 +346,42 @@ let internal assignmentAndDisclosure fixture =
             1L
             "Mine inherits current case responsibility"
 
-        let authorityOnly =
-            PrincipalKey.human "https://issuer.example/" "authority-only-owner"
+        let peopleOnly =
+            PrincipalKey.human "https://issuer.example/" "people-only-owner"
             |> Result.defaultWith (string >> failtest)
 
         let! registeredOwner =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 13)
-                        authorityOnly
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        peopleOnly
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registeredOwner
+        acceptedPeople registeredOwner
 
         let! ownerGrant =
             grant
                 owner
                 (id fixture 25)
-                authorityOnly
+                peopleOnly
                 {
                     Role = Role.Owner
                     Scope = GrantTarget.Installation
                 }
                 true
 
-        acceptedAuthority ownerGrant
+        acceptedPeople ownerGrant
 
-        let! noCounts = Service.workViews (core fixture authorityOnly) () token
+        let! noCounts = Service.workViews (core fixture peopleOnly) () token
 
         Expect.equal
             noCounts
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "Authority-only role learns no case counts"
+            "People-only role learns no case counts"
 
         let pending =
             OperationInput.Work
@@ -416,7 +416,7 @@ let internal assignmentAndDisclosure fixture =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! refused = Service.execute owner pending token
 
         Expect.equal
@@ -492,12 +492,10 @@ let internal assignmentAndDisclosure fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id fixture 35) person AuthorityAct.Disable
-                ))
+                (OperationInput.People(peopleRequest (id fixture 35) person PeopleAct.Disable))
                 token
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
         let! afterDisable = get owner caseId
 
         Expect.equal
@@ -758,7 +756,7 @@ let internal reminderTiming fixture =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
         let! context = Service.context initialOwner () token
 
         let initialDate = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
@@ -1074,7 +1072,7 @@ let internal lifecycleAndErasure fixture =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let facts =
             Inputs.registrationWith
@@ -1332,7 +1330,7 @@ let internal lifecycleAndErasure fixture =
                 "All related private bytes and nonces are erased together"
     }
 
-let internal partialUpdatesAndPaymentAuthority fixture =
+let internal partialUpdatesAndPaymentPeople fixture =
     task {
         let! owner = caseWorker fixture
         let! opened = execute fixture owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
@@ -1407,7 +1405,7 @@ let internal partialUpdatesAndPaymentAuthority fixture =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
 
         let! denied =
             execute fixture owner 47 "PARTIAL-FACTS" 4L (CaseAct.RemovePayment(id fixture 44))
@@ -1417,7 +1415,7 @@ let internal partialUpdatesAndPaymentAuthority fixture =
             (ExecuteResult.Rejected(
                 Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
             ))
-            "Entry removal requires payment authority"
+            "Entry removal requires payment people"
 
         let! granted =
             grant
@@ -1430,7 +1428,7 @@ let internal partialUpdatesAndPaymentAuthority fixture =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L corrected
         accepted updated |> ignore
 

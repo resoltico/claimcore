@@ -72,7 +72,7 @@ let private connectionRefusals () =
     Expect.equal
         (RequestGate.postShape (WebBindings.create origin "127.0.0.1" origin.Port) 32 wrongHost)
         (Error GateFailure.UntrustedConnection)
-        "A loopback peer cannot redirect the host authority"
+        "A loopback peer cannot redirect the host people"
 
 let private browserOriginRefusals () =
     let missingOrigin = context ()
@@ -186,7 +186,7 @@ let tests =
             testCase "admits only the exact local JSON shape" jsonShapeTests
             testCase "keeps the mutable browser session registry server-side" sessionTests
             testCase "returns typed CSRF gate refusal" antiforgeryTests
-            testCase "rejects absent and remote peers or wrong host authority" connectionRefusals
+            testCase "rejects absent and remote peers or wrong host people" connectionRefusals
             testCase
                 "requires one exact browser origin and same-origin metadata"
                 browserOriginRefusals

@@ -47,8 +47,8 @@ module internal VerbRunner =
 
         let frame = prepared.Invocation
 
-        if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
-            AuthorityHistoryCommand.run pageIO prepared token
+        if (Frames.endpoint frame).Id = Api.peopleHistory.Id then
+            PeopleHistoryCommand.run pageIO prepared token
         elif
             List.contains
                 (Frames.endpoint frame).Id

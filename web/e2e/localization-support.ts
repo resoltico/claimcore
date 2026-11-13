@@ -58,7 +58,8 @@ test.beforeEach(async ({ page }) => {
 });
 export const ui = (language: CatalogLanguage, key: MessageKey): string =>
   catalogFor(language)[key]!;
-export const openLabel = (language: CatalogLanguage): string => ui(language, "act.OPEN.label");
+export const openLabel = (language: CatalogLanguage): string =>
+  ui(language, "task.case.open.label");
 type PreferenceVisit =
   { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */

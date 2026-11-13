@@ -41,13 +41,13 @@ const acts = taskDefinitions.flatMap((task) =>
 );
 const currentFor = (kind: ActKind): CurrentCase => {
   const scenarios: Partial<Record<ActKind, Partial<CurrentCase["context"]>>> = {
-    AMEND_REGISTRATION: {
+    "case.amendRegistration": {
       editableInputs: registrationInputs,
       seeds: { ...emptyCaseSeeds, registration: caseFields.registration },
     },
-    DECIDE: { editableInputs: decisionInputs },
-    RECORD_PAYMENT: { seeds: { ...emptyCaseSeeds, paymentCurrency: "EUR" } },
-    CORRECT: {
+    "case.decide": { editableInputs: decisionInputs },
+    "case.recordPayment": { seeds: { ...emptyCaseSeeds, paymentCurrency: "EUR" } },
+    "case.correct": {
       editableInputs: [...registrationInputs, ...decisionInputs],
       correction: correctionChoices,
       seeds: {
@@ -56,12 +56,12 @@ const currentFor = (kind: ActKind): CurrentCase => {
         decision: { paymentDecisionDate: "2026-09-03", payableAmount: "5", payableCurrency: "EUR" },
       },
     },
-    REMOVE_PAYMENT: {
+    "case.removePayment": {
       payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: true }],
     },
   };
   const suppliedScreen =
-    kind === "REMOVE_PAYMENT"
+    kind === "case.removePayment"
       ? {
           regions: [
             ...caseIdentityScreen.regions,
@@ -90,21 +90,21 @@ const currentFor = (kind: ActKind): CurrentCase => {
           ],
         }
       : caseIdentityScreen;
-  return caseDocumentInput({ tasks: [`CASE:${kind}`], ...scenarios[kind] }, suppliedScreen);
+  return caseDocumentInput({ tasks: [kind], ...scenarios[kind] }, suppliedScreen);
 };
 const authorCase = (kind: ActKind) => {
   switch (kind) {
-    case "OPEN":
+    case "case.open":
       fillRegistrationInputs();
       break;
-    case "AMEND_REGISTRATION":
+    case "case.amendRegistration":
       input("claimantName", "Synthetic replacement");
       break;
-    case "CORRECT":
+    case "case.correct":
       fireEvent.click(document.querySelector('input[name="group:registration"][value="UPDATE"]')!);
       input("claimantName", "Synthetic correction");
       break;
-    case "DECIDE":
+    case "case.decide":
       for (const [name, value] of Object.entries({
         paymentDecisionDate: "2026-09-03",
         payableAmount: "5.0000",
@@ -113,14 +113,14 @@ const authorCase = (kind: ActKind) => {
         input(name, value);
       }
       break;
-    case "RECORD_PAYMENT":
+    case "case.recordPayment":
       input("paymentDate", "2026-09-04");
       input("paidAmount", "5");
       break;
-    case "REMOVE_PAYMENT":
+    case "case.removePayment":
       break;
-    case "VOID":
-    case "REINSTATE":
+    case "case.void":
+    case "case.reinstate":
       input("input:reason", "Synthetic reason العربية");
       break;
     default:
@@ -129,7 +129,7 @@ const authorCase = (kind: ActKind) => {
 };
 const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
   const caseId =
-    request.act.kind === "OPEN" ? request.operationId : "20000000-0000-4000-8000-000000000001";
+    request.act.kind === "case.open" ? request.operationId : "20000000-0000-4000-8000-000000000001";
   return {
     screen: { regions: [] },
     context: {
@@ -144,7 +144,7 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
   };
 };
 const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] => {
-  if (request.act.kind === "DECIDE") {
+  if (request.act.kind === "case.decide") {
     return [
       {
         key: "payable",
@@ -154,7 +154,7 @@ const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] 
       },
     ];
   }
-  if (request.act.kind === "CORRECT") {
+  if (request.act.kind === "case.correct") {
     return [
       {
         key: "claimantName",
@@ -183,10 +183,10 @@ const caseReview = (request: CaseInput) => {
         target: {
           kind: "CASE",
           caseId:
-            request.act.kind === "OPEN"
+            request.act.kind === "case.open"
               ? request.operationId
               : "20000000-0000-4000-8000-000000000001",
-          beforeRevision: request.act.kind === "OPEN" ? null : request.expectedRevision,
+          beforeRevision: request.act.kind === "case.open" ? null : request.expectedRevision,
         },
         confirmation: { kind: "CASE_REFERENCE", reference: caseFields.caseReference },
       },
@@ -234,22 +234,22 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
   });
 const assertAuthoredCase = (request: CaseInput) => {
   switch (request.act.kind) {
-    case "OPEN":
+    case "case.open":
       expect(request.act.values.claimantName).toBe(caseFields.registration.claimantName);
       break;
-    case "AMEND_REGISTRATION":
+    case "case.amendRegistration":
       expect(request.act.values.claimantName).toBe("Synthetic replacement");
       break;
-    case "DECIDE":
+    case "case.decide":
       expect(request.act.values.payableAmount).toBe("5.0000");
       break;
-    case "RECORD_PAYMENT":
+    case "case.recordPayment":
       expect(request.act.values.paymentDate).toBe("2026-09-04");
       break;
-    case "REMOVE_PAYMENT":
+    case "case.removePayment":
       expect(request.act.paymentId).toBe("10000000-0000-7000-8000-000000000003");
       break;
-    case "CORRECT":
+    case "case.correct":
       expect(request.act.groups).toMatchObject({
         registration: {
           kind: "UPDATE",
@@ -262,8 +262,8 @@ const assertAuthoredCase = (request: CaseInput) => {
         },
       });
       break;
-    case "VOID":
-    case "REINSTATE":
+    case "case.void":
+    case "case.reinstate":
       expect(request.act.reason).toBe("Synthetic reason العربية");
       break;
     default:
@@ -287,9 +287,9 @@ it.each(acts)(
     render(
       <OperationEditor
         definition={productMetadata}
-        current={act.kind === "OPEN" ? null : currentFor(act.kind)}
+        current={act.kind === "case.open" ? null : currentFor(act.kind)}
         initialAct={act.kind}
-        {...(act.kind === "REMOVE_PAYMENT"
+        {...(act.kind === "case.removePayment"
           ? {
               binding: {
                 kind: "CASE" as const,
@@ -313,17 +313,17 @@ it.each(acts)(
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));
     const dialog = await screen.findByRole("dialog");
-    if (act.kind === "DECIDE") {
+    if (act.kind === "case.decide") {
       expect(dialog).toHaveTextContent("5.0000");
       expect([...dialog.querySelectorAll("bdi")].map((node) => node.textContent)).toContain(
         "5.0000 EUR",
       );
     }
-    if (act.kind === "CORRECT") {
+    if (act.kind === "case.correct") {
       expect(dialog).toHaveTextContent("Synthetic correction");
     }
     await waitForReviewConfirm();
-    if (act.kind === "ERASE") {
+    if (act.kind === "case.erase") {
       await user.type(
         screen.getByRole("textbox", { name: "Case reference (exact)" }),
         caseFields.caseReference,
@@ -339,7 +339,7 @@ it.each(acts)(
     ]);
     expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
     expect(calls[1]!.input.act.kind).toBe(act.kind);
-    expect(calls[1]!.input.expectedRevision).toBe(act.kind === "OPEN" ? 0 : 1);
+    expect(calls[1]!.input.expectedRevision).toBe(act.kind === "case.open" ? 0 : 1);
     assertAuthoredCase(calls[1]!.input);
   },
 );

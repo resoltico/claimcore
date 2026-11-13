@@ -6,7 +6,7 @@ import type {
   HumanRejection,
   OperationInput,
   HumanRejection_CONFLICT,
-  HumanReadDocument_caseGet,
+  HumanReadDocument_case_get,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
@@ -28,11 +28,11 @@ export type LocalSource = {
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
-    input: Exclude<OperationInput, { kind: "AUTHORITY" }>;
+    input: Exclude<OperationInput, { kind: "PEOPLE" }>;
   };
 };
 export type ConflictObservation = {
-  readonly current: HumanReadDocument_caseGet;
+  readonly current: HumanReadDocument_case_get;
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {

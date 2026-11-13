@@ -18,12 +18,15 @@ test("records instalments and removes the selected entry through one reviewed co
   await openAuthenticated(page);
   const reference = `PAY-${randomUUID()}`;
   await openCase(page, reference);
-  await completeAct(page, "DECIDE", {
+  await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "100",
     "Payable currency": "EUR",
   });
-  await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-04", "Paid amount": "40" });
+  await completeAct(page, "case.recordPayment", {
+    "Payment date": "2026-09-04",
+    "Paid amount": "40",
+  });
   const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   await expect(payments.locator('[data-entry="paid"]')).toContainText("40.00 EUR");
   await expect(payments.locator('[data-entry="remaining"]')).toContainText("60.00 EUR");
@@ -35,7 +38,10 @@ test("records instalments and removes the selected entry through one reviewed co
       '.case-detail .case-stage-list li[data-complete="false"] meter[aria-label="Paid"]',
     ),
   ).toHaveAttribute("value", "40");
-  await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-05", "Paid amount": "20" });
+  await completeAct(page, "case.recordPayment", {
+    "Payment date": "2026-09-05",
+    "Paid amount": "20",
+  });
   await expect(payments.locator('[data-entry="paid"]')).toContainText("60.00 EUR");
   const read = await workRequest(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },
@@ -65,7 +71,7 @@ test("records instalments and removes the selected entry through one reviewed co
   expect(reviewed.request().postDataJSON()).toMatchObject({
     kind: "CASE",
     expectedRevision: 4,
-    act: { kind: "REMOVE_PAYMENT", paymentId: first.paymentId },
+    act: { kind: "case.removePayment", paymentId: first.paymentId },
   });
   const dialog = page.getByRole("dialog");
   const confirm = dialog.locator("button[data-confirm-operation]");
@@ -106,7 +112,7 @@ const recordPayments = async (page: Page, caseId: string) => {
       target: { kind: "ID", caseId },
       expectedRevision: revision,
       act: {
-        kind: "RECORD_PAYMENT",
+        kind: "case.recordPayment",
         values: { paymentDate: "2026-09-04", paidAmount: "1", paidCurrency: "EUR" },
       },
     };
@@ -153,7 +159,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   await page.setViewportSize({ width: 1440, height: 1000 });
   const reference = "CLM-PAYMENTS-55";
   await openCase(page, reference);
-  await completeAct(page, "DECIDE", {
+  await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "100",
     "Payable currency": "EUR",
@@ -196,7 +202,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
     expectedRevision: 57,
-    act: { kind: "REMOVE_PAYMENT", paymentId: original.operationId },
+    act: { kind: "case.removePayment", paymentId: original.operationId },
   });
   const execution = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.execute",

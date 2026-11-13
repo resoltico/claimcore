@@ -59,7 +59,7 @@
     "text": "El servicio no está disponible.",
     "source": "6468ac9f9bca"
   },
-  "cli.family.authority": {
+  "cli.family.people": {
     "text": "Personas y acceso",
     "source": "1e133caaec46"
   },
@@ -191,7 +191,7 @@
     "text": "Roles directos: {direct}; roles derivados de la instalación: {inherited}; efectivos: {effective}",
     "source": "db07af8055e6"
   },
-  "cli.text.authorityHistoryEmpty": {
+  "cli.text.peopleHistoryEmpty": {
     "text": "No hay cambios de acceso que coincidan con esta selección.",
     "source": "4e76d78127bf"
   },

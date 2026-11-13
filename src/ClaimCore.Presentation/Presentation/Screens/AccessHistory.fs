@@ -7,16 +7,16 @@ open ScreenEntries
 open PersonScreen
 
 module AccessHistoryScreen =
-    let authorityHistoryColumns =
+    let peopleHistoryColumns =
         [
             column
                 "recordedAt"
                 "label.recordedAt"
                 Prominence.Secondary
                 false
-                (fun (item: AuthorityHistoryEntry) -> PresentedValue.Instant item.RecordedAt)
+                (fun (item: PeopleHistoryEntry) -> PresentedValue.Instant item.RecordedAt)
             column "act" "label.action" Prominence.Primary false (fun item ->
-                code AuthorityKind.vocabulary (AuthorityHistoryFacts.kind item.Facts))
+                code PeopleActKind.vocabulary (PeopleHistoryFacts.kind item.Facts))
             column "recordedBy" "label.recordedBy" Prominence.Primary false (fun item ->
                 PresentedValue.Actor item.RecordedBy)
             column "target" "label.targetAccount" Prominence.Primary false (fun item ->
@@ -28,32 +28,31 @@ module AccessHistoryScreen =
                 false
                 (fun item ->
                     match item.Facts with
-                    | AuthorityHistoryFacts.Granted {
-                                                        Scope = GrantScope.Case(_, reference)
-                                                    }
-                    | AuthorityHistoryFacts.Revoked {
-                                                        Scope = GrantScope.Case(_, reference)
-                                                    } -> PresentedValue.Reference reference
+                    | PeopleHistoryFacts.Granted {
+                                                     Scope = GrantScope.Case(_, reference)
+                                                 }
+                    | PeopleHistoryFacts.Revoked {
+                                                     Scope = GrantScope.Case(_, reference)
+                                                 } -> PresentedValue.Reference reference
                     | _ -> absent)
             column "details" "label.details" Prominence.Primary false (fun item ->
                 match item.Facts with
-                | AuthorityHistoryFacts.Granted grant
-                | AuthorityHistoryFacts.Revoked grant -> code Role.vocabulary grant.Role
-                | AuthorityHistoryFacts.ProfileSet(Some profile) ->
+                | PeopleHistoryFacts.Granted grant
+                | PeopleHistoryFacts.Revoked grant -> code Role.vocabulary grant.Role
+                | PeopleHistoryFacts.ProfileSet(Some profile) ->
                     PresentedValue.Party profile.DisplayName
-                | AuthorityHistoryFacts.ProfileSet None
-                | AuthorityHistoryFacts.ProfileErased ->
-                    PresentedValue.Absent "label.changesErased"
-                | AuthorityHistoryFacts.OwnerProvisioned principal
-                | AuthorityHistoryFacts.Registered principal ->
+                | PeopleHistoryFacts.ProfileSet None
+                | PeopleHistoryFacts.ProfileErased -> PresentedValue.Absent "label.changesErased"
+                | PeopleHistoryFacts.OwnerProvisioned principal
+                | PeopleHistoryFacts.Registered principal ->
                     let kind, _, _ = PrincipalKey.parts principal in
                     code PrincipalKind.vocabulary kind
-                | AuthorityHistoryFacts.Enabled -> boolean true
-                | AuthorityHistoryFacts.Disabled -> boolean false)
+                | PeopleHistoryFacts.Enabled -> boolean true
+                | PeopleHistoryFacts.Disabled -> boolean false)
             column "scope" "input.scope.label" Prominence.Secondary false (fun item ->
                 match item.Facts with
-                | AuthorityHistoryFacts.Granted grant
-                | AuthorityHistoryFacts.Revoked grant ->
+                | PeopleHistoryFacts.Granted grant
+                | PeopleHistoryFacts.Revoked grant ->
                     code
                         ScopeKind.vocabulary
                         (match grant.Scope with
@@ -62,12 +61,12 @@ module AccessHistoryScreen =
                 | _ -> PresentedValue.Absent "label.notApplicable")
             column "reference" "field.caseReference.label" Prominence.Secondary false (fun item ->
                 match item.Facts with
-                | AuthorityHistoryFacts.Granted {
-                                                    Scope = GrantScope.Case(_, reference)
-                                                }
-                | AuthorityHistoryFacts.Revoked {
-                                                    Scope = GrantScope.Case(_, reference)
-                                                } -> PresentedValue.Reference reference
+                | PeopleHistoryFacts.Granted {
+                                                 Scope = GrantScope.Case(_, reference)
+                                             }
+                | PeopleHistoryFacts.Revoked {
+                                                 Scope = GrantScope.Case(_, reference)
+                                             } -> PresentedValue.Reference reference
                 | _ -> PresentedValue.Absent "label.notApplicable")
             column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(EffectPosition.format item.Position))
@@ -79,11 +78,11 @@ module AccessHistoryScreen =
                 ))
         ]
 
-    let authorityHistory item =
+    let peopleHistory item =
         let facts =
             match item.Facts with
-            | AuthorityHistoryFacts.OwnerProvisioned principal
-            | AuthorityHistoryFacts.Registered principal ->
+            | PeopleHistoryFacts.OwnerProvisioned principal
+            | PeopleHistoryFacts.Registered principal ->
                 let kind, issuer, subject = PrincipalKey.parts principal
 
                 [
@@ -103,9 +102,9 @@ module AccessHistoryScreen =
                         Prominence.Detail
                         (PresentedValue.Identifier subject)
                 ]
-            | AuthorityHistoryFacts.Granted item
-            | AuthorityHistoryFacts.Revoked item -> grant item
-            | AuthorityHistoryFacts.ProfileSet profile ->
+            | PeopleHistoryFacts.Granted item
+            | PeopleHistoryFacts.Revoked item -> grant item
+            | PeopleHistoryFacts.ProfileSet profile ->
                 [
                     value
                         "name"
@@ -123,21 +122,19 @@ module AccessHistoryScreen =
                          |> Option.bind _.Contact
                          |> optional (ContactText.format >> PresentedValue.Text))
                 ]
-            | AuthorityHistoryFacts.Enabled
-            | AuthorityHistoryFacts.Disabled
-            | AuthorityHistoryFacts.ProfileErased -> []
+            | PeopleHistoryFacts.Enabled
+            | PeopleHistoryFacts.Disabled
+            | PeopleHistoryFacts.ProfileErased -> []
 
-        [
-            section "label.authorityHistory" (entries authorityHistoryColumns item @ facts)
-        ]
+        [ section "label.peopleHistory" (entries peopleHistoryColumns item @ facts) ]
 
 
     let rows rows =
         let items =
             rows
-            |> List.map (fun (item: AuthorityHistoryEntry) ->
+            |> List.map (fun (item: PeopleHistoryEntry) ->
                 let sections =
-                    authorityHistory item
+                    peopleHistory item
                     |> List.map (fun section ->
                         let visible =
                             section.Entries
@@ -157,8 +154,8 @@ module AccessHistoryScreen =
                         {
                             MessageId =
                                 Vocabulary.messageKey
-                                    AuthorityKind.vocabulary
-                                    (AuthorityHistoryFacts.kind item.Facts)
+                                    PeopleActKind.vocabulary
+                                    (PeopleHistoryFacts.kind item.Facts)
                                     "label"
                             Arguments = Map.empty
                         }
@@ -169,7 +166,7 @@ module AccessHistoryScreen =
         let details =
             rows
             |> List.collect (fun item ->
-                authorityHistory item
+                peopleHistory item
                 |> List.collect _.Entries
                 |> List.filter technical
                 |> List.map (fun entry ->
@@ -184,5 +181,5 @@ module AccessHistoryScreen =
                     entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]
 
-    let view (reply: AuthorityHistoryPage) =
+    let view (reply: PeopleHistoryPage) =
         rows reply.Entries |> page reply.Basis reply.Entries.Length reply.NextCursor

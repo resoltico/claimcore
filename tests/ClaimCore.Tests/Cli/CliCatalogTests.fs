@@ -58,7 +58,7 @@ let private byteLimits () =
         Grammar.prepare (fun () -> operationId) args
 
     let emptyInput =
-        """{"kind":"CASE","operationId":"11111111-2222-7333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
+        """{"kind":"CASE","operationId":"11111111-2222-7333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"case.void","reason":""}}"""
 
     let remaining =
         Limits.MaximumRequestBytes - System.Text.Encoding.UTF8.GetByteCount emptyInput

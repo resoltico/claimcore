@@ -25,7 +25,7 @@ let private deepLinks () =
                 "/cases/~fmJtVjM"
                 "/cases/CASE.001/acts/CLOSE"
                 "/operations/10000000-0000-4000-8000-000000000001"
-                "/authority/10000000-0000-4000-8000-000000000001"
+                "/people/10000000-0000-4000-8000-000000000001"
             ] do
             let! status, bytes = host.Send(HttpMethod.Get, path, None, [])
             Expect.equal status 200 $"Deep reload {path}"

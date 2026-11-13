@@ -65,6 +65,6 @@ it("rejects missing, extra, duplicate, reordered and undisclosed assignee handle
 
 it("rejects an otherwise valid choice document at a different read endpoint", () => {
   expect(isResponse("case.get", reply(document))).toBe(false);
-  expect(isResponse("authority.list", reply(document))).toBe(false);
+  expect(isResponse("people.list", reply(document))).toBe(false);
   expect(isResponse("case.assignees", reply(document))).toBe(true);
 });

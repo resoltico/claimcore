@@ -25,7 +25,8 @@ module internal NoteStorage =
         if
             DatabaseSession.namedValue<Guid> "subject_id" value <> NoteId.value id
             || DatabaseSession.namedValue<Guid> "parent_case_id" value <> CaseId.value parent
-            || DatabaseSession.namedValue<string> "act" value <> "ADD_NOTE"
+            || DatabaseSession.namedValue<string> "act" value
+               <> (NoteActKind.token NoteActKind.AddNote)
             || DatabaseSession.namedValue<string> "subject_kind" value <> "NOTE"
         then
             raise (RecordCorruptException "Note creation source disagrees.")

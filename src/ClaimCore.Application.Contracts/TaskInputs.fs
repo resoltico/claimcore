@@ -113,24 +113,24 @@ module TaskInputId =
 
 /// Collection identity is independent of transport members and UI-local row keys.
 [<RequireQualifiedAccess>]
-type TaskCollectionId = | AuthorityGrants
+type TaskCollectionId = | PeopleGrants
 
 module TaskCollectionId =
     let key =
         function
-        | TaskCollectionId.AuthorityGrants -> "authorityGrants"
+        | TaskCollectionId.PeopleGrants -> "peopleGrants"
 
     let input =
         function
-        | TaskCollectionId.AuthorityGrants -> TaskInputId.Target InputTarget.Grants
+        | TaskCollectionId.PeopleGrants -> TaskInputId.Target InputTarget.Grants
 
     let minimumRows =
         function
-        | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MinimumGrants
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MinimumGrants
 
     let maximumRows =
         function
-        | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MaximumGrants
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
 
 /// Submitted ordinals correlate responses with an immutable client-owned row map.
 type TaskRowTarget =
@@ -170,7 +170,7 @@ module TaskInputIssue =
             Row =
                 issue.GrantRow
                 |> Option.bind (
-                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.AuthorityGrants
+                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.PeopleGrants
                 )
             Violation = issue.Violation
             RelatedDate = issue.RelatedDate

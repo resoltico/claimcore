@@ -711,7 +711,7 @@ let tests =
                     [
                         [ "case"; "get"; "x"; "--all" ]
                         [ "case"; "get"; "x"; "--format"; "csv" ]
-                        [ "authority"; "list"; "--all" ]
+                        [ "people"; "list"; "--all" ]
                     ] do
                     Expect.isError
                         (Grammar.prepare (fun () -> "unused") args)

@@ -21,7 +21,7 @@ import { productMetadata } from "../../src/protocol/productMetadata";
 import { fields } from "../support/service-ui.fixtures";
 
 const current = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
+  tasks: ["case.amendRegistration", "case.correct", "case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 4,
   history: "FULL",
@@ -49,7 +49,7 @@ const editor = () =>
       <OperationEditor
         definition={productMetadata}
         current={current}
-        initialAct="AMEND_REGISTRATION"
+        initialAct="case.amendRegistration"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
@@ -76,7 +76,7 @@ it("sends only a selected registration fact and does not serialize retained cont
   const frame = await prepared(spy);
   expect(frame.input).toMatchObject({ kind: "CASE", expectedRevision: 4 });
   expect(frame.input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
+    kind: "case.amendRegistration",
     values: { claimantName: "Only selected claimant" },
   });
 });
@@ -99,7 +99,7 @@ it("selects and removes a complete money pair as one authoring event", async () 
   expect(screen.queryByRole("textbox", { name: "Claimed amount" })).toBeNull();
   const frame = await prepared(spy);
   expect(frame.input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
+    kind: "case.amendRegistration",
     values: { claimantName: "Only selected claimant" },
   });
 });
@@ -131,7 +131,7 @@ it.each([
       },
     });
     const execute = vi.spyOn(service, "execute");
-    const path = actPath({ kind: "ID", caseId: current.context.caseId }, "AMEND_REGISTRATION");
+    const path = actPath({ kind: "ID", caseId: current.context.caseId }, "case.amendRegistration");
     navigate(path);
     render(<Dashboard />);
     await screen.findByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u });
@@ -160,7 +160,7 @@ it.each([
     expect(screen.getByRole("textbox", { name: "Claimed amount" })).toHaveValue(raw);
     const frame = await prepared(spy);
     expect(frame.input.act).toEqual({
-      kind: "AMEND_REGISTRATION",
+      kind: "case.amendRegistration",
       values: { claimedAmount: expected, claimedCurrency: "EUR" },
     });
     const { operationId: reviewedId, ...reviewedInput } = frame.input;

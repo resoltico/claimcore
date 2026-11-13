@@ -3,7 +3,7 @@ import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type {
-  HumanReadDocument_workViews,
+  HumanReadDocument_work_views,
   PresentedValue,
   Screen,
   WorkDateBasis,
@@ -18,10 +18,10 @@ type ViewCounts<V> = {
   items: ReadonlyArray<{ view: V; label: PresentedValue; count: PresentedValue }>;
 };
 export type CaseCounts = ViewCounts<
-  HumanReadDocument_workViews["context"]["cases"][number]["view"]
+  HumanReadDocument_work_views["context"]["cases"][number]["view"]
 >;
 export type ReminderCounts = ViewCounts<
-  HumanReadDocument_workViews["context"]["reminders"][number]["view"]
+  HumanReadDocument_work_views["context"]["reminders"][number]["view"]
 >;
 const viewChoices = <V extends string>(
   screen: Screen,
@@ -46,7 +46,7 @@ const viewChoices = <V extends string>(
   return items;
 };
 const countData = <V extends string>(
-  document: HumanReadDocument_workViews | null,
+  document: HumanReadDocument_work_views | null,
   controls: ReadonlyArray<{ key: string; view: V }>,
   area: "cases" | "reminders",
 ): ViewCounts<V> | null => {

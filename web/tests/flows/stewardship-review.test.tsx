@@ -16,7 +16,7 @@ const stateLabels = {
   ERASED: "Erased",
 };
 const stubReview = (
-  act: "VOID" | "REINSTATE" | "ERASE",
+  act: "case.void" | "case.reinstate" | "case.erase",
   before: "ACTIVE" | "VOIDED",
   after: "ACTIVE" | "VOIDED" | "ERASED",
 ) => {
@@ -56,13 +56,13 @@ const stubReview = (
                                 },
                               ]
                             : []),
-                          ...(act === "ERASE"
+                          ...(act === "case.erase"
                             ? [
                                 {
                                   key: "meaning",
                                   labelId: "label.details",
                                   prominence: "PRIMARY",
-                                  value: { kind: "MESSAGE", messageId: "act.ERASE.meaning" },
+                                  value: { kind: "MESSAGE", messageId: "task.case.erase.meaning" },
                                 },
                               ]
                             : []),
@@ -107,21 +107,21 @@ const stubReview = (
 
 it.each([
   {
-    act: "VOID",
+    act: "case.void",
     label: "Void case record",
     before: "ACTIVE",
     after: "VOIDED",
     reason: "Exact العربية 1.0000",
   },
   {
-    act: "REINSTATE",
+    act: "case.reinstate",
     label: "Reinstate case record",
     before: "VOIDED",
     after: "ACTIVE",
     reason: "Exact reinstatement",
   },
   {
-    act: "ERASE",
+    act: "case.erase",
     label: "Erase case",
     before: "ACTIVE",
     after: "ERASED",
@@ -134,7 +134,7 @@ it.each([
     render(
       editor({
         initialAct: act,
-        current: caseDocumentInput({ tasks: [`CASE:${act}`] }),
+        current: caseDocumentInput({ tasks: [act] }),
       }),
     );
     const user = userEvent.setup();
@@ -146,7 +146,7 @@ it.each([
         reason,
       );
     }
-    if (act === "ERASE") {
+    if (act === "case.erase") {
       expect(screen.getByRole("dialog")).toHaveTextContent(
         "Copies held elsewhere are not affected.",
       );
@@ -159,10 +159,10 @@ it.each([
     }
     expect(dialog.querySelector(".review-before")).toHaveTextContent(stateLabels[before]);
     expect(dialog.querySelector(".review-after")).toHaveTextContent(stateLabels[after]);
-    if (act === "ERASE") {
+    if (act === "case.erase") {
       expect(dialog).toHaveTextContent("Copies held elsewhere are not affected.");
     }
-    if (act === "ERASE") {
+    if (act === "case.erase") {
       expect(reviewConfirm()).toBeDisabled();
       const confirmation = screen.getByRole("textbox", { name: "Case reference (exact)" });
       await user.type(confirmation, fields.caseReference.toLowerCase());

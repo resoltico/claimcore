@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { WorklistFilters } from "../../../src/views/worklist/WorklistFilters";
-import { AuthorityListing } from "../../../src/views/AuthorityListing";
+import { PeopleListing } from "../../../src/views/PeopleListing";
 
 afterEach(() => vi.unstubAllGlobals());
 it("renders semantic worklist sets as independent Core-labelled checkboxes", async () => {
@@ -18,7 +18,7 @@ it("renders semantic worklist sets as independent Core-labelled checkboxes", asy
   await userEvent.click(screen.getByRole("checkbox", { name: "Voided" }));
   expect(change).toHaveBeenCalledWith({ lifecycle: ["ACTIVE", "VOIDED"], progress: ["DECIDED"] });
 });
-it("takes role choices from the semantic authority query and sends only authored filters", async () => {
+it("takes role choices from the semantic people query and sends only authored filters", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(() =>
     Promise.resolve(
       new Response(
@@ -47,7 +47,7 @@ it("takes role choices from the semantic authority query and sends only authored
   );
   vi.stubGlobal("fetch", fetch);
   render(
-    <AuthorityListing
+    <PeopleListing
       mayReadGrants={false}
       onSelect={vi.fn()}
       onDisclosureRefused={vi.fn()}

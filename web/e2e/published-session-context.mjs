@@ -6,4 +6,4 @@ export const isActiveOwnerContext = (reply) =>
   isResponseFor("context", "DATA", reply) &&
   reply.outcome.kind === "SUCCEEDED" &&
   reply.outcome.data.requester.kind === "ACTIVE" &&
-  reply.outcome.data.requester.capabilities.includes("MANAGE_AUTHORITY");
+  reply.outcome.data.requester.capabilities.includes("MANAGE_ACCESS");

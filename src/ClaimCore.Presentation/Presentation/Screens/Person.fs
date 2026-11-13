@@ -70,7 +70,7 @@ module PersonScreen =
                     ))
             ]
 
-    let view (reply: AuthorityGrantPage) =
+    let view (reply: PeopleGrantPage) =
         let actor = reply.Actor
         let _, issuer, subject = PrincipalKey.parts actor.Principal
 

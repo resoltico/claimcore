@@ -47,7 +47,7 @@ const current: CurrentCase = {
     revision: 7,
     workRevision: 0,
     history: "NONE",
-    tasks: ["CASE:CORRECT"],
+    tasks: ["case.correct"],
     editableInputs: [],
     correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP"] },
     seeds: { paymentCurrency: null, registration: null, decision: null, work: null },

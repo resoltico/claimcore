@@ -2,8 +2,8 @@
   "source": "Hand-reviewed literal decoding examples. No updater or generated snapshots. Focused tests use builders for behavioral variants and boundary controls.",
   "cases": [
     {
-      "id": "authority.grants-request-0",
-      "endpoint": "authority.grants",
+      "id": "people.grants-request-0",
+      "endpoint": "people.grants",
       "direction": "request",
       "valid": true,
       "value": {
@@ -12,8 +12,8 @@
       }
     },
     {
-      "id": "authority.history-all",
-      "endpoint": "authority.history",
+      "id": "people.history-all",
+      "endpoint": "people.history",
       "direction": "request",
       "valid": true,
       "value": {
@@ -21,8 +21,8 @@
       }
     },
     {
-      "id": "authority.list-request-0",
-      "endpoint": "authority.list",
+      "id": "people.list-request-0",
+      "endpoint": "people.list",
       "direction": "request",
       "valid": true,
       "value": {
@@ -31,7 +31,7 @@
     },
     {
       "id": "requests-page",
-      "endpoint": "authority.requests",
+      "endpoint": "people.requests",
       "direction": "request",
       "valid": true,
       "value": {
@@ -40,7 +40,7 @@
     },
     {
       "id": "request-dismiss-kind-key",
-      "endpoint": "authority.requests.dismiss",
+      "endpoint": "people.requests.dismiss",
       "direction": "request",
       "valid": true,
       "value": {
@@ -120,7 +120,7 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
-          "kind": "OPEN",
+          "kind": "case.open",
           "values": {
             "incidentDate": "2026-01-01",
             "incidentNotificationDate": "2026-01-01",
@@ -156,7 +156,7 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
-          "kind": "OPEN",
+          "kind": "case.open",
           "values": {
             "incidentDate": "2026-01-01",
             "incidentNotificationDate": "2026-01-01",
@@ -216,12 +216,12 @@
       "value": {}
     },
     {
-      "id": "operation.execute.authority-request-0",
+      "id": "operation.execute.people-request-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "AUTHORITY",
+        "kind": "PEOPLE",
         "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
@@ -229,7 +229,7 @@
           "subject": "x"
         },
         "act": {
-          "kind": "REGISTER",
+          "kind": "people.register",
           "profile": {
             "displayName": "Authored fixture account"
           }
@@ -250,7 +250,7 @@
         },
         "expectedRevision": 1,
         "act": {
-          "kind": "UPDATE_WORK",
+          "kind": "work.update",
           "values": {
             "responsibleActor": {
               "kind": "CLEAR"
@@ -288,7 +288,7 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT",
+          "kind": "case.correct",
           "groups": {
             "registration": {
               "kind": "UPDATE",
@@ -324,7 +324,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "AUTHORITY",
+        "kind": "PEOPLE",
         "operationId": "11111111-2222-7333-8444-555555555555",
         "target": {
           "kind": "HUMAN",
@@ -332,7 +332,7 @@
           "subject": "admitted"
         },
         "act": {
-          "kind": "ADMIT",
+          "kind": "people.admit",
           "profile": {
             "displayName": "Authored",
             "contact": "Contact"
@@ -372,7 +372,7 @@
         },
         "expectedRevision": 0,
         "act": {
-          "kind": "UPDATE_WORK",
+          "kind": "work.update",
           "values": {
             "handlingSummary": "  First paragraph\nSecond paragraph 😀  "
           }
@@ -426,7 +426,7 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
-          "kind": "CORRECT",
+          "kind": "case.correct",
           "groups": {
             "registration": {
               "kind": "UPDATE",
@@ -501,7 +501,7 @@
           "caseReference": "CASE-1"
         },
         "act": {
-          "kind": "ADD_NOTE",
+          "kind": "note.add",
           "text": "First\nSecond"
         }
       }
@@ -519,7 +519,7 @@
           "caseReference": "CASE-1"
         },
         "act": {
-          "kind": "REMOVE_NOTE",
+          "kind": "note.remove",
           "noteId": "10000000-0000-7000-8000-000000000002"
         }
       }
@@ -538,7 +538,7 @@
           "caseReference": "CASE-1"
         },
         "act": {
-          "kind": "ADD_NOTE",
+          "kind": "note.add",
           "text": "First"
         }
       }

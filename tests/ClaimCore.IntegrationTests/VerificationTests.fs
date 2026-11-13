@@ -16,7 +16,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 open ClaimCore.IntegrationTests.VerificationScenarioInputs
 open ClaimCore.IntegrationTests.LedgerFindingScenarios
-open ClaimCore.IntegrationTests.AuthorityFindingScenarios
+open ClaimCore.IntegrationTests.PeopleFindingScenarios
 open ClaimCore.IntegrationTests.StoredDataFindingScenarios
 
 
@@ -101,7 +101,7 @@ let private workIndexPrecedence (database: PostgresFixture.Database) =
 
         do! finding VerificationFinding.CaseStatusProjection database
         do! sql database "UPDATE claimcore.cases SET status='OPENED'" [||]
-        do! finding VerificationFinding.AuthorityProjection database
+        do! finding VerificationFinding.PeopleProjection database
         do! sql database "UPDATE claimcore.actors SET enabled=true" [||]
         do! finding VerificationFinding.CaseWorkProjection database
         do! sql database "UPDATE claimcore.cases SET follow_up=NULL" [||]
@@ -137,10 +137,10 @@ let tests =
                     (run check)
             testCaseAsync "disabled historical executors are divergence" (run disabledExecutor)
             testCaseAsync
-                "human-only grant targets remain a permanent authority invariant"
+                "human-only grant targets remain a permanent people invariant"
                 (run serviceGrantTarget)
             testCaseAsync
-                "authority history cannot remove the last enabled human installation owner"
+                "people history cannot remove the last enabled human installation owner"
                 (run lastOwner)
             testCaseAsync
                 "replay refuses an enabled executor without the as-of case capability"
@@ -149,13 +149,13 @@ let tests =
                 "the first finding has stable precedence under multiple damaged properties"
                 (run precedence)
             testCaseAsync
-                "case work indexes preserve case authority work and fence finding precedence"
+                "case work indexes preserve case people work and fence finding precedence"
                 (run workIndexPrecedence)
             testCaseAsync
                 "malformed actor projections are divergence rather than I/O failure"
                 (run malformedProjection)
             testCaseAsync
-                "case-scoped authority is resolved against earlier ledger cases, not final projections"
+                "case-scoped people is resolved against earlier ledger cases, not final projections"
                 (run priorCaseRequired)
             testCaseAsync
                 "malformed retained instants are typed payload divergence"

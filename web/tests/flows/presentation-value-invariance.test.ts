@@ -49,9 +49,9 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
     const source = buildRequest(
       "operation.execute",
       assembleOperation(
-        operationEntry({ subject: "CASE", kind: "OPEN" }),
+        operationEntry({ subject: "CASE", kind: "case.open" }),
         {
-          ...initialOperationValues("CASE", "OPEN", null),
+          ...initialOperationValues("CASE", "case.open", null),
           "field:caseReference": reference,
           "field:claimedAmount": values.claimedAmount,
           "field:incidentDate": values.incidentDate,

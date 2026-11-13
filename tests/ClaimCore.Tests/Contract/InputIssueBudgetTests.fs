@@ -13,7 +13,7 @@ let tests =
     testCase
         "the issue envelope carries maximum-size admission failures and rejects excess issues"
         (fun () ->
-            let request: AuthorityRequest =
+            let request: PeopleRequest =
                 {
                     OperationId = Guid.Empty
                     Target =
@@ -23,7 +23,7 @@ let tests =
                             Subject = ""
                         }
                     Act =
-                        AuthorityAct.Admit
+                        PeopleAct.Admit
                             {
                                 Profile =
                                     {
@@ -32,7 +32,7 @@ let tests =
                                     }
                                 Grants =
                                     List.replicate
-                                        AuthorityAdmission.MaximumGrants
+                                        PeopleAdmission.MaximumGrants
                                         {
                                             Role = Role.CaseReader
                                             Scope = GrantTarget.CaseReference ""
@@ -41,7 +41,7 @@ let tests =
                 }
 
             let refusal, issues =
-                match Authority.parse request with
+                match People.parse request with
                 | Error(Refusal.InvalidInput issues as refusal) ->
                     refusal, InputIssues.toList issues
                 | value -> failtestf "Expected accumulated invalid input, got %A" value

@@ -80,7 +80,7 @@ let private actorNameCursorBudget () =
 
     let bytes =
         Codec.encode
-            Api.authorityList.Input
+            Api.peopleList.Input
             {
                 ActorListRequest.Role = None
                 Text = Some raw
@@ -133,7 +133,7 @@ let conflictRangeCursor =
             Expect.equal
                 (Cursors.decodeTimeline installation (String('b', 64)) encoded)
                 (Error Refusal.InvalidCursor)
-                "The continuation conveys no actor authority"
+                "The continuation conveys no actor people"
 
             Expect.equal
                 (Cursors.decodeTimeline (Guid.NewGuid()) scope encoded)
@@ -209,7 +209,7 @@ let private accepted () =
                         (String('a', 64))
                         None
                         expected.BeforePosition
-                | "authority.list" ->
+                | "people.list" ->
                     let expected = Guid.Parse(position.GetString() |> nonNull)
 
                     Expect.equal
@@ -227,7 +227,7 @@ let private accepted () =
                         None
                         None
                         (CaseFixtures.actorId (expected))
-                | "authority.grants" ->
+                | "people.grants" ->
                     let caseId = position.GetProperty "caseId"
 
                     let expected =
@@ -256,7 +256,7 @@ let private accepted () =
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                         (CaseFixtures.actorId (actor))
                         expected
-                | "authority.history" ->
+                | "people.history" ->
                     let target = json.RootElement.GetProperty "actor"
 
                     let actor =
@@ -272,14 +272,14 @@ let private accepted () =
                         |> Option.get
 
                     Expect.equal
-                        (Cursors.decodeAuthorityHistory
+                        (Cursors.decodePeopleHistory
                             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                             actor
                             encoded)
                         (Ok expected)
-                        "Independent authority-history position and target"
+                        "Independent people-history position and target"
 
-                    Cursors.encodeAuthorityHistory
+                    Cursors.encodePeopleHistory
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                         actor
                         expected
@@ -310,8 +310,8 @@ let private refused () =
                         ))
                         encoded
                     |> Result.map string
-                elif name = "authority-history scalar position" then
-                    Cursors.decodeAuthorityHistory
+                elif name = "people-history scalar position" then
+                    Cursors.decodePeopleHistory
                         (Guid.Parse "90000000-0000-4000-8000-000000000001")
                         None
                         encoded
@@ -595,7 +595,7 @@ let tests =
 
 [<Tests>]
 let triageCursors =
-    testCase "notification cursors retain null dates and authority cursors reject zero" (fun () ->
+    testCase "notification cursors retain null dates and people cursors reject zero" (fun () ->
         let selected =
             { CaseListFilter.empty<CaseSearchText> with
                 Order = CaseListOrder.Notified
@@ -618,10 +618,10 @@ let triageCursors =
 
         let zero =
             token
-                """{"actor":null,"after":{"effectIndex":0,"sequence":0},"installationId":"90000000-0000-4000-8000-000000000001","kind":"AUTHORITY_HISTORY"}"""
+                """{"actor":null,"after":{"effectIndex":0,"sequence":0},"installationId":"90000000-0000-4000-8000-000000000001","kind":"PEOPLE_HISTORY"}"""
 
         Expect.equal
-            (Cursors.decodeAuthorityHistory
+            (Cursors.decodePeopleHistory
                 (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                 None
                 zero)
@@ -646,7 +646,7 @@ let installationBinding =
                         | "case.timeline" ->
                             Cursors.decodeTimeline foreign (String('a', 64)) encoded
                             |> Result.map ignore
-                        | "authority.list" ->
+                        | "people.list" ->
                             Cursors.decodeActors
                                 Paging.MaximumActorCursorCharacters
                                 foreign
@@ -654,10 +654,10 @@ let installationBinding =
                                 None
                                 encoded
                             |> Result.map ignore
-                        | "authority.grants" ->
+                        | "people.grants" ->
                             Cursors.decodeGrants foreign (CaseFixtures.actorId actor) encoded
                             |> Result.map ignore
-                        | "authority.history" ->
+                        | "people.history" ->
                             use json = JsonDocument.Parse(text "canonicalJson" sample)
                             let target = json.RootElement.GetProperty("actor")
 
@@ -671,7 +671,7 @@ let installationBinding =
                                         )
                                     )
 
-                            Cursors.decodeAuthorityHistory foreign id encoded |> Result.map ignore
+                            Cursors.decodePeopleHistory foreign id encoded |> Result.map ignore
                         | _ -> failtest "Unknown independent cursor fixture"
 
                     Expect.equal result (Error Refusal.InvalidCursor) "Installation-bound grammar"))

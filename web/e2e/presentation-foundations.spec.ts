@@ -322,7 +322,7 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
       json: {
         ...humanReadReply("context", {
           ...activeRequester,
-          context: { ...activeRequester.context, views: [], tasks: [], authorityIssuerSeed: null },
+          context: { ...activeRequester.context, views: [], tasks: [], peopleIssuerSeed: null },
           basis: { kind: "SNAPSHOT", observation: presentationBasis },
         }),
       },
@@ -544,8 +544,8 @@ test("shell case creation returns to the captured core view and focus without se
           context: {
             ...activeRequester.context,
             views: ["CASES"],
-            tasks: ["CASE:OPEN"],
-            authorityIssuerSeed: null,
+            tasks: ["case.open"],
+            peopleIssuerSeed: null,
           },
           basis: { kind: "SNAPSHOT", observation: presentationBasis },
         }),
@@ -961,7 +961,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
         installationId: kind === "NO_ROLES" ? "90000000-0000-4000-8000-000000000001" : null,
         views: [],
         tasks: [],
-        authorityIssuerSeed: null,
+        peopleIssuerSeed: null,
       },
       basis: { kind: "UNAVAILABLE" },
       disclosure: "CURRENT",
@@ -971,7 +971,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
     );
     const resources: string[] = [];
     page.on("request", (request) => {
-      if (/\/api\/(?:case|reminder|authority)\./u.test(request.url())) {
+      if (/\/api\/(?:case|reminder|people)\./u.test(request.url())) {
         resources.push(request.url());
       }
     });
@@ -995,16 +995,16 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     ...activeRequester,
     context: {
       ...activeRequester.context,
-      views: ["AUTHORITY", "OPERATIONS"],
+      views: ["PEOPLE", "OPERATIONS"],
       tasks: [
-        "AUTHORITY:ADMIT",
-        "query:authorityList",
-        "query:authorityGrants",
-        "query:authorityHistory",
-        "query:authorityRequests",
-        "query:authorityRequestsDismiss",
+        "people.admit",
+        "people.list",
+        "people.grants",
+        "people.history",
+        "people.requests",
+        "people.requests.dismiss",
       ],
-      authorityIssuerSeed: "https://issuer.example/",
+      peopleIssuerSeed: "https://issuer.example/",
     },
     basis: { kind: "SNAPSHOT", observation: presentationBasis },
   };
@@ -1025,7 +1025,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
                   installationId: active.context.installationId,
                   views: [],
                   tasks: [],
-                  authorityIssuerSeed: null,
+                  peopleIssuerSeed: null,
                 },
                 basis: { kind: "UNAVAILABLE" },
                 disclosure: "CURRENT",
@@ -1034,10 +1034,10 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       },
     }),
   );
-  await page.route("**/api/authority.list", (route) =>
+  await page.route("**/api/people.list", (route) =>
     route.fulfill({
       json: {
-        ...humanReadReply("authority.list", {
+        ...humanReadReply("people.list", {
           screen: { regions: [] },
           context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
           basis: { kind: "SNAPSHOT", observation: presentationBasis },
@@ -1050,8 +1050,8 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     const input: unknown = route.request().postDataJSON();
     if (
       !isRequest("operation.preview", input) ||
-      input.kind !== "AUTHORITY" ||
-      input.act.kind !== "ADMIT"
+      input.kind !== "PEOPLE" ||
+      input.act.kind !== "people.admit"
     ) {
       throw new Error("Expected the browser's real registration preview request.");
     }
@@ -1059,7 +1059,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       json: humanReviewEnvelope(
         input,
         {
-          target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
+          target: { kind: "PEOPLE", actorId: null, scope: { kind: "INSTALLATION" } },
           confirmation: { kind: "OPERATION", operationId: input.operationId },
         },
         presentationBasis,
@@ -1168,7 +1168,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
         caseId,
         revision,
         history: "FULL",
-        tasks: ["CASE:AMEND_REGISTRATION"],
+        tasks: ["case.amendRegistration"],
         editableInputs: registrationInputs,
         seeds: {
           ...emptyCaseSeeds,
@@ -1338,7 +1338,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   expect(drafts).toHaveLength(2);
   expect(drafts[1]).toMatchObject({
     expectedRevision: 3,
-    act: { kind: "AMEND_REGISTRATION", values: { claimantName: "My retained draft" } },
+    act: { kind: "case.amendRegistration", values: { claimantName: "My retained draft" } },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(writes).toEqual([]);
@@ -1361,27 +1361,27 @@ for (const reviewLanguage of ["en", "ar"] as const) {
             ...activeRequester,
             context: {
               ...activeRequester.context,
-              views: ["AUTHORITY", "OPERATIONS"],
+              views: ["PEOPLE", "OPERATIONS"],
               tasks: [
-                "AUTHORITY:REGISTER",
-                "AUTHORITY:ADMIT",
-                "query:authorityList",
-                "query:authorityGrants",
-                "query:authorityHistory",
-                "query:authorityRequests",
-                "query:authorityRequestsDismiss",
+                "people.register",
+                "people.admit",
+                "people.list",
+                "people.grants",
+                "people.history",
+                "people.requests",
+                "people.requests.dismiss",
               ],
-              authorityIssuerSeed: "https://issuer.example/",
+              peopleIssuerSeed: "https://issuer.example/",
             },
             basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
         },
       }),
     );
-    await page.route("**/api/authority.list", (route) =>
+    await page.route("**/api/people.list", (route) =>
       route.fulfill({
         json: {
-          ...humanReadReply("authority.list", {
+          ...humanReadReply("people.list", {
             screen: { regions: [] },
             context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
             basis: { kind: "SNAPSHOT", observation: presentationBasis },
@@ -1411,8 +1411,8 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       const input: unknown = route.request().postDataJSON();
       if (
         !isRequest("operation.preview", input) ||
-        input.kind !== "AUTHORITY" ||
-        input.act.kind !== "ADMIT"
+        input.kind !== "PEOPLE" ||
+        input.act.kind !== "people.admit"
       ) {
         throw new Error("Expected actual atomic admission.");
       }
@@ -1427,7 +1427,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       const reply = humanReviewEnvelope(
         input,
         {
-          target: { kind: "AUTHORITY", actorId: null, scope: { kind: "INSTALLATION" } },
+          target: { kind: "PEOPLE", actorId: null, scope: { kind: "INSTALLATION" } },
           confirmation: { kind: "OPERATION", operationId: input.operationId },
         },
         presentationBasis,
@@ -1435,7 +1435,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           regions: (
             [
               {
-                titleId: "act.REGISTER.label",
+                titleId: "task.people.register.label",
                 entries: [
                   {
                     key: "register",
@@ -1446,7 +1446,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                 ],
               },
               {
-                titleId: "act.SET_PROFILE.label",
+                titleId: "task.people.setProfile.label",
                 entries: [
                   {
                     key: "profile",
@@ -1457,7 +1457,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                 ],
               },
               {
-                titleId: "act.GRANT.label",
+                titleId: "task.people.grant.label",
                 entries: [
                   {
                     key: "owner",
@@ -1472,7 +1472,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                 ],
               },
               {
-                titleId: "act.GRANT.label",
+                titleId: "task.people.grant.label",
                 entries: [
                   {
                     key: "reader",
@@ -1553,14 +1553,14 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
     await expectAccessible(page);
     expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
-    expect(reads.filter((url) => url.endsWith("/api/authority.list"))).toHaveLength(1);
-    expect(reads.filter((url) => url.endsWith("/api/authority.requests"))).toHaveLength(1);
+    expect(reads.filter((url) => url.endsWith("/api/people.list"))).toHaveLength(1);
+    expect(reads.filter((url) => url.endsWith("/api/people.requests"))).toHaveLength(1);
     expect(reads.filter((url) => url.endsWith("/api/session"))).toHaveLength(1);
     expect(
       reads.filter(
         (url) =>
-          !["session", "context", "authority.list", "authority.requests", "work.views"].some(
-            (endpoint) => url.endsWith(`/api/${endpoint}`),
+          !["session", "context", "people.list", "people.requests", "work.views"].some((endpoint) =>
+            url.endsWith(`/api/${endpoint}`),
           ),
       ),
     ).toEqual([]);
@@ -1644,7 +1644,7 @@ test("case panels follow compact reading order while a work draft survives respo
     ...caseDocumentInput(
       {
         history: "NONE",
-        tasks: ["WORK:UPDATE_WORK"],
+        tasks: ["work.update"],
         editableInputs: ["field:handlingSummary", "field:responsibleActor"],
       },
       {
@@ -1745,11 +1745,11 @@ test("People uses core roles and state without row reads and forwards known-zero
   const actorId = "10000000-0000-4000-8000-000000000001";
   let listing = 0;
   let grants = 0;
-  await page.route("**/api/authority.list", (route) => {
+  await page.route("**/api/people.list", (route) => {
     listing += 1;
     return route.fulfill({
       json: {
-        ...humanReadReply("authority.list", {
+        ...humanReadReply("people.list", {
           screen: {
             regions: [
               {
@@ -1784,7 +1784,7 @@ test("People uses core roles and state without row reads and forwards known-zero
                           kind: "ACTOR",
                           value: actorRefInput({
                             actorId,
-                            displayName: { kind: "NAMED", value: "Authority owner" },
+                            displayName: { kind: "NAMED", value: "People owner" },
                             availability: "NOT_ELIGIBLE",
                           }),
                         },
@@ -1823,11 +1823,11 @@ test("People uses core roles and state without row reads and forwards known-zero
       },
     });
   });
-  await page.route("**/api/authority.grants", (route) => {
+  await page.route("**/api/people.grants", (route) => {
     grants += 1;
     return route.fulfill({
       json: {
-        ...humanReadReply("authority.grants", {
+        ...humanReadReply("people.grants", {
           screen: {
             regions: [
               {
@@ -1849,7 +1849,7 @@ test("People uses core roles and state without row reads and forwards known-zero
                         kind: "ACTOR",
                         value: actorRefInput({
                           actorId,
-                          displayName: { kind: "NAMED", value: "Authority owner" },
+                          displayName: { kind: "NAMED", value: "People owner" },
                           availability: "NOT_ELIGIBLE",
                         }),
                       },
@@ -1936,7 +1936,7 @@ test("People uses core roles and state without row reads and forwards known-zero
   });
   await page.goto("/people", { waitUntil: "commit" });
   const table = page.getByRole("table", { name: "People & access" });
-  const row = table.getByRole("row").filter({ hasText: "Authority owner" });
+  const row = table.getByRole("row").filter({ hasText: "People owner" });
   await expect(row).toContainText("Enabled with roles");
   await expect(row).toContainText("Owner");
   await expect(table).not.toContainText("do-not-use-subject");
@@ -1997,8 +1997,8 @@ for (const [language, displayLocale, dismiss, separator] of [
             context: {
               ...activeRequester.context,
               views: ["CASES"],
-              tasks: ["CASE:OPEN"],
-              authorityIssuerSeed: null,
+              tasks: ["case.open"],
+              peopleIssuerSeed: null,
             },
             basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),

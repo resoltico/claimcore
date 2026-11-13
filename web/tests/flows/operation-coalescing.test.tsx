@@ -8,7 +8,7 @@ import { useOperation } from "../../src/hooks/operation/useOperation";
 import { previewReply } from "../support/presentation-state.fixtures";
 
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
+  tasks: ["case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -26,7 +26,7 @@ it("coalesces duplicate preview activation while retention is pending", async ()
       ...recoveryOptions,
       credential: "token",
       current,
-      kind: "CLOSE",
+      kind: "case.close",
       subject: "CASE",
       onLockChange: vi.fn(),
     }),

@@ -73,10 +73,10 @@ const ready = async (page: Page, route: MatrixRoute) => {
   if (route.id === "operation-result") {
     await expect(page.locator(".entries-view [data-entry='claimantName']")).toBeVisible();
   }
-  if (route.id === "authority-list") {
+  if (route.id === "people-list") {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
   }
-  if (route.id === "authority-detail") {
+  if (route.id === "people-detail") {
     await expect(page.locator('[role="dialog"] .table-view tbody > tr')).toHaveCount(1);
   }
   if ((await dialog.count()) > 0) {
@@ -162,8 +162,8 @@ const assertReadResponse = async (
     await assertCasePresentation(page, payload, route);
   }
   if (
-    route.endpoint === "authority.grants" &&
-    isResponseFor("authority.grants", "HUMAN", payload) &&
+    route.endpoint === "people.grants" &&
+    isResponseFor("people.grants", "HUMAN", payload) &&
     payload.outcome.kind === "SUCCEEDED"
   ) {
     const { principal } = payload.outcome.document.context;
@@ -298,13 +298,13 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
 };
 const primaryByFrame: Readonly<Record<string, string | null>> = {
-  "case-undecided": "DECIDE",
-  "case-decided": "RECORD_PAYMENT",
-  "case-paid": "CLOSE",
+  "case-undecided": "case.decide",
+  "case-decided": "case.recordPayment",
+  "case-paid": "case.close",
   "case-closed": null,
   "case-voided": null,
   "case-erased": null,
-  "history-comparison": "CLOSE",
+  "history-comparison": "case.close",
 };
 export const checkFrame = async (
   page: Page,

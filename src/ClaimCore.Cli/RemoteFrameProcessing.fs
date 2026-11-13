@@ -131,7 +131,7 @@ module private FrameInvocation =
                     AttemptId = Frames.attemptId frame
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
                     Subject = ActKind.subject kind
-                    Act = ActKind.subjectActionToken kind
+                    Act = ActKind.token kind
                     Refused = false
                 }
 

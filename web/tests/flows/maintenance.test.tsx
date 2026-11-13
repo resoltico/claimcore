@@ -33,7 +33,7 @@ import {
 } from "../support/recovery.fixtures";
 
 const current = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
+  tasks: ["case.amendRegistration"],
   revision: 1,
   history: "NONE",
   editableInputs: [...registrationInputs],
@@ -77,7 +77,7 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
       <OperationEditor
         definition={productMetadata}
         current={current}
-        initialAct="AMEND_REGISTRATION"
+        initialAct="case.amendRegistration"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
@@ -110,7 +110,7 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
+    kind: "case.amendRegistration",
     values: { claimantName: "Retained local draft" },
   });
 });

@@ -33,10 +33,7 @@ let private operation fixture id =
     }
 
 let private execute owner operation target act =
-    Service.execute
-        owner
-        (OperationInput.Authority(Inputs.authorityRequest operation target act))
-        token
+    Service.execute owner (OperationInput.People(Inputs.peopleRequest operation target act)) token
 
 let private self owner =
     task {
@@ -61,7 +58,7 @@ let internal lifecycle fixture =
             }
 
         let! changed =
-            execute owner (id fixture 301) fixture.Owner (AuthorityAct.SetProfile profile)
+            execute owner (id fixture 301) fixture.Owner (PeopleAct.SetProfile profile)
 
         let changed = accepted changed
 
@@ -78,7 +75,7 @@ let internal lifecycle fixture =
                 owner
                 (id fixture 302)
                 fixture.Owner
-                (AuthorityAct.Grant
+                (PeopleAct.Grant
                     {
                         Role = Role.Auditor
                         Scope = GrantTarget.Installation
@@ -88,7 +85,7 @@ let internal lifecycle fixture =
         let! identityBefore = operation fixture (id fixture 1)
         let! grantBefore = operation fixture (id fixture 302)
         let! profileBefore = operation fixture (id fixture 301)
-        let! erased = execute owner (id fixture 303) fixture.Owner AuthorityAct.EraseProfile
+        let! erased = execute owner (id fixture 303) fixture.Owner PeopleAct.EraseProfile
         let erased = accepted erased
 
         Expect.equal
@@ -154,7 +151,7 @@ let internal lifecycle fixture =
             }
 
         let! renamed =
-            execute owner (id fixture 304) fixture.Owner (AuthorityAct.SetProfile replacement)
+            execute owner (id fixture 304) fixture.Owner (PeopleAct.SetProfile replacement)
 
         accepted renamed |> ignore
 
@@ -165,8 +162,8 @@ let internal lifecycle fixture =
                         (fun tx ->
                             task {
                                 do!
-                                    tx.ProjectAuthority(
-                                        AuthorityProjection.EraseProfile(
+                                    tx.ProjectPeople(
+                                        PeopleProjection.EraseProfile(
                                             ownerId,
                                             (EffectPosition.create erased.Position.Sequence 0
                                              |> Option.get)
@@ -234,7 +231,7 @@ let internal registrationIsolation fixture =
             }
 
         let! registered =
-            execute owner (id fixture 311) principal (AuthorityAct.Register profile)
+            execute owner (id fixture 311) principal (PeopleAct.Register profile)
 
         let receipt = accepted registered
         let! stored = operation fixture (id fixture 311)
@@ -247,12 +244,12 @@ let internal registrationIsolation fixture =
         Expect.equal receipt.Position stored.Position "One root proves the complete registration"
 
         match stored.Root.Structure.Command, stored.Values with
-        | CommandSkeleton.Authority scope,
-          RetainedOperationValues.Authority(RetainedProfile.Available saved) ->
+        | CommandSkeleton.People scope,
+          RetainedOperationValues.People(RetainedProfile.Available saved) ->
             Expect.equal scope.Principal principal "Public identity remains exact"
 
             match scope.Act with
-            | AuthorityAct.Register ordinal ->
+            | PeopleAct.Register ordinal ->
                 Expect.equal ordinal 0 "Registration references its profile compartment"
             | _ -> failtest "Expected a registration command"
 
@@ -311,7 +308,7 @@ let internal atomicWrites fixture =
 
         let fail operation principal act after =
             let command =
-                Authority.parse (Inputs.authorityRequest operation principal act) |> required
+                People.parse (Inputs.peopleRequest operation principal act) |> required
 
             fixture.Store.Write
                 {
@@ -322,13 +319,13 @@ let internal atomicWrites fixture =
                                     ExecutionFacts.target
                                         owner
                                         tx
-                                        (Authority.factsNeeded command.Act)
+                                        (People.factsNeeded command.Act)
                                         command.OperationId
                                         command.Target
                                         []
 
                                 match
-                                    AuthorityExecution.execute
+                                    PeopleExecution.execute
                                         owner
                                         command
                                         {
@@ -342,10 +339,9 @@ let internal atomicWrites fixture =
                                     do! tx.Append operation
 
                                     for projection in List.take after projections do
-                                        do! tx.ProjectAuthority projection
+                                        do! tx.ProjectPeople projection
 
-                                    return
-                                        failwith "injected after authority effect and projection"
+                                    return failwith "injected after people effect and projection"
                                 | other ->
                                     return failtestf "Injection requires admitted work: %A" other
                             })
@@ -353,7 +349,7 @@ let internal atomicWrites fixture =
                 }
 
         for operation, after in [ id fixture 321, 1; id fixture 322, 2 ] do
-            let! failed = fail operation target (AuthorityAct.Register Inputs.actorProfile) after
+            let! failed = fail operation target (PeopleAct.Register Inputs.actorProfile) after
 
             Expect.equal
                 failed
@@ -365,13 +361,12 @@ let internal atomicWrites fixture =
 
             Expect.equal existing (Ok None) "No accepted root or effect remains"
 
-            let! actor =
-                read fixture (fun tx -> tx.Authority { Principal = target; CaseId = None })
+            let! actor = read fixture (fun tx -> tx.Access { Principal = target; CaseId = None })
 
             Expect.isNone ((actor |> required).Actor) "No profile-less registration remains"
 
         let! original = operation fixture (id fixture 1)
-        let! failed = fail (id fixture 323) fixture.Owner AuthorityAct.EraseProfile 1
+        let! failed = fail (id fixture 323) fixture.Owner PeopleAct.EraseProfile 1
 
         Expect.equal
             failed

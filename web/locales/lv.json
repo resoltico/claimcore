@@ -67,7 +67,7 @@
     "text": "Izskats",
     "source": "3907fa7f8072"
   },
-  "ui.authorityAction": {
+  "ui.peopleAction": {
     "text": "Piekļuves izmaiņa",
     "source": "295239c1b29a"
   },
@@ -155,7 +155,7 @@
     "text": "Lieta ir mainījusies",
     "source": "ae4ec9da2e36"
   },
-  "ui.continueAuthorityRequest": {
+  "ui.continuePeopleRequest": {
     "text": "Turpināt pašreizējo pieprasījumu",
     "source": "ec9e7079a21a"
   },
@@ -642,10 +642,6 @@
   "ui.shell.administration": {
     "text": "Administrēšana",
     "source": "4b42c6690ebe"
-  },
-  "ui.shell.authorityHistory": {
-    "text": "Pilnvaru vēsture",
-    "source": "2023c056fe61"
   },
   "ui.shell.businessDateChanged": {
     "text": "Darba datums tagad ir {date}. Atsvaidziniet, lai atjauninātu termiņus.",

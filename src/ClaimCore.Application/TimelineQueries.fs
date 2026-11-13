@@ -4,7 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Every continuation rechecks current authority and current actor names inside its read snapshot.
+/// Every continuation rechecks current people and current actor names inside its read snapshot.
 module internal TimelineQueries =
     open TimelineHistory
 
@@ -35,7 +35,7 @@ module internal TimelineQueries =
 
                                             match view.Case with
                                             | Some parent when
-                                                Authority.can
+                                                Access.can
                                                     services.Principal
                                                     view.Actor
                                                     Capability.ReadHistory
@@ -93,7 +93,7 @@ module internal TimelineQueries =
                                                                 Lifecycle.Erased
 
                                                         let full =
-                                                            Authority.can
+                                                            Access.can
                                                                 services.Principal
                                                                 view.Actor
                                                                 Capability.ReadHistoryFull

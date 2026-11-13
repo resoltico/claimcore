@@ -149,14 +149,14 @@ module Inputs =
             | [] -> Ok(values, List.rev roles)
             | "--owner-role" :: raw :: rest ->
                 match Role.parse raw with
-                | Some role when Authority.initialOwnerRole role && not (List.contains role roles) ->
+                | Some role when People.initialOwnerRole role && not (List.contains role roles) ->
                     options values (role :: roles) rest
                 | _ ->
                     Error(
                         UsageError.InvalidChoice(
                             "--owner-role",
                             raw,
-                            Authority.initialOwnerRoles |> List.map Role.token
+                            People.initialOwnerRoles |> List.map Role.token
                         )
                     )
             | flag :: raw :: rest when List.contains flag ownerValueFlags ->

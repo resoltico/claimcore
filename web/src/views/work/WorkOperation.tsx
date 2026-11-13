@@ -74,7 +74,7 @@ export const WorkOperation = ({
   useEffect(() => {
     if (
       allowed &&
-      ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
+      ["reminder.complete", "note.add", "note.remove"].includes(kind) &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent

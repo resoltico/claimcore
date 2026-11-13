@@ -20,7 +20,9 @@ type NoteActKind =
 
 module NoteActKind =
     let vocabulary =
-        Vocabulary.ofUnion<NoteActKind> "noteAct" TokenCasing.ScreamingSnake None
+        Vocabulary.ofEntries
+            "task"
+            [ NoteActKind.AddNote, "note.add"; NoteActKind.RemoveNote, "note.remove" ]
 
     let token = Vocabulary.token vocabulary
 

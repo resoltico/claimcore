@@ -254,12 +254,12 @@ module internal WorkStorage =
                             box (pairs |> List.map (fst >> CaseId.value) |> List.toArray)
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
                             box (
-                                Authority.rolesFor Capability.ReadCase
+                                Access.rolesFor Capability.ReadCase
                                 |> List.map Role.token
                                 |> List.toArray
                             )
                             box (
-                                Authority.rolesFor Capability.ManageCaseWork
+                                Access.rolesFor Capability.ManageCaseWork
                                 |> List.map Role.token
                                 |> List.toArray
                             )

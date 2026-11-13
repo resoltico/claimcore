@@ -112,10 +112,10 @@ let private reads fixture core =
                     }
                     token
             ))
-        "authority history limit",
+        "people history limit",
         (fun () ->
             code (
-                Service.authorityHistory
+                Service.peopleHistory
                     core
                     {
                         TargetActorId = None
@@ -231,17 +231,17 @@ let private reads fixture core =
 
 let internal malformedWrites fixture =
     [
-        OperationInput.Authority(
-            authorityRequest
+        OperationInput.People(
+            peopleRequest
                 Guid.Empty
                 (principal "new-person")
-                (AuthorityAct.Register Inputs.actorProfile)
+                (PeopleAct.Register Inputs.actorProfile)
         )
-        OperationInput.Authority(
-            authorityRequest
+        OperationInput.People(
+            peopleRequest
                 (id fixture 80100)
                 (principal "new-person")
-                (AuthorityAct.Register { DisplayName = ""; Contact = None })
+                (PeopleAct.Register { DisplayName = ""; Contact = None })
         )
         OperationInput.Work
             {
@@ -297,25 +297,23 @@ let internal lifecycle fixture =
             let! registered =
                 Service.execute
                     owner
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id fixture (80010 + index))
                             target
-                            (AuthorityAct.Register Inputs.actorProfile)
+                            (PeopleAct.Register Inputs.actorProfile)
                     ))
                     token
 
-            acceptedAuthority registered
+            acceptedPeople registered
 
         let! turnedOff =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest (id fixture 80012) disabled AuthorityAct.Disable
-                ))
+                (OperationInput.People(peopleRequest (id fixture 80012) disabled PeopleAct.Disable))
                 token
 
-        acceptedAuthority turnedOff
+        acceptedPeople turnedOff
 
         for caller in [ principal "unknown-input-caller"; disabled ] do
             let current = core fixture caller
@@ -397,15 +395,12 @@ let internal targetPrivacy fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
-                        (id fixture 80300)
-                        reader
-                        (AuthorityAct.Register Inputs.actorProfile)
+                (OperationInput.People(
+                    peopleRequest (id fixture 80300) reader (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! opened =
             Service.execute
@@ -443,7 +438,7 @@ let internal targetPrivacy fixture =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let core = core fixture reader
 
         for number, target, expected in

@@ -36,11 +36,11 @@ let private unavailable () = FailingStore()
 let private inputs () =
     [
         ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
-        OperationInput.Authority(
-            authorityRequest
+        OperationInput.People(
+            peopleRequest
                 (id 471)
                 other
-                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
         )
     ]
 
@@ -65,11 +65,11 @@ let private malformed () =
                 ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
-                OperationInput.Authority(
-                    authorityRequest
+                OperationInput.People(
+                    peopleRequest
                         Guid.Empty
                         other
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 )
             ]
 

@@ -19,9 +19,9 @@ const areas = [
   { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
   { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
   {
-    name: "authorityHistory",
-    path: "/authority-history",
-    label: "ui.shell.authorityHistory",
+    name: "peopleHistory",
+    path: "/people-history",
+    label: "endpoint.people.history.label",
     icon: "history",
   },
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
@@ -255,8 +255,8 @@ export const WorkspaceHeader = ({
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
   const admin = areas.filter(
     (area) =>
-      (area.name === "people" && views.includes("AUTHORITY")) ||
-      (area.name === "authorityHistory" && tasks.includes("query:authorityHistory")),
+      (area.name === "people" && views.includes("PEOPLE")) ||
+      (area.name === "peopleHistory" && tasks.includes("people.history")),
   );
   const mobile = [
     ...primary,
@@ -329,7 +329,7 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && tasks.includes("CASE:OPEN") ? (
+        {route.screen === "cases" && tasks.includes("case.open") ? (
           <a
             id="open-case"
             className="shell-open-case"
@@ -341,7 +341,7 @@ export const WorkspaceHeader = ({
               });
             }}
           >
-            {p.actLabel("OPEN")}
+            {p.actLabel("case.open")}
           </a>
         ) : null}
       </header>

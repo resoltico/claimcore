@@ -365,7 +365,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority removed
+        acceptedPeople removed
 
         for request in
             [

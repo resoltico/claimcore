@@ -115,7 +115,7 @@ let internal erasureFixture (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return actor
     }
 

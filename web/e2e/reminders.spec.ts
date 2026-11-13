@@ -39,9 +39,7 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   }
   const { reminderId } = target.versions[0]!;
   expect(reminderId).toBe(receipt.operationId);
-  await expect(
-    page.locator(`[id="reminder-${reminderId}-REMINDER:REMINDER_COMPLETE"]`),
-  ).toBeVisible();
+  await expect(page.locator(`[id="reminder-${reminderId}-reminder.complete"]`)).toBeVisible();
   return receipt;
 };
 
@@ -74,7 +72,7 @@ test("stores exact optional LF incident text and clears it without a financial a
   await expect(
     page.locator(".case-detail .case-fact-regions [data-entry='incidentDescription']"),
   ).toContainText("حادث في الطريق");
-  await startAct(page, "AMEND_REGISTRATION", "en");
+  await startAct(page, "case.amendRegistration", "en");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   await page.getByRole("checkbox", { name: "Clear recorded value", exact: true }).check();
   await reviewDraft(page);
@@ -131,7 +129,7 @@ test("supports multiple independently revised reminders, terminal records, reope
     page
       .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)")
       .filter({ hasText: "Ask insurer" }),
-    "CANCEL",
+    "reminder.cancel",
   );
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
@@ -144,7 +142,7 @@ test("supports multiple independently revised reminders, terminal records, reope
   await selectReminderAction(
     page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
-    "REOPEN",
+    "reminder.reopen",
   );
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
@@ -176,7 +174,7 @@ test("a compound action has one correlated accepting operation and a new reminde
   await selectReminderAction(
     page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
-    "COMPLETE_AND_PLAN_NEXT",
+    "reminder.completeAndPlanNext",
   );
   await fillBusinessField(page, "reminderAction", "   ");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
@@ -248,7 +246,7 @@ test("a lost compound acknowledgement retries the identical pair without another
   await selectReminderAction(
     page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
-    "COMPLETE_AND_PLAN_NEXT",
+    "reminder.completeAndPlanNext",
   );
   await fillBusinessField(page, "reminderAction", "Replacement after uncertainty");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
@@ -320,7 +318,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         operationId: caseId,
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: 0,
-        act: { kind: "OPEN", values: registration({ incidentDescription: text }) },
+        act: { kind: "case.open", values: registration({ incidentDescription: text }) },
       });
       expect(opened.outcome.kind).toBe("ACCEPTED");
       await page.goto(casePath(caseId));
@@ -342,7 +340,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await recordWorkReview(page, "WORK");
       await page
         .locator(".case-reminders")
-        .getByRole("button", { name: ui(language, "act.REMINDER_CREATE.label"), exact: true })
+        .getByRole("button", { name: ui(language, "task.reminder.create.label"), exact: true })
         .click();
       await fillBusinessField(page, "reminderAction", "😀".repeat(200));
       await fillBusinessField(page, "reminderDueDate", "9999-12-31");
@@ -393,14 +391,14 @@ test("paid description correction preserves payment, then a closed case accepts 
     [
       1,
       {
-        kind: "DECIDE",
+        kind: "case.decide",
         values: { paymentDecisionDate: "2026-09-03", payableAmount: "500", payableCurrency: "EUR" },
       },
     ],
     [
       2,
       {
-        kind: "RECORD_PAYMENT",
+        kind: "case.recordPayment",
         values: { paymentDate: "2026-09-04", paidAmount: "500", paidCurrency: "EUR" },
       },
     ],
@@ -415,7 +413,7 @@ test("paid description correction preserves payment, then a closed case accepts 
     expect(seeded.outcome.kind).toBe("ACCEPTED");
   }
   await page.reload();
-  await startAct(page, "CORRECT", "en");
+  await startAct(page, "case.correct", "en");
   await chooseChoice(page, "group:registration", "UPDATE");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   const description = "Paid case description\nNo new payment assertion.";
@@ -427,9 +425,9 @@ test("paid description correction preserves payment, then a closed case accepts 
   const requested: unknown = (await advisory).request().postDataJSON();
   expect(requested).toMatchObject({
     act: {
-      kind: "CORRECT",
+      kind: "case.correct",
       groups: {
-        registration: { kind: "UPDATE", values: { incidentDescription: description } },
+        registration: { kind: "reminder.update", values: { incidentDescription: description } },
         decision: { kind: "KEEP" },
       },
     },
@@ -440,7 +438,7 @@ test("paid description correction preserves payment, then a closed case accepts 
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: 4,
-    act: { kind: "CLOSE" },
+    act: { kind: "case.close" },
   });
   expect(closed.outcome.kind).toBe("ACCEPTED");
   await page.reload();
@@ -534,7 +532,7 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
   const input: unknown = reply.request().postDataJSON();
   expect(input).toMatchObject({
     kind: "REMINDER",
-    act: { kind: "CREATE", action: "first\nsecond" },
+    act: { kind: "reminder.create", action: "first\nsecond" },
   });
   const payload: unknown = await reply.json();
   if (!isResponseFor("operation.preview", "HUMAN", payload)) {
@@ -574,7 +572,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   await selectReminderAction(
     page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
-    "COMPLETE_AND_PLAN_NEXT",
+    "reminder.completeAndPlanNext",
   );
   await fillBusinessField(page, "reminderAction", "Planned replacement");
   await fillBusinessField(page, "reminderDueDate", "9999-12-31");
@@ -588,7 +586,7 @@ test("a reminder revision change after compound preview refuses both effects wit
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     act: {
-      kind: "UPDATE",
+      kind: "reminder.update",
       reminderId: initial.operationId,
       expectedRevision: 1,
       action: "Changed by another session",
@@ -609,7 +607,11 @@ test("a reminder revision change after compound preview refuses both effects wit
   expect(frozen).toMatchObject({
     operationId: reviewed.operationId,
     kind: "REMINDER",
-    act: { kind: "COMPLETE_AND_PLAN_NEXT", reminderId: initial.operationId, expectedRevision: 1 },
+    act: {
+      kind: "reminder.completeAndPlanNext",
+      reminderId: initial.operationId,
+      expectedRevision: 1,
+    },
   });
   const rejected: unknown = await response.json();
   if (!isResponseFor("operation.execute", "HUMAN", rejected)) {
@@ -690,7 +692,7 @@ test("published reminder rows show server timing in case and queue views across 
       kind: "REMINDER",
       operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
-      act: { kind: "CREATE", action: actions[index]!, dueDate },
+      act: { kind: "reminder.create", action: actions[index]!, dueDate },
     });
     expect(accepted.outcome.kind).toBe("ACCEPTED");
   }
@@ -740,7 +742,7 @@ test("published reminder rows show server timing in case and queue views across 
       operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 1,
-      act: { kind: "VOID", reason: "Synthetic timing test entry error" },
+      act: { kind: "case.void", reason: "Synthetic timing test entry error" },
     });
     expect(voided.outcome.kind).toBe("ACCEPTED");
   } finally {

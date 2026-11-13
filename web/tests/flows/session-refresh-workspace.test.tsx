@@ -34,7 +34,7 @@ it("the persistent App masks a replaced session's authored registration and perm
       context: {
         kind: "CASES",
         cases: [],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },
@@ -93,7 +93,7 @@ it("masks a prior session’s private uncertain request and recovers only its id
       context: {
         kind: "CASES",
         cases: [],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },

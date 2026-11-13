@@ -36,7 +36,7 @@ module internal QueryResults =
             Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
 
     let currentActor principal actor =
-        if Authority.validActor principal actor then
+        if Access.validActor principal actor then
             Ok actor
         else
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)

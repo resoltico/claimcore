@@ -294,7 +294,7 @@ let private qualifyHost (arguments, key, values, syntax) () =
                 "claimcore help <family>"
                 "Unknown selectors retain the family repair route"
 
-            for family in [ "case"; "authority"; "work"; "reminder"; "operation"; "context" ] do
+            for family in [ "case"; "people"; "work"; "reminder"; "operation"; "context" ] do
                 Expect.stringContains
                     text
                     ("\n" + family + " — ")
@@ -357,7 +357,8 @@ let localizedDiscovery =
                 for literal in literals do
                     Expect.stringContains text literal (language + " independent language sample")
 
-                for key in [ "cli.family.case"; "act.OPEN.label"; "field.claimedAmount.label" ] do
+                for key in
+                    [ "cli.family.case"; "task.case.open.label"; "field.claimedAmount.label" ] do
                     Expect.isFalse
                         (text.Contains(key, StringComparison.Ordinal))
                         (language + " discovery never exposes untranslated keys"))

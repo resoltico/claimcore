@@ -1,205 +1,205 @@
 {
-  "act.AMEND_REGISTRATION.label": {
+  "task.case.amendRegistration.label": {
     "text": "更新索賠資料",
     "source": "5ae6604c4520"
   },
-  "act.AMEND_REGISTRATION.meaning": {
+  "task.case.amendRegistration.meaning": {
     "text": "更改選定的索賠資訊。未指定的資訊和案件編號保持不變。",
     "source": "2c651083c926"
   },
-  "act.CLOSE.label": {
+  "task.case.close.label": {
     "text": "結案",
     "source": "5cad104f0e26"
   },
-  "act.CLOSE.meaning": {
+  "task.case.close.meaning": {
     "text": "不再需要處理時關閉案件。關閉不代表索賠已付款。",
     "source": "6059fdf3ac25"
   },
-  "act.CORRECT.label": {
+  "task.case.correct.label": {
     "text": "更正案件資料",
     "source": "e3eeb9561f2e"
   },
-  "act.CORRECT.meaning": {
+  "task.case.correct.meaning": {
     "text": "更正已登記的索賠或賠付決定事實。付款記錄維持不變，應付金額不得低於已付總額。",
     "source": "c115bf28430f"
   },
-  "act.DECIDE.label": {
+  "task.case.decide.label": {
     "text": "記錄賠付決定",
     "source": "17b6161410d5"
   },
-  "act.DECIDE.meaning": {
+  "task.case.decide.meaning": {
     "text": "記錄或替換決定賠付的金額和幣種。這不會轉賬。",
     "source": "17d0f005a684"
   },
-  "act.DISABLE.label": {
+  "task.people.disable.label": {
     "text": "停用帳戶",
     "source": "9f024ada2282"
   },
-  "act.DISABLE.meaning": {
+  "task.people.disable.meaning": {
     "text": "停止此帳戶使用 ClaimCore。其已記錄的更改仍會保留。",
     "source": "a43350b66b04"
   },
-  "act.ENABLE.label": {
+  "task.people.enable.label": {
     "text": "啟用帳戶",
     "source": "1965185f3488"
   },
-  "act.ENABLE.meaning": {
+  "task.people.enable.meaning": {
     "text": "允許此帳戶以現有角色重新使用 ClaimCore。",
     "source": "94ba3463b2e3"
   },
-  "act.ERASE.label": {
+  "task.case.erase.label": {
     "text": "永久刪除案件",
     "source": "29b338cac964"
   },
-  "act.ERASE.meaning": {
+  "task.case.erase.meaning": {
     "text": "從 ClaimCore 永久刪除此案件的資訊、工作和提醒。案件編號和更改列表仍會保留。其他位置保存的副本不受影響。",
     "source": "8705b2ea28a6"
   },
-  "act.ERASE_PROFILE.label": {
+  "task.people.eraseProfile.label": {
     "text": "永久刪除帳戶資料",
     "source": "55056e69d504"
   },
-  "act.ERASE_PROFILE.meaning": {
+  "task.people.eraseProfile.meaning": {
     "text": "永久刪除此帳戶保存的姓名和聯繫方式。登入身份、角色及已記錄的工作仍會保留。此前的更改將顯示“原帳戶”。",
     "source": "871f791ea524"
   },
-  "act.GRANT.label": {
+  "task.people.grant.label": {
     "text": "授予角色",
     "source": "4549a77f3b6c"
   },
-  "act.GRANT.meaning": {
+  "task.people.grant.meaning": {
     "text": "將所選角色分配給此帳戶。",
     "source": "c0ad11901493"
   },
-  "act.OPEN.label": {
+  "task.case.open.label": {
     "text": "新建理賠案件",
     "source": "100d2c104336"
   },
-  "act.OPEN.meaning": {
+  "task.case.open.meaning": {
     "text": "登記事故、索賠人、保險公司和索賠金額。",
     "source": "bd4ea9e91f3a"
   },
-  "act.PROVISION_OWNER.label": {
+  "task.people.provisionOwner.label": {
     "text": "設置首位所有者",
     "source": "2a7018cea51b"
   },
-  "act.RECORD_PAYMENT.label": {
+  "task.case.recordPayment.label": {
     "text": "記錄實際付款",
     "source": "0d13e856322a"
   },
-  "act.RECORD_PAYMENT.meaning": {
+  "task.case.recordPayment.meaning": {
     "text": "以決定幣別記錄實際付款的日期與金額。此操作不會執行或驗證轉帳。",
     "source": "572c7a975cf2"
   },
-  "act.REGISTER.label": {
+  "task.people.register.label": {
     "text": "註冊帳戶",
     "source": "2ce51f0219a2"
   },
-  "act.REGISTER.meaning": {
+  "task.people.register.meaning": {
     "text": "添加包含姓名和可選聯繫方式的帳戶。角色需另行分配。",
     "source": "b056b3b46015"
   },
-  "act.REINSTATE.label": {
+  "task.case.reinstate.label": {
     "text": "恢復案件",
     "source": "d28eb327714f"
   },
-  "act.REINSTATE.meaning": {
+  "task.case.reinstate.meaning": {
     "text": "重新允許處理此已作廢的案件。其打開或關閉狀態不變。",
     "source": "c48d44c1b7c1"
   },
-  "act.REMINDER_CANCEL.label": {
+  "task.reminder.cancel.label": {
     "text": "取消提醒",
     "source": "948e115bd6a0"
   },
-  "act.REMINDER_CANCEL.meaning": {
+  "task.reminder.cancel.meaning": {
     "text": "取消此事項，但不將其標記為已完成。歷史記錄仍會保留。",
     "source": "0d349a8b5a58"
   },
-  "act.REMINDER_COMPLETE.label": {
+  "task.reminder.complete.label": {
     "text": "完成提醒",
     "source": "80f73f9e9a9b"
   },
-  "act.REMINDER_COMPLETE.meaning": {
+  "task.reminder.complete.meaning": {
     "text": "將此事項標記為已完成。如果這是最後一項，案件將需要安排下一事項。",
     "source": "47465ff6d73b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+  "task.reminder.completeAndPlanNext.label": {
     "text": "完成並安排下一事項",
     "source": "329a45fe88c6"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+  "task.reminder.completeAndPlanNext.meaning": {
     "text": "一並完成此提醒並安排下一事項。",
     "source": "6da6febc07ca"
   },
-  "act.REMINDER_CREATE.label": {
+  "task.reminder.create.label": {
     "text": "添加提醒",
     "source": "cd566803bf39"
   },
-  "act.REMINDER_CREATE.meaning": {
+  "task.reminder.create.meaning": {
     "text": "為此案件安排下一事項。",
     "source": "c072c5b2420d"
   },
-  "act.REMINDER_REOPEN.label": {
+  "task.reminder.reopen.label": {
     "text": "重新開啟提醒",
     "source": "a1dceb5971c8"
   },
-  "act.REMINDER_REOPEN.meaning": {
+  "task.reminder.reopen.meaning": {
     "text": "為此事項設置新的到期日，並重新標記為待處理。",
     "source": "00cf210f8d8f"
   },
-  "act.REMINDER_UPDATE.label": {
+  "task.reminder.update.label": {
     "text": "更新提醒",
     "source": "5a4f907e9a23"
   },
-  "act.REMINDER_UPDATE.meaning": {
+  "task.reminder.update.meaning": {
     "text": "更改此待辦提醒的事項或日期。先前的版本會保留在歷史記錄中。",
     "source": "d87307f6a6cd"
   },
-  "act.REOPEN.label": {
+  "task.case.reopen.label": {
     "text": "重新開案",
     "source": "e1469dc1ace7"
   },
-  "act.REOPEN.meaning": {
+  "task.case.reopen.meaning": {
     "text": "重新打開案件。資訊和歷史記錄仍會保留。",
     "source": "9afd35e2c444"
   },
-  "act.REVOKE.label": {
+  "task.people.revoke.label": {
     "text": "撤銷角色",
     "source": "13287c1eda24"
   },
-  "act.REVOKE.meaning": {
+  "task.people.revoke.meaning": {
     "text": "移除所選角色分配。",
     "source": "4bd25ffa16ef"
   },
-  "act.SET_PROFILE.label": {
+  "task.people.setProfile.label": {
     "text": "更新帳戶資料",
     "source": "34540d1107b7"
   },
-  "act.SET_PROFILE.meaning": {
+  "task.people.setProfile.meaning": {
     "text": "記錄帳戶的顯示名稱和可選聯絡方式。這不會更改其身分或存取權限。",
     "source": "eee65a67f467"
   },
-  "act.UPDATE_WORK.label": {
+  "task.work.update.label": {
     "text": "更新案件工作",
     "source": "a55a9d3a672f"
   },
-  "act.UPDATE_WORK.meaning": {
+  "task.work.update.meaning": {
     "text": "更改負責人或更新處理摘要。",
     "source": "3d22d9afd8ec"
   },
-  "act.VOID.label": {
+  "task.case.void.label": {
     "text": "作廢案件",
     "source": "dcb1ab478602"
   },
-  "act.VOID.meaning": {
+  "task.case.void.meaning": {
     "text": "停止此案件的所有工作，例如案件錄入有誤時。案件及其歷史記錄仍會保留。",
     "source": "692f8455f851"
   },
-  "act.WITHDRAW_DECISION.label": {
+  "task.case.withdrawDecision.label": {
     "text": "撤回賠付決定",
     "source": "5094d2f8f699"
   },
-  "act.WITHDRAW_DECISION.meaning": {
+  "task.case.withdrawDecision.meaning": {
     "text": "在支付任何款項之前移除付款決定。歷史記錄仍會保留。",
     "source": "4579673a4146"
   },
@@ -279,7 +279,7 @@
     "text": "記錄付款決定",
     "source": "2ff9882dcfbc"
   },
-  "capability.MANAGE_AUTHORITY.label": {
+  "capability.MANAGE_ACCESS.label": {
     "text": "管理人員和存取權限",
     "source": "da7fc871fa3c"
   },
@@ -287,7 +287,7 @@
     "text": "管理案件工作",
     "source": "df43d3bc49f6"
   },
-  "capability.READ_AUTHORITY.label": {
+  "capability.READ_ACCESS.label": {
     "text": "查看存取權限",
     "source": "f5462009cf42"
   },
@@ -515,27 +515,27 @@
     "text": "即將到期",
     "source": "5f1a2542e4e4"
   },
-  "endpoint.authority.grants.label": {
+  "endpoint.people.grants.label": {
     "text": "查看角色",
     "source": "baa2809b34eb"
   },
-  "endpoint.authority.grants.meaning": {
+  "endpoint.people.grants.meaning": {
     "text": "列出分配給帳戶的角色。",
     "source": "a0171895698a"
   },
-  "endpoint.authority.history.label": {
+  "endpoint.people.history.label": {
     "text": "存取權限歷史記錄",
     "source": "29e9d0964e33"
   },
-  "endpoint.authority.history.meaning": {
+  "endpoint.people.history.meaning": {
     "text": "從最近開始查看存取權限的更改。",
     "source": "5f18e1d68412"
   },
-  "endpoint.authority.list.label": {
+  "endpoint.people.list.label": {
     "text": "列出人員",
     "source": "59c1126b3c3c"
   },
-  "endpoint.authority.list.meaning": {
+  "endpoint.people.list.meaning": {
     "text": "列出帳戶和可用的存取權限更改。",
     "source": "b16e0b16d7eb"
   },
@@ -1203,7 +1203,7 @@
     "text": "未結案",
     "source": "ed077f3d8125"
   },
-  "subject.AUTHORITY.label": {
+  "subject.PEOPLE.label": {
     "text": "存取權限",
     "source": "ec5ba0abb717"
   },
@@ -1343,19 +1343,19 @@
     "text": "所有者需要先批准加入此帳戶，才能存取 ClaimCore。",
     "source": "9f93027815d5"
   },
-  "endpoint.authority.requests.label": {
+  "endpoint.people.requests.label": {
     "text": "存取申請",
     "source": "34185554f83d"
   },
-  "endpoint.authority.requests.meaning": {
+  "endpoint.people.requests.meaning": {
     "text": "列出等待存取授權的登入請求。",
     "source": "cf0e3a6ea687"
   },
-  "endpoint.authority.requests.dismiss.label": {
+  "endpoint.people.requests.dismiss.label": {
     "text": "忽略存取申請",
     "source": "83aeff49e156"
   },
-  "endpoint.authority.requests.dismiss.meaning": {
+  "endpoint.people.requests.dismiss.meaning": {
     "text": "刪除此申請，不會授予存取權限。",
     "source": "0201b260d157"
   },
@@ -1387,11 +1387,11 @@
     "text": "此操作不可用。提醒狀態：{state}。請審閱最新提醒。",
     "source": "1ae8310d09d9"
   },
-  "act.ADMIT.label": {
+  "task.people.admit.label": {
     "text": "添加人員",
     "source": "66848b5361f4"
   },
-  "act.ADMIT.meaning": {
+  "task.people.admit.meaning": {
     "text": "添加包含姓名和首批角色的人員帳戶或服務帳戶。",
     "source": "57a856554f42"
   },
@@ -1851,143 +1851,143 @@
     "text": "每個角色及其適用範圍只能選擇一次。",
     "source": "7a0f01238fda"
   },
-  "act.OPEN.done": {
+  "task.case.open.done": {
     "text": "已新建案件。",
     "source": "87e4c2288a79"
   },
-  "act.AMEND_REGISTRATION.done": {
+  "task.case.amendRegistration.done": {
     "text": "已更新登記資料。",
     "source": "bf64cd9ad6ac"
   },
-  "act.CORRECT.done": {
+  "task.case.correct.done": {
     "text": "已更正案件資料。",
     "source": "a36e2011a7df"
   },
-  "act.DECIDE.done": {
+  "task.case.decide.done": {
     "text": "已記錄賠付決定。",
     "source": "5c37a8e391bc"
   },
-  "act.WITHDRAW_DECISION.done": {
+  "task.case.withdrawDecision.done": {
     "text": "已撤回賠付決定。",
     "source": "264b3e2b75e7"
   },
-  "act.RECORD_PAYMENT.done": {
+  "task.case.recordPayment.done": {
     "text": "已記錄付款。",
     "source": "08d843e2c987"
   },
-  "act.CLOSE.done": {
+  "task.case.close.done": {
     "text": "已結案。",
     "source": "e474c5de64f5"
   },
-  "act.REOPEN.done": {
+  "task.case.reopen.done": {
     "text": "已重新開案。",
     "source": "2f0851679340"
   },
-  "act.VOID.done": {
+  "task.case.void.done": {
     "text": "已作廢案件。",
     "source": "3879f4c74f67"
   },
-  "act.VOID.consequence": {
+  "task.case.void.consequence": {
     "text": "此案件會保留記錄，並退出日常工作，直到恢復。",
     "source": "b10ae3c17e24"
   },
-  "act.REINSTATE.done": {
+  "task.case.reinstate.done": {
     "text": "已恢復案件。",
     "source": "e8b79ac26253"
   },
-  "act.REINSTATE.consequence": {
+  "task.case.reinstate.consequence": {
     "text": "此案件重新變為活動狀態。其未結案或已結案狀態保持不變。",
     "source": "d174ff361378"
   },
-  "act.ERASE.done": {
+  "task.case.erase.done": {
     "text": "已永久刪除案件。",
     "source": "c808ff2c3abd"
   },
-  "act.ERASE.consequence": {
+  "task.case.erase.consequence": {
     "text": "這會從 ClaimCore 中永久刪除案件詳細資料、工作和提醒。編號和更改記錄會保留。",
     "source": "e774df6acd21"
   },
-  "act.REGISTER.done": {
+  "task.people.register.done": {
     "text": "已註冊帳戶。",
     "source": "8beb0718d0ce"
   },
-  "act.ADMIT.done": {
+  "task.people.admit.done": {
     "text": "已添加帳戶及其角色。",
     "source": "34e9d9f27a5d"
   },
-  "act.ADMIT.consequence": {
+  "task.people.admit.consequence": {
     "text": "這會一並添加帳戶、保存帳戶資料並記錄全部所選角色。",
     "source": "9f450fe5937d"
   },
-  "act.SET_PROFILE.done": {
+  "task.people.setProfile.done": {
     "text": "已更新帳戶資料。",
     "source": "3a06720a52cb"
   },
-  "act.ERASE_PROFILE.done": {
+  "task.people.eraseProfile.done": {
     "text": "已永久刪除帳戶資料。",
     "source": "3f92d421b5a7"
   },
-  "act.ERASE_PROFILE.consequence": {
+  "task.people.eraseProfile.consequence": {
     "text": "這會永久刪除保存的名稱和聯絡方式。先前的更改會顯示匿名帳戶名稱。",
     "source": "59d90d4c6095"
   },
-  "act.GRANT.done": {
+  "task.people.grant.done": {
     "text": "已授予角色。",
     "source": "58d5cb320b79"
   },
-  "act.GRANT.consequence": {
+  "task.people.grant.consequence": {
     "text": "這會記錄此帳戶的所選角色分配。",
     "source": "2516ad2235ce"
   },
-  "act.REVOKE.done": {
+  "task.people.revoke.done": {
     "text": "已撤銷角色。",
     "source": "8cb5dd549927"
   },
-  "act.REVOKE.consequence": {
+  "task.people.revoke.consequence": {
     "text": "這會移除所選角色分配。",
     "source": "04f9c1d1eb16"
   },
-  "act.ENABLE.done": {
+  "task.people.enable.done": {
     "text": "已啟用帳戶。",
     "source": "bc5cec779f5e"
   },
-  "act.DISABLE.done": {
+  "task.people.disable.done": {
     "text": "已停用帳戶。",
     "source": "baa0517c0ffc"
   },
-  "act.DISABLE.consequence": {
+  "task.people.disable.consequence": {
     "text": "此帳戶將失去對 ClaimCore 的存取權限。其已記錄的更改會保留。",
     "source": "ecd5b17ec840"
   },
-  "act.UPDATE_WORK.done": {
+  "task.work.update.done": {
     "text": "已更新案件工作。",
     "source": "fbdedb4562e0"
   },
-  "act.REMINDER_CREATE.done": {
+  "task.reminder.create.done": {
     "text": "已添加提醒。",
     "source": "5e9e2dcc0b92"
   },
-  "act.REMINDER_UPDATE.done": {
+  "task.reminder.update.done": {
     "text": "已更新提醒。",
     "source": "b744baec4246"
   },
-  "act.REMINDER_COMPLETE.done": {
+  "task.reminder.complete.done": {
     "text": "已完成提醒。",
     "source": "7b359664f423"
   },
-  "act.REMINDER_CANCEL.done": {
+  "task.reminder.cancel.done": {
     "text": "已取消提醒。",
     "source": "d4f1d5514d81"
   },
-  "act.REMINDER_REOPEN.done": {
+  "task.reminder.reopen.done": {
     "text": "已重新開啟提醒。",
     "source": "8b94105daf2b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+  "task.reminder.completeAndPlanNext.done": {
     "text": "已完成提醒並安排下一事項。",
     "source": "99dc5d907128"
   },
-  "endpoint.authority.requests.dismiss.done": {
+  "endpoint.people.requests.dismiss.done": {
     "text": "已忽略存取申請。",
     "source": "5dcca45467bc"
   },
@@ -2011,7 +2011,7 @@
     "text": "記錄序號",
     "source": "262fca96392a"
   },
-  "label.authorityHistory": {
+  "label.peopleHistory": {
     "text": "存取權限歷史記錄",
     "source": "29e9d0964e33"
   },
@@ -2091,7 +2091,7 @@
     "text": "理賠案件",
     "source": "2249bd503ec4"
   },
-  "view.AUTHORITY.label": {
+  "view.PEOPLE.label": {
     "text": "人員與存取權限",
     "source": "1e133caaec46"
   },
@@ -2467,15 +2467,15 @@
     "text": "授予者",
     "source": "b6f1129ef877"
   },
-  "act.REMOVE_PAYMENT.label": {
+  "task.case.removePayment.label": {
     "text": "移除付款記錄",
     "source": "3765d89e8401"
   },
-  "act.REMOVE_PAYMENT.meaning": {
+  "task.case.removePayment.meaning": {
     "text": "移除誤錄的付款記錄。此操作不會退款或撤銷轉帳，既有歷史記錄仍會保留。",
     "source": "839063316dd5"
   },
-  "act.REMOVE_PAYMENT.done": {
+  "task.case.removePayment.done": {
     "text": "付款記錄已移除。",
     "source": "0aa96c610f64"
   },
@@ -2579,27 +2579,27 @@
     "text": "此付款記錄已不存在。繼續前請讀取案件的目前狀態。",
     "source": "ffdd2d61ba68"
   },
-  "act.ADD_NOTE.done": {
+  "task.note.add.done": {
     "text": "備註已新增。",
     "source": "26e0eaebce58"
   },
-  "act.ADD_NOTE.label": {
+  "task.note.add.label": {
     "text": "新增備註",
     "source": "63565c0485fe"
   },
-  "act.ADD_NOTE.meaning": {
+  "task.note.add.meaning": {
     "text": "為此案件新增備註，不會更改索賠或付款事實。",
     "source": "41497abc12f4"
   },
-  "act.REMOVE_NOTE.done": {
+  "task.note.remove.done": {
     "text": "備註已移除。",
     "source": "bb424a5bfe68"
   },
-  "act.REMOVE_NOTE.label": {
+  "task.note.remove.label": {
     "text": "移除備註",
     "source": "c06bd11ad0f6"
   },
-  "act.REMOVE_NOTE.meaning": {
+  "task.note.remove.meaning": {
     "text": "從目前備註中隱藏此備註。案件永久刪除前，其文字仍保留在完整歷史中。",
     "source": "cf678694f353"
   },
@@ -2651,11 +2651,11 @@
     "text": "備註",
     "source": "d8da2c49df39"
   },
-  "timeline.event.ADD_NOTE": {
+  "timeline.event.note.add": {
     "text": "備註已新增",
     "source": "a7886ebc4ffd"
   },
-  "timeline.event.REMOVE_NOTE": {
+  "timeline.event.note.remove": {
     "text": "備註已移除",
     "source": "b9096ff4a83e"
   },

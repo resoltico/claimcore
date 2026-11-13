@@ -358,7 +358,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let! context = Service.context actor () token
         let ownerId = (Inputs.activeContext (read context)).ActorId
 
@@ -374,8 +374,8 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                             }
                         Visibility = CaseVisibility.Every
                         ActorId = ownerId
-                        ReadRoles = Authority.readRoles database.Fixture.Owner
-                        ForbiddenRoles = Authority.invalidRoles database.Fixture.Owner
+                        ReadRoles = Access.readRoles database.Fixture.Owner
+                        ForbiddenRoles = Access.invalidRoles database.Fixture.Owner
                         Filter =
                             CaseListFilter.admit filter |> Result.defaultWith (string >> failtest)
                     }
@@ -557,7 +557,7 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority steward
+        acceptedPeople steward
         let! erased = write 705 4L (CaseAct.Bare BareAct.Erase)
         accepted erased |> ignore
 

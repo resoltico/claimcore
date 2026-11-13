@@ -33,8 +33,8 @@ export const CaseFactRegions = ({
               />
             );
           }
-          const act = current.context.tasks.includes("CASE:AMEND_REGISTRATION")
-            ? "AMEND_REGISTRATION"
+          const act = current.context.tasks.includes("case.amendRegistration")
+            ? "case.amendRegistration"
             : undefined;
           return (
             <RegionView

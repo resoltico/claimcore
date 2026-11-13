@@ -102,13 +102,13 @@ module internal Persistence =
             return changed
         }
 
-    let authority connection projection token =
+    let people connection projection token =
         task {
             match projection with
-            | AuthorityProjection.Register(id, principal) ->
+            | PeopleProjection.Register(id, principal) ->
                 let! _ = register connection id principal token
                 return ()
-            | AuthorityProjection.ProvisionOwner(id, principal, grantedAt) ->
+            | PeopleProjection.ProvisionOwner(id, principal, grantedAt) ->
                 let! _ = register connection id principal token
 
                 let! _ =
@@ -124,7 +124,7 @@ module internal Persistence =
                         token
 
                 return ()
-            | AuthorityProjection.SetProfile(id, profile) ->
+            | PeopleProjection.SetProfile(id, profile) ->
                 let! changed =
                     DatabaseSession.execute
                         connection
@@ -145,11 +145,11 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Profile target is absent.")
-            | AuthorityProjection.EraseProfile(id, sequence) ->
+            | PeopleProjection.EraseProfile(id, sequence) ->
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='PEOPLE' AND subject_id=$1 AND act='ERASE_PROFILE')"
                         [|
                             box (ActorId.value id)
                             box (Sequence.value (EffectPosition.sequence sequence))
@@ -159,7 +159,7 @@ module internal Persistence =
 
                 if rows.Length <> 1 then
                     raise (RecordCorruptException "Profile erase has no matching accepted effect.")
-            | AuthorityProjection.SetEnabled(id, enabled) ->
+            | PeopleProjection.SetEnabled(id, enabled) ->
                 let! changed =
                     DatabaseSession.execute
                         connection
@@ -168,8 +168,8 @@ module internal Persistence =
                         token
 
                 if changed <> 1 then
-                    raise (RecordCorruptException "Authority projection is absent.")
-            | AuthorityProjection.AddGrant(id, role, caseId, grantedAt) ->
+                    raise (RecordCorruptException "People projection is absent.")
+            | PeopleProjection.AddGrant(id, role, caseId, grantedAt) ->
                 let! _ =
                     DatabaseSession.execute
                         connection
@@ -184,7 +184,7 @@ module internal Persistence =
                         token
 
                 return ()
-            | AuthorityProjection.RemoveGrant(id, role, caseId) ->
+            | PeopleProjection.RemoveGrant(id, role, caseId) ->
                 let! _ =
                     DatabaseSession.execute
                         connection
@@ -240,7 +240,7 @@ module internal Persistence =
                     let! changed =
                         DatabaseSession.execute
                             connection
-                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='ADD_NOTE'"
+                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='note.add'"
                             [|
                                 box (NoteId.value (Note.id note))
                                 box (CaseId.value (Note.caseId note))

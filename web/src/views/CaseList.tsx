@@ -8,7 +8,7 @@ import "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "../ui/Button";
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
-import type { CaseSelector, HumanReadDocument_caseList } from "@contracts/client";
+import type { CaseSelector, HumanReadDocument_case_list } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -33,7 +33,7 @@ type Props = {
   disclosureAvailable?: boolean;
 };
 const ignoreLock = (_locked: boolean): void => undefined;
-export type CaseListControl = HumanReadDocument_caseList["context"]["cases"][number];
+export type CaseListControl = HumanReadDocument_case_list["context"]["cases"][number];
 const casePage = (response: ServiceResponse<"case.list">) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;

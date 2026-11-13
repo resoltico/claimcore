@@ -303,10 +303,7 @@ let private erasedView (tombstone: JsonElement) =
 
     let history = advice.GetProperty("history").GetString()
 
-    Expect.equal
-        history
-        "FULL"
-        "Current full-history authority remains visible for erased identities"
+    Expect.equal history "FULL" "Current full-history people remains visible for erased identities"
 
 
 let private stewardship (fixture: PublishedFixture.Fixture) =

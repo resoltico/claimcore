@@ -20,7 +20,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
     kind: props.initialAct,
     current: props.current,
     prefill: {
-      ...(props.initialAct === "RECORD_PAYMENT" && props.current !== null
+      ...(props.initialAct === "case.recordPayment" && props.current !== null
         ? { "field:paymentDate": props.current.basis.observation.businessDate }
         : {}),
       ...props.prefill,
@@ -101,14 +101,14 @@ const caseOffers = (
       const task = taskDefinitions.find((candidate) => candidate.id === taskId);
       return task?.kind === "OPERATION" &&
         task.subject === "CASE" &&
-        (task.act !== "REMOVE_PAYMENT" || props.initialAct === "REMOVE_PAYMENT")
+        (task.act !== "case.removePayment" || props.initialAct === "case.removePayment")
         ? [task.act]
         : [];
     }) ??
     (props.current === null &&
-    props.initialAct === "OPEN" &&
-    requester?.context.tasks.includes("CASE:OPEN") === true
-      ? ["OPEN"]
+    props.initialAct === "case.open" &&
+    requester?.context.tasks.includes("case.open") === true
+      ? ["case.open"]
       : []);
   return offered;
 };

@@ -7,7 +7,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Current read authority and date basis are acquired with every page; continuations grant no access.
+/// Current read people and date basis are acquired with every page; continuations grant no access.
 module internal WorkQueries =
     let private scope parts =
         String.concat "\u001f" parts
@@ -18,15 +18,15 @@ module internal WorkQueries =
     let private selection (services: ServiceContext) (tx: IReadTx) actor mine =
         QueryResults.currentActor services.Principal actor
         |> Result.bind (fun _ ->
-            match Authority.visibility services.Principal actor, actor.Actor with
+            match Access.visibility services.Principal actor, actor.Actor with
             | Some visibility, Some requester ->
                 Ok
                     {
                         CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
-                        ReadRoles = Authority.readRoles services.Principal
-                        ForbiddenRoles = Authority.invalidRoles services.Principal
+                        ReadRoles = Access.readRoles services.Principal
+                        ForbiddenRoles = Access.invalidRoles services.Principal
                         Filter =
                             { CaseListFilter.empty with
                                 Assignment = if mine then Some CaseAssignment.Mine else None
@@ -58,7 +58,7 @@ module internal WorkQueries =
 
                                         match view.Case with
                                         | Some parent when
-                                            Authority.can
+                                            Access.can
                                                 services.Principal
                                                 view.Actor
                                                 Capability.ReadCase
@@ -187,7 +187,7 @@ module internal WorkQueries =
                                     fun tx ->
                                         task {
                                             let! actor =
-                                                tx.Authority
+                                                tx.Access
                                                     {
                                                         Principal = services.Principal
                                                         CaseId = None
@@ -202,7 +202,7 @@ module internal WorkQueries =
                                             let! targetActor =
                                                 match parent with
                                                 | Some parent ->
-                                                    tx.AuthorityCases(
+                                                    tx.AccessCases(
                                                         services.Principal,
                                                         [ parent.CaseId ]
                                                     )
@@ -213,7 +213,7 @@ module internal WorkQueries =
                                                 match request.Target, parent with
                                                 | None, _ -> true
                                                 | Some _, Some parent ->
-                                                    Authority.can
+                                                    Access.can
                                                         services.Principal
                                                         targetActor
                                                         Capability.ReadCase
@@ -312,7 +312,7 @@ module internal WorkQueries =
                                                             }
 
                                                     let! pageActor =
-                                                        tx.AuthorityCases(
+                                                        tx.AccessCases(
                                                             services.Principal,
                                                             page.Items
                                                             |> List.map _.Stored.CaseId

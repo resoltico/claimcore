@@ -136,31 +136,26 @@ let tests =
                     (fun () ->
                         Vocabulary.define "act" [ CaseActKind.Open ] CaseActKind.token |> ignore)
                     "Missing act cases")
-            testCase
-                "one act vocabulary covers case authority work and reminder identities"
-                (fun () ->
-                    let tokens = Vocabulary.tokens ActKind.vocabulary
+            testCase "one act vocabulary covers case people work and reminder identities" (fun () ->
+                let tokens = Vocabulary.tokens ActKind.vocabulary
 
-                    Expect.equal
-                        (List.length tokens)
-                        (((CaseActKind.all |> List.map CaseActKind.token)
-                          @ (Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
-                          @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
-                          @ (Vocabulary.entries NoteActKind.vocabulary |> List.map snd)
-                          @ (Vocabulary.entries ReminderActKind.vocabulary |> List.map snd))
-                            .Length)
-                        "Independent family inventories include owner provisioning and bounded reminder acts"
+                Expect.equal
+                    (List.length tokens)
+                    (((CaseActKind.all |> List.map CaseActKind.token)
+                      @ (Vocabulary.entries PeopleActKind.vocabulary |> List.map snd)
+                      @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
+                      @ (Vocabulary.entries NoteActKind.vocabulary |> List.map snd)
+                      @ (Vocabulary.entries ReminderActKind.vocabulary |> List.map snd))
+                        .Length)
+                    "Independent family inventories include owner provisioning and bounded reminder acts"
 
-                    Expect.equal
-                        (List.distinct tokens)
-                        tokens
-                        "Scopes have no ambiguous act spelling"
+                Expect.equal (List.distinct tokens) tokens "Scopes have no ambiguous act spelling"
 
-                    Expect.equal
-                        (Vocabulary.messageKey
-                            ActKind.vocabulary
-                            (ActKind.Authority AuthorityKind.Revoke)
-                            "label")
-                        "act.REVOKE.label"
-                        "Shared act message family")
+                Expect.equal
+                    (Vocabulary.messageKey
+                        ActKind.vocabulary
+                        (ActKind.People PeopleActKind.Revoke)
+                        "label")
+                    "task.people.revoke.label"
+                    "Shared act message family")
         ]

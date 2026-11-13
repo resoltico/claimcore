@@ -8,9 +8,9 @@ export const activeRequester: ActiveRequester = {
     state: "ACTIVE",
     installationId: "90000000-0000-4000-8000-000000000001",
     actorId: "10000000-0000-4000-8000-000000000001",
-    views: ["CASES", "AUTHORITY", "OPERATIONS"],
-    tasks: ["CASE:OPEN", "query:authorityList", "query:authorityGrants", "query:authorityHistory"],
-    authorityIssuerSeed: null,
+    views: ["CASES", "PEOPLE", "OPERATIONS"],
+    tasks: ["case.open", "people.list", "people.grants", "people.history"],
+    peopleIssuerSeed: null,
   },
   basis: {
     kind: "SNAPSHOT",

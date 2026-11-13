@@ -37,11 +37,11 @@ const disclosureScreen = (caption: string): Screen => ({
   ],
 });
 const before = caseDocumentInput(
-  { tasks: ["CASE:CLOSE"], history: "NONE" },
+  { tasks: ["case.close"], history: "NONE" },
   disclosureScreen("PRIOR_CASE_DISCLOSURE_CANARY"),
 );
 const after = caseDocumentInput(
-  { revision: 2, tasks: ["CASE:CLOSE"], history: "NONE" },
+  { revision: 2, tasks: ["case.close"], history: "NONE" },
   disclosureScreen("POSITIVE_CURRENT_DISCLOSURE"),
 );
 const Workspace = () => {
@@ -60,7 +60,7 @@ const Workspace = () => {
     <OperationEditor
       definition={definition}
       current={selected}
-      initialAct="CLOSE"
+      initialAct="case.close"
       onClose={() => {
         setSelected(null);
       }}

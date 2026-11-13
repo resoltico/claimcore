@@ -56,8 +56,8 @@ module internal CliConfirmation =
             match request.Target with
             | CaseSelector.Reference reference -> Some reference
             | CaseSelector.Id _ -> invalidOp "Human irreversible commands require a case reference."
-        | Some(OperationInput.Authority request) when
-            Consequence.ofAct (ActKind.Authority(AuthorityAct.kind request.Act)) =
+        | Some(OperationInput.People request) when
+            Consequence.ofAct (ActKind.People(PeopleAct.kind request.Act)) =
                 Consequence.Irreversible
             ->
             Some(request.OperationId.ToString("D"))

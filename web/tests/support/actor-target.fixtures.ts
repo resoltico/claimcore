@@ -4,8 +4,8 @@ import { expect } from "vitest";
 import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
-import { authorityPreview } from "./authority-operation.fixtures";
-import type { AuthorityAct, HumanReadDocument_authorityGrants } from "@contracts/client";
+import { peoplePreview } from "./people-operation.fixtures";
+import type { PeopleAct, HumanReadDocument_people_grants } from "@contracts/client";
 import { taskForAct } from "../../src/protocol/taskCatalog";
 import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
@@ -31,7 +31,7 @@ export const secondActor = {
   },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
-export const firstPerson: HumanReadDocument_authorityGrants = {
+export const firstPerson: HumanReadDocument_people_grants = {
   screen: {
     regions: [
       {
@@ -76,12 +76,12 @@ export const firstPerson: HumanReadDocument_authorityGrants = {
     actorId: firstActor.actor.actorId,
     principal: firstActor.principal,
     tasks: [
-      "AUTHORITY:GRANT",
-      "AUTHORITY:REVOKE",
-      "AUTHORITY:ENABLE",
-      "AUTHORITY:DISABLE",
-      "AUTHORITY:SET_PROFILE",
-      "AUTHORITY:ERASE_PROFILE",
+      "people.grant",
+      "people.revoke",
+      "people.enable",
+      "people.disable",
+      "people.setProfile",
+      "people.eraseProfile",
     ],
     profileSeed: { displayName: "server-first", contact: null },
     revocations: [],
@@ -91,7 +91,7 @@ export const firstPerson: HumanReadDocument_authorityGrants = {
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };
-export const secondPerson: HumanReadDocument_authorityGrants = {
+export const secondPerson: HumanReadDocument_people_grants = {
   ...firstPerson,
   screen: {
     regions: [
@@ -139,21 +139,19 @@ export const secondPerson: HumanReadDocument_authorityGrants = {
     profileSeed: { displayName: "server-second", contact: null },
   },
 };
-export const grantsFor = (
-  document = firstPerson,
-): ApiResult<ServiceResponse<"authority.grants">> => ({
+export const grantsFor = (document = firstPerson): ApiResult<ServiceResponse<"people.grants">> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadReply("authority.grants", document),
+  value: humanReadReply("people.grants", document),
 });
 export const setupActorTargets = (
-  offered: ReadonlyArray<AuthorityAct["kind"] | "OPEN"> = [
-    "REGISTER",
-    "ADMIT",
-    "GRANT",
-    "REVOKE",
-    "ENABLE",
-    "DISABLE",
+  offered: ReadonlyArray<PeopleAct["kind"] | "case.open"> = [
+    "people.register",
+    "people.admit",
+    "people.grant",
+    "people.revoke",
+    "people.enable",
+    "people.disable",
   ],
 ) => {
   const context = wireReply("context");
@@ -172,26 +170,26 @@ export const setupActorTargets = (
           basis: { kind: "SNAPSHOT", observation: workBasis },
           context: {
             ...context.outcome.document.context,
-            views: ["AUTHORITY"],
+            views: ["PEOPLE"],
             tasks: [
               ...offered.map((act) =>
-                act === "OPEN" ? ("CASE:OPEN" as const) : taskForAct("AUTHORITY", act).id,
+                act === "case.open" ? ("case.open" as const) : taskForAct("PEOPLE", act).id,
               ),
-              "query:authorityList",
-              "query:authorityGrants",
-              "query:authorityHistory",
-              "query:authorityRequests",
-              "query:authorityRequestsDismiss",
+              "people.list",
+              "people.grants",
+              "people.history",
+              "people.requests",
+              "people.requests.dismiss",
             ],
           },
         },
       },
     },
   });
-  mockEndpoint("authority.list").mockResolvedValue({
+  mockEndpoint("people.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: humanReadReply("authority.list", {
+    value: humanReadReply("people.list", {
       screen: {
         regions: [
           {
@@ -237,7 +235,7 @@ export const setupActorTargets = (
       disclosure: "CURRENT",
     }),
   });
-  mockEndpoint("authority.grants").mockImplementation((_credential, input) => {
+  mockEndpoint("people.grants").mockImplementation((_credential, input) => {
     const person = input.actorId === firstActor.actor.actorId ? firstPerson : secondPerson;
     return Promise.resolve(
       grantsFor({
@@ -246,16 +244,16 @@ export const setupActorTargets = (
           ...person.context,
           tasks: offered
             .filter(
-              (act): act is AuthorityAct["kind"] =>
-                act !== "OPEN" && act !== "REGISTER" && act !== "ADMIT",
+              (act): act is PeopleAct["kind"] =>
+                act !== "case.open" && act !== "people.register" && act !== "people.admit",
             )
-            .map((act) => taskForAct("AUTHORITY", act).id),
-          profileSeed: offered.includes("SET_PROFILE") ? person.context.profileSeed : null,
+            .map((act) => taskForAct("PEOPLE", act).id),
+          profileSeed: offered.includes("people.setProfile") ? person.context.profileSeed : null,
         },
       }),
     );
   });
-  return authorityPreview();
+  return peoplePreview();
 };
 export const openActor = async (id = firstActor.actor.actorId) => {
   fireEvent.click(document.getElementById(`actor-grants-${id}`)!);

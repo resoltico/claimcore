@@ -30,7 +30,7 @@ let tests =
         match
             Codec.decode
                 Limits.MaximumRequestBytes
-                RequestCodecs.authorityAct
+                RequestCodecs.peopleAct
                 (Encoding.UTF8.GetBytes role)
         with
         | Error problem ->

@@ -30,8 +30,8 @@ module HumanReviewDocument =
                     })
 
             ReviewTarget.Reminder(value.CaseId, existing), value.Context.Basis, Some value.Reference
-        | OperationReview.Authority value ->
-            ReviewTarget.Authority(
+        | OperationReview.People value ->
+            ReviewTarget.People(
                 value.Target |> Option.map (fun item -> item.Actor.ActorId),
                 value.AccessScope
             ),
@@ -116,11 +116,11 @@ module HumanReceiptDocument =
                 | _ -> HumanDisclosure.Partial
 
             ReceiptTarget.Reminder(value.CaseId, versions |> List.map reminderIdentity), disclosure
-        | ReceiptSubject.Authority value ->
-            ReceiptTarget.Authority(AuthorityTargetDisclosure.actorId value.TargetActor),
+        | ReceiptSubject.People value ->
+            ReceiptTarget.People(PeopleTargetDisclosure.actorId value.TargetActor),
             (match value.TargetActor with
-             | AuthorityTargetDisclosure.Disclosed _ -> HumanDisclosure.Current
-             | AuthorityTargetDisclosure.Withheld _ -> HumanDisclosure.Withheld)
+             | PeopleTargetDisclosure.Disclosed _ -> HumanDisclosure.Current
+             | PeopleTargetDisclosure.Withheld _ -> HumanDisclosure.Withheld)
 
     let ofCore (receipt: OperationReceipt) =
         let target, disclosure = targetAndDisclosure receipt.Subject
@@ -143,7 +143,7 @@ module HumanReceiptDocument =
                             | ReceiptTarget.Work(id, _)
                             | ReceiptTarget.Note(id, _)
                             | ReceiptTarget.Reminder(id, _) -> Some id
-                            | ReceiptTarget.Authority _ -> None
+                            | ReceiptTarget.People _ -> None
                         RefreshCase =
                             match receipt.Subject with
                             | ReceiptSubject.Work value -> Some value.CaseId

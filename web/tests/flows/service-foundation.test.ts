@@ -15,11 +15,11 @@ describe("core act metadata", () => {
       revision: 1,
       history: "FULL" as const,
     });
-    const values = initialOperationValues("CASE", "AMEND_REGISTRATION", current);
+    const values = initialOperationValues("CASE", "case.amendRegistration", current);
     expect(values["field:claimantName"]).toBeUndefined();
-    const close = initialOperationValues("CASE", "CLOSE", current);
+    const close = initialOperationValues("CASE", "case.close", current);
     expect(
-      assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close, {
+      assembleOperation(operationEntry({ subject: "CASE", kind: "case.close" }), close, {
         kind: "CASE",
         operationId: "10000000-0000-4000-8000-000000000001",
         target: { kind: "REFERENCE", caseReference: fields.caseReference },
@@ -31,7 +31,7 @@ describe("core act metadata", () => {
       target: { kind: "REFERENCE", caseReference: fields.caseReference },
       expectedRevision: 1,
       act: {
-        kind: "CLOSE",
+        kind: "case.close",
       },
     });
   });

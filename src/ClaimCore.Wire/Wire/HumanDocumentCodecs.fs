@@ -16,7 +16,8 @@ module HumanDocumentCodecs =
         VocabularyCodec.select
             (function
             | TaskId.Operation _ -> true
-            | TaskId.Query _ -> false)
+            | TaskId.Query _
+            | TaskId.Command _ -> false)
             taskVocabulary
 
     let private input =
@@ -165,7 +166,7 @@ module HumanDocumentCodecs =
                 ActorId = actor
                 Views = views
                 Tasks = tasks
-                AuthorityIssuerSeed = issuer
+                PeopleIssuerSeed = issuer
             })
         : Fields<RequesterInteraction, _>)
         |> field "state" _.State (VocabularyCodec.create RequesterKind.vocabulary)
@@ -173,7 +174,7 @@ module HumanDocumentCodecs =
         |> field "actorId" _.ActorId (nullable ResponseScalars.actorId)
         |> field "views" _.Views (list 3 (VocabularyCodec.create View.vocabulary))
         |> field "tasks" _.Tasks (list TaskId.all.Length task)
-        |> field "authorityIssuerSeed" _.AuthorityIssuerSeed (nullable PrincipalCodecs.issuer)
+        |> field "peopleIssuerSeed" _.PeopleIssuerSeed (nullable PrincipalCodecs.issuer)
 
     let private page =
         (record (fun cursor tasks ->
@@ -238,10 +239,10 @@ module HumanDocumentCodecs =
                      |> field "caseId" fst ResponseScalars.caseId
                      |> field "existing" snd (nullable reminderIdentity))
                 variant
-                    "AUTHORITY"
-                    ReviewTarget.Authority
+                    "PEOPLE"
+                    ReviewTarget.People
                     (function
-                    | ReviewTarget.Authority(id, scope) -> Some(id, scope)
+                    | ReviewTarget.People(id, scope) -> Some(id, scope)
                     | _ -> None)
                     (record (fun id scope -> id, scope)
                      |> field "actorId" fst (nullable ResponseScalars.actorId)
@@ -325,10 +326,10 @@ module HumanDocumentCodecs =
                      |> field "caseId" fst ResponseScalars.caseId
                      |> field "versions" snd (boundedList 1 2 reminderIdentity))
                 variant
-                    "AUTHORITY"
-                    ReceiptTarget.Authority
+                    "PEOPLE"
+                    ReceiptTarget.People
                     (function
-                    | ReceiptTarget.Authority value -> Some value
+                    | ReceiptTarget.People value -> Some value
                     | _ -> None)
                     (record id |> field "actorId" id ResponseScalars.actorId)
             ]
@@ -465,24 +466,24 @@ module HumanDocumentCodecs =
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "reminders" _.Reminders (list Paging.MaximumPageSize item)
 
-    let private authorityHistory =
+    let private peopleHistory =
         let item =
             (record (fun key caseId ->
                 {
-                    AuthorityHistoryHandle.Key = key
+                    PeopleHistoryHandle.Key = key
                     CaseId = caseId
                 })
-            : Fields<AuthorityHistoryHandle, _>)
+            : Fields<PeopleHistoryHandle, _>)
             |> field "key" _.Key (boundedText 1 128)
             |> field "caseId" _.CaseId (nullable ResponseScalars.caseId)
             |> build
 
         (record (fun cursor entries ->
             {
-                AuthorityHistoryInteraction.NextCursor = cursor
+                PeopleHistoryInteraction.NextCursor = cursor
                 Entries = entries
             })
-        : Fields<AuthorityHistoryInteraction, _>)
+        : Fields<PeopleHistoryInteraction, _>)
         |> field "nextCursor" _.NextCursor nextCursor
         |> field "entries" _.Entries (list Paging.MaximumPageSize item)
 
@@ -591,12 +592,12 @@ module HumanDocumentCodecs =
             [
                 unitVariant "EMPTY" InteractionContext.Empty
                 variant
-                    "AUTHORITY_HISTORY"
-                    InteractionContext.AuthorityHistory
+                    "PEOPLE_HISTORY"
+                    InteractionContext.PeopleHistory
                     (function
-                    | InteractionContext.AuthorityHistory value -> Some value
+                    | InteractionContext.PeopleHistory value -> Some value
                     | _ -> None)
-                    authorityHistory
+                    peopleHistory
                 variant
                     "NOTE_PAGE"
                     InteractionContext.NotePage
@@ -796,7 +797,7 @@ module HumanDocumentCodecs =
         |> field
             "submittedOrdinal"
             TaskRowTarget.ordinal
-            (integer 0L (int64 AuthorityAdmission.MaximumGrants - 1L) |> map int int64)
+            (integer 0L (int64 PeopleAdmission.MaximumGrants - 1L) |> map int int64)
         |> build
         |> named "TaskRowTarget"
 
@@ -857,7 +858,7 @@ module HumanDocumentCodecs =
             invalidArg "context" "Human controls do not match the requested endpoint."
 
         match query with
-        | QueryTaskId.CaseList ->
+        | TaskId.Query QueryTaskId.CaseList ->
             pick
                 "CASES"
                 InteractionContext.Cases
@@ -865,7 +866,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Cases value -> value
                 | _ -> wrong ())
                 cases
-        | QueryTaskId.ReminderList ->
+        | TaskId.Query QueryTaskId.ReminderList ->
             pick
                 "REMINDERS"
                 InteractionContext.Reminders
@@ -873,7 +874,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Reminders value -> value
                 | _ -> wrong ())
                 reminders
-        | QueryTaskId.AuthorityList ->
+        | TaskId.Query QueryTaskId.PeopleList ->
             pick
                 "PEOPLE"
                 InteractionContext.People
@@ -881,7 +882,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.People value -> value
                 | _ -> wrong ())
                 assignees
-        | QueryTaskId.CaseNotes ->
+        | TaskId.Query QueryTaskId.CaseNotes ->
             pick
                 "NOTE_PAGE"
                 InteractionContext.NotePage
@@ -889,7 +890,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.NotePage value -> value
                 | _ -> wrong ())
                 notePage
-        | QueryTaskId.AuthorityGrants ->
+        | TaskId.Query QueryTaskId.PeopleGrants ->
             pick
                 "PERSON"
                 InteractionContext.Person
@@ -897,7 +898,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Person value -> value
                 | _ -> wrong ())
                 person
-        | QueryTaskId.AuthorityRequests ->
+        | TaskId.Query QueryTaskId.PeopleRequests ->
             pick
                 "ACCESS_REQUESTS"
                 InteractionContext.AccessRequests
@@ -905,7 +906,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.AccessRequests value -> value
                 | _ -> wrong ())
                 accessRequests
-        | QueryTaskId.CaseGet ->
+        | TaskId.Query QueryTaskId.CaseGet ->
             pick
                 "CASE"
                 InteractionContext.Case
@@ -913,7 +914,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Case value -> value
                 | _ -> wrong ())
                 caseInteraction
-        | QueryTaskId.CaseAssignees ->
+        | TaskId.Query QueryTaskId.CaseAssignees ->
             pick
                 "ASSIGNEES"
                 InteractionContext.Assignees
@@ -921,7 +922,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Assignees value -> value
                 | _ -> wrong ())
                 assignees
-        | QueryTaskId.CasePayments ->
+        | TaskId.Query QueryTaskId.CasePayments ->
             pick
                 "PAYMENT_PAGE"
                 InteractionContext.PaymentPage
@@ -929,7 +930,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.PaymentPage value -> value
                 | _ -> wrong ())
                 paymentPage
-        | QueryTaskId.ReminderGet ->
+        | TaskId.Query QueryTaskId.ReminderGet ->
             pick
                 "REMINDER"
                 InteractionContext.Reminder
@@ -937,7 +938,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Reminder value -> value
                 | _ -> wrong ())
                 reminder
-        | QueryTaskId.Context ->
+        | TaskId.Query QueryTaskId.Context ->
             pick
                 "REQUESTER"
                 InteractionContext.Requester
@@ -945,7 +946,7 @@ module HumanDocumentCodecs =
                 | InteractionContext.Requester value -> value
                 | _ -> wrong ())
                 requester
-        | QueryTaskId.WorkViews ->
+        | TaskId.Query QueryTaskId.WorkViews ->
             pick
                 "WORK_VIEWS"
                 InteractionContext.WorkViews
@@ -953,23 +954,23 @@ module HumanDocumentCodecs =
                 | InteractionContext.WorkViews value -> value
                 | _ -> wrong ())
                 workViews
-        | QueryTaskId.CaseSummary
-        | QueryTaskId.AuthorityRequestsDismiss ->
+        | TaskId.Query QueryTaskId.CaseSummary
+        | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
             (record (): Fields<unit, unit>)
             |> fixedField "kind" "EMPTY"
             |> build
             |> map (fun () -> InteractionContext.Empty) (function
                 | InteractionContext.Empty -> ()
                 | _ -> wrong ())
-        | QueryTaskId.AuthorityHistory ->
+        | TaskId.Query QueryTaskId.PeopleHistory ->
             pick
-                "AUTHORITY_HISTORY"
-                InteractionContext.AuthorityHistory
+                "PEOPLE_HISTORY"
+                InteractionContext.PeopleHistory
                 (function
-                | InteractionContext.AuthorityHistory value -> value
+                | InteractionContext.PeopleHistory value -> value
                 | _ -> wrong ())
-                authorityHistory
-        | QueryTaskId.CaseTimeline ->
+                peopleHistory
+        | TaskId.Query QueryTaskId.CaseTimeline ->
             pick
                 "PAGE"
                 InteractionContext.Page
@@ -977,11 +978,12 @@ module HumanDocumentCodecs =
                 | InteractionContext.Page value -> value
                 | _ -> wrong ())
                 page
-        | QueryTaskId.OperationGet ->
+        | TaskId.Operation _
+        | TaskId.Query QueryTaskId.OperationGet ->
             invalidArg (nameof query) "Operation lookup has its own outcome contract."
 
     let readReplyFor query =
-        let name = "HumanReadReply_" + QueryTaskId.key query
+        let name = "HumanReadReply_" + TaskId.key query
 
         let document =
             documentFor
@@ -990,7 +992,7 @@ module HumanDocumentCodecs =
                 id
                 basis
                 disclosure
-                ("HumanReadDocument_" + QueryTaskId.key query)
+                ("HumanReadDocument_" + TaskId.key query)
 
         let outcome =
             tagged

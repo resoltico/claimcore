@@ -4,7 +4,7 @@
     "kind": "CASE",
     "expectedRevision": 0,
     "act": {
-      "kind": "OPEN",
+      "kind": "case.open",
       "values": {
         "incidentDate": "2026-08-01",
         "incidentNotificationDate": "2026-08-03",

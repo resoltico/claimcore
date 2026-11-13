@@ -44,13 +44,13 @@ type CaseWorkView =
 [<RequireQualifiedAccess>]
 type View =
     | Cases
-    | Authority
+    | People
     | Operations
 
 [<RequireQualifiedAccess>]
 type InstallationOffer =
     | Open
-    | AuthorityAct of AuthorityKind
+    | PeopleAct of PeopleActKind
 
 type CorrectionChoices =
     {

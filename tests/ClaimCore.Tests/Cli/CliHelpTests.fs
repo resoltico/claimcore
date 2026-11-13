@@ -45,7 +45,7 @@ let semanticHelp =
     testCase
         "JSON command help supplies semantic task controls without wire paths or catalog aliases"
         (fun () ->
-            let bytes = Discovery.commandHelpJson "en" [ "authority"; "admit" ] |> Option.get
+            let bytes = Discovery.commandHelpJson "en" [ "people"; "admit" ] |> Option.get
             use document = System.Text.Json.JsonDocument.Parse(bytes: byte array)
             let operation = document.RootElement.GetProperty("operations")[0]
 
@@ -57,14 +57,14 @@ let semanticHelp =
 
             Expect.equal
                 (task.GetProperty("id").GetString())
-                "AUTHORITY:ADMIT"
+                "people.admit"
                 "Semantic task identity"
 
             let collection = task.GetProperty("collections")[0]
 
             Expect.equal
                 (collection.GetProperty("id").GetString())
-                "authorityGrants"
+                "peopleGrants"
                 "Semantic collection"
 
             Expect.equal
@@ -111,9 +111,9 @@ let legalNotice =
 [<Tests>]
 let documentedHelpForms =
     testCase
-        "documented case and nested authority verb help resolves without a new grammar path"
+        "documented case and nested people verb help resolves without a new grammar path"
         (fun () ->
-            for words in [ [ "case"; "open" ]; [ "authority"; "requests"; "dismiss" ] ] do
+            for words in [ [ "case"; "open" ]; [ "people"; "requests"; "dismiss" ] ] do
                 Expect.equal
                     (CliInvocations.admit ("help" :: words))
                     (Ok(CliInvocation.CommandHelp(words, "en", false)))

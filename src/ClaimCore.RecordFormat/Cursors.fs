@@ -37,7 +37,7 @@ type TimelinePosition =
         Range: ChangeRange option
     }
 
-/// Plain positions convey no authority. Every selection authorizes before decoding.
+/// Plain positions convey no people. Every selection authorizes before decoding.
 type AccessRequestPosition =
     {
         LastSeen: DateTimeOffset
@@ -456,7 +456,7 @@ module Cursors =
             |> Option.bind (fun sequence -> EffectPosition.create sequence (int index))
         | _ -> None
 
-    let encodeAuthorityHistory installation (actor: ActorId option) position =
+    let encodePeopleHistory installation (actor: ActorId option) position =
         encode
             installation
             [
@@ -465,10 +465,10 @@ module Cursors =
                 |> Option.map (ActorId.format >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
                 "after", effectPosition position
-                "kind", JsonValue.String "AUTHORITY_HISTORY"
+                "kind", JsonValue.String "PEOPLE_HISTORY"
             ]
 
-    let decodeAuthorityHistory installation (actor: ActorId option) token =
+    let decodePeopleHistory installation (actor: ActorId option) token =
         let expected =
             actor
             |> Option.map (ActorId.format >> JsonValue.String)
@@ -480,9 +480,7 @@ module Cursors =
             (function
             | JsonValue.Object [ "actor", target
                                  "after", position
-                                 "kind", JsonValue.String "AUTHORITY_HISTORY" ] when
-                target = expected
-                ->
+                                 "kind", JsonValue.String "PEOPLE_HISTORY" ] when target = expected ->
                 readEffectPosition position
             | _ -> None)
             token

@@ -47,15 +47,15 @@ let createFor issuer subject =
             let! registered =
                 (Service.execute
                     owner
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id fixture 20)
                             service
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     (CancellationToken.None))
 
-            acceptedAuthority registered
+            acceptedPeople registered
 
             let! granted =
                 grant
@@ -68,7 +68,7 @@ let createFor issuer subject =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
             let! opened =
                 (Service.execute

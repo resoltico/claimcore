@@ -498,7 +498,7 @@ let tests =
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language "act.CLOSE.label")
+                            (ReplyTextFormat.label language "task.case.close.label")
                             "The supplied act is localized."
 
                         Expect.stringContains

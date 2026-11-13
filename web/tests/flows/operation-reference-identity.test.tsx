@@ -10,7 +10,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
+  tasks: ["case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -42,7 +42,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     <OperationEditor
       definition={definition}
       current={current}
-      initialAct="CLOSE"
+      initialAct="case.close"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}
@@ -62,6 +62,6 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   expect(draft.target).toEqual({ kind: "ID", caseId: current.context.caseId });
   expect(draft.act).toEqual({
-    kind: "CLOSE",
+    kind: "case.close",
   });
 });

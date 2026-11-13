@@ -230,21 +230,21 @@ export const service = {
     request("case.get", credential, { target: { kind: "REFERENCE", caseReference } }, signal),
   list: (cursor: string | null, limit: number, credential: string, signal?: AbortSignal) =>
     request("case.list", credential, { ...(cursor === null ? {} : { cursor }), limit }, signal),
-  authorityList: (cursor: string | null, credential: string, signal?: AbortSignal) =>
+  peopleList: (cursor: string | null, credential: string, signal?: AbortSignal) =>
     request(
-      "authority.list",
+      "people.list",
       credential,
       { ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
-  authorityGrants: (
+  peopleGrants: (
     actorId: string,
     cursor: string | null,
     credential: string,
     signal?: AbortSignal,
   ) =>
     request(
-      "authority.grants",
+      "people.grants",
       credential,
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,

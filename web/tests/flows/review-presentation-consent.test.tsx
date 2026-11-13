@@ -29,7 +29,7 @@ it.each([
 ] as const)(
   "requires complete registered presentation before confirming %s",
   async (labelId, complete) => {
-    const prepared = preparedFor("CLOSE");
+    const prepared = preparedFor("case.close");
     const original = prepared.bytes;
     const review = reviewed(labelId);
     expect(

@@ -57,7 +57,7 @@ let internal lifecycle fixture =
                 }
                 true
 
-        acceptedAuthority grant
+        acceptedPeople grant
 
         let! opened =
             execute

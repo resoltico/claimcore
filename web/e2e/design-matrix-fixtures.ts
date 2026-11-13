@@ -13,7 +13,7 @@ import {
 } from "@contracts/client";
 import { isResponseFor } from "../src/protocol/client";
 import { referencePath, actPath } from "../src/routing/routes";
-import { applyAuthority, syntheticPrincipals } from "./authority-setup";
+import { applyPeople, syntheticPrincipals } from "./people-setup";
 import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
 
 const request = async <K extends EndpointId>(
@@ -61,14 +61,14 @@ const workAct = (page: Page, reference: string, revision: number, values: CaseWo
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: revision,
-    act: { kind: "UPDATE_WORK", values },
+    act: { kind: "work.update", values },
   });
 const planReminder = (page: Page, reference: string, date: string) =>
   execute(page, {
     kind: "REMINDER",
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
-    act: { kind: "CREATE", action: "Review synthetic case", dueDate: date },
+    act: { kind: "reminder.create", action: "Review synthetic case", dueDate: date },
   });
 const states = ["undecided", "decided", "paid", "closed", "voided", "erased"] as const;
 type CaseState = (typeof states)[number];
@@ -147,12 +147,12 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
     expectedInput: { target: { kind: "REFERENCE", caseReference: references[state] } },
   })),
   { id: "editor-open", path: "/cases/new", ready: '[role="dialog"] .ui-dialog-title' },
-  ...(["DECIDE", "CORRECT", "VOID"] as const).map((act) => ({
+  ...(["case.decide", "case.correct", "case.void"] as const).map((act) => ({
     id: `editor-${act.toLowerCase()}`,
     path: actPath(
       {
         kind: "REFERENCE",
-        caseReference: act === "CORRECT" ? references.paid : references.undecided,
+        caseReference: act === "case.correct" ? references.paid : references.undecided,
       },
       act,
     ),
@@ -183,13 +183,16 @@ const routes = (data: {
   { id: "recovery", path: "/recovery", ready: "#recovery-title" },
   {
     id: "paid-correction-review",
-    path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "CORRECT"),
+    path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "case.correct"),
     ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "case.get",
   },
   {
     id: "record-payment-review",
-    path: actPath({ kind: "REFERENCE", caseReference: data.references.decided }, "RECORD_PAYMENT"),
+    path: actPath(
+      { kind: "REFERENCE", caseReference: data.references.decided },
+      "case.recordPayment",
+    ),
     ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "case.get",
   },
@@ -206,39 +209,35 @@ const routes = (data: {
     endpoint: "operation.get",
   },
   {
-    id: "authority-history",
-    path: "/authority-history",
-    ready: "#authority-history-title",
-    endpoint: "authority.history",
+    id: "people-history",
+    path: "/people-history",
+    ready: "#people-history-title",
+    endpoint: "people.history",
     expectedInput: { limit: 50 },
   },
   { id: "not-found", path: "/not-a-claimcore-page", ready: ".missing-page h1" },
   {
-    id: "authority-list",
+    id: "people-list",
     path: "/people",
-    ready: "#authority-title",
-    endpoint: "authority.list",
+    ready: "#people-title",
+    endpoint: "people.list",
   },
   {
-    id: "authority-detail",
+    id: "people-detail",
     path: `/people/${encodeURIComponent(data.actorId)}`,
     ready: '[role="dialog"] .ui-dialog-title',
-    endpoint: "authority.grants",
+    endpoint: "people.grants",
   },
 ];
 const findOwner = async (page: Page, target: { issuer: string; subject: string }) => {
   let cursor: string | null = null;
   do {
-    const listing: DataResponseByEndpoint["authority.list"] = await request(
-      page,
-      "authority.list",
-      {
-        limit: 50,
-        ...(cursor === null ? {} : { cursor }),
-      },
-    );
+    const listing: DataResponseByEndpoint["people.list"] = await request(page, "people.list", {
+      limit: 50,
+      ...(cursor === null ? {} : { cursor }),
+    });
     if (listing.outcome.kind !== "SUCCEEDED") {
-      throw new Error("E2E_MATRIX_AUTHORITY_LIST");
+      throw new Error("E2E_MATRIX_PEOPLE_LIST");
     }
     const owner = listing.outcome.data.items.find(
       (actor) =>
@@ -254,7 +253,7 @@ const findOwner = async (page: Page, target: { issuer: string; subject: string }
   throw new Error("E2E_MATRIX_OWNER_NOT_REGISTERED");
 };
 const hasStewardship = async (page: Page, actorId: string) => {
-  const grants = await request(page, "authority.grants", { actorId, limit: 50 });
+  const grants = await request(page, "people.grants", { actorId, limit: 50 });
   if (grants.outcome.kind !== "SUCCEEDED" || grants.outcome.data.nextCursor !== null) {
     throw new Error("E2E_MATRIX_OWNER_GRANTS_NOT_COMPLETE");
   }
@@ -272,12 +271,12 @@ const ownerStewardship = async (page: Page) => {
   const owner = await findOwner(page, target);
   const existing = await hasStewardship(page, owner.actor.actorId);
   const set = (active: boolean) =>
-    applyAuthority(page, {
-      kind: "AUTHORITY",
+    applyPeople(page, {
+      kind: "PEOPLE",
       operationId: mintOperationId(),
       target,
       act: {
-        kind: active ? "GRANT" : "REVOKE",
+        kind: active ? "people.grant" : "people.revoke",
         role: "DATA_STEWARD",
         scope: { kind: "INSTALLATION" },
       },
@@ -299,26 +298,29 @@ const ownerStewardship = async (page: Page) => {
 const advanceCase = async (page: Page, reference: string, state: CaseState, date: string) => {
   if (state === "decided" || state === "paid") {
     await caseAct(page, reference, 1, {
-      kind: "DECIDE",
+      kind: "case.decide",
       values: { paymentDecisionDate: date, payableAmount: "300.25", payableCurrency: "EUR" },
     });
   }
   if (state === "paid") {
     return (
       await caseAct(page, reference, 2, {
-        kind: "RECORD_PAYMENT",
+        kind: "case.recordPayment",
         values: { paymentDate: date, paidAmount: "300.25", paidCurrency: "EUR" },
       })
     ).operationId;
   }
   if (state === "closed") {
-    await caseAct(page, reference, 1, { kind: "CLOSE" });
+    await caseAct(page, reference, 1, { kind: "case.close" });
   }
   if (state === "voided") {
-    await caseAct(page, reference, 1, { kind: "VOID", reason: "Synthetic matrix entry error" });
+    await caseAct(page, reference, 1, {
+      kind: "case.void",
+      reason: "Synthetic matrix entry error",
+    });
   }
   if (state === "erased") {
-    await caseAct(page, reference, 1, { kind: "ERASE" });
+    await caseAct(page, reference, 1, { kind: "case.erase" });
   }
   return null;
 };
@@ -345,7 +347,7 @@ const assertCase = async (page: Page, reference: string, state: CaseState) => {
     );
     expect(value.state.fields.finance.paymentCount > 0).toBe(state === "paid");
     if (state === "paid") {
-      expect(value.advice.acts).toContain("CORRECT");
+      expect(value.advice.acts).toContain("case.correct");
     }
   }
 };
@@ -365,7 +367,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
   let operationId = "";
   for (const state of states) {
     const reference = references[state];
-    await caseAct(page, reference, 0, { kind: "OPEN", values: registration });
+    await caseAct(page, reference, 0, { kind: "case.open", values: registration });
     const acceptedId = await advanceCase(page, reference, state, date);
     if (acceptedId !== null) {
       operationId = acceptedId;
@@ -373,7 +375,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     await assertCase(page, reference, state);
     if (state === "decided") {
       await caseAct(page, reference, 2, {
-        kind: "RECORD_PAYMENT",
+        kind: "case.recordPayment",
         values: { paymentDate: date, paidAmount: "100", paidCurrency: "EUR" },
       });
       await execute(page, {
@@ -381,7 +383,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
         operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         act: {
-          kind: "ADD_NOTE",
+          kind: "note.add",
           text: "Documents received. Review the remaining payment after the claimant confirms the estimate.",
         },
       });
@@ -392,20 +394,20 @@ const seedCases = async (page: Page, marker: string, date: string) => {
 const registerActor = async (page: Page, issuer: string, reference: string) => {
   const target = { kind: "SERVICE", issuer, subject: `matrix-${randomUUID()}` } as const;
   const registered = await execute(page, {
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target,
-    act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
+    act: { kind: "people.register", profile: { displayName: "Synthetic matrix account" } },
   });
-  if (registered.subject.kind !== "AUTHORITY") {
-    throw new Error("E2E_MATRIX_AUTHORITY_RECEIPT");
+  if (registered.subject.kind !== "PEOPLE") {
+    throw new Error("E2E_MATRIX_PEOPLE_RECEIPT");
   }
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target,
     act: {
-      kind: "GRANT",
+      kind: "people.grant",
       role: "CASE_READER",
       scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
     },
@@ -442,24 +444,24 @@ const setOwnerCaseWork = async (
 const unavailableCaseWork = async (page: Page, issuer: string, reference: string, date: string) => {
   const target = { kind: "HUMAN", issuer, subject: `matrix-assignee-${randomUUID()}` } as const;
   const registered = await execute(page, {
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target,
-    act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
+    act: { kind: "people.register", profile: { displayName: "Synthetic matrix account" } },
   });
-  if (registered.subject.kind !== "AUTHORITY") {
+  if (registered.subject.kind !== "PEOPLE") {
     throw new Error("Expected the independently registered human assignee");
   }
   const actorId =
     registered.subject.targetActor.kind === "DISCLOSED"
       ? registered.subject.targetActor.actor.actorId
       : registered.subject.targetActor.actorId;
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target,
     act: {
-      kind: "GRANT",
+      kind: "people.grant",
       role: "CASE_HANDLER",
       scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
     },
@@ -468,11 +470,11 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   await workAct(page, reference, 0, { responsibleActor: { kind: "SET", value: actorId } });
   await planReminder(page, reference, yesterday.toISOString().slice(0, 10));
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target,
-    act: { kind: "DISABLE" },
+    act: { kind: "people.disable" },
   });
   const current = await request(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },

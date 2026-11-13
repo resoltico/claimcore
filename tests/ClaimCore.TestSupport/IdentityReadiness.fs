@@ -63,7 +63,7 @@ let wait (client: HttpClient) location validate (ct: CancellationToken) =
         | :? OperationCanceledException -> return refuse ("DEADLINE_" + observed)
     }
 
-/// Host qualification uses the production authority metadata validator after readiness.
+/// Host qualification uses the production people metadata validator after readiness.
 let waitForIssuer client issuer token =
     wait
         client

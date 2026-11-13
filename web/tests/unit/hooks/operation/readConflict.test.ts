@@ -25,7 +25,7 @@ const caseValue = () => ({
     revision: 100,
     workRevision: 7,
     history: "NONE" as const,
-    tasks: ["WORK:UPDATE_WORK"] as const,
+    tasks: ["work.update"] as const,
     editableInputs: ["field:handlingSummary"] as const,
     correction: null,
     seeds: {
@@ -37,7 +37,7 @@ const caseValue = () => ({
   },
 });
 const scoped = (source: LocalSource): source is ConflictSource =>
-  source.prepared.input.kind !== "AUTHORITY";
+  source.prepared.input.kind !== "PEOPLE";
 const effectFor = (input: OperationInput): Extract<OperationEffect, { kind: "READ_CONFLICT" }> => {
   const source = { prepared: prepareRequest("operation.execute", input), submittedRows: {} };
   if (!scoped(source)) {
@@ -76,7 +76,7 @@ it("uses the current work revision separately from the case fact revision", asyn
       kind: "WORK",
       ...root,
       expectedRevision: 1,
-      act: { kind: "UPDATE_WORK", values: { handlingSummary: "Retained summary" } },
+      act: { kind: "work.update", values: { handlingSummary: "Retained summary" } },
     }),
     reads,
   );
@@ -102,7 +102,7 @@ it("reads the selected reminder revision rather than either case or work revisio
         caseId: current.context.caseId,
         reminderId,
         revision: 9,
-        tasks: ["REMINDER:REMINDER_UPDATE"],
+        tasks: ["reminder.update"],
         actionSeed: "Current action",
         dueDateSeed: "2026-11-05",
       },
@@ -113,7 +113,7 @@ it("reads the selected reminder revision rather than either case or work revisio
       kind: "REMINDER",
       ...root,
       act: {
-        kind: "UPDATE",
+        kind: "reminder.update",
         reminderId,
         expectedRevision: 1,
         action: "Retained action",
@@ -154,7 +154,7 @@ it("retains an erased current-case status without inventing editable facts or a 
       kind: "REMINDER",
       ...root,
       act: {
-        kind: "CANCEL",
+        kind: "reminder.cancel",
         reminderId: "30000000-0000-4000-8000-000000000003",
         expectedRevision: 1,
       },

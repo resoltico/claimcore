@@ -49,7 +49,7 @@ let private seedCases fixture (admin: ServiceContext) target =
                     true
 
             let receipt = accepted added
-            acceptedAuthority added
+            acceptedPeople added
 
             if n = 1 then
                 let! reviewed =
@@ -97,7 +97,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 }
                 true
 
-        acceptedAuthority steward
+        acceptedPeople steward
 
         let erase =
             {
@@ -124,15 +124,15 @@ let private prepare (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 200)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         do! seedCases database.Fixture admin target
 
@@ -148,7 +148,7 @@ let private prepare (database: PostgresFixture.Database) =
                     }
                     true
 
-            acceptedAuthority added
+            acceptedPeople added
 
 
         let! actors =
@@ -170,12 +170,12 @@ let private prepare (database: PostgresFixture.Database) =
         let! disabled =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id database.Fixture 603) target (AuthorityAct.Disable)
+                (OperationInput.People(
+                    peopleRequest (id database.Fixture 603) target (PeopleAct.Disable)
                 ))
                 (token))
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
 
         do! eraseCase database admin
         return admin, actorId
@@ -227,7 +227,7 @@ let private changedTarget fixture (admin: ServiceContext) targetId cursor =
                 }
                 false
 
-        acceptedAuthority removed
+        acceptedPeople removed
 
         let! current =
             (Service.grants
@@ -257,15 +257,15 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 620)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! authorized =
             grant
@@ -278,7 +278,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority authorized
+        acceptedPeople authorized
         let actor = core database.Fixture target
 
         let query =
@@ -302,14 +302,14 @@ let private callerRevocation (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
 
         let! denied = (Service.grants actor ({ query with AfterCursor = cursor }) (token))
 
         Expect.equal
             denied
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "Current caller authority precedes token acceptance"
+            "Current caller people precedes token acceptance"
     }
 
 let private cursorIsolation fixture (admin: ServiceContext) (query: GrantsRequest) cursor =
@@ -459,12 +459,10 @@ let private changeTarget fixture (admin: ServiceContext) =
         let! enabled =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id fixture 630) target (AuthorityAct.Enable)
-                ))
+                (OperationInput.People(peopleRequest (id fixture 630) target (PeopleAct.Enable)))
                 (token))
 
-        acceptedAuthority enabled
+        acceptedPeople enabled
 
         let! removed =
             grant
@@ -477,7 +475,7 @@ let private changeTarget fixture (admin: ServiceContext) =
                 }
                 false
 
-        acceptedAuthority removed
+        acceptedPeople removed
     }
 
 let private concurrentSnapshot (database: PostgresFixture.Database) =
@@ -509,8 +507,8 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
             }
 
         let reading =
-            Task.Run<Outcome<AuthorityGrantPage>>(
-                Func<Task<Outcome<AuthorityGrantPage>>>(fun () ->
+            Task.Run<Outcome<PeopleGrantPage>>(
+                Func<Task<Outcome<PeopleGrantPage>>>(fun () ->
                     (Service.grants actor (query) (token)))
             )
 

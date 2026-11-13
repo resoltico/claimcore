@@ -14,7 +14,7 @@ it("fetch never follows redirects and dispatched delivery loss remains uncertain
       target: { kind: "REFERENCE", caseReference: "CASE-1" },
       expectedRevision: 1,
       act: {
-        kind: "CLOSE",
+        kind: "case.close",
       },
     } as const),
     "csrf",

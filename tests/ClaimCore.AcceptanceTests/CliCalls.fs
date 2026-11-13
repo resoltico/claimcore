@@ -192,7 +192,7 @@ let private grantFrame target role =
     frame
         "operation.execute"
         {|
-            kind = "AUTHORITY"
+            kind = "PEOPLE"
             operationId = id ()
             target = target
             act =
@@ -208,7 +208,7 @@ let setGrant fixture target role active =
         frame
             "operation.execute"
             {|
-                kind = "AUTHORITY"
+                kind = "PEOPLE"
                 operationId = id ()
                 target = target
                 act =
@@ -242,7 +242,7 @@ let private setupFrames fixture =
             frame
                 "operation.execute"
                 {|
-                    kind = "AUTHORITY"
+                    kind = "PEOPLE"
                     operationId = id ()
                     target = target
                     act =
@@ -264,7 +264,7 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
     Expect.equal result.StandardError.Length 0 "No private diagnostics"
     let lines = UTF8Encoding(false, true).GetString(result.StandardOutput).Split('\n')
     Expect.equal lines[lines.Length - 1] "" "Every reply ends with a newline"
-    Expect.equal (lines.Length - 1) expected "One reply for every authority frame"
+    Expect.equal (lines.Length - 1) expected "One reply for every people frame"
 
     for line in lines[.. lines.Length - 2] do
         let admitted =

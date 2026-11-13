@@ -37,7 +37,7 @@ const correction: OperationInput = {
   target: { kind: "REFERENCE", caseReference: "CASE-1" },
   expectedRevision: 1,
   act: {
-    kind: "CORRECT",
+    kind: "case.correct",
     groups: {
       registration: {
         kind: "UPDATE",
@@ -53,7 +53,7 @@ const review: HumanReview = {
     ...closeReview.document,
     context: {
       ...closeReview.document.context,
-      task: "CASE:CORRECT",
+      task: "case.correct",
       target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 1 },
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
       inputs: [
@@ -119,16 +119,16 @@ it("preserves Core-supplied target and technical values without changing the pre
   expect(prepared.input).toEqual(correction);
 });
 
-const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
+const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
   const scope =
     kind === "CASE"
       ? { kind, target: { kind: "REFERENCE" as const, caseReference: "SYNTHETIC-GRANT" } }
       : { kind };
   const input: OperationInput = {
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId,
     target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "KEEP" },
-    act: { kind: "GRANT", role: "CASE_READER", scope },
+    act: { kind: "people.grant", role: "CASE_READER", scope },
   };
   const proposed: HumanReview = {
     ...closeReview,
@@ -136,7 +136,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
       ...closeReview.document,
       context: {
         kind: "REVIEW",
-        task: "AUTHORITY:GRANT",
+        task: "people.grant",
         consequence: "ROUTINE",
         confirmation: { kind: "OPERATION", operationId },
         inputs: [
@@ -149,7 +149,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
           "field:caseReference",
         ],
         target: {
-          kind: "AUTHORITY",
+          kind: "PEOPLE",
           actorId: "10000000-0000-4000-8000-000000000099",
           scope:
             kind === "CASE"
@@ -182,9 +182,9 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
   return model(input, proposed);
 };
 it.each(["INSTALLATION", "CASE"] as const)(
-  "authority review displays supplied %s scope and literal token-looking subject",
+  "people review displays supplied %s scope and literal token-looking subject",
   (kind) => {
-    render(<OperationReview model={authorityReviewModel(kind)} />);
+    render(<OperationReview model={peopleReviewModel(kind)} />);
     const dialog = screen.getByRole("dialog");
     const request = dialog.querySelector<HTMLElement>(".screen-details")!;
     fireEvent.click(request.querySelector("summary")!);
@@ -194,7 +194,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
     ).toHaveLength(1);
     expect(within(request).getByText("KEEP", { exact: true }).closest("code")).toBeNull();
     expect(within(dialog).queryByText("Keep current details", { exact: true })).toBeNull();
-    expect(within(dialog).queryByText("AUTHORITY", { exact: true })).toBeNull();
+    expect(within(dialog).queryByText("PEOPLE", { exact: true })).toBeNull();
     if (kind === "CASE") {
       expect(within(dialog).getAllByText("SYNTHETIC-GRANT", { exact: true })).toHaveLength(1);
     }
@@ -276,7 +276,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     operationId,
     target: { kind: "REFERENCE", caseReference: "CASE-1" },
     expectedRevision: 1,
-    act: { kind: "ERASE" },
+    act: { kind: "case.erase" },
   };
   const proposed: HumanReview = {
     ...closeReview,
@@ -284,7 +284,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
       ...closeReview.document,
       context: {
         ...closeReview.document.context,
-        task: "CASE:ERASE",
+        task: "case.erase",
         consequence: "IRREVERSIBLE",
         target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 1 },
         confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
@@ -293,7 +293,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
         regions: [
           {
             role: "NOTICE",
-            content: { kind: "NOTICE", messageId: "act.ERASE.meaning", tone: "FINAL" },
+            content: { kind: "NOTICE", messageId: "task.case.erase.meaning", tone: "FINAL" },
           },
         ],
       },
@@ -304,11 +304,11 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
 });
 it("shows Core profile changes rather than recomputing proposed values from authored input", () => {
   const input: OperationInput = {
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId,
     target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "profile-target" },
     act: {
-      kind: "SET_PROFILE",
+      kind: "people.setProfile",
       profile: { displayName: "Requested name", contact: "Requested contact" },
     },
   };
@@ -318,7 +318,7 @@ it("shows Core profile changes rather than recomputing proposed values from auth
       ...closeReview.document,
       context: {
         kind: "REVIEW",
-        task: "AUTHORITY:SET_PROFILE",
+        task: "people.setProfile",
         consequence: "ROUTINE",
         inputs: [
           "input:operationId",
@@ -329,7 +329,7 @@ it("shows Core profile changes rather than recomputing proposed values from auth
           "input:profile.contact",
         ],
         target: {
-          kind: "AUTHORITY",
+          kind: "PEOPLE",
           actorId: "10000000-0000-4000-8000-000000000099",
           scope: { kind: "INSTALLATION" },
         },

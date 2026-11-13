@@ -4,11 +4,11 @@ import { isResponse } from "../../../contracts/client";
 import { isActiveOwnerContext } from "../../e2e/published-session-context.mjs";
 import { actorContextInput } from "../support/inputs";
 const active = actorContextInput({
-  capabilities: ["MANAGE_AUTHORITY"],
+  capabilities: ["MANAGE_ACCESS"],
   productVersion: "synthetic",
   businessDate: "2026-11-05",
   timeZone: "Etc/UTC",
-  views: ["AUTHORITY"],
+  views: ["PEOPLE"],
   offers: [],
 });
 const reply = (requester: unknown) => ({
@@ -43,14 +43,14 @@ it.each([
     subject: "unknown",
     claims: {},
   },
-])("refuses non-owner requester state %# without inferring authority", (requester) => {
+])("refuses non-owner requester state %# without inferring people", (requester) => {
   expect(isResponse("context", reply(requester))).toBe(true);
   expect(isActiveOwnerContext(reply(requester))).toBe(false);
 });
 it.each([
   null,
   {},
-  reply({ kind: "ACTIVE", capabilities: ["MANAGE_AUTHORITY"] }),
+  reply({ kind: "ACTIVE", capabilities: ["MANAGE_ACCESS"] }),
   { outcome: { kind: "REFUSED", data: { code: "RESOURCE_UNAVAILABLE" } } },
 ])("refuses malformed or non-success context %#", (value) => {
   expect(isActiveOwnerContext(value)).toBe(false);

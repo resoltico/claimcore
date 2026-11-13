@@ -125,9 +125,9 @@ module ReceiptScreen =
                [ receiptReminderVersion completed; receiptReminderVersion next ]),
         []
 
-    let authorityReceipt (item: AuthorityReceipt) =
+    let peopleReceipt (item: PeopleReceipt) =
         [
-            receiptHeader None (code AuthorityKind.vocabulary item.Act)
+            receiptHeader None (code PeopleActKind.vocabulary item.Act)
             section
                 "label.account"
                 [
@@ -136,8 +136,8 @@ module ReceiptScreen =
                         "label.targetAccount"
                         Prominence.Primary
                         (match item.TargetActor with
-                         | AuthorityTargetDisclosure.Disclosed actor -> PresentedValue.Actor actor
-                         | AuthorityTargetDisclosure.Withheld _ ->
+                         | PeopleTargetDisclosure.Disclosed actor -> PresentedValue.Actor actor
+                         | PeopleTargetDisclosure.Withheld _ ->
                              PresentedValue.Absent "label.detailsWithheld")
                 ]
         ]
@@ -150,7 +150,7 @@ module ReceiptScreen =
                            "act"
                            "label.action"
                            Prominence.Primary
-                           (code AuthorityKind.vocabulary effect.Act)
+                           (code PeopleActKind.vocabulary effect.Act)
                        value
                            ("effect." + string (EffectId.index effect.Id) + ".position")
                            "label.effectPosition"
@@ -168,7 +168,7 @@ module ReceiptScreen =
                 "input.actorId.label"
                 Prominence.Detail
                 (PresentedValue.Identifier(
-                    ActorId.format (AuthorityTargetDisclosure.actorId item.TargetActor)
+                    ActorId.format (PeopleTargetDisclosure.actorId item.TargetActor)
                 ))
         ]
 
@@ -216,7 +216,7 @@ module ReceiptScreen =
                         (PresentedValue.Identifier(NoteId.format item.NoteId))
                 ]
             | ReceiptSubject.Reminder item -> reminderReceipt item
-            | ReceiptSubject.Authority item -> authorityReceipt item
+            | ReceiptSubject.People item -> peopleReceipt item
 
         body
         @ [
@@ -298,7 +298,7 @@ module ReceiptScreen =
             | ReceiptSubject.Work item -> ActKind.Work item.Act
             | ReceiptSubject.Note item -> ActKind.Note item.Act
             | ReceiptSubject.Reminder item -> ActKind.Reminder item.Act
-            | ReceiptSubject.Authority item -> ActKind.Authority item.Act
+            | ReceiptSubject.People item -> ActKind.People item.Act
 
         let reference =
             match receipt.Subject with
@@ -306,7 +306,7 @@ module ReceiptScreen =
             | ReceiptSubject.Work item -> Some item.Reference
             | ReceiptSubject.Note item -> Some item.Reference
             | ReceiptSubject.Reminder item -> Some item.Reference
-            | ReceiptSubject.Authority _ -> None
+            | ReceiptSubject.People _ -> None
 
         let stateEntries =
             match receipt.Subject with
@@ -362,7 +362,7 @@ module ReceiptScreen =
             ]
 
         let message =
-            if act = ActKind.Authority AuthorityKind.ProvisionOwner then
+            if act = ActKind.People PeopleActKind.ProvisionOwner then
                 "label.recorded"
             else
                 Vocabulary.messageKey ActKind.vocabulary act "done"

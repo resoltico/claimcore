@@ -87,18 +87,18 @@ it("formats only read-only scalar displays and leaves technical text and currenc
   expect(p.fieldValue("12.5000", field("claimedAmount"))).toBe("12,5000");
 });
 
-it("uses stable metadata identity rather than supplied English labels as catalog authority", () => {
+it("uses stable metadata identity rather than supplied English labels as catalog people", () => {
   const p = createPresenter(defaults);
   expect(p.fieldLabel("claimantName")).toBe("Claimant name");
   expect(p.fieldHint("claimantName")).not.toBe("");
-  expect(p.actLabel("CLOSE")).toBe("Close the case");
-  expect(p.actMeaning("CLOSE")).not.toBe("");
+  expect(p.actLabel("case.close")).toBe("Close the case");
+  expect(p.actMeaning("case.close")).not.toBe("");
   expect(renderCatalogKey(defaults, taskInput("group:registration").labelId)).not.toBe("");
   expect(renderCatalogKey(defaults, taskInput("group:registration").hintId!)).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
   expect(p.fieldHint("FUTURE_TECHNICAL_FIELD")).toBe("");
-  expect(p.term("act", "CLOSE")).toBe(p.actLabel("CLOSE"));
-  expect(isTerm("act", "opaque-identifier")).toBe(false);
+  expect(p.term("task", "case.close")).toBe(p.actLabel("case.close"));
+  expect(isTerm("task", "opaque-identifier")).toBe(false);
   expect(p.integer("42")).toBe("42");
   expect(p.amount("42.0000")).toBe("42.0000");
   expect(p.date("2026-09-22")).toBe("22/09/2026");

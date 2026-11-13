@@ -142,8 +142,9 @@ module internal QueryArguments =
 
         let typed =
             match query with
-            | QueryTaskId.CaseGet -> EndpointValues.input Api.caseGet { Target = caseTarget () }
-            | QueryTaskId.CaseAssignees ->
+            | TaskId.Query QueryTaskId.CaseGet ->
+                EndpointValues.input Api.caseGet { Target = caseTarget () }
+            | TaskId.Query QueryTaskId.CaseAssignees ->
                 EndpointValues.input
                     Api.caseAssignees
                     {
@@ -151,7 +152,7 @@ module internal QueryArguments =
                         AfterCursor = cursor 512
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.CaseNotes ->
+            | TaskId.Query QueryTaskId.CaseNotes ->
                 EndpointValues.input
                     Api.caseNotes
                     {
@@ -159,7 +160,7 @@ module internal QueryArguments =
                         AfterCursor = cursor 512
                         Limit = limit NotePaging.MaximumLimit NotePaging.DefaultLimit
                     }
-            | QueryTaskId.CasePayments ->
+            | TaskId.Query QueryTaskId.CasePayments ->
                 EndpointValues.input
                     Api.casePayments
                     {
@@ -167,7 +168,7 @@ module internal QueryArguments =
                         AfterCursor = cursor 512
                         Limit = limit PaymentPaging.MaximumLimit PaymentPaging.DefaultLimit
                     }
-            | QueryTaskId.CaseTimeline ->
+            | TaskId.Query QueryTaskId.CaseTimeline ->
                 EndpointValues.input
                     Api.caseTimeline
                     {
@@ -176,7 +177,7 @@ module internal QueryArguments =
                         AfterCursor = cursor 512
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.CaseList ->
+            | TaskId.Query QueryTaskId.CaseList ->
                 EndpointValues.input
                     Api.caseList
                     {
@@ -187,8 +188,9 @@ module internal QueryArguments =
                                 Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                             }
                     }
-            | QueryTaskId.CaseSummary -> EndpointValues.input Api.caseSummary (filter ())
-            | QueryTaskId.ReminderGet ->
+            | TaskId.Query QueryTaskId.CaseSummary ->
+                EndpointValues.input Api.caseSummary (filter ())
+            | TaskId.Query QueryTaskId.ReminderGet ->
                 EndpointValues.input
                     Api.reminder
                     {
@@ -203,7 +205,7 @@ module internal QueryArguments =
 
                                 Guid.Empty)
                     }
-            | QueryTaskId.ReminderList ->
+            | TaskId.Query QueryTaskId.ReminderList ->
                 let inactive =
                     match raw TaskInputId.IncludeInactive with
                     | None -> None
@@ -235,7 +237,7 @@ module internal QueryArguments =
                         AfterCursor = cursor Paging.MaximumCaseCursorCharacters
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.OperationGet ->
+            | TaskId.Query QueryTaskId.OperationGet ->
                 EndpointValues.input
                     Api.operationGet
                     {
@@ -244,18 +246,18 @@ module internal QueryArguments =
                             |> uuid (target InputTarget.OperationId)
                             |> Option.defaultValue Guid.Empty
                     }
-            | QueryTaskId.AuthorityList ->
+            | TaskId.Query QueryTaskId.PeopleList ->
                 EndpointValues.input
-                    Api.authorityList
+                    Api.peopleList
                     {
                         Role = optionalChoice TaskInputId.RoleFilter Role.vocabulary
                         Text = raw (target InputTarget.DirectorySearch)
                         AfterCursor = cursor Paging.MaximumActorCursorCharacters
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.AuthorityGrants ->
+            | TaskId.Query QueryTaskId.PeopleGrants ->
                 EndpointValues.input
-                    Api.authorityGrants
+                    Api.peopleGrants
                     {
                         ActorId =
                             operand "ACTOR-ID"
@@ -264,23 +266,23 @@ module internal QueryArguments =
                         AfterCursor = cursor 512
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.AuthorityHistory ->
+            | TaskId.Query QueryTaskId.PeopleHistory ->
                 EndpointValues.input
-                    Api.authorityHistory
+                    Api.peopleHistory
                     {
                         TargetActorId =
                             raw TaskInputId.ActorId |> Option.bind (uuid TaskInputId.ActorId)
                         AfterCursor = cursor 512
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.AuthorityRequests ->
+            | TaskId.Query QueryTaskId.PeopleRequests ->
                 EndpointValues.input
-                    Api.authorityRequests
+                    Api.peopleRequests
                     {
                         AfterCursor = cursor Paging.MaximumAccessRequestCursorCharacters
                         Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
                     }
-            | QueryTaskId.AuthorityRequestsDismiss ->
+            | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
                 let required input =
                     raw input
                     |> Option.defaultWith (fun () ->
@@ -288,7 +290,7 @@ module internal QueryArguments =
                         "")
 
                 EndpointValues.input
-                    Api.authorityRequestsDismiss
+                    Api.peopleRequestsDismiss
                     {
                         Kind =
                             required (target InputTarget.PrincipalKind)
@@ -297,8 +299,9 @@ module internal QueryArguments =
                         Issuer = required (target InputTarget.PrincipalIssuer)
                         Subject = required (target InputTarget.PrincipalSubject)
                     }
-            | QueryTaskId.Context -> EndpointValues.input Api.context ()
-            | QueryTaskId.WorkViews -> EndpointValues.input Api.workViews ()
+            | TaskId.Query QueryTaskId.Context -> EndpointValues.input Api.context ()
+            | TaskId.Query QueryTaskId.WorkViews -> EndpointValues.input Api.workViews ()
+            | TaskId.Operation _ -> invalidArg (nameof query) "Operations use task submissions."
 
         operands
         |> List.skip (min consumed operands.Length)
@@ -306,6 +309,6 @@ module internal QueryArguments =
 
         for name in options.Keys do
             if not (used.Contains name || List.contains name CommandGrammar.globalFlags) then
-                problems.Add(UsageError.NotApplicable(name, QueryTaskId.key query))
+                problems.Add(UsageError.NotApplicable(name, TaskId.key query))
 
         typed

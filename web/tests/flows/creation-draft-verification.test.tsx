@@ -11,7 +11,7 @@ import type { ActiveRequester } from "../../src/hooks/useRequesterContext";
 it("consumes a fresh successful requester observation once and never reuses its offer after a later refusal", () => {
   let requester: ActiveRequester = {
     ...activeRequester,
-    context: { ...activeRequester.context, tasks: ["CASE:OPEN"] },
+    context: { ...activeRequester.context, tasks: ["case.open"] },
   };
   const preview = vi.spyOn(service, "preview");
   const execute = vi.spyOn(service, "execute");
@@ -19,7 +19,7 @@ it("consumes a fresh successful requester observation once and never reuses its 
     () =>
       useOperation({
         subject: "CASE",
-        kind: "OPEN",
+        kind: "case.open",
         current: null,
         credential: "token",
         onLockChange: vi.fn(),

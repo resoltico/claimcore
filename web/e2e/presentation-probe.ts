@@ -152,7 +152,7 @@ export const observe = async (
             },
             context: {
               ...activeRequester.context,
-              tasks: ["query:authorityList", "query:authorityGrants", "query:authorityHistory"],
+              tasks: ["people.list", "people.grants", "people.history"],
             },
             basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
@@ -172,10 +172,10 @@ export const seed = async (
     accent?: "green" | "blue";
   } = {},
 ) => {
-  await page.route("**/api/authority.requests", (route) =>
+  await page.route("**/api/people.requests", (route) =>
     route.fulfill({
       json: {
-        ...humanReadReply("authority.requests", {
+        ...humanReadReply("people.requests", {
           screen: { regions: [] },
           context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
           basis: { kind: "SNAPSHOT", observation: presentationBasis },

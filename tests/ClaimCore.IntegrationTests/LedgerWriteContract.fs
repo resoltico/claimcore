@@ -31,8 +31,8 @@ let internal genesis fixture =
                                     ExecutionFacts.target
                                         (core fixture fixture.Owner)
                                         tx
-                                        (Authority.factsNeeded (
-                                            AuthorityAct.ProvisionOwner(
+                                        (People.factsNeeded (
+                                            PeopleAct.ProvisionOwner(
                                                 (ActorProfile.parse Inputs.ownerProfile
                                                  |> Result.defaultWith (string >> failtest)),
                                                 []
@@ -54,7 +54,7 @@ let internal genesis fixture =
                                 Expect.isNone view.Actor.Actor "No actor before provisioning"
 
                                 return!
-                                    AuthorityExecution.provision
+                                    PeopleExecution.provision
                                         (core fixture fixture.Owner)
                                         ((CaseFixtures.operationId (id fixture 1)))
                                         Inputs.ownerProfile
@@ -65,7 +65,7 @@ let internal genesis fixture =
                                             NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
-                                    |> ExecutionFacts.persistOperation tx tx.ProjectAuthority
+                                    |> ExecutionFacts.persistOperation tx tx.ProjectPeople
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -77,11 +77,11 @@ let internal genesis fixture =
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
-        let! actor = inspectAuthority fixture (fixture.Owner) (CancellationToken.None)
+        let! actor = inspectPeople fixture (fixture.Owner) (CancellationToken.None)
 
         match actor with
-        | Ok({ Actor = Some _ } as authority) ->
-            Expect.equal authority.Installation [ Role.Owner ] "Only the owner role is provisioned"
+        | Ok({ Actor = Some _ } as people) ->
+            Expect.equal people.Installation [ Role.Owner ] "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
         let! entry =

@@ -89,36 +89,34 @@ let receipt id (reference: string) : OperationReceipt =
             }
     }
 
-let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
+let peopleReceipt (request: ClaimCore.Domain.PeopleRequest) =
     let original = receipt request.OperationId "WEB-001"
-    let kind = AuthorityAct.kind request.Act
+    let kind = PeopleAct.kind request.Act
 
     let kinds =
         match request.Act with
-        | AuthorityAct.Register _ -> [ AuthorityKind.Register; AuthorityKind.SetProfile ]
-        | AuthorityAct.ProvisionOwner _ ->
-            [ AuthorityKind.ProvisionOwner; AuthorityKind.SetProfile ]
-        | AuthorityAct.Admit value ->
-            AuthorityKind.Register
-            :: AuthorityKind.SetProfile
-            :: List.replicate value.Grants.Length AuthorityKind.Grant
+        | PeopleAct.Register _ -> [ PeopleActKind.Register; PeopleActKind.SetProfile ]
+        | PeopleAct.ProvisionOwner _ -> [ PeopleActKind.ProvisionOwner; PeopleActKind.SetProfile ]
+        | PeopleAct.Admit value ->
+            PeopleActKind.Register
+            :: PeopleActKind.SetProfile
+            :: List.replicate value.Grants.Length PeopleActKind.Grant
         | _ -> [ kind ]
 
     let effects =
         kinds
         |> List.mapi (fun index kind ->
             {
-                AuthorityReceiptEffect.Act = kind
+                PeopleReceiptEffect.Act = kind
                 Id = EffectId.create original.OperationId index |> Option.get
                 Position = EffectPosition.create original.Position.Sequence index |> Option.get
             })
 
     { original with
         Subject =
-            ReceiptSubject.Authority
+            ReceiptSubject.People
                 {
-                    TargetActor =
-                        AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
+                    TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
                     Act = kind
                     Effects = effects
                 }
@@ -142,7 +140,7 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
         let current = actor |> Option.filter (fun value -> value.Principal = principal)
 
         {
-            GlobalReadFacts.Authority =
+            GlobalReadFacts.People =
                 {
                     Actor = current
                     Installation = if current.IsSome then [ Role.Owner ] else []
@@ -174,11 +172,10 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                 | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
                 | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
                 | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
-                | "Authority" ->
+                | "People" ->
                     box (
                         Task.FromResult
-                            (facts (unbox<AuthorityQuery>(nonNull arguments[0])).Principal)
-                                .Authority
+                            (facts (unbox<AccessQuery>(nonNull arguments[0])).Principal).People
                     )
                 | "FindOperation" ->
                     box (Task.FromResult<ClaimCore.RecordFormat.RetainedOperation option> None)
@@ -221,9 +218,9 @@ type Stub() =
                 ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: ClaimCore.Domain.AuthorityRequest * CancellationToken
+    member val ExecutePeople: ClaimCore.Domain.PeopleRequest * CancellationToken
         -> Task<ExecuteResult> =
-        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
+        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(peopleReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set
 
@@ -274,9 +271,9 @@ type Stub() =
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                                 receipt request.OperationId request.CaseReference
                             )
-                        | OperationInput.Authority request ->
+                        | OperationInput.People request ->
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                authorityReceipt request
+                                peopleReceipt request
                             )
                         | OperationInput.Note _
                         | OperationInput.Work _
@@ -308,8 +305,8 @@ type Stub() =
                                 match input with
                                 | OperationInput.Case request ->
                                     this.Execute(Inputs.referencedCase request, token)
-                                | OperationInput.Authority request ->
-                                    this.ExecuteAuthority(request, token)
+                                | OperationInput.People request ->
+                                    this.ExecutePeople(request, token)
                                 | OperationInput.Note _
                                 | OperationInput.Work _
                                 | OperationInput.Reminder _ ->
@@ -322,11 +319,10 @@ type Stub() =
                                 }
 
                     })
-        | ActorEndpoint.Query query ->
+        | (ActorEndpoint.Query _ | ActorEndpoint.Command _) as endpoint ->
             let definition =
                 Api.definitions
-                |> List.find (fun endpoint ->
-                    endpoint.Id = EndpointId.Actor(ActorEndpoint.Query query))
+                |> List.find (fun definition -> definition.Id = EndpointId.Actor endpoint)
 
             definition.Accept
                 { new IEndpointVisitor<ClaimCore.Web.Route> with

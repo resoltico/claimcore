@@ -1,15 +1,15 @@
-import type { HumanReadDocument_workViews, PresentedValue } from "@contracts/client";
+import type { HumanReadDocument_work_views, PresentedValue } from "@contracts/client";
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
 
 type CaseViewFixture = {
   key: string;
-  view: HumanReadDocument_workViews["context"]["cases"][number]["view"];
+  view: HumanReadDocument_work_views["context"]["cases"][number]["view"];
   label: PresentedValue;
   count: PresentedValue;
 };
 type ReminderViewFixture = Omit<CaseViewFixture, "view"> & {
-  view: HumanReadDocument_workViews["context"]["reminders"][number]["view"];
+  view: HumanReadDocument_work_views["context"]["reminders"][number]["view"];
 };
 const cases: ReadonlyArray<CaseViewFixture> = [
   {
@@ -142,7 +142,7 @@ export const testWorkspaceViews = {
 export const workViewsDocument = (
   caseItems: ReadonlyArray<CaseViewFixture> = cases,
   reminderItems: ReadonlyArray<ReminderViewFixture> = reminders,
-): HumanReadDocument_workViews => ({
+): HumanReadDocument_work_views => ({
   screen: {
     regions: [
       {

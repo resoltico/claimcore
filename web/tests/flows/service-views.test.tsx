@@ -23,7 +23,7 @@ import { wireReply } from "../support/reply.fixtures";
 import { definition, operationId } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput(
   {
-    tasks: ["CASE:CLOSE"],
+    tasks: ["case.close"],
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 1,
     history: "FULL",
@@ -65,7 +65,7 @@ const queueListPages = () => {
       context: {
         kind: "CASES",
         cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: "next",
       },
@@ -102,7 +102,7 @@ const queueListPages = () => {
       context: {
         kind: "CASES",
         cases: [{ caseId: "20000000-0000-4000-8000-000000000002", assignment: null }],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },
@@ -134,7 +134,7 @@ const queueListPages = () => {
       context: {
         kind: "CASES",
         cases: [],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },
@@ -200,7 +200,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
-  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "CLOSE");
+  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "case.close");
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");
   await user.click(getButton("Load more"));
@@ -356,7 +356,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       context: {
         kind: "CASES",
         cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },
@@ -393,7 +393,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       context: {
         kind: "CASES",
         cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },

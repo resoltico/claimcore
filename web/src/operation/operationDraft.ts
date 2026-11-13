@@ -14,12 +14,12 @@ export const createDraft = (
   owner: OwnerScope | null,
 ): OperationDraft => {
   const values = { ...authored };
-  if (binding.kind === "AUTHORITY" && binding.principal !== undefined) {
+  if (binding.kind === "PEOPLE" && binding.principal !== undefined) {
     delete values["input:principal.kind"];
     delete values["input:principal.issuer"];
     delete values["input:principal.subject"];
   }
-  if (entry.kind === "REVOKE" && binding.kind === "AUTHORITY" && binding.grant !== undefined) {
+  if (entry.kind === "people.revoke" && binding.kind === "PEOPLE" && binding.grant !== undefined) {
     delete values["input:role"];
     delete values["input:scope"];
     delete values["field:caseReference"];
@@ -40,8 +40,8 @@ export const createDraft = (
 type Edit = Extract<OperationAction, { type: "EDIT" }>;
 const clearsRoleSelection = (draft: OperationDraft, action: Edit): boolean => {
   if (
-    draft.entry.subject !== "AUTHORITY" ||
-    draft.entry.kind !== "GRANT" ||
+    draft.entry.subject !== "PEOPLE" ||
+    draft.entry.kind !== "people.grant" ||
     (action.path !== "input:principal.kind" && action.path !== "input:scope")
   ) {
     return false;

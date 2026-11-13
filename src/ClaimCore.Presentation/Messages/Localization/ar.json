@@ -1,205 +1,205 @@
 {
-  "act.AMEND_REGISTRATION.label": {
+  "task.case.amendRegistration.label": {
     "text": "تحديث بيانات المطالبة",
     "source": "5ae6604c4520"
   },
-  "act.AMEND_REGISTRATION.meaning": {
+  "task.case.amendRegistration.meaning": {
     "text": "تغيير تفاصيل المطالبة المحددة. تبقى التفاصيل غير المحددة ومرجع الملف كما هي.",
     "source": "2c651083c926"
   },
-  "act.CLOSE.label": {
+  "task.case.close.label": {
     "text": "إغلاق الملف",
     "source": "5cad104f0e26"
   },
-  "act.CLOSE.meaning": {
+  "task.case.close.meaning": {
     "text": "إغلاق الملف عندما لا تبقى أعمال مطلوبة. لا يعني الإغلاق أن المطالبة دُفعت.",
     "source": "6059fdf3ac25"
   },
-  "act.CORRECT.label": {
+  "task.case.correct.label": {
     "text": "تصحيح وقائع الملف",
     "source": "e3eeb9561f2e"
   },
-  "act.CORRECT.meaning": {
+  "task.case.correct.meaning": {
     "text": "تصحيح بيانات المطالبة أو القرار المسجلة. تبقى الدفعات دون تغيير، ولا يجوز أن يقل المبلغ المستحق عن إجمالي المدفوع.",
     "source": "c115bf28430f"
   },
-  "act.DECIDE.label": {
+  "task.case.decide.label": {
     "text": "تسجيل قرار الدفع",
     "source": "17b6161410d5"
   },
-  "act.DECIDE.meaning": {
+  "task.case.decide.meaning": {
     "text": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
     "source": "17d0f005a684"
   },
-  "act.DISABLE.label": {
+  "task.people.disable.label": {
     "text": "تعطيل الحساب",
     "source": "9f024ada2282"
   },
-  "act.DISABLE.meaning": {
+  "task.people.disable.meaning": {
     "text": "منع هذا الحساب من استخدام ClaimCore. تبقى تغييراته المسجلة محفوظة.",
     "source": "a43350b66b04"
   },
-  "act.ENABLE.label": {
+  "task.people.enable.label": {
     "text": "تمكين الحساب",
     "source": "1965185f3488"
   },
-  "act.ENABLE.meaning": {
+  "task.people.enable.meaning": {
     "text": "السماح لهذا الحساب باستخدام ClaimCore مجددًا بأدواره الحالية.",
     "source": "94ba3463b2e3"
   },
-  "act.ERASE.label": {
+  "task.case.erase.label": {
     "text": "محو الملف",
     "source": "29b338cac964"
   },
-  "act.ERASE.meaning": {
+  "task.case.erase.meaning": {
     "text": "محو تفاصيل هذا الملف وأعماله وتذكيراته نهائيًا من ClaimCore. يبقى مرجع الملف وقائمة التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
     "source": "8705b2ea28a6"
   },
-  "act.ERASE_PROFILE.label": {
+  "task.people.eraseProfile.label": {
     "text": "محو الملف الشخصي",
     "source": "55056e69d504"
   },
-  "act.ERASE_PROFILE.meaning": {
+  "task.people.eraseProfile.meaning": {
     "text": "محو الاسم وبيانات الاتصال المحفوظة لهذا الحساب نهائيًا. تبقى هوية تسجيل الدخول والأدوار والأعمال المسجلة. تظهر التغييرات السابقة باسم «حساب سابق».",
     "source": "871f791ea524"
   },
-  "act.GRANT.label": {
+  "task.people.grant.label": {
     "text": "منح دور",
     "source": "4549a77f3b6c"
   },
-  "act.GRANT.meaning": {
+  "task.people.grant.meaning": {
     "text": "عيّن الدور المحدد لهذا الحساب.",
     "source": "c0ad11901493"
   },
-  "act.OPEN.label": {
+  "task.case.open.label": {
     "text": "فتح ملف",
     "source": "100d2c104336"
   },
-  "act.OPEN.meaning": {
+  "task.case.open.meaning": {
     "text": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
     "source": "bd4ea9e91f3a"
   },
-  "act.PROVISION_OWNER.label": {
+  "task.people.provisionOwner.label": {
     "text": "إعداد المالك الأول",
     "source": "2a7018cea51b"
   },
-  "act.RECORD_PAYMENT.label": {
+  "task.case.recordPayment.label": {
     "text": "تسجيل الدفع الفعلي",
     "source": "0d13e856322a"
   },
-  "act.RECORD_PAYMENT.meaning": {
+  "task.case.recordPayment.meaning": {
     "text": "تسجيل تاريخ دفعة تمت فعليًا ومبلغها بعملة القرار. لا يؤدي ذلك إلى تنفيذ تحويل أو التحقق منه.",
     "source": "572c7a975cf2"
   },
-  "act.REGISTER.label": {
+  "task.people.register.label": {
     "text": "تسجيل حساب",
     "source": "2ce51f0219a2"
   },
-  "act.REGISTER.meaning": {
+  "task.people.register.meaning": {
     "text": "إضافة حساب باسم وبيانات اتصال اختيارية. تُسند الأدوار بشكل منفصل.",
     "source": "b056b3b46015"
   },
-  "act.REINSTATE.label": {
+  "task.case.reinstate.label": {
     "text": "إعادة تفعيل الملف",
     "source": "d28eb327714f"
   },
-  "act.REINSTATE.meaning": {
+  "task.case.reinstate.meaning": {
     "text": "السماح بمتابعة العمل على هذا الملف المبطل. لا تتغير حالته المفتوحة أو المغلقة.",
     "source": "c48d44c1b7c1"
   },
-  "act.REMINDER_CANCEL.label": {
+  "task.reminder.cancel.label": {
     "text": "إلغاء التذكير",
     "source": "948e115bd6a0"
   },
-  "act.REMINDER_CANCEL.meaning": {
+  "task.reminder.cancel.meaning": {
     "text": "إلغاء هذا الإجراء دون اعتباره مكتملًا. يبقى سجله محفوظًا.",
     "source": "0d349a8b5a58"
   },
-  "act.REMINDER_COMPLETE.label": {
+  "task.reminder.complete.label": {
     "text": "إكمال التذكير",
     "source": "80f73f9e9a9b"
   },
-  "act.REMINDER_COMPLETE.meaning": {
+  "task.reminder.complete.meaning": {
     "text": "تحديد هذا الإجراء كمكتمل. إذا كان الأخير، فسيحتاج الملف إلى إجراء تالٍ.",
     "source": "47465ff6d73b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+  "task.reminder.completeAndPlanNext.label": {
     "text": "إكمال وتخطيط الإجراء التالي",
     "source": "329a45fe88c6"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+  "task.reminder.completeAndPlanNext.meaning": {
     "text": "أكمل هذا التذكير وخطط للإجراء التالي معًا.",
     "source": "6da6febc07ca"
   },
-  "act.REMINDER_CREATE.label": {
+  "task.reminder.create.label": {
     "text": "إضافة تذكير",
     "source": "cd566803bf39"
   },
-  "act.REMINDER_CREATE.meaning": {
+  "task.reminder.create.meaning": {
     "text": "خطط للإجراء التالي لهذا الملف.",
     "source": "c072c5b2420d"
   },
-  "act.REMINDER_REOPEN.label": {
+  "task.reminder.reopen.label": {
     "text": "إعادة فتح التذكير",
     "source": "a1dceb5971c8"
   },
-  "act.REMINDER_REOPEN.meaning": {
+  "task.reminder.reopen.meaning": {
     "text": "إعادة هذا الإجراء إلى حالة الانتظار بتاريخ استحقاق جديد.",
     "source": "00cf210f8d8f"
   },
-  "act.REMINDER_UPDATE.label": {
+  "task.reminder.update.label": {
     "text": "تحديث التذكير",
     "source": "5a4f907e9a23"
   },
-  "act.REMINDER_UPDATE.meaning": {
+  "task.reminder.update.meaning": {
     "text": "تغيير الإجراء أو التاريخ لهذا التذكير المعلق. تبقى النسخ السابقة في السجل.",
     "source": "d87307f6a6cd"
   },
-  "act.REOPEN.label": {
+  "task.case.reopen.label": {
     "text": "إعادة فتح الملف",
     "source": "e1469dc1ace7"
   },
-  "act.REOPEN.meaning": {
+  "task.case.reopen.meaning": {
     "text": "إعادة فتح الملف. تبقى تفاصيله وسجله محفوظين.",
     "source": "9afd35e2c444"
   },
-  "act.REVOKE.label": {
+  "task.people.revoke.label": {
     "text": "سحب دور",
     "source": "13287c1eda24"
   },
-  "act.REVOKE.meaning": {
+  "task.people.revoke.meaning": {
     "text": "أزل تعيين الدور المحدد.",
     "source": "4bd25ffa16ef"
   },
-  "act.SET_PROFILE.label": {
+  "task.people.setProfile.label": {
     "text": "تحديث الملف الشخصي",
     "source": "34540d1107b7"
   },
-  "act.SET_PROFILE.meaning": {
+  "task.people.setProfile.meaning": {
     "text": "تسجيل اسم عرض وبيانات اتصال اختيارية للحساب. لا يغيّر ذلك هويته أو صلاحيات وصوله.",
     "source": "eee65a67f467"
   },
-  "act.UPDATE_WORK.label": {
+  "task.work.update.label": {
     "text": "تحديث عمل الملف",
     "source": "a55a9d3a672f"
   },
-  "act.UPDATE_WORK.meaning": {
+  "task.work.update.meaning": {
     "text": "غيّر المسؤول أو حدّث ملخص العمل.",
     "source": "3d22d9afd8ec"
   },
-  "act.VOID.label": {
+  "task.case.void.label": {
     "text": "إبطال سجل الملف",
     "source": "dcb1ab478602"
   },
-  "act.VOID.meaning": {
+  "task.case.void.meaning": {
     "text": "إيقاف جميع الأعمال على هذا الملف، مثلًا إذا أُدخل بالخطأ. يبقى الملف وسجله محفوظين.",
     "source": "692f8455f851"
   },
-  "act.WITHDRAW_DECISION.label": {
+  "task.case.withdrawDecision.label": {
     "text": "سحب قرار الدفع",
     "source": "5094d2f8f699"
   },
-  "act.WITHDRAW_DECISION.meaning": {
+  "task.case.withdrawDecision.meaning": {
     "text": "إزالة قرار الدفع قبل دفع أي مبلغ. يبقى سجله محفوظًا.",
     "source": "4579673a4146"
   },
@@ -279,7 +279,7 @@
     "text": "تسجيل قرارات الدفع",
     "source": "2ff9882dcfbc"
   },
-  "capability.MANAGE_AUTHORITY.label": {
+  "capability.MANAGE_ACCESS.label": {
     "text": "إدارة الأشخاص والصلاحيات",
     "source": "da7fc871fa3c"
   },
@@ -287,7 +287,7 @@
     "text": "إدارة عمل الملف",
     "source": "df43d3bc49f6"
   },
-  "capability.READ_AUTHORITY.label": {
+  "capability.READ_ACCESS.label": {
     "text": "عرض الصلاحيات",
     "source": "f5462009cf42"
   },
@@ -515,27 +515,27 @@
     "text": "قادمة",
     "source": "5f1a2542e4e4"
   },
-  "endpoint.authority.grants.label": {
+  "endpoint.people.grants.label": {
     "text": "عرض الأدوار",
     "source": "baa2809b34eb"
   },
-  "endpoint.authority.grants.meaning": {
+  "endpoint.people.grants.meaning": {
     "text": "سرد الأدوار المسندة إلى حساب.",
     "source": "a0171895698a"
   },
-  "endpoint.authority.history.label": {
+  "endpoint.people.history.label": {
     "text": "سجل الصلاحيات",
     "source": "29e9d0964e33"
   },
-  "endpoint.authority.history.meaning": {
+  "endpoint.people.history.meaning": {
     "text": "عرض تغييرات الصلاحيات بدءًا من الأحدث.",
     "source": "5f18e1d68412"
   },
-  "endpoint.authority.list.label": {
+  "endpoint.people.list.label": {
     "text": "قائمة الأشخاص",
     "source": "59c1126b3c3c"
   },
-  "endpoint.authority.list.meaning": {
+  "endpoint.people.list.meaning": {
     "text": "سرد الحسابات وتغييرات الصلاحيات المتاحة.",
     "source": "b16e0b16d7eb"
   },
@@ -1203,7 +1203,7 @@
     "text": "مفتوح",
     "source": "ed077f3d8125"
   },
-  "subject.AUTHORITY.label": {
+  "subject.PEOPLE.label": {
     "text": "الصلاحيات",
     "source": "ec5ba0abb717"
   },
@@ -1343,19 +1343,19 @@
     "text": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
     "source": "9f93027815d5"
   },
-  "endpoint.authority.requests.label": {
+  "endpoint.people.requests.label": {
     "text": "طلبات الوصول",
     "source": "34185554f83d"
   },
-  "endpoint.authority.requests.meaning": {
+  "endpoint.people.requests.meaning": {
     "text": "سرد طلبات تسجيل الدخول التي تنتظر صلاحية الوصول.",
     "source": "cf0e3a6ea687"
   },
-  "endpoint.authority.requests.dismiss.label": {
+  "endpoint.people.requests.dismiss.label": {
     "text": "تجاهل طلب الوصول",
     "source": "83aeff49e156"
   },
-  "endpoint.authority.requests.dismiss.meaning": {
+  "endpoint.people.requests.dismiss.meaning": {
     "text": "إزالة هذا الطلب دون منح الوصول.",
     "source": "0201b260d157"
   },
@@ -1387,11 +1387,11 @@
     "text": "هذا الإجراء غير متاح. حالة التذكير الحالية: {state}. راجع أحدث بيانات التذكير.",
     "source": "1ae8310d09d9"
   },
-  "act.ADMIT.label": {
+  "task.people.admit.label": {
     "text": "إضافة شخص",
     "source": "66848b5361f4"
   },
-  "act.ADMIT.meaning": {
+  "task.people.admit.meaning": {
     "text": "إضافة شخص أو حساب خدمة باسم وأدواره الأولى.",
     "source": "57a856554f42"
   },
@@ -1851,143 +1851,143 @@
     "text": "اختر كل دور ومكان تطبيقه مرة واحدة فقط.",
     "source": "7a0f01238fda"
   },
-  "act.OPEN.done": {
+  "task.case.open.done": {
     "text": "فُتح الملف.",
     "source": "87e4c2288a79"
   },
-  "act.AMEND_REGISTRATION.done": {
+  "task.case.amendRegistration.done": {
     "text": "حُدّثت بيانات التسجيل.",
     "source": "bf64cd9ad6ac"
   },
-  "act.CORRECT.done": {
+  "task.case.correct.done": {
     "text": "صُحّحت بيانات الملف.",
     "source": "a36e2011a7df"
   },
-  "act.DECIDE.done": {
+  "task.case.decide.done": {
     "text": "سُجّل قرار الدفع.",
     "source": "5c37a8e391bc"
   },
-  "act.WITHDRAW_DECISION.done": {
+  "task.case.withdrawDecision.done": {
     "text": "سُحب قرار الدفع.",
     "source": "264b3e2b75e7"
   },
-  "act.RECORD_PAYMENT.done": {
+  "task.case.recordPayment.done": {
     "text": "سُجّل الدفع.",
     "source": "08d843e2c987"
   },
-  "act.CLOSE.done": {
+  "task.case.close.done": {
     "text": "أُغلق الملف.",
     "source": "e474c5de64f5"
   },
-  "act.REOPEN.done": {
+  "task.case.reopen.done": {
     "text": "أُعيد فتح الملف.",
     "source": "2f0851679340"
   },
-  "act.VOID.done": {
+  "task.case.void.done": {
     "text": "أُبطل الملف.",
     "source": "3879f4c74f67"
   },
-  "act.VOID.consequence": {
+  "task.case.void.consequence": {
     "text": "يبقى الملف مسجلًا ويخرج من العمل اليومي حتى يُعاد تفعيله.",
     "source": "b10ae3c17e24"
   },
-  "act.REINSTATE.done": {
+  "task.case.reinstate.done": {
     "text": "أُعيد تفعيل الملف.",
     "source": "e8b79ac26253"
   },
-  "act.REINSTATE.consequence": {
+  "task.case.reinstate.consequence": {
     "text": "يصبح الملف نشطًا مجددًا. وتبقى حالته مفتوحة أو مغلقة كما هي.",
     "source": "d174ff361378"
   },
-  "act.ERASE.done": {
+  "task.case.erase.done": {
     "text": "مُحي الملف.",
     "source": "c808ff2c3abd"
   },
-  "act.ERASE.consequence": {
+  "task.case.erase.consequence": {
     "text": "يؤدي هذا إلى محو تفاصيل الملف وعمله وتذكيراته نهائيًا من ClaimCore. ويبقى المرجع وسجل التغييرات.",
     "source": "e774df6acd21"
   },
-  "act.REGISTER.done": {
+  "task.people.register.done": {
     "text": "سُجّل الحساب.",
     "source": "8beb0718d0ce"
   },
-  "act.ADMIT.done": {
+  "task.people.admit.done": {
     "text": "أُضيف الحساب مع أدواره.",
     "source": "34e9d9f27a5d"
   },
-  "act.ADMIT.consequence": {
+  "task.people.admit.consequence": {
     "text": "يضيف هذا الحساب ويحفظ ملفه الشخصي ويسجل جميع الأدوار المحددة معًا.",
     "source": "9f450fe5937d"
   },
-  "act.SET_PROFILE.done": {
+  "task.people.setProfile.done": {
     "text": "حُدّث الملف الشخصي.",
     "source": "3a06720a52cb"
   },
-  "act.ERASE_PROFILE.done": {
+  "task.people.eraseProfile.done": {
     "text": "مُحي الملف الشخصي.",
     "source": "3f92d421b5a7"
   },
-  "act.ERASE_PROFILE.consequence": {
+  "task.people.eraseProfile.consequence": {
     "text": "يؤدي هذا إلى محو الاسم وبيانات الاتصال المحفوظة نهائيًا. وتظهر التغييرات السابقة باسم حساب مجهول.",
     "source": "59d90d4c6095"
   },
-  "act.GRANT.done": {
+  "task.people.grant.done": {
     "text": "مُنح الدور.",
     "source": "58d5cb320b79"
   },
-  "act.GRANT.consequence": {
+  "task.people.grant.consequence": {
     "text": "يسجل هذا تعيين الدور المحدد لهذا الحساب.",
     "source": "2516ad2235ce"
   },
-  "act.REVOKE.done": {
+  "task.people.revoke.done": {
     "text": "سُحب الدور.",
     "source": "8cb5dd549927"
   },
-  "act.REVOKE.consequence": {
+  "task.people.revoke.consequence": {
     "text": "يزيل هذا تعيين الدور المحدد.",
     "source": "04f9c1d1eb16"
   },
-  "act.ENABLE.done": {
+  "task.people.enable.done": {
     "text": "فُعّل الحساب.",
     "source": "bc5cec779f5e"
   },
-  "act.DISABLE.done": {
+  "task.people.disable.done": {
     "text": "عُطّل الحساب.",
     "source": "baa0517c0ffc"
   },
-  "act.DISABLE.consequence": {
+  "task.people.disable.consequence": {
     "text": "يفقد هذا الحساب الوصول إلى ClaimCore. وتبقى تغييراته المسجلة محفوظة.",
     "source": "ecd5b17ec840"
   },
-  "act.UPDATE_WORK.done": {
+  "task.work.update.done": {
     "text": "حُدّث عمل الملف.",
     "source": "fbdedb4562e0"
   },
-  "act.REMINDER_CREATE.done": {
+  "task.reminder.create.done": {
     "text": "أُضيف التذكير.",
     "source": "5e9e2dcc0b92"
   },
-  "act.REMINDER_UPDATE.done": {
+  "task.reminder.update.done": {
     "text": "حُدّث التذكير.",
     "source": "b744baec4246"
   },
-  "act.REMINDER_COMPLETE.done": {
+  "task.reminder.complete.done": {
     "text": "أُكمل التذكير.",
     "source": "7b359664f423"
   },
-  "act.REMINDER_CANCEL.done": {
+  "task.reminder.cancel.done": {
     "text": "أُلغي التذكير.",
     "source": "d4f1d5514d81"
   },
-  "act.REMINDER_REOPEN.done": {
+  "task.reminder.reopen.done": {
     "text": "أُعيد فتح التذكير.",
     "source": "8b94105daf2b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+  "task.reminder.completeAndPlanNext.done": {
     "text": "أُكمل التذكير وخُطط للإجراء التالي.",
     "source": "99dc5d907128"
   },
-  "endpoint.authority.requests.dismiss.done": {
+  "endpoint.people.requests.dismiss.done": {
     "text": "تم استبعاد طلب الوصول.",
     "source": "5dcca45467bc"
   },
@@ -2011,7 +2011,7 @@
     "text": "رقم السجل",
     "source": "262fca96392a"
   },
-  "label.authorityHistory": {
+  "label.peopleHistory": {
     "text": "سجل الصلاحيات",
     "source": "29e9d0964e33"
   },
@@ -2091,7 +2091,7 @@
     "text": "الملفات",
     "source": "2249bd503ec4"
   },
-  "view.AUTHORITY.label": {
+  "view.PEOPLE.label": {
     "text": "الأشخاص والصلاحيات",
     "source": "1e133caaec46"
   },
@@ -2467,15 +2467,15 @@
     "text": "المانح",
     "source": "b6f1129ef877"
   },
-  "act.REMOVE_PAYMENT.label": {
+  "task.case.removePayment.label": {
     "text": "إزالة دفعة",
     "source": "3765d89e8401"
   },
-  "act.REMOVE_PAYMENT.meaning": {
+  "task.case.removePayment.meaning": {
     "text": "إزالة دفعة سُجلت بالخطأ. لا يؤدي ذلك إلى رد المال أو عكس التحويل. يبقى السجل السابق.",
     "source": "839063316dd5"
   },
-  "act.REMOVE_PAYMENT.done": {
+  "task.case.removePayment.done": {
     "text": "أُزيلت الدفعة.",
     "source": "0aa96c610f64"
   },
@@ -2579,27 +2579,27 @@
     "text": "لم تعد هذه الدفعة موجودة. اقرأ الحالة الحالية قبل المتابعة.",
     "source": "ffdd2d61ba68"
   },
-  "act.ADD_NOTE.done": {
+  "task.note.add.done": {
     "text": "أُضيفت الملاحظة.",
     "source": "26e0eaebce58"
   },
-  "act.ADD_NOTE.label": {
+  "task.note.add.label": {
     "text": "إضافة ملاحظة",
     "source": "63565c0485fe"
   },
-  "act.ADD_NOTE.meaning": {
+  "task.note.add.meaning": {
     "text": "إضافة ملاحظة إلى هذا الملف دون تغيير وقائع المطالبة أو الدفعات.",
     "source": "41497abc12f4"
   },
-  "act.REMOVE_NOTE.done": {
+  "task.note.remove.done": {
     "text": "أُزيلت الملاحظة.",
     "source": "bb424a5bfe68"
   },
-  "act.REMOVE_NOTE.label": {
+  "task.note.remove.label": {
     "text": "إزالة الملاحظة",
     "source": "c06bd11ad0f6"
   },
-  "act.REMOVE_NOTE.meaning": {
+  "task.note.remove.meaning": {
     "text": "إخفاء الملاحظة من الملاحظات الحالية. يبقى نصها في السجل الكامل حتى محو الملف.",
     "source": "cf678694f353"
   },
@@ -2651,11 +2651,11 @@
     "text": "ملاحظة",
     "source": "d8da2c49df39"
   },
-  "timeline.event.ADD_NOTE": {
+  "timeline.event.note.add": {
     "text": "أُضيفت ملاحظة",
     "source": "a7886ebc4ffd"
   },
-  "timeline.event.REMOVE_NOTE": {
+  "timeline.event.note.remove": {
     "text": "أُزيلت ملاحظة",
     "source": "b9096ff4a83e"
   },

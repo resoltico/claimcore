@@ -73,7 +73,7 @@ it("renders supplied note narrative and author captions and binds remove to the 
       revision: 7,
       workRevision: 2,
       history: "NONE",
-      tasks: ["NOTE:REMOVE_NOTE"],
+      tasks: ["note.remove"],
       editableInputs: [],
       correction: null,
       seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
@@ -106,7 +106,7 @@ it("renders reminder rows from Core while actions use versioned task controls wi
     caseId,
     reminderId,
     revision: 4,
-    tasks: ["REMINDER:REMINDER_COMPLETE"],
+    tasks: ["reminder.complete"],
     actionSeed: null,
     dueDateSeed: null,
   };
@@ -167,5 +167,5 @@ it("renders reminder rows from Core while actions use versioned task controls wi
     expect.stringContaining(caseId),
   );
   await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
-  expect(act).toHaveBeenCalledWith(control, "REMINDER:REMINDER_COMPLETE", expect.any(String));
+  expect(act).toHaveBeenCalledWith(control, "reminder.complete", expect.any(String));
 });

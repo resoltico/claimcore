@@ -59,7 +59,7 @@ const input = {
   },
   expectedRevision: 7,
   act: {
-    kind: "CLOSE",
+    kind: "case.close",
   },
 } as const;
 const snapshot: RevisionConflictSnapshot = {

@@ -2,7 +2,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
-import { applyAuthority, syntheticPrincipals } from "./authority-setup";
+import { applyPeople, syntheticPrincipals } from "./people-setup";
 import { openCase } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
@@ -32,12 +32,12 @@ const setGrant = (
   scoped: boolean,
   active: boolean,
 ) =>
-  applyAuthority(page, {
-    kind: "AUTHORITY",
+  applyPeople(page, {
+    kind: "PEOPLE",
     operationId: mintOperationId(),
     target: fixture.principal,
     act: {
-      kind: active ? "GRANT" : "REVOKE",
+      kind: active ? "people.grant" : "people.revoke",
       role,
       scope: scoped
         ? { kind: "CASE", target: { kind: "REFERENCE", caseReference: fixture.reference } }

@@ -59,7 +59,7 @@ const inactive = (
     actorId: state === "NOT_REGISTERED" ? null : activeRequester.context.actorId,
     tasks: [],
     views: [],
-    authorityIssuerSeed: null,
+    peopleIssuerSeed: null,
   },
   basis: { kind: "UNAVAILABLE" },
   disclosure: "CURRENT",
@@ -113,10 +113,10 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
     }),
   );
   vi.stubGlobal("fetch", fetch);
-  navigate("/authority-history", true);
+  navigate("/people-history", true);
   render(<Dashboard />);
   await screen.findByText("Core own account caption Ω");
-  expect(screen.getByRole("heading", { name: "Authority history", level: 1 })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "People history", level: 1 })).toBeVisible();
   expect(screen.getByRole("alert")).toBeVisible();
   expect(fetch.mock.calls.map((call) => call[0])).toEqual(["/api/context"]);
 });
@@ -142,10 +142,10 @@ it("rejects inconsistent requester identities, basis, inactive offers and unauth
   for (const document of [
     { ...activeRequester, context: { ...activeRequester.context, actorId: null } },
     { ...activeRequester, basis: { kind: "UNAVAILABLE" } },
-    { ...inactive("NO_ROLES"), context: { ...inactive("NO_ROLES").context, tasks: ["CASE:OPEN"] } },
+    { ...inactive("NO_ROLES"), context: { ...inactive("NO_ROLES").context, tasks: ["case.open"] } },
     {
       ...activeRequester,
-      context: { ...activeRequester.context, authorityIssuerSeed: "https://issuer.example/" },
+      context: { ...activeRequester.context, peopleIssuerSeed: "https://issuer.example/" },
     },
   ]) {
     expect(isResponse("context", reply(document))).toBe(false);
@@ -171,7 +171,7 @@ it("renders the Core maintenance notice without a requester maintenance DTO", as
   };
   expect(isResponse("context", reply(document))).toBe(true);
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
-  navigate("/authority-history", true);
+  navigate("/people-history", true);
   render(<Dashboard />);
   expect(
     await screen.findByText(

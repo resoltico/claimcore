@@ -180,14 +180,14 @@ const owner = async (context, origin, fingerprint, csrf) => {
   if (
     value.outcome.kind !== "SUCCEEDED" ||
     value.outcome.data.requester.kind !== "ACTIVE" ||
-    !value.outcome.data.requester.capabilities.includes("MANAGE_AUTHORITY") ||
+    !value.outcome.data.requester.capabilities.includes("MANAGE_ACCESS") ||
     !value.outcome.data.requester.capabilities.includes("REGISTER") ||
     !value.outcome.data.requester.capabilities.includes("RECORD_PAYMENT") ||
     !value.outcome.data.requester.capabilities.includes("STEWARD") ||
     value.outcome.data.requester.self.displayName.kind !== "NAMED" ||
     value.outcome.data.requester.self.displayName.value !== "Authored deployment owner"
   ) {
-    throw new Error("Fresh owner authority was not initialized with its evaluation roles.");
+    throw new Error("Fresh owner people was not initialized with its evaluation roles.");
   }
   return value.outcome.data.requester;
 };

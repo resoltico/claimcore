@@ -59,7 +59,7 @@ let private decisionStore =
 let services installation calendar principal =
     Service.create "decision-tests" installation decisionStore calendar principal
 
-let actor principal actorId roles cases : AuthorityView =
+let actor principal actorId roles cases : AccessView =
     {
         Actor =
             Some
@@ -100,7 +100,7 @@ type LockedFacts<'Facts> =
         Read: 'Facts
     }
 
-let locked authority current existing : LockedFacts<CaseFacts> =
+let locked people current existing : LockedFacts<CaseFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -111,7 +111,7 @@ let locked authority current existing : LockedFacts<CaseFacts> =
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 ExpiredBefore = None
-                Actor = authority
+                Actor = people
                 ExistingOperation = existing
                 Case = current
             }
@@ -127,10 +127,10 @@ let decide request view =
         }
         view.Read
 
-let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
+let executePeople installation principal request (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    AuthorityExecution.execute
+    PeopleExecution.execute
         (services installation calendar principal)
         request
         {
@@ -142,21 +142,15 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
         }
         view.Read
 
-let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
-    match Authority.parse request with
-    | Ok command ->
-        AuthorityExecution.review (services installation calendar principal) command view
+let reviewPeople installation principal (request: ClaimCore.Domain.PeopleRequest) view =
+    match People.parse request with
+    | Ok command -> PeopleExecution.review (services installation calendar principal) command view
     | Error refusal -> Verdict.Refuse refusal
 
-let provisionAuthority
-    installation
-    operation
-    principal
-    (view: LockedFacts<AuthorityExecutionFacts>)
-    =
+let provisionPeople installation operation principal (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    AuthorityExecution.provision
+    PeopleExecution.provision
         (services installation calendar principal)
         operation
         Inputs.ownerProfile
@@ -194,11 +188,11 @@ let created n reference =
 
     request, entry, current, receipt
 
-let authorityView
-    (caller: AuthorityView)
-    (target: AuthorityView)
+let peopleView
+    (caller: AccessView)
+    (target: AccessView)
     existing
-    : LockedFacts<AuthorityExecutionFacts> =
+    : LockedFacts<PeopleExecutionFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -242,11 +236,11 @@ let authorityView
             }
     }
 
-let admitted n target act : AuthorityCommand =
-    Authority.parse
+let admitted n target act : PeopleCommand =
+    People.parse
         {
             OperationId = id n
             Target = PrincipalKey.toInput target
             Act = act
         }
-    |> Result.defaultWith (fun refusal -> failtestf "Invalid authority test command: %A" refusal)
+    |> Result.defaultWith (fun refusal -> failtestf "Invalid people test command: %A" refusal)

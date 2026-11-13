@@ -25,7 +25,7 @@ module ProjectionVerification =
             SearchText = record.Index.WorkSearchText
         }
 
-    let actor (actors: Map<ActorId, ActorAuthority>) (row: Actor) =
+    let actor (actors: Map<ActorId, ActorAccess>) (row: Actor) =
         result {
             let id = row.ActorId
             let principal = row.Principal
@@ -33,7 +33,7 @@ module ProjectionVerification =
             do!
                 require
                     None
-                    VerificationFinding.AuthorityProjection
+                    VerificationFinding.PeopleProjection
                     (not (Map.containsKey id actors)
                      && not (
                          actors
@@ -41,7 +41,7 @@ module ProjectionVerification =
                          |> Seq.exists (fun actor -> actor.Principal = principal)
                      ))
 
-            let actor: ActorAuthority =
+            let actor: ActorAccess =
                 {
                     Actor =
                         {
@@ -56,10 +56,9 @@ module ProjectionVerification =
             return Map.add id actor actors
         }
 
-    let grant (actors: Map<ActorId, ActorAuthority>) (id, role, caseId) =
+    let grant (actors: Map<ActorId, ActorAccess>) (id, role, caseId) =
         result {
-            let! actor =
-                Map.tryFind id actors |> known None VerificationFinding.AuthorityProjection
+            let! actor = Map.tryFind id actors |> known None VerificationFinding.PeopleProjection
 
             let scope =
                 caseId |> Option.map Scope.Case |> Option.defaultValue Scope.Installation
@@ -69,7 +68,7 @@ module ProjectionVerification =
             do!
                 require
                     None
-                    VerificationFinding.AuthorityProjection
+                    VerificationFinding.PeopleProjection
                     (not (List.contains grant actor.Grants))
 
             return
@@ -84,7 +83,7 @@ module ProjectionVerification =
     let private matching expected actual =
         Map.count expected = Map.count actual
         && (expected
-            |> Map.forall (fun id (actor: ActorAuthority) ->
+            |> Map.forall (fun id (actor: ActorAccess) ->
                 match Map.tryFind id actual with
                 | None -> false
                 | Some current ->
@@ -196,9 +195,9 @@ module ProjectionVerification =
                 (Ok Set.empty))
         |> Result.bind (finishCases histories)
 
-    let actorProfileSearch (expected: Map<ActorId, ActorAuthority>) (id, search, contactSearch) =
+    let actorProfileSearch (expected: Map<ActorId, ActorAccess>) (id, search, contactSearch) =
         match Map.tryFind id expected with
-        | None -> Error(divergence None VerificationFinding.AuthorityProfileProjection)
+        | None -> Error(divergence None VerificationFinding.PeopleProfileProjection)
         | Some actor ->
             let wanted =
                 actor.Actor.Profile
@@ -212,22 +211,22 @@ module ProjectionVerification =
 
             require
                 None
-                VerificationFinding.AuthorityProfileProjection
+                VerificationFinding.PeopleProfileProjection
                 (search = wanted && contactSearch = wantedContact)
 
-    let finishAuthority expected actual =
+    let finishPeople expected actual =
         result {
-            do! require None VerificationFinding.AuthorityProjection (matching expected actual)
+            do! require None VerificationFinding.PeopleProjection (matching expected actual)
 
             do!
                 require
                     None
-                    VerificationFinding.AuthorityProfileProjection
-                    (Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) expected =
-                        Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) actual)
+                    VerificationFinding.PeopleProfileProjection
+                    (Map.map (fun _ (actor: ActorAccess) -> actor.Actor.Profile) expected =
+                        Map.map (fun _ (actor: ActorAccess) -> actor.Actor.Profile) actual)
         }
 
-    let authority expected actorRows grantRows =
+    let people expected actorRows grantRows =
         actorRows
         |> List.fold
             (fun state row -> Result.bind (fun state -> actor state row) state)
@@ -237,7 +236,7 @@ module ProjectionVerification =
             |> List.fold
                 (fun state row -> Result.bind (fun state -> grant state row) state)
                 (Ok actors))
-        |> Result.bind (finishAuthority expected)
+        |> Result.bind (finishPeople expected)
 
     let workIndexes
         (work: Map<CaseId, WorkHistory>)

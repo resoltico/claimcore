@@ -27,7 +27,7 @@ const observe = async (
     observedRevision = current.context.workRevision;
   }
   if (input.kind === "REMINDER") {
-    if (input.act.kind === "CREATE") {
+    if (input.act.kind === "reminder.create") {
       return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
     }
     const result = await requestEndpoint(

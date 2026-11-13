@@ -4,7 +4,7 @@
     "kind": "CASE",
     "expectedRevision": 8,
     "act": {
-      "kind": "ERASE"
+      "kind": "case.erase"
     },
     "target": {
       "kind": "REFERENCE",

@@ -149,7 +149,7 @@ let private directoryDetails fixture reference =
             (frame
                 "operation.execute"
                 {|
-                    kind = "AUTHORITY"
+                    kind = "PEOPLE"
                     operationId = id ()
                     target = target
                     act = act
@@ -179,7 +179,7 @@ let private directoryDetails fixture reference =
         |}
 
     let accounts =
-        verb fixture environment [ "authority"; "list"; "--text"; subject ] 0
+        verb fixture environment [ "people"; "list"; "--text"; subject ] 0
         |> require "SUCCEEDED"
 
     let actorId =
@@ -188,12 +188,7 @@ let private directoryDetails fixture reference =
         |> fun item -> item.GetProperty("actor").GetProperty("actorId").GetString() |> nonNull
 
     let noGrants =
-        invoke
-            fixture
-            environment
-            [ "authority"; "grants"; actorId; "--format"; "text" ]
-            Array.empty
-            0
+        invoke fixture environment [ "people"; "grants"; actorId; "--format"; "text" ] Array.empty 0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput
 
     Expect.stringContains
@@ -224,12 +219,7 @@ let private directoryDetails fixture reference =
         |}
 
     let directory =
-        invoke
-            fixture
-            environment
-            [ "authority"; "grants"; actorId; "--format"; "text" ]
-            Array.empty
-            0
+        invoke fixture environment [ "people"; "grants"; actorId; "--format"; "text" ] Array.empty 0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput
 
     Expect.stringContains directory "Case reader" "The installed role is readable"
@@ -238,7 +228,7 @@ let private directoryDetails fixture reference =
     Expect.stringContains directory "One case" "Case scope remains distinguishable"
 
     let grantData =
-        verb fixture environment [ "authority"; "grants"; actorId ] 0
+        verb fixture environment [ "people"; "grants"; actorId ] 0
         |> require "SUCCEEDED"
 
     let scoped =
@@ -255,7 +245,7 @@ let private directoryDetails fixture reference =
         invoke
             fixture
             environment
-            [ "authority"; "history"; "--limit"; "50"; "--format"; "text" ]
+            [ "people"; "history"; "--limit"; "50"; "--format"; "text" ]
             Array.empty
             0
         |> fun result -> Encoding.UTF8.GetString result.StandardOutput

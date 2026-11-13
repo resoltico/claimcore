@@ -13,7 +13,7 @@ const record: RecoveryRecord = {
   attemptId: "10000000-0000-4000-8000-000000000003",
   operationId: "10000000-0000-4000-8000-000000000004",
   subject: "CASE",
-  act: "OPEN",
+  act: "case.open",
 };
 it("awaits journal commit before handoff and retains only the explicit identity fields", async () => {
   let commit!: () => void;
@@ -63,13 +63,13 @@ it("refuses storage failure and stale completion without a transport call", asyn
 });
 
 it("admits only the current identity grammar and declared family-local work actions", () => {
-  expect(isRecoveryRecord({ ...record, subject: "WORK", act: "UPDATE_WORK" })).toBe(true);
-  expect(isRecoveryRecord({ ...record, subject: "REMINDER", act: "COMPLETE_AND_PLAN_NEXT" })).toBe(
-    true,
-  );
+  expect(isRecoveryRecord({ ...record, subject: "WORK", act: "work.update" })).toBe(true);
+  expect(
+    isRecoveryRecord({ ...record, subject: "REMINDER", act: "reminder.completeAndPlanNext" }),
+  ).toBe(true);
   expect(isRecoveryRecord({ ...record, format: 1 })).toBe(false);
-  expect(isRecoveryRecord({ ...record, subject: "WORK", act: "OPEN" })).toBe(false);
-  expect(isRecoveryRecord({ ...record, subject: "REMINDER", act: "ERASE" })).toBe(false);
+  expect(isRecoveryRecord({ ...record, subject: "WORK", act: "case.open" })).toBe(false);
+  expect(isRecoveryRecord({ ...record, subject: "REMINDER", act: "case.erase" })).toBe(false);
   for (const privateValue of [
     { action: "private" },
     { dueDate: "2026-11-10" },

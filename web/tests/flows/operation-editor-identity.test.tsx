@@ -40,7 +40,10 @@ const sentDraft = (call: number): SentDraft => {
   }
   return JSON.parse(body) as SentDraft;
 };
-const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "CORRECT") => (
+const editor = (
+  current: CurrentCase | null,
+  initialAct: "case.open" | "case.close" | "case.correct",
+) => (
   <OperationEditor
     definition={definition}
     current={current}
@@ -119,7 +122,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockImplementationOnce(preparedResponse)
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  render(editor(null, "OPEN"));
+  render(editor(null, "case.open"));
   fillRegistrationInputs({
     claimantName: "Synthetic A",
   });
@@ -148,7 +151,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 it("re-previews the same authored revision after preview loss despite a changed current observation", async () => {
   const user = userEvent.setup();
   const current: CurrentCase = caseDocumentInput({
-    tasks: ["CASE:CLOSE"],
+    tasks: ["case.close"],
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 1,
     history: "FULL",
@@ -165,7 +168,7 @@ it("re-previews the same authored revision after preview loss despite a changed 
         },
       }),
     );
-  const view = render(editor(current, "CLOSE"));
+  const view = render(editor(current, "case.close"));
   await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
   view.rerender(
@@ -174,7 +177,7 @@ it("re-previews the same authored revision after preview loss despite a changed 
         ...current,
         context: { ...current.context, revision: 2 },
       },
-      "CLOSE",
+      "case.close",
     ),
   );
   await user.click(getButton("Review changes"));
@@ -189,7 +192,7 @@ it("re-previews the same authored revision after preview loss despite a changed 
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
 const paidCase: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CORRECT"],
+  tasks: ["case.correct"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -209,7 +212,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   const user = userEvent.setup();
   const current = paidCase;
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  render(editor(current, "CORRECT"));
+  render(editor(current, "case.correct"));
   const registration = document.querySelector<HTMLSelectElement>(
     'fieldset[id="field-group:registration"]',
   );
@@ -231,7 +234,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   const draft: unknown = JSON.parse(body);
   expect(draft).toMatchObject({
     act: {
-      kind: "CORRECT",
+      kind: "case.correct",
       groups: {
         registration: {
           kind: "UPDATE",

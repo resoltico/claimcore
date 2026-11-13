@@ -1,5 +1,5 @@
 {
-  "purpose": "Hand-authored canonical JSON and case-list cursor encodings with independent byte and digest derivations. Literal expectations have no updater.",
+  "purpose": "Hand-authored canonical JSON and case-list cursor encodings with independent byte and digest derivations. Literal expectations have no updater. Format 3 compartment and dotted-task operation frames are hand-authored in CompartmentTests.fs and OperationRootTests.fs; these RFC and cursor bytes are unchanged.",
   "jcs": [
     {
       "name": "RFC 8785 3.2.3 property sorting",

@@ -17,7 +17,7 @@ const Workspace = () => {
         <OperationEditor
           definition={productMetadata}
           current={null}
-          initialAct="OPEN"
+          initialAct="case.open"
           prefill={{
             "field:caseReference": "DETOUR-1",
             "field:incidentNotificationDate": "2026-11-09",
@@ -95,7 +95,7 @@ it.each([
     expect(bodies[0]).toMatchObject({
       kind: "CASE",
       act: {
-        kind: "OPEN",
+        kind: "case.open",
         values: {
           incidentDate: "2026-08-17",
           claimedAmount: normalized,

@@ -118,7 +118,7 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
       },
     }),
   );
-  render(editor({ current: null, initialAct: "OPEN" }));
+  render(editor({ current: null, initialAct: "case.open" }));
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
   const input = screen.getByLabelText("Case reference", { exact: true });
   await waitFor(() => {

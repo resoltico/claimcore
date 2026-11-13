@@ -76,16 +76,16 @@ let tests =
         let registered =
             Service.execute
                 admin
-                (OperationInput.Authority(
-                    StoreFixtures.authorityRequest
+                (OperationInput.People(
+                    StoreFixtures.peopleRequest
                         serviceId
                         servicePrincipal
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 CancellationToken.None
             |> fun pending -> pending.GetAwaiter().GetResult()
 
-        StoreFixtures.acceptedAuthority registered
+        StoreFixtures.acceptedPeople registered
 
         let granted =
             StoreFixtures.grant
@@ -99,7 +99,7 @@ let tests =
                 true
             |> fun pending -> pending.GetAwaiter().GetResult()
 
-        StoreFixtures.acceptedAuthority granted
+        StoreFixtures.acceptedPeople granted
 
         let changed =
             task {
@@ -126,7 +126,7 @@ let tests =
                 {
                     Work =
                         (fun tx ->
-                            tx.Authority
+                            tx.Access
                                 {
                                     Principal = servicePrincipal
                                     CaseId = Some corruptedCase
@@ -140,7 +140,7 @@ let tests =
         Expect.contains
             (Map.find corruptedCase persisted.Cases)
             Role.DataSteward
-            "The forbidden scope is committed and visible to the actual authority loader"
+            "The forbidden scope is committed and visible to the actual people loader"
 
 
         let service = core servicePrincipal

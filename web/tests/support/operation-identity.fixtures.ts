@@ -31,7 +31,7 @@ export const initial = (): OperationState => {
       owner,
       entry: {
         subject: "CASE",
-        kind: "CLOSE",
+        kind: "case.close",
       },
       target: "CASE:CASE-SERIALIZATION",
       binding: {

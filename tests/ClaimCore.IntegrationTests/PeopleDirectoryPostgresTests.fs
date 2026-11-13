@@ -25,7 +25,7 @@ let private nameProjection (database: PostgresFixture.Database) =
 
         do!
             finding
-                ClaimCore.Application.Contracts.VerificationFinding.AuthorityProfileProjection
+                ClaimCore.Application.Contracts.VerificationFinding.PeopleProfileProjection
                 database
 
         do! enterMaintenance database
@@ -82,7 +82,7 @@ let private contactProjection (database: PostgresFixture.Database) =
 
         do!
             finding
-                ClaimCore.Application.Contracts.VerificationFinding.AuthorityProfileProjection
+                ClaimCore.Application.Contracts.VerificationFinding.PeopleProfileProjection
                 database
 
         do! enterMaintenance database

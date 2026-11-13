@@ -9,7 +9,7 @@ module internal ConflictReads =
     let private explain
         (services: ServiceContext)
         (tx: IReadTx)
-        (actor: AuthorityView)
+        (actor: AccessView)
         (parent: StoredCase option)
         entity
         expected
@@ -18,7 +18,7 @@ module internal ConflictReads =
         task {
             match parent, actor.Actor with
             | Some parent, Some requester when
-                Authority.can
+                Access.can
                     services.Principal
                     actor
                     Capability.ReadHistory
@@ -55,7 +55,7 @@ module internal ConflictReads =
                     return Error CoreFault.StoreIntegrityError
                 else
                     let full =
-                        Authority.can
+                        Access.can
                             services.Principal
                             actor
                             Capability.ReadHistoryFull

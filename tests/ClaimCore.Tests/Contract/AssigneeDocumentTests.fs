@@ -138,12 +138,17 @@ let tests =
 
                     let bytes =
                         Codec.encode
-                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseAssignees)
+                            (HumanDocumentCodecs.readReplyFor (
+                                TaskId.Query QueryTaskId.CaseAssignees
+                            ))
                             reply
 
                     for query in QueryTaskId.all |> List.filter ((<>) QueryTaskId.OperationGet) do
                         let result =
-                            Codec.validate 65536 (HumanDocumentCodecs.readReplyFor query) bytes
+                            Codec.validate
+                                65536
+                                (HumanDocumentCodecs.readReplyFor (TaskId.Query query))
+                                bytes
 
                         if query = QueryTaskId.CaseAssignees then
                             Expect.isOk result "Requested choice document is valid"
@@ -181,13 +186,15 @@ let tests =
 
                     let bytes =
                         Codec.encode
-                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseAssignees)
+                            (HumanDocumentCodecs.readReplyFor (
+                                TaskId.Query QueryTaskId.CaseAssignees
+                            ))
                             rejected
 
                     Expect.isOk
                         (Codec.validate
                             65536
-                            (HumanDocumentCodecs.readReplyFor QueryTaskId.CaseGet)
+                            (HumanDocumentCodecs.readReplyFor (TaskId.Query QueryTaskId.CaseGet))
                             bytes)
                         "Refusals carry no successful resource context")
         ]

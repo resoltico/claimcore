@@ -11,7 +11,7 @@ import {
   browserRequest,
   sessionToken,
 } from "./session-helpers";
-import { syntheticPrincipals } from "./authority-setup";
+import { syntheticPrincipals } from "./people-setup";
 import { trackForegroundRequests } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
@@ -51,12 +51,12 @@ test("keyboard navigation focuses the editor and restores its invoking control o
   await expect(open).toBeFocused();
 });
 
-test("authority refusal preserves authored input through Settings and needs a fresh review and explicit consent", async ({
+test("people refusal preserves authored input through Settings and needs a fresh review and explicit consent", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await goToView(page, "people");
-  await expect(page.locator("#authority-title")).toBeVisible();
+  await expect(page.locator("#people-title")).toBeVisible();
   // This raw fixture is a separate client; let the app's bounded People/bootstrap reads settle.
   await page.waitForLoadState("networkidle");
   const source = await syntheticPrincipals();
@@ -76,11 +76,11 @@ test("authority refusal preserves authored input through Settings and needs a fr
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "AUTHORITY",
+      kind: "PEOPLE",
       operationId: mintOperationId(),
       target: { kind: "HUMAN", issuer: "", subject: subjectValue },
       act: {
-        kind: "ADMIT",
+        kind: "people.admit",
         profile: { displayName: profileName, contact: null },
         grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
       },
@@ -144,11 +144,11 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(editor.locator("button[data-confirm-operation]")).toHaveCount(0);
   const refused: unknown = response.request().postDataJSON();
   expect(refused).toEqual({
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId: operationId(refused),
     target: { kind: "HUMAN", issuer: source.issuer, subject: "" },
     act: {
-      kind: "ADMIT",
+      kind: "people.admit",
       profile: { displayName: profileName },
       grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
     },
@@ -172,15 +172,15 @@ test("authority refusal preserves authored input through Settings and needs a fr
     !isResponseFor("operation.preview", "HUMAN", reviewed) ||
     reviewed.outcome.kind !== "REVIEWED"
   ) {
-    throw new Error("Expected a fresh authority review after correction.");
+    throw new Error("Expected a fresh people review after correction.");
   }
   const corrected: unknown = reviewedResponse.request().postDataJSON();
   expect(corrected).toEqual({
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     operationId: operationId(corrected),
     target: { kind: "HUMAN", issuer: source.issuer, subject: subjectValue },
     act: {
-      kind: "ADMIT",
+      kind: "people.admit",
       profile: { displayName: profileName },
       grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
     },

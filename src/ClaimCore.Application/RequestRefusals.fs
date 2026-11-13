@@ -9,14 +9,14 @@ module internal RequestRefusals =
     let private current (services: ServiceContext) (tx: IReadTx) refusal =
         task {
             let! actor =
-                tx.Authority
+                tx.Access
                     {
                         Principal = services.Principal
                         CaseId = None
                     }
 
             return
-                if Authority.validActor services.Principal actor then
+                if Access.validActor services.Principal actor then
                     refusal
                 else
                     Refusal.Access AccessRefusal.ResourceUnavailable

@@ -3,20 +3,20 @@ namespace ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-/// View counts acquire current authority and the date basis inside the same read snapshot.
+/// View counts acquire current people and the date basis inside the same read snapshot.
 module internal ViewQueries =
     let private selection (services: ServiceContext) (tx: IReadTx) actor =
         QueryResults.currentActor services.Principal actor
         |> Result.bind (fun _ ->
-            match Authority.visibility services.Principal actor, actor.Actor with
+            match Access.visibility services.Principal actor, actor.Actor with
             | Some visibility, Some requester ->
                 Ok
                     {
                         CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
-                        ReadRoles = Authority.readRoles services.Principal
-                        ForbiddenRoles = Authority.invalidRoles services.Principal
+                        ReadRoles = Access.readRoles services.Principal
+                        ForbiddenRoles = Access.invalidRoles services.Principal
                         Filter = CaseListFilter.empty
                     }
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
@@ -30,7 +30,7 @@ module internal ViewQueries =
                             fun tx ->
                                 task {
                                     let! actor =
-                                        tx.Authority
+                                        tx.Access
                                             {
                                                 Principal = services.Principal
                                                 CaseId = None

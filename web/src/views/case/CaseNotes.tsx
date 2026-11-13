@@ -1,6 +1,6 @@
 import { useCallback, useId, useLayoutEffect, useState } from "react";
 import type {
-  HumanReadDocument_caseNotes,
+  HumanReadDocument_case_notes,
   HumanResponseByEndpoint,
   Screen,
 } from "@contracts/client";
@@ -13,7 +13,7 @@ import { NoticeView } from "../../presentation/Message";
 import { Button } from "../../ui/Button";
 import "./notes.css";
 
-type NoteHandle = HumanReadDocument_caseNotes["context"]["notes"][number];
+type NoteHandle = HumanReadDocument_case_notes["context"]["notes"][number];
 const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -103,7 +103,7 @@ const NoteRows = ({
                   onRemove(row.key);
                 }}
               >
-                {p.text("act.REMOVE_NOTE.label")}
+                {p.text("task.note.remove.label")}
               </Button>
             </div>
           ) : null}
@@ -211,7 +211,7 @@ export const CaseNotes = ({
       aria-labelledby={`${id}-title`}
     >
       <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
-      {current.context.tasks.includes("NOTE:ADD_NOTE") ? (
+      {current.context.tasks.includes("note.add") ? (
         <div className="note-composer">
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
@@ -230,7 +230,7 @@ export const CaseNotes = ({
               onAdd(text);
             }}
           >
-            {p.text("act.ADD_NOTE.label")}
+            {p.text("task.note.add.label")}
           </Button>
         </div>
       ) : null}

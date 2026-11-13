@@ -149,8 +149,7 @@ module TypeScript =
             + JsonSerializer.Serialize(
                 Capability.all
                 |> List.map (fun capability ->
-                    Capability.token capability,
-                    Authority.rolesFor capability |> List.map Role.token)
+                    Capability.token capability, Access.rolesFor capability |> List.map Role.token)
                 |> dict
             )
             + " as const;"

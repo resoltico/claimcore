@@ -191,7 +191,7 @@ let producerBudgets =
 
             let grants =
                 [
-                    for number in 1 .. AuthorityAdmission.MaximumGrants ->
+                    for number in 1 .. PeopleAdmission.MaximumGrants ->
                         {
                             ScopedGrant.Role = Role.CaseReader
                             Scope =
@@ -208,15 +208,15 @@ let producerBudgets =
                 ]
 
             let admission =
-                OperationReview.Authority
+                OperationReview.People
                     {
                         Basis = Inputs.workBasis
                         Effects =
                             [
-                                AuthorityReviewEffect.Register principal
-                                AuthorityReviewEffect.SetProfile profile
+                                PeopleReviewEffect.Register principal
+                                PeopleReviewEffect.SetProfile profile
                             ]
-                            @ (grants |> List.map AuthorityReviewEffect.Grant)
+                            @ (grants |> List.map PeopleReviewEffect.Grant)
                         Target = None
                         AccessScope = GrantScope.Installation
                         Before =
@@ -346,9 +346,9 @@ let producerBudgets =
 
 
 [<Tests>]
-let primaryAuthorityChanges =
+let primaryPeopleChanges =
     testCase
-        "overlapping and disabled authority reviews keep authored changes without ambiguous access rows"
+        "overlapping and disabled people reviews keep authored changes without ambiguous access rows"
         (fun () ->
             let reference = CaseFixtures.reference "OVERLAP"
 
@@ -378,7 +378,7 @@ let primaryAuthorityChanges =
             for enabled in [ true; false ] do
                 let before =
                     {
-                        AuthorityState.Profile = None
+                        PeopleState.Profile = None
                         Enabled = enabled
                         Grants = [ scoped ]
                         Access = access enabled []
@@ -392,26 +392,26 @@ let primaryAuthorityChanges =
 
                 let value =
                     {
-                        AuthorityReview.Basis = Inputs.workBasis
+                        PeopleReview.Basis = Inputs.workBasis
                         Target = None
                         AccessScope = GrantScope.Installation
                         Before = before
                         After = after
-                        Effects = [ AuthorityReviewEffect.Grant installation ]
+                        Effects = [ PeopleReviewEffect.Grant installation ]
                     }
 
                 let result =
                     HumanReviewDocument.ofCore
-                        (OperationInput.Authority
-                            { CliReplyFixtures.authorityRequest with
+                        (OperationInput.People
+                            { CliReplyFixtures.peopleRequest with
                                 Act =
-                                    AuthorityAct.Grant
+                                    PeopleAct.Grant
                                         {
                                             Role = Role.CaseReader
                                             Scope = GrantTarget.Installation
                                         }
                             })
-                        (OperationReview.Authority value)
+                        (OperationReview.People value)
 
                 let keys =
                     (result.Presentation.Changes |> List.map _.Key)
@@ -432,10 +432,10 @@ let primaryAuthorityChanges =
                 match
                     ReplyCodecs.review.Read
                         "$"
-                        (ReplyCodecs.review.Write(OperationReview.Authority value))
+                        (ReplyCodecs.review.Write(OperationReview.People value))
                     |> Fixtures.accepted
                 with
-                | OperationReview.Authority provided ->
+                | OperationReview.People provided ->
                     Expect.equal
                         provided.Before.Access
                         before.Access
@@ -448,6 +448,6 @@ let primaryAuthorityChanges =
 
                     Expect.equal
                         provided.Effects
-                        [ AuthorityReviewEffect.Grant installation ]
+                        [ PeopleReviewEffect.Grant installation ]
                         "No authored effect is removed"
-                | _ -> failtest "Expected authority")
+                | _ -> failtest "Expected people")

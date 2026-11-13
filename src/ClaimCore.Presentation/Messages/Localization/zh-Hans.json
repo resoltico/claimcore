@@ -1,205 +1,205 @@
 {
-  "act.AMEND_REGISTRATION.label": {
+  "task.case.amendRegistration.label": {
     "text": "更新索赔资料",
     "source": "5ae6604c4520"
   },
-  "act.AMEND_REGISTRATION.meaning": {
+  "task.case.amendRegistration.meaning": {
     "text": "更改选定的索赔信息。未指定的信息和案件编号保持不变。",
     "source": "2c651083c926"
   },
-  "act.CLOSE.label": {
+  "task.case.close.label": {
     "text": "结案",
     "source": "5cad104f0e26"
   },
-  "act.CLOSE.meaning": {
+  "task.case.close.meaning": {
     "text": "不再需要处理时关闭案件。关闭不代表索赔已付款。",
     "source": "6059fdf3ac25"
   },
-  "act.CORRECT.label": {
+  "task.case.correct.label": {
     "text": "更正案件资料",
     "source": "e3eeb9561f2e"
   },
-  "act.CORRECT.meaning": {
+  "task.case.correct.meaning": {
     "text": "更正已登记的索赔或赔付决定事实。付款记录保持不变，应付金额不得低于已付总额。",
     "source": "c115bf28430f"
   },
-  "act.DECIDE.label": {
+  "task.case.decide.label": {
     "text": "记录赔付决定",
     "source": "17b6161410d5"
   },
-  "act.DECIDE.meaning": {
+  "task.case.decide.meaning": {
     "text": "记录或替换决定赔付的金额和币种。这不会转账。",
     "source": "17d0f005a684"
   },
-  "act.DISABLE.label": {
+  "task.people.disable.label": {
     "text": "停用账户",
     "source": "9f024ada2282"
   },
-  "act.DISABLE.meaning": {
+  "task.people.disable.meaning": {
     "text": "停止此账户使用 ClaimCore。其已记录的更改仍会保留。",
     "source": "a43350b66b04"
   },
-  "act.ENABLE.label": {
+  "task.people.enable.label": {
     "text": "启用账户",
     "source": "1965185f3488"
   },
-  "act.ENABLE.meaning": {
+  "task.people.enable.meaning": {
     "text": "允许此账户以现有角色重新使用 ClaimCore。",
     "source": "94ba3463b2e3"
   },
-  "act.ERASE.label": {
+  "task.case.erase.label": {
     "text": "永久删除案件",
     "source": "29b338cac964"
   },
-  "act.ERASE.meaning": {
+  "task.case.erase.meaning": {
     "text": "从 ClaimCore 永久删除此案件的信息、工作和提醒。案件编号和更改列表仍会保留。其他位置保存的副本不受影响。",
     "source": "8705b2ea28a6"
   },
-  "act.ERASE_PROFILE.label": {
+  "task.people.eraseProfile.label": {
     "text": "永久删除账户资料",
     "source": "55056e69d504"
   },
-  "act.ERASE_PROFILE.meaning": {
+  "task.people.eraseProfile.meaning": {
     "text": "永久删除此账户保存的姓名和联系方式。登录身份、角色及已记录的工作仍会保留。此前的更改将显示“原账户”。",
     "source": "871f791ea524"
   },
-  "act.GRANT.label": {
+  "task.people.grant.label": {
     "text": "授予角色",
     "source": "4549a77f3b6c"
   },
-  "act.GRANT.meaning": {
+  "task.people.grant.meaning": {
     "text": "将所选角色分配给此账户。",
     "source": "c0ad11901493"
   },
-  "act.OPEN.label": {
+  "task.case.open.label": {
     "text": "新建理赔案件",
     "source": "100d2c104336"
   },
-  "act.OPEN.meaning": {
+  "task.case.open.meaning": {
     "text": "登记事故、索赔人、保险公司和索赔金额。",
     "source": "bd4ea9e91f3a"
   },
-  "act.PROVISION_OWNER.label": {
+  "task.people.provisionOwner.label": {
     "text": "设置首位所有者",
     "source": "2a7018cea51b"
   },
-  "act.RECORD_PAYMENT.label": {
+  "task.case.recordPayment.label": {
     "text": "记录实际付款",
     "source": "0d13e856322a"
   },
-  "act.RECORD_PAYMENT.meaning": {
+  "task.case.recordPayment.meaning": {
     "text": "以决定币种记录实际付款的日期和金额。此操作不会执行或核验转账。",
     "source": "572c7a975cf2"
   },
-  "act.REGISTER.label": {
+  "task.people.register.label": {
     "text": "注册账户",
     "source": "2ce51f0219a2"
   },
-  "act.REGISTER.meaning": {
+  "task.people.register.meaning": {
     "text": "添加包含姓名和可选联系方式的账户。角色需另行分配。",
     "source": "b056b3b46015"
   },
-  "act.REINSTATE.label": {
+  "task.case.reinstate.label": {
     "text": "恢复案件",
     "source": "d28eb327714f"
   },
-  "act.REINSTATE.meaning": {
+  "task.case.reinstate.meaning": {
     "text": "重新允许处理此已作废的案件。其打开或关闭状态不变。",
     "source": "c48d44c1b7c1"
   },
-  "act.REMINDER_CANCEL.label": {
+  "task.reminder.cancel.label": {
     "text": "取消提醒",
     "source": "948e115bd6a0"
   },
-  "act.REMINDER_CANCEL.meaning": {
+  "task.reminder.cancel.meaning": {
     "text": "取消此事项，但不将其标记为已完成。历史记录仍会保留。",
     "source": "0d349a8b5a58"
   },
-  "act.REMINDER_COMPLETE.label": {
+  "task.reminder.complete.label": {
     "text": "完成提醒",
     "source": "80f73f9e9a9b"
   },
-  "act.REMINDER_COMPLETE.meaning": {
+  "task.reminder.complete.meaning": {
     "text": "将此事项标记为已完成。如果这是最后一项，案件将需要安排下一事项。",
     "source": "47465ff6d73b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+  "task.reminder.completeAndPlanNext.label": {
     "text": "完成并安排下一事项",
     "source": "329a45fe88c6"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+  "task.reminder.completeAndPlanNext.meaning": {
     "text": "一并完成此提醒并安排下一事项。",
     "source": "6da6febc07ca"
   },
-  "act.REMINDER_CREATE.label": {
+  "task.reminder.create.label": {
     "text": "添加提醒",
     "source": "cd566803bf39"
   },
-  "act.REMINDER_CREATE.meaning": {
+  "task.reminder.create.meaning": {
     "text": "为此案件安排下一事项。",
     "source": "c072c5b2420d"
   },
-  "act.REMINDER_REOPEN.label": {
+  "task.reminder.reopen.label": {
     "text": "重新开启提醒",
     "source": "a1dceb5971c8"
   },
-  "act.REMINDER_REOPEN.meaning": {
+  "task.reminder.reopen.meaning": {
     "text": "为此事项设置新的到期日，并重新标记为待处理。",
     "source": "00cf210f8d8f"
   },
-  "act.REMINDER_UPDATE.label": {
+  "task.reminder.update.label": {
     "text": "更新提醒",
     "source": "5a4f907e9a23"
   },
-  "act.REMINDER_UPDATE.meaning": {
+  "task.reminder.update.meaning": {
     "text": "更改此待办提醒的事项或日期。先前的版本会保留在历史记录中。",
     "source": "d87307f6a6cd"
   },
-  "act.REOPEN.label": {
+  "task.case.reopen.label": {
     "text": "重新开案",
     "source": "e1469dc1ace7"
   },
-  "act.REOPEN.meaning": {
+  "task.case.reopen.meaning": {
     "text": "重新打开案件。信息和历史记录仍会保留。",
     "source": "9afd35e2c444"
   },
-  "act.REVOKE.label": {
+  "task.people.revoke.label": {
     "text": "撤销角色",
     "source": "13287c1eda24"
   },
-  "act.REVOKE.meaning": {
+  "task.people.revoke.meaning": {
     "text": "移除所选角色分配。",
     "source": "4bd25ffa16ef"
   },
-  "act.SET_PROFILE.label": {
+  "task.people.setProfile.label": {
     "text": "更新账户资料",
     "source": "34540d1107b7"
   },
-  "act.SET_PROFILE.meaning": {
+  "task.people.setProfile.meaning": {
     "text": "记录账户的显示名称和可选联系方式。这不会更改其身份或访问权限。",
     "source": "eee65a67f467"
   },
-  "act.UPDATE_WORK.label": {
+  "task.work.update.label": {
     "text": "更新案件工作",
     "source": "a55a9d3a672f"
   },
-  "act.UPDATE_WORK.meaning": {
+  "task.work.update.meaning": {
     "text": "更改负责人或更新处理摘要。",
     "source": "3d22d9afd8ec"
   },
-  "act.VOID.label": {
+  "task.case.void.label": {
     "text": "作废案件",
     "source": "dcb1ab478602"
   },
-  "act.VOID.meaning": {
+  "task.case.void.meaning": {
     "text": "停止此案件的所有工作，例如案件录入有误时。案件及其历史记录仍会保留。",
     "source": "692f8455f851"
   },
-  "act.WITHDRAW_DECISION.label": {
+  "task.case.withdrawDecision.label": {
     "text": "撤回赔付决定",
     "source": "5094d2f8f699"
   },
-  "act.WITHDRAW_DECISION.meaning": {
+  "task.case.withdrawDecision.meaning": {
     "text": "在支付任何款项之前移除付款决定。历史记录仍会保留。",
     "source": "4579673a4146"
   },
@@ -279,7 +279,7 @@
     "text": "记录付款决定",
     "source": "2ff9882dcfbc"
   },
-  "capability.MANAGE_AUTHORITY.label": {
+  "capability.MANAGE_ACCESS.label": {
     "text": "管理人员和访问权限",
     "source": "da7fc871fa3c"
   },
@@ -287,7 +287,7 @@
     "text": "管理案件工作",
     "source": "df43d3bc49f6"
   },
-  "capability.READ_AUTHORITY.label": {
+  "capability.READ_ACCESS.label": {
     "text": "查看访问权限",
     "source": "f5462009cf42"
   },
@@ -515,27 +515,27 @@
     "text": "即将到期",
     "source": "5f1a2542e4e4"
   },
-  "endpoint.authority.grants.label": {
+  "endpoint.people.grants.label": {
     "text": "查看角色",
     "source": "baa2809b34eb"
   },
-  "endpoint.authority.grants.meaning": {
+  "endpoint.people.grants.meaning": {
     "text": "列出分配给账户的角色。",
     "source": "a0171895698a"
   },
-  "endpoint.authority.history.label": {
+  "endpoint.people.history.label": {
     "text": "访问权限历史记录",
     "source": "29e9d0964e33"
   },
-  "endpoint.authority.history.meaning": {
+  "endpoint.people.history.meaning": {
     "text": "从最近开始查看访问权限的更改。",
     "source": "5f18e1d68412"
   },
-  "endpoint.authority.list.label": {
+  "endpoint.people.list.label": {
     "text": "列出人员",
     "source": "59c1126b3c3c"
   },
-  "endpoint.authority.list.meaning": {
+  "endpoint.people.list.meaning": {
     "text": "列出账户和可用的访问权限更改。",
     "source": "b16e0b16d7eb"
   },
@@ -1203,7 +1203,7 @@
     "text": "未结案",
     "source": "ed077f3d8125"
   },
-  "subject.AUTHORITY.label": {
+  "subject.PEOPLE.label": {
     "text": "访问权限",
     "source": "ec5ba0abb717"
   },
@@ -1343,19 +1343,19 @@
     "text": "所有者需要先批准加入此账户，才能访问 ClaimCore。",
     "source": "9f93027815d5"
   },
-  "endpoint.authority.requests.label": {
+  "endpoint.people.requests.label": {
     "text": "访问申请",
     "source": "34185554f83d"
   },
-  "endpoint.authority.requests.meaning": {
+  "endpoint.people.requests.meaning": {
     "text": "列出等待访问授权的登录请求。",
     "source": "cf0e3a6ea687"
   },
-  "endpoint.authority.requests.dismiss.label": {
+  "endpoint.people.requests.dismiss.label": {
     "text": "忽略访问申请",
     "source": "83aeff49e156"
   },
-  "endpoint.authority.requests.dismiss.meaning": {
+  "endpoint.people.requests.dismiss.meaning": {
     "text": "删除此申请，不会授予访问权限。",
     "source": "0201b260d157"
   },
@@ -1387,11 +1387,11 @@
     "text": "此操作不可用。提醒状态：{state}。请审阅最新提醒。",
     "source": "1ae8310d09d9"
   },
-  "act.ADMIT.label": {
+  "task.people.admit.label": {
     "text": "添加人员",
     "source": "66848b5361f4"
   },
-  "act.ADMIT.meaning": {
+  "task.people.admit.meaning": {
     "text": "添加包含姓名和首批角色的人员账户或服务账户。",
     "source": "57a856554f42"
   },
@@ -1851,143 +1851,143 @@
     "text": "每个角色及其适用范围只能选择一次。",
     "source": "7a0f01238fda"
   },
-  "act.OPEN.done": {
+  "task.case.open.done": {
     "text": "已新建案件。",
     "source": "87e4c2288a79"
   },
-  "act.AMEND_REGISTRATION.done": {
+  "task.case.amendRegistration.done": {
     "text": "已更新登记资料。",
     "source": "bf64cd9ad6ac"
   },
-  "act.CORRECT.done": {
+  "task.case.correct.done": {
     "text": "已更正案件资料。",
     "source": "a36e2011a7df"
   },
-  "act.DECIDE.done": {
+  "task.case.decide.done": {
     "text": "已记录赔付决定。",
     "source": "5c37a8e391bc"
   },
-  "act.WITHDRAW_DECISION.done": {
+  "task.case.withdrawDecision.done": {
     "text": "已撤回赔付决定。",
     "source": "264b3e2b75e7"
   },
-  "act.RECORD_PAYMENT.done": {
+  "task.case.recordPayment.done": {
     "text": "已记录付款。",
     "source": "08d843e2c987"
   },
-  "act.CLOSE.done": {
+  "task.case.close.done": {
     "text": "已结案。",
     "source": "e474c5de64f5"
   },
-  "act.REOPEN.done": {
+  "task.case.reopen.done": {
     "text": "已重新开案。",
     "source": "2f0851679340"
   },
-  "act.VOID.done": {
+  "task.case.void.done": {
     "text": "已作废案件。",
     "source": "3879f4c74f67"
   },
-  "act.VOID.consequence": {
+  "task.case.void.consequence": {
     "text": "此案件会保留记录，并退出日常工作，直到恢复。",
     "source": "b10ae3c17e24"
   },
-  "act.REINSTATE.done": {
+  "task.case.reinstate.done": {
     "text": "已恢复案件。",
     "source": "e8b79ac26253"
   },
-  "act.REINSTATE.consequence": {
+  "task.case.reinstate.consequence": {
     "text": "此案件重新变为活动状态。其未结案或已结案状态保持不变。",
     "source": "d174ff361378"
   },
-  "act.ERASE.done": {
+  "task.case.erase.done": {
     "text": "已永久删除案件。",
     "source": "c808ff2c3abd"
   },
-  "act.ERASE.consequence": {
+  "task.case.erase.consequence": {
     "text": "这会从 ClaimCore 中永久删除案件详细资料、工作和提醒。编号和更改记录会保留。",
     "source": "e774df6acd21"
   },
-  "act.REGISTER.done": {
+  "task.people.register.done": {
     "text": "已注册账户。",
     "source": "8beb0718d0ce"
   },
-  "act.ADMIT.done": {
+  "task.people.admit.done": {
     "text": "已添加账户及其角色。",
     "source": "34e9d9f27a5d"
   },
-  "act.ADMIT.consequence": {
+  "task.people.admit.consequence": {
     "text": "这会一并添加账户、保存账户资料并记录全部所选角色。",
     "source": "9f450fe5937d"
   },
-  "act.SET_PROFILE.done": {
+  "task.people.setProfile.done": {
     "text": "已更新账户资料。",
     "source": "3a06720a52cb"
   },
-  "act.ERASE_PROFILE.done": {
+  "task.people.eraseProfile.done": {
     "text": "已永久删除账户资料。",
     "source": "3f92d421b5a7"
   },
-  "act.ERASE_PROFILE.consequence": {
+  "task.people.eraseProfile.consequence": {
     "text": "这会永久删除保存的名称和联系方式。先前的更改会显示匿名账户名称。",
     "source": "59d90d4c6095"
   },
-  "act.GRANT.done": {
+  "task.people.grant.done": {
     "text": "已授予角色。",
     "source": "58d5cb320b79"
   },
-  "act.GRANT.consequence": {
+  "task.people.grant.consequence": {
     "text": "这会记录此账户的所选角色分配。",
     "source": "2516ad2235ce"
   },
-  "act.REVOKE.done": {
+  "task.people.revoke.done": {
     "text": "已撤销角色。",
     "source": "8cb5dd549927"
   },
-  "act.REVOKE.consequence": {
+  "task.people.revoke.consequence": {
     "text": "这会移除所选角色分配。",
     "source": "04f9c1d1eb16"
   },
-  "act.ENABLE.done": {
+  "task.people.enable.done": {
     "text": "已启用账户。",
     "source": "bc5cec779f5e"
   },
-  "act.DISABLE.done": {
+  "task.people.disable.done": {
     "text": "已停用账户。",
     "source": "baa0517c0ffc"
   },
-  "act.DISABLE.consequence": {
+  "task.people.disable.consequence": {
     "text": "此账户将失去对 ClaimCore 的访问权限。其已记录的更改会保留。",
     "source": "ecd5b17ec840"
   },
-  "act.UPDATE_WORK.done": {
+  "task.work.update.done": {
     "text": "已更新案件工作。",
     "source": "fbdedb4562e0"
   },
-  "act.REMINDER_CREATE.done": {
+  "task.reminder.create.done": {
     "text": "已添加提醒。",
     "source": "5e9e2dcc0b92"
   },
-  "act.REMINDER_UPDATE.done": {
+  "task.reminder.update.done": {
     "text": "已更新提醒。",
     "source": "b744baec4246"
   },
-  "act.REMINDER_COMPLETE.done": {
+  "task.reminder.complete.done": {
     "text": "已完成提醒。",
     "source": "7b359664f423"
   },
-  "act.REMINDER_CANCEL.done": {
+  "task.reminder.cancel.done": {
     "text": "已取消提醒。",
     "source": "d4f1d5514d81"
   },
-  "act.REMINDER_REOPEN.done": {
+  "task.reminder.reopen.done": {
     "text": "已重新开启提醒。",
     "source": "8b94105daf2b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+  "task.reminder.completeAndPlanNext.done": {
     "text": "已完成提醒并安排下一事项。",
     "source": "99dc5d907128"
   },
-  "endpoint.authority.requests.dismiss.done": {
+  "endpoint.people.requests.dismiss.done": {
     "text": "已忽略访问申请。",
     "source": "5dcca45467bc"
   },
@@ -2011,7 +2011,7 @@
     "text": "记录序号",
     "source": "262fca96392a"
   },
-  "label.authorityHistory": {
+  "label.peopleHistory": {
     "text": "访问权限历史记录",
     "source": "29e9d0964e33"
   },
@@ -2091,7 +2091,7 @@
     "text": "理赔案件",
     "source": "2249bd503ec4"
   },
-  "view.AUTHORITY.label": {
+  "view.PEOPLE.label": {
     "text": "人员与访问权限",
     "source": "1e133caaec46"
   },
@@ -2467,15 +2467,15 @@
     "text": "授予人",
     "source": "b6f1129ef877"
   },
-  "act.REMOVE_PAYMENT.label": {
+  "task.case.removePayment.label": {
     "text": "移除付款记录",
     "source": "3765d89e8401"
   },
-  "act.REMOVE_PAYMENT.meaning": {
+  "task.case.removePayment.meaning": {
     "text": "移除误录的付款记录。此操作不会退款或撤销转账，既有历史记录仍会保留。",
     "source": "839063316dd5"
   },
-  "act.REMOVE_PAYMENT.done": {
+  "task.case.removePayment.done": {
     "text": "付款记录已移除。",
     "source": "0aa96c610f64"
   },
@@ -2579,27 +2579,27 @@
     "text": "此付款记录已不存在。继续前请读取案件的当前状态。",
     "source": "ffdd2d61ba68"
   },
-  "act.ADD_NOTE.done": {
+  "task.note.add.done": {
     "text": "备注已添加。",
     "source": "26e0eaebce58"
   },
-  "act.ADD_NOTE.label": {
+  "task.note.add.label": {
     "text": "添加备注",
     "source": "63565c0485fe"
   },
-  "act.ADD_NOTE.meaning": {
+  "task.note.add.meaning": {
     "text": "为此案件添加备注，不会更改索赔或付款事实。",
     "source": "41497abc12f4"
   },
-  "act.REMOVE_NOTE.done": {
+  "task.note.remove.done": {
     "text": "备注已移除。",
     "source": "bb424a5bfe68"
   },
-  "act.REMOVE_NOTE.label": {
+  "task.note.remove.label": {
     "text": "移除备注",
     "source": "c06bd11ad0f6"
   },
-  "act.REMOVE_NOTE.meaning": {
+  "task.note.remove.meaning": {
     "text": "从当前备注中隐藏此备注。案件永久删除前，其文本仍保留在完整历史中。",
     "source": "cf678694f353"
   },
@@ -2651,11 +2651,11 @@
     "text": "备注",
     "source": "d8da2c49df39"
   },
-  "timeline.event.ADD_NOTE": {
+  "timeline.event.note.add": {
     "text": "备注已添加",
     "source": "a7886ebc4ffd"
   },
-  "timeline.event.REMOVE_NOTE": {
+  "timeline.event.note.remove": {
     "text": "备注已移除",
     "source": "b9096ff4a83e"
   },

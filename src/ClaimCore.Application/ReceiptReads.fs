@@ -15,14 +15,14 @@ module internal ReceiptReads =
 
                 let! accounts = tx.AssignedAccounts relations
                 return Ok(ReceiptCurrent.Work(parent, work, accounts))
-            | ReceiptCurrent.Authority _ when
-                Authority.can services.Principal actor Capability.ReadAuthority Scope.Installation
+            | ReceiptCurrent.People _ when
+                Access.can services.Principal actor Capability.ReadAccess Scope.Installation
                 ->
                 let identities =
                     entries
                     |> List.choose (fun (entry: ValidatedEntry) ->
                         match entry.Entry.Subject with
-                        | EntryTarget.Authority(target, _) -> Some target
+                        | EntryTarget.People(target, _) -> Some target
                         | _ -> None)
                     |> List.distinct
 
@@ -32,10 +32,10 @@ module internal ReceiptReads =
 
                     match Map.tryFind identity actors with
                     | Some actor when actor.ActorId = identity ->
-                        return Ok(ReceiptCurrent.Authority(Some actor))
+                        return Ok(ReceiptCurrent.People(Some actor))
                     | _ -> return Error CoreFault.StoreIntegrityError
                 | _ -> return Error CoreFault.StoreIntegrityError
-            | ReceiptCurrent.Authority _ -> return Ok(ReceiptCurrent.Authority None)
+            | ReceiptCurrent.People _ -> return Ok(ReceiptCurrent.People None)
             | _ -> return Ok current
         }
 
@@ -47,7 +47,7 @@ module internal ReceiptReads =
                     services.Principal
                     actor
                     (LedgerEntries.primary operation).Subject
-                || (Authority.validActor services.Principal actor
+                || (Access.validActor services.Principal actor
                     && (actor.Actor
                         |> Option.exists (fun owner -> owner.ActorId = operation.ActorId)))
                 ->

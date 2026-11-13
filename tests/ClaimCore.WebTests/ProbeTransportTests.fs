@@ -23,7 +23,7 @@ let private retainsPublicIdentity () =
             Expect.equal
                 (response.Headers.GetValues("Observed-Host") |> Seq.exactlyOne)
                 binding.Origin.Authority
-                "HTTP identity retains the public authority"
+                "HTTP identity retains the public people"
 
             use! ready = client.GetAsync(Uri(binding.Origin, "/health/ready"))
 

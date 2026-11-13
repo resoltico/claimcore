@@ -50,20 +50,19 @@ let tests =
                         let! reply =
                             Service.execute
                                 admin
-                                (OperationInput.Authority(
-                                    authorityRequest
+                                (OperationInput.People(
+                                    peopleRequest
                                         (id number)
                                         principal
-                                        (AuthorityAct.Register
-                                            { DisplayName = name; Contact = None })
+                                        (PeopleAct.Register { DisplayName = name; Contact = None })
                                 ))
                                 token
 
                         let actorId =
                             match (accepted reply).Subject with
-                            | ReceiptSubject.Authority receipt ->
-                                AuthorityTargetDisclosure.actorId receipt.TargetActor
-                            | _ -> failtest "Expected authority receipt"
+                            | ReceiptSubject.People receipt ->
+                                PeopleTargetDisclosure.actorId receipt.TargetActor
+                            | _ -> failtest "Expected people receipt"
 
                         return principal, actorId
                     }
@@ -94,18 +93,16 @@ let tests =
                             true
                         |> Async.AwaitTask
 
-                    acceptedAuthority reply
+                    acceptedPeople reply
 
                 let! disabled =
                     Service.execute
                         admin
-                        (OperationInput.Authority(
-                            authorityRequest (id 10) bobPrincipal AuthorityAct.Disable
-                        ))
+                        (OperationInput.People(peopleRequest (id 10) bobPrincipal PeopleAct.Disable))
                         token
                     |> Async.AwaitTask
 
-                acceptedAuthority disabled
+                acceptedPeople disabled
                 let pairs = [ parent, alice; parent, bob; other, alice; parent, service ]
 
                 let! found =

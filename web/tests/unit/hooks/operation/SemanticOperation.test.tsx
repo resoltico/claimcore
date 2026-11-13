@@ -51,7 +51,7 @@ const current: CurrentCase = {
     revision: 7,
     workRevision: 2,
     history: "NONE",
-    tasks: ["CASE:CLOSE"],
+    tasks: ["case.close"],
     editableInputs: [],
     correction: null,
     seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
@@ -68,7 +68,7 @@ const review: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "CASE:CLOSE",
+      task: "case.close",
       target: { kind: "CASE", caseId, beforeRevision: 7 },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
@@ -154,7 +154,7 @@ const fixture = (lost = false, putFails = false, panel = false) => {
   const Harness = () => {
     const value = useOperation({
       subject: "CASE",
-      kind: "CLOSE",
+      kind: "case.close",
       current,
       credential: "csrf",
       contextEpoch: 1,
@@ -170,7 +170,7 @@ const fixture = (lost = false, putFails = false, panel = false) => {
         <OperationPanel
           model={value}
           current={current}
-          offered={["CLOSE"]}
+          offered={["case.close"]}
           onClose={() => undefined}
         />
       );
@@ -180,14 +180,14 @@ const fixture = (lost = false, putFails = false, panel = false) => {
         <OperationForm
           model={value}
           current={current}
-          offered={["CLOSE"]}
+          offered={["case.close"]}
           onAct={() => undefined}
           formId="task-form"
         />
         <OperationFormActions
           model={value}
           current={current}
-          offered={["CLOSE"]}
+          offered={["case.close"]}
           formId="task-form"
           preview={preview}
         />
@@ -242,7 +242,7 @@ it("connects the actual form, Core review and journal-before-send to one exact p
     kind: "CASE",
     target: { kind: "ID", caseId },
     expectedRevision: 7,
-    act: { kind: "CLOSE" },
+    act: { kind: "case.close" },
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);

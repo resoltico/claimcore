@@ -8,19 +8,19 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.VerificationChecks
 
-module internal AuthorityReplay =
+module internal PeopleReplay =
     let private ownerGrant: ActorGrant =
         {
             Role = Role.Owner
             Scope = Scope.Installation
         }
 
-    let private owner (actor: ActorAuthority) =
+    let private owner (actor: ActorAccess) =
         actor.Enabled
         && PrincipalKey.isHuman actor.Principal
         && List.contains ownerGrant actor.Grants
 
-    let executor (actors: Map<ActorId, ActorAuthority>) (entry: StoredEffect) human ownerRequired =
+    let executor (actors: Map<ActorId, ActorAccess>) (entry: StoredEffect) human ownerRequired =
         result {
             let! actor =
                 Map.tryFind entry.ActorId actors
@@ -45,30 +45,30 @@ module internal AuthorityReplay =
 
     let applyRoot
         (cases: Set<CaseId>)
-        (actors: Map<ActorId, ActorAuthority>)
+        (actors: Map<ActorId, ActorAccess>)
         (operation: RetainedOperation)
-        (scope: AuthorityCommandSkeleton)
+        (scope: PeopleCommandSkeleton)
         =
         let at = Some operation.Root.Header.Sequence
         let target = Map.tryFind scope.TargetActorId actors
 
         let registering =
             match scope.Act with
-            | AuthorityAct.Register _
-            | AuthorityAct.Admit _
-            | AuthorityAct.ProvisionOwner _ -> true
+            | PeopleAct.Register _
+            | PeopleAct.Admit _
+            | PeopleAct.ProvisionOwner _ -> true
             | _ -> false
 
         let profile =
             match operation.Values with
-            | RetainedOperationValues.Authority(RetainedProfile.Available value) -> Some value
+            | RetainedOperationValues.People(RetainedProfile.Available value) -> Some value
             | _ -> None
 
         let grants =
             match scope.Act with
-            | AuthorityAct.Admit value -> value.Grants
-            | AuthorityAct.Grant grant
-            | AuthorityAct.Revoke grant -> [ grant ]
+            | PeopleAct.Admit value -> value.Grants
+            | PeopleAct.Grant grant
+            | PeopleAct.Revoke grant -> [ grant ]
             | _ -> []
 
         let authored (grant: ActorGrant) =
@@ -80,7 +80,7 @@ module internal AuthorityReplay =
                     | Scope.Case id -> GrantTarget.CaseId id
             }
 
-        let act = AuthorityAct.map authored (fun _ -> profile) scope.Act
+        let act = PeopleAct.map authored (fun _ -> profile) scope.Act
 
         let targets =
             grants
@@ -90,7 +90,7 @@ module internal AuthorityReplay =
                 | _ -> None)
             |> Map.ofList
 
-        let owner (actor: ActorAuthority) =
+        let owner (actor: ActorAccess) =
             actor.Enabled
             && PrincipalKey.isHuman actor.Principal
             && List.contains
@@ -102,9 +102,9 @@ module internal AuthorityReplay =
 
         let facts =
             {
-                AuthorityFacts.TargetActor = target
+                PeopleFacts.TargetActor = target
                 TargetCases = targets
-                Requester = AuthorityView.ofActor (Map.tryFind operation.ActorId actors)
+                Requester = AccessView.ofActor (Map.tryFind operation.ActorId actors)
                 EnabledHumanOwners = Some(actors |> Map.values |> Seq.filter owner |> Seq.length)
                 ActorCount = Some actors.Count
             }
@@ -113,7 +113,7 @@ module internal AuthorityReplay =
             do!
                 require
                     at
-                    VerificationFinding.AuthorityFold
+                    VerificationFinding.PeopleFold
                     (if registering then
                          target.IsNone
                          && (actors
@@ -123,24 +123,20 @@ module internal AuthorityReplay =
                          target |> Option.exists (fun actor -> actor.Principal = scope.Principal))
 
             let! after =
-                Authority.replayRetained
+                People.replayRetained
                     facts
                     scope.TargetActorId
                     operation.OperationId
                     scope.Principal
                     act
                 |> Result.mapError (function
-                    | Refusal.Authority AuthorityRefusal.HumanPrincipalRequired ->
+                    | Refusal.People PeopleRefusal.HumanPrincipalRequired ->
                         divergence at VerificationFinding.HumanRequired
-                    | _ -> divergence at VerificationFinding.AuthorityFold)
+                    | _ -> divergence at VerificationFinding.PeopleFold)
 
             let next = Map.add scope.TargetActorId after actors
 
-            do!
-                require
-                    at
-                    VerificationFinding.AuthorityFold
-                    (next |> Map.values |> Seq.exists owner)
+            do! require at VerificationFinding.PeopleFold (next |> Map.values |> Seq.exists owner)
 
             return next
         }
@@ -203,7 +199,7 @@ module internal CaseReplay =
         | EntryTarget.Note _
         | EntryTarget.Work _
         | EntryTarget.Reminder _
-        | EntryTarget.Authority _ ->
+        | EntryTarget.People _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, businessDate) ->
             result {
@@ -533,7 +529,7 @@ module internal WorkReplay =
 
     let apply
         (cases: Map<CaseId, CaseHistory>)
-        (actors: Map<ActorId, ActorAuthority>)
+        (actors: Map<ActorId, ActorAccess>)
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)
         (entry: StoredEffect)
@@ -551,11 +547,11 @@ module internal WorkReplay =
             actors
             |> Map.tryFind actorId
             |> Option.exists (fun actor ->
-                decide actor.Principal (AuthorityView.ofActor (Some actor)) caseId)
+                decide actor.Principal (AccessView.ofActor (Some actor)) caseId)
 
         let authorized caseId actorId =
-            policy caseId actorId (fun principal authority caseId ->
-                CaseWorkPolicy.authorize principal authority caseId |> Result.isOk)
+            policy caseId actorId (fun principal people caseId ->
+                CaseWorkPolicy.authorize principal people caseId |> Result.isOk)
 
         let eligible caseId actorId =
             policy caseId actorId CaseWorkPolicy.eligibleAssignee
@@ -565,7 +561,7 @@ module internal WorkReplay =
                 let! parent = Map.tryFind caseId cases |> known
                 do! check (parent.State = CaseState.Active())
                 do! check (authorized caseId entry.ActorId)
-                do! AuthorityReplay.executor actors entry true false
+                do! PeopleReplay.executor actors entry true false
                 return parent
             }
 
@@ -889,7 +885,7 @@ type NoteHistory =
 module internal NoteReplay =
     let apply
         (cases: Map<CaseId, CaseHistory>)
-        (actors: Map<ActorId, ActorAuthority>)
+        (actors: Map<ActorId, ActorAccess>)
         (notes: Map<NoteId, NoteHistory>)
         (entry: StoredEffect)
         payload
@@ -905,14 +901,14 @@ module internal NoteReplay =
             | EntryTarget.Note subject ->
                 let! parent = Map.tryFind subject.CaseId cases |> known
                 do! check (parent.State = CaseState.Active())
-                do! AuthorityReplay.executor actors entry true false
+                do! PeopleReplay.executor actors entry true false
                 let! actor = Map.tryFind entry.ActorId actors |> known
 
                 do!
                     check (
                         CaseWorkPolicy.authorize
                             actor.Principal
-                            (AuthorityView.ofActor (Some actor))
+                            (AccessView.ofActor (Some actor))
                             subject.CaseId
                         |> Result.isOk
                     )
@@ -1016,7 +1012,7 @@ module internal NoteReplay =
                         Ok()))
             (Ok())
 
-/// Deterministic operation replay. Command authority is fixed before any effect is applied.
+/// Deterministic operation replay. Command people is fixed before any effect is applied.
 module Replay =
     type ProfileHistory =
         {
@@ -1031,7 +1027,7 @@ module Replay =
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
             Notes: Map<NoteId, NoteHistory>
-            Actors: Map<ActorId, ActorAuthority>
+            Actors: Map<ActorId, ActorAccess>
             GrantSources: Map<ActorId * Role * Scope, EffectPosition>
             Accepted: Map<OperationId, ActorId>
             Profiles: Map<ActorId, ProfileHistory>
@@ -1051,24 +1047,24 @@ module Replay =
     let private profile history (entry: StoredEffect) =
 
         match entry.Descriptor with
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.SetProfile _) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.SetProfile _) ->
             let current =
                 Map.tryFind id history |> Option.defaultValue { Missing = None; Present = None }
 
             let next =
                 match entry.Operation.Values with
-                | RetainedOperationValues.Authority RetainedProfile.Unavailable ->
+                | RetainedOperationValues.People RetainedProfile.Unavailable ->
                     { current with
                         Missing = Option.orElse current.Missing (Some entry.Position)
                     }
-                | RetainedOperationValues.Authority(RetainedProfile.Available _) ->
+                | RetainedOperationValues.People(RetainedProfile.Available _) ->
                     { current with
                         Present = Option.orElse current.Present (Some entry.Position)
                     }
                 | _ -> current
 
             Ok(Map.add id next history)
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.EraseProfile) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.EraseProfile) ->
             match Map.tryFind id history |> Option.bind _.Present with
             | Some position ->
                 Error(
@@ -1081,11 +1077,11 @@ module Replay =
 
     let private grantSource sources (entry: StoredEffect) =
         match entry.Descriptor with
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.ProvisionOwner _) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.ProvisionOwner _) ->
             Map.add (id, Role.Owner, Scope.Installation) entry.Position sources
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.Grant grant) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.Grant grant) ->
             Map.add (id, grant.Role, grant.Scope) entry.Position sources
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.Revoke grant) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.Revoke grant) ->
             Map.remove (id, grant.Role, grant.Scope) sources
         | _ -> sources
 
@@ -1103,8 +1099,8 @@ module Replay =
             let human =
                 List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
 
-            do! AuthorityReplay.executor actors entry human false
-            let view = AuthorityView.ofActor (Some actor)
+            do! PeopleReplay.executor actors entry human false
+            let view = AccessView.ofActor (Some actor)
 
             let scope =
                 if act = CaseActKind.Open then
@@ -1115,11 +1111,11 @@ module Replay =
             let permitted =
                 match payload with
                 | VerifiedPayload.Case(command, _) ->
-                    Authority.canAct actor.Principal view scope command.Act
-                | VerifiedPayload.Erased -> Authority.canAdvertise actor.Principal view scope act
+                    Access.canAct actor.Principal view scope command.Act
+                | VerifiedPayload.Erased -> Access.canAdvertise actor.Principal view scope act
                 | _ -> false
 
-            do! require (Some entry.Sequence) VerificationFinding.AuthorityFold permitted
+            do! require (Some entry.Sequence) VerificationFinding.PeopleFold permitted
         }
 
     let append
@@ -1162,8 +1158,8 @@ module Replay =
 
             let! actors =
                 match root.Structure.Command with
-                | CommandSkeleton.Authority scope ->
-                    AuthorityReplay.applyRoot
+                | CommandSkeleton.People scope ->
+                    PeopleReplay.applyRoot
                         (state.Cases |> Map.keys |> Set.ofSeq)
                         state.Actors
                         operation

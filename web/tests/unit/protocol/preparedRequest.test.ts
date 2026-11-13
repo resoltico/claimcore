@@ -6,18 +6,18 @@ import { strictByteProfile } from "@contracts/client";
 
 it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
   const values = {
-    ...valuesFor("CORRECT"),
+    ...valuesFor("case.correct"),
     "group:registration": "UPDATE",
     "field:claimantName": "Before",
     "field:claimedAmount": "1.0000",
     "field:claimedCurrency": "EUR",
   };
-  const request = requestFor(values, "CORRECT");
+  const request = requestFor(values, "case.correct");
   const prepared = prepareRequest("operation.execute", request);
   Object.assign(values, { "field:claimantName": "After" });
   if (
     request.kind !== "CASE" ||
-    request.act.kind !== "CORRECT" ||
+    request.act.kind !== "case.correct" ||
     request.act.groups.registration.kind !== "UPDATE"
   ) {
     throw new Error("Missing correction fixture.");
@@ -38,7 +38,7 @@ it("the compiler rejects raw bytes and structural forgeries at mutation submissi
     target: { kind: "REFERENCE", caseReference: "CASE-1" },
     expectedRevision: 1,
     act: {
-      kind: "CLOSE",
+      kind: "case.close",
     },
   } as const;
   const forged = { endpoint: "operation.execute", bytes: "{}", input: source } as const;
@@ -56,7 +56,7 @@ it("final prepared wire admission bounds actual UTF-8 bytes before dispatch", ()
     target: { kind: "REFERENCE", caseReference: "CASE-1" },
     expectedRevision: 1,
     act: {
-      kind: "VOID",
+      kind: "case.void",
       reason: "💼".repeat(strictByteProfile.maximumRequestBytes),
     },
   } as const;

@@ -20,7 +20,7 @@ import { endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
+  tasks: ["case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -103,7 +103,7 @@ const acceptsOperation = async (): Promise<void> => {
               regions: [
                 {
                   role: "NOTICE",
-                  content: { kind: "NOTICE", tone: "INFO", messageId: "act.CLOSE.done" },
+                  content: { kind: "NOTICE", tone: "INFO", messageId: "task.case.close.done" },
                 },
                 {
                   role: "DETAILS",
@@ -132,7 +132,7 @@ const acceptsOperation = async (): Promise<void> => {
     <OperationEditor
       definition={definition}
       current={current}
-      initialAct="CLOSE"
+      initialAct="case.close"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}
@@ -176,7 +176,7 @@ const sessionLifecycle = async () => {
       context: {
         kind: "CASES",
         cases: [],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },

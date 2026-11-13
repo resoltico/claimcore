@@ -14,14 +14,14 @@ it.each(["CASE-0042", "new", "NEW", ".", "..", "/", "%", "~", "~bmV3", "A/B", "1
     expect(
       parseRoute(
         new URL(
-          actPath({ kind: "REFERENCE", caseReference: reference }, "CORRECT"),
+          actPath({ kind: "REFERENCE", caseReference: reference }, "case.correct"),
           window.location.origin,
         ),
       ),
     ).toEqual({
       screen: "caseAct",
       target: { kind: "REFERENCE", caseReference: reference },
-      act: "CORRECT",
+      act: "case.correct",
     });
   },
 );
@@ -84,7 +84,7 @@ it("keeps canonical case identity separate from a UUID-shaped reference", () => 
   }
 });
 
-it.each(["/work", "/authority", "/authority/actor-id", "/operations", "/operations/op-id"])(
+it.each(["/work", "/people", "/people/actor-id", "/operations", "/operations/op-id"])(
   "rejects retired route %s without an alias",
   (path) => {
     expect(parseRoute(new URL(path, location.origin))).toEqual({ screen: "missing" });
@@ -96,8 +96,8 @@ it("distinguishes default entry and the separate public areas", () => {
     screen: "reminders",
     query: "?view=pending",
   });
-  expect(parseRoute(new URL("/authority-history", location.origin))).toEqual({
-    screen: "authorityHistory",
+  expect(parseRoute(new URL("/people-history", location.origin))).toEqual({
+    screen: "peopleHistory",
     actorId: "",
   });
   expect(parseRoute(new URL("/recovery", location.origin))).toEqual({
@@ -108,8 +108,8 @@ it("distinguishes default entry and the separate public areas", () => {
 
 it("preserves the explicit history actor instead of broadening to all actors", () => {
   const actorId = "10000000-0000-4000-8000-000000000001";
-  expect(parseRoute(new URL(`/authority-history?actorId=${actorId}`, location.origin))).toEqual({
-    screen: "authorityHistory",
+  expect(parseRoute(new URL(`/people-history?actorId=${actorId}`, location.origin))).toEqual({
+    screen: "peopleHistory",
     actorId,
   });
 });
@@ -120,7 +120,7 @@ it.each([
   "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000002",
   "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000001",
 ])("rejects a supplied ambiguous or invalid history actor: %s", (query) => {
-  expect(parseRoute(new URL(`/authority-history?${query}`, location.origin))).toEqual({
+  expect(parseRoute(new URL(`/people-history?${query}`, location.origin))).toEqual({
     screen: "missing",
   });
 });

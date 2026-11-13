@@ -267,25 +267,25 @@ module TaskDeclarations =
                     | CaseActKind.Erase -> []
 
                 operation :: caseTarget :: revision :: values, []
-            | TaskId.Operation(ActKind.Authority kind) ->
+            | TaskId.Operation(ActKind.People kind) ->
                 let values, collections =
                     match kind with
-                    | AuthorityKind.Register
-                    | AuthorityKind.SetProfile -> profile, []
-                    | AuthorityKind.Admit ->
+                    | PeopleActKind.Register
+                    | PeopleActKind.SetProfile -> profile, []
+                    | PeopleActKind.Admit ->
                         profile,
                         [
                             {
-                                Collection = TaskCollectionId.AuthorityGrants
+                                Collection = TaskCollectionId.PeopleGrants
                                 Inputs = grant
                             }
                         ]
-                    | AuthorityKind.Grant
-                    | AuthorityKind.Revoke -> grant, []
-                    | AuthorityKind.Enable
-                    | AuthorityKind.Disable
-                    | AuthorityKind.EraseProfile -> [], []
-                    | AuthorityKind.ProvisionOwner ->
+                    | PeopleActKind.Grant
+                    | PeopleActKind.Revoke -> grant, []
+                    | PeopleActKind.Enable
+                    | PeopleActKind.Disable
+                    | PeopleActKind.EraseProfile -> [], []
+                    | PeopleActKind.ProvisionOwner ->
                         invalidArg (nameof task) "Owner provisioning is an operator task."
 
                 operation :: (principal @ values), collections
@@ -330,6 +330,7 @@ module TaskDeclarations =
                     | ReminderActKind.Cancel -> identity
 
                 operation :: caseTarget :: values, []
+            | TaskId.Command CommandTaskId.PeopleRequestsDismiss -> principal, []
             | TaskId.Query query ->
                 let values =
                     match query with
@@ -355,16 +356,15 @@ module TaskDeclarations =
                     | QueryTaskId.ReminderGet ->
                         [ caseTarget; required (target InputTarget.ReminderId) ]
                     | QueryTaskId.OperationGet -> [ required (target InputTarget.OperationId) ]
-                    | QueryTaskId.AuthorityList ->
+                    | QueryTaskId.PeopleList ->
                         [
                             optional (target InputTarget.DirectorySearch)
                             optional TaskInputId.RoleFilter
                         ]
                         @ page
-                    | QueryTaskId.AuthorityGrants -> required TaskInputId.ActorId :: page
-                    | QueryTaskId.AuthorityHistory -> optional TaskInputId.ActorId :: page
-                    | QueryTaskId.AuthorityRequests -> page
-                    | QueryTaskId.AuthorityRequestsDismiss -> principal
+                    | QueryTaskId.PeopleGrants -> required TaskInputId.ActorId :: page
+                    | QueryTaskId.PeopleHistory -> optional TaskInputId.ActorId :: page
+                    | QueryTaskId.PeopleRequests -> page
                     | QueryTaskId.WorkViews
                     | QueryTaskId.Context -> []
 
@@ -374,7 +374,8 @@ module TaskDeclarations =
             Task = task
             Inputs =
                 match task with
-                | TaskId.Query _ ->
+                | TaskId.Query _
+                | TaskId.Command _ ->
                     inputs
                     |> List.map (fun input ->
                         { input with

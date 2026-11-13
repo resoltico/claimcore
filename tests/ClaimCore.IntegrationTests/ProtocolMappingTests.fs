@@ -73,7 +73,7 @@ let private assertServerIdentity endpoint input reply =
             (JsonValue.tryMember "operationId" receipt)
             (Some(Codec.uuid.Write(guid "operationId" input)))
             "Lookup receipt identity"
-    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleGrants) when
         kind = JsonValue.String "SUCCEEDED"
         ->
         let actor = memberValue "data" outcome |> memberValue "actor"

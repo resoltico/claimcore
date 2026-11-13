@@ -51,7 +51,7 @@
     "text": "Apariencia",
     "source": "3907fa7f8072"
   },
-  "ui.authorityAction": {
+  "ui.peopleAction": {
     "text": "Cambio de acceso",
     "source": "295239c1b29a"
   },
@@ -111,7 +111,7 @@
     "text": "Cerrar",
     "source": "7d9eb7acb13e"
   },
-  "ui.continueAuthorityRequest": {
+  "ui.continuePeopleRequest": {
     "text": "Continuar la solicitud actual",
     "source": "ec9e7079a21a"
   },
@@ -558,10 +558,6 @@
   "ui.shell.administration": {
     "text": "Administración",
     "source": "4b42c6690ebe"
-  },
-  "ui.shell.authorityHistory": {
-    "text": "Historial de acceso",
-    "source": "2023c056fe61"
   },
   "ui.shell.businessDateChanged": {
     "text": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",

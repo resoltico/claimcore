@@ -107,7 +107,7 @@
     <Compile Include="Contract/NoteDocumentTests.fs" />
     <Compile Include="Contract/HistoryControlDocumentTests.fs" />
     <Compile Include="Contract/ReminderControlDocumentTests.fs" />
-    <Compile Include="Contract/AuthorityHistoryDocumentTests.fs" />
+    <Compile Include="Contract/PeopleHistoryDocumentTests.fs" />
     <Compile Include="Contract/CaseChildControlTests.fs" />
     <Compile Include="Contract/RequesterControlDocumentTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
@@ -120,15 +120,15 @@
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Web/RuntimeDrainTests.fs" />
     <Compile Include="Web/RuntimeProcessTests.fs" />
-    <Compile Include="Application/AuthorityPolicyInputs.fs" />
+    <Compile Include="Application/PeoplePolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
     <Compile Include="Application/ReplayDecisionTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
-    <Compile Include="Application/AuthorityDecisionTests.fs" />
-    <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
+    <Compile Include="Application/PeopleDecisionTests.fs" />
+    <Compile Include="Application/PeopleRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/TranslationPipelineTests.fs" />
@@ -176,7 +176,7 @@
     <Compile Include="Cli/OfflineDraftTests.fs" />
     <Compile Include="Cli/TaskArgumentTests.fs" />
     <Compile Include="Cli/QueryArgumentTests.fs" />
-    <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
+    <Compile Include="Cli/PeopleInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
@@ -211,7 +211,7 @@
     <Compile Include="Cli/MoneyDisplayTests.fs" />
     <Compile Include="Cli/CliDisplayCultureTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
-    <Compile Include="Cli/AuthorityHistoryTests.fs" />
+    <Compile Include="Cli/PeopleHistoryTests.fs" />
     <Compile Include="Cli/CsvEffectProofTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />

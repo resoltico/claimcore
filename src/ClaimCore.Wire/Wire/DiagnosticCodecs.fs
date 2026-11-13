@@ -75,7 +75,8 @@ module DiagnosticCodecs =
         TaskId.all
         |> List.choose (function
             | TaskId.Operation _ as task -> Some(TaskDeclarations.describe task)
-            | TaskId.Query _ -> None)
+            | TaskId.Query _
+            | TaskId.Command _ -> None)
         |> List.map (fun task ->
             task.Inputs.Length
             + (task.Collections
@@ -113,7 +114,7 @@ module DiagnosticCodecs =
             |> optionalField
                 "grantOrdinal"
                 (fun (_, _, row) -> row)
-                (integer 0L (int64 AuthorityAdmission.MaximumGrants - 1L)
+                (integer 0L (int64 PeopleAdmission.MaximumGrants - 1L)
                  |> map (int >> GrantOrdinal.create >> Option.get) (GrantOrdinal.value >> int64))
 
         violationVariants
@@ -170,9 +171,9 @@ module DiagnosticCodecs =
                  |> field "state" id (VocabularyCodec.create CaseHeadline.vocabulary))
         ]
 
-    let private authorityVariants =
-        familyVariants "" Refusal.Authority (function
-            | Refusal.Authority value -> Some value
+    let private peopleVariants =
+        familyVariants "" Refusal.People (function
+            | Refusal.People value -> Some value
             | _ -> None)
 
     let private accessVariants =
@@ -304,7 +305,7 @@ module DiagnosticCodecs =
         @ (nullaryVariants<Refusal> "" nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag <> "INVALID_CURSOR"))
         @ accessVariants
-        @ authorityVariants
+        @ peopleVariants
         @ (nullaryVariants<Refusal> "" nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag = "INVALID_CURSOR"))
 

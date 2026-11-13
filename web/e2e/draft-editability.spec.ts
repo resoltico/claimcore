@@ -13,14 +13,14 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
 }) => {
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
-  await startAct(page, "AMEND_REGISTRATION", "en");
+  await startAct(page, "case.amendRegistration", "en");
   await expect(page.getByRole("combobox", { name: "Case action", exact: true })).toHaveCount(0);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Close", exact: true })
     .first()
     .click();
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
   await page
@@ -28,7 +28,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .getByRole("button", { name: "Close", exact: true })
     .first()
     .click();
-  await startAct(page, "AMEND_REGISTRATION", "en");
+  await startAct(page, "case.amendRegistration", "en");
   const selectedFacts = page.locator(".operation-form-card input[data-selects-fields]");
   await selectedFacts.first().waitFor({ state: "visible" });
   for (const selected of await selectedFacts.all()) {
@@ -63,7 +63,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
   await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
     "1,200.50 EUR",
   );
-  await startAct(page, "AMEND_REGISTRATION", "en");
+  await startAct(page, "case.amendRegistration", "en");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Close", exact: true })
@@ -96,7 +96,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
   }
   expect(current.outcome.document.context.revision).toBe(1);
-  expect(current.outcome.document.context.tasks).toContain("CASE:AMEND_REGISTRATION");
+  expect(current.outcome.document.context.tasks).toContain("case.amendRegistration");
   await expect(page.locator('[data-entry="caseReference"]').first()).toContainText(reference);
   const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();
@@ -113,5 +113,5 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(page.locator("section.success-toast.receipt")).toHaveCount(1);
   await expect(page.locator("section.receipt:not(.success-toast)")).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator('button[data-act="AMEND_REGISTRATION"]')).toHaveCount(1);
+  await expect(page.locator('button[data-act="case.amendRegistration"]')).toHaveCount(1);
 });

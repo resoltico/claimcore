@@ -24,15 +24,15 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 3)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (CancellationToken.None))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -45,7 +45,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         let afterWrite () =
             task {
@@ -82,7 +82,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         }
                         false
 
-                acceptedAuthority revoked
+                acceptedPeople revoked
             }
 
         let store = AfterCaseWriteStore(fixture.Store, afterWrite)
@@ -125,7 +125,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         Expect.equal
             denied
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "Later reads use revoked authority"
+            "Later reads use revoked people"
     }
 
 [<Tests>]
@@ -134,6 +134,6 @@ let tests =
         "committed receipt context"
         [
             testCaseAsync
-                "receipts retain locked disclosure when authority and revision change before delivery"
+                "receipts retain locked disclosure when people and revision change before delivery"
                 (run commitSnapshot)
         ]

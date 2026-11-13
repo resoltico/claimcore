@@ -32,7 +32,7 @@ let private containsMember name value =
 
     walk value
 
-let private authorityReview () =
+let private peopleReview () =
     let principal =
         PrincipalKey.human "https://issuer.example/" "review-subject" |> accepted
 
@@ -43,14 +43,14 @@ let private authorityReview () =
 
     let state =
         {
-            AuthorityState.Profile = None
+            PeopleState.Profile = None
             Enabled = true
             Grants = []
             Access = []
         }
 
     let input =
-        OperationInput.Authority
+        OperationInput.People
             {
                 OperationId = OperationId.value ResponseExamples.receipt.OperationId
                 Target =
@@ -59,14 +59,14 @@ let private authorityReview () =
                         Issuer = "https://issuer.example/"
                         Subject = "review-subject"
                     }
-                Act = AuthorityAct.EraseProfile
+                Act = PeopleAct.EraseProfile
             }
 
     let review =
-        OperationReview.Authority
+        OperationReview.People
             {
                 Basis = Inputs.workBasis
-                Effects = [ AuthorityReviewEffect.EraseProfile ]
+                Effects = [ PeopleReviewEffect.EraseProfile ]
                 Target =
                     Some
                         {
@@ -154,7 +154,7 @@ let tests =
             testCase
                 "review supplies the authored operation identity only in Core Details"
                 (fun () ->
-                    let input, review, _ = authorityReview ()
+                    let input, review, _ = peopleReview ()
                     let document = (HumanReviewDocument.ofCore input review).Document
 
                     let entries =
@@ -183,14 +183,14 @@ let tests =
             testCase
                 "review carries core confirmation and bindings without full snapshots"
                 (fun () ->
-                    let input, review, actor = authorityReview ()
+                    let input, review, actor = peopleReview ()
                     let result = HumanReviewDocument.ofCore input review
 
                     match result.Document.Context with
                     | InteractionContext.Review binding ->
                         Expect.equal
                             binding.Task
-                            (TaskId.Operation(ActKind.Authority AuthorityKind.EraseProfile))
+                            (TaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
                             "Semantic task"
 
                         Expect.equal
@@ -200,7 +200,7 @@ let tests =
 
                         Expect.equal
                             binding.Target
-                            (ReviewTarget.Authority(Some actor.ActorId, GrantScope.Installation))
+                            (ReviewTarget.People(Some actor.ActorId, GrantScope.Installation))
                             "Resolved target"
 
                         Expect.equal
@@ -235,7 +235,7 @@ let tests =
             testCase
                 "structural review binding refuses mismatched task target input and consequence"
                 (fun () ->
-                    let input, review, _ = authorityReview ()
+                    let input, review, _ = peopleReview ()
                     let document = (HumanReviewDocument.ofCore input review).Document
                     let wire = HumanDocumentCodecs.document.Write document
                     HumanDocumentCodecs.document.Validate "$" wire |> accepted |> ignore
@@ -243,7 +243,7 @@ let tests =
 
                     for altered in
                         [
-                            mutate "task" (JsonValue.String "query:context") context
+                            mutate "task" (JsonValue.String "context") context
                             mutate "inputs" (JsonValue.Array []) context
                             mutate "consequence" (JsonValue.String "ROUTINE") context
                             mutate
@@ -273,58 +273,54 @@ let tests =
                                 (mutate "context" altered wire))
                             "Cross references must fail before typed interpretation")
 
-            testCase
-                "authority receipt retains supplied outcome facts in its core Screen"
-                (fun () ->
-                    let _, _, actor = authorityReview ()
+            testCase "people receipt retains supplied outcome facts in its core Screen" (fun () ->
+                let _, _, actor = peopleReview ()
 
-                    let receipt =
-                        { ResponseExamples.authorityReceipt with
-                            Subject =
-                                ReceiptSubject.Authority
-                                    {
-                                        TargetActor = AuthorityTargetDisclosure.Disclosed actor
-                                        Act = AuthorityKind.Disable
-                                        Effects =
-                                            [
-                                                {
-                                                    Act = AuthorityKind.Disable
-                                                    Id =
-                                                        EffectId.create
-                                                            ResponseExamples.authorityReceipt
-                                                                .OperationId
-                                                            0
-                                                        |> Option.get
-                                                    Position =
-                                                        EffectPosition.create
-                                                            ResponseExamples.receipt
-                                                                .Position.Sequence
-                                                            0
-                                                        |> Option.get
-                                                }
-                                            ]
-                                    }
-                        }
+                let receipt =
+                    { ResponseExamples.peopleReceipt with
+                        Subject =
+                            ReceiptSubject.People
+                                {
+                                    TargetActor = PeopleTargetDisclosure.Disclosed actor
+                                    Act = PeopleActKind.Disable
+                                    Effects =
+                                        [
+                                            {
+                                                Act = PeopleActKind.Disable
+                                                Id =
+                                                    EffectId.create
+                                                        ResponseExamples.peopleReceipt.OperationId
+                                                        0
+                                                    |> Option.get
+                                                Position =
+                                                    EffectPosition.create
+                                                        ResponseExamples.receipt.Position.Sequence
+                                                        0
+                                                    |> Option.get
+                                            }
+                                        ]
+                                }
+                    }
 
-                    let document = HumanReceiptDocument.ofCore receipt
+                let document = HumanReceiptDocument.ofCore receipt
 
-                    let rendered =
-                        ViewText.renderSelected true "en" document.Screen |> String.concat "\n"
+                let rendered =
+                    ViewText.renderSelected true "en" document.Screen |> String.concat "\n"
 
-                    Expect.stringContains
-                        rendered
-                        "Reviewed actor🪙"
-                        "Authority facts cannot collapse to generic acceptance and UUID"
+                Expect.stringContains
+                    rendered
+                    "Reviewed actor🪙"
+                    "People facts cannot collapse to generic acceptance and UUID"
 
-                    Expect.stringContains
-                        rendered
-                        (ActorId.format actor.ActorId)
-                        "Technical target remains available in DETAILS"
+                Expect.stringContains
+                    rendered
+                    (ActorId.format actor.ActorId)
+                    "Technical target remains available in DETAILS"
 
-                    let wire = HumanDocumentCodecs.document.Write document
-                    Expect.isFalse (containsMember "snapshot" wire) "No raw receipt snapshot"
-                    Expect.isFalse (containsMember "data" wire) "No raw DATA sibling"
-                    HumanDocumentCodecs.document.Validate "$" wire |> accepted |> ignore)
+                let wire = HumanDocumentCodecs.document.Write document
+                Expect.isFalse (containsMember "snapshot" wire) "No raw receipt snapshot"
+                Expect.isFalse (containsMember "data" wire) "No raw DATA sibling"
+                HumanDocumentCodecs.document.Validate "$" wire |> accepted |> ignore)
 
             testCase
                 "compound receipt preserves both handles and distinguishes partial disclosure"

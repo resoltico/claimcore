@@ -23,8 +23,8 @@ type ReminderOperationValues =
         Effects: ReminderEffects
     }
 
-/// An absent profile in a newly decided value is valid only for a public-only authority act.
-type AuthorityOperationValues = { Profile: ActorProfile option }
+/// An absent profile in a newly decided value is valid only for a public-only people act.
+type PeopleOperationValues = { Profile: ActorProfile option }
 
 [<RequireQualifiedAccess; NoComparison>]
 type OperationValues =
@@ -32,7 +32,7 @@ type OperationValues =
     | Work of WorkOperationValues
     | Note of NoteOperationValues
     | Reminder of ReminderOperationValues
-    | Authority of AuthorityOperationValues
+    | People of PeopleOperationValues
 
 [<RequireQualifiedAccess>]
 type RetainedProfile =
@@ -40,14 +40,14 @@ type RetainedProfile =
     | Available of ActorProfile
     | Unavailable
 
-/// Authority public effects remain interpretable when only its profile compartment is erased.
+/// People public effects remain interpretable when only its profile compartment is erased.
 [<RequireQualifiedAccess; NoComparison>]
 type RetainedOperationValues =
     | Case of CaseOperationValues option
     | Work of WorkOperationValues option
     | Note of NoteOperationValues option
     | Reminder of ReminderOperationValues option
-    | Authority of RetainedProfile
+    | People of RetainedProfile
 
 [<RequireQualifiedAccess>]
 type OperationContentProblem =

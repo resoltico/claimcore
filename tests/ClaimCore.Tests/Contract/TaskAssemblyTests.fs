@@ -120,15 +120,14 @@ let tests =
                             "One control identity per declared task input"
 
                     Expect.isNone
-                        (TaskRowTarget.create TaskCollectionId.AuthorityGrants -1)
+                        (TaskRowTarget.create TaskCollectionId.PeopleGrants -1)
                         "No negative ordinal"
 
                     Expect.isNone
-                        (TaskRowTarget.create TaskCollectionId.AuthorityGrants 48)
+                        (TaskRowTarget.create TaskCollectionId.PeopleGrants 48)
                         "Bounded submitted ordinal"
 
-                    let row =
-                        TaskRowTarget.create TaskCollectionId.AuthorityGrants 47 |> Option.get
+                    let row = TaskRowTarget.create TaskCollectionId.PeopleGrants 47 |> Option.get
 
                     Expect.equal (TaskRowTarget.ordinal row) 47 "Last supported submitted row")
             testCase "Keep Clear and empty Set survive typed registration assembly" (fun () ->
@@ -188,7 +187,7 @@ let tests =
                             "No floating point conversion or date normalization"
                     | _ -> failtest "Payment task must assemble RECORD_PAYMENT")
             testCase
-                "duplicate authority rows retain submitted identity independently of business content"
+                "duplicate people rows retain submitted identity independently of business content"
                 (fun () ->
                     let grant =
                         {
@@ -215,10 +214,10 @@ let tests =
                             Grants = rows
                         }
 
-                    let submission = TaskAssembly.admitAuthority operation draft
+                    let submission = TaskAssembly.admitPeople operation draft
 
                     let changedKeys =
-                        TaskAssembly.admitAuthority
+                        TaskAssembly.admitPeople
                             operation
                             { draft with
                                 Grants =
@@ -234,24 +233,24 @@ let tests =
                         "Local identity is excluded from business input"
 
                     Expect.equal
-                        submission.SubmittedRows[TaskCollectionId.AuthorityGrants]
+                        submission.SubmittedRows[TaskCollectionId.PeopleGrants]
                         [ "local-b"; "local-a" ]
                         "Submitted order is frozen"
 
                     let reordered =
-                        TaskAssembly.admitAuthority operation { draft with Grants = List.rev rows }
+                        TaskAssembly.admitPeople operation { draft with Grants = List.rev rows }
 
                     Expect.equal
-                        reordered.SubmittedRows[TaskCollectionId.AuthorityGrants]
+                        reordered.SubmittedRows[TaskCollectionId.PeopleGrants]
                         [ "local-a"; "local-b" ]
                         "A later submission has its own ordinal map"
 
                     Expect.equal
-                        submission.SubmittedRows[TaskCollectionId.AuthorityGrants]
+                        submission.SubmittedRows[TaskCollectionId.PeopleGrants]
                         [ "local-b"; "local-a" ]
                         "The previous submission is unchanged")
             testCase
-                "authority sibling issues carry submitted ordinals and semantic input identities"
+                "people sibling issues carry submitted ordinals and semantic input identities"
                 (fun () ->
                     let grant =
                         {
@@ -260,7 +259,7 @@ let tests =
                         }
 
                     let submission =
-                        TaskAssembly.admitAuthority
+                        TaskAssembly.admitPeople
                             operation
                             {
                                 Target =
@@ -282,8 +281,8 @@ let tests =
                             }
 
                     match submission.Command with
-                    | OperationInput.Authority request ->
-                        match Authority.parse request with
+                    | OperationInput.People request ->
+                        match People.parse request with
                         | Error(Refusal.InvalidInput issues) ->
                             let issues = InputIssues.toList issues
 
@@ -320,7 +319,7 @@ let tests =
                                 [ Some 0; Some 1 ]
                                 "Typed HUMAN row targets retain both identical failures"
                         | other -> failtestf "Expected row input issues, got %A" other
-                    | _ -> failtest "Authority task must assemble authority input")
+                    | _ -> failtest "People task must assemble people input")
             testCase "typed correction keeps updates and decision clearing explicit" (fun () ->
                 for decision in
                     [

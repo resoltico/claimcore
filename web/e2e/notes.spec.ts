@@ -30,7 +30,7 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
     const reviewed = await preview;
     expect(reviewed.request().postDataJSON()).toMatchObject({
       kind: "NOTE",
-      act: { kind: "ADD_NOTE", text: `Handling note ${number}\nSecond line` },
+      act: { kind: "note.add", text: `Handling note ${number}\nSecond line` },
     });
     expect(reviewed.request().postDataJSON()).not.toHaveProperty("expectedRevision");
     const dialog = page.getByRole("dialog");

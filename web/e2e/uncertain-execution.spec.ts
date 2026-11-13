@@ -92,7 +92,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
 }) => {
   await openAuthenticated(page);
   await openCase(page, `UNCERTAIN-${randomUUID()}`);
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   const previewed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.preview"),
   );

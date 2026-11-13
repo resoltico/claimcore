@@ -14,7 +14,7 @@ module PresentationCodecs =
     let MaximumEntries =
         max
             (CaseFields.declarations.Length + 2)
-            (2 * AuthorityAdmission.MaximumGrants * 3 + Capability.all.Length * 3 + 3)
+            (2 * PeopleAdmission.MaximumGrants * 3 + Capability.all.Length * 3 + 3)
 
     let MaximumKeyCharacters = 256
 
@@ -125,8 +125,6 @@ module PresentationCodecs =
             codeVariant many PresentedBoolean.vocabulary
             codeVariant many CorrectionGroupAction.vocabulary
             codeVariant many ActKind.vocabulary
-            codeVariant many WorkActKind.vocabulary
-            codeVariant many ReminderActKind.vocabulary
             codeVariant many CaseStageKind.vocabulary
             codeVariant many CaseAttention.vocabulary
             codeVariant many AccountState.vocabulary

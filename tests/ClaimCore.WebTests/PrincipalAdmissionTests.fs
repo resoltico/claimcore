@@ -22,7 +22,7 @@ let private ambiguousClaims () =
     for first, second in [ "cli", "service"; "service", "cli"; "cli", "cli" ] do
         Expect.isError
             (bearer [ Claim("azp", first); Claim("azp", second); Claim("sub", "human") ])
-            "Repeated client identity never chooses the first authority"
+            "Repeated client identity never chooses the first people"
 
     for first, second in [ "alice", "bob"; "bob", "alice"; "alice", "alice" ] do
         let claims = [ Claim("azp", "cli"); Claim("sub", first); Claim("sub", second) ]
@@ -142,7 +142,7 @@ let private metadataShapes () =
 
 let private rootIssuerDiscovery () =
     for source in [ "https://issuer.example.test/"; "https://issuer.example.test/realm/" ] do
-        let authority =
+        let people =
             OidcAuthority.parse source
             |> Result.defaultWith (fun _ -> failtest "A canonical HTTPS issuer is valid.")
 
@@ -151,7 +151,7 @@ let private rootIssuerDiscovery () =
 
         let validate value =
             OidcAuthority.validateMetadata
-                authority
+                people
                 (ReadOnlyMemory(Encoding.UTF8.GetBytes(value: string)))
 
         Expect.isOk (validate metadata) "Slash-ended HTTPS endpoints do not change issuer identity"

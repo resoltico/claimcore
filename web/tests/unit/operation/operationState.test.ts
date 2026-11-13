@@ -440,7 +440,7 @@ const creationRefresh = (): OperationState => {
       ...state.draft,
       entry: {
         subject: "CASE",
-        kind: "OPEN",
+        kind: "case.open",
       },
       target: prior.target,
       binding: {
@@ -572,7 +572,7 @@ it.each([
         ...state.draft,
         entry: {
           subject: "CASE",
-          kind: "CLOSE",
+          kind: "case.close",
         },
       },
     };
@@ -732,7 +732,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         },
         expectedRevision: 0,
         act: {
-          kind: "OPEN",
+          kind: "case.open",
           values: {
             incidentDate: "2026-09-01",
             incidentNotificationDate: "2026-09-02",
@@ -752,7 +752,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         ...closeReview.document,
         context: {
           ...closeReview.document.context,
-          task: "CASE:OPEN",
+          task: "case.open",
           target: {
             kind: "CASE",
             caseId: firstId,

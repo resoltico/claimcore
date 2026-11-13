@@ -126,12 +126,15 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
   }
-  if (input.id !== "input:role" || (props.task.act !== "GRANT" && props.task.act !== "ADMIT")) {
+  if (
+    input.id !== "input:role" ||
+    (props.task.act !== "people.grant" && props.task.act !== "people.admit")
+  ) {
     return null;
   }
   const principalKind =
     props.principalKind ??
-    (props.binding.kind === "AUTHORITY" ? props.binding.principal?.kind : undefined) ??
+    (props.binding.kind === "PEOPLE" ? props.binding.principal?.kind : undefined) ??
     formValueText(props.values["input:principal.kind"]);
   const scope = formValueText(props.values["input:scope"]) || "INSTALLATION";
   if (roleAdmitted(value, principalKind, scope)) {
@@ -220,7 +223,7 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
       disabled: props.disabled,
       error,
       onChange: (value: string) => {
-        if (props.task.id === "CASE:OPEN" && input.mode === "OPTIONAL" && value === "") {
+        if (props.task.id === "case.open" && input.mode === "OPTIONAL" && value === "") {
           props.onFieldsChange({}, [input.id]);
         } else {
           props.onChange(input.id, value);
@@ -272,7 +275,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
         });
   const clear =
     (field?.allowsAbsence === true || input.id === "input:profile.contact") &&
-    props.task.id !== "CASE:OPEN";
+    props.task.id !== "case.open";
   return (
     <fieldset className="selected-fact">
       <legend>
@@ -294,7 +297,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
             }}
           />
           {p.text(
-            props.task.id === "CASE:OPEN" || input.id === "input:profile.contact"
+            props.task.id === "case.open" || input.id === "input:profile.contact"
               ? "ui.recordOptionalFact"
               : "ui.changeFact",
             {
@@ -322,8 +325,8 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
     </fieldset>
   );
 };
-const authorityInputBound = (input: Input, props: Props): boolean => {
-  if (props.binding.kind !== "AUTHORITY") {
+const peopleInputBound = (input: Input, props: Props): boolean => {
+  if (props.binding.kind !== "PEOPLE") {
     return false;
   }
   const principalBound =
@@ -332,7 +335,7 @@ const authorityInputBound = (input: Input, props: Props): boolean => {
       input.id,
     );
   const grantBound =
-    props.task.id === "AUTHORITY:REVOKE" &&
+    props.task.id === "people.revoke" &&
     props.binding.grant !== undefined &&
     ["input:role", "input:scope", "field:caseReference"].includes(input.id);
   return principalBound || grantBound;
@@ -340,12 +343,12 @@ const authorityInputBound = (input: Input, props: Props): boolean => {
 const boundInput = (input: Input, props: Props): boolean => {
   const caseReferenceBound =
     input.id === "field:caseReference" &&
-    props.task.subject !== "AUTHORITY" &&
+    props.task.subject !== "PEOPLE" &&
     props.binding.kind !== "NEW_CASE";
   return (
     caseReferenceBound ||
     ["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id) ||
-    authorityInputBound(input, props)
+    peopleInputBound(input, props)
   );
 };
 const workInputPermitted = (input: Input, props: Props): boolean => {
@@ -367,8 +370,8 @@ const workInputPermitted = (input: Input, props: Props): boolean => {
       return true;
   }
 };
-const authorityInputPermitted = (input: Input, props: Props): boolean => {
-  if (props.task.subject !== "AUTHORITY" || input.id !== "field:caseReference") {
+const peopleInputPermitted = (input: Input, props: Props): boolean => {
+  if (props.task.subject !== "PEOPLE" || input.id !== "field:caseReference") {
     return true;
   }
   return (props.values["input:scope"] ?? "INSTALLATION") === "CASE";
@@ -379,11 +382,11 @@ const permitted = (input: Input, props: Props): boolean =>
   input.source === "AUTHORED" &&
   !boundInput(input, props) &&
   workInputPermitted(input, props) &&
-  authorityInputPermitted(input, props) &&
+  peopleInputPermitted(input, props) &&
   updateInputPermitted(input, props.current);
 const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
   // The grant scope already controls omission; a visible case reference is required.
-  if (subject === "AUTHORITY" && input.id === "field:caseReference") {
+  if (subject === "PEOPLE" && input.id === "field:caseReference") {
     return false;
   }
   return (
@@ -402,7 +405,7 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
       field?.pairs === null || field?.pairs === undefined
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = props.task.id !== "CASE:OPEN" && selectsValue(input, props.task.subject);
+    const selectable = props.task.id !== "case.open" && selectsValue(input, props.task.subject);
     if (
       selectable &&
       field?.scalar.kind === "CURRENCY" &&
@@ -458,9 +461,8 @@ const GrantRows = ({
                 input={input}
                 current={null}
                 principalKind={
-                  (props.binding.kind === "AUTHORITY"
-                    ? props.binding.principal?.kind
-                    : undefined) ?? formValueText(props.values["input:principal.kind"])
+                  (props.binding.kind === "PEOPLE" ? props.binding.principal?.kind : undefined) ??
+                  formValueText(props.values["input:principal.kind"])
                 }
                 values={row.values}
                 errorKey={taskRowInputKey(collection.id, row.key, input.id)}

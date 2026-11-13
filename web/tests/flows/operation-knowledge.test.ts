@@ -41,7 +41,7 @@ it.each([false, true])(
 );
 it("exact preview replay accepts without executing and an observation never resolves a pending attempt", async () => {
   vi.spyOn(service, "preview").mockImplementation((prepared) => {
-    if (prepared.input.kind !== "CASE" || prepared.input.act.kind !== "CLOSE") {
+    if (prepared.input.kind !== "CASE" || prepared.input.act.kind !== "case.close") {
       throw new Error("Expected the authored close attempt.");
     }
     return Promise.resolve({

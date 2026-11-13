@@ -29,7 +29,7 @@ let private profile name =
 let private nonce number () =
     Array.init 32 (fun index -> byte ((number + index) % 256))
 
-let private authority number (head: LedgerPosition) executor target act saved =
+let private people number (head: LedgerPosition) executor target act saved =
     let header =
         {
             OperationHeader.InstallationId = installation
@@ -43,13 +43,13 @@ let private authority number (head: LedgerPosition) executor target act saved =
 
     RetainedOperation.create
         header
-        (CommandSkeleton.Authority
+        (CommandSkeleton.People
             {
                 TargetActorId = actor target
                 Principal = principal target
                 Act = act
             })
-        (OperationValues.Authority { Profile = saved })
+        (OperationValues.People { Profile = saved })
         (nonce number)
     |> valid
 
@@ -68,12 +68,12 @@ let private append state root =
     Replay.append installation None state root |> valid
 
 let private owner () =
-    authority
+    people
         1
         LedgerPosition.genesis
         (actor 1)
         1
-        (AuthorityAct.ProvisionOwner(0, Authority.initialOwnerRoles))
+        (PeopleAct.ProvisionOwner(0, People.initialOwnerRoles))
         (Some(profile "Owner"))
 
 [<Tests>]
@@ -100,7 +100,7 @@ let tests =
                         (Some(profile "Owner"))
                         "Typed profile applied"
 
-                    for role in Role.Owner :: Authority.initialOwnerRoles do
+                    for role in Role.Owner :: People.initialOwnerRoles do
                         Expect.contains
                             current.Grants
                             {
@@ -141,12 +141,12 @@ let tests =
                         ]
 
                     let admitted =
-                        authority
+                        people
                             2
                             initial.Head
                             (actor 1)
                             2
-                            (AuthorityAct.Admit { Profile = 0; Grants = grants })
+                            (PeopleAct.Admit { Profile = 0; Grants = grants })
                             (Some(profile "Removed profile"))
 
                     let beforeErase = append initial (erased admitted)
@@ -164,8 +164,7 @@ let tests =
                         (Replay.erasure beforeErase)
                         "Unexplained private loss remains corruption"
 
-                    let erase =
-                        authority 3 beforeErase.Head (actor 1) 2 AuthorityAct.EraseProfile None
+                    let erase = people 3 beforeErase.Head (actor 1) 2 PeopleAct.EraseProfile None
 
                     let after = append beforeErase erase
 
@@ -174,12 +173,12 @@ let tests =
                         "Later accepted owner erase accounts for the missing profile"
 
                     let later =
-                        authority
+                        people
                             4
                             after.Head
                             (actor 1)
                             2
-                            (AuthorityAct.SetProfile 0)
+                            (PeopleAct.SetProfile 0)
                             (Some(profile "Later profile"))
 
                     let after = append after later
@@ -197,38 +196,36 @@ let tests =
                     Expect.isOk
                         (Replay.erasure after)
                         "Earlier erase does not require later profile clearing")
-            testCase
-                "an erased profile cannot grant authority to execute its own command"
-                (fun () ->
-                    let root = owner ()
-                    let initial = append (Replay.initial None) root
+            testCase "an erased profile cannot grant people to execute its own command" (fun () ->
+                let root = owner ()
+                let initial = append (Replay.initial None) root
 
-                    let grants =
-                        [
-                            {
-                                Role = Role.Owner
-                                Scope = Scope.Installation
-                            }
-                        ]
+                let grants =
+                    [
+                        {
+                            Role = Role.Owner
+                            Scope = Scope.Installation
+                        }
+                    ]
 
-                    let self =
-                        authority
-                            2
-                            initial.Head
-                            (actor 2)
-                            2
-                            (AuthorityAct.Admit { Profile = 0; Grants = grants })
-                            (Some(profile "Untrusted new owner"))
-                        |> erased
+                let self =
+                    people
+                        2
+                        initial.Head
+                        (actor 2)
+                        2
+                        (PeopleAct.Admit { Profile = 0; Grants = grants })
+                        (Some(profile "Untrusted new owner"))
+                    |> erased
 
-                    match Replay.append installation None initial self with
-                    | Error finding ->
-                        Expect.equal
-                            finding.Finding
-                            VerificationFinding.AuthorityFold
-                            "Command authorization uses earlier requester state"
-                    | Ok _ ->
-                        failtest "Post-registration owner permission authorized an earlier command")
+                match Replay.append installation None initial self with
+                | Error finding ->
+                    Expect.equal
+                        finding.Finding
+                        VerificationFinding.PeopleFold
+                        "Command authorization uses earlier requester state"
+                | Ok _ ->
+                    failtest "Post-registration owner permission authorized an earlier command")
             testCase
                 "available profile content before an accepted erase is independently detected"
                 (fun () ->
@@ -236,16 +233,16 @@ let tests =
                     let initial = append (Replay.initial None) root
 
                     let registered =
-                        authority
+                        people
                             2
                             initial.Head
                             (actor 1)
                             2
-                            (AuthorityAct.Register 0)
+                            (PeopleAct.Register 0)
                             (Some(profile "Still available"))
 
                     let before = append initial registered
-                    let erase = authority 3 before.Head (actor 1) 2 AuthorityAct.EraseProfile None
+                    let erase = people 3 before.Head (actor 1) 2 PeopleAct.EraseProfile None
 
                     match Replay.append installation None before erase with
                     | Error finding ->

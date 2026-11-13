@@ -12,7 +12,7 @@ import type {
   RevisionConflictSnapshot,
 } from "./operationTypes";
 const caseBound = (source: LocalSource): source is ConflictSource =>
-  source.prepared.input.kind !== "AUTHORITY";
+  source.prepared.input.kind !== "PEOPLE";
 export const conflictFromRefusal = (
   action: Extract<OperationAction, { type: "REFUSE" }>,
   source: LocalSource | null,
@@ -44,12 +44,12 @@ export const rebasedTaskBinding = (input: OperationInput, revision: number): Tas
         kind: "CASE",
         target: input.target,
         revision,
-        ...(input.act.kind === "REMOVE_PAYMENT" ? { paymentId: input.act.paymentId } : {}),
+        ...(input.act.kind === "case.removePayment" ? { paymentId: input.act.paymentId } : {}),
       };
     case "WORK":
       return { kind: "WORK", target: input.target, workRevision: revision };
     case "REMINDER":
-      if (input.act.kind === "CREATE") {
+      if (input.act.kind === "reminder.create") {
         throw new Error("A new reminder has no prior version to rebase.");
       }
       return {
@@ -61,10 +61,10 @@ export const rebasedTaskBinding = (input: OperationInput, revision: number): Tas
       return {
         kind: "NOTE",
         target: input.target,
-        ...(input.act.kind === "REMOVE_NOTE" ? { noteId: input.act.noteId } : {}),
+        ...(input.act.kind === "note.remove" ? { noteId: input.act.noteId } : {}),
       };
-    case "AUTHORITY":
-      throw new Error("Authority commands do not have a reviewed version.");
+    case "PEOPLE":
+      throw new Error("People commands do not have a reviewed version.");
   }
 };
 const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
@@ -72,12 +72,14 @@ const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
     ? right.kind === "ID" && left.caseId === right.caseId
     : right.kind === "REFERENCE" && left.caseReference === right.caseReference;
 const sameReminder = (before: ReminderAct, after: ReminderAct): boolean =>
-  before.kind !== "CREATE" && after.kind !== "CREATE" && before.reminderId === after.reminderId;
+  before.kind !== "reminder.create" &&
+  after.kind !== "reminder.create" &&
+  before.reminderId === after.reminderId;
 /** Target spelling and selected reminder identity cannot change as a side effect of rebasing. */
 export const sameConflictTarget = (before: OperationInput, after: OperationInput): boolean => {
   if (
-    before.kind === "AUTHORITY" ||
-    after.kind === "AUTHORITY" ||
+    before.kind === "PEOPLE" ||
+    after.kind === "PEOPLE" ||
     before.kind !== after.kind ||
     before.act.kind !== after.act.kind
   ) {

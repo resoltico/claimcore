@@ -19,7 +19,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
         context: {
           kind: "CASES",
           cases: [],
-          tasks: ["CASE:OPEN"],
+          tasks: ["case.open"],
           exactCaseId: null,
           nextCursor: null,
         },

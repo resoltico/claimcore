@@ -15,7 +15,7 @@ import { render, screen, TestSession } from "../support/presentation-test-suppor
 import { current, editor, previewReply } from "../support/presentation-state.fixtures";
 const canary = "PRIOR_ACTOR_PREFILL_CANARY";
 const disclosed = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
+  tasks: ["case.amendRegistration"],
   caseId: current.context.caseId,
   revision: 1,
   history: "FULL",
@@ -26,14 +26,14 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("closes prior actor prefills synchronously on token change without reusing the old observation", () => {
   const view = render(
     <TestSession credential="token">
-      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+      {editor({ current: disclosed, initialAct: "case.amendRegistration" })}
     </TestSession>,
   );
   selectFact("claimantName");
   expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
   view.rerender(
     <TestSession credential="new-token">
-      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+      {editor({ current: disclosed, initialAct: "case.amendRegistration" })}
     </TestSession>,
   );
   expect(screen.queryByDisplayValue(canary)).toBeNull();

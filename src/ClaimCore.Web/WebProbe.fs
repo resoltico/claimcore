@@ -11,7 +11,7 @@ open System.Net.Http
 open System.Threading
 open ClaimCore.Web.Composition
 
-/// A probe has no runtime factory, database credential reader or schema/authority mutation.
+/// A probe has no runtime factory, database credential reader or schema/people mutation.
 module internal WebProbe =
     let private value name fallback =
         Environment.GetEnvironmentVariable(name)

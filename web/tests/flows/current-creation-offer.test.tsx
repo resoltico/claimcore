@@ -46,7 +46,7 @@ const contextReply = (
     context: {
       ...activeRequester.context,
       views: ["CASES", "OPERATIONS"],
-      tasks: offered ? ["CASE:OPEN"] : [],
+      tasks: offered ? ["case.open"] : [],
     },
   }),
 });
@@ -74,7 +74,7 @@ beforeEach(() => {
       screen: { regions: [] },
       context: {
         kind: "CASES",
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         cases: [],
         exactCaseId: null,
         nextCursor: null,

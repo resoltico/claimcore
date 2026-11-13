@@ -4,12 +4,12 @@ import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
-import type { HumanReadDocument_caseList } from "@contracts/client";
+import type { HumanReadDocument_case_list } from "@contracts/client";
 import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../support/transport-response.fixtures";
 // The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
 vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
-const listed: HumanReadDocument_caseList = {
+const listed: HumanReadDocument_case_list = {
   screen: {
     regions: [
       {
@@ -47,7 +47,7 @@ const listed: HumanReadDocument_caseList = {
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", {
     ...listed,
-    context: { ...listed.context, tasks: mayOpen ? ["CASE:OPEN"] : [], nextCursor },
+    context: { ...listed.context, tasks: mayOpen ? ["case.open"] : [], nextCursor },
   });
 afterEach(() => vi.unstubAllGlobals());
 it("opens the core-supplied exact reference without inferring it from the query or row count", async () => {

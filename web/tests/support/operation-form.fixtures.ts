@@ -15,7 +15,7 @@ export const current: CurrentCase = {
     revision: 4,
     workRevision: 0,
     history: "FULL",
-    tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
+    tasks: ["case.amendRegistration", "case.correct", "case.close"],
     editableInputs: [],
     correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE", "CLEAR"] },
     seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
@@ -33,8 +33,8 @@ export const current: CurrentCase = {
   },
   disclosure: "CURRENT",
 };
-export const bindingFor = (kind = "CLOSE"): TaskBinding =>
-  kind === "OPEN"
+export const bindingFor = (kind = "case.close"): TaskBinding =>
+  kind === "case.open"
     ? { kind: "NEW_CASE", operationId: firstId }
     : {
         kind: "CASE",
@@ -42,11 +42,11 @@ export const bindingFor = (kind = "CLOSE"): TaskBinding =>
         target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
         revision: current.context.revision,
       };
-export const valuesFor = (kind = "CLOSE") => initialOperationValues("CASE", kind, current);
-export const requestFor = (values: FormValues, kind = "CLOSE") =>
+export const valuesFor = (kind = "case.close") => initialOperationValues("CASE", kind, current);
+export const requestFor = (values: FormValues, kind = "case.close") =>
   buildRequest(
     "operation.execute",
     assembleOperation(operationEntry({ subject: "CASE", kind }), values, bindingFor(kind)).command,
   );
-export const preparedFor = (kind = "CLOSE") =>
+export const preparedFor = (kind = "case.close") =>
   prepareRequest("operation.execute", requestFor(valuesFor(kind), kind));

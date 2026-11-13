@@ -1,5 +1,5 @@
 import { isRequest } from "../src/protocol/client";
-import { applyAuthority } from "./authority-setup";
+import { applyPeople } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showAccountActions } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -112,23 +112,23 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
   await selectFormat(page, "en-GB");
   const reference = `EXACT-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
-  await applyAuthority(page, {
+  await applyPeople(page, {
     kind: "CASE",
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: 1,
     act: {
-      kind: "AMEND_REGISTRATION",
+      kind: "case.amendRegistration",
       values: { incidentDescription: "Earlier browser history\nOriginal exact paragraph" },
     },
   });
-  await applyAuthority(page, {
+  await applyPeople(page, {
     kind: "CASE",
     operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: 2,
     act: {
-      kind: "AMEND_REGISTRATION",
+      kind: "case.amendRegistration",
       values: {
         claimedAmount: "9876.5432",
         claimedCurrency: "EUR",

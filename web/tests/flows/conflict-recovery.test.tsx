@@ -127,7 +127,7 @@ const current = (
 ) => {
   const value = caseDocumentInput(
     {
-      tasks: ["CASE:AMEND_REGISTRATION"],
+      tasks: ["case.amendRegistration"],
       revision,
       history,
       editableInputs: registrationInputs,
@@ -206,7 +206,7 @@ const editor = () =>
     <OperationEditor
       definition={definition}
       current={current(1)}
-      initialAct="AMEND_REGISTRATION"
+      initialAct="case.amendRegistration"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}
@@ -338,7 +338,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   expect(drafts[1]).toMatchObject({
     kind: "CASE",
     expectedRevision: 54,
-    act: { kind: "AMEND_REGISTRATION", values: { claimantName: "My retained draft" } },
+    act: { kind: "case.amendRegistration", values: { claimantName: "My retained draft" } },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(

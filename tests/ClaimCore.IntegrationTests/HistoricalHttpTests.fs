@@ -39,15 +39,15 @@ let private caller (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 20)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -60,7 +60,7 @@ let private caller (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return core database.Fixture
     }
 

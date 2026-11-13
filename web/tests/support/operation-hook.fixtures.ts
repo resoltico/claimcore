@@ -12,7 +12,7 @@ export const hook = () =>
       useOperation({
         ...recoveryOptions,
         subject: "CASE",
-        kind: "CLOSE",
+        kind: "case.close",
         current: target,
         credential,
         onLockChange: vi.fn(),
@@ -28,15 +28,18 @@ export const preview = (
   prepared: PreparedRequest<"operation.execute"> = preparedFor(),
 ): ApiResult<ServiceResponse<"operation.preview">> => {
   const { input } = prepared;
-  if (input.kind !== "CASE" || (input.act.kind !== "OPEN" && input.act.kind !== "CLOSE")) {
+  if (
+    input.kind !== "CASE" ||
+    (input.act.kind !== "case.open" && input.act.kind !== "case.close")
+  ) {
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
-  const source = input.act.kind === "OPEN" ? openReview : closeReview;
+  const source = input.act.kind === "case.open" ? openReview : closeReview;
   let { caseId } = current.context;
   if (input.target.kind === "ID") {
     ({ caseId } = input.target);
   }
-  if (input.act.kind === "OPEN") {
+  if (input.act.kind === "case.open") {
     caseId = input.operationId;
   }
   const reference =
@@ -58,7 +61,7 @@ export const preview = (
               target: {
                 kind: "CASE",
                 caseId,
-                beforeRevision: input.act.kind === "OPEN" ? null : input.expectedRevision,
+                beforeRevision: input.act.kind === "case.open" ? null : input.expectedRevision,
               },
               confirmation: { kind: "CASE_REFERENCE", reference },
             },

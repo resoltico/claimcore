@@ -77,11 +77,11 @@ export const CasePayments = ({
         <h2 id="case-payments-title">
           {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
         </h2>
-        {current.context.tasks.includes("CASE:DECIDE") ? (
+        {current.context.tasks.includes("case.decide") ? (
           <Button
             variant="secondary"
             onPress={() => {
-              onAct("DECIDE");
+              onAct("case.decide");
             }}
           >
             {p.text("ui.changeDecision")}
@@ -100,7 +100,7 @@ export const CasePayments = ({
           current={current}
           total={total}
           onRemove={(id) => {
-            onAct("REMOVE_PAYMENT", id);
+            onAct("case.removePayment", id);
           }}
           onChanged={onChanged}
         />
@@ -111,7 +111,7 @@ export const CasePayments = ({
           total={total}
           zone={zone}
           onRemove={(id) => {
-            onAct("REMOVE_PAYMENT", id);
+            onAct("case.removePayment", id);
           }}
           onExpand={() => {
             setExpanded(owner);

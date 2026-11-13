@@ -64,7 +64,7 @@ let identities (fixture: Fixture) =
                         }
                 }
                 expected
-                "Both selectors return the same case facts and current authority across distinct observations"
+                "Both selectors return the same case facts and current people across distinct observations"
         | _ -> failtest "Both positive selectors must resolve"
 
         match byId with
@@ -228,7 +228,7 @@ let identities (fixture: Fixture) =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let! voided =
             Service.execute
@@ -341,15 +341,15 @@ let grantScopes (fixture: Fixture) =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 631)
                         reader
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let authored =
             {
@@ -363,27 +363,27 @@ let grantScopes (fixture: Fixture) =
                 Scope = GrantScope.Case(expectedId, reference)
             }
 
-        let input = authorityRequest (id fixture 632) reader (AuthorityAct.Grant authored)
-        let! preview = Service.preview actor (OperationInput.Authority input) token
+        let input = peopleRequest (id fixture 632) reader (PeopleAct.Grant authored)
+        let! preview = Service.preview actor (OperationInput.People input) token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
             Expect.equal
                 review.After.Grants
                 [ expected ]
                 "Review publishes the resolved immutable scope"
         | _ -> failtest "The independent ID-scoped grant must preview"
 
-        let! granted = Service.execute actor (OperationInput.Authority input) token
+        let! granted = Service.execute actor (OperationInput.People input) token
         let acceptedGrant = accepted granted
 
         let! replay =
             Service.execute
                 actor
-                (OperationInput.Authority
+                (OperationInput.People
                     { input with
                         Act =
-                            AuthorityAct.Grant
+                            PeopleAct.Grant
                                 { authored with
                                     Scope = GrantTarget.CaseReference "scope-a"
                                 }
@@ -405,10 +405,10 @@ let grantScopes (fixture: Fixture) =
         let entry =
             match stored with
             | Ok(Some value) -> value
-            | _ -> failtest "The real accepted authority record must exist"
+            | _ -> failtest "The real accepted people record must exist"
 
         match entry.Root.Structure.Command with
-        | CommandSkeleton.Authority { Act = AuthorityAct.Grant grant } ->
+        | CommandSkeleton.People { Act = PeopleAct.Grant grant } ->
             Expect.equal grant.Role Role.CaseReader "Accepted grant role"
 
             Expect.equal
@@ -454,7 +454,7 @@ let grantScopes (fixture: Fixture) =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! denied = Service.get scopedReader { Target = CaseSelector.Id expectedId } token
 
         Expect.equal
@@ -463,7 +463,7 @@ let grantScopes (fixture: Fixture) =
             "The next lookup reauthorizes after revocation"
 
         let! restored = grant actor (id fixture 634) reader authored true
-        acceptedAuthority restored
+        acceptedPeople restored
 
         let! stewardship =
             grant
@@ -476,7 +476,7 @@ let grantScopes (fixture: Fixture) =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let! voided =
             Service.execute
@@ -517,7 +517,7 @@ let grantScopes (fixture: Fixture) =
         | _ -> failtest "Erased grant metadata remains readable"
 
         let! history =
-            Service.authorityHistory
+            Service.peopleHistory
                 actor
                 {
                     TargetActorId = Some(id fixture 631)
@@ -532,13 +532,13 @@ let grantScopes (fixture: Fixture) =
                 page.Entries
                 |> List.choose (fun entry ->
                     match entry.Facts with
-                    | AuthorityHistoryFacts.Granted value
-                    | AuthorityHistoryFacts.Revoked value -> Some value
+                    | PeopleHistoryFacts.Granted value
+                    | PeopleHistoryFacts.Revoked value -> Some value
                     | _ -> None)
 
             Expect.equal
                 scopes
                 [ expected; expected; expected ]
                 "History reads retained pairs without recovering erased case data"
-        | _ -> failtest "Authority history remains readable after case erasure"
+        | _ -> failtest "People history remains readable after case erasure"
     }

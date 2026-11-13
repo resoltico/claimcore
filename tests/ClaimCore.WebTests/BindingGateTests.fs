@@ -66,7 +66,7 @@ let private invalidBindings () =
 [<Tests>]
 let tests =
     testList
-        "listener and public authority"
+        "listener and public people"
         [
             testCase "explicit container binding retains Host and origin refusal" peerBoundary
             testCase "listener rejects invalid address and port" invalidBindings

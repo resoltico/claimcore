@@ -31,7 +31,7 @@ const context = {
   caseId: "019aa6a0-0000-7000-8000-000000000001",
   revision: 1,
   workRevision: 0,
-  tasks: ["CASE:AMEND_REGISTRATION"],
+  tasks: ["case.amendRegistration"],
   editableInputs: editable,
   correction: null,
   seeds: { paymentCurrency: null, registration, decision: null, work: null },
@@ -90,7 +90,7 @@ it("rejects action references that are absent from the declared handles", () => 
       regions: [
         {
           role: "RECOMMENDATION",
-          content: { kind: "ACTIONS", recommended: "ERASE", groups: [] },
+          content: { kind: "ACTIONS", recommended: "case.erase", groups: [] },
         },
       ],
     },
@@ -100,9 +100,9 @@ it("rejects action references that are absent from the declared handles", () => 
 
 const reviewContext = {
   kind: "REVIEW",
-  task: "AUTHORITY:ERASE_PROFILE",
+  task: "people.eraseProfile",
   target: {
-    kind: "AUTHORITY",
+    kind: "PEOPLE",
     actorId: "019aa6a0-0000-7000-8000-000000000002",
     scope: { kind: "INSTALLATION" },
   },
@@ -129,7 +129,7 @@ it("checks review control bindings against the declared task without reconstruct
   expect(isResponse("operation.preview", reviewed(review))).toBe(true);
   expect(isResponse("case.get", reply(review))).toBe(false);
   for (const alteredContext of [
-    { ...reviewContext, task: "query:context" },
+    { ...reviewContext, task: "context" },
     { ...reviewContext, consequence: "ROUTINE" },
     { ...reviewContext, inputs: [] },
     { ...reviewContext, inputs: [...reviewContext.inputs, reviewContext.inputs[0]] },

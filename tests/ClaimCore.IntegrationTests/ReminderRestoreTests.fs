@@ -287,7 +287,7 @@ let private seeded database =
                 }
                 true
 
-        acceptedAuthority permission
+        acceptedPeople permission
         do! identicalOther database.Fixture actor
         let! _ = verified database
         return actor

@@ -70,7 +70,7 @@ export const CaseReassignment = ({
     <WorkOperation
       current={parent}
       subject="WORK"
-      kind="UPDATE_WORK"
+      kind="work.update"
       targetIdentity={selection.readId}
       binding={{
         kind: "WORK",

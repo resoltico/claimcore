@@ -7,7 +7,7 @@ open ClaimCore.Application.Contracts
 [<RequireQualifiedAccess; NoComparison>]
 type internal VerifiedPayload =
     | Case of CaseCommand * CaseDecision option
-    | Authority of AuthorityEffectDescriptor * ActorProfile option
+    | People of PeopleEffectDescriptor * ActorProfile option
     | Work of WorkDecisionInput * CaseWorkSnapshot
     | Reminder of ReminderDecisionInput * ReminderEffects
     | Note of NoteDecisionInput * Note
@@ -21,7 +21,7 @@ module internal VerificationPayload =
         |> Result.map LedgerEntries.content
         |> Result.map (function
             | EntryContent.Case(request, decision) -> VerifiedPayload.Case(request, decision)
-            | EntryContent.Authority(change, profile) -> VerifiedPayload.Authority(change, profile)
+            | EntryContent.People(change, profile) -> VerifiedPayload.People(change, profile)
             | EntryContent.Work(request, after) -> VerifiedPayload.Work(request, after)
             | EntryContent.Reminder(request, effects) -> VerifiedPayload.Reminder(request, effects)
             | EntryContent.Note(request, after) -> VerifiedPayload.Note(request, after)

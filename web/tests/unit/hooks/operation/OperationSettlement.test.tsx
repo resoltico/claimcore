@@ -32,7 +32,7 @@ const current: CurrentCase = {
     revision: 7,
     workRevision: 0,
     history: "NONE",
-    tasks: ["CASE:CLOSE"],
+    tasks: ["case.close"],
     editableInputs: [],
     correction: null,
     seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
@@ -49,7 +49,7 @@ const review: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "CASE:CLOSE",
+      task: "case.close",
       target: { kind: "CASE", caseId, beforeRevision: 7 },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
@@ -181,7 +181,7 @@ const fixture = async (
     };
     model = useOperation({
       subject: "CASE",
-      kind: "CLOSE",
+      kind: "case.close",
       current,
       credential,
       contextEpoch: epoch,

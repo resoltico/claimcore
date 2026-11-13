@@ -20,7 +20,7 @@ export const CaseActions = ({
     <RegionView
       region={region}
       onAct={(act) => {
-        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
+        if (isCaseAct(act) && current.context.tasks.includes(act)) {
           onAct(act);
         }
       }}
@@ -43,7 +43,7 @@ export const CaseActionAlternatives = ({
       content={content}
       expandOther
       onAct={(act) => {
-        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
+        if (isCaseAct(act) && current.context.tasks.includes(act)) {
           onAct(act);
         }
       }}

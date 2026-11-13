@@ -17,7 +17,7 @@ you enter; it does not take a profile name from sign-in claims.
 The CLI performs the same admission in one request:
 
 ```sh
-claimcore authority admit --principal-kind human --issuer https://identity.example/ \
+claimcore people admit --principal-kind human --issuer https://identity.example/ \
   --subject PERSON-SUBJECT --name "Alex Example" --role case-handler
 ```
 
@@ -82,7 +82,7 @@ See [erasure limits](operating.md#erasure-limits) for backups and copies outside
 
 ## Review authority changes
 
-Open **Authority history**, or run `claimcore authority history`, to see who changed access and what was
+Open **Access history**, or run `claimcore people history`, to see who changed access and what was
 recorded. Actor names reflect current profiles, including profile erasure. Follow each continuation to
 review more history. A case-specific role does not provide authority-history access.
 

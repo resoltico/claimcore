@@ -37,7 +37,7 @@ export const caseIdentityScreen: Screen = {
 export const closeCaseScreen: Screen = {
   regions: [
     ...caseIdentityScreen.regions,
-    { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "CLOSE", groups: [] } },
+    { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "case.close", groups: [] } },
   ],
 };
 export const emptyCaseSeeds: CurrentCase["context"]["seeds"] = {
@@ -71,10 +71,10 @@ export const caseDocumentInput = (
 });
 
 /** Fixture authors choose offers explicitly; declaration metadata supplies only their input identities. */
-export const registrationInputs = operationTask("CASE:AMEND_REGISTRATION")
+export const registrationInputs = operationTask("case.amendRegistration")
   .inputs.filter((input) => input.source === "AUTHORED" && input.id !== "field:caseReference")
   .map((input) => input.id);
-export const decisionInputs = operationTask("CASE:DECIDE")
+export const decisionInputs = operationTask("case.decide")
   .inputs.filter((input) => input.source === "AUTHORED" && input.id !== "field:caseReference")
   .map((input) => input.id);
 export const correctionChoices = {

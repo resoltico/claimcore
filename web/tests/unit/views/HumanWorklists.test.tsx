@@ -10,8 +10,8 @@ import { ReminderQueue } from "../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../src/routing/navigation";
 import {
   isResponse,
-  type HumanReadDocument_caseList,
-  type HumanReadDocument_workViews,
+  type HumanReadDocument_case_list,
+  type HumanReadDocument_work_views,
 } from "@contracts/client";
 
 const caseId = "00000000-0000-4000-8000-000000000001";
@@ -24,7 +24,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const counts: HumanReadDocument_workViews = {
+const counts: HumanReadDocument_work_views = {
   screen: {
     regions: [
       {
@@ -63,7 +63,7 @@ const counts: HumanReadDocument_workViews = {
   basis,
   disclosure: "CURRENT",
 };
-const cases: HumanReadDocument_caseList = {
+const cases: HumanReadDocument_case_list = {
   screen: {
     regions: [
       {
@@ -209,7 +209,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
       { kind: "TEXT" as const, value: label },
     ],
   });
-  const navigation: HumanReadDocument_workViews = {
+  const navigation: HumanReadDocument_work_views = {
     ...counts,
     screen: {
       regions: [

@@ -1,0 +1,160 @@
+module ClaimCore.IntegrationTests.PeopleContinuationTests
+
+open ClaimCore.TestSupport
+open ClaimCore.Wire
+open ClaimCore.Presentation
+
+open System
+open System.Threading
+open System.Threading.Tasks
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
+open ClaimCore.Application
+open ClaimCore.TestSupport.StoreFixtures
+open ClaimCore.IntegrationTests.ApplicationFixtures
+open ClaimCore.IntegrationTests.PaginationScenarios
+
+
+let private peopleLimits (_: PostgresFixture.Database) (fixture: Fixture) =
+    task {
+        let! actor = caseWorker fixture
+
+        do! registerActors fixture actor
+
+        let! first =
+            (Service.actors
+                actor
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = None
+                    Limit = 1
+                })
+                (CancellationToken.None))
+
+        let first = succeeded first
+
+        Expect.equal
+            (first.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
+            [ id fixture 1 ]
+            "Stable actor-ID order"
+
+        let! second =
+            (Service.actors
+                actor
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = first.NextCursor
+                    Limit = 2
+                })
+                (CancellationToken.None))
+
+        let second = succeeded second
+
+        Expect.equal
+            (second.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
+            [ id fixture 10; id fixture 11 ]
+            "Changed page size"
+
+        let! third =
+            (Service.actors
+                actor
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = second.NextCursor
+                    Limit = 1
+                })
+                (CancellationToken.None))
+
+        match third with
+        | Outcome.Succeeded page ->
+            Expect.equal
+                (page.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
+                [ id fixture 12 ]
+                "No omission"
+
+            Expect.isNone page.NextCursor "End of review"
+        | _ -> failtest "Missing final review page"
+
+        let! wrongEndpoint =
+            (Service.list
+                actor
+                ((ClaimCore.TestSupport.Inputs.caseListPage (
+                    {
+                        AfterCursor = first.NextCursor
+                        Limit = 1
+                    }
+                )))
+                (CancellationToken.None))
+
+        Expect.equal
+            wrongEndpoint
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "People continuation is endpoint-bound even when its position is valid ASCII"
+    }
+
+let private grantCursorRejections (_: PostgresFixture.Database) (fixture: Fixture) =
+    task {
+        let! admin = caseWorker fixture
+        let! view = inspectPeople fixture (owner) (CancellationToken.None)
+        let view = view |> Result.defaultWith (fun _ -> failtest "Caller people")
+        let people = view.Actor |> Option.get
+
+        for position in invalidGrantPositions do
+            let cursor =
+                let json =
+                    $"{{\"actor\":\"{people.ActorId:D}\",\"after\":{position},\"kind\":\"GRANTS\",\"v\":1}}"
+
+                Convert
+                    .ToBase64String(System.Text.Encoding.UTF8.GetBytes json)
+                    .TrimEnd('=')
+                    .Replace('+', '-')
+                    .Replace('/', '_')
+
+            let! refused =
+                (Service.grants
+                    admin
+                    ({
+                        ActorId = ActorId.value people.ActorId
+                        AfterCursor = Some cursor
+                        Limit = 50
+                    })
+                    (CancellationToken.None))
+
+            Expect.equal
+                refused
+                (Outcome.Rejected Refusal.InvalidCursor)
+                "A plain envelope does not admit an invalid grant position"
+
+        let! invalidLimit =
+            (Service.grants
+                admin
+                ({
+                    ActorId = ActorId.value people.ActorId
+                    AfterCursor = None
+                    Limit = 51
+                })
+                (CancellationToken.None))
+
+        Expect.equal
+            invalidLimit
+            (Outcome.Rejected(Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange 50)))
+            "Public grant page is bounded"
+    }
+
+[<Tests>]
+let tests =
+    testList
+        "authorized continuation pages"
+        [
+            testCaseAsync
+                "plain grant positions retain primitive and semantic admission"
+                (run grantCursorRejections)
+            testCaseAsync
+                "people continuation pages actors once and cannot cross endpoints"
+                (run peopleLimits)
+        ]

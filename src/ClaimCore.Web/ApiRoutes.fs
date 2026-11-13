@@ -47,23 +47,20 @@ module internal ApiRoutes =
                 (fun _ reply -> HumanReplies.lookup reply)
                 (fun _ -> None)
                 Service.operationGet
-        | ActorEndpoint.Query QueryTaskId.AuthorityList ->
-            Route.representedRead Api.authorityList HumanReadDocuments.actors Service.actors
-        | ActorEndpoint.Query QueryTaskId.AuthorityGrants ->
-            Route.representedRead Api.authorityGrants HumanReadDocuments.grants Service.grants
-        | ActorEndpoint.Query QueryTaskId.AuthorityHistory ->
+        | ActorEndpoint.Query QueryTaskId.PeopleList ->
+            Route.representedRead Api.peopleList HumanReadDocuments.actors Service.actors
+        | ActorEndpoint.Query QueryTaskId.PeopleGrants ->
+            Route.representedRead Api.peopleGrants HumanReadDocuments.grants Service.grants
+        | ActorEndpoint.Query QueryTaskId.PeopleHistory ->
+            Route.representedRead Api.peopleHistory HumanReadDocuments.history Service.peopleHistory
+        | ActorEndpoint.Query QueryTaskId.PeopleRequests ->
             Route.representedRead
-                Api.authorityHistory
-                HumanReadDocuments.history
-                Service.authorityHistory
-        | ActorEndpoint.Query QueryTaskId.AuthorityRequests ->
-            Route.representedRead
-                Api.authorityRequests
+                Api.peopleRequests
                 HumanReadDocuments.requests
                 Service.accessRequests
-        | ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss ->
+        | ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss ->
             Route.representedRead
-                Api.authorityRequestsDismiss
+                Api.peopleRequestsDismiss
                 HumanReadDocuments.dismissed
                 Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->

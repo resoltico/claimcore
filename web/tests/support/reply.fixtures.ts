@@ -37,12 +37,12 @@ const caseReceipt = (): HumanReceiptDocument => ({
   basis,
   disclosure: "CURRENT",
 });
-export const authorityReceipt = (): HumanReceiptDocument => ({
+export const peopleReceipt = (): HumanReceiptDocument => ({
   screen: empty,
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "AUTHORITY", actorId },
+    target: { kind: "PEOPLE", actorId },
     caseLink: null,
     refreshCase: null,
   },
@@ -54,7 +54,7 @@ const caseReview: HumanReview = {
     screen: empty,
     context: {
       kind: "REVIEW",
-      task: "CASE:CLOSE",
+      task: "case.close",
       target: { kind: "CASE", caseId, beforeRevision: 1 },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
@@ -65,13 +65,13 @@ const caseReview: HumanReview = {
   },
   presentation: { changes: [], unchanged: [] },
 };
-const authorityReview: HumanReview = {
+const peopleReview: HumanReview = {
   document: {
     screen: empty,
     context: {
       kind: "REVIEW",
-      task: "AUTHORITY:GRANT",
-      target: { kind: "AUTHORITY", actorId, scope: { kind: "INSTALLATION" } },
+      task: "people.grant",
+      target: { kind: "PEOPLE", actorId, scope: { kind: "INSTALLATION" } },
       inputs: [
         "input:operationId",
         "input:principal.kind",
@@ -89,7 +89,7 @@ const authorityReview: HumanReview = {
   },
   presentation: { changes: [], unchanged: [] },
 };
-type Subject = "CASE" | "AUTHORITY";
+type Subject = "CASE" | "PEOPLE";
 type Replies = { [K in EndpointId]: (subject: Subject) => HumanResponseByEndpoint[K] };
 const replies: Replies = {
   session: () =>
@@ -108,17 +108,17 @@ const replies: Replies = {
         context: {
           ...activeRequester.context,
           tasks: [
-            "CASE:OPEN",
-            "AUTHORITY:REGISTER",
-            "AUTHORITY:ADMIT",
-            "AUTHORITY:GRANT",
-            "AUTHORITY:REVOKE",
-            "AUTHORITY:ENABLE",
-            "AUTHORITY:DISABLE",
-            "query:authorityList",
-            "query:authorityGrants",
-            "query:authorityHistory",
-            "query:authorityRequests",
+            "case.open",
+            "people.register",
+            "people.admit",
+            "people.grant",
+            "people.revoke",
+            "people.enable",
+            "people.disable",
+            "people.list",
+            "people.grants",
+            "people.history",
+            "people.requests",
           ],
         },
       },
@@ -151,8 +151,8 @@ const replies: Replies = {
       dueDateSeed: null,
     }),
   "reminder.list": () => read({ kind: "REMINDERS", reminders: [], nextCursor: null }),
-  "authority.list": () => read({ kind: "PEOPLE", actorIds: [], nextCursor: null }),
-  "authority.grants": () =>
+  "people.list": () => read({ kind: "PEOPLE", actorIds: [], nextCursor: null }),
+  "people.grants": () =>
     read({
       kind: "PERSON",
       actorId,
@@ -163,21 +163,21 @@ const replies: Replies = {
       tasks: [],
       nextCursor: null,
     }),
-  "authority.history": () => read({ kind: "AUTHORITY_HISTORY", entries: [], nextCursor: null }),
-  "authority.requests": () => read({ kind: "ACCESS_REQUESTS", requests: [], nextCursor: null }),
-  "authority.requests.dismiss": () => read({ kind: "EMPTY" }),
+  "people.history": () => read({ kind: "PEOPLE_HISTORY", entries: [], nextCursor: null }),
+  "people.requests": () => read({ kind: "ACCESS_REQUESTS", requests: [], nextCursor: null }),
+  "people.requests.dismiss": () => read({ kind: "EMPTY" }),
   "operation.execute": (subject) => ({
     representation: "HUMAN",
     operationId,
     outcome: {
       kind: "ACCEPTED",
-      document: subject === "CASE" ? caseReceipt() : authorityReceipt(),
+      document: subject === "CASE" ? caseReceipt() : peopleReceipt(),
     },
   }),
   "operation.preview": (subject) => ({
     representation: "HUMAN",
     operationId,
-    outcome: { kind: "REVIEWED", review: subject === "CASE" ? caseReview : authorityReview },
+    outcome: { kind: "REVIEWED", review: subject === "CASE" ? caseReview : peopleReview },
   }),
   "operation.get": () => ({
     representation: "HUMAN",

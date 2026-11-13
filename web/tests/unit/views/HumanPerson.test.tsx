@@ -1,12 +1,12 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
-import { AuthorityGrants } from "../../../src/views/AuthorityGrants";
-import { isResponse, type HumanReadDocument_authorityGrants } from "@contracts/client";
+import { PeopleGrants } from "../../../src/views/PeopleGrants";
+import { isResponse, type HumanReadDocument_people_grants } from "@contracts/client";
 
 const actorId = "00000000-0000-4000-8000-000000000001";
 const caseId = "00000000-0000-4000-8000-000000000002";
-const document: HumanReadDocument_authorityGrants = {
+const document: HumanReadDocument_people_grants = {
   screen: {
     regions: [
       {
@@ -53,7 +53,7 @@ const document: HumanReadDocument_authorityGrants = {
     kind: "PERSON",
     actorId,
     principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "person" },
-    tasks: ["AUTHORITY:REVOKE"],
+    tasks: ["people.revoke"],
     profileSeed: null,
     nextCursor: null,
     revocations: [{ key: "selected-grant", role: "CASE_READER", scope: { kind: "CASE", caseId } }],
@@ -85,12 +85,12 @@ const response = (personDocument: unknown) =>
   });
 afterEach(() => vi.unstubAllGlobals());
 it("renders an opaque Core person title and binds revoke/navigation to typed controls without a business DTO", async () => {
-  expect(isResponse("authority.grants", reply(document))).toBe(true);
+  expect(isResponse("people.grants", reply(document))).toBe(true);
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const revoke = vi.fn();
   const observed = vi.fn();
   render(
-    <AuthorityGrants
+    <PeopleGrants
       actorId={actorId}
       onBack={vi.fn()}
       onDisclosureRefused={vi.fn()}
@@ -124,14 +124,14 @@ it("rejects missing/unoffered revocations and a responsibility destination belon
       responsibleCases: { ...document.context.responsibleCases, responsibleActor: caseId },
     },
   ]) {
-    expect(isResponse("authority.grants", reply({ ...document, context }))).toBe(false);
+    expect(isResponse("people.grants", reply({ ...document, context }))).toBe(false);
   }
 });
 it("does not publish a person document for a different requested actor", async () => {
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const observed = vi.fn();
   render(
-    <AuthorityGrants
+    <PeopleGrants
       actorId={caseId}
       onBack={vi.fn()}
       onDisclosureRefused={vi.fn()}

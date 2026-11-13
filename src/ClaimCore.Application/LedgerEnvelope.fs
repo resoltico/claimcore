@@ -24,7 +24,7 @@ type internal LedgerWriteContext =
     }
 
 module internal LedgerEnvelope =
-    let actorId (view: AuthorityView) =
+    let actorId (view: AccessView) =
         view.Actor
         |> Option.map _.ActorId
         |> Option.defaultWith (fun () -> invalidArg (nameof view) "Authorized actor is missing.")
@@ -49,7 +49,7 @@ module internal LedgerEnvelope =
         try
             let businessDate =
                 match plan.Command with
-                | CommandSkeleton.Authority _ -> None
+                | CommandSkeleton.People _ -> None
                 | _ -> Some(services.Calendar.DateAt plan.ObservedAt)
 
             let header =

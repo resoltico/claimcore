@@ -24,10 +24,7 @@ let private principal value =
     PrincipalKey.human "https://issuer.example/" value |> required
 
 let private execute owner operation target act =
-    Service.execute
-        owner
-        (OperationInput.Authority(Inputs.authorityRequest operation target act))
-        token
+    Service.execute owner (OperationInput.People(Inputs.peopleRequest operation target act)) token
 
 let private profile =
     {
@@ -45,14 +42,14 @@ let private lookup fixture operation =
 let private actor fixture target =
     fixture.Store.Read
         {
-            Work = (fun tx -> tx.Authority { Principal = target; CaseId = None })
+            Work = (fun tx -> tx.Access { Principal = target; CaseId = None })
             CancellationToken = token
         }
 
 let private effectKinds (receipt: OperationReceipt) =
     match receipt.Subject with
-    | ReceiptSubject.Authority value -> value, value.Effects |> List.map _.Act
-    | _ -> failtest "Expected authority receipt"
+    | ReceiptSubject.People value -> value, value.Effects |> List.map _.Act
+    | _ -> failtest "Expected people receipt"
 
 let internal lifecycle fixture =
     task {
@@ -97,14 +94,14 @@ let internal lifecycle fixture =
                     }
                     false
 
-            acceptedAuthority removed
+            acceptedPeople removed
 
         let! ownerContext = Service.context owner () token
         let ownerContext = successful ownerContext |> Inputs.activeContext
 
         Expect.isFalse
             (List.contains Capability.ReadCase ownerContext.Capability)
-            "Control owner has authority management without case-read access"
+            "Control owner has people management without case-read access"
 
         let target = principal "admitted-person"
 
@@ -140,16 +137,16 @@ let internal lifecycle fixture =
             ]
 
         let operation =
-            Inputs.authorityRequest
+            Inputs.peopleRequest
                 (id fixture 740)
                 target
-                (AuthorityAct.Admit { Profile = profile; Grants = grants })
-            |> OperationInput.Authority
+                (PeopleAct.Admit { Profile = profile; Grants = grants })
+            |> OperationInput.People
 
         let! preview = Service.preview owner operation token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
             Expect.equal
                 review.Effects.Length
                 5
@@ -164,13 +161,13 @@ let internal lifecycle fixture =
                 "Token hints never select the authored profile"
 
             match review.Effects with
-            | AuthorityReviewEffect.Register identity :: AuthorityReviewEffect.SetProfile _ :: effects ->
+            | PeopleReviewEffect.Register identity :: PeopleReviewEffect.SetProfile _ :: effects ->
                 Expect.equal identity target "Review identifies the admitted principal"
 
                 Expect.equal
                     (effects
                      |> List.choose (function
-                         | AuthorityReviewEffect.Grant grant -> Some grant
+                         | PeopleReviewEffect.Grant grant -> Some grant
                          | _ -> None)
                      |> List.length)
                     3
@@ -181,16 +178,16 @@ let internal lifecycle fixture =
         let! acceptedReply = Service.execute owner operation token
         let receipt = accepted acceptedReply
         let metadata, kinds = effectKinds receipt
-        Expect.equal metadata.Act AuthorityKind.Admit "Logical operation remains ADMIT"
+        Expect.equal metadata.Act PeopleActKind.Admit "Logical operation remains ADMIT"
 
         Expect.equal
             kinds
             [
-                AuthorityKind.Register
-                AuthorityKind.SetProfile
-                AuthorityKind.Grant
-                AuthorityKind.Grant
-                AuthorityKind.Grant
+                PeopleActKind.Register
+                PeopleActKind.SetProfile
+                PeopleActKind.Grant
+                PeopleActKind.Grant
+                PeopleActKind.Grant
             ]
             "Receipt includes every logical effect in order"
 
@@ -212,7 +209,7 @@ let internal lifecycle fixture =
         Expect.equal stored.Position receipt.Position "Store and receipt have one root proof"
 
         match stored.Root.Structure.Command with
-        | CommandSkeleton.Authority { Act = AuthorityAct.Admit _ } -> ()
+        | CommandSkeleton.People { Act = PeopleAct.Admit _ } -> ()
         | _ -> failtest "The command remains ADMIT, not its REGISTER effect"
 
         let privateProfile = stored.Root.Structure.Compartments |> List.exactlyOne
@@ -285,7 +282,7 @@ let internal lifecycle fixture =
                 owner
                 (id fixture 740)
                 target
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants = aliasGrants
@@ -296,8 +293,8 @@ let internal lifecycle fixture =
             receipt
             "Reference and ID aliases replay the same normalized operation"
 
-        let! erased = execute owner (id fixture 741) target AuthorityAct.EraseProfile
-        acceptedAuthority erased
+        let! erased = execute owner (id fixture 741) target PeopleAct.EraseProfile
+        acceptedPeople erased
         let! hidden = Service.execute owner operation token
 
         Expect.equal
@@ -344,7 +341,7 @@ let internal boundary fixture =
                 owner
                 (id fixture 751)
                 target
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants = duplicate
@@ -377,7 +374,7 @@ let internal boundary fixture =
                     owner
                     (id fixture operation)
                     target
-                    (AuthorityAct.Admit { Profile = profile; Grants = grants })
+                    (PeopleAct.Admit { Profile = profile; Grants = grants })
 
             match refused.Outcome with
             | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
@@ -392,7 +389,7 @@ let internal boundary fixture =
                 owner
                 (id fixture 754)
                 target
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants =
@@ -414,7 +411,7 @@ let internal boundary fixture =
                 owner
                 (id fixture 755)
                 target
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants =
@@ -428,7 +425,7 @@ let internal boundary fixture =
 
         Expect.equal
             wrongScope.Outcome
-            (ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.RoleScopeNotApplicable))
+            (ExecuteResult.Rejected(Refusal.People PeopleRefusal.RoleScopeNotApplicable))
             "Existing role/scope admission remains authoritative"
 
         let service =
@@ -439,7 +436,7 @@ let internal boundary fixture =
                 owner
                 (id fixture 756)
                 service
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants =
@@ -453,7 +450,7 @@ let internal boundary fixture =
 
         Expect.equal
             wrongKind.Outcome
-            (ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired))
+            (ExecuteResult.Rejected(Refusal.People PeopleRefusal.HumanPrincipalRequired))
             "Principal-kind restrictions are unchanged"
     }
 
@@ -494,7 +491,7 @@ let internal maximum fixture =
                 owner
                 (id fixture 810)
                 target
-                (AuthorityAct.Admit
+                (PeopleAct.Admit
                     {
                         Profile = profile
                         Grants = List.rev grants
@@ -558,11 +555,11 @@ let internal atomicWrites fixture =
             let operation = id fixture (850 + after)
 
             let command =
-                Authority.parse (
-                    Inputs.authorityRequest
+                People.parse (
+                    Inputs.peopleRequest
                         operation
                         target
-                        (AuthorityAct.Admit { Profile = profile; Grants = grants })
+                        (PeopleAct.Admit { Profile = profile; Grants = grants })
                 )
                 |> required
 
@@ -577,13 +574,13 @@ let internal atomicWrites fixture =
                                         ExecutionFacts.target
                                             owner
                                             tx
-                                            (Authority.factsNeeded command.Act)
+                                            (People.factsNeeded command.Act)
                                             command.OperationId
                                             command.Target
-                                            (AuthorityRequests.targetCases command)
+                                            (PeopleRequests.targetCases command)
 
                                     let verdict =
-                                        AuthorityExecution.execute
+                                        PeopleExecution.execute
                                             owner
                                             command
                                             {
@@ -598,7 +595,7 @@ let internal atomicWrites fixture =
                                         do! tx.Append operation
 
                                         for projection in List.take after projections do
-                                            do! tx.ProjectAuthority projection
+                                            do! tx.ProjectPeople projection
 
                                         return
                                             failwith

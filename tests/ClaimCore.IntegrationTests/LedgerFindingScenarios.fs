@@ -161,7 +161,7 @@ let internal stateSequence (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let! receipt = close database actor
 
         do!
@@ -200,7 +200,7 @@ let internal erasure (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         let! erased =
             Service.execute
@@ -235,7 +235,7 @@ let internal missingPayload (database: PostgresFixture.Database) =
         do! finding VerificationFinding.PayloadWithoutErasure database
     }
 
-let internal authority (database: PostgresFixture.Database) =
+let internal people (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
 
@@ -251,8 +251,8 @@ let internal authority (database: PostgresFixture.Database) =
                 true
 
         let receipt = accepted reply
-        do! rewrite database receipt.Position.Sequence (updateAuthority AuthorityAct.Disable)
-        do! finding VerificationFinding.AuthorityFold database
+        do! rewrite database receipt.Position.Sequence (updatePeople PeopleAct.Disable)
+        do! finding VerificationFinding.PeopleFold database
     }
 
 let internal executor (database: PostgresFixture.Database) =
@@ -289,7 +289,7 @@ let internal human (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority grant
+        acceptedPeople grant
 
         let! voided =
             Service.execute
@@ -317,8 +317,8 @@ let internal owner (database: PostgresFixture.Database) =
         let! changed =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest (id database.Fixture 31) reader AuthorityAct.Enable
+                (OperationInput.People(
+                    peopleRequest (id database.Fixture 31) reader PeopleAct.Enable
                 ))
                 token
 
@@ -328,7 +328,7 @@ let internal owner (database: PostgresFixture.Database) =
                 (accepted changed).Position.Sequence
                 (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 30)))
 
-        do! finding VerificationFinding.AuthorityFold database
+        do! finding VerificationFinding.PeopleFold database
     }
 
 let internal caseProjection (database: PostgresFixture.Database) =
@@ -344,11 +344,11 @@ let internal caseProjection (database: PostgresFixture.Database) =
         do! finding VerificationFinding.CaseProjection database
     }
 
-let internal authorityProjection (database: PostgresFixture.Database) =
+let internal peopleProjection (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
         do! sql database "DELETE FROM claimcore.grants WHERE role='CASE_HANDLER'" [||]
-        do! finding VerificationFinding.AuthorityProjection database
+        do! finding VerificationFinding.PeopleProjection database
     }
 
 let internal head (database: PostgresFixture.Database) =
@@ -432,7 +432,7 @@ let internal profileProjection (database: PostgresFixture.Database) =
                 "UPDATE claimcore.actors SET display_name='Wrong projection' WHERE actor_id=$1"
                 [| box (id database.Fixture 1) |]
 
-        do! finding VerificationFinding.AuthorityProfileProjection database
+        do! finding VerificationFinding.PeopleProfileProjection database
     }
 
 let internal findingCases =
@@ -447,11 +447,11 @@ let internal findingCases =
         VerificationFinding.StateSequence, stateSequence
         VerificationFinding.ErasureIncomplete, erasure
         VerificationFinding.PayloadWithoutErasure, missingPayload
-        VerificationFinding.AuthorityProfileProjection, profileProjection
-        VerificationFinding.AuthorityFold, authority
+        VerificationFinding.PeopleProfileProjection, profileProjection
+        VerificationFinding.PeopleFold, people
         VerificationFinding.ActorNotEnabled, executor
         VerificationFinding.HumanRequired, human
-        VerificationFinding.AuthorityFold, owner
+        VerificationFinding.PeopleFold, owner
         VerificationFinding.CaseProjection, caseProjection
         VerificationFinding.CaseStatusProjection,
         indexFinding
@@ -494,7 +494,7 @@ let internal findingCases =
             VerificationFinding.CasePayableCurrencyProjection
             "UPDATE claimcore.cases SET payable_currency='USD'"
 
-        VerificationFinding.AuthorityProjection, authorityProjection
+        VerificationFinding.PeopleProjection, peopleProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected
     ]

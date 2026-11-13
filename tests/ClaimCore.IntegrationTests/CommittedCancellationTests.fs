@@ -30,11 +30,11 @@ let tests =
                     Inputs.caseOperation (
                         requestIds 470 "BOUNDARY" 0L (AuthoredCaseAct.Open registration)
                     )
-                    OperationInput.Authority(
-                        authorityRequest
+                    OperationInput.People(
+                        peopleRequest
                             (OperationIds.fresh ())
                             target
-                            (AuthorityAct.Register Inputs.actorProfile)
+                            (PeopleAct.Register Inputs.actorProfile)
                     )
                 ]
 

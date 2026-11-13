@@ -13,7 +13,7 @@ let tests =
             testCase "startup reads authored English Latvian and Arabic resources" (fun () ->
                 for language, expected in
                     [ "en", "Open a case"; "lv", "Atvērt lietu"; "ar", "فتح ملف" ] do
-                    let actual = MessageCatalogs.render language "act.OPEN.label" Map.empty
+                    let actual = MessageCatalogs.render language "task.case.open.label" Map.empty
 
                     Expect.equal
                         actual

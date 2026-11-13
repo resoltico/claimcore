@@ -50,7 +50,7 @@ export const reviewReminderCompletion = async (
       (value) => new URL(value.url()).pathname === "/api/operation.preview",
     );
     const circle = row.getByRole("button", {
-      name: ui(await languageOf(page), "act.REMINDER_COMPLETE.label"),
+      name: ui(await languageOf(page), "task.reminder.complete.label"),
       exact: false,
     });
     const originId = await circle.getAttribute("id");
@@ -62,20 +62,20 @@ export const reviewReminderCompletion = async (
       delivered.status() !== 200 ||
       !isRequest("operation.preview", input) ||
       input.kind !== "REMINDER" ||
-      input.act.kind !== "COMPLETE" ||
+      input.act.kind !== "reminder.complete" ||
       !isResponseFor("operation.preview", "HUMAN", payload) ||
       payload.outcome.kind !== "REVIEWED"
     ) {
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
     expect(payload.operationId).toBe(input.operationId);
-    expect(originId).toBe(`reminder-${input.act.reminderId}-REMINDER:REMINDER_COMPLETE`);
+    expect(originId).toBe(`reminder-${input.act.reminderId}-reminder.complete`);
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();
     await expect(workConfirmButton(page)).toBeEnabled();
     await expect(workConfirmButton(page)).toHaveText(
-      ui(await languageOf(page), "act.REMINDER_COMPLETE.label"),
+      ui(await languageOf(page), "task.reminder.complete.label"),
     );
     expect(calls).toEqual(["/api/operation.preview"]);
     return { operationId: input.operationId };
@@ -88,11 +88,11 @@ export const reviewReminderCompletion = async (
 export const selectReminderAction = async (
   page: Page,
   row: Locator,
-  kind: "UPDATE" | "CANCEL" | "REOPEN" | "COMPLETE_AND_PLAN_NEXT",
+  kind: "reminder.update" | "reminder.cancel" | "reminder.reopen" | "reminder.completeAndPlanNext",
 ) => {
   const language = await languageOf(page);
-  if (kind === "UPDATE") {
-    await row.locator('button[id$="-UPDATE"]').click();
+  if (kind === "reminder.update") {
+    await row.locator('button[id$="-reminder.update"]').click();
     return;
   }
   const trigger = row.getByRole("button", {
@@ -105,7 +105,7 @@ export const selectReminderAction = async (
   await expect(menu).toHaveCount(1);
   await expect(menu).toBeVisible();
   await menu
-    .getByRole("menuitem", { name: ui(language, `act.REMINDER_${kind}.label`), exact: true })
+    .getByRole("menuitem", { name: ui(language, `task.${kind}.label`), exact: true })
     .click();
 };
 
@@ -164,14 +164,14 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   const label = (await confirmed.textContent())?.trim();
   const labelKeys =
     family === "WORK"
-      ? (["act.UPDATE_WORK.label"] as const)
+      ? (["task.work.update.label"] as const)
       : ([
-          "act.REMINDER_CREATE.label",
-          "act.REMINDER_UPDATE.label",
-          "act.REMINDER_COMPLETE.label",
-          "act.REMINDER_CANCEL.label",
-          "act.REMINDER_REOPEN.label",
-          "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label",
+          "task.reminder.create.label",
+          "task.reminder.update.label",
+          "task.reminder.complete.label",
+          "task.reminder.cancel.label",
+          "task.reminder.reopen.label",
+          "task.reminder.completeAndPlanNext.label",
         ] as const);
   expect(labelKeys.map((key) => ui(language, key))).toContain(label);
   const response = page.waitForResponse(
@@ -188,9 +188,7 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   );
   expect(envelope).toBe(input.operationId);
   const labelId =
-    input.kind === "WORK"
-      ? "act.UPDATE_WORK.label"
-      : (`act.REMINDER_${input.act.kind}.label` as const);
+    input.kind === "WORK" ? "task.work.update.label" : (`task.${input.act.kind}.label` as const);
   expect(label).toBe(ui(language, labelId));
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const current = page.locator(".case-detail");

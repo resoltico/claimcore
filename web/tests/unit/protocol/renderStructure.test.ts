@@ -92,10 +92,10 @@ it("rejects duplicate presented message arguments without interpreting the finan
 it("does not turn the issuer URI shape into a second canonical-principal admission rule", () => {
   expect(
     isRequest("operation.execute", {
-      kind: "AUTHORITY",
+      kind: "PEOPLE",
       operationId: "019aa6a0-0000-7000-8000-000000000001",
       target: { kind: "HUMAN", issuer: "https://issuer.example:bad/", subject: "person" },
-      act: { kind: "ENABLE" },
+      act: { kind: "people.enable" },
     }),
   ).toBe(true);
 });
@@ -123,9 +123,9 @@ it("applies the same structural issuer projection profile without admitting a tr
       },
     },
   });
-  expect(isResponse("authority.requests", projection("https://issuer.example:bad/"))).toBe(true);
-  expect(isResponse("authority.requests", projection("https://issuer.example/"))).toBe(true);
+  expect(isResponse("people.requests", projection("https://issuer.example:bad/"))).toBe(true);
+  expect(isResponse("people.requests", projection("https://issuer.example/"))).toBe(true);
   for (const issuer of ["https://issuer.example/\u0085", "https://issuer.example/\uFEFF"]) {
-    expect(isResponse("authority.requests", projection(issuer))).toBe(false);
+    expect(isResponse("people.requests", projection(issuer))).toBe(false);
   }
 });

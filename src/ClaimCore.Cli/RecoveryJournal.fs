@@ -88,9 +88,9 @@ module internal RecoveryJournal =
         && (TaskId.all
             |> List.exists (function
                 | TaskId.Operation kind ->
-                    ActKind.subject kind = record.Subject
-                    && ActKind.subjectActionToken kind = record.Act
-                | TaskId.Query _ -> false))
+                    ActKind.subject kind = record.Subject && ActKind.token kind = record.Act
+                | TaskId.Query _
+                | TaskId.Command _ -> false))
 
 
 

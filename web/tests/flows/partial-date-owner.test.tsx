@@ -51,7 +51,7 @@ const refreshedContext = (
             actorId: different ? "10000000-0000-4000-8000-000000000099" : current.context.actorId,
             tasks: offered
               ? current.context.tasks
-              : current.context.tasks.filter((task) => task !== "CASE:OPEN"),
+              : current.context.tasks.filter((task) => task !== "case.open"),
           },
         },
       },
@@ -75,7 +75,7 @@ it.each([
         context: {
           kind: "CASES",
           cases: [],
-          tasks: ["CASE:OPEN"],
+          tasks: ["case.open"],
           exactCaseId: null,
           nextCursor: null,
         },
@@ -136,7 +136,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         context: {
           kind: "CASES",
           cases: [],
-          tasks: ["CASE:OPEN"],
+          tasks: ["case.open"],
           exactCaseId: null,
           nextCursor: null,
         },
@@ -186,7 +186,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         installationId: kind === "NO_ROLES" ? self.context.installationId : null,
         tasks: [],
         views: [],
-        authorityIssuerSeed: null,
+        peopleIssuerSeed: null,
       },
       basis: { kind: "UNAVAILABLE" as const },
       disclosure: "CURRENT" as const,

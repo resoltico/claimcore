@@ -52,7 +52,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
       throw new Error("Expected the real reviewed stewardship draft.");
     }
     const authored: unknown = JSON.parse(response.request().postData() ?? "null");
-    expect(authored).toMatchObject({ act: { kind: "VOID", reason } });
+    expect(authored).toMatchObject({ act: { kind: "case.void", reason } });
     if (
       typeof authored !== "object" ||
       authored === null ||
@@ -77,7 +77,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     for (const language of ["ar", "lv", "en"] as const) {
       await selectLanguage(steward, language);
       await expect(dialog).toBeVisible();
-      await expect(dialog).toHaveAccessibleName(ui(language, "act.VOID.label"));
+      await expect(dialog).toHaveAccessibleName(ui(language, "task.case.void.label"));
       await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
       await expect(dialog.locator(".screen-details")).toContainText(operationId);
       await expect(dialog).toContainText(reason);

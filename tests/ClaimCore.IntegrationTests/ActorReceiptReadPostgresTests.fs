@@ -16,10 +16,10 @@ let private principal subject =
     PrincipalKey.human "https://pg-receipt-names.example/" subject
     |> Result.defaultWith (string >> failtest)
 
-let private authority fixture number target act =
+let private people fixture number target act =
     let kind, issuer, subject = PrincipalKey.parts target
 
-    OperationInput.Authority
+    OperationInput.People
         {
             OperationId = id fixture number
             Target =
@@ -42,15 +42,15 @@ let private execute service input =
     }
 
 let private named fixture number target name =
-    authority fixture number target (AuthorityAct.Register { DisplayName = name; Contact = None })
+    people fixture number target (PeopleAct.Register { DisplayName = name; Contact = None })
 
 let private target (receipt: OperationReceipt) =
     match receipt.Subject with
-    | ReceiptSubject.Authority value -> value.TargetActor
+    | ReceiptSubject.People value -> value.TargetActor
     | other -> failtestf "%A" other
 
 let private known receipt =
-    target receipt |> AuthorityTargetDisclosure.actorId
+    target receipt |> PeopleTargetDisclosure.actorId
 
 let private status fixture service operation =
     task {
@@ -71,11 +71,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     101
                     fixture.Owner
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = Role.CaseHandler
                             Scope = GrantTarget.Installation
@@ -84,11 +84,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     2
                     fixture.Owner
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = Role.DataSteward
                             Scope = GrantTarget.Installation
@@ -102,11 +102,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     6
                     guardian
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
@@ -129,11 +129,11 @@ let private scenario (database: PostgresFixture.Database) =
             let! _ =
                 execute
                     owner
-                    (authority
+                    (people
                         fixture
                         number
                         person
-                        (AuthorityAct.Grant
+                        (PeopleAct.Grant
                             {
                                 Role = Role.CaseHandler
                                 Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
@@ -177,11 +177,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     19
                     alice
-                    (AuthorityAct.SetProfile
+                    (PeopleAct.SetProfile
                         {
                             DisplayName = "Current Alice"
                             Contact = None
@@ -208,11 +208,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     21
                     reader
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = Role.CaseReader
                             Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
@@ -233,18 +233,18 @@ let private scenario (database: PostgresFixture.Database) =
         let! saved =
             execute
                 owner
-                (authority
+                (people
                     fixture
                     12
                     bob
-                    (AuthorityAct.SetProfile
+                    (PeopleAct.SetProfile
                         {
                             DisplayName = "Saved Bob"
                             Contact = None
                         }))
 
         match target saved with
-        | AuthorityTargetDisclosure.Disclosed actor ->
+        | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.DisplayName
                 (DisplayName.Named(Inputs.name "Saved Bob"))
@@ -254,11 +254,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 guardianCore
-                (authority
+                (people
                     fixture
                     13
                     fixture.Owner
-                    (AuthorityAct.Revoke
+                    (PeopleAct.Revoke
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
@@ -267,11 +267,11 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 guardianCore
-                (authority
+                (people
                     fixture
                     14
                     bob
-                    (AuthorityAct.SetProfile
+                    (PeopleAct.SetProfile
                         {
                             DisplayName = "Current private Bob"
                             Contact = None
@@ -281,7 +281,7 @@ let private scenario (database: PostgresFixture.Database) =
 
         Expect.equal
             (target hidden)
-            (AuthorityTargetDisclosure.Withheld(known bobReceipt))
+            (PeopleTargetDisclosure.Withheld(known bobReceipt))
             "Own metadata survives without granting target profile access"
 
         let json =
@@ -291,16 +291,16 @@ let private scenario (database: PostgresFixture.Database) =
 
         Expect.isFalse
             (json.Contains "Saved Bob" || json.Contains "Current private Bob")
-            "Neither historical nor current target names escape the authority fixture gate"
+            "Neither historical nor current target names escape the people fixture gate"
 
         let! _ =
             execute
                 guardianCore
-                (authority
+                (people
                     fixture
                     15
                     fixture.Owner
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
@@ -309,28 +309,28 @@ let private scenario (database: PostgresFixture.Database) =
         let! visible = status fixture owner 12
 
         match target visible with
-        | AuthorityTargetDisclosure.Disclosed actor ->
+        | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.DisplayName
                 (DisplayName.Named(Inputs.name "Current private Bob"))
                 "Regrant resolves the current account name"
         | other -> failtestf "%A" other
 
-        let! _ = execute guardianCore (authority fixture 16 bob AuthorityAct.EraseProfile)
+        let! _ = execute guardianCore (people fixture 16 bob PeopleAct.EraseProfile)
         let! erased = status fixture owner 12
 
         match target erased with
-        | AuthorityTargetDisclosure.Disclosed actor ->
+        | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.DisplayName
                 DisplayName.Erased
                 "Real erasure remains different from withheld details"
         | other -> failtestf "%A" other
 
-        let! disabled = execute guardianCore (authority fixture 17 bob AuthorityAct.Disable)
+        let! disabled = execute guardianCore (people fixture 17 bob PeopleAct.Disable)
 
         match target disabled with
-        | AuthorityTargetDisclosure.Disclosed actor ->
+        | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.Availability
                 ActorAvailability.Disabled

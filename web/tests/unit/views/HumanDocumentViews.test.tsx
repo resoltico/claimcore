@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
-import { AuthorityListing } from "../../../src/views/AuthorityListing";
+import { PeopleListing } from "../../../src/views/PeopleListing";
 import { SummaryBand } from "../../../src/views/worklist/SummaryBand";
 
 const actorId = "00000000-0000-4000-8000-000000000001";
@@ -53,7 +53,7 @@ it("renders the supplied person caption and navigates with its typed identity wi
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(document)));
   const select = vi.fn();
   render(
-    <AuthorityListing
+    <PeopleListing
       mayReadGrants
       onSelect={select}
       onDisclosureRefused={vi.fn()}

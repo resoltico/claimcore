@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { HumanReadDocument_caseGet, Region, PresentedEntry } from "@contracts/client";
+import type { HumanReadDocument_case_get, Region, PresentedEntry } from "@contracts/client";
 import { isResponse } from "@contracts/client";
 import { render, screen, TestSession, waitFor } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
@@ -23,7 +23,7 @@ const table = (role: Region["role"], key: string, caption: string): Region => ({
     rows: [{ key, values: [{ kind: "TEXT", value: caption }] }],
   },
 });
-const document: HumanReadDocument_caseGet = {
+const document: HumanReadDocument_case_get = {
   screen: {
     regions: [
       {
@@ -49,7 +49,7 @@ const document: HumanReadDocument_caseGet = {
     revision: 4,
     workRevision: 6,
     history: "NONE",
-    tasks: ["CASE:AMEND_REGISTRATION", "CASE:REMOVE_PAYMENT", "WORK:UPDATE_WORK"],
+    tasks: ["case.amendRegistration", "case.removePayment", "work.update"],
     editableInputs: ["field:handlingSummary"],
     correction: null,
     seeds: {
@@ -65,7 +65,7 @@ const document: HumanReadDocument_caseGet = {
         caseId,
         reminderId,
         revision: 9,
-        tasks: ["REMINDER:REMINDER_COMPLETE"],
+        tasks: ["reminder.complete"],
         actionSeed: null,
         dueDateSeed: null,
       },
@@ -132,7 +132,7 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
   await userEvent.click(screen.getByRole("button", { name: /remove/iu }));
   expect(f.onAct).toHaveBeenCalledWith(
     expect.objectContaining<{ context: unknown }>({ context: expect.objectContaining({ caseId }) }),
-    "REMOVE_PAYMENT",
+    "case.removePayment",
     paymentId,
   );
   expect(screen.queryByRole("button", { name: /change responsible/iu })).not.toBeInTheDocument();
@@ -150,7 +150,7 @@ it("refuses child handle mismatches and task escalation at the actual HUMAN boun
   for (const context of [
     { ...document.context, payments: [] },
     { ...document.context, nextActions: [] },
-    { ...document.context, tasks: ["WORK:UPDATE_WORK"] },
+    { ...document.context, tasks: ["work.update"] },
     {
       ...document.context,
       nextActions: [

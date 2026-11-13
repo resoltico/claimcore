@@ -13,32 +13,32 @@
       "tokenLength": 279
     },
     {
-      "endpoint": "authority.list",
+      "endpoint": "people.list",
       "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"query\":null,\"role\":null,\"v\":4}",
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJyb2xlIjpudWxsLCJ2Ijo0fQ",
       "tokenLength": 202
     },
     {
-      "endpoint": "authority.grants",
+      "endpoint": "people.grants",
       "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":\"dd9e7559-4cf5-8dbb-9b29-5c312d9d2e92\",\"role\":\"CASE_HANDLER\"},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"GRANTS\",\"v\":2}",
       "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6ImRkOWU3NTU5LTRjZjUtOGRiYi05YjI5LTVjMzEyZDlkMmU5MiIsInJvbGUiOiJDQVNFX0hBTkRMRVIifSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiR1JBTlRTIiwidiI6Mn0",
       "tokenLength": 275
     },
     {
-      "endpoint": "authority.grants",
+      "endpoint": "people.grants",
       "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"caseId\":null,\"role\":\"OWNER\"},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"GRANTS\",\"v\":2}",
       "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImNhc2VJZCI6bnVsbCwicm9sZSI6Ik9XTkVSIn0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkdSQU5UUyIsInYiOjJ9",
       "tokenLength": 220
     },
     {
-      "endpoint": "authority.history",
-      "canonicalJson": "{\"actor\":null,\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\"}",
+      "endpoint": "people.history",
+      "canonicalJson": "{\"actor\":null,\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"PEOPLE_HISTORY\"}",
       "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOnsiZWZmZWN0SW5kZXgiOjMsInNlcXVlbmNlIjo1MH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFVVEhPUklUWV9ISVNUT1JZIn0",
       "tokenLength": 183
     },
     {
-      "endpoint": "authority.history",
-      "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"AUTHORITY_HISTORY\"}",
+      "endpoint": "people.history",
+      "canonicalJson": "{\"actor\":\"a0000000-0000-4000-8000-000000000001\",\"after\":{\"effectIndex\":3,\"sequence\":50},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"PEOPLE_HISTORY\"}",
       "token": "eyJhY3RvciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7ImVmZmVjdEluZGV4IjozLCJzZXF1ZW5jZSI6NTB9LCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSJ9",
       "tokenLength": 228
     }
@@ -94,12 +94,12 @@
     },
     {
       "name": "retired actor v2 has no fallback",
-      "endpoint": "authority.list",
+      "endpoint": "people.list",
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9"
     },
     {
       "name": "retired actor v3 has no role binding",
-      "endpoint": "authority.list",
+      "endpoint": "people.list",
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJ2IjozfQ"
     },
     {
@@ -107,7 +107,7 @@
       "token": "eyJiZWZvcmUiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFX1RJTUVMSU5FIiwicmFuZ2UiOm51bGwsInNjb3BlIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSJ9"
     },
     {
-      "name": "authority-history scalar position",
+      "name": "people-history scalar position",
       "token": "eyJhY3RvciI6bnVsbCwiYWZ0ZXIiOjUwLCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJBVVRIT1JJVFlfSElTVE9SWSJ9"
     }
   ]

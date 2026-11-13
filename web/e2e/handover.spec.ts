@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft } from "./case-workflow";
 import { workRequest } from "./work-workflow";
-import { applyAuthority } from "./authority-setup";
+import { applyPeople } from "./people-setup";
 import { goToView } from "./workspace-navigation";
 import { operationId } from "../src/operation/operationId";
 
@@ -73,17 +73,17 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     issuer: context.outcome.data.requester.issuer,
     subject: `handover-${randomUUID()}`,
   };
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: actor,
     target: principal,
-    act: { kind: "REGISTER", profile: { displayName: "Incoming handler", contact: null } },
+    act: { kind: "people.register", profile: { displayName: "Incoming handler", contact: null } },
   });
-  await applyAuthority(page, {
-    kind: "AUTHORITY",
+  await applyPeople(page, {
+    kind: "PEOPLE",
     operationId: operationId(),
     target: principal,
-    act: { kind: "GRANT", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
+    act: { kind: "people.grant", role: "CASE_HANDLER", scope: { kind: "INSTALLATION" } },
   });
   const references = [`HAND-A-${randomUUID()}`, `HAND-B-${randomUUID()}`] as const;
   for (const reference of references) {
@@ -94,7 +94,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
       operationId: operationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 0,
-      act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: owner } } },
+      act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: owner } } },
     });
     expect(assigned.outcome.kind).toBe("ACCEPTED");
   }
@@ -130,14 +130,14 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   expect(reviewed.request().postDataJSON()).toMatchObject({
     kind: "WORK",
     expectedRevision: 1,
-    act: { kind: "UPDATE_WORK", values: { responsibleActor: { kind: "SET", value: actor } } },
+    act: { kind: "work.update", values: { responsibleActor: { kind: "SET", value: actor } } },
   });
   const authored: unknown = reviewed.request().postDataJSON();
   if (!isRequest("operation.preview", authored) || authored.kind !== "WORK") {
     throw new Error("Expected a typed work review");
   }
   expect(authored.act).toEqual({
-    kind: "UPDATE_WORK",
+    kind: "work.update",
     values: { responsibleActor: { kind: "SET", value: actor } },
   });
   expect(writes).toBe(0);
@@ -165,7 +165,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     target: { kind: "REFERENCE", caseReference: references[1] },
     expectedRevision: 1,
     act: {
-      kind: "UPDATE_WORK",
+      kind: "work.update",
       values: { handlingSummary: "Changed while the row was displayed" },
     },
   });

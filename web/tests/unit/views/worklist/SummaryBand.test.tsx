@@ -4,10 +4,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
 import { humanReadHttpReply as response } from "../../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../../support/transport-response.fixtures";
-import type { HumanReadDocument_caseSummary } from "@contracts/client";
+import type { HumanReadDocument_case_summary } from "@contracts/client";
 import { workBasis } from "../../../support/inputs";
 import { SummaryBand } from "../../../../src/views/worklist/SummaryBand";
-const summary: HumanReadDocument_caseSummary = {
+const summary: HumanReadDocument_case_summary = {
   screen: {
     regions: [
       {

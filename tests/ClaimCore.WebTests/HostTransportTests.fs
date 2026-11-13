@@ -18,9 +18,9 @@ open ClaimCore.Web
 open ClaimCore.TestSupport.HandlerStub
 open ClaimCore.TestSupport.TestServerFixture
 
-let private authorityBody =
+let private peopleBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"kind":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER","profile":{{"displayName":"Host transport person","contact":null}}}}}}"""
+        $"""{{"kind":"PEOPLE","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER","profile":{{"displayName":"Host transport person","contact":null}}}}}}"""
     )
 
 let private body name =
@@ -44,14 +44,14 @@ let private loggedIn ready work =
     |> _.GetAwaiter().GetResult()
 
 let private actorTarget (stub: Stub) endpoint =
-    if endpoint = "authority.grants" then
+    if endpoint = "people.grants" then
         let expected =
-            Codec.decode Limits.MaximumRequestBytes Api.authorityGrants.Input (body endpoint)
+            Codec.decode Limits.MaximumRequestBytes Api.peopleGrants.Input (body endpoint)
             |> Result.defaultWith (string >> failtest)
 
         let actual =
             stub.Inputs
-            |> List.choose (EndpointValues.tryInput Api.authorityGrants)
+            |> List.choose (EndpointValues.tryInput Api.peopleGrants)
             |> List.last
 
         Expect.equal
@@ -213,25 +213,25 @@ let private outcomes () =
                     "Outcome identity"
         })
 
-let private authorityCancellation () =
+let private peopleCancellation () =
     loggedIn true (fun host token ->
         task {
-            host.HandlerStub.ExecuteAuthority <-
+            host.HandlerStub.ExecutePeople <-
                 fun (request, ct) ->
                     Expect.equal
                         ct
                         CancellationToken.None
-                        "Authority mutations are not request-cancellable"
+                        "People mutations are not request-cancellable"
 
-                    Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))
+                    Task.FromResult(ExecuteResult.Accepted(peopleReceipt request))
 
-            let! status, response = host.Call("operation.execute", authorityBody, token)
+            let! status, response = host.Call("operation.execute", peopleBody, token)
 
-            Expect.equal status 200 "Authority dispatch"
+            Expect.equal status 200 "People dispatch"
 
             Expect.isOk
                 (Codec.decode 100000 Api.operationExecute.Output response)
-                "Authority response"
+                "People response"
         })
 
 let private malformedWire () =
@@ -321,7 +321,7 @@ let private readiness () =
         Expect.equal actual 405 "Readiness is GET only"
         Expect.isEmpty host.HandlerStub.Calls "Health has no actor facade"
 
-let private authorityPreview () =
+let private peoplePreview () =
     task {
         use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
 
@@ -333,23 +333,23 @@ let private authorityPreview () =
         let fresh = ClaimCore.TestSupport.OperationIds.fresh ()
 
         let input =
-            (Encoding.UTF8.GetString authorityBody).Replace(string operationId, string fresh)
+            (Encoding.UTF8.GetString peopleBody).Replace(string operationId, string fresh)
             |> Encoding.UTF8.GetBytes
 
         let original = fixture.EntryCount
         let! status, response = host.Call("operation.preview", input, token)
-        Expect.equal status 200 "Authority preview uses the unified route"
+        Expect.equal status 200 "People preview uses the unified route"
 
         match Codec.decode 100000 Api.operationPreview.Output response with
         | Ok(RepresentationReply.Data {
                                           OperationId = id
-                                          Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review))
+                                          Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review))
                                       }) ->
             Expect.equal id fresh "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"
             Expect.isFalse review.Before.Enabled "Registration begins absent"
-            Expect.isTrue review.After.Enabled "Registration proposes enabled authority"
-        | _ -> failtest "Expected a DATA authority review"
+            Expect.isTrue review.After.Enabled "Registration proposes enabled people"
+        | _ -> failtest "Expected a DATA people review"
 
         let! humanStatus, human =
             host.Call("operation.preview", input, token, representation = Representation.Human)
@@ -372,7 +372,7 @@ let private authorityPreview () =
                 (review.Presentation.Changes
                  |> List.exists (fun change -> change.Key = "profileName"))
                 "Registration profile is a supplied change"
-        | _ -> failtest "Expected a HUMAN authority review"
+        | _ -> failtest "Expected a HUMAN people review"
 
         Expect.equal fixture.EntryCount original "Preview records nothing"
 
@@ -391,7 +391,7 @@ let private authorityPreview () =
             Expect.isTrue
                 (document.Screen.Regions
                  |> List.exists (fun region -> region.Role = RegionRole.Facts))
-                "The first accepted authority receipt contains its facts"
+                "The first accepted people receipt contains its facts"
         | _ -> failtest "Expected first HUMAN acceptance"
 
         let! dataStatus, data = host.Call("operation.execute", input, token)
@@ -400,12 +400,12 @@ let private authorityPreview () =
         match Codec.decode 100000 Api.operationExecute.Output data with
         | Ok(RepresentationReply.Data {
                                           Outcome = ExecuteResult.AlreadyAccepted {
-                                                                                      Subject = ReceiptSubject.Authority receipt
+                                                                                      Subject = ReceiptSubject.People receipt
                                                                                   }
                                       }) ->
             Expect.equal
                 (receipt.Effects |> List.map _.Act)
-                [ AuthorityKind.Register; AuthorityKind.SetProfile ]
+                [ PeopleActKind.Register; PeopleActKind.SetProfile ]
                 "DATA retains identity and erasable profile effects without another acceptance"
         | _ -> failtest "Expected same acceptance through DATA"
 
@@ -424,11 +424,11 @@ let private authorityPreview () =
             Expect.isTrue
                 (document.Screen.Regions
                  |> List.exists (fun region -> region.Role = RegionRole.Facts))
-                "Actual authority receipt supplies its outcome facts"
+                "Actual people receipt supplies its outcome facts"
 
             match document.Context with
-            | InteractionContext.Receipt { Target = ReceiptTarget.Authority _ } -> ()
-            | _ -> failtest "Bounded authority receipt handle required"
+            | InteractionContext.Receipt { Target = ReceiptTarget.People _ } -> ()
+            | _ -> failtest "Bounded people receipt handle required"
         | _ -> failtest "Expected same acceptance through HUMAN"
 
         let changed =
@@ -437,20 +437,20 @@ let private authorityPreview () =
                 |> Result.defaultWith (string >> failtest)
 
             match authored with
-            | OperationInput.Authority request ->
+            | OperationInput.People request ->
                 match request.Act with
-                | AuthorityAct.Register profile ->
-                    OperationInput.Authority
+                | PeopleAct.Register profile ->
+                    OperationInput.People
                         { request with
                             Act =
-                                AuthorityAct.Register
+                                PeopleAct.Register
                                     { profile with
                                         DisplayName = "Changed after acceptance"
                                     }
                         }
                     |> Codec.encode Api.operationExecute.Input
                 | _ -> failtest "Registration fixture required"
-            | _ -> failtest "Authority fixture required"
+            | _ -> failtest "People fixture required"
 
         let! changedStatus, changedReply = host.Call("operation.execute", changed, token)
 
@@ -538,7 +538,7 @@ let private principalAdmission () =
         let target kind issuer subject =
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
                 {|
-                    kind = "AUTHORITY"
+                    kind = "PEOPLE"
                     operationId = operationId
                     target =
                         {|
@@ -604,15 +604,13 @@ let tests =
             testCase
                 "generic principal syntax reaches Application admission without recording refusals"
                 principalAdmission
-            testCase
-                "authority execution preserves mutation cancellation semantics"
-                authorityCancellation
+            testCase "people execution preserves mutation cancellation semantics" peopleCancellation
             testCase "raw malformed numeric and unsafe Unicode inputs cannot dispatch" malformedWire
             testCase
                 "business scalar formats reject through real Application after HTTP dispatch"
                 businessFormatRefusals
             testCase "all registered endpoints use the registry and typed handlers" catalogueRoutes
-            testCase "authority preview reaches the shared core without recording" authorityPreview
+            testCase "people preview reaches the shared core without recording" peoplePreview
             testCase "core completion precedes response encoding failure" completionFailure
             testCase
                 "closed runtime preserves typed read preview and execute failures"

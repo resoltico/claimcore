@@ -46,7 +46,7 @@ const view: CurrentCase = {
   screen: { regions: [supplied] },
   context: {
     ...bindingDocument.context,
-    tasks: ["NOTE:ADD_NOTE", "NOTE:REMOVE_NOTE"],
+    tasks: ["note.add", "note.remove"],
     correction: null,
     notes: [{ noteId: id, canRemove: true }],
   },

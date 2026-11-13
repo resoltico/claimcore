@@ -30,7 +30,7 @@ const rejection = (issues: ReadonlyArray<HumanInputIssue>): HumanRejection => ({
 });
 it("keeps an unbound semantic issue visible with its supplied related value", () => {
   const value = rejection([issue]);
-  const projection = projectTaskIssues([issue], operationTask("AUTHORITY:ADMIT"), {});
+  const projection = projectTaskIssues([issue], operationTask("people.admit"), {});
   expect(projection.unbound).toEqual([issue]);
   const view = render(
     <OperationErrors
@@ -49,14 +49,14 @@ it("focuses the submitted row key even when its displayed order differs", async 
   const row: HumanInputIssue = {
     ...issue,
     input: "input:role",
-    row: { collection: "authorityGrants", submittedOrdinal: 1 },
+    row: { collection: "peopleGrants", submittedOrdinal: 1 },
     related: null,
   };
   const value = rejection([row]);
-  const projection = projectTaskIssues([row], operationTask("AUTHORITY:ADMIT"), {
-    authorityGrants: ["original-a", "original-b"],
+  const projection = projectTaskIssues([row], operationTask("people.admit"), {
+    peopleGrants: ["original-a", "original-b"],
   });
-  const key = taskRowInputKey("authorityGrants", "original-b", "input:role");
+  const key = taskRowInputKey("peopleGrants", "original-b", "input:role");
   render(
     <>
       <input aria-label="Moved submitted row" name={key} />

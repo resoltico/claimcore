@@ -91,8 +91,9 @@ module Grammar =
             Choice2Of2 intent
         | None ->
             match (TaskRouting.endpoint entry) with
-            | ActorEndpoint.Query query ->
-                QueryArguments.build query options operands problems |> Some |> Choice1Of2
+            | ActorEndpoint.Query _
+            | ActorEndpoint.Command _ ->
+                QueryArguments.build entry options operands problems |> Some |> Choice1Of2
             | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
 
     let private prepareWith incomplete admit finish newId arguments =
@@ -415,9 +416,9 @@ module Grammar =
             | _ -> wrongIntent ())
             arguments
 
-    let internal authorityIntent arguments =
+    let internal peopleIntent arguments =
         intent
             (function
-            | AuthoredIntent.Authority(operation, target, act) -> Ok(target, act, operation)
+            | AuthoredIntent.People(operation, target, act) -> Ok(target, act, operation)
             | _ -> wrongIntent ())
             arguments

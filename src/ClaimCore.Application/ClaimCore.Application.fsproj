@@ -4,7 +4,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CoreModels.fs" />
     <Compile Include="Metrics.fs" />
-    <Compile Include="AuthorityRequests.fs" />
+    <Compile Include="PeopleRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="ServiceContext.fs" />
     <Compile Include="CaseWorkReadModels.fs" />
@@ -21,11 +21,11 @@
     <Compile Include="ExecutionFacts.fs" />
     <Compile Include="LedgerEnvelope.fs" />
     <Compile Include="CaseExecution.fs" />
-    <Compile Include="AuthorityExecution.fs" />
-    <Compile Include="AuthorityReviews.fs" />
+    <Compile Include="PeopleExecution.fs" />
+    <Compile Include="PeopleReviews.fs" />
     <Compile Include="CaseWorkReads.fs" />
     <Compile Include="Advice.fs" />
-    <Compile Include="AuthorityQueries.fs" />
+    <Compile Include="PeopleQueries.fs" />
     <Compile Include="AccessRequestQueries.fs" />
     <Compile Include="NoteQueries.fs" />
     <Compile Include="PaymentQueries.fs" />

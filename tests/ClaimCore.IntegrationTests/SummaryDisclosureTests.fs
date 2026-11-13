@@ -59,16 +59,16 @@ let private summaries () =
             let! registered =
                 Service.execute
                     owner
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id database.Fixture 200)
                             reader
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
                 |> Async.AwaitTask
 
-            acceptedAuthority registered
+            acceptedPeople registered
 
             let! granted =
                 grant
@@ -82,7 +82,7 @@ let private summaries () =
                     true
                 |> Async.AwaitTask
 
-            acceptedAuthority granted
+            acceptedPeople granted
             let caller = core fixture reader
 
             let! result =

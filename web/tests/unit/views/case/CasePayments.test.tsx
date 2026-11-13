@@ -13,7 +13,7 @@ const current: CurrentCase = {
   ...bindingDocument,
   context: {
     ...bindingDocument.context,
-    tasks: ["CASE:REMOVE_PAYMENT"],
+    tasks: ["case.removePayment"],
     correction: null,
     payments: [
       { paymentId: first, canRemove: true },
@@ -68,7 +68,7 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
   await userEvent
     .setup()
     .click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("REMOVE_PAYMENT", second);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.removePayment", second);
 });
 it("offers no removal without the supplied offered-act flag", () => {
   render(

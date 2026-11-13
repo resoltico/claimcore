@@ -45,7 +45,7 @@ const review: HumanReview = {
     },
     context: {
       kind: "REVIEW",
-      task: "CASE:ERASE",
+      task: "case.erase",
       target: { kind: "CASE", caseId, beforeRevision: 7 },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "IRREVERSIBLE",
@@ -87,7 +87,7 @@ it("renders Core review content and requires its exact confirmation target while
       operationId,
       target: { kind: "ID", caseId },
       expectedRevision: 7,
-      act: { kind: "ERASE" },
+      act: { kind: "case.erase" },
     },
     review,
   );
@@ -123,7 +123,7 @@ it("resets consent when a new Core review supplies a different target", async ()
       operationId,
       target: { kind: "ID", caseId },
       expectedRevision: 7,
-      act: { kind: "ERASE" },
+      act: { kind: "case.erase" },
     },
     review,
   );
@@ -172,7 +172,7 @@ it("records a routine review with one consent action", async () => {
     ...review,
     document: {
       ...review.document,
-      context: { ...review.document.context, task: "CASE:CLOSE", consequence: "ROUTINE" },
+      context: { ...review.document.context, task: "case.close", consequence: "ROUTINE" },
     },
   };
   expect(
@@ -188,7 +188,7 @@ it("records a routine review with one consent action", async () => {
       operationId,
       target: { kind: "ID", caseId },
       expectedRevision: 7,
-      act: { kind: "CLOSE" },
+      act: { kind: "case.close" },
     },
     routine,
   );

@@ -92,7 +92,7 @@ module internal PaymentStorage =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,l.sequence,e.effect_index,$3::date,$4,false FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE l.operation_id=$1 AND e.subject_kind='CASE' AND e.subject_id=$2 AND e.act='RECORD_PAYMENT'"
+                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,l.sequence,e.effect_index,$3::date,$4,false FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE l.operation_id=$1 AND e.subject_kind='CASE' AND e.subject_id=$2 AND e.act='case.recordPayment'"
                         [|
                             box (OperationId.value (PaymentEntry.id entry))
                             box (CaseId.value parent)

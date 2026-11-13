@@ -32,13 +32,11 @@ import { useRoute } from "../routing/useRoute";
 import type { Route } from "../routing/routes";
 import { casePath } from "../routing/routes";
 import { navigate, takeRouteFocus } from "../routing/navigation";
-const category = (
-  route: Route,
-): "cases" | "people" | "recovery" | "authorityHistory" | "settings" => {
+const category = (route: Route): "cases" | "people" | "recovery" | "peopleHistory" | "settings" => {
   switch (route.screen) {
     case "people":
     case "recovery":
-    case "authorityHistory":
+    case "peopleHistory":
     case "settings":
       return route.screen;
     default:
@@ -55,9 +53,9 @@ const availableRoute = (
     case "recovery":
       return true;
     case "people":
-      return views.includes("AUTHORITY");
-    case "authorityHistory":
-      return tasks.includes("query:authorityHistory");
+      return views.includes("PEOPLE");
+    case "peopleHistory":
+      return tasks.includes("people.history");
     case "cases":
       return views.includes("CASES");
   }
@@ -69,7 +67,7 @@ const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>, know
       return;
     }
     let initial = "/settings";
-    if (views.includes("AUTHORITY")) {
+    if (views.includes("PEOPLE")) {
       initial = "/people";
     }
     if (views.includes("CASES")) {
@@ -247,8 +245,8 @@ const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   }
   if (route.screen === "case") {
     title = p.text("ui.caseDetail");
-  } else if (route.screen === "authorityHistory") {
-    title = p.text("ui.shell.authorityHistory");
+  } else if (route.screen === "peopleHistory") {
+    title = p.text("endpoint.people.history.label");
   } else if (route.screen === "people") {
     title = p.text("ui.shell.people");
   }
@@ -296,7 +294,7 @@ const WorkspaceContents = ({
   }
   return known ? fallback : null;
 };
-type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "authorityAvailable"> & {
+type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "peopleAvailable"> & {
   views: ReadonlyArray<string>;
   noViews: boolean;
   tasks: ReadonlyArray<TaskId>;
@@ -315,7 +313,7 @@ const WorkspaceArea = ({ views, noViews, tasks, known, ...routing }: WorkspaceRo
     >
       <RoutedContent
         {...routing}
-        authorityAvailable={views.includes("AUTHORITY")}
+        peopleAvailable={views.includes("PEOPLE")}
         caseAvailable={views.includes("CASES")}
       />
     </WorkspaceContents>

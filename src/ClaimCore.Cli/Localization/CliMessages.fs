@@ -116,7 +116,7 @@ type CliMessage =
     | [<MessageKey("cli.text.pageCount")>] PageCount of count: string
     | [<MessageKey("cli.text.pageMore")>] PageMore of cursor: string
     | [<MessageKey("cli.text.pageMoreAll")>] PageMoreAll of cursor: string
-    | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty
+    | [<MessageKey("cli.text.peopleHistoryEmpty")>] PeopleHistoryEmpty
     | [<MessageKey("cli.text.accessSources")>] AccessSources of
         direct: string *
         inherited: string *
@@ -126,7 +126,7 @@ type CliMessage =
     | [<MessageKey("cli.text.uncertain")>] UncertainDelivery
     | [<MessageKey("cli.family.version")>] VersionFamily
     | [<MessageKey("cli.family.case")>] CaseFamily
-    | [<MessageKey("cli.family.authority")>] AuthorityFamily
+    | [<MessageKey("cli.family.people")>] PeopleFamily
     | [<MessageKey("cli.family.operation")>] OperationFamily
     | [<MessageKey("cli.family.context")>] ContextFamily
     | [<MessageKey("cli.family.call")>] CallFamily

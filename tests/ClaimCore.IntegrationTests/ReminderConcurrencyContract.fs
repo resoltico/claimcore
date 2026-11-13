@@ -361,7 +361,7 @@ let internal erasureRaces fixture =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         for number, reference, compound in
             [ 100, "ERASE-CREATE-RACE", false; 200, "ERASE-COMPOUND-RACE", true ] do
@@ -443,15 +443,15 @@ let internal revocationAndCompound fixture =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 10)
                         person
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
         let! parent = opened fixture actor 100 "REVOKE-COMPOUND-RACE"
         let target = CaseSelector.Id parent
 
@@ -467,7 +467,7 @@ let internal revocationAndCompound fixture =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
         do! seed fixture actor 101 target "Permission-sensitive action"
 
@@ -509,7 +509,7 @@ let internal revocationAndCompound fixture =
                 |]
             )
 
-        acceptedAuthority replies[0]
+        acceptedPeople replies[0]
         let! old = find fixture 101
         let! next = find fixture 103
 
@@ -518,7 +518,7 @@ let internal revocationAndCompound fixture =
             Expect.equal
                 (Reminder.state (snapshot old))
                 ReminderState.Completed
-                "Actual action authority won before revoke"
+                "Actual action people won before revoke"
 
             Expect.equal
                 (Reminder.state (snapshot next))
@@ -620,11 +620,11 @@ let internal notOffered fixture =
                 false
 
         let! revoked = revoke 110 Role.CaseHandler
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! noCapability = change 111 update
         expect (Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)) noCapability
         let! revoked = revoke 112 Role.PaymentRecorder
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! unreadable = change 113 update
         expect (Refusal.Access AccessRefusal.ResourceUnavailable) unreadable
     }

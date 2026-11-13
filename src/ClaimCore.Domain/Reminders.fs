@@ -30,7 +30,7 @@ type ReminderActKind =
 
 module ReminderActKind =
     let vocabulary =
-        Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<ReminderActKind> "task" TokenCasing.CamelCase (Some "reminder.")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

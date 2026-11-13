@@ -11,7 +11,7 @@ open ClaimCore.Json
 
 let id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
-let authorityRequest: AuthorityRequest =
+let peopleRequest: PeopleRequest =
     {
         OperationId = id
         Target =
@@ -20,7 +20,7 @@ let authorityRequest: AuthorityRequest =
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic"
             }
-        Act = (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+        Act = (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
     }
 
 let snapshot =

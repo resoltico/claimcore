@@ -93,7 +93,7 @@ let private casePairs (database: PostgresFixture.Database) =
                 "Retained typed values preserve authored reference and canonical decimal meaning"
     }
 
-let private authorityPairs (database: PostgresFixture.Database) =
+let private peoplePairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let input = opening database.Fixture 9310 "Canonical-Reference" "10.50" "Claimant"
@@ -107,15 +107,15 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 901)
                         target
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let grant reference =
             {
@@ -125,11 +125,11 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
         for number, act, effect in
             [
-                9320, AuthorityAct.Grant, AuthorityKind.Grant
-                9321, AuthorityAct.Revoke, AuthorityKind.Revoke
+                9320, PeopleAct.Grant, PeopleActKind.Grant
+                9321, PeopleAct.Revoke, PeopleActKind.Revoke
             ] do
             let left =
-                authorityRequest
+                peopleRequest
                     (id database.Fixture number)
                     target
                     (act (grant "Canonical-Reference"))
@@ -139,10 +139,10 @@ let private authorityPairs (database: PostgresFixture.Database) =
                     Act = act (grant "canonical-reference")
                 }
 
-            let! first = Service.execute actor (OperationInput.Authority left) token
+            let! first = Service.execute actor (OperationInput.People left) token
             let receipt = accepted first
             let! before = verified database
-            let! replay = Service.execute actor (OperationInput.Authority right) token
+            let! replay = Service.execute actor (OperationInput.People right) token
 
             expectReceipt
                 (replayReceipt replay)
@@ -150,15 +150,15 @@ let private authorityPairs (database: PostgresFixture.Database) =
                 "Reference-bearing grant/revoke inputs compare folded case references"
 
             let! after = verified database
-            Expect.equal after before "Authority replay appends nothing"
+            Expect.equal after before "People replay appends nothing"
             let! authored = retainedRequest database receipt
 
             let restored =
                 authored.Root.Structure.Effects
                 |> List.exactlyOne
                 |> function
-                    | EffectDescriptor.Authority(_, descriptor) -> descriptor
-                    | _ -> failtest "Retained authority effect required"
+                    | EffectDescriptor.People(_, descriptor) -> descriptor
+                    | _ -> failtest "Retained people effect required"
 
             let expected =
                 {
@@ -168,11 +168,11 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
             Expect.equal
                 restored
-                (if effect = AuthorityKind.Grant then
-                     AuthorityEffectDescriptor.Grant expected
+                (if effect = PeopleActKind.Grant then
+                     PeopleEffectDescriptor.Grant expected
                  else
-                     AuthorityEffectDescriptor.Revoke expected)
-                "The retained authority command uses the resolved case identity"
+                     PeopleEffectDescriptor.Revoke expected)
+                "The retained people command uses the resolved case identity"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =
@@ -202,15 +202,15 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 920)
                         outsider
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
         let other = core database.Fixture outsider
 
         let! hiddenEqual =
@@ -240,7 +240,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let! erased =
             (Service.execute
@@ -279,8 +279,8 @@ let tests =
                 "equivalent amounts and references replay while different content conflicts"
                 (run casePairs)
             testCaseAsync
-                "authority grant and revoke replay with respelled case references"
-                (run authorityPairs)
+                "people grant and revoke replay with respelled case references"
+                (run peoplePairs)
             testCaseAsync
                 "comparison stays opaque to unauthorized actors and erased content cannot replay"
                 (run disclosureAndErasure)

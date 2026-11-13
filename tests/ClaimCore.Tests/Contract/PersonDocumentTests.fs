@@ -52,7 +52,7 @@ let tests =
                 "current policy advertises existing-account tasks only and maintenance removes them"
                 (fun () ->
                     let viewer roles =
-                        { AuthorityView.empty with
+                        { AccessView.empty with
                             Actor = Some actor
                             Installation = roles
                         }
@@ -66,12 +66,12 @@ let tests =
                     Expect.equal
                         (offers [ Role.Owner ] false)
                         [
-                            AuthorityKind.Grant
-                            AuthorityKind.Revoke
-                            AuthorityKind.Enable
-                            AuthorityKind.Disable
-                            AuthorityKind.SetProfile
-                            AuthorityKind.EraseProfile
+                            PeopleActKind.Grant
+                            PeopleActKind.Revoke
+                            PeopleActKind.Enable
+                            PeopleActKind.Disable
+                            PeopleActKind.SetProfile
+                            PeopleActKind.EraseProfile
                         ]
                         "Literal existing-account action inventory"
 
@@ -81,11 +81,11 @@ let tests =
 
                     Expect.isEmpty
                         (offers [ Role.Auditor ] false)
-                        "Read authority confers no mutation controls")
+                        "Read people confers no mutation controls")
             testCase
                 "person target and editable profile remain separate from saved display"
                 (fun () ->
-                    let value = document [ AuthorityKind.SetProfile ] (Some profile)
+                    let value = document [ PeopleActKind.SetProfile ] (Some profile)
 
                     match value.Context with
                     | InteractionContext.Person control ->
@@ -95,7 +95,7 @@ let tests =
 
                         Expect.equal
                             control.Tasks
-                            [ TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile) ]
+                            [ TaskId.Operation(ActKind.People PeopleActKind.SetProfile) ]
                             "Core task"
                     | _ -> failtest "Person context required"
 
@@ -129,8 +129,7 @@ let tests =
                             (fun node ->
                                 (nonNull node["context"])["tasks"] <-
                                     JsonArray(
-                                        System.Text.Json.Nodes.JsonValue.Create
-                                            "AUTHORITY:REGISTER"
+                                        System.Text.Json.Nodes.JsonValue.Create "people.register"
                                     ))
                             (fun node ->
                                 node["disclosure"] <-
@@ -181,7 +180,7 @@ let tests =
                                 NextCursor = None
                             }
 
-                    let value = read [ AuthorityKind.Revoke ]
+                    let value = read [ PeopleActKind.Revoke ]
 
                     match value.Context with
                     | InteractionContext.Person controls ->

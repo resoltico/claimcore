@@ -26,7 +26,7 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
     target: { kind: "REFERENCE", caseReference: "SYNTHETIC" },
     expectedRevision: 1,
     act: {
-      kind: "CLOSE",
+      kind: "case.close",
     },
   } as const;
   fetch.mockResolvedValueOnce(overloaded("NOT_STARTED"));

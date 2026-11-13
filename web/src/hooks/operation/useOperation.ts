@@ -46,7 +46,7 @@ import {
 import type { LocalSource } from "../../operation/operationTypes";
 import type { Notice } from "../../protocol/notices";
 type Options = {
-  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE";
+  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
   prefill?: FormValues;
   binding?: TaskBindingSource;
   targetIdentity?: string;
@@ -71,21 +71,21 @@ const targetKey = (options: Options): string =>
     options.subject,
     options.current?.context.caseId ?? null,
     options.targetIdentity ?? null,
-    options.binding?.kind === "AUTHORITY" ? (options.binding.principal ?? null) : null,
+    options.binding?.kind === "PEOPLE" ? (options.binding.principal ?? null) : null,
   ]);
-type AuthorityBinding = Extract<
+type PeopleBinding = Extract<
   TaskBindingSource,
   {
-    kind: "AUTHORITY";
+    kind: "PEOPLE";
   }
 >;
 const initialBinding = (options: Options): TaskBindingSource => {
   if (options.binding !== undefined) {
     return options.binding;
   }
-  if (options.subject === "AUTHORITY") {
+  if (options.subject === "PEOPLE") {
     return {
-      kind: "AUTHORITY",
+      kind: "PEOPLE",
     };
   }
   const { current } = options;
@@ -834,7 +834,7 @@ const editing = (
         });
         return;
       }
-      if (options.subject !== "AUTHORITY" && options.current !== null) {
+      if (options.subject !== "PEOPLE" && options.current !== null) {
         dispatch({
           type: "READ_CURRENT",
           identity: identity(options, state.disclosed.context.generation),
@@ -847,7 +847,7 @@ const editing = (
       acknowledgedUncertainty = false,
       kind = options.kind,
       prefill?: FormValues,
-      binding?: AuthorityBinding,
+      binding?: PeopleBinding,
     ) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
@@ -926,7 +926,7 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   !state.disclosed.refused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.context.tasks.includes("CASE:OPEN") === true;
+  requester?.context.tasks.includes("case.open") === true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
@@ -1096,7 +1096,7 @@ export const useOperation = (supplied: Options) => {
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.disclosed.caseObservation : null,
     revalidating: state.disclosed.read !== null,
-    canRevalidateCase: options.subject !== "AUTHORITY" && options.current !== null,
+    canRevalidateCase: options.subject !== "PEOPLE" && options.current !== null,
     review: disclosureCurrent ? view.review : null,
     receipt: disclosureCurrent ? view.receipt : null,
     contextChanged: state.draft.target !== target,

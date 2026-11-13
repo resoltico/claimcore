@@ -44,7 +44,7 @@ const acquiredInput = (
 ) =>
   input.source === "AUTHORED" &&
   input.mode === "REQUIRED" &&
-  !(input.id === "field:caseReference" && current !== null && subject !== "AUTHORITY") &&
+  !(input.id === "field:caseReference" && current !== null && subject !== "PEOPLE") &&
   !["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id);
 
 /** Draft acquisition has no executable identity or version; those belong to its reviewed binding. */

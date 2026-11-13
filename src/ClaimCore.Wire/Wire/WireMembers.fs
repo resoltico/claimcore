@@ -99,10 +99,10 @@ module RequestSchemas =
     let Scope = "Scope"
 
     [<Literal>]
-    let AuthorityAct = "AuthorityAct"
+    let PeopleAct = "PeopleAct"
 
     [<Literal>]
-    let AuthorityRequest = "AuthorityRequest"
+    let PeopleRequest = "PeopleRequest"
 
     [<Literal>]
     let OperationInput = "OperationInput"
@@ -123,7 +123,7 @@ module RequestSchemas =
     let GrantsRequest = "GrantsRequest"
 
     [<Literal>]
-    let AuthorityHistoryRequest = "AuthorityHistoryRequest"
+    let PeopleHistoryRequest = "PeopleHistoryRequest"
 
     [<Literal>]
     let Empty = "Empty"

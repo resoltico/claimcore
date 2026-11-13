@@ -142,7 +142,7 @@ const humanHasCaseSeeds = (seeds:CaseInteractionStructure["seeds"]):boolean =>
 const humanSeedBindings = (document:HumanDocument,context:CaseInteractionStructure):boolean => {
   const {seeds}=context;
   if(document.disclosure!=="CURRENT"&&humanHasCaseSeeds(seeds)) { return false; }
-  if(seeds.paymentCurrency!==null&&!context.tasks.some(task=>task===humanTaskByAct.RECORD_PAYMENT)) { return false; }
+  if(seeds.paymentCurrency!==null&&!context.tasks.some(task=>task===humanTaskByAct["case.recordPayment"])) { return false; }
   const editable=new Set<string>(context.editableInputs);
   if(seeds.registration!==null&&!humanRegistrationInputs.every(input=>editable.has(input))) { return false; }
   if(seeds.decision!==null&&!humanDecisionInputs.every(input=>editable.has(input))) { return false; }
@@ -172,8 +172,8 @@ const humanReviewBindings = (value:HumanDocument,context:Extract<InteractionCont
 const humanReceiptBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"RECEIPT"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   if(actions.length!==0) { return false; }
   if(value.basis.kind!=="SNAPSHOT") { return false; }
-  if(context.refreshCase!==null&&(context.target.kind==="AUTHORITY"||context.refreshCase!==context.target.caseId)) { return false; }
-  if(context.caseLink!==null&&(context.target.kind==="AUTHORITY"||context.caseLink!==context.target.caseId)) { return false; }
+  if(context.refreshCase!==null&&(context.target.kind==="PEOPLE"||context.refreshCase!==context.target.caseId)) { return false; }
+  if(context.caseLink!==null&&(context.target.kind==="PEOPLE"||context.caseLink!==context.target.caseId)) { return false; }
   if(context.target.kind!=="REMINDER") { return true; }
   const ids=context.target.versions.map(version=>version.reminderId);
   return new Set(ids).size===ids.length;
@@ -187,22 +187,22 @@ const humanPaymentBindings = (value:HumanDocument,context:Extract<InteractionCon
 const humanNoteBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"CASE"|"NOTE_PAGE"}>):boolean => {
   const ids=context.notes.map(item=>item.noteId);
   const keys=value.screen.regions.filter(region=>region.role==="NOTES").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-  const remove=humanTaskByAct.REMOVE_NOTE;
-  const add=humanTaskByAct.ADD_NOTE;
+  const remove=humanTaskByAct["note.remove"];
+  const add=humanTaskByAct["note.add"];
   return new Set(ids).size===ids.length&&ids.length===keys.length&&ids.every((id,index)=>id===keys[index])&&(value.disclosure==="CURRENT"||ids.length===0)&&context.tasks.some(task=>task===remove)===context.notes.some(item=>item.canRemove)&&(context.kind!=="NOTE_PAGE"||context.tasks.every(task=>task===add||task===remove));
 };
 const humanReminderListBindings = (value:HumanDocument,items:Extract<InteractionContext,{readonly kind:"REMINDERS"}>["reminders"]):boolean =>
   items.every(item=>{
     const tasks=new Set<string>(item.tasks);
     return tasks.size===item.tasks.length&&item.tasks.every(task=>humanReminderTasks.includes(task))&&
-      (item.actionSeed===null||tasks.has(humanTaskByAct.REMINDER_UPDATE??""))&&
-      (item.dueDateSeed===null||tasks.has(humanTaskByAct.REMINDER_UPDATE??"")||tasks.has(humanTaskByAct.REMINDER_REOPEN??""))&&
+      (item.actionSeed===null||tasks.has(humanTaskByAct["reminder.update"]??""))&&
+      (item.dueDateSeed===null||tasks.has(humanTaskByAct["reminder.update"]??"")||tasks.has(humanTaskByAct["reminder.reopen"]??""))&&
       (value.disclosure==="CURRENT"||tasks.size===0);
   });
 const humanCaseBindings = (value:HumanDocument,context:CaseInteractionStructure,actions:ReadonlyArray<HumanAct>):boolean => {
   const ids=context.nextActions.map(item=>item.reminderId);
   const keys=value.screen.regions.filter(region=>region.role==="NEXT_ACTIONS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-  return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context)&&humanPaymentBindings(value,context,actions)&&humanReminderListBindings(value,context.nextActions)&&humanOrderedKeys(ids,keys)&&context.nextActions.every(item=>item.caseId===context.caseId)&&(value.disclosure==="CURRENT"||ids.length===0)&&context.payments.every(item=>!item.canRemove||context.tasks.some(task=>task===humanTaskByAct.REMOVE_PAYMENT));
+  return humanEditableBindings(context)&&humanSeedBindings(value,context)&&humanActionBindings(context,actions)&&humanNoteBindings(value,context)&&humanPaymentBindings(value,context,actions)&&humanReminderListBindings(value,context.nextActions)&&humanOrderedKeys(ids,keys)&&context.nextActions.every(item=>item.caseId===context.caseId)&&(value.disclosure==="CURRENT"||ids.length===0)&&context.payments.every(item=>!item.canRemove||context.tasks.some(task=>task===humanTaskByAct["case.removePayment"]));
 };
 type HumanAssigneeContext = Extract<InteractionContext,{readonly kind:"ASSIGNEES"}>;
 const humanAssigneeBindings = (value:HumanDocument,context:HumanAssigneeContext,actions:ReadonlyArray<HumanAct>):boolean => {
@@ -233,7 +233,7 @@ const humanRowPageBindings = (value:HumanDocument,context:HumanRowPageContext,ac
   const keys=value.screen.regions.filter(region=>region.role==="RESULTS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
   return actions.length===0&&humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||ids.length===0)&&(context.kind!=="REMINDERS"||humanReminderListBindings(value,context.reminders));
 };
-const humanHistoryBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"AUTHORITY_HISTORY"}>,actions:ReadonlyArray<HumanAct>):boolean => {
+const humanHistoryBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PEOPLE_HISTORY"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   const ids=context.entries.map(item=>item.key);
   const keys=value.screen.regions.filter(region=>region.role==="ACTIVITY").flatMap(region=>region.content.kind==="TIMELINE"?region.content.entries.map(entry=>entry.key):[]);
   return actions.length===0&&humanOrderedKeys(ids,keys)&&(value.disclosure==="CURRENT"||ids.length===0);
@@ -241,7 +241,7 @@ const humanHistoryBindings = (value:HumanDocument,context:Extract<InteractionCon
 const humanPersonBindings = (value:HumanDocument,context:Extract<InteractionContext,{readonly kind:"PERSON"}>,actions:ReadonlyArray<HumanAct>):boolean => {
   const ids=context.revocations.map(item=>item.key);
   const keys=value.screen.regions.filter(region=>region.role==="ACCESS").flatMap(region=>region.content.kind==="TABLE"?region.content.rows.map(row=>row.key):[]);
-  const revoke=context.tasks.some(task=>task===humanTaskByAct.REVOKE);
+  const revoke=context.tasks.some(task=>task===humanTaskByAct["people.revoke"]);
   const rows=revoke?humanOrderedKeys(ids,keys):ids.length===0;
   return value.disclosure==="CURRENT"&&rows&&(context.responsibleCases===null||context.responsibleCases.responsibleActor===context.actorId)&&context.tasks.every(task=>humanPersonTasks.includes(task))&&(context.profileSeed===null||context.tasks.includes(humanProfileTask))&&humanPageActionBindings(context.tasks,actions);
 };
@@ -257,8 +257,8 @@ const humanRequesterIdentity = (value:HumanDocument,context:HumanRequesterContex
 const humanRequesterOffers = (value:HumanDocument,context:HumanRequesterContext):boolean =>
   context.state==="ACTIVE"||(context.tasks.length===0&&context.views.length===0&&value.basis.kind==="UNAVAILABLE");
 const humanRequesterSeed = (context:HumanRequesterContext):boolean => {
-  const offered=context.tasks.some(task=>task===humanTaskByAct.ADMIT||task===humanTaskByAct.REGISTER);
-  return context.authorityIssuerSeed===null||(context.state==="ACTIVE"&&offered);
+  const offered=context.tasks.some(task=>task===humanTaskByAct["people.admit"]||task===humanTaskByAct["people.register"]);
+  return context.peopleIssuerSeed===null||(context.state==="ACTIVE"&&offered);
 };
 const humanRequesterBindings = (value:HumanDocument,context:HumanRequesterContext,actions:ReadonlyArray<HumanAct>):boolean =>
   humanRequesterIdentity(value,context)&&new Set(context.views).size===context.views.length&&value.disclosure==="CURRENT"&&humanRequesterOffers(value,context)&&humanRequesterSeed(context)&&humanPageActionBindings(context.tasks,actions);
@@ -291,7 +291,7 @@ const humanContextBindings = (value:HumanDocument,context:InteractionContext,act
     case "ACCESS_REQUESTS":
     case "PEOPLE":
     case "REMINDERS": return humanRowPageBindings(value,context,actions);
-    case "AUTHORITY_HISTORY": return humanHistoryBindings(value,context,actions);
+    case "PEOPLE_HISTORY": return humanHistoryBindings(value,context,actions);
     case "REQUESTER": return humanRequesterBindings(value,context,actions);
     case "EMPTY":
     case "CONTINUATION": return actions.length===0;
@@ -535,15 +535,15 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
 
         let byAct =
             ActKind.all
-            |> List.filter ((<>) (ActKind.Authority AuthorityKind.ProvisionOwner))
+            |> List.filter ((<>) (ActKind.People PeopleActKind.ProvisionOwner))
             |> List.map (fun act ->
                 quote (ActKind.token act) + ":" + quote (TaskId.key (TaskId.Operation act)))
             |> String.concat ","
 
         let personTasks =
-            AuthorityKind.all
-            |> List.filter AuthorityKind.targetsExistingActor
-            |> List.map (ActKind.Authority >> TaskId.Operation >> TaskId.key)
+            PeopleActKind.all
+            |> List.filter PeopleActKind.targetsExistingActor
+            |> List.map (ActKind.People >> TaskId.Operation >> TaskId.key)
             |> JsonSerializer.Serialize
 
         let reviewTasks =
@@ -564,14 +564,15 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
                             consequence =
                                 Vocabulary.token Consequence.vocabulary (Consequence.ofAct act)
                             confirmation =
-                                if ActKind.subject act = ActSubject.Authority then
+                                if ActKind.subject act = ActSubject.People then
                                     "OPERATION"
                                 else
                                     "CASE_REFERENCE"
                             inputs = inputs
                         |}
                     )
-                | TaskId.Query _ -> None)
+                | TaskId.Query _
+                | TaskId.Command _ -> None)
             |> Map.ofList
             |> JsonSerializer.Serialize
 
@@ -585,7 +586,7 @@ export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):
             + ";"
             "const humanPersonTasks: ReadonlyArray<string> = " + personTasks + ";"
             "const humanProfileTask = "
-            + quote (TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile)))
+            + quote (TaskId.key (TaskId.Operation(ActKind.People PeopleActKind.SetProfile)))
             + ";"
             "const humanReviewTasks: Readonly<Partial<Record<string,{readonly target:string;readonly consequence:string;readonly confirmation:string;readonly inputs:ReadonlyArray<TaskInputId>}>>> = "
             + reviewTasks

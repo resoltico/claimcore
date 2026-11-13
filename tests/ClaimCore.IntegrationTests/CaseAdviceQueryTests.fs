@@ -39,16 +39,16 @@ let tests =
                     let! registered =
                         Service.execute
                             admin
-                            (OperationInput.Authority(
-                                Inputs.authorityRequest
+                            (OperationInput.People(
+                                Inputs.peopleRequest
                                     (id (100 + index * 2))
                                     target
-                                    (AuthorityAct.Register Inputs.actorProfile)
+                                    (PeopleAct.Register Inputs.actorProfile)
                             ))
                             token
                         |> Async.AwaitTask
 
-                    StoreFixtures.acceptedAuthority registered
+                    StoreFixtures.acceptedPeople registered
 
                     let! granted =
                         StoreFixtures.grant
@@ -62,7 +62,7 @@ let tests =
                             true
                         |> Async.AwaitTask
 
-                    StoreFixtures.acceptedAuthority granted
+                    StoreFixtures.acceptedPeople granted
 
                 let core principal =
                     StoreFixtures.core database.Fixture principal

@@ -72,7 +72,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
     !isResponseFor("case.get", "DATA", reply.payload) ||
     reply.payload.outcome.kind !== "REJECTED"
   ) {
-    throw new Error("A case without read authority must return a typed public refusal.");
+    throw new Error("A case without read people must return a typed public refusal.");
   }
   expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
   return reply.payload.outcome;

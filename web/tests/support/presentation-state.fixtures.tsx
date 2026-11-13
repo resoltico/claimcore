@@ -12,7 +12,7 @@ import { definition, fields } from "./service-ui.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { endpointResponse } from "./transport-response.fixtures";
 export const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
+  tasks: ["case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -25,7 +25,7 @@ const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEdito
         <OperationEditor
           definition={definition}
           current={current}
-          initialAct="CLOSE"
+          initialAct="case.close"
           onClose={vi.fn()}
           onCommitted={vi.fn()}
           onMutationLockChange={vi.fn()}
@@ -51,9 +51,9 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   const task = taskForCommand(draft);
   if (
-    draft.act.kind !== "CLOSE" &&
-    draft.act.kind !== "AMEND_REGISTRATION" &&
-    draft.act.kind !== "CORRECT"
+    draft.act.kind !== "case.close" &&
+    draft.act.kind !== "case.amendRegistration" &&
+    draft.act.kind !== "case.correct"
   ) {
     throw new Error("This interaction fixture reviews CLOSE, AMEND_REGISTRATION or CORRECT only");
   }

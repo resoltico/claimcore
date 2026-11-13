@@ -27,9 +27,9 @@ let tests =
         "human operation proofs"
         [
             testCase
-                "compound authority receipt keeps stable unique provenance and hash in details"
+                "compound people receipt keeps stable unique provenance and hash in details"
                 (fun () ->
-                    let template = ResponseExamples.authorityReceipt
+                    let template = ResponseExamples.peopleReceipt
 
                     let actor =
                         Inputs.namedActorReference
@@ -39,10 +39,10 @@ let tests =
                             "private-target-caption"
 
                     let effects =
-                        [ AuthorityKind.Register; AuthorityKind.SetProfile; AuthorityKind.Grant ]
+                        [ PeopleActKind.Register; PeopleActKind.SetProfile; PeopleActKind.Grant ]
                         |> List.mapi (fun index act ->
                             {
-                                AuthorityReceiptEffect.Act = act
+                                PeopleReceiptEffect.Act = act
                                 Id = EffectId.create template.OperationId index |> Option.get
                                 Position =
                                     EffectPosition.create template.Position.Sequence index
@@ -56,10 +56,10 @@ let tests =
                                     EntryHash = hash
                                 }
                             Subject =
-                                ReceiptSubject.Authority
+                                ReceiptSubject.People
                                     {
-                                        TargetActor = AuthorityTargetDisclosure.Disclosed actor
-                                        Act = AuthorityKind.Admit
+                                        TargetActor = PeopleTargetDisclosure.Disclosed actor
+                                        Act = PeopleActKind.Admit
                                         Effects = effects
                                     }
                         }
@@ -115,11 +115,10 @@ let tests =
                     let withheld =
                         { receipt with
                             Subject =
-                                ReceiptSubject.Authority
+                                ReceiptSubject.People
                                     {
-                                        TargetActor =
-                                            AuthorityTargetDisclosure.Withheld actor.ActorId
-                                        Act = AuthorityKind.Admit
+                                        TargetActor = PeopleTargetDisclosure.Withheld actor.ActorId
+                                        Act = PeopleActKind.Admit
                                         Effects = effects
                                     }
                         }
@@ -142,7 +141,7 @@ let tests =
                         (String.replicate 32 "ab")
                         "Owner-visible acceptance proof survives target withholding")
             testCase
-                "timeline and authority history retain root proofs under disclosure masking"
+                "timeline and people history retain root proofs under disclosure masking"
                 (fun () ->
                     let receipt = ResponseExamples.receipt
                     let position = EffectPosition.create receipt.Position.Sequence 2 |> Option.get
@@ -175,7 +174,7 @@ let tests =
                         "1/2"
                         "Actual timeline detail path includes effect index"
 
-                    let history: AuthorityHistoryEntry =
+                    let history: PeopleHistoryEntry =
                         {
                             OperationId = receipt.OperationId
                             Position = position
@@ -183,7 +182,7 @@ let tests =
                             RecordedAt = receipt.RecordedAt
                             RecordedBy = receipt.RecordedBy
                             Target = receipt.RecordedBy
-                            Facts = AuthorityHistoryFacts.Enabled
+                            Facts = PeopleHistoryFacts.Enabled
                         }
 
                     let screen = AccessHistoryScreen.rows [ history ]
@@ -196,10 +195,10 @@ let tests =
                     Expect.contains
                         details
                         (String.replicate 32 "ab")
-                        "Authority proof is available in technical details"
+                        "People proof is available in technical details"
 
                     Expect.contains
                         details
                         (OperationId.format receipt.OperationId)
-                        "Authority operation identity is retained")
+                        "People operation identity is retained")
         ]

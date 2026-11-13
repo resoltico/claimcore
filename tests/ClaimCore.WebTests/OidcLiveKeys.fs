@@ -69,9 +69,9 @@ let private keyId (metadata: JsonDocument) =
 
 let rotate issuer (client: HttpClient) username password =
     task {
-        let authority = Uri issuer
-        let origin = authority.GetLeftPart(UriPartial.Authority)
-        let realm = realmName authority
+        let people = Uri issuer
+        let origin = people.GetLeftPart(UriPartial.Authority)
+        let realm = realmName people
         let! token = adminToken origin client username password
         let endpoint = origin + "/admin/realms/" + realm
         use! realmInfo = adminGet client token endpoint

@@ -74,7 +74,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
         operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: 0,
-        act: { kind: "OPEN", values: registration({ incidentDate }) },
+        act: { kind: "case.open", values: registration({ incidentDate }) },
       }),
     });
     expect(reply.status).toBe(200);
@@ -183,7 +183,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     const reference = `LOCALE-VALIDATE-${randomUUID()}`;
     await openAuthenticated(page);
     await selectLanguage(page, language);
-    await startOpen(page, reference, ui(language, "act.OPEN.label"));
+    await startOpen(page, reference, ui(language, "task.case.open.label"));
     await malformedCalendarBoundary(page, reference);
     const name = page.locator('input[data-field-name="claimantName"]');
     await name.fill("A\u0308 / العربية");
@@ -241,7 +241,7 @@ test("an in-flight language activation preserves an open review awaiting explici
     await expect(page.locator("html")).toHaveAttribute("lang", "lv");
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeEnabled();
-    await expect(confirmation).toHaveAccessibleName(ui("lv", "act.OPEN.label"));
+    await expect(confirmation).toHaveAccessibleName(ui("lv", "task.case.open.label"));
     await expect(dialog).toContainText(identity.operationId);
     expect(requests).toEqual(["POST /api/operation.preview"]);
     await expectAccessible(page);

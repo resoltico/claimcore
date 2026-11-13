@@ -23,7 +23,7 @@ module internal DiagnosticText =
             | OperationInput.Note request -> Some request.Target
             | OperationInput.Work request -> Some request.Target
             | OperationInput.Reminder request -> Some request.Target
-            | OperationInput.Authority _ -> None
+            | OperationInput.People _ -> None
 
         request
         |> Option.bind (fun frame ->
@@ -43,7 +43,7 @@ module internal DiagnosticText =
             | CaseSelector.Id _ -> None)
 
     let private requiredRoles language required =
-        Authority.rolesFor required
+        Access.rolesFor required
         |> List.map (term language Role.vocabulary)
         |> List.reduce (fun first second ->
             MessageCatalogs.render

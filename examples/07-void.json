@@ -4,7 +4,7 @@
     "kind": "CASE",
     "expectedRevision": 6,
     "act": {
-      "kind": "VOID",
+      "kind": "case.void",
       "reason": "Synthetic entry error"
     },
     "target": {

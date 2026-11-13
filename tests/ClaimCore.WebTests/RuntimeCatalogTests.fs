@@ -20,7 +20,7 @@ let private publicCatalog () =
         use body = JsonDocument.Parse bytes
 
         Expect.equal
-            (body.RootElement.GetProperty("core").GetProperty("act.OPEN.label").GetString())
+            (body.RootElement.GetProperty("core").GetProperty("task.case.open.label").GetString())
             "Open a case"
             "Core text is served"
 

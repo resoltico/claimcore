@@ -11,22 +11,22 @@ import { ui } from "./localization-support";
 import { activeRequester } from "../tests/support/human-requester.fixtures";
 import { caseDocumentInput } from "../tests/support/case-document.fixtures";
 import { timelineDocument } from "../tests/support/timeline-document.fixtures";
-import type { HumanReadDocument_reminderList, Region } from "@contracts/client";
+import type { HumanReadDocument_reminder_list, Region } from "@contracts/client";
 const basis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
   timeZone: "Etc/UTC",
 };
-const reminders: HumanReadDocument_reminderList["context"]["reminders"] = [
+const reminders: HumanReadDocument_reminder_list["context"]["reminders"] = [
   {
     reminderId: "30000000-0000-4000-8000-000000000003",
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 3,
     tasks: [
-      "REMINDER:REMINDER_COMPLETE",
-      "REMINDER:REMINDER_UPDATE",
-      "REMINDER:REMINDER_CANCEL",
-      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+      "reminder.complete",
+      "reminder.update",
+      "reminder.cancel",
+      "reminder.completeAndPlanNext",
     ],
     actionSeed: "Call claimant about invoice",
     dueDateSeed: "2026-10-28",
@@ -36,10 +36,10 @@ const reminders: HumanReadDocument_reminderList["context"]["reminders"] = [
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 1,
     tasks: [
-      "REMINDER:REMINDER_COMPLETE",
-      "REMINDER:REMINDER_UPDATE",
-      "REMINDER:REMINDER_CANCEL",
-      "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+      "reminder.complete",
+      "reminder.update",
+      "reminder.cancel",
+      "reminder.completeAndPlanNext",
     ],
     actionSeed: "Chase insurer for approval",
     dueDateSeed: "2026-11-04",
@@ -86,13 +86,7 @@ const current = {
       history: "SUMMARY",
       nextActions: reminders,
       payments: [{ paymentId: "10000000-0000-7000-8000-000000000003", canRemove: false }],
-      tasks: [
-        "CASE:CLOSE",
-        "CASE:VOID",
-        "CASE:ERASE",
-        "WORK:UPDATE_WORK",
-        "REMINDER:REMINDER_CREATE",
-      ],
+      tasks: ["case.close", "case.void", "case.erase", "work.update", "reminder.create"],
       editableInputs: ["field:handlingSummary", "field:responsibleActor"],
     },
     {
@@ -150,8 +144,8 @@ const current = {
           role: "RECOMMENDATION",
           content: {
             kind: "ACTIONS",
-            recommended: "CLOSE",
-            groups: [{ family: "STEWARDSHIP", acts: ["VOID", "ERASE"] }],
+            recommended: "case.close",
+            groups: [{ family: "STEWARDSHIP", acts: ["case.void", "case.erase"] }],
           },
         },
         {
@@ -306,12 +300,12 @@ for (const { language, accent, mode, mobile } of contexts) {
       if (
         !isRequest("operation.preview", input) ||
         input.kind !== "REMINDER" ||
-        input.act.kind !== "COMPLETE"
+        input.act.kind !== "reminder.complete"
       ) {
         throw new Error("Expected one frozen reminder completion preview.");
       }
       expect(input.act).toEqual({
-        kind: "COMPLETE",
+        kind: "reminder.complete",
         reminderId: reminders[0]!.reminderId,
         expectedRevision: 3,
       });
@@ -422,9 +416,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         testInfo.outputPath(`populated-case-${language}-${accent}-${mode}.png`),
       );
     }
-    const trigger = page.locator(
-      `[id="reminder-${reminders[0]!.reminderId}-REMINDER:REMINDER_COMPLETE"]`,
-    );
+    const trigger = page.locator(`[id="reminder-${reminders[0]!.reminderId}-reminder.complete"]`);
     await trigger.scrollIntoViewIfNeeded();
     await page.evaluate(
       () =>

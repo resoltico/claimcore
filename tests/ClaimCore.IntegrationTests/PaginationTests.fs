@@ -47,15 +47,15 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 3)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -68,7 +68,7 @@ let private setup (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return admin, principal, core database.Fixture principal
     }
 
@@ -93,7 +93,7 @@ let private revocation (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
 
         let! next =
             (Service.list
@@ -167,17 +167,17 @@ type internal PausedPageStore
                                         }
 
 
-                                    member _.Authority
+                                    member _.Access
                                         ({
-                                             AuthorityQuery.Principal = principal
+                                             AccessQuery.Principal = principal
                                              CaseId = scope
                                          })
                                         =
                                         task {
                                             let! actor =
-                                                tx.Authority(
+                                                tx.Access(
                                                     {
-                                                        AuthorityQuery.Principal = principal
+                                                        AccessQuery.Principal = principal
                                                         CaseId = scope
                                                     }
                                                 )
@@ -191,8 +191,8 @@ type internal PausedPageStore
                                     member _.FindCaseByReference reference =
                                         tx.FindCaseByReference reference
 
-                                    member _.AuthorityCases(principal, ids) =
-                                        tx.AuthorityCases(principal, ids)
+                                    member _.AccessCases(principal, ids) =
+                                        tx.AccessCases(principal, ids)
 
                                     member _.FindWork id = tx.FindWork id
                                     member _.FindNote id = tx.FindNote id
@@ -226,8 +226,7 @@ type internal PausedPageStore
 
                                     member _.CaseSummary query = tx.CaseSummary query
 
-                                    member _.AuthorityHistoryPage query =
-                                        tx.AuthorityHistoryPage query
+                                    member _.PeopleHistoryPage query = tx.PeopleHistoryPage query
 
                                     member _.ActorPage
                                         ({
@@ -296,7 +295,7 @@ let private freshAdvice (actor: ServiceContext) cursor current =
 
         Expect.isFalse
             ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
-            "Plain continuation uses current authority and does not restore registrar advice"
+            "Plain continuation uses current people and does not restore registrar advice"
     }
 
 let private snapshot (database: PostgresFixture.Database) =
@@ -314,7 +313,7 @@ let private snapshot (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority promoted
+        acceptedPeople promoted
 
         let! first =
             (Service.list actor ((ClaimCore.TestSupport.Inputs.caseListPage (query None 1))) (token))
@@ -359,7 +358,7 @@ let private snapshot (database: PostgresFixture.Database) =
                     }
                     false
 
-            acceptedAuthority revoked
+            acceptedPeople revoked
 
             let! later =
                 (Service.execute
@@ -391,7 +390,7 @@ let private snapshot (database: PostgresFixture.Database) =
 [<Tests>]
 let tests =
     testList
-        "database cursor authority"
+        "database cursor people"
         [
             testCaseAsync
                 "a real grant revocation refuses continuation on the next page"

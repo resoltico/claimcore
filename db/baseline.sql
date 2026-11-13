@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 2),
+    installation_format smallint NOT NULL CHECK (installation_format = 3),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -67,13 +67,13 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=2),
+    installation_format smallint NOT NULL CHECK (installation_format=3),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid NOT NULL CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
     business_date date CHECK (business_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     command jsonb NOT NULL CHECK (jsonb_typeof(command)='object'),
-    CHECK ((command->>'kind'='AUTHORITY')=(business_date IS NULL))
+    CHECK ((command->>'kind'='PEOPLE')=(business_date IS NULL))
 );
 
 CREATE TABLE claimcore.ledger_effects (
@@ -81,21 +81,21 @@ CREATE TABLE claimcore.ledger_effects (
     effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
     descriptor jsonb NOT NULL CHECK (jsonb_typeof(descriptor)='object'),
     subject_kind text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'NOTE_ADDED' THEN 'NOTE' WHEN 'NOTE_REMOVED' THEN 'NOTE' WHEN 'REMINDER_CREATED' THEN 'REMINDER' WHEN 'REMINDER_CHANGED' THEN 'REMINDER' ELSE descriptor->>'kind' END) STORED,
-    subject_id uuid GENERATED ALWAYS AS ((CASE descriptor->>'kind' WHEN 'AUTHORITY' THEN descriptor->>'targetActorId' WHEN 'NOTE_ADDED' THEN descriptor->>'noteId' WHEN 'NOTE_REMOVED' THEN descriptor->>'noteId' WHEN 'REMINDER_CREATED' THEN descriptor->>'reminderId' WHEN 'REMINDER_CHANGED' THEN descriptor->>'reminderId' ELSE descriptor->>'caseId' END)::uuid) STORED,
-    act text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'AUTHORITY' THEN descriptor->'change'->>'kind' WHEN 'WORK' THEN 'UPDATE_WORK' WHEN 'NOTE_ADDED' THEN 'ADD_NOTE' WHEN 'NOTE_REMOVED' THEN 'REMOVE_NOTE' WHEN 'REMINDER_CREATED' THEN 'CREATE' ELSE descriptor->>'act' END) STORED,
+    subject_id uuid GENERATED ALWAYS AS ((CASE descriptor->>'kind' WHEN 'PEOPLE' THEN descriptor->>'targetActorId' WHEN 'NOTE_ADDED' THEN descriptor->>'noteId' WHEN 'NOTE_REMOVED' THEN descriptor->>'noteId' WHEN 'REMINDER_CREATED' THEN descriptor->>'reminderId' WHEN 'REMINDER_CHANGED' THEN descriptor->>'reminderId' ELSE descriptor->>'caseId' END)::uuid) STORED,
+    act text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'PEOPLE' THEN descriptor->'change'->>'kind' WHEN 'WORK' THEN 'work.update' WHEN 'NOTE_ADDED' THEN 'note.add' WHEN 'NOTE_REMOVED' THEN 'note.remove' WHEN 'REMINDER_CREATED' THEN 'reminder.create' ELSE descriptor->>'act' END) STORED,
     case_revision bigint GENERATED ALWAYS AS ((descriptor->>'revision')::bigint) STORED,
     parent_case_id uuid GENERATED ALWAYS AS ((CASE WHEN descriptor->>'kind' IN ('WORK','NOTE_ADDED','NOTE_REMOVED','REMINDER_CREATED','REMINDER_CHANGED') THEN descriptor->>'caseId' END)::uuid) STORED,
     creation_reference text GENERATED ALWAYS AS (descriptor->>'creationReference') STORED,
     payment_id uuid GENERATED ALWAYS AS ((descriptor->'payment'->>'operationId')::uuid) STORED,
     PRIMARY KEY(operation_sequence,effect_index),
-    CHECK (subject_kind IN ('CASE','AUTHORITY','WORK','NOTE','REMINDER')),
+    CHECK (subject_kind IN ('CASE','PEOPLE','WORK','NOTE','REMINDER')),
     CHECK (subject_id IS NOT NULL AND subject_id<>'00000000-0000-0000-0000-000000000000'),
     CHECK (case_revision IS NULL OR case_revision BETWEEN 1 AND 9007199254740991)
 );
 CREATE UNIQUE INDEX ledger_case_revision ON claimcore.ledger_effects(subject_kind,subject_id,case_revision);
 CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger_effects(upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
 CREATE INDEX ledger_case_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='CASE';
-CREATE INDEX ledger_authority_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='AUTHORITY';
+CREATE INDEX ledger_people_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='PEOPLE';
 CREATE INDEX ledger_case_activity ON claimcore.ledger_effects(parent_case_id,operation_sequence DESC,effect_index DESC) WHERE parent_case_id IS NOT NULL;
 
 CREATE TABLE claimcore.ledger_compartments (
@@ -173,14 +173,14 @@ BEGIN
     IF family='CASE' THEN
         IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','reference','expectedRevision','act','selectedPayment','compartment']) THEN RAISE EXCEPTION 'invalid case command shape' USING ERRCODE='CC004'; END IF;
         target:=(command->>'caseId')::uuid; revision:=(command->>'expectedRevision')::bigint; action:=command->>'act';
-        IF action NOT IN ('OPEN','AMEND_REGISTRATION','CORRECT','DECIDE','WITHDRAW_DECISION','RECORD_PAYMENT','REMOVE_PAYMENT','CLOSE','REOPEN','VOID','REINSTATE','ERASE')
-           OR revision IS NULL OR revision<0 OR revision>=9007199254740991 OR (action='OPEN' AND (revision<>0 OR target<>operation)) OR (action<>'OPEN' AND revision=0)
+        IF action NOT IN ('case.open','case.amendRegistration','case.correct','case.decide','case.withdrawDecision','case.recordPayment','case.removePayment','case.close','case.reopen','case.void','case.reinstate','case.erase')
+           OR revision IS NULL OR revision<0 OR revision>=9007199254740991 OR (action='case.open' AND (revision<>0 OR target<>operation)) OR (action<>'case.open' AND revision=0)
            OR (command->>'reference') COLLATE "C" !~ '^[!-~]{1,80}$'
-           OR (action='REMOVE_PAYMENT')<>(command->'selectedPayment'<>'null'::jsonb)
-           OR command->'compartment' IS DISTINCT FROM (CASE WHEN action='ERASE' THEN 'null'::jsonb ELSE '0'::jsonb END)
+           OR (action='case.removePayment')<>(command->'selectedPayment'<>'null'::jsonb)
+           OR command->'compartment' IS DISTINCT FROM (CASE WHEN action='case.erase' THEN 'null'::jsonb ELSE '0'::jsonb END)
         THEN RAISE EXCEPTION 'invalid case command structure' USING ERRCODE='CC004'; END IF;
-        IF action='REMOVE_PAYMENT' THEN PERFORM (command->>'selectedPayment')::uuid; END IF;
-        RETURN jsonb_build_array(jsonb_build_object('kind','CASE','caseId',target,'revision',revision+1,'act',action,'creationReference',CASE WHEN action='OPEN' THEN command->>'reference' END,'payment',CASE WHEN action='RECORD_PAYMENT' THEN jsonb_build_object('kind','RECORDED','operationId',operation) WHEN action='REMOVE_PAYMENT' THEN jsonb_build_object('kind','REMOVED','operationId',(command->>'selectedPayment')::uuid) ELSE 'null'::jsonb END));
+        IF action='case.removePayment' THEN PERFORM (command->>'selectedPayment')::uuid; END IF;
+        RETURN jsonb_build_array(jsonb_build_object('kind','CASE','caseId',target,'revision',revision+1,'act',action,'creationReference',CASE WHEN action='case.open' THEN command->>'reference' END,'payment',CASE WHEN action='case.recordPayment' THEN jsonb_build_object('kind','RECORDED','operationId',operation) WHEN action='case.removePayment' THEN jsonb_build_object('kind','REMOVED','operationId',(command->>'selectedPayment')::uuid) ELSE 'null'::jsonb END));
     ELSIF family='WORK' THEN
         IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid work command shape' USING ERRCODE='CC004'; END IF;
         revision:=(command->>'expectedRevision')::bigint;
@@ -188,42 +188,42 @@ BEGIN
         RETURN jsonb_build_array(jsonb_build_object('kind','WORK','caseId',(command->>'caseId')::uuid,'revision',revision+1));
     ELSIF family='NOTE' THEN
         action:=command->>'act'; target:=(command->>'caseId')::uuid;
-        IF action='ADD_NOTE' AND claimcore.json_shape(command,ARRAY['kind','caseId','act','compartment']) AND command->'compartment'='0'::jsonb THEN
+        IF action='note.add' AND claimcore.json_shape(command,ARRAY['kind','caseId','act','compartment']) AND command->'compartment'='0'::jsonb THEN
             RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_ADDED','caseId',target,'noteId',operation));
-        ELSIF action='REMOVE_NOTE' AND claimcore.json_shape(command,ARRAY['kind','caseId','noteId','act','compartment']) AND command->'compartment'='null'::jsonb THEN
+        ELSIF action='note.remove' AND claimcore.json_shape(command,ARRAY['kind','caseId','noteId','act','compartment']) AND command->'compartment'='null'::jsonb THEN
             RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_REMOVED','caseId',target,'noteId',(command->>'noteId')::uuid));
         ELSE RAISE EXCEPTION 'invalid note command shape' USING ERRCODE='CC004'; END IF;
     ELSIF family='REMINDER' THEN
         IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','act','reminderId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid reminder command shape' USING ERRCODE='CC004'; END IF;
         target:=(command->>'caseId')::uuid; action:=command->>'act';
-        IF action='CREATE' AND command->'reminderId'='null'::jsonb AND command->'expectedRevision'='null'::jsonb THEN
+        IF action='reminder.create' AND command->'reminderId'='null'::jsonb AND command->'expectedRevision'='null'::jsonb THEN
             RETURN jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
         END IF;
         revision:=(command->>'expectedRevision')::bigint;
-        IF action NOT IN ('UPDATE','COMPLETE','CANCEL','REOPEN','COMPLETE_AND_PLAN_NEXT') OR revision IS NULL OR revision<1 OR revision>=9007199254740991 OR command->>'reminderId' IS NULL THEN RAISE EXCEPTION 'invalid reminder change' USING ERRCODE='CC004'; END IF;
-        result:=jsonb_build_array(jsonb_build_object('kind','REMINDER_CHANGED','caseId',target,'reminderId',(command->>'reminderId')::uuid,'revision',revision+1,'act',CASE WHEN action='COMPLETE_AND_PLAN_NEXT' THEN 'COMPLETE' ELSE action END));
-        IF action='COMPLETE_AND_PLAN_NEXT' THEN
+        IF action NOT IN ('reminder.update','reminder.complete','reminder.cancel','reminder.reopen','reminder.completeAndPlanNext') OR revision IS NULL OR revision<1 OR revision>=9007199254740991 OR command->>'reminderId' IS NULL THEN RAISE EXCEPTION 'invalid reminder change' USING ERRCODE='CC004'; END IF;
+        result:=jsonb_build_array(jsonb_build_object('kind','REMINDER_CHANGED','caseId',target,'reminderId',(command->>'reminderId')::uuid,'revision',revision+1,'act',CASE WHEN action='reminder.completeAndPlanNext' THEN 'reminder.complete' ELSE action END));
+        IF action='reminder.completeAndPlanNext' THEN
             IF (command->>'reminderId')::uuid=operation THEN RAISE EXCEPTION 'reminder identities overlap' USING ERRCODE='CC004'; END IF;
             result:=result||jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
         END IF;
         RETURN result;
-    ELSIF family='AUTHORITY' THEN
+    ELSIF family='PEOPLE' THEN
         IF NOT claimcore.json_shape(command,ARRAY['kind','targetActorId','principal','act']) OR NOT claimcore.json_shape(command->'principal',ARRAY['kind','issuer','subject'])
            OR command->'principal'->>'kind' NOT IN ('HUMAN','SERVICE') OR jsonb_typeof(command->'principal'->'issuer')<>'string' OR jsonb_typeof(command->'principal'->'subject')<>'string'
-        THEN RAISE EXCEPTION 'invalid authority command shape' USING ERRCODE='CC004'; END IF;
+        THEN RAISE EXCEPTION 'invalid people command shape' USING ERRCODE='CC004'; END IF;
         target:=(command->>'targetActorId')::uuid; action:=command->'act'->>'kind'; item:=command->'act';
-        IF action IN ('REGISTER','ADMIT','PROVISION_OWNER') THEN
+        IF action IN ('people.register','people.admit','people.provisionOwner') THEN
             IF target<>operation OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid registered actor identity' USING ERRCODE='CC004'; END IF;
-            result:=jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind',CASE WHEN action='PROVISION_OWNER' THEN action ELSE 'REGISTER' END,'principal',command->'principal')),
-                jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','SET_PROFILE','profileCompartment',0)));
-            IF action='REGISTER' THEN
+            result:=jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind',CASE WHEN action='people.provisionOwner' THEN action ELSE 'people.register' END,'principal',command->'principal')),
+                jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.setProfile','profileCompartment',0)));
+            IF action='people.register' THEN
                 IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) THEN RAISE EXCEPTION 'invalid registration shape' USING ERRCODE='CC004'; END IF;
-            ELSIF action='ADMIT' THEN
+            ELSIF action='people.admit' THEN
                 IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','grants']) OR jsonb_typeof(item->'grants')<>'array' OR jsonb_array_length(item->'grants') NOT BETWEEN 1 AND 48 THEN RAISE EXCEPTION 'invalid admission shape' USING ERRCODE='CC004'; END IF;
                 IF (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'grants')) THEN RAISE EXCEPTION 'duplicate admission grants' USING ERRCODE='CC004'; END IF;
                 FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'grants') LOOP
                     IF NOT claimcore.json_shape(item,ARRAY['role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
-                    result:=result||jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','GRANT','role',item->'role','scope',item->'scope')));
+                    result:=result||jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.grant','role',item->'role','scope',item->'scope')));
                 END LOOP;
             ELSE
                 IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','roles']) OR jsonb_typeof(item->'roles')<>'array' OR jsonb_array_length(item->'roles')>4
@@ -232,18 +232,18 @@ BEGIN
                    OR (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'roles'))
                 THEN RAISE EXCEPTION 'invalid owner provisioning shape' USING ERRCODE='CC004'; END IF;
                 FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'roles') LOOP
-                    result:=result||jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',jsonb_build_object('kind','GRANT','role',item,'scope',jsonb_build_object('kind','INSTALLATION'))));
+                    result:=result||jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.grant','role',item,'scope',jsonb_build_object('kind','INSTALLATION'))));
                 END LOOP;
             END IF;
             RETURN result;
-        ELSIF action='SET_PROFILE' THEN
+        ELSIF action='people.setProfile' THEN
             IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid profile reference' USING ERRCODE='CC004'; END IF;
-        ELSIF action IN ('GRANT','REVOKE') THEN
+        ELSIF action IN ('people.grant','people.revoke') THEN
             IF NOT claimcore.json_shape(item,ARRAY['kind','role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
-        ELSIF action IN ('ENABLE','DISABLE','ERASE_PROFILE') THEN
-            IF NOT claimcore.json_shape(item,ARRAY['kind']) THEN RAISE EXCEPTION 'invalid authority act shape' USING ERRCODE='CC004'; END IF;
-        ELSE RAISE EXCEPTION 'unknown authority act' USING ERRCODE='CC004'; END IF;
-        RETURN jsonb_build_array(jsonb_build_object('kind','AUTHORITY','targetActorId',target,'change',item));
+        ELSIF action IN ('people.enable','people.disable','people.eraseProfile') THEN
+            IF NOT claimcore.json_shape(item,ARRAY['kind']) THEN RAISE EXCEPTION 'invalid people act shape' USING ERRCODE='CC004'; END IF;
+        ELSE RAISE EXCEPTION 'unknown people act' USING ERRCODE='CC004'; END IF;
+        RETURN jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',item));
     ELSE RAISE EXCEPTION 'unknown operation family' USING ERRCODE='CC004'; END IF;
 END;
 $$;
@@ -252,15 +252,15 @@ CREATE FUNCTION claimcore.operation_compartments(command jsonb)
 RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
 DECLARE family text:=command->>'kind'; action text; owner_kind text; owner_id uuid; purpose text; refs jsonb:='[0]'::jsonb;
 BEGIN
-    IF family='AUTHORITY' THEN
+    IF family='PEOPLE' THEN
         action:=command->'act'->>'kind';
-        IF action NOT IN ('REGISTER','ADMIT','PROVISION_OWNER','SET_PROFILE') THEN RETURN '[]'::jsonb; END IF;
+        IF action NOT IN ('people.register','people.admit','people.provisionOwner','people.setProfile') THEN RETURN '[]'::jsonb; END IF;
         owner_kind:='ACTOR_PROFILE'; owner_id:=(command->>'targetActorId')::uuid; purpose:='PROFILE';
-        IF action<>'SET_PROFILE' THEN refs:='[1]'::jsonb; END IF;
+        IF action<>'people.setProfile' THEN refs:='[1]'::jsonb; END IF;
     ELSE
         owner_kind:='CASE';owner_id:=(command->>'caseId')::uuid;purpose:=family;
-        IF (family='CASE' AND command->>'act'='ERASE') OR (family='NOTE' AND command->>'act'='REMOVE_NOTE') THEN RETURN '[]'::jsonb; END IF;
-        IF family='REMINDER' AND command->>'act'='COMPLETE_AND_PLAN_NEXT' THEN refs:='[0,1]'::jsonb; END IF;
+        IF (family='CASE' AND command->>'act'='case.erase') OR (family='NOTE' AND command->>'act'='note.remove') THEN RETURN '[]'::jsonb; END IF;
+        IF family='REMINDER' AND command->>'act'='reminder.completeAndPlanNext' THEN refs:='[0,1]'::jsonb; END IF;
     END IF;
     RETURN jsonb_build_array(jsonb_build_object('ordinal',0,'ownerKind',owner_kind,'ownerId',owner_id,'purpose',purpose,'effects',refs));
 END;
@@ -297,7 +297,7 @@ BEGIN
        (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.purpose,NEW.effect_indices,NEW.commitment)
        IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.purpose,OLD.effect_indices,OLD.commitment)
        OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_id=OLD.owner_id
-             AND ((OLD.owner_kind='CASE' AND erased.subject_kind='CASE' AND erased.act='ERASE') OR (OLD.owner_kind='ACTOR_PROFILE' AND erased.subject_kind='AUTHORITY' AND erased.act='ERASE_PROFILE'))
+             AND ((OLD.owner_kind='CASE' AND erased.subject_kind='CASE' AND erased.act='case.erase') OR (OLD.owner_kind='ACTOR_PROFILE' AND erased.subject_kind='PEOPLE' AND erased.act='people.eraseProfile'))
              AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,OLD.effect_indices[cardinality(OLD.effect_indices)]))
     THEN RAISE EXCEPTION 'private contents clear only under accepted owner erasure' USING ERRCODE='CC003'; END IF;
     RETURN NEW;
@@ -332,7 +332,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; expected jsonb; supplied jsonb; item
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>2 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>3 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
     expected:=claimcore.operation_effects(p_command,p_operation,p_actor,p_sequence);
     IF jsonb_array_length(p_effects)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation effects' USING ERRCODE='CC004'; END IF;
     FOR n IN 0..jsonb_array_length(expected)-1 LOOP
@@ -355,7 +355,7 @@ BEGIN
         INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,descriptor) VALUES(p_sequence,(item->>'index')::integer,item->'descriptor');
     END LOOP;
     FOR item IN SELECT value FROM jsonb_array_elements(p_compartments) LOOP
-        IF item->>'ownerKind'='CASE' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_kind='CASE' AND erased.subject_id=(item->>'ownerId')::uuid AND erased.act='ERASE') THEN RAISE EXCEPTION 'erased case cannot acquire private contents' USING ERRCODE='CC004'; END IF;
+        IF item->>'ownerKind'='CASE' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_kind='CASE' AND erased.subject_id=(item->>'ownerId')::uuid AND erased.act='case.erase') THEN RAISE EXCEPTION 'erased case cannot acquire private contents' USING ERRCODE='CC004'; END IF;
         INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,purpose,effect_indices,commitment,nonce,payload)
         VALUES(p_sequence,(item->>'ordinal')::integer,item->>'ownerKind',(item->>'ownerId')::uuid,item->>'purpose',ARRAY(SELECT value::integer FROM jsonb_array_elements_text(item->'effects')),decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
     END LOOP;
@@ -367,7 +367,7 @@ CREATE FUNCTION claimcore.erase_case_payload(target_case_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE erased bigint;
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE subject_kind='CASE' AND subject_id=target_case_id AND act='ERASE') THEN RAISE EXCEPTION 'case has no accepted erasure' USING ERRCODE='CC002'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE subject_kind='CASE' AND subject_id=target_case_id AND act='case.erase') THEN RAISE EXCEPTION 'case has no accepted erasure' USING ERRCODE='CC002'; END IF;
     UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='CASE' AND owner_id=target_case_id AND payload IS NOT NULL;
     GET DIAGNOSTICS erased=ROW_COUNT;
     UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=target_case_id;
@@ -381,19 +381,19 @@ CREATE FUNCTION claimcore.erase_profile_payload(target_actor_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE frontier bigint; erase_index integer; erased bigint;
 BEGIN
-    SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects WHERE subject_kind='AUTHORITY' AND subject_id=target_actor_id AND act='ERASE_PROFILE' ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
+    SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects WHERE subject_kind='PEOPLE' AND subject_id=target_actor_id AND act='people.eraseProfile' ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
     IF frontier IS NULL THEN RAISE EXCEPTION 'actor has no accepted profile erasure' USING ERRCODE='CC002'; END IF;
     UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND owner_id=target_actor_id AND (operation_sequence,effect_indices[cardinality(effect_indices)])<(frontier,erase_index) AND payload IS NOT NULL;
     GET DIAGNOSTICS erased=ROW_COUNT;
     UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=target_actor_id
-       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects later WHERE later.subject_kind='AUTHORITY' AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND (later.operation_sequence,later.effect_index)>(frontier,erase_index));
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects later WHERE later.subject_kind='PEOPLE' AND later.act='people.setProfile' AND later.subject_id=target_actor_id AND (later.operation_sequence,later.effect_index)>(frontier,erase_index));
     RETURN erased;
 END;
 $$;
 
 -- ---------------------------------------------------------------------------------------------
 -- Projections. Derived from the ledger in the same transaction that appends to it; `verify`
--- recomputes them from the ledger and reports any divergence. They are never an authority.
+-- recomputes them from the ledger and reports any divergence. They are never an people.
 -- ---------------------------------------------------------------------------------------------
 CREATE TABLE claimcore.cases (
     -- The UUID of the operation which created the case.
@@ -465,7 +465,7 @@ CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,acce
 CREATE INDEX case_payments_current_dates ON claimcore.case_payments(case_id,payment_date,payment_id) WHERE NOT removed AND payment_date IS NOT NULL;
 
 CREATE TABLE claimcore.actors (
-    -- The operation ID of the authority entry that registered the actor.
+    -- The operation ID of the people entry that registered the actor.
     actor_id uuid PRIMARY KEY CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     principal_kind text NOT NULL CHECK (principal_kind ~ '^[A-Z][A-Z_]{0,39}$'),
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
@@ -482,7 +482,7 @@ CREATE TABLE claimcore.actors (
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
 CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public.gin_trgm_ops);
 
--- Bounded authentication hints, never ledger authority. Identity includes principal kind.
+-- Bounded authentication hints, never ledger people. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
     principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN','SERVICE')),
     issuer text COLLATE "C" NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
@@ -563,7 +563,7 @@ CREATE TABLE claimcore.grants (
 
 CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL;
 
--- Resource-scoped authority reads load an actor's installation grants (case_id IS NULL) and its
+-- Resource-scoped people reads load an actor's installation grants (case_id IS NULL) and its
 -- grants on the one case a request targets, never the actor's whole grant set.
 CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 

@@ -5,15 +5,15 @@ import { render, screen, waitFor } from "../../support/presentation-test-support
 import {
   AccessRequests,
   type AccessRequestControl,
-} from "../../../src/views/authority/AccessRequests";
-import type { HumanReadDocument_authorityRequests } from "@contracts/client";
+} from "../../../src/views/people/AccessRequests";
+import type { HumanReadDocument_people_requests } from "@contracts/client";
 
 const handles: AccessRequestControl[] = ["first", "second"].map((key) => ({
   key,
   principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: key },
   profileSeed: { displayName: `${key} unverified hint`, contact: null },
 }));
-const document: HumanReadDocument_authorityRequests = {
+const document: HumanReadDocument_people_requests = {
   screen: {
     regions: [
       {
@@ -90,6 +90,6 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
-  expect(fetch.mock.calls[1]![0]).toBe("/api/authority.requests.dismiss");
+  expect(fetch.mock.calls[1]![0]).toBe("/api/people.requests.dismiss");
   expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(handles[1]!.principal);
 });

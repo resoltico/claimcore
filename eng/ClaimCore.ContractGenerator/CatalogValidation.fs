@@ -134,7 +134,7 @@ module CatalogValidation =
                 "label"
                 "view"
                 "endpoint"
-                "authority"
+                "people"
                 "diagnostic"
                 "fault"
                 "host"

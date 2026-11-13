@@ -23,7 +23,7 @@ const receipt: HumanReceiptDocument = {
               key: "result",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "MESSAGE", messageId: "act.REMINDER_COMPLETE.done" },
+              value: { kind: "MESSAGE", messageId: "task.reminder.complete.done" },
             },
           ],
         },
@@ -91,10 +91,10 @@ const setup = () => {
               caseId: current.context.caseId,
               revision: 3,
               tasks: [
-                "REMINDER:REMINDER_COMPLETE",
-                "REMINDER:REMINDER_UPDATE",
-                "REMINDER:REMINDER_CANCEL",
-                "REMINDER:REMINDER_COMPLETE_AND_PLAN_NEXT",
+                "reminder.complete",
+                "reminder.update",
+                "reminder.cancel",
+                "reminder.completeAndPlanNext",
               ],
               actionSeed: "Call the claimant",
               dueDateSeed: "2026-11-01",
@@ -135,7 +135,7 @@ const setup = () => {
               screen: { regions: [] },
               context: {
                 kind: "REVIEW",
-                task: "REMINDER:REMINDER_COMPLETE",
+                task: "reminder.complete",
                 inputs: [
                   "input:operationId",
                   "field:caseReference",
@@ -213,7 +213,7 @@ it("opens a compact completion preview from an explicit row action and writes on
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     kind: "REMINDER",
     target: { kind: "ID", caseId: current.context.caseId },
-    act: { kind: "COMPLETE", reminderId, expectedRevision: 3 },
+    act: { kind: "reminder.complete", reminderId, expectedRevision: 3 },
   });
   await user.click(reviewConfirm());
   await waitFor(() => {

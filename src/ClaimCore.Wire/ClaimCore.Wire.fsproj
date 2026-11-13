@@ -41,7 +41,7 @@
     <Compile Include="Wire/HumanDocumentStructure.fs" />
     <Compile Include="Wire/HumanDocumentCodecs.fs" />
     <Compile Include="Wire/HumanReplies.fs" />
-    <Compile Include="Wire/AuthorityHistoryCodecs.fs" />
+    <Compile Include="Wire/PeopleHistoryCodecs.fs" />
     <Compile Include="Wire/CaseTotalsCodecs.fs" />
     <Compile Include="Wire/ReceiptCodecs.fs" />
     <Compile Include="Wire/WorkReadCodecs.fs" />

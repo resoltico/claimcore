@@ -71,10 +71,10 @@ module OperationIntent =
             (CommandSkeleton.Reminder scope)
             ((OperationContentCodecs.reminderInput scope).Write command)
 
-    let authority operation scope profile =
+    let people operation scope profile =
         bytes
             operation
-            (CommandSkeleton.Authority scope)
+            (CommandSkeleton.People scope)
             (profile
              |> Option.map OperationContentCodecs.profile.Write
              |> Option.defaultValue JsonValue.Null)
@@ -91,12 +91,11 @@ module OperationIntent =
             Some(note root.Header.OperationId content.Command)
         | CommandSkeleton.Reminder scope, RetainedOperationValues.Reminder(Some content) ->
             Some(reminder root.Header.OperationId scope content.Command)
-        | CommandSkeleton.Authority scope,
-          RetainedOperationValues.Authority(RetainedProfile.Available profile) ->
-            Some(authority root.Header.OperationId scope (Some profile))
-        | CommandSkeleton.Authority scope,
-          RetainedOperationValues.Authority RetainedProfile.NotRequired ->
-            Some(authority root.Header.OperationId scope None)
+        | CommandSkeleton.People scope,
+          RetainedOperationValues.People(RetainedProfile.Available profile) ->
+            Some(people root.Header.OperationId scope (Some profile))
+        | CommandSkeleton.People scope, RetainedOperationValues.People RetainedProfile.NotRequired ->
+            Some(people root.Header.OperationId scope None)
         | CommandSkeleton.Case scope, RetainedOperationValues.Case None when
             (match scope.Act with
              | CaseActKind.RemovePayment
@@ -118,6 +117,6 @@ module OperationIntent =
             ->
             Some(bytes root.Header.OperationId (CommandSkeleton.Reminder scope) JsonValue.Null)
         | _,
-          (RetainedOperationValues.Case None | RetainedOperationValues.Work None | RetainedOperationValues.Note None | RetainedOperationValues.Reminder None | RetainedOperationValues.Authority RetainedProfile.Unavailable) ->
+          (RetainedOperationValues.Case None | RetainedOperationValues.Work None | RetainedOperationValues.Note None | RetainedOperationValues.Reminder None | RetainedOperationValues.People RetainedProfile.Unavailable) ->
             None
         | _ -> invalidOp "Decoded values must belong to their operation command."

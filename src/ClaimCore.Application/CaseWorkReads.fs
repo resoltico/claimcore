@@ -216,7 +216,7 @@ module internal CaseWorkReads =
         (services: ServiceContext)
         (tx: IReadTx)
         (work: CaseWorkView)
-        (actor: AuthorityView)
+        (actor: AccessView)
         maintenance
         (record: StoredCase)
         =
@@ -233,7 +233,7 @@ module internal CaseWorkReads =
                                     DateBasis = basis
                                     Visibility =
                                         if
-                                            Authority.can
+                                            Access.can
                                                 services.Principal
                                                 actor
                                                 Capability.ReadCase
@@ -243,8 +243,8 @@ module internal CaseWorkReads =
                                         else
                                             CaseVisibility.Scoped
                                     ActorId = requester.ActorId
-                                    ReadRoles = Authority.readRoles services.Principal
-                                    ForbiddenRoles = Authority.invalidRoles services.Principal
+                                    ReadRoles = Access.readRoles services.Principal
+                                    ForbiddenRoles = Access.invalidRoles services.Principal
                                     Filter = CaseListFilter.empty
                                 }
                             TargetCaseId = Some record.CaseId

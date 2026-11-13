@@ -17,7 +17,7 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
+  tasks: ["case.amendRegistration", "case.correct", "case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -29,7 +29,7 @@ const current: CurrentCase = caseDocumentInput({
     decision: fields.finance.decision,
   },
 });
-const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
+const open = (act: "case.amendRegistration" | "case.correct" = "case.amendRegistration") => {
   const close = vi.fn();
   render(
     <OperationEditor
@@ -112,7 +112,7 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
 });
 it("protects hidden correction replacement edits after returning its mode to KEEP", async () => {
   const user = userEvent.setup();
-  const close = open("CORRECT");
+  const close = open("case.correct");
   const mode = document.querySelector<HTMLSelectElement>(
     'fieldset[id="field-group:registration"]',
   )!;
@@ -134,7 +134,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
 });
 it("leaves a correction whose mode was changed and reverted without value edits", async () => {
   const user = userEvent.setup();
-  const close = open("CORRECT");
+  const close = open("case.correct");
   const mode = document.querySelector<HTMLSelectElement>('fieldset[id="field-group:decision"]')!;
   await chooseOption(user, mode, "CLEAR");
   await chooseOption(user, mode, "KEEP");

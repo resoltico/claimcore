@@ -31,7 +31,7 @@ const receipt: HumanReceiptDocument = {
               key: "opaque-acceptance",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core authority outcome Ω" },
+              value: { kind: "TEXT", value: "Core people outcome Ω" },
             },
           ],
         },
@@ -41,7 +41,7 @@ const receipt: HumanReceiptDocument = {
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "AUTHORITY", actorId: "00000000-0000-4000-8000-000000000002" },
+    target: { kind: "PEOPLE", actorId: "00000000-0000-4000-8000-000000000002" },
     caseLink: null,
     refreshCase: null,
   },
@@ -124,7 +124,7 @@ const setup = (
 };
 it("retains the complete Core receipt and known acceptance when identity-only journal cleanup fails", async () => {
   const journal = setup();
-  await screen.findByText("Core authority outcome Ω");
+  await screen.findByText("Core people outcome Ω");
   await waitFor(() => {
     expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
   });
@@ -136,23 +136,23 @@ it("retains the complete Core receipt and known acceptance when identity-only jo
 });
 it("masks a recovered receipt synchronously when the disclosure generation is invalidated", async () => {
   setup();
-  await screen.findByText("Core authority outcome Ω");
+  await screen.findByText("Core people outcome Ω");
   await userEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
-  expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
+  expect(screen.queryByText("Core people outcome Ω")).not.toBeInTheDocument();
 });
 
 it("masks pending operation presentation on invalidation while retaining its journal identity", async () => {
   const journal = setup("PENDING");
-  await screen.findByText("Core authority outcome Ω");
+  await screen.findByText("Core people outcome Ω");
   await userEvent.click(screen.getByRole("button", { name: "Invalidate observations" }));
-  expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
+  expect(screen.queryByText("Core people outcome Ω")).not.toBeInTheDocument();
   expect(journal.remove).not.toHaveBeenCalled();
 });
 it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
   "keeps known %s through cleanup failure and a later unavailable read",
   async (kind) => {
     setup(kind);
-    await screen.findByText("Core authority outcome Ω");
+    await screen.findByText("Core people outcome Ω");
     await waitFor(() => {
       expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
     });
@@ -161,7 +161,7 @@ it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
     await waitFor(() => {
       expect(screen.getByTestId("notice")).toHaveTextContent("local");
     });
-    expect(screen.getByText("Core authority outcome Ω")).toBeVisible();
+    expect(screen.getByText("Core people outcome Ω")).toBeVisible();
     expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
   },
 );
@@ -177,7 +177,7 @@ it("keeps the explicit Core case link independently of the refresh hint", async 
       refreshCase: null,
     },
   });
-  await screen.findByText("Core authority outcome Ω");
+  await screen.findByText("Core people outcome Ω");
   const answer: unknown = JSON.parse(screen.getByTestId("answer").textContent ?? "null");
   expect(answer).toMatchObject({
     outcome: { kind: "RECORDED", caseId: "00000000-0000-4000-8000-000000000003" },
@@ -261,7 +261,7 @@ it("keeps an in-flight identity lookup through an unverified same-session reques
 
 it("masks a previously recovered receipt when a fresh lookup refuses disclosure", async () => {
   const journal = setup();
-  await screen.findByText("Core authority outcome Ω");
+  await screen.findByText("Core people outcome Ω");
   await waitFor(() => {
     expect(screen.getByTestId("cleanup")).toHaveTextContent("local");
   });
@@ -288,6 +288,6 @@ it("masks a previously recovered receipt when a fresh lookup refuses disclosure"
   await waitFor(() => {
     expect(screen.getByTestId("notice")).toHaveTextContent("human");
   });
-  expect(screen.queryByText("Core authority outcome Ω")).not.toBeInTheDocument();
+  expect(screen.queryByText("Core people outcome Ω")).not.toBeInTheDocument();
   expect(journal.remove).toHaveBeenCalledTimes(1);
 });

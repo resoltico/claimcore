@@ -36,7 +36,7 @@ const document = (caption: string): HumanReceiptDocument => ({
   context: {
     kind: "RECEIPT",
     recordedFields: [],
-    target: { kind: "AUTHORITY", actorId: activeRequester.context.actorId },
+    target: { kind: "PEOPLE", actorId: activeRequester.context.actorId },
     caseLink: null,
     refreshCase: null,
   },

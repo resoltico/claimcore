@@ -78,7 +78,7 @@ let tests =
 
                     let expected =
                         ActKind.all
-                        |> List.filter ((<>) (ActKind.Authority AuthorityKind.ProvisionOwner))
+                        |> List.filter ((<>) (ActKind.People PeopleActKind.ProvisionOwner))
 
                     Expect.equal
                         (Set.ofList acts)

@@ -46,8 +46,14 @@ let frame endpoint =
             Frames.create Api.operationExecute input
         else
             Frames.create Api.operationPreview input
-    | EndpointId.Actor(ActorEndpoint.Query query) ->
-        CliExamples.queryArguments (TaskId.Query query)
+    | EndpointId.Actor((ActorEndpoint.Query _ | ActorEndpoint.Command _) as actor) ->
+        let task =
+            match actor with
+            | ActorEndpoint.Query query -> TaskId.Query query
+            | ActorEndpoint.Command command -> TaskId.Command command
+            | ActorEndpoint.Operation _ -> failtest "Expected an endpoint task"
+
+        CliExamples.queryArguments task
         |> Grammar.prepare (fun () -> CliReplyFixtures.id.ToString("D"))
         |> Result.map _.Invocation
         |> Result.mapError (fun errors ->
@@ -57,18 +63,16 @@ let frame endpoint =
             })
     |> Result.defaultWith (fun problem -> failtestf "Typed fixture frame: %A" problem)
 
-let authorityFrame () =
+let peopleFrame () =
     ClaimCore.Json.JsonValue.Object
         [
             "endpoint", ClaimCore.Json.JsonValue.String "operation.execute"
             "input",
-            Api.operationExecute.Input.Write(
-                OperationInput.Authority CliReplyFixtures.authorityRequest
-            )
+            Api.operationExecute.Input.Write(OperationInput.People CliReplyFixtures.peopleRequest)
         ]
     |> WireWriter.bytes
     |> Frames.admit
-    |> Result.defaultWith (fun _ -> failwith "Authority fixture refused.")
+    |> Result.defaultWith (fun _ -> failwith "People fixture refused.")
 
 let frameEndpoint invocation = Frames.endpoint invocation
 let frameBytes invocation = Frames.encodeInvocation invocation

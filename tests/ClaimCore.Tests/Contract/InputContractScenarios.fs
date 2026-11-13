@@ -191,10 +191,10 @@ let internal retainedText () =
             (CaseFixtures.decide today CasePaymentContext.NoneRequired changed (Some prior))
             "New assertions follow current admission"
 
-let internal authorityWire kind issuer subject =
+let internal peopleWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
         {|
-            kind = "AUTHORITY"
+            kind = "PEOPLE"
             operationId = id.ToString("D")
             target =
                 {|
@@ -237,7 +237,7 @@ let internal principalAdmission () =
         ]
 
     for admitted, kind, issuer, subject in expected do
-        let wire = authorityWire kind issuer subject
+        let wire = peopleWire kind issuer subject
 
         let syntax =
             Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire
@@ -245,12 +245,12 @@ let internal principalAdmission () =
 
         Expect.equal
             (match syntax with
-             | OperationInput.Authority request -> Authority.parse request |> Result.isOk
+             | OperationInput.People request -> People.parse request |> Result.isOk
              | _ -> false)
             admitted
             "Only authoritative principal admission judges identity semantics"
 
-    let invalidKind = authorityWire "UNKNOWN" "https://issuer.example/" "subject"
+    let invalidKind = peopleWire "UNKNOWN" "https://issuer.example/" "subject"
 
     Expect.isError
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input invalidKind)
@@ -268,7 +268,7 @@ let internal policyHints () =
         200
         "Current policy is a nonvalidating hint"
 
-let internal authorityFieldPresentation () =
+let internal peopleFieldPresentation () =
     use document = artifact "catalog.json"
     let root = document.RootElement
     let fields = root.GetProperty("inputFields").EnumerateArray() |> Seq.toList

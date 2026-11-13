@@ -4,7 +4,7 @@
     "kind": "CASE",
     "expectedRevision": 3,
     "act": {
-      "kind": "CLOSE"
+      "kind": "case.close"
     },
     "target": {
       "kind": "REFERENCE",

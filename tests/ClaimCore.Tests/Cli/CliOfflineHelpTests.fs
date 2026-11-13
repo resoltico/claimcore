@@ -20,7 +20,7 @@ let private commandHelp language arguments =
     Expect.equal result.StandardError.Length 0 "No prose on stderr"
     Encoding.UTF8.GetString result.StandardOutput
 
-let private selectedInputs =
+let private selectedInputs () =
     // CliHelpTests covers the complete operation/input/language product in process.
     // CliUsageTests.localizedDiscovery checks every offline language with independent literals.
     for operation in CommandGrammar.operations do
@@ -42,9 +42,9 @@ let private selectedInputs =
 
 // These historical grammar captures intentionally retain a noncanonical bare-host issuer.
 // L6 now refuses their business syntax locally; they remain authored structural command examples.
-let private noncanonicalAuthorityExample arguments =
+let private noncanonicalPeopleExample arguments =
     match arguments with
-    | "authority" :: act :: _ ->
+    | "people" :: act :: _ ->
         List.contains
             act
             [
@@ -85,7 +85,7 @@ let private principalRefusal arguments =
         "PRINCIPAL_FORMAT"
         "Canonical issuer rule"
 
-let private commandExamples =
+let private commandExamples () =
     let rows =
         System.IO.File.ReadAllLines(
             System.IO.Path.Combine(
@@ -121,7 +121,7 @@ let private commandExamples =
         let arguments =
             row.Split(' ', System.StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
 
-        if noncanonicalAuthorityExample arguments then
+        if noncanonicalPeopleExample arguments then
             localRefusals <- localRefusals + 1
             principalRefusal arguments
         else
@@ -135,7 +135,7 @@ let private commandExamples =
 
     Expect.equal localRefusals 8 "All eight original noncanonical issuer examples remain exercised"
 
-let private diagnosticRoute =
+let private diagnosticRoute () =
     let result = invoke [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))
 
     Expect.equal result.ExitCode 2 "Malformed input preserves protocol refusal"
@@ -169,6 +169,6 @@ let private diagnosticRoute =
 [<Tests>]
 let tests =
     testCase "offline CLI help and captured dry-runs" (fun () ->
-        selectedInputs
-        commandExamples
-        diagnosticRoute)
+        selectedInputs ()
+        commandExamples ()
+        diagnosticRoute ())

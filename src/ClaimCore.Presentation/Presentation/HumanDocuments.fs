@@ -109,7 +109,7 @@ type RequesterInteraction =
         ActorId: ActorId option
         Views: View list
         Tasks: TaskId list
-        AuthorityIssuerSeed: string option
+        PeopleIssuerSeed: string option
     }
 
 type PageInteraction =
@@ -131,7 +131,7 @@ type ReviewTarget =
     | Work of CaseId * before: Revision
     | Note of CaseId * existing: NoteId option
     | Reminder of CaseId * existing: ReminderIdentity option
-    | Authority of ActorId option * GrantScope
+    | People of ActorId option * GrantScope
 
 [<RequireQualifiedAccess>]
 type ConfirmationTarget =
@@ -153,7 +153,7 @@ type ReceiptTarget =
     | Work of CaseId * Revision
     | Note of CaseId * NoteId
     | Reminder of CaseId * ReminderIdentity list
-    | Authority of ActorId
+    | People of ActorId
 
 type ReceiptInteraction =
     {
@@ -213,12 +213,12 @@ type ReminderPageInteraction =
     }
 
 /// Row destinations bind authorized history effects without exposing their business DTOs.
-type AuthorityHistoryHandle = { Key: string; CaseId: CaseId option }
+type PeopleHistoryHandle = { Key: string; CaseId: CaseId option }
 
-type AuthorityHistoryInteraction =
+type PeopleHistoryInteraction =
     {
         NextCursor: string option
-        Entries: AuthorityHistoryHandle list
+        Entries: PeopleHistoryHandle list
     }
 
 /// Request hints are unverified editable seeds, never evidence of an admitted account/profile.
@@ -285,7 +285,7 @@ type InteractionContext =
     | People of ActorPageInteraction
     | AccessRequests of AccessRequestInteraction
     | Person of PersonInteraction
-    | AuthorityHistory of AuthorityHistoryInteraction
+    | PeopleHistory of PeopleHistoryInteraction
     | NotePage of NotePageInteraction
 
 type HumanDocument =
@@ -372,7 +372,7 @@ module HumanDocument =
         | InteractionContext.People page -> page.NextCursor
         | InteractionContext.AccessRequests page -> page.NextCursor
         | InteractionContext.Person page -> page.NextCursor
-        | InteractionContext.AuthorityHistory page -> page.NextCursor
+        | InteractionContext.PeopleHistory page -> page.NextCursor
         | InteractionContext.NotePage page -> page.NextCursor
         | _ -> None
 
@@ -524,7 +524,7 @@ module HumanReadDocuments =
     let private offer =
         function
         | InstallationOffer.Open -> TaskId.Operation(ActKind.Case CaseActKind.Open)
-        | InstallationOffer.AuthorityAct kind -> TaskId.Operation(ActKind.Authority kind)
+        | InstallationOffer.PeopleAct kind -> TaskId.Operation(ActKind.People kind)
 
     let private resource basis screen context disclosure =
         {
@@ -556,20 +556,20 @@ module HumanReadDocuments =
                          else
                              actor.Offers |> List.map offer)
                         @ [
-                            if List.contains Capability.ReadAuthority actor.Capability then
-                                yield TaskId.Query QueryTaskId.AuthorityList
-                                yield TaskId.Query QueryTaskId.AuthorityGrants
-                                yield TaskId.Query QueryTaskId.AuthorityHistory
-                            if List.contains Capability.ManageAuthority actor.Capability then
-                                yield TaskId.Query QueryTaskId.AuthorityRequests
-                                yield TaskId.Query QueryTaskId.AuthorityRequestsDismiss
+                            if List.contains Capability.ReadAccess actor.Capability then
+                                yield TaskId.Query QueryTaskId.PeopleList
+                                yield TaskId.Query QueryTaskId.PeopleGrants
+                                yield TaskId.Query QueryTaskId.PeopleHistory
+                            if List.contains Capability.ManageAccess actor.Capability then
+                                yield TaskId.Query QueryTaskId.PeopleRequests
+                                yield TaskId.Command CommandTaskId.PeopleRequestsDismiss
                         ]
-                    AuthorityIssuerSeed =
+                    PeopleIssuerSeed =
                         if
                             not actor.Maintenance.Active
                             && (actor.Offers
                                 |> List.exists (function
-                                    | InstallationOffer.AuthorityAct(AuthorityKind.Admit | AuthorityKind.Register) ->
+                                    | InstallationOffer.PeopleAct(PeopleActKind.Admit | PeopleActKind.Register) ->
                                         true
                                     | _ -> false))
                         then
@@ -585,7 +585,7 @@ module HumanReadDocuments =
                     ActorId = Some actor.Self.ActorId
                     Views = []
                     Tasks = []
-                    AuthorityIssuerSeed = None
+                    PeopleIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
             | RequesterState.Disabled actor ->
@@ -595,7 +595,7 @@ module HumanReadDocuments =
                     ActorId = Some actor.ActorId
                     Views = []
                     Tasks = []
-                    AuthorityIssuerSeed = None
+                    PeopleIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
             | RequesterState.NotRegistered _ ->
@@ -605,7 +605,7 @@ module HumanReadDocuments =
                     ActorId = None
                     Views = []
                     Tasks = []
-                    AuthorityIssuerSeed = None
+                    PeopleIssuerSeed = None
                 },
                 ObservationBasis.Unavailable
 
@@ -770,7 +770,7 @@ module HumanReadDocuments =
                 })
             HumanDisclosure.Current
 
-    let grants (value: AuthorityGrantPage) =
+    let grants (value: PeopleGrantPage) =
         resource
             value.Basis
             (PersonScreen.view value)
@@ -779,10 +779,10 @@ module HumanReadDocuments =
                     ActorId = value.Actor.Actor.ActorId
                     Principal = value.Actor.Principal
                     NextCursor = value.NextCursor
-                    Tasks = value.Offers |> List.map (ActKind.Authority >> TaskId.Operation)
+                    Tasks = value.Offers |> List.map (ActKind.People >> TaskId.Operation)
                     ProfileSeed = value.ProfileSeed
                     Revocations =
-                        if List.contains AuthorityKind.Revoke value.Offers then
+                        if List.contains PeopleActKind.Revoke value.Offers then
                             value.Items
                             |> List.map (fun item ->
                                 {
@@ -808,11 +808,11 @@ module HumanReadDocuments =
                 })
             HumanDisclosure.Current
 
-    let history (value: AuthorityHistoryPage) =
+    let history (value: PeopleHistoryPage) =
         resource
             value.Basis
             (AccessHistoryScreen.view value)
-            (InteractionContext.AuthorityHistory
+            (InteractionContext.PeopleHistory
                 {
                     NextCursor = value.NextCursor
                     Entries =
@@ -822,14 +822,9 @@ module HumanReadDocuments =
                                 Key = EffectPosition.format item.Position
                                 CaseId =
                                     match item.Facts with
-                                    | AuthorityHistoryFacts.Granted {
-                                                                        Scope = GrantScope.Case(id,
-                                                                                                _)
-                                                                    }
-                                    | AuthorityHistoryFacts.Revoked {
-                                                                        Scope = GrantScope.Case(id,
-                                                                                                _)
-                                                                    } -> Some id
+                                    | PeopleHistoryFacts.Granted { Scope = GrantScope.Case(id, _) }
+                                    | PeopleHistoryFacts.Revoked { Scope = GrantScope.Case(id, _) } ->
+                                        Some id
                                     | _ -> None
                             })
                 })

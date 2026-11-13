@@ -17,7 +17,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
       installationId: null,
       tasks: [],
       views: [],
-      authorityIssuerSeed: null,
+      peopleIssuerSeed: null,
     },
     screen: {
       regions: [
@@ -54,7 +54,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
       installationId: "90000000-0000-4000-8000-000000000001",
       tasks: [],
       views: [],
-      authorityIssuerSeed: null,
+      peopleIssuerSeed: null,
     },
     screen: {
       regions: [
@@ -85,7 +85,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
       installationId: null,
       tasks: [],
       views: [],
-      authorityIssuerSeed: null,
+      peopleIssuerSeed: null,
     },
     screen: {
       regions: [
@@ -120,7 +120,7 @@ it.each(inactive)(
       },
     });
     const cases = mockEndpoint("work.views");
-    const directory = mockEndpoint("authority.list");
+    const directory = mockEndpoint("people.list");
     const view = render(<Dashboard />);
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
       requester.context.state === "DISABLED"
@@ -159,7 +159,7 @@ it.each(inactive)(
         dispatched: false,
       });
     const cases = mockEndpoint("work.views");
-    const directory = mockEndpoint("authority.list");
+    const directory = mockEndpoint("people.list");
     render(<Dashboard />);
     await screen.findByRole("heading", { level: 1 });
     await userEvent.setup().click(screen.getByRole("button", { name: "Check access" }));

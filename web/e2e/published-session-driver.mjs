@@ -36,7 +36,7 @@ const networks = new Map([
   ["net::ERR_TIMED_OUT", "TIMEOUT"],
   ["net::ERR_CONNECTION_TIMED_OUT", "TIMEOUT"],
   ["ETIMEDOUT", "TIMEOUT"],
-  ["net::ERR_CERT_AUTHORITY_INVALID", "TLS"],
+  ["net::ERR_CERT_PEOPLE_INVALID", "TLS"],
   ["net::ERR_CERT_DATE_INVALID", "TLS"],
   ["net::ERR_CERT_COMMON_NAME_INVALID", "TLS"],
   ["net::ERR_SSL_PROTOCOL_ERROR", "TLS"],

@@ -156,7 +156,7 @@ let private initialDecisionIsBounded =
         |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private withdrawnDateIsAbsent =
-    testCase "withdrawing a decision removes its date reaffirmation authority" (fun () ->
+    testCase "withdrawing a decision removes its date reaffirmation people" (fun () ->
         decided ()
         |> apply (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
         |> accepted
@@ -164,7 +164,7 @@ let private withdrawnDateIsAbsent =
         |> future (InputTarget.Field BusinessField.PaymentDecisionDate))
 
 let private clearedPaymentDateIsAbsent =
-    testCase "clearing payment removes its date reaffirmation authority" (fun () ->
+    testCase "clearing payment removes its date reaffirmation people" (fun () ->
         let current = paid ()
         let parent = Case.snapshot current
 

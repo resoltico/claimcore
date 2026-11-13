@@ -12,7 +12,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 
-let private authorityAndCursor () =
+let private peopleAndCursor () =
     let page: PageRequest =
         {
             AfterCursor = Some "malformed"
@@ -45,7 +45,7 @@ let private authorityAndCursor () =
             }
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Authority precedes token parsing"
+        "People precedes token parsing"
 
     Expect.equal
         (Queries.selectActors
@@ -114,20 +114,20 @@ let private authorityAndCursor () =
             ungranted
             view)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Grant review needs installation authority"
+        "Grant review needs installation people"
 
     Expect.equal
         (Advice.views owner ungranted)
         [ View.Operations ]
-        "A valid ungranted actor retains recovery without business or authority views"
+        "A valid ungranted actor retains recovery without business or people views"
 
     Expect.isEmpty (Advice.installationOffers owner ungranted) "Context carries no implied offers"
 
     Expect.isTrue
-        (Authority.validActor owner ungranted)
+        (Access.validActor owner ungranted)
         "Context remains available to an enabled ungranted actor"
 
-    Expect.isFalse (Authority.validActor owner AuthorityView.empty) "Absent actor has no context"
+    Expect.isFalse (Access.validActor owner AccessView.empty) "Absent actor has no context"
 
 let private history () =
     let _, entry, _, _ = created 460 "QUERY-HISTORY"
@@ -138,8 +138,8 @@ let private history () =
         (LedgerEntries.canObserve
             owner
             reader
-            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
-        "Case rights cannot observe authority entries"
+            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        "Case rights cannot observe people entries"
 
     Expect.isTrue
         (LedgerEntries.canObserve owner reader (LedgerEntries.primary entry).Subject)
@@ -229,7 +229,7 @@ let private context () =
             (DecisionFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
-            AuthorityView.empty
+            AccessView.empty
             []
     with
     | Outcome.Succeeded {
@@ -278,8 +278,8 @@ let private context () =
         (LedgerEntries.canObserve
             owner
             scoped
-            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
-        "Scoped auditor cannot observe installation authority"
+            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        "Scoped auditor cannot observe installation people"
 
     Expect.equal
         (Queries.selectActors
@@ -299,16 +299,16 @@ let private context () =
         (LedgerEntries.canObserve
             owner
             worker
-            (EntryTarget.Authority((CaseFixtures.actorId (id 1)), AuthorityKind.Register)))
-        "Installation owner may observe authority"
+            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        "Installation owner may observe people"
 
 [<Tests>]
 let tests =
     testList
         "pure query selections"
         [
-            testCase "context and authority observation preserve installation boundaries" context
+            testCase "context and people observation preserve installation boundaries" context
             testCase "absent inaccessible and erased resources share refusal" resources
-            testCase "current authority precedes cursors and target review" authorityAndCursor
-            testCase "history detail and operation subject use current authority" history
+            testCase "current people precedes cursors and target review" peopleAndCursor
+            testCase "history detail and operation subject use current people" history
         ]

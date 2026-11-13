@@ -103,7 +103,7 @@ module internal NoteQueries =
 
                                             match view.Case with
                                             | Some parent when
-                                                Authority.can
+                                                Access.can
                                                     services.Principal
                                                     view.Actor
                                                     Capability.ReadCase

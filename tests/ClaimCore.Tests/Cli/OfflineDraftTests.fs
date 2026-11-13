@@ -95,7 +95,7 @@ let tests =
                     for args in
                         [
                             [
-                                "authority"
+                                "people"
                                 "set-profile"
                                 "--principal-kind"
                                 "human"

@@ -56,7 +56,7 @@ const refusal = (kind: "access" | "session") =>
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
 const disclosedCurrent = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
+  tasks: ["case.amendRegistration"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -67,7 +67,7 @@ const disclosedCurrent = caseDocumentInput({
   },
 });
 const preview = () => {
-  const task = operationTask("CASE:AMEND_REGISTRATION");
+  const task = operationTask("case.amendRegistration");
   return endpointResponse("operation.preview", {
     representation: "HUMAN",
     outcome: {
@@ -131,7 +131,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
     editor({
       onMutationLockChange,
       current: disclosedCurrent,
-      initialAct: "AMEND_REGISTRATION",
+      initialAct: "case.amendRegistration",
     }),
   );
   selectFact("claimantName");

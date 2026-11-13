@@ -19,8 +19,8 @@
     <Compile Include="StoreContractReads.fs" />
     <Compile Include="LedgerWriteContract.fs" />
     <Compile Include="CaseDisclosureContract.fs" />
-    <Compile Include="ScopedAuthorityContract.fs" />
-    <Compile Include="AuthorityReviewContract.fs" />
+    <Compile Include="ScopedPeopleContract.fs" />
+    <Compile Include="PeopleReviewContract.fs" />
     <Compile Include="OperationRecoveryContract.fs" />
     <Compile Include="CaseWorkContract.fs" />
     <Compile Include="PaymentEntriesContract.fs" />
@@ -28,7 +28,7 @@
     <Compile Include="ReminderConcurrencyContract.fs" />
     <Compile Include="WorkDateBasisTests.fs" />
     <Compile Include="HttpAdmissionPressureTests.fs" />
-    <Compile Include="AuthorityHistoryContract.fs" />
+    <Compile Include="PeopleHistoryContract.fs" />
     <Compile Include="WorklistTriageContract.fs" />
     <Compile Include="CaseSelectorContract.fs" />
     <Compile Include="ActorProfilesContract.fs" />
@@ -86,7 +86,7 @@
     <Compile Include="CaseListReadSequencingTests.fs" />
     <Compile Include="PaginationScenarios.fs" />
     <Compile Include="PositionPaginationTests.fs" />
-    <Compile Include="AuthorityContinuationTests.fs" />
+    <Compile Include="PeopleContinuationTests.fs" />
     <Compile Include="ProtocolMappingTests.fs" />
     <Compile Include="DiagnosticWitnesses.fs" />
     <Compile Include="DiagnosticEvidence.fs" />
@@ -95,7 +95,7 @@
     <Compile Include="ReceiptContextTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />
     <Compile Include="LedgerFindingScenarios.fs" />
-    <Compile Include="AuthorityFindingScenarios.fs" />
+    <Compile Include="PeopleFindingScenarios.fs" />
     <Compile Include="StoredDataFindingScenarios.fs" />
     <Compile Include="VerificationTests.fs" />
     <Compile Include="SubmissionStorage.fs" />

@@ -68,18 +68,7 @@ module CommandGrammar =
         | input -> TaskInputId.key input
 
     let words (entry: TaskId) =
-        match (TaskRouting.act entry) with
-        | Some(ActKind.Case kind) -> [ "case"; kebab (CaseActKind.token kind) ]
-        | Some(ActKind.Note NoteActKind.AddNote) -> [ "note"; "add" ]
-        | Some(ActKind.Note NoteActKind.RemoveNote) -> [ "note"; "remove" ]
-        | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
-        | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
-        | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None when (TaskRouting.endpoint entry) = ActorEndpoint.Query QueryTaskId.CasePayments ->
-            [ "payment"; "list" ]
-        | None when (TaskRouting.endpoint entry) = ActorEndpoint.Query QueryTaskId.CaseNotes ->
-            [ "note"; "list" ]
-        | None -> (ActorEndpoint.token (TaskRouting.endpoint entry)).Split('.') |> List.ofArray
+        (TaskId.key entry).Split('.') |> Array.map kebab |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
@@ -164,7 +153,7 @@ module CommandGrammar =
         (TaskDeclarations.describe operation).Collections
         |> List.map (fun item ->
             match item.Collection with
-            | TaskCollectionId.AuthorityGrants ->
+            | TaskCollectionId.PeopleGrants ->
                 {
                     Collection = item.Collection
                     Name = TaskInputId.Target InputTarget.Grants
@@ -172,18 +161,18 @@ module CommandGrammar =
                         TaskInputPresentation.messageKey
                             (TaskInputId.Target InputTarget.Grants)
                             "label"
-                    MinimumItems = AuthorityAdmission.MinimumGrants
-                    MaximumItems = AuthorityAdmission.MaximumGrants
+                    MinimumItems = PeopleAdmission.MinimumGrants
+                    MaximumItems = PeopleAdmission.MaximumGrants
                 })
 
     let collectionFlag (definition: CommandCollection) =
         match definition.Collection with
-        | TaskCollectionId.AuthorityGrants ->
+        | TaskCollectionId.PeopleGrants ->
             "--" + kebab (inputName (TaskInputId.Target InputTarget.Role))
 
     let collectionPlaceholder (definition: CommandCollection) =
         match definition.Collection with
-        | TaskCollectionId.AuthorityGrants -> "ROLE[@CASE-REF]"
+        | TaskCollectionId.PeopleGrants -> "ROLE[@CASE-REF]"
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
@@ -205,7 +194,7 @@ module CommandGrammar =
                 [
                     ActorEndpoint.Query QueryTaskId.CaseList
                     ActorEndpoint.Query QueryTaskId.ReminderList
-                    ActorEndpoint.Query QueryTaskId.AuthorityHistory
+                    ActorEndpoint.Query QueryTaskId.PeopleHistory
                     ActorEndpoint.Query QueryTaskId.CaseTimeline
                 ]
         then
@@ -254,7 +243,7 @@ module CommandGrammar =
         | TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary), Some(ActKind.Work _) ->
             true
         | TaskInputId.Target InputTarget.ProfileContact,
-          Some(ActKind.Authority AuthorityKind.SetProfile) -> true
+          Some(ActKind.People PeopleActKind.SetProfile) -> true
         | _ -> false
 
     let synopsisForDraft draft (operation: TaskId) =

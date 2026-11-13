@@ -96,25 +96,25 @@ let private actors (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id database.Fixture 20)
                         principal
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id database.Fixture 21) principal AuthorityAct.Disable
+                (OperationInput.People(
+                    Inputs.peopleRequest (id database.Fixture 21) principal PeopleAct.Disable
                 ))
                 token
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
 
         let! opened =
             Service.execute

@@ -73,28 +73,28 @@ it("chooses an advertised workspace only for the default entry route", async () 
           ...activeRequester,
           context: {
             ...activeRequester.context,
-            views: ["AUTHORITY", "OPERATIONS"],
+            views: ["PEOPLE", "OPERATIONS"],
             tasks: [
-              "AUTHORITY:REGISTER",
-              "AUTHORITY:GRANT",
-              "AUTHORITY:REVOKE",
-              "AUTHORITY:ENABLE",
-              "AUTHORITY:DISABLE",
+              "people.register",
+              "people.grant",
+              "people.revoke",
+              "people.enable",
+              "people.disable",
             ],
           },
         },
       },
     },
   });
-  mockEndpoint("authority.list").mockResolvedValue({
+  mockEndpoint("people.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("authority.list"),
+    value: wireReply("people.list"),
   });
-  mockEndpoint("authority.requests").mockResolvedValue({
+  mockEndpoint("people.requests").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("authority.requests"),
+    value: wireReply("people.requests"),
   });
   render(<Dashboard />);
   expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
@@ -120,8 +120,8 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
           ...activeRequester,
           context: {
             ...activeRequester.context,
-            views: ["AUTHORITY"],
-            tasks: ["query:authorityList"],
+            views: ["PEOPLE"],
+            tasks: ["people.list"],
           },
         },
       },

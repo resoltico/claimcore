@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import {
   taskDefinitions,
-  type HumanReadDocument_reminderList,
+  type HumanReadDocument_reminder_list,
   type OperationTaskId,
 } from "@contracts/client";
 import { Button } from "../../ui/Button";
@@ -11,7 +11,7 @@ import { operationTask } from "../../protocol/taskCatalog";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 
-export type ReminderControl = HumanReadDocument_reminderList["context"]["reminders"][number];
+export type ReminderControl = HumanReadDocument_reminder_list["context"]["reminders"][number];
 export type ReminderActHandler = (
   row: ReminderControl,
   task: OperationTaskId,
@@ -34,8 +34,8 @@ export const ReminderActions = ({
   const p = usePresentation();
   const overflow = useRef<HTMLButtonElement>(null);
   const tasks = row.tasks.filter((id): id is OperationTaskId => operationTaskKind(id));
-  const complete = tasks.find((id) => id === "REMINDER:REMINDER_COMPLETE");
-  const update = tasks.find((id) => id === "REMINDER:REMINDER_UPDATE");
+  const complete = tasks.find((id) => id === "reminder.complete");
+  const update = tasks.find((id) => id === "reminder.update");
   const other = tasks.filter((id) => id !== complete && id !== update);
   const label = (id: OperationTaskId) => renderCatalogKey(p, operationTask(id).labelId);
   const primary = (id: OperationTaskId | undefined, className?: string) =>

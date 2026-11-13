@@ -25,7 +25,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 2 "Fresh installations use adopted format two"
+        Expect.equal initial.InstallationFormat 3 "Fresh installations use adopted format three"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -106,21 +106,21 @@ let private actionState (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "maintenance-target"
             |> Result.defaultWith (string >> failtest)
 
-        let! authority =
+        let! people =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 12)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
         Expect.equal
-            authority.Outcome
+            people.Outcome
             (ExecuteResult.Rejected Refusal.RegisterMaintenance)
-            "Authority writes share the actual gate"
+            "People writes share the actual gate"
 
         let expired = OperationIds.at (DateTimeOffset.UtcNow.AddMinutes(-11.))
         let! final = Service.operationGet actor { OperationId = expired } token

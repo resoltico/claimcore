@@ -4,7 +4,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Access-request hints confer no authority; only authority managers can inspect or dismiss them.
+/// Access-request hints confer no people; only people managers can inspect or dismiss them.
 module internal AccessRequestQueries =
     open QueryResults
 
@@ -18,7 +18,7 @@ module internal AccessRequestQueries =
                             fun tx ->
                                 task {
                                     let! actor =
-                                        tx.Authority
+                                        tx.Access
                                             {
                                                 Principal = services.Principal
                                                 CaseId = None
@@ -26,10 +26,10 @@ module internal AccessRequestQueries =
 
                                     if
                                         not (
-                                            Authority.can
+                                            Access.can
                                                 services.Principal
                                                 actor
-                                                Capability.ManageAuthority
+                                                Capability.ManageAccess
                                                 Scope.Installation
                                         )
                                     then
@@ -88,7 +88,7 @@ module internal AccessRequestQueries =
                             fun tx ->
                                 task {
                                     let! actor =
-                                        tx.Authority
+                                        tx.Access
                                             {
                                                 Principal = services.Principal
                                                 CaseId = None
@@ -96,10 +96,10 @@ module internal AccessRequestQueries =
 
                                     if
                                         not (
-                                            Authority.can
+                                            Access.can
                                                 services.Principal
                                                 actor
-                                                Capability.ManageAuthority
+                                                Capability.ManageAccess
                                                 Scope.Installation
                                         )
                                     then

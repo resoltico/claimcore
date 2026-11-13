@@ -9,13 +9,13 @@ type OperationInput =
     | Work of WorkOperationRequest
     | Reminder of ReminderOperationRequest
     | Note of NoteOperationRequest
-    | Authority of ClaimCore.Domain.AuthorityRequest
+    | People of ClaimCore.Domain.PeopleRequest
 
 module OperationInput =
     let operationId =
         function
         | OperationInput.Case request -> request.OperationId
-        | OperationInput.Authority request -> request.OperationId
+        | OperationInput.People request -> request.OperationId
         | OperationInput.Work request -> request.OperationId
         | OperationInput.Reminder request -> request.OperationId
         | OperationInput.Note request -> request.OperationId
@@ -46,7 +46,7 @@ module OperationInput =
                 AuthoredInput.Reminder(request.OperationId, request.Act), reference request.Target
             | OperationInput.Note request ->
                 AuthoredInput.Note(request.OperationId, request.Act), reference request.Target
-            | OperationInput.Authority request -> AuthoredInput.Authority request, None
+            | OperationInput.People request -> AuthoredInput.People request, None
 
         let issues =
             Validation.syntax authored

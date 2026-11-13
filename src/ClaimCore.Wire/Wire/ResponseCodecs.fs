@@ -128,13 +128,13 @@ module ResponseCodecs =
 
     let private historyAccess = VocabularyCodec.create HistoryAccess.vocabulary
 
-    let private authorityKind =
-        VocabularyCodec.select ((<>) AuthorityKind.ProvisionOwner) AuthorityKind.vocabulary
+    let private peopleKind =
+        VocabularyCodec.select ((<>) PeopleActKind.ProvisionOwner) PeopleActKind.vocabulary
 
     let private maximumInstallationOffers =
         1
-        + (AuthorityKind.all
-           |> List.filter ((<>) AuthorityKind.ProvisionOwner)
+        + (PeopleActKind.all
+           |> List.filter ((<>) PeopleActKind.ProvisionOwner)
            |> List.length)
 
     let private dateValue =
@@ -328,14 +328,14 @@ module ResponseCodecs =
         tagged
             "InstallationOffer"
             [
-                unitVariant "OPEN" InstallationOffer.Open
+                unitVariant (CaseActKind.token CaseActKind.Open) InstallationOffer.Open
                 variant
-                    "AUTHORITY_ACT"
-                    InstallationOffer.AuthorityAct
+                    "PEOPLE_ACT"
+                    InstallationOffer.PeopleAct
                     (function
-                    | InstallationOffer.AuthorityAct act -> Some act
+                    | InstallationOffer.PeopleAct act -> Some act
                     | _ -> None)
-                    (record id |> field "act" id authorityKind)
+                    (record id |> field "act" id peopleKind)
             ]
 
     let private runtimeFields =
@@ -624,12 +624,12 @@ module ResponseCodecs =
         |> build
         |> named "ActorReviewItem"
 
-    let internal authorityGrantFields =
+    let internal peopleGrantFields =
         (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> field "scope" _.Scope grantScope
 
-    let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
+    let peopleGrant = peopleGrantFields |> build |> named "PeopleGrant"
 
     let private grantRead =
         (record (fun role scope at by ->
@@ -651,19 +651,19 @@ module ResponseCodecs =
         (record (fun basis v0 offers seed v1 v2 ->
             {
                 Basis = basis
-                AuthorityGrantPage.Actor = v0
+                PeopleGrantPage.Actor = v0
                 Offers = offers
                 ProfileSeed = seed
                 Items = v1
                 NextCursor = v2
             })
-        : Fields<AuthorityGrantPage, _>)
+        : Fields<PeopleGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
         |> field
             "offers"
             _.Offers
-            (list AuthorityKind.all.Length (VocabularyCodec.create AuthorityKind.vocabulary))
+            (list PeopleActKind.all.Length (VocabularyCodec.create PeopleActKind.vocabulary))
         |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
         |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))

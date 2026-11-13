@@ -21,7 +21,7 @@ let private human =
 let private service =
     PrincipalKey.service "https://issuer.example/" "synthetic-service" |> accepted
 
-let private actor principal grants : ActorAuthority =
+let private actor principal grants : ActorAccess =
     {
         Actor =
             {
@@ -62,13 +62,13 @@ let private nonce value () = Array.create 32 value
 let private root () =
     RetainedOperation.create
         (header 1L id (CaseFixtures.actorId id) EntryHash.zero None)
-        (CommandSkeleton.Authority
+        (CommandSkeleton.People
             {
                 TargetActorId = CaseFixtures.actorId id
                 Principal = human
-                Act = AuthorityAct.ProvisionOwner(0, Authority.initialOwnerRoles)
+                Act = PeopleAct.ProvisionOwner(0, People.initialOwnerRoles)
             })
-        (OperationValues.Authority
+        (OperationValues.People
             {
                 Profile = Some(ActorProfile.parse Inputs.actorProfile |> accepted)
             })
@@ -288,33 +288,29 @@ let private caseChecks =
                 [])
     ]
 
-let private authorityChecks =
+let private peopleChecks =
     let executor actor human required =
-        AuthorityReplay.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
+        PeopleReplay.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
 
     [
         VerificationFinding.ActorNotEnabled,
-        (fun () -> AuthorityReplay.executor Map.empty (entry ()) false false)
+        (fun () -> PeopleReplay.executor Map.empty (entry ()) false false)
         VerificationFinding.HumanRequired, (fun () -> executor (actor service []) true false)
         VerificationFinding.OwnerRequired, (fun () -> executor (actor human []) true true)
-        VerificationFinding.AuthorityFold,
+        VerificationFinding.PeopleFold,
         (fun () ->
             let root = root ()
 
             match root.Root.Structure.Command with
-            | CommandSkeleton.Authority scope ->
-                AuthorityReplay.applyRoot
-                    Set.empty
-                    (Map.ofList [ owner.ActorId, owner ])
-                    root
-                    scope
+            | CommandSkeleton.People scope ->
+                PeopleReplay.applyRoot Set.empty (Map.ofList [ owner.ActorId, owner ]) root scope
                 |> unitResult
-            | _ -> failtest "Authority root required")
-        VerificationFinding.AuthorityProjection,
-        (fun () -> ProjectionVerification.authority (Map.ofList [ owner.ActorId, owner ]) [] [])
-        VerificationFinding.AuthorityProfileProjection,
+            | _ -> failtest "People root required")
+        VerificationFinding.PeopleProjection,
+        (fun () -> ProjectionVerification.people (Map.ofList [ owner.ActorId, owner ]) [] [])
+        VerificationFinding.PeopleProfileProjection,
         (fun () ->
-            ProjectionVerification.authority
+            ProjectionVerification.people
                 (Map.ofList [ owner.ActorId, owner ])
                 [
                     { owner.Actor with
@@ -375,9 +371,9 @@ let private invalidProjectionRows () =
         match check () with
         | Error {
                     Sequence = None
-                    Finding = VerificationFinding.AuthorityProjection
+                    Finding = VerificationFinding.PeopleProjection
                 } -> ()
-        | _ -> failtest "Malformed projections must return the stable authority finding"
+        | _ -> failtest "Malformed projections must return the stable people finding"
 
 [<Tests>]
 let tests =
@@ -387,7 +383,7 @@ let tests =
             for index, (expected, run) in
                 ledgerChecks
                 @ caseChecks
-                @ authorityChecks
+                @ peopleChecks
                 @ ProjectionIndexChecks.checks installation instant
                 |> List.indexed do
                 testCase (string index + " " + VerificationFinding.token expected) (fun () ->

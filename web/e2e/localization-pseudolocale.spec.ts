@@ -50,7 +50,7 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
   await expectAccessible(page);
   await selectLanguage(page, "ar");
   // Settings parks the same operation model while the modal portal closes; restoring it creates a visible dialog node.
-  const dialog = page.getByRole("dialog", { name: ui("ar", "act.OPEN.label"), exact: true });
+  const dialog = page.getByRole("dialog", { name: ui("ar", "task.case.open.label"), exact: true });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);

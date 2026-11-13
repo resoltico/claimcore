@@ -233,11 +233,11 @@ let private dispatch () =
         let registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 40001)
                         reader
-                        (AuthorityAct.Register
+                        (PeopleAct.Register
                             {
                                 DisplayName = "Auditor input"
                                 Contact = None
@@ -249,8 +249,8 @@ let private dispatch () =
 
         let readerId =
             match registered.Subject with
-            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
-            | _ -> failtest "Authority receipt required"
+            | ReceiptSubject.People value -> PeopleTargetDisclosure.actorId value.TargetActor
+            | _ -> failtest "People receipt required"
 
         grant
             owner
@@ -262,7 +262,7 @@ let private dispatch () =
             }
             true
         |> sync
-        |> acceptedAuthority
+        |> acceptedPeople
 
         let person services =
             match
@@ -283,7 +283,7 @@ let private dispatch () =
 
         Expect.contains
             editable.Offers
-            AuthorityKind.SetProfile
+            PeopleActKind.SetProfile
             "Owner receives permitted person task"
 
         Expect.equal

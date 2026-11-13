@@ -29,7 +29,7 @@ let tests =
         let hash = EntryHash.ofBytes (Array.create 32 0xabuy) |> Option.get
         let position = EffectPosition.create (CaseFixtures.sequence 7L) 3 |> Option.get
 
-        let entry: AuthorityHistoryEntry =
+        let entry: PeopleHistoryEntry =
             {
                 OperationId = operation
                 Position = position
@@ -37,11 +37,11 @@ let tests =
                 RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
                 RecordedBy = actor
                 Target = actor
-                Facts = AuthorityHistoryFacts.Enabled
+                Facts = PeopleHistoryFacts.Enabled
             }
 
-        let authority =
-            Array.append AuthorityHistoryCsv.csvHeader (AuthorityHistoryCsv.csvRows [ entry ])
+        let people =
+            Array.append PeopleHistoryCsv.csvHeader (PeopleHistoryCsv.csvRows [ entry ])
             |> parse
 
         let timeline: CaseTimelineEntry =
@@ -69,7 +69,7 @@ let tests =
                     })
             |> parse
 
-        for row in [ authority; activity ] do
+        for row in [ people; activity ] do
             Expect.equal row["operationId"] (raw.ToString "D") "Stable operation identity"
             Expect.equal row["sequence"] "7" "Sequence is the operation position"
             Expect.equal row["effectIndex"] "3" "Effect ordinal is retained independently"

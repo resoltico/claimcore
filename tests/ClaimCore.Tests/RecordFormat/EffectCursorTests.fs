@@ -52,33 +52,31 @@ let tests =
                         "Query/target scope remains bound"
 
                     Expect.isLessThan first second "Lexicographic order includes the ordinal")
-            testCase
-                "authority continuation binds installation target and effect ordinal"
-                (fun () ->
-                    let actor = ActorId.create (guid 2) |> Option.get
-                    let other = ActorId.create (guid 3) |> Option.get
-                    let expected = position 11L 5
-                    let cursor = Cursors.encodeAuthorityHistory installation (Some actor) expected
+            testCase "people continuation binds installation target and effect ordinal" (fun () ->
+                let actor = ActorId.create (guid 2) |> Option.get
+                let other = ActorId.create (guid 3) |> Option.get
+                let expected = position 11L 5
+                let cursor = Cursors.encodePeopleHistory installation (Some actor) expected
 
-                    Expect.equal
-                        (Cursors.decodeAuthorityHistory installation (Some actor) cursor |> valid)
-                        expected
-                        "Compound authority effects preserve ordinal"
+                Expect.equal
+                    (Cursors.decodePeopleHistory installation (Some actor) cursor |> valid)
+                    expected
+                    "Compound people effects preserve ordinal"
 
-                    Expect.equal
-                        (Cursors.decodeAuthorityHistory installation (Some other) cursor)
-                        (Error Refusal.InvalidCursor)
-                        "Another actor cannot consume the cursor"
+                Expect.equal
+                    (Cursors.decodePeopleHistory installation (Some other) cursor)
+                    (Error Refusal.InvalidCursor)
+                    "Another actor cannot consume the cursor"
 
-                    Expect.equal
-                        (Cursors.decodeAuthorityHistory installation None cursor)
-                        (Error Refusal.InvalidCursor)
-                        "An installation-wide query is a different selection"
+                Expect.equal
+                    (Cursors.decodePeopleHistory installation None cursor)
+                    (Error Refusal.InvalidCursor)
+                    "An installation-wide query is a different selection"
 
-                    Expect.equal
-                        (Cursors.decodeAuthorityHistory (guid 4) (Some actor) cursor)
-                        (Error Refusal.InvalidCursor)
-                        "Foreign installation is rejected")
+                Expect.equal
+                    (Cursors.decodePeopleHistory (guid 4) (Some actor) cursor)
+                    (Error Refusal.InvalidCursor)
+                    "Foreign installation is rejected")
             testCase
                 "notes and revision-conflict timeline positions retain their independent bindings"
                 (fun () ->

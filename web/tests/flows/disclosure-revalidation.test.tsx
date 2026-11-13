@@ -12,7 +12,7 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { definition, fields } from "../support/service-ui.fixtures";
 const context = caseDocumentInput(
-  { tasks: ["CASE:CLOSE"], history: "FULL" },
+  { tasks: ["case.close"], history: "FULL" },
   {
     regions: [
       ...closeCaseScreen.regions.filter((region) => region.role !== "IDENTITY"),

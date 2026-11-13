@@ -8,7 +8,7 @@ open System.Security.Cryptography.X509Certificates
 open Expecto
 open ClaimCore.Web
 
-let private authority commonName =
+let private people commonName =
     let key = RSA.Create(2048)
 
     let request =
@@ -52,8 +52,8 @@ let private serverCertificate (root: X509Certificate2) =
     request.Create(root, now.AddHours(-1), now.AddHours(1), serial)
 
 let private syntheticIssuerTrust () =
-    let rootKey, rootCertificate = authority "synthetic-issuer-root"
-    let otherKey, otherCertificate = authority "unrelated-root"
+    let rootKey, rootCertificate = people "synthetic-issuer-root"
+    let otherKey, otherCertificate = people "unrelated-root"
     use _rootKey = rootKey
     use _otherKey = otherKey
     use root = rootCertificate

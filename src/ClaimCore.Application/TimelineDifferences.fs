@@ -198,7 +198,7 @@ module internal TimelineDifferences =
         | EntryContent.Work(_, snapshot) -> snapshot.Work.Responsible |> Option.toList
         | EntryContent.Note _
         | EntryContent.Case _
-        | EntryContent.Authority _
+        | EntryContent.People _
         | EntryContent.Reminder _
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> []
@@ -233,7 +233,7 @@ module internal TimelineDifferences =
                     ]
             else
                 fault
-        | EntryContent.Authority _
+        | EntryContent.People _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase
         | EntryContent.ErasedProfile -> fault

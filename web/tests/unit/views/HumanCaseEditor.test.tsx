@@ -48,7 +48,7 @@ const current: CurrentCase = {
     revision: 7,
     workRevision: 4,
     history: "NONE",
-    tasks: ["CASE:REMOVE_PAYMENT"],
+    tasks: ["case.removePayment"],
     editableInputs: [],
     correction: null,
     seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
@@ -65,7 +65,7 @@ const review: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "CASE:REMOVE_PAYMENT",
+      task: "case.removePayment",
       target: { kind: "CASE", caseId, beforeRevision: 7 },
       inputs: [
         "input:operationId",
@@ -140,7 +140,7 @@ it("previews the typed selected payment and preserves selector spelling through 
     <OperationEditor
       definition={productMetadata}
       current={current}
-      initialAct="REMOVE_PAYMENT"
+      initialAct="case.removePayment"
       binding={{
         kind: "CASE",
         target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
@@ -170,7 +170,7 @@ it("previews the typed selected payment and preserves selector spelling through 
     kind: "CASE",
     target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
     expectedRevision: 7,
-    act: { kind: "REMOVE_PAYMENT", paymentId },
+    act: { kind: "case.removePayment", paymentId },
   });
 });
 it("takes the payment currency default only from an offered Core input seed", () => {
@@ -178,7 +178,7 @@ it("takes the payment currency default only from an offered Core input seed", ()
     ...current,
     context: {
       ...current.context,
-      tasks: ["CASE:RECORD_PAYMENT"],
+      tasks: ["case.recordPayment"],
       payments: [{ paymentId, canRemove: false }],
       seeds: { ...current.context.seeds, paymentCurrency: "EUR" },
     },
@@ -193,7 +193,7 @@ it("takes the payment currency default only from an offered Core input seed", ()
     <OperationEditor
       definition={productMetadata}
       current={payment}
-      initialAct="RECORD_PAYMENT"
+      initialAct="case.recordPayment"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}

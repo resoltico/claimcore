@@ -107,7 +107,7 @@ let private physicalReplyLoss () =
 
     use client = new HttpClient(handler)
     client.Timeout <- TimeSpan.FromSeconds 5.
-    let invocation = authorityFrame ()
+    let invocation = peopleFrame ()
     let mutable dispatched = false
 
     let reply =

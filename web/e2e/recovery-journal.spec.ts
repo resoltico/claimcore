@@ -129,7 +129,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     operationId,
     attemptId: randomUUID(),
     subject: "CASE",
-    act: "CLOSE",
+    act: "case.close",
   };
   const secondRecord: RecoveryRecord = { ...firstRecord, attemptId: randomUUID() };
   const put = (target: Page, record: RecoveryRecord) =>
@@ -317,7 +317,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
   const scope = await scopeFor(page);
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   const identity = await reviewDraft(page);
   await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   let executions = 0;
@@ -338,7 +338,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const retained = await records(page, scope);
   expect(retained).toMatchObject([
-    { operationId: identity.operationId, subject: "CASE", act: "CLOSE" },
+    { operationId: identity.operationId, subject: "CASE", act: "case.close" },
   ]);
   const replacement = await context.newPage();
   await replacement.emulateMedia({ colorScheme: "light" });
@@ -377,7 +377,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
       operationId,
       attemptId: randomUUID(),
       subject: "CASE",
-      act: "CLOSE",
+      act: "case.close",
     });
   }
   await replacement.evaluate(async (identities) => {
@@ -452,7 +452,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
     operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
-    act: "CLOSE",
+    act: "case.close",
   };
   await page.evaluate(async (record) => {
     const path = "/__claimcore_qa__/recovery/indexedJournal.js";
@@ -490,7 +490,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
         operationId: id,
         attemptId: crypto.randomUUID(),
         subject: "CASE",
-        act: "OPEN",
+        act: "case.open",
       };
       const prepared = await protocol.journalBeforeSend(
         journalModule.createIndexedJournal(factory),
@@ -537,7 +537,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
     operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
-    act: "CLOSE",
+    act: "case.close",
   };
   const exercise = (disableVersionHandler: boolean) =>
     page.evaluate(
@@ -668,7 +668,7 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     operationId: expiredOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
-    act: "CLOSE",
+    act: "case.close",
   };
   const ready = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
@@ -731,7 +731,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
     attemptId: randomUUID(),
     operationId: newOperationId(),
     subject: "WORK",
-    act: "UPDATE_WORK",
+    act: "work.update",
   };
   const reminder: RecoveryRecord = {
     ...scope,
@@ -739,7 +739,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
     attemptId: randomUUID(),
     operationId: newOperationId(),
     subject: "REMINDER",
-    act: "COMPLETE_AND_PLAN_NEXT",
+    act: "reminder.completeAndPlanNext",
   };
   await page.evaluate(
     async ({ work: selectedWork, reminder: selectedReminder }) => {

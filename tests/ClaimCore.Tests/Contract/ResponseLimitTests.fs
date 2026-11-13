@@ -78,7 +78,7 @@ let private receipt disclosure : OperationReceipt =
                 }
     }
 
-let private authorityFixture () =
+let private peopleFixture () =
     let prefix = "https://issuer.example/"
 
     let principal =
@@ -101,12 +101,12 @@ let private authorityFixture () =
 
     actor, grant
 
-let private boundedAuthority () =
-    let actor, grant = authorityFixture ()
+let private boundedPeople () =
+    let actor, grant = peopleFixture ()
 
     let actors count =
         Codec.encode
-            Api.authorityList.Output
+            Api.peopleList.Output
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
@@ -118,7 +118,7 @@ let private boundedAuthority () =
 
     let grants count =
         Codec.encode
-            Api.authorityGrants.Output
+            Api.peopleGrants.Output
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
@@ -413,7 +413,7 @@ let tests =
     testList
         "bounded response codecs"
         [
-            testCase "authority headers and grants have actual bounded codecs" boundedAuthority
+            testCase "people headers and grants have actual bounded codecs" boundedPeople
             testCase "maximal full timeline page and view fit the response limit" timelineLimit
             testCase
                 "fifty maximal reminder event contexts fit alongside full differences"

@@ -11,29 +11,29 @@ const supplied = (content: Extract<RegionContent, { kind: "ACTIONS" }>) => ({
   context: {
     ...current.context,
     correction: null,
-    tasks: ["CASE:DECIDE", "CASE:AMEND_REGISTRATION", "CASE:VOID", "CASE:ERASE"] as const,
+    tasks: ["case.decide", "case.amendRegistration", "case.void", "case.erase"] as const,
   },
 });
 it("uses the supplied recommendation rather than deriving a primary from typed offers", async () => {
   const onAct = vi.fn();
   const value = supplied({
     kind: "ACTIONS",
-    recommended: "AMEND_REGISTRATION",
-    groups: [{ family: "BUSINESS", acts: ["DECIDE"] }],
+    recommended: "case.amendRegistration",
+    groups: [{ family: "BUSINESS", acts: ["case.decide"] }],
   });
   const view = render(<CaseActions current={value} onAct={onAct} />);
   expect(view.container.querySelector("button.primary")).toHaveAttribute(
     "data-act",
-    "AMEND_REGISTRATION",
+    "case.amendRegistration",
   );
   await userEvent.setup().click(screen.getByRole("button", { name: /^Update claim details:/u }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("AMEND_REGISTRATION");
+  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.amendRegistration");
 });
 it("renders no inferred primary when the view supplies none", () => {
   const value = supplied({
     kind: "ACTIONS",
     recommended: null,
-    groups: [{ family: "BUSINESS", acts: ["DECIDE"] }],
+    groups: [{ family: "BUSINESS", acts: ["case.decide"] }],
   });
   const view = render(<CaseActions current={value} onAct={vi.fn()} />);
   expect(view.container.querySelector("button.primary")).toBeNull();
@@ -56,8 +56,8 @@ it.each(["primary", "alternative"] as const)(
   async (kind) => {
     const value = supplied({
       kind: "ACTIONS",
-      recommended: kind === "primary" ? "DECIDE" : null,
-      groups: kind === "alternative" ? [{ family: "BUSINESS", acts: ["DECIDE"] }] : [],
+      recommended: kind === "primary" ? "case.decide" : null,
+      groups: kind === "alternative" ? [{ family: "BUSINESS", acts: ["case.decide"] }] : [],
     });
     const onAct = vi.fn();
     const props = { current: { ...value, context: { ...value.context, tasks: [] } }, onAct };
@@ -74,7 +74,7 @@ it.each([false, true])(
     const value = supplied({
       kind: "ACTIONS",
       recommended: null,
-      groups: [{ family: "STEWARDSHIP", acts: ["VOID", "ERASE"] }],
+      groups: [{ family: "STEWARDSHIP", acts: ["case.void", "case.erase"] }],
     });
     const onAct = vi.fn();
     render(
@@ -97,14 +97,14 @@ it.each([false, true])(
       "H3",
     ]);
     await userEvent.setup().click(screen.getByRole("button", { name: /^Void case record:/u }));
-    expect(onAct).toHaveBeenCalledExactlyOnceWith("VOID");
+    expect(onAct).toHaveBeenCalledExactlyOnceWith("case.void");
   },
 );
 
 it("preserves Core's sole recommendation as an alternative to an unoffered route action", async () => {
-  const value = supplied({ kind: "ACTIONS", recommended: "DECIDE", groups: [] });
+  const value = supplied({ kind: "ACTIONS", recommended: "case.decide", groups: [] });
   const onAct = vi.fn();
   render(<CaseActionAlternatives current={value} onAct={onAct} />);
   await userEvent.setup().click(screen.getByRole("button", { name: /^Record payment decision:/u }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("DECIDE");
+  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.decide");
 });

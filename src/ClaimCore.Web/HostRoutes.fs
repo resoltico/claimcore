@@ -219,7 +219,7 @@ module HostRoutes =
             [
                 "/cases/{**path}"
                 "/operations/{**path}"
-                "/authority/{**path}"
+                "/people/{**path}"
                 "/work/{**path}"
             ] do
             application.MapFallback(pattern, RequestDelegate(fallback assets)) |> ignore

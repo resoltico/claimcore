@@ -4,7 +4,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
 import { activeRequester } from "../support/human-requester.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
-import { authorityReview } from "../support/authority-operation.fixtures";
+import { peopleReview } from "../support/people-operation.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest, isResponse } from "../../src/protocol/client";
@@ -21,11 +21,11 @@ const principal = {
   issuer: "https://issuer.example/",
   subject: "Immutable-A",
 } as const;
-const AuthorityEditor = () => {
+const PeopleEditor = () => {
   const credential = useCredential();
   const model = useOperation({
-    subject: "AUTHORITY",
-    kind: "GRANT",
+    subject: "PEOPLE",
+    kind: "people.grant",
     current: null,
     credential,
     prefill: {
@@ -37,10 +37,10 @@ const AuthorityEditor = () => {
     },
     onLockChange: noLock,
   });
-  return <OperationPanel model={model} current={null} offered={["GRANT"]} />;
+  return <OperationPanel model={model} current={null} offered={["people.grant"]} />;
 };
 
-it.each(["CASE", "AUTHORITY"] as const)(
+it.each(["CASE", "PEOPLE"] as const)(
   "rejects a mismatched %s operation ID echo and preserves its exact draft for a fresh review",
   async (kind) => {
     const bodies: string[] = [];
@@ -60,7 +60,7 @@ it.each(["CASE", "AUTHORITY"] as const)(
         operationId: bad ? "20000000-0000-7000-8000-000000000099" : input.operationId,
         outcome: {
           kind: "REVIEWED",
-          review: input.kind === "CASE" ? closeReview : authorityReview(input),
+          review: input.kind === "CASE" ? closeReview : peopleReview(input),
         },
       };
       expect(isResponse("operation.preview", reply)).toBe(true);
@@ -72,8 +72,8 @@ it.each(["CASE", "AUTHORITY"] as const)(
       ...activeRequester,
       context: {
         ...activeRequester.context,
-        views: ["AUTHORITY"] as const,
-        tasks: ["AUTHORITY:GRANT"] as const,
+        views: ["PEOPLE"] as const,
+        tasks: ["people.grant"] as const,
       },
     };
     render(
@@ -81,14 +81,14 @@ it.each(["CASE", "AUTHORITY"] as const)(
         <OperationEditor
           definition={productMetadata}
           current={current}
-          initialAct="CLOSE"
+          initialAct="case.close"
           onClose={noLock}
           onCommitted={noLock}
           onMutationLockChange={noLock}
         />
       ) : (
         <RequesterContext value={context}>
-          <AuthorityEditor />
+          <PeopleEditor />
         </RequesterContext>
       ),
     );

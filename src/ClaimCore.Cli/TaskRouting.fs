@@ -11,21 +11,25 @@ module TaskRouting =
         function
         | TaskId.Operation _ -> ActorEndpoint.Operation OperationEndpoint.Execute
         | TaskId.Query query -> ActorEndpoint.Query query
+        | TaskId.Command command -> ActorEndpoint.Command command
 
     let act =
         function
         | TaskId.Operation act -> Some act
-        | TaskId.Query _ -> None
+        | TaskId.Query _
+        | TaskId.Command _ -> None
 
     let consequence =
         function
         | TaskId.Operation act -> Consequence.ofAct act
-        | TaskId.Query _ -> Consequence.Routine
+        | TaskId.Query _
+        | TaskId.Command _ -> Consequence.Routine
 
     let private message task part =
         match task with
         | TaskId.Operation act -> Vocabulary.messageKey ActKind.vocabulary act part
-        | TaskId.Query _ -> Vocabulary.messageKey ActorEndpoint.vocabulary (endpoint task) part
+        | TaskId.Query _
+        | TaskId.Command _ -> Vocabulary.messageKey ActorEndpoint.vocabulary (endpoint task) part
 
     let labelId task = message task "label"
     let meaningId task = message task "meaning"

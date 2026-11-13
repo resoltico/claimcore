@@ -17,7 +17,7 @@ import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { fields } from "../support/service-ui.fixtures";
-import { authorityPreview } from "../support/authority-operation.fixtures";
+import { peoplePreview } from "../support/people-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
 import { navigate } from "../../src/routing/navigation";
@@ -38,15 +38,15 @@ const unavailable = {
     },
   },
 } as const;
-type Views = ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">;
-const authorityTasks: ReadonlyArray<TaskId> = [
-  "CASE:OPEN",
-  "AUTHORITY:ADMIT",
-  "query:authorityList",
-  "query:authorityGrants",
-  "query:authorityHistory",
-  "query:authorityRequests",
-  "query:authorityRequestsDismiss",
+type Views = ReadonlyArray<"CASES" | "PEOPLE" | "OPERATIONS">;
+const peopleTasks: ReadonlyArray<TaskId> = [
+  "case.open",
+  "people.admit",
+  "people.list",
+  "people.grants",
+  "people.history",
+  "people.requests",
+  "people.requests.dismiss",
 ];
 const requesterFor = (
   views: Views,
@@ -58,7 +58,7 @@ const requesterFor = (
     ...activeRequester.context,
     views,
     tasks,
-    authorityIssuerSeed: issuer,
+    peopleIssuerSeed: issuer,
   },
   basis: { kind: "SNAPSHOT", observation: workBasis },
 });
@@ -75,7 +75,7 @@ const deferred = <T,>() => {
   });
   return { promise, finish };
 };
-const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) => {
+const beginUnknownPeople = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(await screen.findByRole("link", { name: "People & access" }));
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await openPersonEditor();
@@ -94,7 +94,7 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
   await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
 };
-const authorityReads = () => {
+const peopleReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
     outcome({
       ...humanReadReply("case.list", {
@@ -105,10 +105,10 @@ const authorityReads = () => {
       }),
     }),
   );
-  mockEndpoint("authority.list")
+  mockEndpoint("people.list")
     .mockResolvedValueOnce(
       outcome({
-        ...humanReadReply("authority.list", {
+        ...humanReadReply("people.list", {
           screen: {
             regions: [
               {
@@ -155,15 +155,15 @@ const authorityReads = () => {
     )
     .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
 };
-it("retains the exact uncertain authority request when delayed context removes its navigation view", async () => {
+it("retains the exact uncertain people request when delayed context removes its navigation view", async () => {
   const delayed = deferred<ApiResult<ServiceResponse<"context">>>();
   const metadata = mockEndpoint("context")
     .mockResolvedValueOnce(
-      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+      contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
     )
     .mockReturnValue(delayed.promise);
-  authorityReads();
-  authorityPreview();
+  peopleReads();
+  peoplePreview();
   const execute = vi
     .spyOn(service, "execute")
     .mockResolvedValueOnce({
@@ -182,14 +182,14 @@ it("retains the exact uncertain authority request when delayed context removes i
     );
   const user = userEvent.setup();
   render(<Dashboard />);
-  await beginUnknownAuthority(user);
+  await beginUnknownPeople(user);
   const original = execute.mock.calls[0]![0].bytes;
   await user.click(screen.getByRole("button", { name: "Send again" }));
   await waitFor(() => {
     expect(metadata.mock.calls.length).toBeGreaterThan(1);
   });
   await act(async () => {
-    delayed.finish(contextFor(["CASES", "OPERATIONS"], ["CASE:OPEN"]));
+    delayed.finish(contextFor(["CASES", "OPERATIONS"], ["case.open"]));
     await delayed.promise;
   });
   expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
@@ -219,14 +219,14 @@ const RefreshDisclosure = () => {
 it("keeps the requested case route while an actual read refusal removes every current fact", async () => {
   mockEndpoint("context")
     .mockResolvedValueOnce(
-      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+      contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
     )
     .mockResolvedValueOnce(contextFor(["OPERATIONS"], []))
     .mockResolvedValue(
-      contextFor(["CASES", "AUTHORITY", "OPERATIONS"], authorityTasks, "https://issuer.example/"),
+      contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
     );
   const visible = caseDocumentInput(
-    { caseId: current.context.caseId, tasks: ["CASE:CLOSE"], history: "FULL" },
+    { caseId: current.context.caseId, tasks: ["case.close"], history: "FULL" },
     {
       regions: [
         ...closeCaseScreen.regions,
@@ -296,8 +296,8 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
   "retains same-requester uncertain bytes through %s without replay and restores the draft after access returns",
   async (kind) => {
     const active = contextFor(
-      ["CASES", "AUTHORITY", "OPERATIONS"],
-      authorityTasks,
+      ["CASES", "PEOPLE", "OPERATIONS"],
+      peopleTasks,
       "https://issuer.example/",
     );
     if (
@@ -317,7 +317,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         installationId: kind === "NO_ROLES" ? self.installationId : null,
         tasks: [],
         views: [],
-        authorityIssuerSeed: null,
+        peopleIssuerSeed: null,
       },
       basis: { kind: "UNAVAILABLE" },
       disclosure: "CURRENT",
@@ -330,8 +330,8 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         }),
       )
       .mockResolvedValue(active);
-    authorityReads();
-    authorityPreview();
+    peopleReads();
+    peoplePreview();
     const execute = vi.spyOn(service, "execute").mockResolvedValue({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
@@ -351,7 +351,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         />
       </>,
     );
-    await beginUnknownAuthority(user);
+    await beginUnknownPeople(user);
     const [{ bytes }] = execute.mock.calls[0]!;
     await act(() => Promise.resolve().then(refresh));
     await screen.findByRole("heading", {
@@ -375,8 +375,8 @@ it.each(["actor", "installation"] as const)(
   "does not retain a previous workspace for a NO_ROLES requester with a different %s",
   async (difference) => {
     const active = contextFor(
-      ["CASES", "AUTHORITY", "OPERATIONS"],
-      authorityTasks,
+      ["CASES", "PEOPLE", "OPERATIONS"],
+      peopleTasks,
       "https://issuer.example/",
     );
     if (
@@ -399,7 +399,7 @@ it.each(["actor", "installation"] as const)(
             : source.installationId,
         tasks: [],
         views: [],
-        authorityIssuerSeed: null,
+        peopleIssuerSeed: null,
       },
       basis: { kind: "UNAVAILABLE" },
       disclosure: "CURRENT",
@@ -412,8 +412,8 @@ it.each(["actor", "installation"] as const)(
         }),
       )
       .mockResolvedValue(active);
-    authorityReads();
-    authorityPreview();
+    peopleReads();
+    peoplePreview();
     const execute = vi.spyOn(service, "execute").mockResolvedValue({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
@@ -433,7 +433,7 @@ it.each(["actor", "installation"] as const)(
         />
       </>,
     );
-    await beginUnknownAuthority(user);
+    await beginUnknownPeople(user);
     await act(() => Promise.resolve().then(refresh));
     await screen.findByRole("heading", { name: "You don’t have access yet" });
     expect(document.querySelector(".workspace-shell")).toBeNull();

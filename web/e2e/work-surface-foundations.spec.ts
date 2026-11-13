@@ -31,7 +31,7 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     ).toBeVisible();
     const saved = await recoveryRecords(page);
     expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
+    expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "case.close" });
     const resolved = page.waitForResponse((response) =>
       response.url().endsWith("/api/operation.get"),
     );
@@ -62,7 +62,7 @@ test("native beforeunload blocks document navigation only while execution is in 
   await openAuthenticated(page);
   const reference = `UNLOAD-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "CLOSE", "en");
+  await startAct(page, "case.close", "en");
   const identity = await reviewDraft(page);
   const execution = await pauseJsonReply(page, "operation.execute");
   const dialogs: string[] = [];

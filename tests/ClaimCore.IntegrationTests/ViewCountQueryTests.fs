@@ -226,11 +226,11 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture.Database.Fixture 5509)
                         scoped
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
 
         let! paid =
@@ -252,11 +252,8 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.Authority(
-                    authorityRequest
-                        (id fixture.Database.Fixture 5510)
-                        scoped
-                        (AuthorityAct.Grant grant)
+                (OperationInput.People(
+                    peopleRequest (id fixture.Database.Fixture 5510) scoped (PeopleAct.Grant grant)
                 ))
 
         let scopedFixture =
@@ -300,11 +297,8 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.Authority(
-                    authorityRequest
-                        (id fixture.Database.Fixture 5511)
-                        scoped
-                        (AuthorityAct.Revoke grant)
+                (OperationInput.People(
+                    peopleRequest (id fixture.Database.Fixture 5511) scoped (PeopleAct.Revoke grant)
                 ))
 
         let service = scopedFixture.Service

@@ -27,7 +27,7 @@ type internal DraftAct =
 [<RequireQualifiedAccess>]
 type internal DraftIntent =
     | Case of reference: string * act: DraftAct
-    | Authority of target: PrincipalInput * act: AuthoredAuthorityAct
+    | People of target: PrincipalInput * act: AuthoredPeopleAct
 
 /// A structurally checked draft has no executable revision or automatically allocated operation id.
 [<NoEquality; NoComparison>]
@@ -78,7 +78,7 @@ module internal InteractiveReview =
                | Some(ActKind.Note _)
                | Some(ActKind.Work _)
                | Some(ActKind.Reminder _)
-               | Some(ActKind.Authority _) -> true
+               | Some(ActKind.People _) -> true
                | _ -> false)
 
     let prepare console arguments =
@@ -109,10 +109,10 @@ module internal InteractiveReview =
 
                 let intent =
                     match (TaskRouting.act entry) with
-                    | Some(ActKind.Authority _) ->
-                        Grammar.authorityIntent arguments
+                    | Some(ActKind.People _) ->
+                        Grammar.peopleIntent arguments
                         |> Result.map (fun ((target, act, supplied), language, preview) ->
-                            DraftIntent.Authority(target, act), supplied, language, preview)
+                            DraftIntent.People(target, act), supplied, language, preview)
                     | Some(ActKind.Note _) ->
                         Grammar.noteIntent arguments |> caseIntent DraftAct.Note
                     | Some(ActKind.Reminder _) ->
@@ -141,8 +141,7 @@ module internal InteractiveReview =
             AuthoredIntent.Work(draft.SuppliedId, Some reference, None, work)
         | DraftIntent.Case(reference, DraftAct.Reminder act) ->
             AuthoredIntent.Reminder(draft.SuppliedId, Some reference, act)
-        | DraftIntent.Authority(target, act) ->
-            AuthoredIntent.Authority(draft.SuppliedId, target, act)
+        | DraftIntent.People(target, act) -> AuthoredIntent.People(draft.SuppliedId, target, act)
 
     let private invocation (endpoint: Endpoint<'Input, 'Output>) input =
         Frames.create endpoint input
@@ -277,9 +276,9 @@ module internal InteractiveReview =
                     return! review console transport draft input installation token
                 | DraftIntent.Case(reference, act) ->
                     return! readCase newId console transport draft reference act installation token
-                | DraftIntent.Authority(target, act) ->
+                | DraftIntent.People(target, act) ->
                     let input =
-                        OperationInput.Authority
+                        OperationInput.People
                             {
                                 OperationId = draft.SuppliedId |> Option.defaultWith newId
                                 Target = target

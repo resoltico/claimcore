@@ -77,7 +77,7 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
         },
       },
     },
-    { ...valid, context: { ...valid.context, target: "AUTHORITY" } },
+    { ...valid, context: { ...valid.context, target: "PEOPLE" } },
     { ...valid, snapshot: {} },
   ]) {
     expect(

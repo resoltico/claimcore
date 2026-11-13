@@ -245,7 +245,7 @@ const receiptView: Screen = {
             key: "act",
             labelId: "label.action",
             prominence: "PRIMARY",
-            value: { kind: "CODE", vocabulary: "act", token: "OPEN" },
+            value: { kind: "CODE", vocabulary: "task", token: "case.open" },
           },
           {
             key: "caseReference",
@@ -294,7 +294,7 @@ const recorded = (byRequester = true) => ({
 });
 
 it("retains a recorded card with Core facts, time and disclosed case navigation after cleanup", async () => {
-  await testJournal.put({ ...recoveryRecord(), act: "VOID" });
+  await testJournal.put({ ...recoveryRecord(), act: "case.void" });
   const get = vi.spyOn(service, "operationGet").mockResolvedValue(recorded());
   const execute = vi.spyOn(service, "execute");
   render(view(requester));

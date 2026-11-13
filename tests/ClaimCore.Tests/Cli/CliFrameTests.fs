@@ -276,7 +276,7 @@ let private offlineDiscovery () =
             ("payment — " + label)
             "Every required language describes the payment family offline"
 
-    for args in [ []; [ "case"; "open" ]; [ "authority"; "register" ]; [ "context" ] ] do
+    for args in [ []; [ "case"; "open" ]; [ "people"; "register" ]; [ "context" ] ] do
         Expect.isSome (helpJson args) "Offline catalogue read"
 
     for args in

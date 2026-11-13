@@ -223,7 +223,7 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
       context: {
         kind: "CASES",
         cases: [],
-        tasks: ["CASE:OPEN"],
+        tasks: ["case.open"],
         exactCaseId: null,
         nextCursor: null,
       },

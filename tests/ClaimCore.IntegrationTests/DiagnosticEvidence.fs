@@ -62,7 +62,7 @@ let internal scalarEvidence () =
                 }
                 true
 
-        acceptedAuthority scalarSteward
+        acceptedPeople scalarSteward
 
         for index, request in List.indexed (progressRequests fixture ()) do
             let! outcome =
@@ -172,7 +172,7 @@ let internal scalarEvidence () =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let! voided =
             execute
@@ -270,7 +270,7 @@ let internal stateEvidence (setup, final) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let! opening = execute actor (openRequest fixture 10 "REACH-1")
         accepted opening |> ignore
 
@@ -327,7 +327,7 @@ let internal queryEvidence actor =
             @ List.ofSeq evidence
     }
 
-let internal authorityEvidence fixture actor =
+let internal peopleEvidence fixture actor =
     task {
         let service =
             PrincipalKey.service "https://issuer.example/" "synthetic"
@@ -336,19 +336,19 @@ let internal authorityEvidence fixture actor =
         let send n target act =
             (Service.execute
                 (actor: ServiceContext)
-                (OperationInput.Authority(authorityRequest (id fixture n) target act))
+                (OperationInput.People(peopleRequest (id fixture n) target act))
                 (ct))
 
         let! registered =
-            send 30 owner (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+            send 30 owner (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
-        let! unknown = send 31 service (AuthorityAct.Disable)
-        let! last = send 32 owner (AuthorityAct.Disable)
+        let! unknown = send 31 service (PeopleAct.Disable)
+        let! last = send 32 owner (PeopleAct.Disable)
 
         let! admitted =
-            send 33 service (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+            send 33 service (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
-        acceptedAuthority admitted
+        acceptedPeople admitted
 
         let! human =
             grant
@@ -399,15 +399,15 @@ let internal identityEvidence fixture actor =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 35)
                         reader
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (ct))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -420,7 +420,7 @@ let internal identityEvidence fixture actor =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return [ refused conflict; refused revision ], reader
     }
 
@@ -436,7 +436,7 @@ let internal principalEvidence fixture (actor: ServiceContext) =
                     "invalid", "valid"
                     "https://issuer.example/", String('x', 513)
                 ] do
-            let request: ClaimCore.Domain.AuthorityRequest =
+            let request: ClaimCore.Domain.PeopleRequest =
                 {
                     OperationId = id fixture (60 + index)
                     Target =
@@ -446,11 +446,11 @@ let internal principalEvidence fixture (actor: ServiceContext) =
                             Subject = subject
                         }
                     Act =
-                        (ClaimCore.Domain.AuthorityAct.Register
+                        (ClaimCore.Domain.PeopleAct.Register
                             ClaimCore.TestSupport.Inputs.actorProfile)
                 }
 
-            let! outcome = (Service.execute actor (OperationInput.Authority request) (ct))
+            let! outcome = (Service.execute actor (OperationInput.People request) (ct))
 
             evidence.Add(refused outcome)
 
@@ -492,11 +492,11 @@ let private profileAndDirectoryEvidence fixture actor =
                 let! reply =
                     Service.execute
                         actor
-                        (OperationInput.Authority(
-                            authorityRequest
+                        (OperationInput.People(
+                            peopleRequest
                                 (id fixture (600 + index * 2 + (if contact then 1 else 0)))
                                 target
-                                (AuthorityAct.Register profile)
+                                (PeopleAct.Register profile)
                         ))
                         ct
 
@@ -526,11 +526,11 @@ let private profileAndDirectoryEvidence fixture actor =
             let! reply =
                 Service.execute
                     actor
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id fixture (650 + index))
                             target
-                            (AuthorityAct.Admit
+                            (PeopleAct.Admit
                                 {
                                     Profile = Inputs.actorProfile
                                     Grants = grants
@@ -561,7 +561,7 @@ let internal boundaryEvidence () =
                 (request fixture 37 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
         let! queries = queryEvidence actor
-        let! authority = authorityEvidence fixture actor
+        let! people = peopleEvidence fixture actor
         let! principals = principalEvidence fixture actor
         let! profiles = profileAndDirectoryEvidence fixture actor
 
@@ -594,7 +594,7 @@ let internal boundaryEvidence () =
             identity
             @ [ refused denied; refused outOfWindow; refused behindFrontier; refused paused ]
             @ queries
-            @ authority
+            @ people
             @ principals
             @ profiles
     }

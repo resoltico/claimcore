@@ -101,10 +101,10 @@ let private requireDenied (local: HttpClient) tokens =
     }
 
 let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonElement) =
-    let authority = Uri issuer
+    let people = Uri issuer
 
     let foreignIssuer =
-        authority.GetLeftPart(UriPartial.Authority)
+        people.GetLeftPart(UriPartial.Authority)
         + "/realms/"
         + value credentials "foreignRealm"
 
@@ -115,7 +115,7 @@ let private wrongIssuerToken issuer (identity: HttpClient) (credentials: JsonEle
         (value credentials "foreignClientSecret")
 
 [<NoEquality; NoComparison>]
-type private ServiceAuthorityScenario =
+type private ServicePeopleScenario =
     {
         Issuer: string
         Identity: HttpClient
@@ -125,7 +125,7 @@ type private ServiceAuthorityScenario =
         First: JsonElement option
     }
 
-let private serviceAuthority (scenario: ServiceAuthorityScenario) =
+let private servicePeople (scenario: ServicePeopleScenario) =
     let issuer = scenario.Issuer
     let identity = scenario.Identity
     let local = scenario.Local
@@ -193,7 +193,7 @@ let qualifyBearers
             raise (CredentialDispatchMismatch(allowed, caseAllowed, mixed))
 
         do!
-            serviceAuthority
+            servicePeople
                 {
                     Issuer = issuer
                     Identity = identity

@@ -62,7 +62,7 @@ export const useCaseWorkPanels = ({
     recorded.clear();
     setEditor({
       ...next,
-      ...(next.kind === "REMINDER_COMPLETE" && returnFocus.current !== null
+      ...(next.kind === "reminder.complete" && returnFocus.current !== null
         ? { anchor: returnFocus.current }
         : {}),
     });
@@ -87,12 +87,12 @@ export const useCaseWorkPanels = ({
         {...(current.screen.regions.find((region) => region.role === "WORK") === undefined
           ? {}
           : { region: current.screen.regions.find((region) => region.role === "WORK")! })}
-        {...(editor === null && current.context.tasks.includes("WORK:UPDATE_WORK")
+        {...(editor === null && current.context.tasks.includes("work.update")
           ? {
               onAssign: () => {
                 open({
                   subject: "WORK",
-                  kind: "UPDATE_WORK",
+                  kind: "work.update",
                   identity: "work",
                   prefill: {
                     "input:responsibleActorAction": "SET",
@@ -103,7 +103,7 @@ export const useCaseWorkPanels = ({
               onSummary: () => {
                 open({
                   subject: "WORK",
-                  kind: "UPDATE_WORK",
+                  kind: "work.update",
                   identity: "work",
                   prefill: { "field:handlingSummary": current.context.seeds.work?.summary ?? "" },
                 });
@@ -137,9 +137,9 @@ export const useCaseWorkPanels = ({
   const nextActions = disclosureAvailable ? (
     <CaseNextActions
       current={current}
-      canCreate={editor === null && current.context.tasks.includes("REMINDER:REMINDER_CREATE")}
+      canCreate={editor === null && current.context.tasks.includes("reminder.create")}
       onCreate={() => {
-        open({ subject: "REMINDER", kind: "REMINDER_CREATE", identity: "create", prefill: {} });
+        open({ subject: "REMINDER", kind: "reminder.create", identity: "create", prefill: {} });
       }}
       onReminder={onReminder}
       state={state}
@@ -183,7 +183,7 @@ export const useCaseWorkPanels = ({
       onAdd={(text) => {
         open({
           subject: "NOTE",
-          kind: "ADD_NOTE",
+          kind: "note.add",
           identity: "add",
           prefill: { "input:noteText": text },
         });
@@ -191,7 +191,7 @@ export const useCaseWorkPanels = ({
       onRemove={(id) => {
         open({
           subject: "NOTE",
-          kind: "REMOVE_NOTE",
+          kind: "note.remove",
           identity: id,
           prefill: {},
           binding: { kind: "NOTE", target, noteId: id },

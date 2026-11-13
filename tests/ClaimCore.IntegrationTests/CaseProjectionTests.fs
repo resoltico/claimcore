@@ -452,7 +452,7 @@ let private roundTrips database =
                 }
                 true
 
-        ClaimCore.TestSupport.StoreFixtures.acceptedAuthority grant
+        ClaimCore.TestSupport.StoreFixtures.acceptedPeople grant
 
         let check expectedState revision =
             task {

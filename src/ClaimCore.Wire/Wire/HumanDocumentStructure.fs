@@ -43,7 +43,7 @@ module internal HumanDocumentStructure =
             let expectedTarget = ActSubject.token (ActKind.subject act)
 
             let confirmationKind =
-                if ActKind.subject act = ActSubject.Authority then
+                if ActKind.subject act = ActSubject.People then
                     "OPERATION"
                 else
                     "CASE_REFERENCE"
@@ -169,10 +169,10 @@ module internal HumanDocumentStructure =
                 | _ -> false
 
             let seedOffered =
-                [ AuthorityKind.Admit; AuthorityKind.Register ]
+                [ PeopleActKind.Admit; PeopleActKind.Register ]
                 |> List.exists (fun kind ->
                     List.contains
-                        (JsonValue.String(TaskId.key (TaskId.Operation(ActKind.Authority kind))))
+                        (JsonValue.String(TaskId.key (TaskId.Operation(ActKind.People kind))))
                         (array "tasks" context))
 
             identity
@@ -183,7 +183,7 @@ module internal HumanDocumentStructure =
                    && (array "views" context).IsEmpty
                    && memberValue "kind" (memberValue "basis" value) =
                        JsonValue.String "UNAVAILABLE")
-            && (not (present "authorityIssuerSeed") || active && seedOffered)
+            && (not (present "peopleIssuerSeed") || active && seedOffered)
 
     let private workViewBindings value context =
         if memberValue "kind" context <> JsonValue.String "WORK_VIEWS" then
@@ -208,7 +208,7 @@ module internal HumanDocumentStructure =
             && (memberValue "disclosure" value = JsonValue.String "CURRENT" || ids.IsEmpty)
 
     let private historyBindings value context =
-        if memberValue "kind" context <> JsonValue.String "AUTHORITY_HISTORY" then
+        if memberValue "kind" context <> JsonValue.String "PEOPLE_HISTORY" then
             true
         else
             let entries = array "entries" context
@@ -268,15 +268,13 @@ module internal HumanDocumentStructure =
             let tasks = array "tasks" context
 
             let allowed =
-                AuthorityKind.all
-                |> List.filter AuthorityKind.targetsExistingActor
-                |> List.map (
-                    ActKind.Authority >> TaskId.Operation >> TaskId.key >> JsonValue.String
-                )
+                PeopleActKind.all
+                |> List.filter PeopleActKind.targetsExistingActor
+                |> List.map (ActKind.People >> TaskId.Operation >> TaskId.key >> JsonValue.String)
 
             let profileTask =
                 JsonValue.String(
-                    TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile))
+                    TaskId.key (TaskId.Operation(ActKind.People PeopleActKind.SetProfile))
                 )
 
             let revocations = array "revocations" context
@@ -290,9 +288,7 @@ module internal HumanDocumentStructure =
                     memberValue "content" region |> array "rows" |> List.map (memberValue "key"))
 
             let revoke =
-                JsonValue.String(
-                    TaskId.key (TaskId.Operation(ActKind.Authority AuthorityKind.Revoke))
-                )
+                JsonValue.String(TaskId.key (TaskId.Operation(ActKind.People PeopleActKind.Revoke)))
 
             let responsible = memberValue "responsibleCases" context
 

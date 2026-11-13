@@ -15,7 +15,7 @@ const readable = caseDocumentInput(
   {
     revision: 4,
     history: "NONE",
-    tasks: ["WORK:UPDATE_WORK", "REMINDER:REMINDER_CREATE"],
+    tasks: ["work.update", "reminder.create"],
     editableInputs: ["field:handlingSummary", "field:responsibleActor"],
     seeds: { ...emptyCaseSeeds, work: { summary: null, responsible: null } },
   },

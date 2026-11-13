@@ -62,7 +62,7 @@ type PlainTextConstraints =
         AllowsLineFeed: bool
     }
 
-/// Typed scalar rules are the Domain authority for adapter-visible field constraints.
+/// Typed scalar rules are the Domain people for adapter-visible field constraints.
 [<RequireQualifiedAccess>]
 type ScalarRule =
     | CalendarDate of CalendarDateScalarRule

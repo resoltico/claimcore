@@ -126,25 +126,25 @@ module RequestCodecs =
 
     let actorProfileInput = CanonicalInputs.actorProfileInput
 
-    let authorityActWith role =
-        CanonicalInputs.authorityActWith role scope
+    let peopleActWith role =
+        CanonicalInputs.peopleActWith role scope
 
-    let authorityAct = authorityActWith (VocabularyCodec.create Role.vocabulary)
+    let peopleAct = peopleActWith (VocabularyCodec.create Role.vocabulary)
 
-    let authorityRequestFields =
+    let peopleRequestFields =
         (record (fun v0 v1 v2 ->
             {
-                AuthorityRequest.OperationId = v0
+                PeopleRequest.OperationId = v0
                 Target = v1
                 Act = v2
             })
-        : Fields<AuthorityRequest, _>)
+        : Fields<PeopleRequest, _>)
         |> field WireMembers.OperationId _.OperationId (uuid)
         |> field WireMembers.Target _.Target (principal)
-        |> field WireMembers.Act _.Act (authorityAct)
+        |> field WireMembers.Act _.Act (peopleAct)
 
-    let authorityRequest =
-        authorityRequestFields |> build |> named RequestSchemas.AuthorityRequest
+    let peopleRequest =
+        peopleRequestFields |> build |> named RequestSchemas.PeopleRequest
 
     let private caseVariant =
         variant
@@ -155,14 +155,14 @@ module RequestCodecs =
             | _ -> None)
             caseRequestFields
 
-    let private authorityVariant =
+    let private peopleVariant =
         variant
-            (ActSubject.token ActSubject.Authority)
-            OperationInput.Authority
+            (ActSubject.token ActSubject.People)
+            OperationInput.People
             (function
-            | OperationInput.Authority value -> Some value
+            | OperationInput.People value -> Some value
             | _ -> None)
-            authorityRequestFields
+            peopleRequestFields
 
     let noteRequestFields =
         (record (fun operation target act ->
@@ -189,7 +189,7 @@ module RequestCodecs =
                     | _ -> None)
                     noteRequestFields
                 caseVariant
-                authorityVariant
+                peopleVariant
                 variant
                     "WORK"
                     OperationInput.Work
@@ -258,7 +258,7 @@ module RequestCodecs =
 
     let private page cursor limit fields = pageWith 512 cursor limit fields
 
-    let private finishRead name endpoint (fields: ReadFields<'request, 'request>) =
+    let private finishEndpoint name endpoint (fields: ReadFields<'request, 'request>) =
         let declaration =
             ReadCatalog.declarations |> List.find (fun value -> value.Endpoint = endpoint)
 
@@ -266,6 +266,9 @@ module RequestCodecs =
             invalidOp "The read codec must follow its declared input contract."
 
         fields.Fields |> build |> named name
+
+    let private finishRead name query fields =
+        finishEndpoint name (TaskId.Query query) fields
 
     let caseGetRequest =
         (read (fun reference -> { CaseGetRequest.Target = reference })
@@ -311,7 +314,7 @@ module RequestCodecs =
                 |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
         }
         |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.ActorListRequest QueryTaskId.AuthorityList
+        |> finishRead RequestSchemas.ActorListRequest QueryTaskId.PeopleList
 
     let accessRequestsRequest =
         (read (fun cursor limit ->
@@ -321,7 +324,7 @@ module RequestCodecs =
             })
         : ReadFields<PageRequest, _>)
         |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AccessRequestsRequest QueryTaskId.AuthorityRequests
+        |> finishRead RequestSchemas.AccessRequestsRequest QueryTaskId.PeopleRequests
 
     let accessRequestDismissRequest =
         let payload: ReadFields<PrincipalInput, PrincipalInput> =
@@ -341,9 +344,9 @@ module RequestCodecs =
             }
 
         payload
-        |> finishRead
+        |> finishEndpoint
             RequestSchemas.AccessRequestDismissRequest
-            QueryTaskId.AuthorityRequestsDismiss
+            (TaskId.Command CommandTaskId.PeopleRequestsDismiss)
 
     let private optionalChoices name get vocabulary fields =
         fields
@@ -478,21 +481,21 @@ module RequestCodecs =
         : ReadFields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.GrantsRequest QueryTaskId.AuthorityGrants
+        |> finishRead RequestSchemas.GrantsRequest QueryTaskId.PeopleGrants
 
     let empty = read () |> finishRead RequestSchemas.Empty QueryTaskId.Context
 
-    let authorityHistoryRequest =
+    let peopleHistoryRequest =
         (read (fun actor cursor limit ->
             {
-                AuthorityHistoryRequest.TargetActorId = actor
+                PeopleHistoryRequest.TargetActorId = actor
                 AfterCursor = cursor
                 Limit = limit
             })
-        : ReadFields<AuthorityHistoryRequest, _>)
+        : ReadFields<PeopleHistoryRequest, _>)
         |> actorFilter _.TargetActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AuthorityHistoryRequest QueryTaskId.AuthorityHistory
+        |> finishRead RequestSchemas.PeopleHistoryRequest QueryTaskId.PeopleHistory
 
     let reminderListRequest =
         (record (fun target state view due assignment search cursor limit inactive ->

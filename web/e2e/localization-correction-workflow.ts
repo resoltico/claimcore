@@ -68,12 +68,12 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     },
   };
   const steps: SeedStep[] = [
-    { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
-    { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
+    { act: { kind: "case.open", values: setupRegistration }, fields: opened },
+    { act: { kind: "case.decide", values: setupDecision }, fields: decided },
     {
       operationId: paymentId,
       act: {
-        kind: "RECORD_PAYMENT",
+        kind: "case.recordPayment",
         values: { paymentDate: "2026-09-05", paidAmount: "300.25", paidCurrency: "EUR" },
       },
       fields: paid,
@@ -81,7 +81,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   ];
   if (status === "CLOSED") {
     steps.push({
-      act: { kind: "CLOSE" },
+      act: { kind: "case.close" },
       fields: { ...paid, status: "CLOSED" },
     });
   }
@@ -133,7 +133,7 @@ const acceptSetup = async (
   expect(receipt.subject.revision).toBe(revision);
   const recordedFields = (() => {
     switch (request.act.kind) {
-      case "OPEN":
+      case "case.open":
         return [
           "incidentDate",
           "incidentNotificationDate",
@@ -146,11 +146,11 @@ const acceptSetup = async (
           "claimedAmount",
           "claimedCurrency",
         ];
-      case "DECIDE":
+      case "case.decide":
         return ["paymentDecisionDate", "payableAmount", "payableCurrency"];
-      case "RECORD_PAYMENT":
+      case "case.recordPayment":
         return ["paymentDate", "paidAmount", "paidCurrency"];
-      case "CLOSE":
+      case "case.close":
         return [];
       default:
         throw new Error("Unexpected paid-case setup act");
@@ -161,7 +161,7 @@ const acceptSetup = async (
     recordedFields,
     state: { kind: "ACTIVE", fields },
     payment:
-      request.act.kind === "RECORD_PAYMENT"
+      request.act.kind === "case.recordPayment"
         ? {
             kind: "RECORDED",
             entry: {
@@ -212,7 +212,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
-  await startAct(page, "CORRECT", language);
+  await startAct(page, "case.correct", language);
   for (const group of ["registration", "decision"] as const) {
     await chooseChoice(page, `group:${group}`, modes[group]);
   }

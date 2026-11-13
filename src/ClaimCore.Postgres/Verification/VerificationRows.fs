@@ -202,7 +202,7 @@ module internal VerificationRows =
                     |> Result.map (fun () -> List.rev workIndexes))
         }
 
-    let authority connection expected sources token =
+    let people connection expected sources token =
         task {
             let! actors =
                 fold
@@ -212,7 +212,7 @@ module internal VerificationRows =
                         Read = fun reader () -> DatabaseSession.row reader |> Projections.actorRow
                         Append = ProjectionVerification.actor
                         Initial = Map.empty
-                        Finding = VerificationFinding.AuthorityProjection
+                        Finding = VerificationFinding.PeopleProjection
                     }
                     token
 
@@ -248,17 +248,15 @@ module internal VerificationRows =
                                         |> Option.defaultValue Scope.Installation
 
                                     if Map.tryFind (id, role, scope) sources <> Some source then
-                                        Error(
-                                            divergence None VerificationFinding.AuthorityProjection
-                                        )
+                                        Error(divergence None VerificationFinding.PeopleProjection)
                                     else
                                         ProjectionVerification.grant actors (id, role, caseId)
                             Initial = actors
-                            Finding = VerificationFinding.AuthorityProjection
+                            Finding = VerificationFinding.PeopleProjection
                         }
                         token
 
-                match actual |> Result.bind (ProjectionVerification.finishAuthority expected) with
+                match actual |> Result.bind (ProjectionVerification.finishPeople expected) with
                 | Error error -> return Error error
                 | Ok() ->
                     return!
@@ -278,7 +276,7 @@ module internal VerificationRows =
                                     (fun () row ->
                                         ProjectionVerification.actorProfileSearch expected row)
                                 Initial = ()
-                                Finding = VerificationFinding.AuthorityProfileProjection
+                                Finding = VerificationFinding.PeopleProfileProjection
                             }
                             token
         }

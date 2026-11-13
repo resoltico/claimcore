@@ -6,7 +6,7 @@ const context = {
   kind: "NOTE_PAGE",
   caseId: id,
   nextCursor: "next",
-  tasks: ["NOTE:REMOVE_NOTE"],
+  tasks: ["note.remove"],
   notes: [handle],
 };
 const document = {
@@ -58,7 +58,7 @@ it("refuses missing, duplicate, unoffered and tightened note controls", () => {
       false,
     );
   }
-  for (const tasks of [[], ["CASE:ERASE"], ["NOTE:REMOVE_NOTE", "NOTE:REMOVE_NOTE"]]) {
+  for (const tasks of [[], ["case.erase"], ["note.remove", "note.remove"]]) {
     expect(isResponse("case.notes", reply({ ...document, context: { ...context, tasks } }))).toBe(
       false,
     );

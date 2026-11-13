@@ -195,9 +195,9 @@ module internal Projections =
         (Vocabulary.tryParse Role.vocabulary) (required<string> 0 row)
         |> Option.defaultWith (fun () -> raise (RecordCorruptException "Invalid stored role."))
 
-    let private authorityRows principal (rows: obj array list) =
+    let private peopleRows principal (rows: obj array list) =
         match rows with
-        | [] -> AuthorityView.empty
+        | [] -> AccessView.empty
         | first :: _ ->
             let grants: ActorGrant list =
                 rows
@@ -219,7 +219,7 @@ module internal Projections =
                                 |> Option.defaultValue Scope.Installation
                         }))
 
-            let stored: ActorAuthority =
+            let stored: ActorAccess =
                 {
                     Actor =
                         {
@@ -231,7 +231,7 @@ module internal Projections =
                     Grants = grants
                 }
 
-            AuthorityView.ofActor (Some stored)
+            AccessView.ofActor (Some stored)
 
     let private actorQuery columns =
         $"SELECT {columns} FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
@@ -258,7 +258,7 @@ module internal Projections =
                     (actorParameters principal caseIds)
                     token
 
-            return authorityRows principal rows
+            return peopleRows principal rows
         }
 
     let private globalActorQuery principal =
@@ -275,18 +275,18 @@ module internal Projections =
                 box ((Vocabulary.token PrincipalKind.vocabulary) kind)
                 box issuer
                 box subject
-                box (Authority.readRoles principal |> List.map Role.token |> List.toArray)
-                box (Authority.invalidRoles principal |> List.map Role.token |> List.toArray)
+                box (Access.readRoles principal |> List.map Role.token |> List.toArray)
+                box (Access.invalidRoles principal |> List.map Role.token |> List.toArray)
             |]
 
         sql, parameters
 
-    let private globalAuthority principal rows =
+    let private globalPeople principal rows =
         let actorRows =
             rows
             |> List.filter (fun row -> DatabaseSession.optional<Guid> 0 row |> Option.isSome)
 
-        let view = authorityRows principal actorRows
+        let view = peopleRows principal actorRows
 
         match actorRows with
         | [] -> view
@@ -301,7 +301,7 @@ module internal Projections =
         task {
             let sql, parameters = globalActorQuery principal
             let! rows = DatabaseSession.rows connection sql parameters token
-            return globalAuthority principal rows
+            return globalPeople principal rows
         }
 
     // Both directory pages and own context summarize raw assignments, independently of eligibility.
@@ -355,7 +355,7 @@ module internal Projections =
 
             return
                 {
-                    GlobalReadFacts.Authority = globalAuthority principal rows
+                    GlobalReadFacts.People = globalPeople principal rows
                     AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 10 rows.Head)
                     Maintenance = mode
                 }

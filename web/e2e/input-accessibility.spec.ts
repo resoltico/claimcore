@@ -2,7 +2,7 @@ import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView, chooseChoice } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
-import { syntheticPrincipals } from "./authority-setup";
+import { syntheticPrincipals } from "./people-setup";
 import { selectLanguage, ui, trackForegroundRequests } from "./localization-support";
 import { createPresenter } from "../src/presentation/presenter";
 import { actorName } from "../src/presentation/actorName";
@@ -37,17 +37,20 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
   await expect(control).toHaveAttribute("aria-invalid", "true");
   await expect(dialog.locator("button[data-confirm-operation]")).toHaveCount(0);
 };
-const openAuthority = async (page: Page, language: "en" | "lv" | "ar") => {
+const openPeople = async (page: Page, language: "en" | "lv" | "ar") => {
   await openAuthenticated(page);
   await goToView(page, "people");
   await selectLanguage(page, language);
 };
 const openAdmission = async (page: Page, language: "en" | "lv" | "ar") => {
   await page
-    .getByRole("button", { name: ui(language, "act.ADMIT.label"), exact: true })
+    .getByRole("button", { name: ui(language, "task.people.admit.label"), exact: true })
     .first()
     .click();
-  const dialog = page.getByRole("dialog", { name: ui(language, "act.ADMIT.label"), exact: true });
+  const dialog = page.getByRole("dialog", {
+    name: ui(language, "task.people.admit.label"),
+    exact: true,
+  });
   await dialog
     .locator('[name="input:profile.displayName"]')
     .fill("Authored accessibility candidate");
@@ -64,11 +67,11 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "AUTHORITY",
+      kind: "PEOPLE",
       operationId: mintOperationId(),
       target: { kind: "HUMAN", issuer, subject },
       act: {
-        kind: "ADMIT",
+        kind: "people.admit",
         profile: { displayName: "Authored accessibility candidate", contact: null },
         grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
       },
@@ -91,7 +94,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   test(`seeded issuer and subject refusals preserve exact accessible names and keyboard focus in ${language}`, async ({
     page,
   }) => {
-    await openAuthority(page, language);
+    await openPeople(page, language);
     const requests = trackForegroundRequests(page);
     const source = await syntheticPrincipals();
     const dialog = await openAdmission(page, language);
@@ -129,7 +132,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   test(`case-scoped grant and revoke references retain shared hints and refusal focus in ${language}`, async ({
     page,
   }) => {
-    await openAuthority(page, language);
+    await openPeople(page, language);
     const requests = trackForegroundRequests(page);
     const own = await browserRequest(page, "/api/context", {
       method: "POST",
@@ -156,17 +159,17 @@ for (const language of ["en", "lv", "ar"] as const) {
     });
     const person = page.getByRole("dialog", { name: actorName(p, requester.self), exact: true });
     await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
-    for (const kind of ["GRANT", "REVOKE"] as const) {
+    for (const kind of ["people.grant", "people.revoke"] as const) {
       await expect(person).toBeVisible();
       const name = p.text("ui.actDescription", {
-        label: p.authorityLabel(kind),
-        meaning: p.authorityMeaning(kind),
+        label: p.peopleLabel(kind),
+        meaning: p.peopleMeaning(kind),
       });
       const action = person.getByRole("button", { name, exact: true });
-      await expect(action).toHaveText(ui(language, `act.${kind}.label`));
+      await expect(action).toHaveText(ui(language, `task.${kind}.label`));
       await action.click();
       const dialog = page.getByRole("dialog", {
-        name: ui(language, `act.${kind}.label`),
+        name: ui(language, `task.${kind}.label`),
         exact: true,
       });
       await expect(dialog.locator('[name="input:principal.issuer"]')).toHaveCount(0);
@@ -187,7 +190,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expect(reference).toHaveAccessibleName(
         inputMessage(language, "field.caseReference.label"),
       );
-      if (kind === "GRANT") {
+      if (kind === "people.grant") {
         await dialog
           .getByRole("button", { name: ui(language, "ui.close"), exact: true })
           .first()

@@ -6,10 +6,10 @@ import { current as source } from "../../../support/operation-form.fixtures";
 import { workBasis } from "../../../support/inputs";
 import { isResponseFor } from "../../../../src/protocol/client";
 import type { CurrentCase } from "../../../../src/protocol/types";
-import type { HumanReadDocument_casePayments, Region } from "@contracts/client";
+import type { HumanReadDocument_case_payments, Region } from "@contracts/client";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
 
-type Handle = HumanReadDocument_casePayments["context"]["payments"][number];
+type Handle = HumanReadDocument_case_payments["context"]["payments"][number];
 const ids = [
   "10000000-0000-7000-8000-000000000101",
   "10000000-0000-7000-8000-000000000102",
@@ -55,7 +55,7 @@ const region = table(preview, "EUR", 1);
 const current: CurrentCase = {
   ...source,
   screen: { regions: [region] },
-  context: { ...source.context, revision: 7, tasks: ["CASE:REMOVE_PAYMENT"], payments: preview },
+  context: { ...source.context, revision: 7, tasks: ["case.removePayment"], payments: preview },
 };
 const reply = (
   handles: ReadonlyArray<Handle>,
@@ -63,7 +63,7 @@ const reply = (
   revision = 7,
   disclosure: "CURRENT" | "ERASED" = "CURRENT",
 ) => {
-  const document: HumanReadDocument_casePayments = {
+  const document: HumanReadDocument_case_payments = {
     screen: { regions: disclosure === "ERASED" ? [] : [table(handles, "USD", 41)] },
     context: {
       kind: "PAYMENT_PAGE",
@@ -123,7 +123,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
     cursor: "core-payment-cursor",
   });
   await user.click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
-  expect(onAct).toHaveBeenCalledWith("REMOVE_PAYMENT", older);
+  expect(onAct).toHaveBeenCalledWith("case.removePayment", older);
   expect(onChanged).not.toHaveBeenCalled();
 });
 

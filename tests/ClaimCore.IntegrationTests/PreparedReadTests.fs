@@ -78,15 +78,15 @@ let private freshness (database: PostgresFixture.Database) =
             let! added =
                 Service.execute
                     admin
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id database.Fixture operation)
                             who
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 
-            acceptedAuthority added
+            acceptedPeople added
 
         for operation, who in [ 120, human; 121, service ] do
             let! added =
@@ -100,7 +100,7 @@ let private freshness (database: PostgresFixture.Database) =
                     }
                     true
 
-            acceptedAuthority added
+            acceptedPeople added
 
         let facts who =
             database.Fixture.Store.Read
@@ -114,10 +114,10 @@ let private freshness (database: PostgresFixture.Database) =
                 [ database.Fixture.Owner, false; human, true; service, true; roleless, false ] do
                 let! result = facts who
                 let result = required result
-                Expect.isSome result.Authority.Actor "Zero-grant and service actors remain present"
+                Expect.isSome result.People.Actor "Zero-grant and service actors remain present"
 
                 Expect.equal
-                    result.Authority.HasScopedCases
+                    result.People.HasScopedCases
                     expected
                     "Prepared global facts bind the current principal and role arrays"
 
@@ -129,8 +129,8 @@ let private freshness (database: PostgresFixture.Database) =
         let! absent = facts unknown
 
         Expect.equal
-            (required absent).Authority
-            AuthorityView.empty
+            (required absent).People
+            AccessView.empty
             "An absent actor does not become a NULL pseudo-actor"
 
         let! planned =
@@ -199,21 +199,21 @@ let private freshness (database: PostgresFixture.Database) =
         let! disabled =
             Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest (id database.Fixture 140) human AuthorityAct.Disable
+                (OperationInput.People(
+                    peopleRequest (id database.Fixture 140) human PeopleAct.Disable
                 ))
                 token
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
         let! off = facts human
 
         Expect.equal
-            ((required off).Authority.Actor |> Option.map _.Enabled)
+            ((required off).People.Actor |> Option.map _.Enabled)
             (Some false)
             "Prepared execution observes a post-cache disable"
 
         Expect.isTrue
-            (required off).Authority.HasScopedCases
+            (required off).People.HasScopedCases
             "Scoped presence is still a fact for a disabled actor"
 
         let! revoked =
@@ -227,11 +227,11 @@ let private freshness (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! removed = facts human
 
         Expect.isFalse
-            (required removed).Authority.HasScopedCases
+            (required removed).People.HasScopedCases
             "Prepared execution observes a post-cache grant removal"
 
         use! pooled = database.RuntimeSource.OpenConnectionAsync()
@@ -313,7 +313,7 @@ let private multiplexing (database: PostgresFixture.Database) =
         let! facts = Projections.globalReadFacts connection database.Fixture.Owner token
 
         Expect.isSome
-            facts.Authority.Actor
+            facts.People.Actor
             "An existing multiplexed configuration retains unprepared global reads"
 
         let! work = WorkStorage.summaries connection [ caseId ] (DateOnly(2026, 11, 2)) token

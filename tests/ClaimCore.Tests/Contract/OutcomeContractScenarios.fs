@@ -166,13 +166,13 @@ let internal queryCodecs () =
         (RepresentationReply.Data
             {
                 OperationReply.OperationId = id
-                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(authority, true))
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, true))
             })
 
     |> ignore
 
     admitted
-        Api.authorityList.Output
+        Api.peopleList.Output
         (RepresentationReply.Data(
             Outcome.Succeeded
                 {
@@ -186,7 +186,7 @@ let internal queryCodecs () =
 
 
 let internal executeOutcomes () =
-    for receiptValue in [ receipt; authority ] do
+    for receiptValue in [ receipt; people ] do
         for outcome, exit in
             [
                 ExecuteResult.Accepted(receiptValue), 0
@@ -327,7 +327,7 @@ let internal diagnostics () =
     for value, expectedCode in
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
-            (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
+            (ClaimCore.Domain.Refusal.People PeopleRefusal.LastOwner), "LAST_OWNER"
             (ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)),
             "NOT_AUTHORIZED"
             (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),

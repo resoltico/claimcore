@@ -95,7 +95,7 @@ type NoteEntryMetadata =
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
-    | Authority of targetActorId: ActorId * act: AuthorityKind
+    | People of targetActorId: ActorId * act: PeopleActKind
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
     | Note of NoteEntryMetadata
@@ -139,19 +139,19 @@ type StoredEffect =
         match this.Descriptor with
         | EffectDescriptor.Case(id, revision, act, _, _) ->
             EntryTarget.Case(id, revision, act, businessDate ())
-        | EffectDescriptor.Authority(id, change) ->
+        | EffectDescriptor.People(id, change) ->
             let act =
                 match change with
-                | AuthorityEffectDescriptor.ProvisionOwner _ -> AuthorityKind.ProvisionOwner
-                | AuthorityEffectDescriptor.Register _ -> AuthorityKind.Register
-                | AuthorityEffectDescriptor.SetProfile _ -> AuthorityKind.SetProfile
-                | AuthorityEffectDescriptor.EraseProfile -> AuthorityKind.EraseProfile
-                | AuthorityEffectDescriptor.Grant _ -> AuthorityKind.Grant
-                | AuthorityEffectDescriptor.Revoke _ -> AuthorityKind.Revoke
-                | AuthorityEffectDescriptor.Enable -> AuthorityKind.Enable
-                | AuthorityEffectDescriptor.Disable -> AuthorityKind.Disable
+                | PeopleEffectDescriptor.ProvisionOwner _ -> PeopleActKind.ProvisionOwner
+                | PeopleEffectDescriptor.Register _ -> PeopleActKind.Register
+                | PeopleEffectDescriptor.SetProfile _ -> PeopleActKind.SetProfile
+                | PeopleEffectDescriptor.EraseProfile -> PeopleActKind.EraseProfile
+                | PeopleEffectDescriptor.Grant _ -> PeopleActKind.Grant
+                | PeopleEffectDescriptor.Revoke _ -> PeopleActKind.Revoke
+                | PeopleEffectDescriptor.Enable -> PeopleActKind.Enable
+                | PeopleEffectDescriptor.Disable -> PeopleActKind.Disable
 
-            EntryTarget.Authority(id, act)
+            EntryTarget.People(id, act)
         | EffectDescriptor.Work(parent, revision) ->
             EntryTarget.Work
                 {
@@ -339,7 +339,7 @@ type ReceiptCurrent =
         accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
     | Note of parent: StoredCase option * current: Note option
-    | Authority of target: ActorRef option
+    | People of target: ActorRef option
 
 [<RequireQualifiedAccess>]
 type CaseProjection =
@@ -352,7 +352,7 @@ type CaseProjection =
     | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
 
 [<RequireQualifiedAccess>]
-type AuthorityProjection =
+type PeopleProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
     | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: EffectPosition
     | SetProfile of actorId: ActorId * profile: ActorProfile
@@ -361,7 +361,7 @@ type AuthorityProjection =
     | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: EffectPosition
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
 
-type AuthorityQuery =
+type AccessQuery =
     {
         Principal: PrincipalKey
         CaseId: CaseId option
@@ -393,7 +393,7 @@ type AssigneePageQuery =
         Limit: int
     }
 
-type AuthorityHistoryPageQuery =
+type PeopleHistoryPageQuery =
     {
         TargetActorId: ActorId option
         BeforePosition: EffectPosition option
@@ -470,7 +470,7 @@ type TimelinePageQuery =
 /// Independently owned global facts observed together by read consumers that require both.
 type GlobalReadFacts =
     {
-        Authority: AuthorityView
+        People: AccessView
         AssignedRoles: ActorRoleSummary list
         Maintenance: RegisterMaintenance
     }
@@ -508,8 +508,8 @@ type IReadTx =
     abstract ExpiredBefore: unit -> Task<DateTimeOffset option>
     abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract GlobalReadFacts: PrincipalKey -> Task<GlobalReadFacts>
-    abstract Authority: AuthorityQuery -> Task<AuthorityView>
-    abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
+    abstract Access: AccessQuery -> Task<AccessView>
+    abstract AccessCases: PrincipalKey * CaseId list -> Task<AccessView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
 
@@ -537,8 +537,7 @@ type IReadTx =
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract AuthorityHistoryPage:
-        AuthorityHistoryPageQuery -> Task<Page<StoredEffect, EffectPosition>>
+    abstract PeopleHistoryPage: PeopleHistoryPageQuery -> Task<Page<StoredEffect, EffectPosition>>
 
     abstract AccessRequestPage:
         AccessRequestPageQuery -> Task<Page<AccessRequest, AccessRequestPosition>>
@@ -562,7 +561,7 @@ type IWriteTx =
     abstract Append: RetainedOperation -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
-    abstract ProjectAuthority: AuthorityProjection -> Task<unit>
+    abstract ProjectPeople: PeopleProjection -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
 
 [<NoEquality; NoComparison>]
@@ -580,7 +579,7 @@ type WriteOperation<'result> =
     }
 
 /// Context cache writes are non-ledger facts. Implementations serialize the principal before
-/// taking the authority snapshot and refresh a request only when that snapshot has no actor.
+/// taking the people snapshot and refresh a request only when that snapshot has no actor.
 [<NoComparison>]
 type ContextQuery =
     {

@@ -18,7 +18,7 @@ import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/reply.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
+  tasks: ["case.amendRegistration", "case.correct", "case.close"],
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   history: "FULL",
@@ -49,7 +49,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   render(
     editor({
       current,
-      initialAct: "CLOSE",
+      initialAct: "case.close",
       onCommitted: committed,
     }),
   );
@@ -79,7 +79,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   );
   expect(committed).toHaveBeenCalledOnce();
 });
-it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
+it.each(["case.amendRegistration", "case.correct"] as const)(
   "reflects reducer editability during preparation, review, submission and uncertainty for %s",
   async (act) => {
     const user = userEvent.setup();
@@ -94,7 +94,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
         initialAct: act,
       }),
     );
-    if (act === "CORRECT") {
+    if (act === "case.correct") {
       const mode = document.querySelector<HTMLElement>('fieldset[id="field-group:registration"]')!;
       await chooseOption(user, mode, "UPDATE");
     }

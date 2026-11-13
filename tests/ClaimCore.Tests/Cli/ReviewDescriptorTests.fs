@@ -256,7 +256,7 @@ let reviews =
                         "First\nSecond"
                         "Only the narrative kind admits LF layout")
             testCase
-                "withheld authority target is explicit and never given an erased profile name"
+                "withheld people target is explicit and never given an erased profile name"
                 (fun () ->
                     let identity = CaseFixtures.actorId CliReplyFixtures.id
 
@@ -264,14 +264,14 @@ let reviews =
                         { CliReplyFixtures.receipt with
                             RecordedBy = account
                             Subject =
-                                ReceiptSubject.Authority
+                                ReceiptSubject.People
                                     {
-                                        Act = AuthorityKind.Disable
-                                        TargetActor = AuthorityTargetDisclosure.Withheld identity
+                                        Act = PeopleActKind.Disable
+                                        TargetActor = PeopleTargetDisclosure.Withheld identity
                                         Effects =
                                             [
                                                 {
-                                                    Act = AuthorityKind.Disable
+                                                    Act = PeopleActKind.Disable
                                                     Id =
                                                         EffectId.create
                                                             CliReplyFixtures.receipt.OperationId

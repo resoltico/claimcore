@@ -11,7 +11,7 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.HostSecurity
 
-/// Connect to this listener while TLS SNI and HTTP authority retain the public origin.
+/// Connect to this listener while TLS SNI and HTTP people retain the public origin.
 module internal WebProbeTransport =
     let private connect (binding: WebBinding) (_: SocketsHttpConnectionContext) ct =
         ValueTask<Stream>(

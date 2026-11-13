@@ -11,22 +11,22 @@ type internal CaseFacts =
         ObservedAt: DateTimeOffset
         ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
-        Actor: AuthorityView
-        Assignee: AuthorityView option
+        Actor: AccessView
+        Assignee: AccessView option
         ExistingOperation: RetainedOperation option
         Case: StoredCase option
         PaymentContext: CasePaymentContext
     }
 
 [<NoComparison>]
-type internal AuthorityExecutionFacts =
+type internal PeopleExecutionFacts =
     {
         ObservedAt: DateTimeOffset
         ExpiredBefore: DateTimeOffset option
         Maintenance: RegisterMaintenance
-        Actor: AuthorityView
+        Actor: AccessView
         ExistingOperation: RetainedOperation option
-        Target: AuthorityView
+        Target: AccessView
         TargetRoles: Map<ActorId, ActorRoleSummary list>
         TargetCases: Map<GrantTarget, StoredCase>
         EnabledHumanOwners: int option
@@ -42,18 +42,18 @@ module internal ExecutionFacts =
         | Some(EntryTarget.Note subject) -> Some subject.CaseId
         | _ -> None
 
-    let authority (tx: IReadTx) principal caseIds =
+    let people (tx: IReadTx) principal caseIds =
         task {
             match List.distinct caseIds with
             | [] ->
                 return!
-                    tx.Authority(
+                    tx.Access(
                         {
-                            AuthorityQuery.Principal = principal
+                            AccessQuery.Principal = principal
                             CaseId = None
                         }
                     )
-            | ids -> return! tx.AuthorityCases(principal, ids)
+            | ids -> return! tx.AccessCases(principal, ids)
         }
 
     let findCase (tx: IReadTx) =
@@ -81,7 +81,7 @@ module internal ExecutionFacts =
             let! frontier = tx.ExpiredBefore()
 
             let! actor =
-                authority
+                people
                     tx
                     principal
                     ((record |> Option.map _.CaseId |> Option.toList)
@@ -91,7 +91,7 @@ module internal ExecutionFacts =
                 task {
                     match record, paymentAct with
                     | Some current, Some act when
-                        Authority.canAct principal actor (Scope.Case current.CaseId) act
+                        Access.canAct principal actor (Scope.Case current.CaseId) act
                         ->
                         match act with
                         | CaseAct.RecordPayment _ ->
@@ -171,27 +171,27 @@ module internal ExecutionFacts =
             let! maintenance = tx.Maintenance()
             let! frontier = tx.ExpiredBefore()
             let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
-            let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
-            let! target = authority tx target ids
+            let! actor = people tx principal (ids @ (operationCase existing |> Option.toList))
+            let! target = people tx target ids
 
             let! targetRoles =
                 tx.ActorRoleSummaries(target.Actor |> Option.map _.ActorId |> Option.toList)
 
             let! owners =
-                if List.contains AuthorityFact.EnabledHumanOwners needed then
+                if List.contains PeopleFact.EnabledHumanOwners needed then
                     task { let! count = tx.EnabledHumanOwners() in return Some count }
                 else
                     System.Threading.Tasks.Task.FromResult None
 
             let! actors =
-                if List.contains AuthorityFact.ActorCount needed then
+                if List.contains PeopleFact.ActorCount needed then
                     task { let! count = tx.ActorCount() in return Some count }
                 else
                     System.Threading.Tasks.Task.FromResult None
 
             return
                 {
-                    AuthorityExecutionFacts.ObservedAt = tx.ObservedAt
+                    PeopleExecutionFacts.ObservedAt = tx.ObservedAt
                     ExpiredBefore = frontier
                     Maintenance = maintenance
                     Actor = actor
@@ -205,7 +205,7 @@ module internal ExecutionFacts =
         }
 
     let operationActor (tx: IReadTx) principal entry =
-        authority tx principal (operationCase entry |> Option.toList)
+        people tx principal (operationCase entry |> Option.toList)
 
     let receiptCurrent (tx: IReadTx) entry =
         task {
@@ -239,7 +239,7 @@ module internal ExecutionFacts =
                         let! note = tx.FindNote subject.NoteId
                         return ReceiptCurrent.Note(record, note |> Option.map _.Note)
                     | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
-                    | _ -> return ReceiptCurrent.Authority None
+                    | _ -> return ReceiptCurrent.People None
                 }
 
             return current

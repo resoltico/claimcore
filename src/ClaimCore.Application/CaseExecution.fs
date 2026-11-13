@@ -61,7 +61,7 @@ module internal CaseExecution =
     let authorize principal actor capability (record: StoredCase option) =
         record
         |> Option.exists (fun value ->
-            Authority.can principal actor capability (Scope.Case value.CaseId))
+            Access.can principal actor capability (Scope.Case value.CaseId))
 
     let current _installationId (record: StoredCase) =
         Case.ofAccepted record.Snapshot
@@ -85,19 +85,19 @@ module internal CaseExecution =
 
     let permissionFor principal actor act (record: StoredCase option) =
         if CaseAct.kind act = CaseActKind.Open then
-            if Authority.canAct principal actor Scope.Installation act then
+            if Access.canAct principal actor Scope.Installation act then
                 Ok()
             else
                 Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             match record with
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-            | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) act -> Ok()
+            | Some value when Access.canAct principal actor (Scope.Case value.CaseId) act -> Ok()
             | Some value when
-                Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
+                Access.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
                 let required =
-                    Authority.missingCapabilities principal actor (Scope.Case value.CaseId) act
+                    Access.missingCapabilities principal actor (Scope.Case value.CaseId) act
                     |> List.tryHead
                     |> Option.defaultWith (fun () ->
                         invalidOp "A readable denied act has a missing capability.")

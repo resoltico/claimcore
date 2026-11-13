@@ -15,7 +15,7 @@ export const closeReview: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "CASE:CLOSE",
+      task: "case.close",
       target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 4 },
       inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
       consequence: "ROUTINE",
@@ -45,7 +45,7 @@ export const openReview: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "CASE:OPEN",
+      task: "case.open",
       target: {
         kind: "CASE",
         caseId: "10000000-0000-7000-8000-000000000001",

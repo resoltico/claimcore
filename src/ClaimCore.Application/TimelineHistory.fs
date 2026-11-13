@@ -34,7 +34,7 @@ module internal TimelineHistory =
                     reminder.NextReminderId |> Option.map (fun id -> id, Revision.first)
                 )
             )
-        | EntryTarget.Authority _ -> Error CoreFault.StoreIntegrityError
+        | EntryTarget.People _ -> Error CoreFault.StoreIntegrityError
 
     let belongs parent (filter: TimelineFilter option) (entry: StoredEffect) =
         match entry.Subject with
@@ -46,7 +46,7 @@ module internal TimelineHistory =
             reminder.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Work)
         | EntryTarget.Note note ->
             note.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Notes)
-        | EntryTarget.Authority _ -> false
+        | EntryTarget.People _ -> false
 
     let inRange (range: ChangeRange) subject =
         let revision value =
@@ -83,7 +83,7 @@ module internal TimelineHistory =
         | EntryContent.Work _
         | EntryContent.Note _
         | EntryContent.Reminder _ -> not erased
-        | EntryContent.Authority _
+        | EntryContent.People _
         | EntryContent.ErasedProfile -> false
 
     let validate (services: ServiceContext) entries =
@@ -164,9 +164,8 @@ module internal TimelineHistory =
                                              | EntryTarget.Work value -> value.BusinessDate
                                              | EntryTarget.Reminder value -> value.BusinessDate
                                              | EntryTarget.Note value -> value.BusinessDate
-                                             | EntryTarget.Authority _ ->
-                                                 invalidOp
-                                                     "Case history excludes authority entries.")
+                                             | EntryTarget.People _ ->
+                                                 invalidOp "Case history excludes people entries.")
                                             actors
                                             content
                                             before

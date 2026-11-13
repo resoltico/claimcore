@@ -36,10 +36,10 @@ it.each(["en", "lv", "ar"] as const)(
   async (language) => {
     preferences(language);
     const user = userEvent.setup();
-    const values = initialOperationValues("AUTHORITY", "REGISTER", null);
+    const values = initialOperationValues("PEOPLE", "people.register", null);
     const props = {
-      binding: { kind: "AUTHORITY" as const },
-      task: operationEntry({ subject: "AUTHORITY", kind: "REGISTER" }),
+      binding: { kind: "PEOPLE" as const },
+      task: operationEntry({ subject: "PEOPLE", kind: "people.register" }),
       values,
       current: null,
       disabled: false,
@@ -81,8 +81,8 @@ it.each(["en", "lv", "ar"] as const)(
           target: { kind: "REFERENCE", caseReference: "CASE-1" },
           revision: 1,
         }}
-        task={operationEntry({ subject: "CASE", kind: "CORRECT" })}
-        values={initialOperationValues("CASE", "CORRECT", null)}
+        task={operationEntry({ subject: "CASE", kind: "case.correct" })}
+        values={initialOperationValues("CASE", "case.correct", null)}
         current={null}
         disabled={false}
         errors={{}}

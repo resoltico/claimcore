@@ -199,11 +199,7 @@ let private coreUnknown (fixture: PublishedFixture.Fixture) =
     let source, operationId, reference = authored fixture
     let intercepted = fixture.ArmCommitReplyLoss()
 
-    verb
-        fixture
-        (interactiveEnvironment fixture "synthetic-owner" "valid")
-        [ "authority"; "list" ]
-        0
+    verb fixture (interactiveEnvironment fixture "synthetic-owner" "valid") [ "people"; "list" ] 0
     |> require "SUCCEEDED"
     |> ignore
 

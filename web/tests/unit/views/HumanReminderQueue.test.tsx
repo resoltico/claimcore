@@ -5,7 +5,7 @@ import { render, screen, waitFor, TestSession } from "../../support/presentation
 import { ReminderQueueWork } from "../../../src/views/work/ReminderQueueWork";
 import {
   isRequest,
-  type HumanReadDocument_caseGet,
+  type HumanReadDocument_case_get,
   type HumanReview,
   type HumanReceiptDocument,
 } from "@contracts/client";
@@ -20,7 +20,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const current: HumanReadDocument_caseGet = {
+const current: HumanReadDocument_case_get = {
   screen: { regions: [] },
   context: {
     kind: "CASE",
@@ -45,7 +45,7 @@ const review: HumanReview = {
     screen: { regions: [] },
     context: {
       kind: "REVIEW",
-      task: "REMINDER:REMINDER_COMPLETE",
+      task: "reminder.complete",
       target: { kind: "REMINDER", caseId, existing: { reminderId, revision: 9 } },
       inputs: [
         "input:operationId",
@@ -119,7 +119,7 @@ const page = {
         caseId,
         reminderId,
         revision: 9,
-        tasks: ["REMINDER:REMINDER_COMPLETE"],
+        tasks: ["reminder.complete"],
         actionSeed: null,
         dueDateSeed: null,
       },
@@ -190,7 +190,7 @@ it("takes one parent read and carries the selected reminder version through revi
   expect(JSON.parse(sent[0]!)).toMatchObject({
     kind: "REMINDER",
     target: { kind: "ID", caseId },
-    act: { kind: "COMPLETE", reminderId, expectedRevision: 9 },
+    act: { kind: "reminder.complete", reminderId, expectedRevision: 9 },
   });
   expect(fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("case.get"))).toHaveLength(
     1,

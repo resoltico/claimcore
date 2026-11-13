@@ -68,7 +68,7 @@ it("admits bounded case, reminder and person destinations independent of opaque 
     ),
   ).toBe(true);
   expect(
-    isResponse("authority.list", reply({ kind: "PEOPLE", nextCursor: "next", actorIds: [id] })),
+    isResponse("people.list", reply({ kind: "PEOPLE", nextCursor: "next", actorIds: [id] })),
   ).toBe(true);
 });
 
@@ -90,9 +90,9 @@ it("refuses missing or duplicate destinations and wrong list resource kinds", ()
   expect(
     isResponse("reminder.list", reply({ kind: "REMINDERS", nextCursor: null, reminders: [] })),
   ).toBe(false);
-  expect(
-    isResponse("authority.list", reply({ kind: "PEOPLE", nextCursor: null, actorIds: [] })),
-  ).toBe(false);
+  expect(isResponse("people.list", reply({ kind: "PEOPLE", nextCursor: null, actorIds: [] }))).toBe(
+    false,
+  );
   expect(isResponse("case.list", reply({ kind: "PEOPLE", nextCursor: null, actorIds: [id] }))).toBe(
     false,
   );
@@ -122,13 +122,13 @@ it("admits only permitted versioned reminder controls and refuses seed or task e
     caseId: parent,
     reminderId: id,
     revision: 3,
-    tasks: ["REMINDER:REMINDER_UPDATE"],
+    tasks: ["reminder.update"],
     actionSeed: "Editable action",
     dueDateSeed: "2026-11-10",
   };
   const context = { kind: "REMINDERS", nextCursor: null, reminders: [control] };
   expect(isResponse("reminder.list", reply(context))).toBe(true);
-  for (const tasks of [[], ["CASE:CLOSE"], ["REMINDER:REMINDER_CREATE"]]) {
+  for (const tasks of [[], ["case.close"], ["reminder.create"]]) {
     expect(
       isResponse("reminder.list", reply({ ...context, reminders: [{ ...control, tasks }] })),
     ).toBe(false);

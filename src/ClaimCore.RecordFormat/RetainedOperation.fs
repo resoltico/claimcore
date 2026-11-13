@@ -32,17 +32,17 @@ module RetainedOperation =
         | [ EffectDescriptor.Work(_, revision) ] -> revision
         | _ -> invalidOp "A versioned operation has one declared primary effect."
 
-    let private profileRequired (scope: AuthorityCommandSkeleton) =
+    let private profileRequired (scope: PeopleCommandSkeleton) =
         match scope.Act with
-        | AuthorityAct.Register _
-        | AuthorityAct.Admit _
-        | AuthorityAct.ProvisionOwner _
-        | AuthorityAct.SetProfile _ -> true
-        | AuthorityAct.EraseProfile
-        | AuthorityAct.Grant _
-        | AuthorityAct.Revoke _
-        | AuthorityAct.Enable
-        | AuthorityAct.Disable -> false
+        | PeopleAct.Register _
+        | PeopleAct.Admit _
+        | PeopleAct.ProvisionOwner _
+        | PeopleAct.SetProfile _ -> true
+        | PeopleAct.EraseProfile
+        | PeopleAct.Grant _
+        | PeopleAct.Revoke _
+        | PeopleAct.Enable
+        | PeopleAct.Disable -> false
 
     let private matches (header: OperationHeader) command effects values =
         match command, values with
@@ -101,7 +101,7 @@ module RetainedOperation =
             && target = scope.ReminderId
             && expected = scope.ExpectedRevision
             && ReminderCommand.matchesEffects header.OperationId value.Command value.Effects
-        | CommandSkeleton.Authority scope, OperationValues.Authority value ->
+        | CommandSkeleton.People scope, OperationValues.People value ->
             profileRequired scope = value.Profile.IsSome
         | _ -> false
 
@@ -127,13 +127,11 @@ module RetainedOperation =
             |> Codec.map OperationValues.Reminder (function
                 | OperationValues.Reminder value -> value
                 | _ -> invalidOp "Expected reminder values.")
-        | CommandSkeleton.Authority _ ->
+        | CommandSkeleton.People _ ->
             OperationContentCodecs.profile
-            |> Codec.map
-                (fun profile -> OperationValues.Authority { Profile = Some profile })
-                (function
-                 | OperationValues.Authority { Profile = Some profile } -> profile
-                 | _ -> invalidOp "Expected profile values.")
+            |> Codec.map (fun profile -> OperationValues.People { Profile = Some profile }) (function
+                | OperationValues.People { Profile = Some profile } -> profile
+                | _ -> invalidOp "Expected profile values.")
         | CommandSkeleton.Note(NoteCommandSkeleton.Remove _) ->
             invalidOp "Removed notes have no private content."
 
@@ -143,8 +141,8 @@ module RetainedOperation =
         | OperationValues.Work value -> RetainedOperationValues.Work(Some value)
         | OperationValues.Note value -> RetainedOperationValues.Note(Some value)
         | OperationValues.Reminder value -> RetainedOperationValues.Reminder(Some value)
-        | OperationValues.Authority value ->
-            RetainedOperationValues.Authority(
+        | OperationValues.People value ->
+            RetainedOperationValues.People(
                 value.Profile
                 |> Option.map RetainedProfile.Available
                 |> Option.defaultValue RetainedProfile.NotRequired
@@ -225,8 +223,8 @@ module RetainedOperation =
                         }
                 )
             )
-        | CommandSkeleton.Authority scope when not (profileRequired scope) ->
-            Ok(RetainedOperationValues.Authority RetainedProfile.NotRequired)
+        | CommandSkeleton.People scope when not (profileRequired scope) ->
+            Ok(RetainedOperationValues.People RetainedProfile.NotRequired)
         | _ -> Error OperationContentProblem.MissingContent
 
     let private cleared =
@@ -235,8 +233,7 @@ module RetainedOperation =
         | CommandSkeleton.Work _ -> RetainedOperationValues.Work None
         | CommandSkeleton.Note _ -> RetainedOperationValues.Note None
         | CommandSkeleton.Reminder _ -> RetainedOperationValues.Reminder None
-        | CommandSkeleton.Authority _ ->
-            RetainedOperationValues.Authority RetainedProfile.Unavailable
+        | CommandSkeleton.People _ -> RetainedOperationValues.People RetainedProfile.Unavailable
 
     /// All private interpretation goes through this boundary. Public-only/erased values are explicit.
     let decode (root: OperationRoot) =

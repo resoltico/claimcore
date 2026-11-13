@@ -6,11 +6,11 @@ open ClaimCore.Application.Contracts
 
 module internal Advice =
     let private can principal actor capability resource =
-        Authority.can principal actor capability resource
+        Access.can principal actor capability resource
 
     let private correctionChoices principal actor resource accepted : CorrectionChoices =
         let actions group =
-            if can principal actor (Authority.correctionCapability group) resource then
+            if can principal actor (Access.correctionCapability group) resource then
                 Case.correctionActions accepted group
             else
                 [ CorrectionGroupAction.Keep ]
@@ -48,7 +48,7 @@ module internal Advice =
                     | Some refusal -> Refusal.Case refusal
                     | None when kind = CaseActKind.Correct ->
                         let required =
-                            Authority.correctionGroups
+                            Access.correctionGroups
                             |> List.tryPick (fun (group, capability) ->
                                 if
                                     Case.correctionActions accepted group
@@ -89,7 +89,7 @@ module internal Advice =
 
             let eligible =
                 Case.eligibleActs accepted
-                |> List.filter (Authority.canAdvertise principal actor resource)
+                |> List.filter (Access.canAdvertise principal actor resource)
 
             let correction =
                 if List.contains CaseActKind.Correct eligible then
@@ -154,10 +154,10 @@ module internal Advice =
         [
             if can principal actor Capability.Register Scope.Installation then
                 yield InstallationOffer.Open
-            if can principal actor Capability.ManageAuthority Scope.Installation then
-                for kind in AuthorityKind.all do
-                    if kind <> AuthorityKind.ProvisionOwner then
-                        yield InstallationOffer.AuthorityAct kind
+            if can principal actor Capability.ManageAccess Scope.Installation then
+                for kind in PeopleActKind.all do
+                    if kind <> PeopleActKind.ProvisionOwner then
+                        yield InstallationOffer.PeopleAct kind
         ]
 
     let actorOffers principal actor (maintenance: RegisterMaintenance) =
@@ -166,20 +166,20 @@ module internal Advice =
         else
             installationOffers principal actor
             |> List.choose (function
-                | InstallationOffer.AuthorityAct kind when AuthorityKind.targetsExistingActor kind ->
+                | InstallationOffer.PeopleAct kind when PeopleActKind.targetsExistingActor kind ->
                     Some kind
                 | _ -> None)
 
     let views principal actor =
-        let cases = Authority.visibility principal actor |> Option.isSome
+        let cases = Access.visibility principal actor |> Option.isSome
 
-        let authority = can principal actor Capability.ReadAuthority Scope.Installation
+        let people = can principal actor Capability.ReadAccess Scope.Installation
 
         [
             if cases then
                 yield View.Cases
-            if authority then
-                yield View.Authority
-            if Authority.validActor principal actor then
+            if people then
+                yield View.People
+            if Access.validActor principal actor then
                 yield View.Operations
         ]

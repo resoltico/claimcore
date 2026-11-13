@@ -1,7 +1,7 @@
 import type {
   HostFailure,
-  HumanReadDocument_caseGet,
-  HumanReadDocument_authorityGrants,
+  HumanReadDocument_case_get,
+  HumanReadDocument_people_grants,
   Representation,
   ResponseFor,
   HumanReceiptDocument,
@@ -13,7 +13,7 @@ import type {
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
 export type { CaseFields } from "@contracts/client";
-export type PersonDocument = HumanReadDocument_authorityGrants;
+export type PersonDocument = HumanReadDocument_people_grants;
 export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
 export type CaseOperationReceipt = OperationReceipt & {
@@ -43,11 +43,11 @@ type Success<K extends keyof ResponseByEndpoint> =
   }
     ? T
     : never;
-export type CurrentCase = HumanReadDocument_caseGet & {
+export type CurrentCase = HumanReadDocument_case_get & {
   readonly disclosure: "CURRENT";
-  readonly basis: Extract<HumanReadDocument_caseGet["basis"], { kind: "SNAPSHOT" }>;
+  readonly basis: Extract<HumanReadDocument_case_get["basis"], { kind: "SNAPSHOT" }>;
 };
-export const isCurrentCase = (value: HumanReadDocument_caseGet): value is CurrentCase =>
+export const isCurrentCase = (value: HumanReadDocument_case_get): value is CurrentCase =>
   value.disclosure === "CURRENT" && value.basis.kind === "SNAPSHOT";
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =

@@ -6,7 +6,7 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
-import type { HumanReadDocument_caseAssignees, HumanResponseByEndpoint } from "@contracts/client";
+import type { HumanReadDocument_case_assignees, HumanResponseByEndpoint } from "@contracts/client";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "./CatalogDate";
@@ -15,7 +15,7 @@ type Props = TypedFieldProps & { current: CurrentCase };
 const AssigneeChoices = ({
   page,
   ...props
-}: TypedFieldProps & { page: HumanReadDocument_caseAssignees }) => {
+}: TypedFieldProps & { page: HumanReadDocument_case_assignees }) => {
   const p = usePresentation();
   if (page.basis.kind !== "SNAPSHOT") {
     return (

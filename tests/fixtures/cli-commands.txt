@@ -12,19 +12,19 @@ case reopen R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555
 case void R-1 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
 case reinstate R-1 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
 case erase R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-authority register --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
-authority grant --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
-authority grant --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_READER --case-reference R-1 --operation-id 11111111-2222-7333-8444-555555555555
-authority revoke --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
-authority enable --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
-authority disable --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
+people register --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
+people grant --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
+people grant --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_READER --case-reference R-1 --operation-id 11111111-2222-7333-8444-555555555555
+people revoke --principal-kind HUMAN --issuer https://id.example --subject u1 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
+people enable --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
+people disable --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
 case get R-1
 case list
 case list --limit 5 --cursor abc
-authority list
-authority grants 11111111-2222-7333-8444-555555555555
+people list
+people grants 11111111-2222-7333-8444-555555555555
 context
-authority history --limit 1
+people history --limit 1
 case summary
 operation get 11111111-2222-7333-8444-555555555555
 case amend-registration R-1 --expected-revision 4 --claimant-name Selected --operation-id 11111111-2222-7333-8444-555555555555
@@ -49,15 +49,15 @@ case timeline CASE-001 --filter work --limit 2
 case timeline R-1
 case timeline R-1 --filter facts --limit 5 --all
 case timeline R-1 --filter work --cursor abc --limit 1
-authority set-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
-authority erase-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
+people set-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
+people erase-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555
 case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --limit 1
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all
-authority requests
-authority requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1
-authority admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@00000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
-authority list --text Name
+people requests
+people requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1
+people admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@00000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
+people list --text Name
 note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
 note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
-note list R-1 --limit 1
-payment list CASE-001 --limit 20
+case notes R-1 --limit 1
+case payments CASE-001 --limit 20

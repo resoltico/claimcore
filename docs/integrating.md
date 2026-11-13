@@ -94,7 +94,7 @@ destinations and supplied Screen values for captions; a displayed reference or n
 ACCESS_REQUESTS controls bind each displayed row to a typed principal and an unverified editable
 profile seed. The seed prefers the name hint, then username, and may include the email hint as contact.
 Hints confer no authority; preview and execute independently admit the entered account/profile.
-PERSON controls bind `authority.grants` to the reviewed actor and principal. Tasks follow current
+PERSON controls bind `people.grants` to the reviewed actor and principal. Tasks follow current
 management permission and maintenance state. A saved profile becomes an editable seed only when the
 profile task is offered; the Screen remains authoritative for saved display. Offers are advisory and
 execution independently checks the command, including last-owner protection.
@@ -206,7 +206,7 @@ members together. Optional registration facts may be omitted or explicitly clear
 
 ## Changes, work and reminders
 
-OPEN and DECIDE supply complete groups. AMEND_REGISTRATION changes selected registration facts.
+`case.open` and `case.decide` supply complete groups. case.amendRegistration changes selected registration facts.
 A money assertion always contains amount and currency together. Omission preserves a partial value;
 explicit null clears only an optional value. Required nulls, half money and unknown members refuse.
 
@@ -290,9 +290,9 @@ changed disclosure level, discard previously loaded items/views, keep the accept
 issued cursor, and refresh current-case disclosure. Every continuation rechecks disclosure. Other cursors are opaque positions for their issuing endpoint,
 resource and filters. Follow non-null `nextCursor` even after a short page. A page is not a fixed export.
 
-`authority.list` filters saved names/contacts and recognized raw roles. Current assignment state differs
+`people.list` filters saved names/contacts and recognized raw roles. Current assignment state differs
 from effective authorization. Row role summaries are bounded summaries, not full grant inventories.
-`authority.grants` pages the selected account's assignments. `authority.history` pages access changes
+`people.grants` pages the selected account's assignments. `people.history` pages access changes
 newest first and optionally filters their target `actorId`; it requires installation-wide ReadAuthority. Case-only read grants do not permit access review.
 REGISTER/PROVISION_OWNER retain principal facts, GRANT/REVOKE retain scope, and profile history can be erased.
 

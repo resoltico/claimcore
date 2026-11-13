@@ -198,15 +198,15 @@ let tests =
             matches "timeline" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
                 data Api.caseTimeline |> TimelineScreen.view)
             matches "people" [ RegionRole.Results; RegionRole.Details ] (fun () ->
-                data Api.authorityList |> PeopleScreen.view)
+                data Api.peopleList |> PeopleScreen.view)
             matches
                 "person"
                 [ RegionRole.Account; RegionRole.Access; RegionRole.Details ]
-                (fun () -> data Api.authorityGrants |> PersonScreen.view)
+                (fun () -> data Api.peopleGrants |> PersonScreen.view)
             matches "access history" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
-                data Api.authorityHistory |> AccessHistoryScreen.view)
+                data Api.peopleHistory |> AccessHistoryScreen.view)
             matches "access requests" [ RegionRole.Results; RegionRole.Details ] (fun () ->
-                data Api.authorityRequests |> AccessRequestsScreen.view)
+                data Api.peopleRequests |> AccessRequestsScreen.view)
             matches
                 "context"
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]

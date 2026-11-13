@@ -62,15 +62,15 @@ let internal lookup fixture =
             let! result =
                 Service.execute
                     owner
-                    (OperationInput.Authority(
-                        Inputs.authorityRequest
+                    (OperationInput.People(
+                        Inputs.peopleRequest
                             (id fixture (1100 + index))
                             principal
-                            (AuthorityAct.Register profile)
+                            (PeopleAct.Register profile)
                     ))
                     token
 
-            acceptedAuthority result
+            acceptedPeople result
             people <- (name, principal) :: people
 
         let expectations =
@@ -161,12 +161,12 @@ let internal lookup fixture =
         let! erased =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id fixture 1120) person AuthorityAct.EraseProfile
+                (OperationInput.People(
+                    Inputs.peopleRequest (id fixture 1120) person PeopleAct.EraseProfile
                 ))
                 token
 
-        acceptedAuthority erased
+        acceptedPeople erased
         let! after = search owner "ALICE"
 
         Expect.equal
@@ -177,11 +177,11 @@ let internal lookup fixture =
         let! restored =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id fixture 1121)
                         person
-                        (AuthorityAct.SetProfile
+                        (PeopleAct.SetProfile
                             {
                                 DisplayName = "Renamed person"
                                 Contact = None
@@ -189,7 +189,7 @@ let internal lookup fixture =
                 ))
                 token
 
-        acceptedAuthority restored
+        acceptedPeople restored
         let! old = search owner "Alice Example"
         Expect.isEmpty (success old).Items "Reprofile cannot retain an obsolete search value"
         let! fresh = search owner "RENAMED"
@@ -222,11 +222,11 @@ let internal contactAndRole fixture =
                 let! reply =
                     Service.execute
                         owner
-                        (OperationInput.Authority(
-                            Inputs.authorityRequest
+                        (OperationInput.People(
+                            Inputs.peopleRequest
                                 (id fixture operation)
                                 principal
-                                (AuthorityAct.Register
+                                (PeopleAct.Register
                                     {
                                         DisplayName = display
                                         Contact = contact
@@ -234,7 +234,7 @@ let internal contactAndRole fixture =
                         ))
                         token
 
-                acceptedAuthority reply
+                acceptedPeople reply
                 return principal
             }
 
@@ -263,7 +263,7 @@ let internal contactAndRole fixture =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
         let find text role cursor limit =
             Service.actors
@@ -329,12 +329,12 @@ let internal contactAndRole fixture =
         let! erased =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id fixture 1146) first AuthorityAct.EraseProfile
+                (OperationInput.People(
+                    Inputs.peopleRequest (id fixture 1146) first PeopleAct.EraseProfile
                 ))
                 token
 
-        acceptedAuthority erased
+        acceptedPeople erased
         let! absent = find (Some "contact@example") None None 50
 
         Expect.isEmpty
@@ -352,11 +352,11 @@ let internal contactAndRole fixture =
         let! reprofiled =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id fixture 1147)
                         first
-                        (AuthorityAct.SetProfile
+                        (PeopleAct.SetProfile
                             {
                                 DisplayName = "Replacement person"
                                 Contact = Some "NEW@EXAMPLE.INVALID"
@@ -364,7 +364,7 @@ let internal contactAndRole fixture =
                 ))
                 token
 
-        acceptedAuthority reprofiled
+        acceptedPeople reprofiled
         let! fresh = find (Some "new@example") (Some Role.CaseReader) None 50
 
         Expect.equal

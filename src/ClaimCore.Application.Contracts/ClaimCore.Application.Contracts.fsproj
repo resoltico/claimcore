@@ -17,7 +17,7 @@
     <Compile Include="CasePages.fs" />
     <Compile Include="PaymentPages.fs" />
     <Compile Include="CaseTotals.fs" />
-    <Compile Include="AuthorityPages.fs" />
+    <Compile Include="PeoplePages.fs" />
     <Compile Include="WorkReads.fs" />
     <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />

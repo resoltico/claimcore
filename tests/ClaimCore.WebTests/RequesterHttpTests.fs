@@ -70,7 +70,7 @@ let private claimsReachContext () =
             "The same admitted hint reaches the store context boundary"
 
         let! status, refused =
-            host.Call("authority.requests", Encoding.UTF8.GetBytes "{\"limit\":50}", token)
+            host.Call("people.requests", Encoding.UTF8.GetBytes "{\"limit\":50}", token)
 
         Expect.equal status 200 "Core refusal preserves the structured envelope"
         use failure = JsonDocument.Parse refused
@@ -141,7 +141,7 @@ let private activeIssuer () =
         Expect.equal
             (requester.GetProperty("issuer").GetString())
             oidc.Issuer.AbsoluteUri
-            "Issuer comes from configured authentication authority, never request hints or guessed directory data"
+            "Issuer comes from configured authentication people, never request hints or guessed directory data"
 
         Expect.notEqual
             (requester.GetProperty("issuer").GetString())
@@ -155,7 +155,7 @@ let tests =
         "own requester authentication facts"
         [
             testCaseAsync
-                "ACTIVE issuer is the configured authenticated authority"
+                "ACTIVE issuer is the configured authenticated people"
                 (activeIssuer () |> Async.AwaitTask)
             testCaseAsync
                 "authenticated requester hints flow through cookie gates into own context and the store boundary"
