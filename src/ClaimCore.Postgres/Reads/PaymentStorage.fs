@@ -41,52 +41,6 @@ module internal PaymentStorage =
             return rows |> List.map row
         }
 
-    let apply connection parent effect token =
-        task {
-            match effect with
-            | None -> ()
-            | Some(PaymentDifference.Recorded entry) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,l.sequence,e.effect_index,$3::date,$4,false FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE l.operation_id=$1 AND e.subject_kind='CASE' AND e.subject_id=$2 AND e.act='case.recordPayment'"
-                        [|
-                            box (OperationId.value (PaymentEntry.id entry))
-                            box (CaseId.value parent)
-                            box (CalendarDate.value (PaymentEntry.date entry))
-                            box (Amount.value (PaymentEntry.amount entry))
-                        |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Payment accepting effect is absent.")
-            | Some(PaymentDifference.Removed entry) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.case_payments SET removed=true WHERE case_id=$1 AND payment_id=$2 AND NOT removed AND payment_date IS NOT NULL"
-                        [|
-                            box (CaseId.value parent)
-                            box (OperationId.value (PaymentEntry.id entry))
-                        |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Selected active payment is absent.")
-        }
-
-    let erase connection parent token =
-        task {
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
-                    [| box (CaseId.value parent) |]
-                    token
-
-            return ()
-        }
-
     let page
         connection
         (query: ClaimCore.Application.PaymentPageQuery)
@@ -202,7 +156,7 @@ module internal PaymentStorage =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7)"
+                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7) ON CONFLICT(payment_id) DO UPDATE SET payment_date=EXCLUDED.payment_date,paid_amount=EXCLUDED.paid_amount,removed=EXCLUDED.removed WHERE claimcore.case_payments.case_id=EXCLUDED.case_id AND claimcore.case_payments.accepting_sequence=EXCLUDED.accepting_sequence AND claimcore.case_payments.effect_index=EXCLUDED.effect_index"
                     [|
                         box (CaseId.value payment.CaseId)
                         box (OperationId.value payment.PaymentId)

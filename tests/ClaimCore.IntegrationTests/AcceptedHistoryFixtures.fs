@@ -144,7 +144,16 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         Verdict.Proceed(
             entry,
-            CaseProjection.Insert(id, snapshot, CaseIndex.create entry.RecordedAt snapshot None []),
+            {
+                CaseProjection.Rows =
+                    {
+                        Snapshot = snapshot
+                        Payments = []
+                        ChangedAt = entry.RecordedAt
+                    }
+                Index = CaseIndex.create entry.RecordedAt snapshot None []
+                Family = CaseFamily.onCaseCreated id |> CaseFamily.rows |> Result.toOption
+            },
             receipt
         )
 

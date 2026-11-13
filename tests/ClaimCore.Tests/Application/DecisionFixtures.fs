@@ -100,7 +100,7 @@ type LockedFacts<'Facts> =
         Read: 'Facts
     }
 
-let locked people current existing : LockedFacts<CaseFacts> =
+let locked (people: AccessView) (current: StoredCase option) existing : LockedFacts<CaseFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -112,7 +112,26 @@ let locked people current existing : LockedFacts<CaseFacts> =
                         CaseSubject.restore record.Index.ChangedAt record.Snapshot Map.empty
                         |> Result.defaultWith (fun _ ->
                             invalidOp "Invalid synthetic owned case state."))
-                Work = None
+                Family =
+                    current |> Option.map (fun record -> CaseFamily.onCaseCreated record.CaseId)
+                Work =
+                    current
+                    |> Option.map (fun record ->
+                        let root = WorkSubject.initial record.CaseId
+
+                        {
+                            StoredWork.CaseId = record.CaseId
+                            Revision = root.Revision
+                            Snapshot = root.Snapshot
+                            SnapshotBytes =
+                                root.Snapshot
+                                |> Option.map WorkRecord.encodeSnapshot
+                                |> Option.defaultValue [||]
+                            ChangedAt = None
+                            RecordedBy = None
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
+                        })
                 PendingReminderDue = []
                 Assignee = None
                 Maintenance = RegisterMaintenance.initial
@@ -183,15 +202,13 @@ let created n reference =
         decide request (locked worker None None) |> appended
 
     let current =
-        match projection with
-        | CaseProjection.Insert(id, snapshot, index) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Opening inserts a case"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     request, entry, current, receipt
 

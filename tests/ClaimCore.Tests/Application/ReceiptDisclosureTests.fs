@@ -200,15 +200,13 @@ let private stewardship () =
         decide request (locked steward (Some current) None) |> appended
 
     let voided =
-        match projection with
-        | CaseProjection.Update(id, snapshot, index, _) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Update"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     let restore =
         actRequest
@@ -221,15 +219,13 @@ let private stewardship () =
         decide restore (locked steward (Some voided) None) |> appended
 
     let restored =
-        match projection with
-        | CaseProjection.Update(id, snapshot, index, _) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Update"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     match decide request (locked steward (Some restored) (Some draft)) with
     | Verdict.Replay replay ->

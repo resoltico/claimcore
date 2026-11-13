@@ -163,3 +163,49 @@ module WorkSubject =
                     SummaryChangedAt = state.SummaryChangedAt
                     SummaryRecordedBy = state.SummaryRecordedBy
                 }
+
+    let restore caseId lifecycle (row: WorkSubjectRows) =
+        let responsible, summary, search = columns row.Snapshot
+
+        let attributed =
+            if row.Revision = Revision.zero then
+                row.ChangedAt.IsNone && row.RecordedBy.IsNone
+            else
+                row.ChangedAt.IsSome && row.RecordedBy.IsSome
+
+        let privatePresent =
+            if lifecycle = Lifecycle.Erased then
+                row.Snapshot.IsNone
+            else
+                row.Snapshot.IsSome
+
+        let matchingSnapshot =
+            row.Snapshot
+            |> Option.forall (fun value ->
+                value.CaseId = caseId
+                && value.Revision = row.Revision
+                && (row.Revision <> Revision.zero || value.Work = CaseWork.empty))
+
+        let valid =
+            row.CaseId = caseId
+            && attributed
+            && privatePresent
+            && matchingSnapshot
+            && ((responsible, summary, search) = (row.Responsible, row.Summary, row.SearchText))
+            && (row.Summary.IsSome = row.SummaryChangedAt.IsSome)
+            && (row.SummaryChangedAt.IsSome = row.SummaryRecordedBy.IsSome)
+
+        if not valid then
+            Error RecordViolation.InvalidSubjectState
+        else
+            Ok
+                {
+                    WorkSubjectState.CaseId = caseId
+                    Revision = row.Revision
+                    Snapshot = row.Snapshot
+                    ChangedAt = row.ChangedAt
+                    RecordedBy = row.RecordedBy
+                    SummaryChangedAt = row.SummaryChangedAt
+                    SummaryRecordedBy = row.SummaryRecordedBy
+                    Erased = lifecycle = Lifecycle.Erased
+                }

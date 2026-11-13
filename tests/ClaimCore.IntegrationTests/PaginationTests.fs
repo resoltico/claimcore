@@ -147,6 +147,8 @@ type internal PausedPageStore
 
                                     member _.CaseState id = tx.CaseState id
 
+                                    member _.CaseFamily id = tx.CaseFamily id
+
                                     member _.PendingReminderDue(parent, excluded) =
                                         tx.PendingReminderDue(parent, excluded)
 

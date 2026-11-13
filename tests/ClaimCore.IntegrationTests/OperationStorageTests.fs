@@ -310,6 +310,7 @@ let private storage () =
             "Four accepted operations remain after all negative controls"
 
         let mutable current: CaseSnapshot option = None
+        let mutable owned: CaseSubjectState option = None
 
         let case act context =
             let identity = operation ()
@@ -362,27 +363,34 @@ let private storage () =
                     (fun () -> RandomNumberGenerator.GetBytes 32)
                 |> valid
 
-            let projection =
+            let stamp =
+                {
+                    SubjectStamp.Position = EffectPosition.create hdr.Sequence 0 |> Option.get
+                    OperationId = hdr.OperationId
+                    ActorId = hdr.ActorId
+                    RecordedAt = hdr.RecordedAt
+                }
+
+            let after = CaseSubject.apply stamp owned decided |> Option.get
+
+            let family =
                 match current, decided.After.State with
-                | _, CaseState.Erased ->
-                    CaseProjection.Erase(
-                        decided.After.CaseId,
-                        decided.After.Revision,
-                        hdr.RecordedAt
-                    )
                 | None, _ ->
-                    CaseProjection.Insert(
-                        decided.After.CaseId,
-                        decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After None []
-                    )
-                | Some _, _ ->
-                    CaseProjection.Update(
-                        decided.After.CaseId,
-                        decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After None [],
-                        decided.Payment
-                    )
+                    CaseFamily.onCaseCreated after.CaseId |> CaseFamily.rows |> Result.toOption
+                | _, CaseState.Erased ->
+                    CaseFamily.onCaseErased after (CaseFamily.onCaseCreated after.CaseId)
+                    |> Result.bind CaseFamily.rows
+                    |> Result.toOption
+                | _ -> None
+
+            let projection =
+                {
+                    CaseProjection.Rows = CaseSubject.rows after |> Option.get
+                    Index = CaseIndex.create hdr.RecordedAt decided.After None []
+                    Family = family
+                }
+
+            owned <- Some after
 
             write retained.Root (fun connection ->
                 Persistence.case connection projection token |> sync)

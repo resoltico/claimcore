@@ -284,15 +284,12 @@ type ReceiptCurrent =
     | Note of parent: StoredCase option * current: Note option
     | People of target: ActorRef option
 
-[<RequireQualifiedAccess>]
 type CaseProjection =
-    | Insert of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
-    | Update of
-        caseId: CaseId *
-        snapshot: CaseSnapshot *
-        index: CaseIndex *
-        payment: PaymentDifference option
-    | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
+    {
+        Rows: CaseSubjectRows
+        Index: CaseIndex
+        Family: CaseFamilyRows option
+    }
 
 type AccessQuery =
     {
@@ -431,6 +428,7 @@ type IReadTx =
     abstract AccessCases: PrincipalKey * CaseId list -> Task<AccessView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract CaseState: CaseId -> Task<CaseSubjectState option>
+    abstract CaseFamily: CaseId -> Task<CaseFamilyState option>
     abstract PendingReminderDue: CaseId * ReminderId option -> Task<CalendarDate list>
 
     abstract FindCaseByReference: string -> Task<StoredCase option>

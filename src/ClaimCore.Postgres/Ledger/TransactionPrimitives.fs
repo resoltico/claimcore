@@ -271,6 +271,9 @@ type private ReadTx
                             ))
             }
 
+        member _.CaseFamily id =
+            CaseFamilyStorage.load connection id token
+
         member _.PendingReminderDue(parent, excluded) =
             task {
                 let! rows =

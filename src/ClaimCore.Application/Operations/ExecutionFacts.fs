@@ -16,6 +16,7 @@ type internal CaseFacts =
         ExistingOperation: RetainedOperation option
         Case: StoredCase option
         State: CaseSubjectState option
+        Family: CaseFamilyState option
         Work: StoredWork option
         PendingReminderDue: CalendarDate list
     }
@@ -108,6 +109,14 @@ module internal ExecutionFacts =
                 | Some state -> tx.PendingReminderDue(state.CaseId, None)
                 | None -> System.Threading.Tasks.Task.FromResult []
 
+            let! family =
+                match state, paymentAct with
+                | Some parent, Some(CaseAct.Bare BareAct.Erase) when
+                    parent.Lifecycle <> Lifecycle.Erased
+                    ->
+                    tx.CaseFamily parent.CaseId
+                | _ -> System.Threading.Tasks.Task.FromResult None
+
             return
                 {
                     CaseFacts.Assignee = None
@@ -118,6 +127,7 @@ module internal ExecutionFacts =
                     ExistingOperation = existing
                     Case = record
                     State = state
+                    Family = family
                     Work = work
                     PendingReminderDue = pendingDue
                 }

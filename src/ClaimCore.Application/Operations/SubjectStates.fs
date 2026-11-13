@@ -32,7 +32,11 @@ module internal SubjectStates =
         {
             NoteId = Note.id record.Note
             CaseId = Note.caseId record.Note
-            Removed = Note.text record.Note |> Option.isNone
+            Removed =
+                if parent.Lifecycle = Lifecycle.Erased then
+                    None
+                else
+                    Some(Note.text record.Note |> Option.isNone)
             Snapshot = Some record.Note
             Created =
                 {

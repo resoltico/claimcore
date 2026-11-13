@@ -87,6 +87,7 @@ let internal inspectOperation fixture principal operation token =
                             {
                                 Maintenance = maintenance
                                 State = None
+                                Family = None
                                 Work = None
                                 PendingReminderDue = []
                                 CaseFacts.Assignee = None

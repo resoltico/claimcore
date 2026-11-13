@@ -6,7 +6,7 @@ type NoteSubjectState =
     {
         NoteId: NoteId
         CaseId: CaseId
-        Removed: bool
+        Removed: bool option
         Snapshot: Note option
         Created: SubjectStamp
         Erased: bool
@@ -54,7 +54,9 @@ module NoteSubject =
                 |> Result.mapError (fun violation ->
                     Refusal.invalidInput (InputTarget.NoteText, violation))
             | NoteCommand.RemoveNote(_, id), Some before when
-                before.NoteId = id && before.CaseId = parent.CaseId && not before.Removed
+                before.NoteId = id
+                && before.CaseId = parent.CaseId
+                && before.Removed = Some false
                 ->
                 Ok(Note.ofAccepted id parent.CaseId None)
             | NoteCommand.RemoveNote _, _ -> Error unavailable
@@ -64,7 +66,7 @@ module NoteSubject =
             {
                 NoteId = Note.id effect
                 CaseId = Note.caseId effect
-                Removed = Note.text effect |> Option.isNone
+                Removed = Some(Note.text effect |> Option.isNone)
                 Snapshot = Some effect
                 Created = state |> Option.map _.Created |> Option.defaultValue stamp
                 Erased = false
@@ -87,7 +89,7 @@ module NoteSubject =
                         {
                             NoteId = effect.NoteId
                             CaseId = effect.CaseId
-                            Removed = false
+                            Removed = Some false
                             Snapshot = None
                             Created = effect.Stamp
                             Erased = false
@@ -96,12 +98,12 @@ module NoteSubject =
             | NoteActKind.RemoveNote, Some before when
                 before.NoteId = effect.NoteId
                 && before.CaseId = effect.CaseId
-                && not before.Removed
+                && before.Removed = Some false
                 ->
                 Ok(
                     Some
                         { before with
-                            Removed = true
+                            Removed = Some true
                             Snapshot = None
                         }
                 )
@@ -114,7 +116,7 @@ module NoteSubject =
         }
 
     let rows (state: NoteSubjectState) =
-        if state.Snapshot.IsNone && not state.Removed && not state.Erased then
+        if state.Snapshot.IsNone && state.Removed <> Some true && not state.Erased then
             None
         else
             Some
@@ -126,3 +128,33 @@ module NoteSubject =
                     RecordedBy = state.Created.ActorId
                     Text = state.Snapshot |> Option.bind Note.text
                 }
+
+    let restore caseId lifecycle (row: NoteSubjectRows) =
+        match OperationId.create (NoteId.value row.NoteId) with
+        | Some operation when
+            row.CaseId = caseId && (lifecycle <> Lifecycle.Erased || row.Text.IsNone)
+            ->
+            Ok
+                {
+                    NoteId = row.NoteId
+                    CaseId = caseId
+                    Removed =
+                        if lifecycle = Lifecycle.Erased then
+                            None
+                        else
+                            Some row.Text.IsNone
+                    Snapshot =
+                        if lifecycle = Lifecycle.Erased then
+                            None
+                        else
+                            Some(Note.ofAccepted row.NoteId caseId row.Text)
+                    Created =
+                        {
+                            Position = row.CreatedPosition
+                            OperationId = operation
+                            ActorId = row.RecordedBy
+                            RecordedAt = row.RecordedAt
+                        }
+                    Erased = lifecycle = Lifecycle.Erased
+                }
+        | _ -> Error RecordViolation.InvalidSubjectState

@@ -13,7 +13,12 @@ module internal Persistence =
             box (CaseReference.format snapshot.Reference)
             box (Revision.value snapshot.Revision)
             box (CaseState.token snapshot.State)
-            box (CaseRecord.encodeSnapshot snapshot)
+            DatabaseSession.parameter (
+                if snapshot.State = CaseState.Erased then
+                    None
+                else
+                    Some(CaseRecord.encodeSnapshot snapshot)
+            )
             DatabaseSession.parameter (index.Status |> Option.map CaseStatus.token)
             DatabaseSession.parameter (index.Progress |> Option.map CaseProgress.token)
             box index.ChangedAt
@@ -28,60 +33,6 @@ module internal Persistence =
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
             DatabaseSession.parameter index.WorkSearchText
         |]
-
-    let case connection projection token =
-        task {
-            match projection with
-            | CaseProjection.Insert(id, snapshot, index) ->
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17,$18)"
-                        (caseParameters id snapshot index)
-                        token
-
-                let root = (WorkSubject.initial id).Snapshot.Value
-
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.case_work(case_id,revision,snapshot) VALUES($1,0,$2)"
-                        [| box (CaseId.value id); box (WorkRecord.encodeSnapshot root) |]
-                        token
-
-                return ()
-            | CaseProjection.Update(id, snapshot, index, payment) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10::date,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14,paid_amount=$15,responsible_actor=$16,follow_up=$17,work_search_text=$18 WHERE case_id=$1"
-                        (caseParameters id snapshot index)
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Case projection is absent.")
-
-                do! PaymentStorage.apply connection id payment token
-            | CaseProjection.Erase(id, revision, changedAt) ->
-                do! PaymentStorage.erase connection id token
-
-                let! _ =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT claimcore.erase_case_payload($1)"
-                        [| box (CaseId.value id) |]
-                        token
-
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.cases SET revision=$2,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,paid_amount=NULL,responsible_actor=NULL,follow_up=NULL,work_search_text=NULL,changed_at=$3 WHERE case_id=$1"
-                        [| box (CaseId.value id); box (Revision.value revision); box changedAt |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Case projection is absent.")
-        }
 
     let caseIndex connection id (index: CaseIndex) token =
         task {
@@ -310,4 +261,46 @@ module internal Persistence =
 
                     if changed <> 1 then
                         raise (RecordCorruptException "Reminder projection has another parent.")
+        }
+
+    let case connection (projection: CaseProjection) token =
+        task {
+            let rows = projection.Rows
+            let snapshot = rows.Snapshot
+            let id = snapshot.CaseId
+
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,notified_on=EXCLUDED.notified_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,paid_amount=EXCLUDED.paid_amount,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
+                    (caseParameters id snapshot projection.Index)
+                    token
+
+            if changed <> 1 then
+                raise (RecordCorruptException "Case row cannot change its retained reference.")
+
+            for payment in rows.Payments do
+                do! PaymentStorage.restore connection payment token
+
+            if snapshot.State = CaseState.Erased then
+                let! _ =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT claimcore.erase_case_payload($1)"
+                        [| box (CaseId.value id) |]
+                        token
+
+                ()
+
+            match projection.Family with
+            | None -> ()
+            | Some family ->
+                match family.Work with
+                | None -> ()
+                | Some work -> do! workChange connection (WorkChangeProjection.Work work) token
+
+                do! workChange connection (WorkChangeProjection.Reminder family.Reminders) token
+
+                for note in family.Notes do
+                    do! workChange connection (WorkChangeProjection.Note note) token
         }

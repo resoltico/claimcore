@@ -12,33 +12,16 @@ open ClaimCore.RecordFormat
 module internal ProjectionRebuild =
     let private replaceCases connection rows token =
         task {
-            for KeyValue(id, (owned: CaseSubjectRows, index)) in rows do
-                let snapshot = owned.Snapshot
-
-                match snapshot.State with
-                | CaseState.Erased ->
-                    let! _ =
-                        DatabaseSession.execute
-                            connection
-                            "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,changed_at) VALUES ($1,$2,$3,'ERASED',$4)"
-                            [|
-                                box (CaseId.value id)
-                                box (CaseReference.format snapshot.Reference)
-                                box (Revision.value snapshot.Revision)
-                                box owned.ChangedAt
-                            |]
-                            token
-
-                    ()
-                | _ ->
-                    do!
-                        Persistence.case
-                            connection
-                            (CaseProjection.Insert(id, snapshot, index))
-                            token
-
-                for payment in owned.Payments do
-                    do! PaymentStorage.restore connection payment token
+            for KeyValue(_, (owned: CaseSubjectRows, index)) in rows do
+                do!
+                    Persistence.case
+                        connection
+                        {
+                            Rows = owned
+                            Index = index
+                            Family = None
+                        }
+                        token
         }
 
     let private replacePeople connection rows token =
@@ -102,7 +85,7 @@ module internal ProjectionRebuild =
                     {
                         NoteSubjectState.NoteId = id
                         CaseId = history.CaseId
-                        Removed = history.Removed
+                        Removed = Some history.Removed
                         Snapshot = history.Snapshot
                         Created =
                             {

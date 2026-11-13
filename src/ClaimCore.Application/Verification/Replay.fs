@@ -329,7 +329,7 @@ module internal WorkReplay =
             | EntryTarget.Case(id, _, CaseActKind.Open, _) ->
                 do! check (not (Map.containsKey id work))
 
-                let initial = WorkSubject.initial id
+                let initial = (CaseFamily.onCaseCreated id).Work.Value
 
                 return
                     Map.add
@@ -346,27 +346,6 @@ module internal WorkReplay =
                         }
                         work,
                     reminders
-            | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
-                let work =
-                    work
-                    |> Map.change
-                        id
-                        (Option.map (fun value ->
-                            { value with
-                                Snapshot = None
-                                SummaryChangedAt = None
-                                SummaryRecordedBy = None
-                            }))
-
-                let reminders =
-                    reminders
-                    |> Map.map (fun _ value ->
-                        if value.CaseId = id then
-                            { value with Snapshot = None }
-                        else
-                            value)
-
-                return work, reminders
             | EntryTarget.Work descriptor ->
                 let! parent = parent descriptor.CaseId
                 let! parentState = CaseReplay.subject descriptor.CaseId parent |> known
@@ -594,7 +573,7 @@ module internal NoteReplay =
         {
             NoteId = id
             CaseId = history.CaseId
-            Removed = history.Removed
+            Removed = Some history.Removed
             Snapshot = history.Snapshot
             Created =
                 {
@@ -689,7 +668,7 @@ module internal NoteReplay =
                 let history =
                     {
                         CaseId = applied.CaseId
-                        Removed = applied.Removed
+                        Removed = applied.Removed.Value
                         Snapshot = applied.Snapshot
                         CreatedPosition = applied.Created.Position
                         RecordedAt = applied.Created.RecordedAt
@@ -707,18 +686,6 @@ module internal NoteReplay =
                     }
 
                 return Map.add descriptor.NoteId history notes
-            | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
-                return
-                    notes
-                    |> Map.map (fun noteId history ->
-                        if history.CaseId <> id then
-                            history
-                        else
-                            let cleared = subject noteId false history |> NoteSubject.erase
-
-                            { history with
-                                Snapshot = cleared.Snapshot
-                            })
             | _ -> return notes
         }
 
@@ -898,6 +865,61 @@ module Replay =
             return next
         }
 
+    let private clearFamily (state: Scan) (parent: CaseSubjectState) =
+        let id = parent.CaseId
+
+        let family =
+            {
+                CaseFamilyState.Work =
+                    state.Work |> Map.tryFind id |> Option.map (WorkReplay.subject id false)
+                Reminders =
+                    state.Reminders
+                    |> Map.filter (fun _ history -> history.CaseId = id)
+                    |> Map.map (fun id history -> WorkReplay.reminderSubject id false history)
+                Notes =
+                    state.Notes
+                    |> Map.filter (fun _ history -> history.CaseId = id)
+                    |> Map.map (fun id history -> NoteReplay.subject id false history)
+            }
+
+        CaseFamily.onCaseErased parent family
+        |> Result.mapError (fun _ -> divergence None VerificationFinding.StateSequence)
+        |> Result.map (fun family ->
+            let work =
+                state.Work
+                |> Map.change
+                    id
+                    (Option.map (fun history ->
+                        let owned = family.Work.Value
+
+                        { history with
+                            Snapshot = owned.Snapshot
+                            SummaryChangedAt = owned.SummaryChangedAt
+                            SummaryRecordedBy = owned.SummaryRecordedBy
+                        }))
+
+            let reminders =
+                state.Reminders
+                |> Map.map (fun id history ->
+                    match Map.tryFind id family.Reminders with
+                    | Some owned ->
+                        { history with
+                            Snapshot = owned.Snapshot
+                        }
+                    | None -> history)
+
+            let notes =
+                state.Notes
+                |> Map.map (fun id history ->
+                    match Map.tryFind id family.Notes with
+                    | Some owned ->
+                        { history with
+                            Snapshot = owned.Snapshot
+                        }
+                    | None -> history)
+
+            work, reminders, notes)
+
     let link (state: Scan) sequence previous =
         require
             (Some sequence)
@@ -1072,25 +1094,41 @@ module Replay =
                                         && entry.Index = 1
                                     | _ -> false
 
-                                let! work, reminders =
-                                    if secondaryReminder then
-                                        Ok(current.Work, current.Reminders)
-                                    else
-                                        WorkReplay.apply
-                                            current.Cases
-                                            actors
-                                            current.Work
-                                            current.Reminders
-                                            entry
-                                            payload
+                                let! work, reminders, notes =
+                                    match entry.Subject with
+                                    | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
+                                        result {
+                                            let! parent =
+                                                Map.tryFind id cases
+                                                |> Option.bind (CaseReplay.subject id)
+                                                |> known at VerificationFinding.StateSequence
 
-                                let! notes =
-                                    NoteReplay.apply
-                                        current.Cases
-                                        actors
-                                        current.Notes
-                                        entry
-                                        payload
+                                            return! clearFamily current parent
+                                        }
+                                    | _ ->
+                                        result {
+                                            let! work, reminders =
+                                                if secondaryReminder then
+                                                    Ok(current.Work, current.Reminders)
+                                                else
+                                                    WorkReplay.apply
+                                                        current.Cases
+                                                        actors
+                                                        current.Work
+                                                        current.Reminders
+                                                        entry
+                                                        payload
+
+                                            let! notes =
+                                                NoteReplay.apply
+                                                    current.Cases
+                                                    actors
+                                                    current.Notes
+                                                    entry
+                                                    payload
+
+                                            return work, reminders, notes
+                                        }
 
                                 return
                                     { current with

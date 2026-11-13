@@ -202,3 +202,38 @@ module ReminderSubject =
                     Due = due
                     SearchText = search
                 }
+
+    let restore caseId lifecycle (row: ReminderSubjectRows) =
+        let expected = columns row.Snapshot
+
+        let privatePresent =
+            if lifecycle = Lifecycle.Erased then
+                row.Snapshot.IsNone
+            else
+                row.Snapshot.IsSome
+
+        let valid =
+            row.CaseId = caseId
+            && row.Revision > Revision.zero
+            && privatePresent
+            && expected = (row.Status, row.Action, row.Due, row.SearchText)
+            && (row.Snapshot
+                |> Option.forall (fun value ->
+                    Reminder.id value = row.ReminderId
+                    && Reminder.caseId value = caseId
+                    && Reminder.revision value = row.Revision))
+
+        if not valid then
+            Error RecordViolation.InvalidSubjectState
+        else
+            Ok
+                {
+                    ReminderSubjectState.ReminderId = row.ReminderId
+                    CaseId = caseId
+                    Revision = row.Revision
+                    Status = row.Status
+                    Snapshot = row.Snapshot
+                    RecordedAt = row.RecordedAt
+                    RecordedBy = row.RecordedBy
+                    Erased = lifecycle = Lifecycle.Erased
+                }

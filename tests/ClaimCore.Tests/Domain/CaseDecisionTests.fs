@@ -262,15 +262,13 @@ let private wireSpelling () =
     let draft, projection, receipt = decide original view |> appended
 
     let current =
-        match projection with
-        | CaseProjection.Insert(id, snapshot, index) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Insert"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     let replayView = locked worker (Some current) (Some draft)
 

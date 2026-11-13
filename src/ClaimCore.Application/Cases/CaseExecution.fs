@@ -142,7 +142,16 @@ module internal CaseExecution =
                 | Some record ->
                     match view.State with
                     | Some state when
-                        state.CaseId = record.CaseId && state.Snapshot = Some record.Snapshot
+                        state.CaseId = record.CaseId
+                        && state.Snapshot = Some record.Snapshot
+                        && view.Work.IsSome
+                        && CaseIndex.create
+                            record.Index.ChangedAt
+                            record.Snapshot
+                            (view.Work |> Option.bind _.Snapshot)
+                            view.PendingReminderDue
+                            =
+                            record.Index
                         ->
                         current installationId record |> Result.map Some
                     | _ -> Error CoreFault.StoreIntegrityError
@@ -154,6 +163,11 @@ module internal CaseExecution =
                 | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
                 | Error(CaseDecisionError.InvalidState _) ->
                     Verdict.Fail CoreFault.StoreIntegrityError
+                | Ok after when after.After.State = CaseState.Erased ->
+                    match view.Family with
+                    | Some family when CaseFamily.validate after.After.CaseId family |> Result.isOk ->
+                        Verdict.Proceed(before, after)
+                    | _ -> Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok after -> Verdict.Proceed(before, after)
         with :? System.OverflowException ->
             Verdict.Fail CoreFault.InternalError
@@ -178,18 +192,40 @@ module internal CaseExecution =
 
         let projection operation =
             let stamp = LedgerEnvelope.stamp operation
+            let state = CaseSubject.apply stamp view.State after |> Option.get
+            let owned = CaseSubject.rows state |> Option.get
+
+            let beforePayments =
+                view.State |> Option.map _.Payments |> Option.defaultValue Map.empty
 
             let rows =
-                CaseSubject.apply stamp view.State after
-                |> Option.bind CaseSubject.rows
-                |> Option.defaultWith (fun () -> invalidOp "A decided case has complete rows.")
+                { owned with
+                    Payments =
+                        owned.Payments
+                        |> List.filter (fun row ->
+                            Map.tryFind row.PaymentId beforePayments <> Some row)
+                }
 
-            let snapshot = rows.Snapshot
+            let complete value =
+                value
+                |> Result.defaultWith (fun _ ->
+                    invalidOp "A case-family consequence has complete owned rows.")
+                |> Some
 
-            match snapshot.State, view.Case with
-            | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
-            | _, None -> CaseProjection.Insert(id, snapshot, index)
-            | _ -> CaseProjection.Update(id, snapshot, index, after.Payment)
+            let family =
+                match snapshot.State, view.Case with
+                | CaseState.Erased, _ ->
+                    CaseFamily.onCaseErased state view.Family.Value
+                    |> Result.bind CaseFamily.rows
+                    |> complete
+                | _, None -> CaseFamily.onCaseCreated id |> CaseFamily.rows |> complete
+                | _ -> None
+
+            {
+                CaseProjection.Rows = rows
+                Index = index
+                Family = family
+            }
 
         {
             OperationId = request.OperationId

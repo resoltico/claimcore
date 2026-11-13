@@ -26,6 +26,7 @@
     <Compile Include="Reads/ViewCountStorage.fs" />
     <Compile Include="Reads/WorkStorage.fs" />
     <Compile Include="Reads/NoteStorage.fs" />
+    <Compile Include="Reads/CaseFamilyStorage.fs" />
     <Compile Include="Reads/TimelineStorage.fs" />
     <Compile Include="Ledger/TransactionPrimitives.fs" />
     <Compile Include="Verification/VerificationRows.fs" />

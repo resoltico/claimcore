@@ -58,5 +58,6 @@
     <Compile Include="PeopleSubject.fs" />
     <Compile Include="CaseSearch.fs" />
     <Compile Include="CaseIndex.fs" />
+    <Compile Include="CaseFamily.fs" />
   </ItemGroup>
 </Project>
