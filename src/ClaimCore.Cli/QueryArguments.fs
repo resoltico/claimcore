@@ -92,7 +92,7 @@ module internal QueryArguments =
                 with
                 | true, value when value >= 1 && value <= maximum -> value
                 | _ ->
-                    problems.Add(UsageError.InvalidValue(flag input, value))
+                    problems.Add(UsageError.InvalidRange(flag input, value, 1, maximum))
                     fallback
 
         let mutable consumed = 0

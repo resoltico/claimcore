@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "拒否済み、最終確認待ち — 試行{attemptId}：{subject} {act}、操作{operationId}。",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} は {minimum} から {maximum} の範囲で指定してください。指定値: {value}。",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "2分以内にサインインが完了しませんでした。コマンドをもう一度実行し、ブラウザーでサインインを完了してください。",
+    "source": "fc5087e49e05"
   }
 }

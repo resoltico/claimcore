@@ -156,6 +156,7 @@ it("retains compound receipt handles while rejecting duplicate effect identities
     disclosure: "PARTIAL",
     context: {
       kind: "RECEIPT",
+      recordedFields: [],
       caseLink: null,
       refreshCase: null,
       target: {
@@ -210,6 +211,7 @@ it("requires closed review and receipt contexts in the actual operation success 
     ...document,
     context: {
       kind: "RECEIPT",
+      recordedFields: [],
       target: {
         kind: "CASE",
         caseId: "019aa6a0-0000-7000-8000-000000000002",

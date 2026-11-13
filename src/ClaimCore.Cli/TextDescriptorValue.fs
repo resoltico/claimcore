@@ -30,7 +30,7 @@ module internal TextDescriptorValue =
         ReplyTextFormat.displayed language (Some value)
 
     // This exhaustive semantic-value table keeps every renderer case visible without a fallback.
-    let render language =
+    let renderIn timeZone language =
         function
         | PresentedValue.Money value ->
             ReplyTextFormat.moneyWithScale language value.Value value.DisplayScale
@@ -41,7 +41,8 @@ module internal TextDescriptorValue =
                 value.Value
                 value.DisplayScale
         | PresentedValue.Date value -> ReplyTextFormat.date language value |> text language
-        | PresentedValue.Instant value -> ReplyTextFormat.instant value |> text language
+        | PresentedValue.Instant value ->
+            ReplyTextFormat.instantIn language timeZone value |> text language
         | PresentedValue.Party value -> PartyName.format value |> text language
         | PresentedValue.Text value -> text language value
         | PresentedValue.Narrative value -> ReplyTextFormat.narrative language (Some value)
@@ -55,16 +56,20 @@ module internal TextDescriptorValue =
         | PresentedValue.Identifier value -> text language value
         | PresentedValue.Absent reason -> ReplyTextFormat.label language reason
 
+    let render language value = renderIn "UTC" language value
+
     /// Tables keep admitted paragraph breaks visible as data inside a single cell.
-    let cell language =
+    let cellIn timeZone language =
         function
         | PresentedValue.Narrative value -> ReplyTextFormat.displayed language (Some value)
-        | value -> render language value
+        | value -> renderIn timeZone language value
+
+    let cell language value = cellIn "UTC" language value
 
     let entry language (entry: Entry) =
         ReplyTextFormat.line language entry.LabelId (render language entry.Value)
 
-    let entries language (values: Entry list) =
+    let entriesIn timeZone language (values: Entry list) =
         let labels =
             values |> List.map (fun entry -> ReplyTextFormat.label language entry.LabelId)
 
@@ -73,13 +78,23 @@ module internal TextDescriptorValue =
 
         List.map2
             (fun label entry ->
-                label + String(' ', maximum - width label) + ": " + render language entry.Value)
+                label
+                + String(' ', maximum - width label)
+                + ": "
+                + renderIn timeZone language entry.Value)
             labels
             values
 
-    let sections language values =
+    let entries language values = entriesIn "UTC" language values
+
+    let sectionsIn timeZone language values =
         values
         |> List.filter (fun (section: Section) -> not section.Entries.IsEmpty)
         |> List.collect (fun (section: Section) ->
-            ReplyTextFormat.label language section.TitleId
-            :: entries language section.Entries)
+            (if section.Entries |> List.exists (fun entry -> entry.LabelId = section.TitleId) then
+                 []
+             else
+                 [ ReplyTextFormat.label language section.TitleId ])
+            @ entriesIn timeZone language section.Entries)
+
+    let sections language values = sectionsIn "UTC" language values

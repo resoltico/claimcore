@@ -348,8 +348,14 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 ## CLI use
 
+Disclosed case receipts supply `recordedFields` from the recorded command; HUMAN receipt context carries the same selection, including acceptance replay.
+Mutation text reports the outcome, recorded fields and case headline. `case get` presents the full
+case, and `--details` includes technical details. Timestamps use the supplied installation business
+zone. Page-size diagnostics state the accepted range. Interactive sign-in has a two-minute limit;
+`AUTHENTICATION_TIMEOUT` instructs the operator to retry and finish sign-in in the browser.
+
 CLI reply `result.localFailure.code` is one of `INSTALLATION_MISMATCH`, `RECOVERY_UNAVAILABLE`,
-`CONFIGURATION_INVALID`, `AUTHENTICATION_FAILED`, `SERVICE_UNAVAILABLE`, `CANCELLED`, `INTERNAL`,
+`CONFIGURATION_INVALID`, `AUTHENTICATION_FAILED`, `AUTHENTICATION_TIMEOUT`, `SERVICE_UNAVAILABLE`, `CANCELLED`, `INTERNAL`,
 `INVALID_FRAME`, `INVALID_RESPONSE` or `CONTRACT_MISMATCH`. `CONFIGURATION_INVALID` can include the
 setting and issue. `INVALID_FRAME` always includes a bounded `reason`: `NOT_JSON`, `DUPLICATE_KEY`,
 `UNKNOWN_ENDPOINT`, `TOO_LARGE` or `SCHEMA`. Reasons contain no submitted data or parser exception text.

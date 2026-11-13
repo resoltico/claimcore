@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "거부됨, 최종 확인 대기 — 시도 {attemptId}: {subject} {act}; 작업 {operationId}.",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} 값은 {minimum}에서 {maximum} 사이여야 합니다. 입력값: {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "2분 이내에 로그인이 완료되지 않았습니다. 명령을 다시 실행하고 브라우저에서 로그인을 완료하세요.",
+    "source": "fc5087e49e05"
   }
 }

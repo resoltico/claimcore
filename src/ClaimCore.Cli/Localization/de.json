@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "Abgelehnt, endgültige Bestätigung ausstehend — Versuch {attemptId}: {subject} {act}; Vorgang {operationId}.",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} muss zwischen {minimum} und {maximum} liegen; erhalten: {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "Die Anmeldung wurde nicht innerhalb von zwei Minuten abgeschlossen. Führen Sie den Befehl erneut aus und schließen Sie die Anmeldung im Browser ab.",
+    "source": "fc5087e49e05"
   }
 }

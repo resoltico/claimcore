@@ -30,6 +30,8 @@ module UsageText =
         | UsageError.ExtraOperand operand -> message language (CliMessage.ExtraOperand operand)
         | UsageError.InvalidValue(flag, value) ->
             message language (CliMessage.InvalidInteger(flag, value))
+        | UsageError.InvalidRange(flag, value, minimum, maximum) ->
+            message language (CliMessage.InvalidRange(flag, value, string minimum, string maximum))
         | UsageError.InvalidChoice(flag, value, allowed) -> choice language flag value allowed
         | UsageError.NotApplicable(flag, because) ->
             message language (CliMessage.NotApplicable(flag, because))

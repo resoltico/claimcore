@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "Atteikts, gaida galīgo apstiprinājumu — mēģinājums {attemptId}: {subject} {act}; operācija {operationId}.",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} jābūt no {minimum} līdz {maximum}; saņemts {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "Pierakstīšanās netika pabeigta divu minūšu laikā. Palaidiet komandu vēlreiz un pabeidziet pierakstīšanos pārlūkā.",
+    "source": "fc5087e49e05"
   }
 }

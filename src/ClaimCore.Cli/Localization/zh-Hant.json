@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "已拒絕，等待最終確認 — 嘗試 {attemptId}：{subject} {act}；操作 {operationId}。",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} 必須介於 {minimum} 和 {maximum} 之間；收到的值為 {value}。",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "未能在兩分鐘內完成登入。請重新執行命令，並在瀏覽器中完成登入。",
+    "source": "fc5087e49e05"
   }
 }

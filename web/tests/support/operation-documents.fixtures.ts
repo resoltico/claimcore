@@ -31,6 +31,7 @@ export const closeReceipt: HumanReceiptDocument = {
   screen: { regions: [] },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", revision: 5 },
     caseLink: "20000000-0000-4000-8000-000000000001",
     refreshCase: "20000000-0000-4000-8000-000000000001",

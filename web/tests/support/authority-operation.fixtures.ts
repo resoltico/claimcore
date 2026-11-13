@@ -85,6 +85,7 @@ export const authorityAcceptance = (
           screen: { regions: [] },
           context: {
             kind: "RECEIPT",
+            recordedFields: [],
             target: {
               kind: "AUTHORITY",
               actorId: ["REGISTER", "ADMIT"].includes(input.act.kind) ? input.operationId : actorId,

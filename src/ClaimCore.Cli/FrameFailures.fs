@@ -26,6 +26,7 @@ type ClientFailure =
     | Configuration
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | Authentication
+    | AuthenticationTimeout
     | Unavailable
     | Cancelled
     | Unexpected
@@ -40,6 +41,7 @@ type CliFailure =
     | ConfigurationInvalid
     | ConfigurationIssue of CliSetting * ConfigurationIssue
     | AuthenticationFailed
+    | AuthenticationTimeout
     | ServiceUnavailable
     | Cancelled
     | Internal
@@ -53,6 +55,7 @@ type CliFailureCode =
     | RecoveryUnavailable
     | ConfigurationInvalid
     | AuthenticationFailed
+    | AuthenticationTimeout
     | ServiceUnavailable
     | Cancelled
     | Internal
@@ -74,6 +77,7 @@ module CliFailureCode =
         | CliFailure.RecoveryUnavailable -> CliFailureCode.RecoveryUnavailable
         | CliFailure.ConfigurationInvalid
         | CliFailure.ConfigurationIssue _ -> CliFailureCode.ConfigurationInvalid
+        | CliFailure.AuthenticationTimeout -> CliFailureCode.AuthenticationTimeout
         | CliFailure.AuthenticationFailed -> CliFailureCode.AuthenticationFailed
         | CliFailure.ServiceUnavailable -> CliFailureCode.ServiceUnavailable
         | CliFailure.Cancelled -> CliFailureCode.Cancelled
@@ -87,6 +91,7 @@ module CliFailureCode =
         | CliFailureCode.InstallationMismatch -> CliFailure.InstallationMismatch
         | CliFailureCode.RecoveryUnavailable -> CliFailure.RecoveryUnavailable
         | CliFailureCode.ConfigurationInvalid -> CliFailure.ConfigurationInvalid
+        | CliFailureCode.AuthenticationTimeout -> CliFailure.AuthenticationTimeout
         | CliFailureCode.AuthenticationFailed -> CliFailure.AuthenticationFailed
         | CliFailureCode.ServiceUnavailable -> CliFailure.ServiceUnavailable
         | CliFailureCode.Cancelled -> CliFailure.Cancelled
@@ -103,6 +108,7 @@ module ClientFailure =
         | CliFailure.ConfigurationInvalid -> ClientFailure.Configuration
         | CliFailure.ConfigurationIssue(setting, issue) ->
             ClientFailure.ConfigurationIssue(setting, issue)
+        | CliFailure.AuthenticationTimeout -> ClientFailure.AuthenticationTimeout
         | CliFailure.AuthenticationFailed -> ClientFailure.Authentication
         | CliFailure.ServiceUnavailable -> ClientFailure.Unavailable
         | CliFailure.Cancelled -> ClientFailure.Cancelled

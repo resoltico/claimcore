@@ -23,13 +23,20 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    ((record (fun state payment ->
+                    ((record (fun state fields payment ->
                         {
                             DisclosedCaseReceipt.State = state
+                            RecordedFields = fields
                             Payment = payment
                         })
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
+                     |> field
+                         "recordedFields"
+                         _.RecordedFields
+                         (list
+                             (Vocabulary.all BusinessField.vocabulary).Length
+                             (VocabularyCodec.create BusinessField.vocabulary))
                      |> field
                          "payment"
                          _.Payment

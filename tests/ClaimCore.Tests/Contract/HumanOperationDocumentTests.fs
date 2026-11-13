@@ -415,3 +415,63 @@ let tests =
                         (HumanDocumentCodecs.document.Validate "$" (mutate "context" altered wire))
                         "Repeated effect IDs cannot masquerade as two handles")
         ]
+
+
+[<Tests>]
+let mutationSummary =
+    testCase "mutation text uses disclosed recorded fields and the case headline" (fun () ->
+        let receipt = closedReceipt ()
+
+        let receipt =
+            match receipt.Subject with
+            | ReceiptSubject.Case item ->
+                let shown =
+                    match item.Snapshot with
+                    | SnapshotDisclosure.Disclosed shown -> shown
+                    | _ -> failtest "Disclosed fixture"
+
+                { receipt with
+                    Subject =
+                        ReceiptSubject.Case
+                            { item with
+                                Snapshot =
+                                    SnapshotDisclosure.Disclosed { shown with RecordedFields = [] }
+                            }
+                }
+            | _ -> failtest "Case fixture"
+
+        let document = HumanReceiptDocument.ofCore receipt
+
+        let reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+            RepresentationReply.Human
+                {
+                    OperationId = OperationId.value receipt.OperationId
+                    Outcome = HumanExecuteResult.Accepted document
+                }
+
+        let text = OperationText.executeLines "en" reply |> String.concat "\n"
+        Expect.stringContains text "Closed" "The accepted snapshot supplies the headline"
+        Expect.isFalse (text.Contains "Status filter") "A case field is not a view filter"
+        Expect.isFalse (text.Contains "Policy number:") "Unrelated saved facts are omitted"
+        let full = ViewText.renderDocument false "en" document |> String.concat "\n"
+
+        Expect.stringContains
+            full
+            "Policy number:"
+            "The full supplied receipt remains available independently"
+
+        Expect.equal
+            (ReplyTextFormat.instantIn
+                "en"
+                "Europe/Riga"
+                (DateTimeOffset.Parse "2026-01-01T23:30:00Z"))
+            "2 Jan 2026 01:30 +02:00"
+            "The business zone changes both date and clock"
+
+        let usage =
+            UsageText.render
+                "en"
+                [ "case"; "list" ]
+                [ UsageError.InvalidRange("--limit", "0", 1, 200) ]
+
+        Expect.stringContains usage "between 1 and 200" "Range advice states both bounds")

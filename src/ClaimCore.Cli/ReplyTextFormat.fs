@@ -103,6 +103,13 @@ module internal ReplyTextFormat =
     let instant (value: DateTimeOffset) =
         value.ToUniversalTime().ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture)
 
+    let instantIn language timeZone (value: DateTimeOffset) =
+        let local =
+            TimeZoneInfo.ConvertTime(value, TimeZoneInfo.FindSystemTimeZoneById timeZone)
+
+        calendarDate language (DateOnly.FromDateTime local.DateTime)
+        + local.ToString(" HH:mm zzz", CultureInfo.InvariantCulture)
+
     let displayed language =
         function
         | None -> "—"

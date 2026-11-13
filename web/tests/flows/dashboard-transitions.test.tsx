@@ -232,6 +232,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
                 ...receipt,
                 context: {
                   kind: "RECEIPT",
+                  recordedFields: [],
                   target: { kind: "CASE", caseId: creation, revision: 1 },
                   caseLink: creation,
                   refreshCase: creation,
@@ -251,6 +252,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
                 ...receipt,
                 context: {
                   kind: "RECEIPT",
+                  recordedFields: [],
                   target: { kind: "CASE", caseId: creation, revision: 1 },
                   caseLink: creation,
                   refreshCase: creation,

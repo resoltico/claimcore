@@ -141,7 +141,7 @@ module CaseScreen =
                     else
                         value
                             "status"
-                            "input.status.label"
+                            "field.status.label"
                             Prominence.Primary
                             (code CaseStatus.vocabulary facts.Status)
 

@@ -134,6 +134,7 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
     screen: { regions: [] },
     context: {
       kind: "RECEIPT",
+      recordedFields: [],
       target: { kind: "CASE", caseId, revision: request.expectedRevision + 1 },
       caseLink: caseId,
       refreshCase: caseId,

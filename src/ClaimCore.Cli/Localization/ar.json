@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "مرفوض، بانتظار التأكيد النهائي — المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "يجب أن تكون قيمة {flag} بين {minimum} و{maximum}؛ القيمة المستلمة: {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "لم يكتمل تسجيل الدخول خلال دقيقتين. شغّل الأمر مجددًا وأكمل تسجيل الدخول في المتصفح.",
+    "source": "fc5087e49e05"
   }
 }

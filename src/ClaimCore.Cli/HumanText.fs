@@ -35,12 +35,11 @@ module internal HumanText =
         | HumanRejection.Input(value, issues) ->
             advice language value @ (issues |> List.map (issue language))
         | HumanRejection.Conflict(value, _, document) ->
-            advice language value @ ViewText.renderSelected details language document.Screen
+            advice language value @ ViewText.renderDocument details language document
         | HumanRejection.Refused value -> advice language value
 
     let read details language (reply: HumanReadReply) =
         match reply.Outcome with
-        | HumanReadOutcome.Succeeded document ->
-            ViewText.renderSelected details language document.Screen
+        | HumanReadOutcome.Succeeded document -> ViewText.renderDocument details language document
         | HumanReadOutcome.Failed value -> advice language value
         | HumanReadOutcome.Rejected value -> rejection details language value

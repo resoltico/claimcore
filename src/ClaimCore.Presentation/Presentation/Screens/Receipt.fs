@@ -308,8 +308,34 @@ module ReceiptScreen =
             | ReceiptSubject.Reminder item -> Some item.Reference
             | ReceiptSubject.Authority _ -> None
 
+        let headline =
+            match receipt.Subject with
+            | ReceiptSubject.Case item ->
+                let state =
+                    match item.Snapshot with
+                    | SnapshotDisclosure.Disclosed live ->
+                        Some(
+                            LiveCase.toState live.State
+                            |> CaseState.map (fun fields ->
+                                fields.Status, CaseProgress.ofFinancial fields.Finance)
+                            |> CaseHeadline.ofState
+                        )
+                    | SnapshotDisclosure.Erased -> Some CaseHeadline.Erased
+                    | SnapshotDisclosure.Withheld -> None
+
+                state
+                |> Option.map (fun state ->
+                    value
+                        "headline"
+                        "field.status.label"
+                        Prominence.Primary
+                        (PresentedValue.State state))
+                |> Option.toList
+            | _ -> []
+
         let identity =
             (receiptHeader reference (code ActKind.vocabulary act)).Entries
+            @ headline
             @ [
                 value
                     "recordedAt"

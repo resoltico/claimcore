@@ -414,5 +414,13 @@
   "cli.text.recoveryRefusedAttempt": {
     "text": "Rechazado, pendiente de confirmación definitiva — intento {attemptId}: {subject} {act}; operación {operationId}.",
     "source": "a1976e98bad0"
+  },
+  "cli.usage.invalidRange": {
+    "text": "{flag} debe estar entre {minimum} y {maximum}; se recibió {value}.",
+    "source": "8826c22553e7"
+  },
+  "cli.failure.AUTHENTICATION_TIMEOUT": {
+    "text": "No se completó el inicio de sesión en dos minutos. Ejecute de nuevo el comando y complete el inicio de sesión en el navegador.",
+    "source": "fc5087e49e05"
   }
 }

@@ -196,6 +196,9 @@ type internal LoopbackBrowser(launch: string -> Result<unit, AccessFailure>) =
                     return BrowserResult(ResultType = BrowserResultType.HttpError)
             with
             | :? OperationCanceledException ->
+                if not cancelled.IsCancellationRequested then
+                    failure <- Some AccessFailure.OidcInteractionTimeout
+
                 return BrowserResult(ResultType = BrowserResultType.Timeout)
             | :? IO.IOException
             | :? SocketException ->

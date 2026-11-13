@@ -53,6 +53,7 @@ module CliReply =
             | ClientFailure.Configuration -> CliFailure.ConfigurationInvalid
             | ClientFailure.ConfigurationIssue(setting, issue) ->
                 CliFailure.ConfigurationIssue(setting, issue)
+            | ClientFailure.AuthenticationTimeout -> CliFailure.AuthenticationTimeout
             | ClientFailure.Authentication -> CliFailure.AuthenticationFailed
             | ClientFailure.Unavailable -> CliFailure.ServiceUnavailable
             | ClientFailure.Cancelled -> CliFailure.Cancelled

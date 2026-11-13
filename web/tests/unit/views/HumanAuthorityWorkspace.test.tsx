@@ -94,6 +94,7 @@ const receipt = (caption: string): HumanReceiptDocument => ({
   },
   context: {
     kind: "RECEIPT",
+    recordedFields: [],
     target: { kind: "AUTHORITY", actorId },
     caseLink: null,
     refreshCase: null,

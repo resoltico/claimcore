@@ -218,6 +218,8 @@ module private FrameInvocation =
                                     ConfigurationIssue.PrivateInputRefused
                                 )
                             )
+                    | Error AccessFailure.OidcInteractionTimeout ->
+                        return CliReply.local ClientFailure.AuthenticationTimeout
                     | Error _ -> return CliReply.local ClientFailure.Authentication
                     | Ok token -> return! prepared access token frame beforeSend consent cancelled
         }
