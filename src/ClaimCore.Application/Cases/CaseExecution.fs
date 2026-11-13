@@ -162,36 +162,28 @@ module internal CaseExecution =
         _installationId
         (_calendar: IBusinessCalendar)
         (request: CaseCommand)
-        (write: LedgerWriteContext)
         (view: CaseFacts)
         (after: CaseDecision)
         =
-        let stamp =
-            {
-                SubjectStamp.Position =
-                    EffectPosition.create (Sequence.successor write.Head.Sequence) 0 |> Option.get
-                OperationId = request.OperationId
-                ActorId = LedgerEnvelope.actorId view.Actor
-                RecordedAt = view.ObservedAt
-            }
-
-        let rows =
-            CaseSubject.apply stamp view.State after
-            |> Option.bind CaseSubject.rows
-            |> Option.defaultWith (fun () -> invalidOp "A decided case has complete rows.")
-
-        let snapshot = rows.Snapshot
+        let snapshot = after.After
 
         let index =
             CaseIndex.create
-                rows.ChangedAt
+                view.ObservedAt
                 snapshot
                 (view.Work |> Option.bind _.Snapshot)
                 view.PendingReminderDue
 
         let id = snapshot.CaseId
 
-        let projection =
+        let projection stamp =
+            let rows =
+                CaseSubject.apply stamp view.State after
+                |> Option.bind CaseSubject.rows
+                |> Option.defaultWith (fun () -> invalidOp "A decided case has complete rows.")
+
+            let snapshot = rows.Snapshot
+
             match snapshot.State, view.Case with
             | CaseState.Erased, _ -> CaseProjection.Erase(id, snapshot.Revision, view.ObservedAt)
             | _, None -> CaseProjection.Insert(id, snapshot, index)
@@ -295,7 +287,7 @@ module internal CaseExecution =
                 propose services.InstallationId services.Calendar command view)
         |> Verdict.bind (fun (_, after) ->
             try
-                let plan = project installationId calendar command write view after
+                let plan = project installationId calendar command view after
                 LedgerEnvelope.accept services view.Actor write plan
             with :? System.OverflowException ->
                 Verdict.Fail CoreFault.InternalError)

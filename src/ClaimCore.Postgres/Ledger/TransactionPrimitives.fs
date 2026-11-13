@@ -294,14 +294,10 @@ type private ReadTx
         member _.PaymentPage query =
             PaymentStorage.page connection query token
 
-        member _.ActivePayment(parent, identity) =
-            PaymentStorage.active connection (parent, identity) token
 
         member _.LatestPayments(parent, limit) =
             PaymentStorage.latest connection (parent, limit) token
 
-        member _.PaymentBoundsExcluding(parent, selected) =
-            PaymentStorage.remainingDates connection (parent, selected) token
 
         member _.FindWork id =
             WorkStorage.findWork connection id token

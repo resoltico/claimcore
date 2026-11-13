@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-[<NoComparison>]
+[<NoEquality; NoComparison>]
 type internal LedgerAppend<'projection> =
     {
         OperationId: OperationId
@@ -14,7 +14,7 @@ type internal LedgerAppend<'projection> =
         Command: CommandSkeleton
         Values: OperationValues
         Current: ReceiptCurrent
-        Projection: 'projection
+        Projection: SubjectStamp -> 'projection
     }
 
 type internal LedgerWriteContext =
@@ -75,7 +75,17 @@ module internal LedgerEnvelope =
                         (actor.Actor |> Option.map Actor.currentReference)
                         plan.Current
                 )
-                |> Result.map (fun receipt -> Verdict.Proceed(operation, plan.Projection, receipt)))
+                |> Result.map (fun receipt ->
+                    let stamp =
+                        {
+                            SubjectStamp.Position =
+                                EffectPosition.create header.Sequence 0 |> Option.get
+                            OperationId = header.OperationId
+                            ActorId = header.ActorId
+                            RecordedAt = header.RecordedAt
+                        }
+
+                    Verdict.Proceed(operation, plan.Projection stamp, receipt)))
             |> Result.defaultWith Verdict.Fail
         with :? OverflowException ->
             Verdict.Fail CoreFault.InternalError

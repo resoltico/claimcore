@@ -280,3 +280,70 @@ module internal VerificationRows =
                             }
                             token
         }
+
+    let family connection (state: Replay.Scan) workIndexes token =
+        task {
+            let! work =
+                DatabaseSession.namedRows
+                    connection
+                    ($"SELECT {WorkStorage.workColumns} FROM claimcore.case_work")
+                    [||]
+                    token
+
+            let! reminders =
+                DatabaseSession.namedRows
+                    connection
+                    ($"SELECT {WorkStorage.reminderColumns} FROM claimcore.reminders r")
+                    [||]
+                    token
+
+            let! notes =
+                DatabaseSession.namedRows
+                    connection
+                    ("SELECT " + NoteStorage.columns + NoteStorage.source)
+                    [||]
+                    token
+
+            return
+                result {
+                    let! work =
+                        capture None VerificationFinding.CaseWorkProjection (fun () ->
+                            work |> List.map WorkStorage.workProjectionRow)
+
+                    let! reminders =
+                        capture None VerificationFinding.CaseWorkProjection (fun () ->
+                            reminders |> List.map WorkStorage.reminderProjectionRow)
+
+                    let! notes =
+                        capture None VerificationFinding.CaseNotesProjection (fun () ->
+                            notes |> List.map NoteStorage.projectionRow)
+
+                    let! expectedWork = Replay.workRows state
+                    let! expectedReminders = Replay.reminderRows state
+                    let! expectedNotes = Replay.noteRows state
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseNotesProjection
+                            (fun (row: NoteSubjectRows) -> row.NoteId)
+                            expectedNotes
+                            notes
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseWorkProjection
+                            (fun (row: WorkSubjectRows) -> row.CaseId)
+                            expectedWork
+                            work
+
+                    do!
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseWorkProjection
+                            (fun (row: ReminderSubjectRows) -> row.ReminderId)
+                            expectedReminders
+                            reminders
+
+                    return!
+                        ProjectionVerification.workIndexes state.Work state.Reminders workIndexes
+                }
+        }

@@ -18,6 +18,7 @@
     <Compile Include="Reads/TimelineOverview.fs" />
     <Compile Include="Reads/TimelineHistory.fs" />
     <Compile Include="Reads/ConflictReads.fs" />
+    <Compile Include="Operations/SubjectStates.fs" />
     <Compile Include="Operations/ExecutionFacts.fs" />
     <Compile Include="Operations/LedgerEnvelope.fs" />
     <Compile Include="Cases/CaseExecution.fs" />

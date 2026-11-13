@@ -681,6 +681,26 @@ let private projectionRepair database =
         let! repairedSearch = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
         Expect.isOk repairedSearch "Independent work search columns are also part of reconstruction"
         let! _ = verified database
+
+        for table in [ "case_work"; "reminders" ] do
+            do!
+                sql
+                    database
+                    ("UPDATE claimcore."
+                     + table
+                     + " SET snapshot=decode('20','hex')||snapshot WHERE snapshot IS NOT NULL")
+                    [||]
+
+            do! finding VerificationFinding.CaseWorkProjection database
+            let! repairedBytes = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+            Expect.isOk
+                repairedBytes
+                "Rebuild restores canonical subject bytes instead of accepting a re-encoded projection"
+
+            let! _ = verified database
+            ()
+
         return ()
     }
 

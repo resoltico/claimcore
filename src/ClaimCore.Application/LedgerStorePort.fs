@@ -267,27 +267,11 @@ type CasePageItem =
         WorkSummary: CaseWorkSummary option
     }
 
-type WorkProjection =
-    {
-        Snapshot: CaseWorkSnapshot
-        ChangedAt: DateTimeOffset
-        RecordedBy: ActorId
-        SummaryChangedAt: DateTimeOffset option
-        SummaryRecordedBy: ActorId option
-    }
-
-type ReminderProjection =
-    {
-        Effects: ReminderEffects
-        ChangedAt: DateTimeOffset
-        RecordedBy: ActorId
-    }
-
 [<RequireQualifiedAccess>]
 type WorkChangeProjection =
-    | Work of WorkProjection
-    | Reminder of ReminderProjection
-    | Note of Note
+    | Work of WorkSubjectRows
+    | Reminder of ReminderSubjectRows list
+    | Note of NoteSubjectRows
 
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
@@ -465,8 +449,6 @@ type IReadTx =
         PaymentPageQuery -> Task<Page<PaymentEntry * EffectPosition, EffectPosition>>
 
     abstract LatestPayments: CaseId * int -> Task<PaymentEntry list>
-    abstract ActivePayment: CaseId * Guid -> Task<PaymentEntry option>
-    abstract PaymentBoundsExcluding: CaseId * OperationId -> Task<PaymentDateBounds option>
     abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindNote: NoteId -> Task<StoredNote option>

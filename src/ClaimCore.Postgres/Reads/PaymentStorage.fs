@@ -26,18 +26,6 @@ module internal PaymentStorage =
         |> Result.defaultWith (fun _ ->
             raise (RecordCorruptException "Invalid projected payment entry."))
 
-    let active connection (parent, identity) token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    "SELECT payment_id,payment_date,paid_amount FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=$2 AND NOT removed AND payment_date IS NOT NULL"
-                    [| box (CaseId.value parent); box identity |]
-                    token
-
-            return rows |> List.tryHead |> Option.map row
-        }
-
     let latest connection (parent, limit) token =
         task {
             if limit < 1 || limit > PaymentPaging.MaximumLimit then
@@ -51,37 +39,6 @@ module internal PaymentStorage =
                     token
 
             return rows |> List.map row
-        }
-
-    let remainingDates connection (parent, selected) token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    "SELECT (SELECT payment_date FROM claimcore.case_payments WHERE case_id=$1 AND payment_id<>$2 AND NOT removed AND payment_date IS NOT NULL ORDER BY payment_date ASC,payment_id ASC LIMIT 1) AS first_date,(SELECT payment_date FROM claimcore.case_payments WHERE case_id=$1 AND payment_id<>$2 AND NOT removed AND payment_date IS NOT NULL ORDER BY payment_date DESC,payment_id DESC LIMIT 1) AS last_date"
-                    [| box (CaseId.value parent); box (OperationId.value selected) |]
-                    token
-
-            match rows with
-            | [ row ] ->
-                match
-                    DatabaseSession.namedOptional<DateOnly> "first_date" row,
-                    DatabaseSession.namedOptional<DateOnly> "last_date" row
-                with
-                | None, None -> return None
-                | Some first, Some last ->
-                    match
-                        PaymentDateBounds.create
-                            (CalendarDate.ofDate first)
-                            (CalendarDate.ofDate last)
-                    with
-                    | Some bounds -> return Some bounds
-                    | None ->
-                        return
-                            raise (RecordCorruptException "Invalid projected payment boundaries.")
-                | _ ->
-                    return raise (RecordCorruptException "Incomplete projected payment boundaries.")
-            | _ -> return raise (RecordCorruptException "Missing payment boundary observation.")
         }
 
     let apply connection parent effect token =

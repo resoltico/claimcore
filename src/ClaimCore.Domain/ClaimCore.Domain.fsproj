@@ -52,6 +52,9 @@
     <Compile Include="CaseWorkDecision.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="CaseSubject.fs" />
+    <Compile Include="WorkSubject.fs" />
+    <Compile Include="ReminderSubject.fs" />
+    <Compile Include="NoteSubject.fs" />
     <Compile Include="CaseSearch.fs" />
     <Compile Include="CaseIndex.fs" />
   </ItemGroup>

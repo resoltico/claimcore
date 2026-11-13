@@ -22,9 +22,10 @@ module CaseIndex =
         let fields = CaseState.fields snapshot.State
 
         let work = if snapshot.State = CaseState.Erased then None else work
+        let responsible, _, workSearch = WorkSubject.columns work
 
         {
-            Responsible = work |> Option.bind (fun state -> state.Work.Responsible)
+            Responsible = responsible
             FollowUp =
                 if snapshot.State = CaseState.Erased then
                     None
@@ -34,10 +35,7 @@ module CaseIndex =
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
             ChangedAt = changedAt
             SearchText = fields |> Option.map CaseSearch.text
-            WorkSearchText =
-                work
-                |> Option.bind (fun state -> state.Work.Summary)
-                |> Option.map (HandlingSummary.format >> TextSearch.normalize)
+            WorkSearchText = workSearch
             NotifiedOn =
                 fields
                 |> Option.map (fun fields ->

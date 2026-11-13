@@ -70,89 +70,76 @@ module internal ProjectionRebuild =
     let private replaceWork connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, history) in state.Work do
-                match history.Snapshot with
-                | Some snapshot when snapshot.Revision > Revision.zero ->
-                    do!
-                        Persistence.workChange
-                            connection
-                            (WorkChangeProjection.Work
-                                {
-                                    Snapshot = snapshot
-                                    ChangedAt = history.ChangedAt.Value
-                                    RecordedBy = history.RecordedBy.Value
-                                    SummaryChangedAt = history.SummaryChangedAt
-                                    SummaryRecordedBy = history.SummaryRecordedBy
-                                })
-                            token
-                | Some _ -> ()
-                | None ->
-                    let! _ =
-                        DatabaseSession.execute
-                            connection
-                            "INSERT INTO claimcore.case_work(case_id,revision,changed_at,recorded_by) VALUES($1,$2,$3,$4)"
-                            [|
-                                box (CaseId.value id)
-                                box (Revision.value history.Revision)
-                                DatabaseSession.parameter history.ChangedAt
-                                DatabaseSession.parameter (
-                                    history.RecordedBy |> Option.map ActorId.value
-                                )
-                            |]
-                            token
+                let parent = Map.find id state.Cases
 
-                    ()
+                let owned =
+                    {
+                        WorkSubjectState.CaseId = id
+                        Revision = history.Revision
+                        Snapshot = history.Snapshot
+                        ChangedAt = history.ChangedAt
+                        RecordedBy = history.RecordedBy
+                        SummaryChangedAt = history.SummaryChangedAt
+                        SummaryRecordedBy = history.SummaryRecordedBy
+                        Erased = parent.State = CaseState.Erased
+                    }
 
-            for KeyValue(id, history) in state.Reminders do
-                match history.Snapshot with
-                | Some snapshot ->
-                    do!
-                        Persistence.workChange
-                            connection
-                            (WorkChangeProjection.Reminder
-                                {
-                                    Effects = ReminderEffects.Created snapshot
-                                    ChangedAt = history.RecordedAt
-                                    RecordedBy = history.RecordedBy
-                                })
-                            token
-                | None ->
-                    let! _ =
-                        DatabaseSession.execute
-                            connection
-                            "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,changed_at,recorded_by) VALUES($1,$2,$3,$4,$5)"
-                            [|
-                                box (ReminderId.value id)
-                                box (CaseId.value history.CaseId)
-                                box (Revision.value history.Revision)
-                                box history.RecordedAt
-                                box (ActorId.value history.RecordedBy)
-                            |]
-                            token
+                let rows =
+                    WorkSubject.rows owned
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Incomplete work after replay."))
 
-                    ()
+                do! Persistence.workChange connection (WorkChangeProjection.Work rows) token
+
+            let reminders =
+                state.Reminders
+                |> Map.toList
+                |> List.map (fun (id, history) ->
+                    let owned =
+                        {
+                            ReminderSubjectState.ReminderId = id
+                            CaseId = history.CaseId
+                            Revision = history.Revision
+                            Status = Some history.State
+                            Snapshot = history.Snapshot
+                            RecordedAt = history.RecordedAt
+                            RecordedBy = history.RecordedBy
+                            Erased = (Map.find history.CaseId state.Cases).State = CaseState.Erased
+                        }
+
+                    ReminderSubject.rows owned
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Incomplete reminder after replay.")))
+
+            do! Persistence.workChange connection (WorkChangeProjection.Reminder reminders) token
+
         }
 
     let private replaceNotes connection (state: Replay.Scan) token =
         task {
             for KeyValue(id, history) in state.Notes do
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) VALUES($1,$2,$3,$4,$5)"
-                        [|
-                            box (NoteId.value id)
-                            box (CaseId.value history.CaseId)
-                            box (Sequence.value (EffectPosition.sequence history.CreatedPosition))
-                            box (EffectPosition.index history.CreatedPosition)
-                            DatabaseSession.parameter (
-                                history.Snapshot
-                                |> Option.bind Note.text
-                                |> Option.map NoteText.format
-                            )
-                        |]
-                        token
+                let owned =
+                    {
+                        NoteSubjectState.NoteId = id
+                        CaseId = history.CaseId
+                        Removed = history.Removed
+                        Snapshot = history.Snapshot
+                        Created =
+                            {
+                                Position = history.CreatedPosition
+                                OperationId = OperationId.create (NoteId.value id) |> Option.get
+                                ActorId = history.RecordedBy
+                                RecordedAt = history.RecordedAt
+                            }
+                        Erased = (Map.find history.CaseId state.Cases).State = CaseState.Erased
+                    }
 
-                ()
+                let rows =
+                    NoteSubject.rows owned
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Incomplete note after replay."))
+
+                do! Persistence.workChange connection (WorkChangeProjection.Note rows) token
         }
 
     let private replaceGrants connection (state: Replay.Scan) token =

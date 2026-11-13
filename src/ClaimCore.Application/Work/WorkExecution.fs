@@ -13,13 +13,13 @@ module internal WorkExecution =
         | Reminder of OperationId * CaseSelector * ReminderInput
         | Note of OperationId * CaseSelector * NoteInput
 
-    [<NoComparison>]
+    [<NoEquality; NoComparison>]
     type private Proposal =
         {
             Command: CommandSkeleton
             Values: OperationValues
             Current: ReceiptCurrent
-            Projection: WorkChangeProjection
+            Projection: SubjectStamp -> WorkChangeProjection
             Index: (CaseId * CaseIndex) option
             Review: OperationReview
         }
@@ -212,20 +212,33 @@ module internal WorkExecution =
                                  | _ -> None)
 
                         match
-                            CaseWorkDecision.decide parent.Snapshot eligible expected update before
+                            WorkSubject.decide
+                                {
+                                    Parent = view.State.Value
+                                    AssigneeEligible = fun _ -> eligible
+                                }
+                                (Some(SubjectStates.work view.State.Value current))
+                                {
+                                    ExpectedRevision = expected
+                                    Update = update
+                                }
                         with
                         | Error refusal -> return Verdict.Refuse refusal
                         | Ok after ->
                             let! pendingDue = tx.PendingReminderDue(parent.CaseId, None)
                             let recordedBy = LedgerEnvelope.actorId view.Actor
 
-                            let summaryChangedAt, summaryRecordedBy =
-                                if after.Work.Summary.IsNone then
-                                    None, None
-                                elif before.Work.Summary = after.Work.Summary then
-                                    current.SummaryChangedAt, current.SummaryRecordedBy
-                                else
-                                    Some view.ObservedAt, Some recordedBy
+                            let applied =
+                                WorkSubject.apply
+                                    view.ObservedAt
+                                    recordedBy
+                                    (Some(SubjectStates.work view.State.Value current))
+                                    after
+                                |> Option.bind WorkSubject.rows
+                                |> Option.get
+
+                            let summaryChangedAt = applied.SummaryChangedAt
+                            let summaryRecordedBy = applied.SummaryRecordedBy
 
                             let stored =
                                 { current with
@@ -276,15 +289,7 @@ module internal WorkExecution =
                                                         (Some after)
                                                         pendingDue
                                                 )
-                                            Projection =
-                                                WorkChangeProjection.Work
-                                                    {
-                                                        Snapshot = after
-                                                        ChangedAt = view.ObservedAt
-                                                        RecordedBy = recordedBy
-                                                        SummaryChangedAt = summaryChangedAt
-                                                        SummaryRecordedBy = summaryRecordedBy
-                                                    }
+                                            Projection = fun _ -> WorkChangeProjection.Work applied
                                             Review =
                                                 OperationReview.Work
                                                     {
@@ -305,34 +310,6 @@ module internal WorkExecution =
                         (fun () -> invalidOp "Only a new operation has proposed effects.")
                         other
         }
-
-    let private reminderRefusal (parent: StoredCase) current =
-        function
-        | ReminderRefusal.IdentityReserved -> Verdict.Fail CoreFault.StoreIntegrityError
-        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.revisionConflict actual)
-        | ReminderRefusal.InvalidAction violation ->
-            Verdict.Refuse(Refusal.invalidInput (InputTarget.ReminderAction, violation))
-        | ReminderRefusal.NotFound
-        | ReminderRefusal.ParentMismatch ->
-            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | ReminderRefusal.ParentNotActive
-        | ReminderRefusal.ParentNotOpen ->
-            let state =
-                parent.Snapshot.State
-                |> CaseState.map (fun fields ->
-                    fields.Status, CaseProgress.ofFinancial fields.Finance)
-
-            Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered(CaseHeadline.ofState state)))
-        | ReminderRefusal.PendingRequired
-        | ReminderRefusal.TerminalRequired ->
-            match current with
-            | Some reminder ->
-                Verdict.Refuse(
-                    Refusal.Reminder(ReminderRuleRefusal.NotOffered(Reminder.state reminder))
-                )
-            | None -> Verdict.Fail CoreFault.StoreIntegrityError
-        | ReminderRefusal.NoChanges ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.NoChanges)
 
     let private reminderProposal
         executing
@@ -416,22 +393,47 @@ module internal WorkExecution =
                     else
                         next.IsSome
 
-                match Reminder.decide operation parent.Snapshot before reserved command with
-                | Error refusal -> return reminderRefusal parent before refusal
+                let ownedBefore = target |> Option.map (SubjectStates.reminder view.State.Value)
+
+                let decision =
+                    if reserved then
+                        Error Refusal.IdempotencyConflict
+                    else
+                        ReminderSubject.decide
+                            operation
+                            {
+                                Parent = view.State.Value
+                                IdentityReserved = reserved
+                            }
+                            ownedBefore
+                            command
+
+                match decision with
+                | Error Refusal.IdempotencyConflict ->
+                    return Verdict.Fail CoreFault.StoreIntegrityError
+                | Error refusal -> return Verdict.Refuse refusal
                 | Ok effects ->
                     let! work = tx.FindWork parent.CaseId
                     let! pendingDue = tx.PendingReminderDue(parent.CaseId, Some id)
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 
-                    let stored value : StoredReminder =
+                    let applied =
+                        ReminderSubject.apply view.ObservedAt recordedBy ownedBefore effects
+
+                    let rows = applied |> List.map (ReminderSubject.rows >> Option.get)
+
+                    let stored (state: ReminderSubjectState) : StoredReminder =
                         {
-                            ReminderId = Reminder.id value
-                            CaseId = Reminder.caseId value
-                            Revision = Reminder.revision value
-                            Snapshot = Some value
-                            SnapshotBytes = ReminderRecord.encodeSnapshot value
-                            RecordedAt = view.ObservedAt
-                            RecordedBy = recordedBy
+                            ReminderId = state.ReminderId
+                            CaseId = state.CaseId
+                            Revision = state.Revision
+                            Snapshot = state.Snapshot
+                            SnapshotBytes =
+                                state.Snapshot
+                                |> Option.map ReminderRecord.encodeSnapshot
+                                |> Option.defaultValue [||]
+                            RecordedAt = state.RecordedAt
+                            RecordedBy = state.RecordedBy
                         }
 
                     let _primary, values =
@@ -442,8 +444,8 @@ module internal WorkExecution =
                             completed, [ completed; next ]
 
                     let accepted =
-                        values
-                        |> List.map (fun value -> Reminder.id value, stored value)
+                        applied
+                        |> List.map (fun value -> value.ReminderId, stored value)
                         |> Map.ofList
 
                     return
@@ -467,13 +469,7 @@ module internal WorkExecution =
                                                     Reminder.state value = ReminderState.Pending)
                                                 |> List.map Reminder.due))
                                     )
-                                Projection =
-                                    WorkChangeProjection.Reminder
-                                        {
-                                            Effects = effects
-                                            ChangedAt = view.ObservedAt
-                                            RecordedBy = recordedBy
-                                        }
+                                Projection = fun _ -> WorkChangeProjection.Reminder rows
                                 Review =
                                     OperationReview.Reminder
                                         {
@@ -532,24 +528,13 @@ module internal WorkExecution =
             | Verdict.Proceed() when view.Maintenance.Active ->
                 return Verdict.Refuse Refusal.RegisterMaintenance
             | Verdict.Proceed() ->
-                match Note.decide operation parent.Snapshot before command with
-                | Error NoteRefusal.IdentityReserved ->
-                    return Verdict.Fail CoreFault.StoreIntegrityError
-                | Error(NoteRefusal.InvalidText violation) ->
-                    return Verdict.Refuse(Refusal.invalidInput (InputTarget.NoteText, violation))
-                | Error NoteRefusal.ParentMismatch
-                | Error NoteRefusal.NotOffered ->
-                    return Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-                | Error NoteRefusal.ParentNotActive ->
-                    let state =
-                        parent.Snapshot.State
-                        |> CaseState.map (fun fields ->
-                            fields.Status, CaseProgress.ofFinancial fields.Finance)
+                let ownedBefore = stored |> Option.map (SubjectStates.note view.State.Value)
+                let decision = NoteSubject.decide operation view.State.Value ownedBefore command
 
-                    return
-                        Verdict.Refuse(
-                            Refusal.Case(CaseRefusal.NotOffered(CaseHeadline.ofState state))
-                        )
+                match decision with
+                | Error Refusal.IdempotencyConflict ->
+                    return Verdict.Fail CoreFault.StoreIntegrityError
+                | Error refusal -> return Verdict.Refuse refusal
                 | Ok after ->
                     return
                         Verdict.Proceed
@@ -563,7 +548,14 @@ module internal WorkExecution =
                                 Values = OperationValues.Note { Command = command; After = after }
                                 Current = ReceiptCurrent.Note(Some parent, Some after)
                                 Index = None
-                                Projection = WorkChangeProjection.Note after
+                                Projection =
+                                    fun stamp ->
+                                        let rows =
+                                            NoteSubject.apply stamp ownedBefore after
+                                            |> Option.bind NoteSubject.rows
+                                            |> Option.get
+
+                                        WorkChangeProjection.Note rows
                                 Review =
                                     OperationReview.Note
                                         {
@@ -588,9 +580,27 @@ module internal WorkExecution =
             let! view =
                 ExecutionFacts.case services tx (Some(identity prepared)) (target prepared) None
 
+            let! state =
+                match view.Case with
+                | Some parent when
+                    view.ExistingOperation.IsNone
+                    && CaseWorkPolicy.authorize services.Principal view.Actor parent.CaseId
+                       |> Result.isOk
+                    ->
+                    tx.CaseState parent.CaseId
+                | _ -> System.Threading.Tasks.Task.FromResult None
+
+            let view = { view with State = state }
+
             try
                 match authorized services view with
                 | Error refusal -> return view, Verdict.Refuse refusal
+                | Ok parent when
+                    view.ExistingOperation.IsNone
+                    && (view.State
+                        |> Option.forall (fun state -> state.Snapshot <> Some parent.Snapshot))
+                    ->
+                    return view, Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok parent ->
                     let! proposal =
                         match prepared with
@@ -677,7 +687,9 @@ module internal WorkExecution =
                                             Command = proposal.Command
                                             Values = proposal.Values
                                             Current = proposal.Current
-                                            Projection = proposal.Projection, proposal.Index
+                                            Projection =
+                                                fun stamp ->
+                                                    proposal.Projection stamp, proposal.Index
                                         })
 
                             let write (projection, index) =

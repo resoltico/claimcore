@@ -56,6 +56,18 @@ module internal NoteStorage =
                 |> DatabaseSession.admitted ActorId.create
         }
 
+    let projectionRow value : NoteSubjectRows =
+        let record = row value
+
+        {
+            NoteId = Note.id record.Note
+            CaseId = Note.caseId record.Note
+            CreatedPosition = record.CreatedPosition
+            RecordedAt = record.RecordedAt
+            RecordedBy = record.RecordedBy
+            Text = Note.text record.Note
+        }
+
     let find connection id token =
         task {
             let! rows =

@@ -40,12 +40,7 @@ module internal Persistence =
                         (caseParameters id snapshot index)
                         token
 
-                let root =
-                    {
-                        CaseWorkSnapshot.CaseId = id
-                        Revision = Revision.zero
-                        Work = CaseWork.empty
-                    }
+                let root = (WorkSubject.initial id).Snapshot.Value
 
                 let! _ =
                     DatabaseSession.execute
@@ -232,119 +227,82 @@ module internal Persistence =
 
 
     let workChange connection projection token =
-        let reminderValue changedAt recordedBy insert value =
-            task {
-                let parameters =
-                    [|
-                        box (ReminderId.value (Reminder.id value))
-                        box (CaseId.value (Reminder.caseId value))
-                        box (Revision.value (Reminder.revision value))
-                        box (ReminderRecord.encodeSnapshot value)
-                        box (ReminderState.token (Reminder.state value))
-                        box (ReminderAction.format (Reminder.action value))
-                        box (CalendarDate.format (Reminder.due value))
-                        box (TextSearch.normalize (ReminderAction.format (Reminder.action value)))
-                        box changedAt
-                        box (ActorId.value recordedBy)
-                    |]
-
-                let sql =
-                    if insert then
-                        "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,snapshot,state,action,due,search_text,changed_at,recorded_by) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10)"
-                    else
-                        "UPDATE claimcore.reminders SET revision=$3,snapshot=$4,state=$5,action=$6,due=$7::date,search_text=$8,changed_at=$9,recorded_by=$10 WHERE reminder_id=$1 AND case_id=$2"
-
-                let! changed = DatabaseSession.execute connection sql parameters token
-
-                if changed <> 1 then
-                    raise (
-                        RecordCorruptException
-                            "Reminder projection is absent or has another parent."
-                    )
-            }
-
         task {
             match projection with
-            | WorkChangeProjection.Note note ->
-                match Note.text note with
-                | Some text ->
-                    let! changed =
-                        DatabaseSession.execute
-                            connection
-                            "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='note.add'"
-                            [|
-                                box (NoteId.value (Note.id note))
-                                box (CaseId.value (Note.caseId note))
-                                box (NoteText.format text)
-                            |]
-                            token
-
-                    if changed <> 1 then
-                        raise (RecordCorruptException "Note creation source is absent.")
-                | None ->
-                    let! changed =
-                        DatabaseSession.execute
-                            connection
-                            "UPDATE claimcore.notes SET text=NULL WHERE note_id=$1 AND case_id=$2 AND text IS NOT NULL"
-                            [|
-                                box (NoteId.value (Note.id note))
-                                box (CaseId.value (Note.caseId note))
-                            |]
-                            token
-
-                    if changed <> 1 then
-                        raise (RecordCorruptException "Current note is absent.")
-            | WorkChangeProjection.Work projection ->
-                let value = projection.Snapshot
-                let summary = value.Work.Summary |> Option.map HandlingSummary.format
-
+            | WorkChangeProjection.Note row ->
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.case_work SET revision=$2,snapshot=$3,responsible_actor=$4,handling_summary=$5,search_text=$6,changed_at=$7,recorded_by=$8,summary_changed_at=$9,summary_recorded_by=$10 WHERE case_id=$1"
+                        "INSERT INTO claimcore.notes(note_id,case_id,created_sequence,created_effect_index,text) SELECT $1,$2,operation_sequence,effect_index,$3 FROM claimcore.ledger_effects WHERE subject_kind='NOTE' AND subject_id=$1 AND act='note.add' AND operation_sequence=$4 AND effect_index=$5 ON CONFLICT(note_id) DO UPDATE SET text=EXCLUDED.text WHERE claimcore.notes.case_id=EXCLUDED.case_id AND claimcore.notes.created_sequence=EXCLUDED.created_sequence AND claimcore.notes.created_effect_index=EXCLUDED.created_effect_index"
                         [|
-                            box (CaseId.value value.CaseId)
-                            box (Revision.value value.Revision)
-                            box (WorkRecord.encodeSnapshot value)
-                            DatabaseSession.parameter (
-                                value.Work.Responsible |> Option.map ActorId.value
-                            )
-                            DatabaseSession.parameter summary
-                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
-                            box projection.ChangedAt
-                            box (ActorId.value projection.RecordedBy)
-                            DatabaseSession.parameter projection.SummaryChangedAt
-                            DatabaseSession.parameter (
-                                projection.SummaryRecordedBy |> Option.map ActorId.value
-                            )
+                            box (NoteId.value row.NoteId)
+                            box (CaseId.value row.CaseId)
+                            DatabaseSession.parameter (row.Text |> Option.map NoteText.format)
+                            box (Sequence.value (EffectPosition.sequence row.CreatedPosition))
+                            box (EffectPosition.index row.CreatedPosition)
                         |]
                         token
 
                 if changed <> 1 then
-                    raise (RecordCorruptException "Work projection is absent.")
+                    raise (RecordCorruptException "Note creation source is absent or mismatched.")
+            | WorkChangeProjection.Work projection ->
+                let state = projection
+
+                let! _ =
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.case_work(case_id,revision,snapshot,responsible_actor,handling_summary,search_text,changed_at,recorded_by,summary_changed_at,summary_recorded_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,snapshot=EXCLUDED.snapshot,responsible_actor=EXCLUDED.responsible_actor,handling_summary=EXCLUDED.handling_summary,search_text=EXCLUDED.search_text,changed_at=EXCLUDED.changed_at,recorded_by=EXCLUDED.recorded_by,summary_changed_at=EXCLUDED.summary_changed_at,summary_recorded_by=EXCLUDED.summary_recorded_by"
+                        [|
+                            box (CaseId.value state.CaseId)
+                            box (Revision.value state.Revision)
+                            DatabaseSession.parameter (
+                                state.Snapshot |> Option.map WorkRecord.encodeSnapshot
+                            )
+                            DatabaseSession.parameter (
+                                projection.Responsible |> Option.map ActorId.value
+                            )
+                            DatabaseSession.parameter (
+                                projection.Summary |> Option.map HandlingSummary.format
+                            )
+                            DatabaseSession.parameter projection.SearchText
+                            DatabaseSession.parameter state.ChangedAt
+                            DatabaseSession.parameter (state.RecordedBy |> Option.map ActorId.value)
+                            DatabaseSession.parameter state.SummaryChangedAt
+                            DatabaseSession.parameter (
+                                state.SummaryRecordedBy |> Option.map ActorId.value
+                            )
+                        |]
+                        token
 
                 return ()
-            | WorkChangeProjection.Reminder projection ->
-                do!
-                    task {
-                        match projection.Effects with
-                        | ReminderEffects.Created value ->
-                            do! reminderValue projection.ChangedAt projection.RecordedBy true value
-                            return ()
-                        | ReminderEffects.Changed value ->
-                            do! reminderValue projection.ChangedAt projection.RecordedBy false value
-                            return ()
-                        | ReminderEffects.CompletedAndPlanned(completed, next) ->
-                            do!
-                                reminderValue
-                                    projection.ChangedAt
-                                    projection.RecordedBy
-                                    false
-                                    completed
+            | WorkChangeProjection.Reminder rows ->
+                for row in rows do
+                    let state = row
 
-                            do! reminderValue projection.ChangedAt projection.RecordedBy true next
-                            return ()
-                    }
+                    let! changed =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,snapshot,state,action,due,search_text,changed_at,recorded_by) VALUES($1,$2,$3,$4,$5,$6,$7::date,$8,$9,$10) ON CONFLICT(reminder_id) DO UPDATE SET revision=EXCLUDED.revision,snapshot=EXCLUDED.snapshot,state=EXCLUDED.state,action=EXCLUDED.action,due=EXCLUDED.due,search_text=EXCLUDED.search_text,changed_at=EXCLUDED.changed_at,recorded_by=EXCLUDED.recorded_by WHERE claimcore.reminders.case_id=EXCLUDED.case_id"
+                            [|
+                                box (ReminderId.value state.ReminderId)
+                                box (CaseId.value state.CaseId)
+                                box (Revision.value state.Revision)
+                                DatabaseSession.parameter (
+                                    state.Snapshot |> Option.map ReminderRecord.encodeSnapshot
+                                )
+                                DatabaseSession.parameter (
+                                    row.Status |> Option.map ReminderState.token
+                                )
+                                DatabaseSession.parameter (
+                                    row.Action |> Option.map ReminderAction.format
+                                )
+                                DatabaseSession.parameter (row.Due |> Option.map CalendarDate.value)
+                                DatabaseSession.parameter row.SearchText
+                                box state.RecordedAt
+                                box (ActorId.value state.RecordedBy)
+                            |]
+                            token
 
-                return ()
+                    if changed <> 1 then
+                        raise (RecordCorruptException "Reminder projection has another parent.")
         }

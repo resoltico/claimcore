@@ -278,66 +278,7 @@ module ProjectionVerification =
     let workIndex work reminders record =
         workIndexes work reminders [ caseWorkIndex record ]
 
-    let workRows (expected: Map<CaseId, WorkHistory>) (actual: StoredWork list) =
-        let matches (row: StoredWork) =
-            match Map.tryFind row.CaseId expected with
-            | None -> false
-            | Some history ->
-                row.Revision = history.Revision
-                && row.Snapshot = history.Snapshot
-                && row.SnapshotBytes =
-                    (history.Snapshot
-                     |> Option.map ClaimCore.RecordFormat.WorkRecord.encodeSnapshot
-                     |> Option.defaultValue Array.empty)
-                && row.ChangedAt = history.ChangedAt
-                && row.RecordedBy = history.RecordedBy
-                && row.SummaryChangedAt = history.SummaryChangedAt
-                && row.SummaryRecordedBy = history.SummaryRecordedBy
-
-        require
-            None
-            VerificationFinding.CaseWorkProjection
-            (actual.Length = expected.Count
-             && (actual |> List.map _.CaseId |> Set.ofList |> Set.count) = expected.Count
-             && List.forall matches actual)
-
-    let reminderRows (expected: Map<ReminderId, ReminderHistory>) (actual: StoredReminder list) =
-        let matches (row: StoredReminder) =
-            match Map.tryFind row.ReminderId expected with
-            | None -> false
-            | Some history ->
-                row.CaseId = history.CaseId
-                && row.Revision = history.Revision
-                && row.Snapshot = history.Snapshot
-                && row.SnapshotBytes =
-                    (history.Snapshot
-                     |> Option.map ClaimCore.RecordFormat.ReminderRecord.encodeSnapshot
-                     |> Option.defaultValue Array.empty)
-                && row.RecordedAt = history.RecordedAt
-                && row.RecordedBy = history.RecordedBy
-
-        require
-            None
-            VerificationFinding.CaseWorkProjection
-            (actual.Length = expected.Count
-             && (actual |> List.map _.ReminderId |> Set.ofList |> Set.count) = expected.Count
-             && List.forall matches actual)
-
-    let noteRows (expected: Map<NoteId, NoteHistory>) (actual: StoredNote list) =
-        let matches (row: StoredNote) =
-            match Map.tryFind (Note.id row.Note) expected with
-            | None -> false
-            | Some history ->
-                Note.caseId row.Note = history.CaseId
-                && Note.text row.Note = (history.Snapshot |> Option.bind Note.text)
-                && row.CreatedPosition = history.CreatedPosition
-                && row.RecordedAt = history.RecordedAt
-                && row.RecordedBy = history.RecordedBy
-
-        require
-            None
-            VerificationFinding.CaseNotesProjection
-            (actual.Length = expected.Count
-             && (actual |> List.map (fun row -> Note.id row.Note) |> Set.ofList |> Set.count) =
-                 expected.Count
-             && List.forall matches actual)
+    /// All subject row products use the same membership and value comparison.
+    let rows finding key expected actual =
+        let indexed = actual |> List.map (fun row -> key row, row) |> Map.ofList
+        require None finding (actual.Length = indexed.Count && indexed = expected)

@@ -92,7 +92,7 @@ module internal ExecutionFacts =
             let! state =
                 match record, paymentAct with
                 | Some current, Some act when
-                    Access.canAct principal actor (Scope.Case current.CaseId) act
+                    existing.IsNone && Access.canAct principal actor (Scope.Case current.CaseId) act
                     ->
                     tx.CaseState current.CaseId
                 | _ -> System.Threading.Tasks.Task.FromResult None
