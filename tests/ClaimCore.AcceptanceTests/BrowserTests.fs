@@ -136,9 +136,42 @@ let private failedSources output =
     with _ ->
         "standard report unavailable"
 
+// Only failed-spec attachments and process output are exported; authentication state stays private.
+let private retainFailureFiles output destination =
+    for source in Directory.EnumerateFiles(output, "*", SearchOption.AllDirectories) do
+        let name = Path.GetFileName source |> nonNull
+
+        if
+            name = "trace.zip"
+            || name = "error-context.md"
+            || name = "playwright.stdout"
+            || name = "playwright.stderr"
+            || (name.StartsWith("test-failed-", StringComparison.Ordinal)
+                && name.EndsWith(".png", StringComparison.Ordinal))
+        then
+            let target = Path.Combine(destination, Path.GetRelativePath(output, source))
+            Directory.CreateDirectory(Path.GetDirectoryName target |> nonNull) |> ignore
+            File.Copy(source, target, true)
+
 let private run engine =
     task {
         use fixture = new PublishedFixture.Fixture()
+
+        let failureReport =
+            Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
+            |> Option.ofObj
+            |> Option.map (fun report ->
+                Path.Combine(
+                    report,
+                    "failed-browser",
+                    engine,
+                    (Path.GetFileName fixture.Directory |> nonNull)
+                ))
+
+        failureReport
+        |> Option.iter (fun report ->
+            fixture.RetainServiceFailureEvidence(Path.Combine(report, "service")))
+
         do! fixture.Start()
         CliCalls.setup fixture
         let output = Path.Combine(fixture.Directory, engine)
@@ -171,10 +204,14 @@ let private run engine =
             with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
                 FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
                 FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
+                failureReport |> Option.iter (retainFailureFiles output)
                 reraise ()
 
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
+
+        if result.ExitCode <> 0 then
+            failureReport |> Option.iter (retainFailureFiles output)
 
         let sources =
             if result.ExitCode = 0 then

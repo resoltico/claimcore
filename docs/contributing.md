@@ -183,6 +183,9 @@ fixture setup, authentication and teardown do not overlap. Chromium covers the c
 Firefox/WebKit cover CSP, sessions, IndexedDB, keyboard interaction, RTL and forced colours. The design
 matrix uses six representative Chromium contexts and desktop English/narrow Arabic on the other engines.
 Do not multiply independent language, theme and viewport choices into a full Cartesian product.
+Failed browser jobs retain synthetic failed-spec traces, screenshots and bounded service captures for
+three days in their verification artifact. Authentication-state files and private fixture configuration
+are excluded. Individual request/assertion bounds remain separate from multi-step workflow budgets.
 
 Store contracts use the single pinned PostgreSQL image from [postgresql-baseline.json](../db/postgresql-baseline.json).
 Tests discover vocabulary from product declarations; reviewed contract diffs, hand-authored business cases and [durable vectors](../tests/fixtures/durable-vectors.json)
