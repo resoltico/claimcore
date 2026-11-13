@@ -308,34 +308,51 @@ module ReceiptScreen =
             | ReceiptSubject.Reminder item -> Some item.Reference
             | ReceiptSubject.Authority _ -> None
 
-        let headline =
+        let stateEntries =
             match receipt.Subject with
             | ReceiptSubject.Case item ->
-                let state =
-                    match item.Snapshot with
-                    | SnapshotDisclosure.Disclosed live ->
-                        Some(
-                            LiveCase.toState live.State
-                            |> CaseState.map (fun fields ->
-                                fields.Status, CaseProgress.ofFinancial fields.Finance)
-                            |> CaseHeadline.ofState
-                        )
-                    | SnapshotDisclosure.Erased -> Some CaseHeadline.Erased
-                    | SnapshotDisclosure.Withheld -> None
+                match item.Snapshot with
+                | SnapshotDisclosure.Disclosed live ->
+                    [
+                        match live.State with
+                        | LiveCase.Active fields ->
+                            value
+                                "status"
+                                "field.status.label"
+                                Prominence.Primary
+                                (code CaseStatus.vocabulary fields.Status)
+                        | LiveCase.Voided _ ->
+                            value
+                                "lifecycle"
+                                "input.lifecycle.label"
+                                Prominence.Primary
+                                (code Lifecycle.vocabulary Lifecycle.Voided)
 
-                state
-                |> Option.map (fun state ->
-                    value
-                        "headline"
-                        "field.status.label"
-                        Prominence.Primary
-                        (PresentedValue.State state))
-                |> Option.toList
+                        let fields =
+                            match live.State with
+                            | LiveCase.Active fields
+                            | LiveCase.Voided fields -> fields
+
+                        value
+                            "progress"
+                            "input.progress.label"
+                            Prominence.Primary
+                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial fields.Finance))
+                    ]
+                | SnapshotDisclosure.Erased ->
+                    [
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Erased)
+                    ]
+                | SnapshotDisclosure.Withheld -> []
             | _ -> []
 
         let identity =
             (receiptHeader reference (code ActKind.vocabulary act)).Entries
-            @ headline
+            @ stateEntries
             @ [
                 value
                     "recordedAt"

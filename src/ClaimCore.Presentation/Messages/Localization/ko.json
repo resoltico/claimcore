@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "효과 식별자",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "청구 건 상태",
+    "source": "19cc1fc68f2a"
   }
 }

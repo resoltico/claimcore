@@ -162,6 +162,33 @@ let tests =
     testList
         "case-list export and traversal"
         [
+            testCase "case list labels composite headline as state" (fun () ->
+                let entries = CaseListScreen.caseSummary (row "STATE-1") |> List.collect _.Entries
+                let headline = entries |> List.find (fun entry -> entry.Key = "headline")
+
+                Expect.equal
+                    headline.LabelId
+                    "label.caseState"
+                    "A composite headline is not the status field"
+
+                Expect.equal
+                    headline.Value
+                    (PresentedValue.State CaseHeadline.Undecided)
+                    "The supplied headline retains its meaning"
+
+                let output =
+                    CaseListScreen.rows [ row "STATE-1" ]
+                    |> ViewText.render "en"
+                    |> String.concat "\n"
+
+                Expect.stringContains
+                    output
+                    "Case state"
+                    "The rendered column names the composite state"
+
+                Expect.isFalse
+                    (output.Contains "Case status")
+                    "The headline is not labelled as operator status")
             testCase "responsible actor flag preserves the wire filter" (fun () ->
                 let actor = System.Guid.Parse "10000000-0000-7000-8000-000000000071"
 

@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "效果識別碼",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "案件狀態",
+    "source": "19cc1fc68f2a"
   }
 }

@@ -672,5 +672,6 @@
   "label.effectPosition": "Effect position",
   "diagnostic.OPERATION_CLOCK_UNAVAILABLE": "The operation predates the confirmed expiry boundary. Check acceptance before preparing another change; ask the operator to check the clock if this change was just prepared.",
   "label.operationHash": "Operation hash",
-  "label.effectId": "Effect identity"
+  "label.effectId": "Effect identity",
+  "label.caseState": "Case state"
 }

@@ -4,7 +4,8 @@
 
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
-- CLI mutation text focuses on the outcome, recorded fields and case headline; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.
+- CLI mutation text focuses on the outcome and recorded fields; timestamps use the business zone, page-size errors state bounds and sign-in timeout explains retry.
+- Case lists label composite headlines as case state; receipts distinguish case status, payment progress and voided/erased lifecycle.
 - INVALID_FRAME replies include a bounded reason for malformed JSON, duplicate keys, unknown endpoints, byte limits or schema failures.
 - CLI usage reflects execution and dry-run requirements; schema help and missing-name errors list the available exports.
 - Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.

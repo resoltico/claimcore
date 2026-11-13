@@ -143,6 +143,20 @@ let tests =
                 data Api.caseList |> CaseListScreen.view)
             matches "paged payments" [ RegionRole.Identity; RegionRole.Payments ] (fun () ->
                 data Api.casePayments |> PaymentsScreen.page)
+            testCase "erased payment page labels lifecycle separately from case status" (fun () ->
+                let page =
+                    { data Api.casePayments with
+                        State = CaseState.Erased
+                    }
+
+                let output = PaymentsScreen.page page |> ViewText.render "en" |> String.concat "\n"
+
+                Expect.stringContains
+                    output
+                    "Lifecycle: Erased"
+                    "Erasure is a lifecycle, not an operator status"
+
+                Expect.isFalse (output.Contains "Case status:") "No case status survives erasure")
             matches "paged notes" [ RegionRole.Identity; RegionRole.Notes ] (fun () ->
                 data Api.caseNotes |> NotesScreen.page)
             matches "assignee choices" [ RegionRole.Results; RegionRole.Details ] (fun () ->

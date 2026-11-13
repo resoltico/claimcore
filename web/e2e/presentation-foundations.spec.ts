@@ -437,7 +437,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
                   },
                   {
                     key: "headline",
-                    labelId: "field.status.label",
+                    labelId: "label.caseState",
                     prominence: "PRIMARY",
                     isMoney: false,
                   },

@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "Efekta identifikators",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "Lietas stāvoklis",
+    "source": "19cc1fc68f2a"
   }
 }

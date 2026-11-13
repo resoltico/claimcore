@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "معرّف الأثر",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "حالة المطالبة",
+    "source": "19cc1fc68f2a"
   }
 }

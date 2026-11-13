@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "効果ID",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "案件の状態",
+    "source": "19cc1fc68f2a"
   }
 }

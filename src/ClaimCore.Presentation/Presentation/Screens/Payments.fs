@@ -123,7 +123,7 @@ module PaymentsScreen =
                         [
                             ScreenEntries.value
                                 "lifecycle"
-                                "field.status.label"
+                                "input.lifecycle.label"
                                 Prominence.Primary
                                 (PresentedValue.Message "lifecycle.ERASED.label")
                         ]

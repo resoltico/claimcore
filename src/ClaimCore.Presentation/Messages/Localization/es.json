@@ -2694,5 +2694,9 @@
   "label.effectId": {
     "text": "Identidad del efecto",
     "source": "aa08b7d30ad9"
+  },
+  "label.caseState": {
+    "text": "Estado del caso",
+    "source": "19cc1fc68f2a"
   }
 }

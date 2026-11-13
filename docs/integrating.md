@@ -349,9 +349,10 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 ## CLI use
 
 Disclosed case receipts supply `recordedFields` from the recorded command; HUMAN receipt context carries the same selection, including acceptance replay.
-Mutation text reports the outcome, recorded fields and case headline. `case get` presents the full
-case, and `--details` includes technical details. Timestamps use the supplied installation business
-zone. Page-size diagnostics state the accepted range. Interactive sign-in has a two-minute limit;
+Mutation text reports the outcome, recorded fields, case status and separate payment progress. Voided
+and erased receipts identify the lifecycle; withheld receipts disclose neither status nor progress.
+`case get` presents the full case, and `--details` includes technical details. Timestamps use the supplied
+installation business zone. Page-size diagnostics state the accepted range. Interactive sign-in has a two-minute limit;
 `AUTHENTICATION_TIMEOUT` instructs the operator to retry and finish sign-in in the browser.
 
 CLI reply `result.localFailure.code` is one of `INSTALLATION_MISMATCH`, `RECOVERY_UNAVAILABLE`,
