@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- CLI usage reflects execution and dry-run requirements; schema help and missing-name errors list the available exports.
+
 - Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.
 
 - CLI recovery uses format 3 and requires fresh CLI state; no migration or compatibility reader is provided.

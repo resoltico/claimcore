@@ -50,7 +50,11 @@ module UsageText =
                     message
                         language
                         (CliMessage.Synopsis(
-                            CliIdentity.programName + " " + CommandGrammar.synopsis entry
+                            CliIdentity.programName
+                            + " "
+                            + CommandGrammar.synopsisForDraft
+                                (List.contains "--dry-run" arguments)
+                                entry
                         ))
                 ]
             | None ->
@@ -95,6 +99,8 @@ module UsageText =
             match command, issue with
             | Some CliCommand.Help, UsageError.UnknownTopic _ -> CliMessage.UnknownHelpTopic
             | Some CliCommand.Help, _ -> CliMessage.InvalidHelpOptions
+            | Some CliCommand.Schema, UsageError.MissingOperand operand ->
+                CliMessage.MissingOperand operand
             | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
                 CliMessage.InvalidSchemaSelector
             | Some CliCommand.Schema, _ -> CliMessage.InvalidSchemaOptions
@@ -107,11 +113,18 @@ module UsageText =
             |> List.map (fun syntax ->
                 message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
 
+        let hints =
+            if command = Some CliCommand.Schema then
+                hints @ CliSchemas.names
+            else
+                hints
+
         String.concat "\n" (TerminalText.data (message language problem) :: hints)
         + "\n"
 
     let renderHost language arguments issue =
         match issue with
+        | _ when List.tryHead arguments = Some "schema" -> host language arguments issue
         | UsageError.UnknownCommand _
         | UsageError.UnknownOption _ -> render language arguments [ issue ]
         | UsageError.UnknownTopic topic ->

@@ -5,6 +5,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
+open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 
 let private descriptions () =
@@ -119,3 +120,42 @@ let documentedHelpForms =
                     "Existing documented form is admitted"
 
                 Expect.isSome (Discovery.commandHelp "en" words) "Existing command help renders")
+
+
+[<Tests>]
+let usageRequiredness =
+    testCase "usage reflects executable and draft requirements and lists schema exports" (fun () ->
+        let erase = TaskId.Operation(ActKind.Case CaseActKind.Erase)
+        let execute = CommandGrammar.synopsis erase
+
+        Expect.stringContains
+            execute
+            "[--operation-id VALUE]"
+            "The CLI allocates an omitted identity"
+
+        Expect.isFalse
+            (execute.Contains "[--confirm")
+            "Irreversible execution requires confirmation"
+
+        Expect.isFalse
+            (execute.Contains "[--expected-revision")
+            "Direct execution requires a revision"
+
+        let draft = CommandGrammar.synopsisForDraft true erase
+
+        Expect.stringContains
+            draft
+            "[--expected-revision N]"
+            "Dry-run admits an incomplete revision"
+
+        Expect.stringContains draft "[--confirm TARGET]" "Dry-run does not execute"
+
+        let usage =
+            UsageText.renderHost "en" [ "schema" ] (UsageError.MissingOperand "SCHEMA")
+
+        let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Schema)
+
+        for name in CliSchemas.names do
+            Expect.stringContains usage name "Missing schema lists every named export"
+            Expect.stringContains help name "Schema help lists every named export"
+            Expect.isSome (ContractDiscovery.schema name) "Every advertised export resolves")

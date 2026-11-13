@@ -64,3 +64,29 @@ module CliSchemas =
     let definitions =
         SchemaDefinitions.merge OpenApi.definitions Frames.failureCodec.Definitions
         |> fun definitions -> SchemaJson.reachable definitions [ invocation; response ]
+
+    /// Named exports are shared by schema admission, help and lookup.
+    let named =
+        Map.ofList
+            [
+                "session.request", (Api.session.Input.Schema, Api.session.Input.Definitions)
+                "invocation", (invocation, definitions)
+                "response", (response, definitions)
+                "recovery", (recoveryList.Schema, recoveryList.Definitions)
+                "host-failure",
+                (HostFailureCodecs.reply.Schema, HostFailureCodecs.reply.Definitions)
+            ]
+
+    let names =
+        [
+            "openapi"
+            yield! Map.keys named
+            for endpoint in Api.all do
+                if Api.id endpoint <> "session" then
+                    Api.id endpoint + ".request"
+
+                Api.id endpoint + ".response"
+            yield! Map.keys OpenApi.definitions
+        ]
+        |> List.distinct
+        |> List.sort

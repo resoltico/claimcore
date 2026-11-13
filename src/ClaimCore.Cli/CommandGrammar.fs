@@ -113,6 +113,10 @@ module CommandGrammar =
 
             let required =
                 declaration.Mode = TaskInputMode.Required
+                && not (
+                    declaration.Source = InputSource.OperationIdentity
+                    && (TaskRouting.act operation).IsSome
+                )
                 && not fixedRevision
                 && (match name with
                     | TaskInputId.Target(InputTarget.Group _) -> false
@@ -253,7 +257,7 @@ module CommandGrammar =
           Some(ActKind.Authority AuthorityKind.SetProfile) -> true
         | _ -> false
 
-    let synopsis (operation: TaskId) =
+    let synopsisForDraft draft (operation: TaskId) =
         let placeholder =
             function
             | CommandAtom.Text -> "VALUE"
@@ -279,7 +283,11 @@ module CommandGrammar =
                         + kebab (inputName input.Name)
                         + (if suffix = "" then "" else " " + suffix)
 
-                    let syntax = if input.Required then text else "[" + text + "]"
+                    let required =
+                        input.Required
+                        && not (draft && input.Declaration.Source = InputSource.ExpectedRevision)
+
+                    let syntax = if required then text else "[" + text + "]"
 
                     Some(
                         match input.Atom with
@@ -305,7 +313,12 @@ module CommandGrammar =
         let globals =
             globalOptions operation
             |> List.map (fun (flag, value) ->
-                "[" + flag + (if value = "" then "" else " " + value) + "]")
+                let text = flag + (if value = "" then "" else " " + value)
+
+                if flag = "--confirm" && not draft then
+                    text
+                else
+                    "[" + text + "]")
 
         let repeated =
             collections operation
@@ -319,3 +332,5 @@ module CommandGrammar =
                 + "...")
 
         String.concat " " (words operation @ arguments @ repeated @ textSources @ clears @ globals)
+
+    let synopsis operation = synopsisForDraft false operation

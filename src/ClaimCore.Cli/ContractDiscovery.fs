@@ -60,6 +60,10 @@ module ContractDiscovery =
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
            |> String.concat "")
         + supportedCodes language topic
+        + (if topic = CliTopic.Help HelpTopic.Schema then
+               String.concat "\n" CliSchemas.names + "\n"
+           else
+               "")
 
     let private openapi () =
         WireWriter.indentedBytes ClaimCore.Wire.OpenApi.document
@@ -139,16 +143,9 @@ module ContractDiscovery =
         use document = JsonDocument.Parse(System.ReadOnlyMemory<byte>(openapi ()))
         let root = document.RootElement
 
-        match name with
-        | "openapi" -> Some(openapi ())
-        | "session.request" ->
-            Some(schemaDocument Api.session.Input.Schema Api.session.Input.Definitions)
-        | "invocation" -> Some(schemaDocument CliSchemas.invocation CliSchemas.definitions)
-        | "response" -> Some(schemaDocument CliSchemas.response CliSchemas.definitions)
-        | "recovery" ->
-            Some(schemaDocument CliSchemas.recoveryList.Schema CliSchemas.recoveryList.Definitions)
-        | "host-failure" ->
-            Some(schemaDocument HostFailureCodecs.reply.Schema HostFailureCodecs.reply.Definitions)
+        match name, Map.tryFind name CliSchemas.named with
+        | "openapi", _ -> Some(openapi ())
+        | _, Some(schema, definitions) -> Some(schemaDocument schema definitions)
         | _ ->
             let separator = name.LastIndexOf '.'
 

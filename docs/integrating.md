@@ -350,7 +350,8 @@ retry frame on stderr. Other failures do not disprove an earlier uncertain commi
 
 A closed stdout pipe ends discovery and read output quietly. Mutation output loss retains exit 4 and its recovery instructions; other I/O failures remain errors.
 
-Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline.
+Keep the complete publish directory and run its apphost. Help, schema and dry-run work offline. `schema` without a name and `help schema` list the available exports.
+Command help shows direct execution and offline dry-run forms. Operation IDs are optional for mutations; direct execution requires the declared revision and destructive confirmation.
 Verbs default to text; `--format json` selects structured replies and `--language` selects interface text.
 Arabic CLI dates/numbers retain Latin digits. Business values are never translated.
 
