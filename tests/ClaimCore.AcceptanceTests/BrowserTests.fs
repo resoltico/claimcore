@@ -18,7 +18,7 @@ let private specification =
     Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SPEC"
     |> Option.ofObj
 
-/// Only public source basenames/lines and standard result states leave the private report.
+/// Console summaries use source basenames/lines and result states; synthetic attachments are retained separately.
 let private sourceLocation (value: JsonElement) =
     let mutable file = Unchecked.defaultof<JsonElement>
     let mutable line = Unchecked.defaultof<JsonElement>

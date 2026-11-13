@@ -28,10 +28,6 @@ test("keeps published login, editor, review, receipt and history accessible at n
   test.setTimeout(freshLoginWorkflowTimeout);
   const caseReference = `A11Y-${randomUUID()}`;
   await openAccessibleLogin(page);
-  // Temporary W1 negative control: verify the actual CI artifact before removing this assertion.
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "W1_FORCED_DIAGNOSTIC_UPLOAD_FAILURE",
-  );
   await progress("a11y-login");
   await expectAccessible(page);
   await noHorizontalOverflow(page, "login");
