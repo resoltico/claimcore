@@ -286,7 +286,8 @@ module LedgerEntries =
                | Change.Update update -> decision update)
         | CaseAct.RecordPayment _
         | CaseAct.RemovePayment _ -> BusinessField.ofGroup RecordGroup.Payment
-        | CaseAct.Bare _
+        | CaseAct.Bare BareAct.WithdrawDecision -> BusinessField.ofGroup RecordGroup.Decision
+        | CaseAct.Bare(BareAct.Close | BareAct.Reopen | BareAct.Erase)
         | CaseAct.Void _
         | CaseAct.Reinstate _ -> []
 

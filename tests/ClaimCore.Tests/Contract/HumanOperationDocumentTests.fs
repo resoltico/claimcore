@@ -474,4 +474,91 @@ let mutationSummary =
                 [ "case"; "list" ]
                 [ UsageError.InvalidRange("--limit", "0", 1, 200) ]
 
-        Expect.stringContains usage "between 1 and 200" "Range advice states both bounds")
+        Expect.stringContains usage "between 1 and 200" "Range advice states both bounds"
+
+        let payable =
+            PresentedValue.money (
+                Money.create (Amount.parse "100" |> accepted) (Currency.parse "EUR" |> accepted)
+            )
+
+        let table =
+            ScreenEntries.table
+                (fun () -> "decision")
+                (fun () -> None)
+                [
+                    ScreenEntries.column
+                        "payable"
+                        "field.payableAmount.label"
+                        Prominence.Primary
+                        true
+                        (fun () -> payable)
+                ]
+                [ () ]
+
+        let decision =
+            { document with
+                Context =
+                    match document.Context with
+                    | InteractionContext.Receipt context ->
+                        InteractionContext.Receipt
+                            { context with
+                                RecordedFields =
+                                    [ BusinessField.PayableAmount; BusinessField.PayableCurrency ]
+                            }
+                    | _ -> failtest "Receipt context"
+                Screen =
+                    Screen.create
+                        [
+                            ScreenEntries.region
+                                RegionRole.Payments
+                                None
+                                (RegionContent.Table table)
+                        ]
+            }
+
+        let decisionReply
+            : RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+            RepresentationReply.Human
+                {
+                    OperationId = OperationId.value receipt.OperationId
+                    Outcome = HumanExecuteResult.Accepted decision
+                }
+
+        let decisionText =
+            OperationText.executeLines "en" decisionReply |> String.concat "\n"
+
+        Expect.stringContains
+            decisionText
+            "100.00 EUR"
+            "A recorded decision keeps its supplied financial region"
+
+        for disclosure, expected in
+            [
+                SnapshotDisclosure.Withheld, "Details: You do not have access to these details."
+                SnapshotDisclosure.Erased, "Details: Erased"
+            ] do
+            let redacted =
+                match receipt.Subject with
+                | ReceiptSubject.Case item ->
+                    { receipt with
+                        Subject = ReceiptSubject.Case { item with Snapshot = disclosure }
+                    }
+                | _ -> failtest "Case fixture"
+
+            let reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply> =
+                RepresentationReply.Human
+                    {
+                        OperationId = OperationId.value redacted.OperationId
+                        Outcome = HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore redacted)
+                    }
+
+            let output = OperationText.executeLines "en" reply |> String.concat "\n"
+
+            Expect.stringContains
+                output
+                expected
+                "Concise acceptance preserves the supplied disclosure explanation"
+
+            Expect.isFalse
+                (output.Contains "Policy number:")
+                "Redaction does not reconstruct recorded facts")

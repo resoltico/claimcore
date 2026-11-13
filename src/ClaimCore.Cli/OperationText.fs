@@ -87,12 +87,22 @@ module internal OperationText =
                     | _ -> [])
                 |> Set.ofList
 
+        let recordedFinancials =
+            [ RecordGroup.Decision; RecordGroup.Payment ]
+            |> List.collect BusinessField.ofGroup
+            |> List.exists (fun field -> Set.contains (FieldPresentation.labelId field) selected)
+
         let screen =
             { receipt.Screen with
                 Regions =
                     receipt.Screen.Regions
                     |> List.choose (fun region ->
                         match region.Role, region.Content with
+                        | _ when
+                            receipt.Disclosure = HumanDisclosure.Withheld
+                            || receipt.Disclosure = HumanDisclosure.Erased
+                            ->
+                            Some region
                         | (RegionRole.Notice | RegionRole.Identity | RegionRole.Details), _ ->
                             Some region
                         | _, RegionContent.Entries entries ->
@@ -115,12 +125,7 @@ module internal OperationText =
                                     { region with
                                         Content = RegionContent.Entries entries
                                     }
-                        | RegionRole.Payments, _ when
-                            Set.contains
-                                (FieldPresentation.labelId BusinessField.PaidAmount)
-                                selected
-                            ->
-                            Some region
+                        | RegionRole.Payments, _ when recordedFinancials -> Some region
                         | _ -> None)
             }
 

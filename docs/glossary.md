@@ -31,8 +31,8 @@ uses Suprimir. Grammar-dependent labels remain separate even when English wordin
 Intentional identical-language cognates are Spanish Cursor, Auditor, Total and Roles; German Cursor,
 Name, Person, Code and Version. Automated catalog checks and screenshots establish structure and
 rendering, not linguistic approval. Human review records should identify the language, English source
-and contexts reviewed. [Locale screenshots](images/localization/) show a case workspace and review;
-RTL and pseudolocale captures cover direction and expanded text.
+and contexts reviewed. [Workspace examples](workspace-examples.md) show synthetic case work,
+review and RTL layouts; executable localization journeys cover expanded text.
 
 ## Account and sign-in identity
 

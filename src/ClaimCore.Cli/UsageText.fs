@@ -116,10 +116,9 @@ module UsageText =
                 message language (CliMessage.Synopsis(CliIdentity.programName + " " + syntax)))
 
         let hints =
-            if command = Some CliCommand.Schema then
-                hints @ CliSchemas.names
-            else
-                hints
+            match command, issue with
+            | Some CliCommand.Schema, UsageError.MissingOperand _ -> hints @ CliSchemas.names
+            | _ -> hints
 
         let details =
             match command, issue with
@@ -132,7 +131,10 @@ module UsageText =
 
     let renderHost language arguments issue =
         match issue with
-        | _ when List.tryHead arguments = Some "schema" -> host language arguments issue
+        | UsageError.UnknownCommand _ when List.tryHead arguments = Some "schema" ->
+            render language arguments [ issue ]
+            + message language (CliMessage.Suggestion(CliIdentity.programName + " help schema"))
+            + "\n"
         | UsageError.UnknownCommand _
         | UsageError.UnknownOption _ -> render language arguments [ issue ]
         | UsageError.UnknownTopic topic ->

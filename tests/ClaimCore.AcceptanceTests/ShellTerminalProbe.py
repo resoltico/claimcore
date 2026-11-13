@@ -186,7 +186,10 @@ def run(cli, home):
     environment["CLAIMCORE_OIDC_CLIENT_SECRET_FILE"] = str(Path(home) / "not-created")
     terminal = Terminal(cli, environment)
     try:
-        terminal.finish(3)
+        terminal.expect(b"shell requires an interactive terminal and interactive sign-in. Use session for piped requests.")
+        terminal.finish(64)
+        if b"localFailure" in terminal.output:
+            raise RuntimeError("Automation shell misuse emitted a JSON failure frame")
     finally:
         terminal.close()
 

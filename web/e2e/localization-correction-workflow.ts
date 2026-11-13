@@ -131,8 +131,34 @@ const acceptSetup = async (
   expect(receipt.subject.caseReference).toBe(request.target.caseReference);
   expect(receipt.subject.act).toBe(request.act.kind);
   expect(receipt.subject.revision).toBe(revision);
+  const recordedFields = (() => {
+    switch (request.act.kind) {
+      case "OPEN":
+        return [
+          "incidentDate",
+          "incidentNotificationDate",
+          "incidentCountry",
+          "incidentDescription",
+          "policyNumber",
+          "insurerClaimReference",
+          "claimantName",
+          "insurerName",
+          "claimedAmount",
+          "claimedCurrency",
+        ];
+      case "DECIDE":
+        return ["paymentDecisionDate", "payableAmount", "payableCurrency"];
+      case "RECORD_PAYMENT":
+        return ["paymentDate", "paidAmount", "paidCurrency"];
+      case "CLOSE":
+        return [];
+      default:
+        throw new Error("Unexpected paid-case setup act");
+    }
+  })();
   expect(receipt.subject.snapshot).toEqual({
     kind: "DISCLOSED",
+    recordedFields,
     state: { kind: "ACTIVE", fields },
     payment:
       request.act.kind === "RECORD_PAYMENT"

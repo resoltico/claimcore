@@ -180,11 +180,13 @@ let private terminal root directory cli =
     let environment = Dictionary<string, string>()
     environment["HOME"] <- home
     let refused = invoke cli environment [ "shell" ]
-    Expect.equal refused.ExitCode 3 "Non-terminal stdin is refused before sign-in"
+    Expect.equal refused.ExitCode 64 "Non-terminal stdin is a usage error before sign-in"
+    Expect.isEmpty refused.StandardOutput "Shell misuse does not emit a JSON frame"
 
-    Expect.isOk
-        (Frames.decode refused.StandardOutput)
-        "Non-terminal refusal is a definite local frame"
+    Expect.stringContains
+        (Encoding.UTF8.GetString refused.StandardError)
+        "Use session for piped requests."
+        "The usage error offers the piped interface"
 
 [<Tests>]
 let tests =

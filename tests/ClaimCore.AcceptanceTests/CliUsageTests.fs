@@ -504,3 +504,33 @@ let redirectedShell =
                     "Do not misdiagnose usage as configuration"
             finally
                 directory.Delete true)
+
+
+[<Tests>]
+let missingSchemaName =
+    testCase "published schema without a selector lists valid names" (fun () ->
+        let directory = Directory.CreateTempSubdirectory("claimcore-schema-usage-")
+
+        try
+            let cli =
+                PublishedProcesses.publish
+                    (RepositoryRoot.find ())
+                    directory.FullName
+                    "ClaimCore.Cli"
+
+            let result =
+                ProcessRunner.dotnet 8_000 cli [ "schema" ] (Dictionary<string, string>()) None
+
+            Expect.equal result.ExitCode 64 "Missing schema selection is usage"
+            Expect.isEmpty result.StandardOutput "No data output on usage failure"
+            let text = Encoding.UTF8.GetString result.StandardError
+            Expect.stringContains text "SCHEMA" "The missing operand is explicit"
+
+            for name in
+                [ "invocation"; "response"; "recovery"; "context.request"; "context.response" ] do
+                Expect.stringContains
+                    text
+                    ("\n" + name + "\n")
+                    "Named offline exports are discoverable"
+        finally
+            directory.Delete true)
