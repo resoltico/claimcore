@@ -33,8 +33,7 @@ let private location (response: HttpResponseMessage) =
     |> Option.defaultWith (fun () -> invalidOp "Synthetic OIDC redirect is missing.")
 
 let private formPost (html: string) =
-    let decoded source =
-        WebUtility.HtmlDecode(source) |> Option.ofObj |> Option.defaultValue ""
+    let decoded (source: string) = WebUtility.HtmlDecode source
 
     let form =
         Regex.Match(html, "<form[^>]*action=\"(?<url>[^\"]+)\"", RegexOptions.IgnoreCase)

@@ -23,7 +23,7 @@ let private anchors text =
     let html =
         Seq.append
             (parsed.Descendants<HtmlBlock>() |> Seq.map (fun block -> block.Lines.ToString()))
-            (parsed.Descendants<HtmlInline>() |> Seq.map _.Tag)
+            ((parsed :> MarkdownObject).Descendants<HtmlInline>() |> Seq.map _.Tag)
 
     let explicit =
         html
@@ -38,7 +38,7 @@ let links (documents: Map<string, string>) exists =
         for KeyValue(path, text) in documents do
             let parsed = Markdown.Parse(text, pipeline)
 
-            for link in parsed.Descendants<LinkInline>() do
+            for link in (parsed :> MarkdownObject).Descendants<LinkInline>() do
                 let url = link.Url |> Option.ofObj |> Option.defaultValue ""
 
                 if

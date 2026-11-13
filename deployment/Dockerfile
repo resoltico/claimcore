@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS sdk
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100@sha256:65f3c7c6a25a239ab3e6719f2896147e7b68242ff2d8818dd70498bde6ef8bea AS sdk
 FROM node:26.13.0-bookworm@sha256:a546d3f8acd2af4382668a7e6acd3bc4418e6a27478373e3246f8162f5181509 AS node
 
 # Prepare SOURCE.tar.gz with eng/source-archive.sh before building. Both producers
@@ -27,14 +27,14 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
     && dotnet publish src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore --output /published/cli \
     && dotnet publish src/ClaimCore.Database/ClaimCore.Database.fsproj --configuration Release --no-restore --output /published/database
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS administration
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS administration
 WORKDIR /app
 COPY --from=build /published/database/ ./database/
 COPY --from=build /published/cli/ ./cli/
 USER $APP_UID
 ENTRYPOINT ["dotnet", "/app/database/claimcore-database.dll"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c AS web
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0@sha256:bc0d6653979efba491ab3d6f589d691f96c309c3c3ef81325efa6978e7b7f242 AS web
 WORKDIR /app
 COPY --from=build /published/web/ ./
 USER $APP_UID

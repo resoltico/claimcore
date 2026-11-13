@@ -2,6 +2,7 @@ module ClaimCore.Tests.ShellAuthenticationTests
 
 open System
 open System.Threading
+open System.Threading.Tasks
 open ClaimCore.Cli
 open Expecto
 open ShellIdentityFixture
@@ -68,11 +69,59 @@ let private failureAndDiscard () =
     Expect.equal provider.Refreshes 1 "A discarded refresh token cannot be reused"
     provider.Completed().GetAwaiter().GetResult()
 
+let private emptyAfterFailure () =
+    let clock = Clock()
+
+    let access =
+        AccessToken("synthetic-access", 60, clock, clock.GetUtcNow(), clock.GetTimestamp())
+
+    let refresh =
+        RefreshToken.Admit "synthetic-refresh"
+        |> Result.defaultWith (string >> failtest)
+
+    let grant =
+        AuthorizationGrant(access, refresh, Uri "https://identity.example.test/token")
+
+    let mutable acquisitions = 0
+    let mutable refreshes = 0
+
+    use credentials =
+        new MemoryTokenSession(
+            (fun _ ->
+                acquisitions <- acquisitions + 1
+
+                Task.FromResult(
+                    if acquisitions = 1 then
+                        Ok grant
+                    else
+                        Error AccessFailure.OidcTokenUnavailable
+                )),
+            (fun _ _ ->
+                refreshes <- refreshes + 1
+                Task.FromResult(Error AccessFailure.OidcTokenUnavailable))
+        )
+
+    Expect.isFalse (credentials.IsCurrent access) "A new session has no current grant"
+    token credentials |> ignore
+    Expect.isTrue (credentials.IsCurrent access) "The acquired grant is current"
+    clock.Advance(TimeSpan.FromSeconds 31.)
+    let result = credentials.Token(CancellationToken.None).GetAwaiter().GetResult()
+    Expect.isError result "Both refresh and reacquisition fail"
+    Expect.equal refreshes 1 "The refresh path was exercised"
+    Expect.equal acquisitions 2 "The fallback acquisition was exercised"
+
+    Expect.isTrue
+        access.CanUse
+        "The old token is still usable, isolating grant removal from token expiry"
+
+    Expect.isFalse (credentials.IsCurrent access) "Failed renewal leaves no current grant"
+
 [<Tests>]
 let tests =
     testList
         "shell authentication"
         [
+            testCase "new and failed-renewal sessions have no current grant" emptyAfterFailure
             testCase "many commands share one real PKCE sign-in" reuse
             testCase "expiry refreshes and rotates the memory-only token" rotation
             testCase "refresh omission retains the current token" omittedRotation

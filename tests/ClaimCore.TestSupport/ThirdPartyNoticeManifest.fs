@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.ThirdPartyNoticeManifest
+module internal ClaimCore.TestSupport.ThirdPartyNoticeManifest
 
 open System
 open System.IO
@@ -45,7 +45,7 @@ let filename (name: string) =
         name <> ""
         && name <> "."
         && name <> ".."
-        && name = (Path.GetFileName name |> nonNull)
+        && name = Path.GetFileName name
         && not (name.Contains '\\')
     )
 

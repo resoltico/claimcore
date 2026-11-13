@@ -11,6 +11,7 @@ Follow [Getting started](docs/getting-started.md) for a fresh synthetic installa
 case. The [examples](examples/README.md) demonstrate nine changes through JSON calls and human commands.
 Operators manage identity, access, backups and erasure of copies outside the live database.
 Durable changes before 1.0 require a fresh installation.
+Build with the SDK pinned in [global.json](global.json); framework-dependent CLI distributions require its matching .NET runtime.
 
 The service has [21 HTTP endpoints](contracts/openapi.json). Actor endpoints negotiate HUMAN documents
 with locale-neutral semantic Screens or DATA projections for automation. Native text and browser clients

@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net10.0": {
+    "net11.0": {
       "Expecto": {
         "type": "Direct",
         "requested": "[11.1.1, )",
@@ -14,9 +14,9 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.403, )",
-        "resolved": "10.1.403",
-        "contentHash": "SpKxPt90eSC3pfSKGLnSyucXXKVWokv1KVMTy2uQG36seOgJg14qUxjlcaWjZNWgxJtG5MeH9WpI6PQg4OR4tA=="
+        "requested": "[11.0.101, )",
+        "resolved": "11.0.101",
+        "contentHash": "XL1wfb0gujXAtnJfO7rYfxKgwufCiT8aOKqGoqKB83oxRAZ9+yiNWXinHO4x9StYuunTl/AH8eERc0hv7UXJVQ=="
       },
       "Hedgehog": {
         "type": "Direct",
@@ -68,8 +68,7 @@
           "CycleDetection": "2.0.0",
           "JetBrains.Annotations": "2026.2.0",
           "Mono.Cecil": "0.11.6",
-          "Newtonsoft.Json": "13.0.4",
-          "System.ValueTuple": "4.6.2"
+          "Newtonsoft.Json": "13.0.4"
         }
       },
       "YoloDev.Expecto.TestSdk": {
@@ -103,17 +102,13 @@
           "Docker.DotNet.Enhanced.LegacyHttp": "4.3.3",
           "Docker.DotNet.Enhanced.NPipe": "4.3.3",
           "Docker.DotNet.Enhanced.NativeHttp": "4.3.3",
-          "Docker.DotNet.Enhanced.Unix": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+          "Docker.DotNet.Enhanced.Unix": "4.3.3"
         }
       },
       "Docker.DotNet.Enhanced.Handler.Abstractions": {
         "type": "Transitive",
         "resolved": "4.3.3",
-        "contentHash": "9Cp8hOgtynixcDoAs9lnEaQosluojSYmiW3fsLsLIVfZjlq/fznSIZNUhnmyT4Xo1Iyuok/y49WL/25O47u0Pw==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
-        }
+        "contentHash": "9Cp8hOgtynixcDoAs9lnEaQosluojSYmiW3fsLsLIVfZjlq/fznSIZNUhnmyT4Xo1Iyuok/y49WL/25O47u0Pw=="
       },
       "Docker.DotNet.Enhanced.LegacyHttp": {
         "type": "Transitive",
@@ -250,14 +245,8 @@
         "resolved": "2026.0.0",
         "contentHash": "Yu9dirPq8l3oaat0+OQ7K0nUf5MmYltpia5UGqsApTG4zTPvBC1cxbNnC3NERij26dUST0A3Ef1QdHSn5ArbWQ==",
         "dependencies": {
-          "BouncyCastle.Cryptography": "2.7.0",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+          "BouncyCastle.Cryptography": "2.7.0"
         }
-      },
-      "System.ValueTuple": {
-        "type": "Transitive",
-        "resolved": "4.6.2",
-        "contentHash": "yQgmjfFximrNm9LIV3mL6T5MzjeC+epeE5rl4hXxAlYmxby7RM1dPSkIKXk9HNkl6G54h2JHOmLD46+Pey+IRg=="
       },
       "TypeShape": {
         "type": "Transitive",
@@ -278,7 +267,7 @@
           "ClaimCore.Wire": "[0.16.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
-          "FSharp.Core": "[10.1.403, )",
+          "FSharp.Core": "[11.0.101, )",
           "Wcwidth": "[4.0.1, )"
         }
       },
@@ -294,7 +283,7 @@
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
           "ClaimCore.Wire": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore-server": {
@@ -308,9 +297,9 @@
           "ClaimCore.Postgres": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.Wire": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )",
-          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.14, )",
-          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.14, )"
+          "FSharp.Core": "[11.0.101, )",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[11.0.0, )",
+          "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[11.0.0, )"
         }
       },
       "claimcore.application": {
@@ -319,14 +308,14 @@
           "ClaimCore.Application.Contracts": "[0.16.0, )",
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
           "ClaimCore.Domain": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.contractgenerator": {
@@ -337,7 +326,7 @@
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.Wire": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )",
+          "FSharp.Core": "[11.0.101, )",
           "claimcore": "[0.16.0, )",
           "claimcore-database": "[0.16.0, )"
         }
@@ -345,19 +334,19 @@
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.json": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.postgres": {
@@ -368,7 +357,7 @@
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )",
+          "FSharp.Core": "[11.0.101, )",
           "Npgsql": "[10.0.3, )"
         }
       },
@@ -378,7 +367,7 @@
           "ClaimCore.Application.Contracts": "[0.16.0, )",
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.recordformat": {
@@ -386,7 +375,7 @@
         "dependencies": {
           "ClaimCore.Domain": "[0.16.0, )",
           "ClaimCore.Json": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.testsupport": {
@@ -402,8 +391,8 @@
           "ClaimCore.RecordFormat": "[0.16.0, )",
           "ClaimCore.Wire": "[0.16.0, )",
           "Expecto": "[11.1.1, )",
-          "FSharp.Core": "[10.1.403, )",
-          "Microsoft.AspNetCore.TestHost": "[10.0.14, )",
+          "FSharp.Core": "[11.0.101, )",
+          "Microsoft.AspNetCore.TestHost": "[11.0.0, )",
           "Npgsql": "[10.0.3, )",
           "Testcontainers": "[4.16.0, )",
           "Testcontainers.PostgreSql": "[4.16.0, )",
@@ -418,7 +407,7 @@
           "ClaimCore.Json": "[0.16.0, )",
           "ClaimCore.Presentation": "[0.16.0, )",
           "ClaimCore.RecordFormat": "[0.16.0, )",
-          "FSharp.Core": "[10.1.403, )"
+          "FSharp.Core": "[11.0.101, )"
         }
       },
       "Duende.IdentityModel": {
@@ -433,54 +422,38 @@
         "resolved": "7.1.1",
         "contentHash": "YyuyW1KaCotSTuEBMt5NTXecuKwX2kU0FmaJ+X39QdQvYGAlOv2Yfp8Vo2vVihw6+3EEcpbDKgfiaoJ3EyI8Fg==",
         "dependencies": {
-          "Duende.IdentityModel": "8.1.0",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.13"
+          "Duende.IdentityModel": "8.1.0"
         }
       },
       "Microsoft.AspNetCore.Authentication.JwtBearer": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "DaTs32NtRkTabidrvhLhcXpa+Uguw0rN5FaX8Q1HmzbYtcI72iSauYlN4WmqbrXp6QQoB8fmZlHk5/bjiMTY7A==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "iWIWAOw3TGa8OxAForwBWlkp/VCelVTYbSc633I6E8zfpjG456xOtSMGIiSEU2E6rdSfJS1vf+EySP19efab8g==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.19.2"
         }
       },
       "Microsoft.AspNetCore.Authentication.OpenIdConnect": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "W5g9xaWjPudw7GNwxCqP9uLxpwE1+LkRf4f8i0aF6Ga1AY3qU2UvBa4+41Opz15sO5oTCLwYYXcvb477Ry8NZQ==",
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "fXRbqkMfaylLtMpEh4ZQQDE9IZtHcf9hXRbScll7MRECpfE1l85kcd/YrVV/WcHJyDqCw/MiU7Mzh7uKrcSX4w==",
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.19.2"
         }
       },
       "Microsoft.AspNetCore.TestHost": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "u4AX1M5Uzmw7V3NCdJJO4ITwH0DDDufyzmVlksE4QguVd23Co8adaREMp2VahlRB5f/rmtaFYVJIA1iIFnchmQ=="
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "rveyIUtr/2aYv4J5EEZr+0+p5kXzEMYVwVr5o6Bvt3J86+uRjgKn7J2rw9uUdpGRHaVn9NqbZvhUkJOMD4N0tA=="
       },
       "Microsoft.Bcl.Cryptography": {
         "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "FiQloJinjQXRpkeHgihmbKnPD8DxJQTmwro5Qa5yHxNULxrIPy9HCEOx1U8F5AwL5WVkAccSI0veFM/iYrttUg=="
-      },
-      "Microsoft.Extensions.DependencyInjection.Abstractions": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "QtpQzuSZVyTPCuHW058yCs9Nj0394uUkNyFHS813nOmK9UgUdBdaprJ5PPsBgsQIpxADTsTkbaMMonykem6qdw=="
-      },
-      "Microsoft.Extensions.Logging.Abstractions": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.14, )",
-        "resolved": "10.0.14",
-        "contentHash": "SwcbEBtkECq3D2oywvHkm46fyrX9Dd2JPWphDnHUc2+cUWR1Mdo41atAjh/9iZjgQxuvbKfZKXqostT/LZfefA==",
-        "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.14"
-        }
+        "requested": "[11.0.0, )",
+        "resolved": "11.0.0",
+        "contentHash": "ORy81TXv7dmqfiY1jTVHrloBCglead8XNuwuTIAHm3LkoBcI51e2b2NpWB0sIcH2pJTsFuO+lTc6gW6++L/1Fw=="
       },
       "Microsoft.IdentityModel.Abstractions": {
         "type": "CentralTransitive",
@@ -532,7 +505,6 @@
         "contentHash": "PUowLq8gqICt+oepHWmKBOJmnVmWoQ5dOVn2CgwFMBZZOAEMHgCQLWs8ONYdsjAyjhDHaFy+AAx0OMG/oV06Zw==",
         "dependencies": {
           "Microsoft.Bcl.Cryptography": "10.0.2",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
           "Microsoft.IdentityModel.Logging": "8.23.0"
         }
       },
@@ -540,10 +512,7 @@
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
-        }
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
       },
       "System.IdentityModel.Tokens.Jwt": {
         "type": "CentralTransitive",
@@ -563,7 +532,6 @@
         "dependencies": {
           "Docker.DotNet.Enhanced": "4.3.3",
           "Docker.DotNet.Enhanced.X509": "4.3.3",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
           "SSH.NET": "2026.0.0",
           "SharpZipLib": "1.4.2"
         }

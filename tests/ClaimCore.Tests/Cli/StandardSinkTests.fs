@@ -4,6 +4,8 @@ open System
 open System.Diagnostics
 open System.IO
 open System.Security
+open System.Reflection
+open System.Runtime.Versioning
 open System.Text
 open Expecto
 open ClaimCore.Cli
@@ -20,8 +22,18 @@ let private buildProbe root directory =
         + SecurityElement.Escape(path)
         + "</HintPath></Reference>"
 
+    let framework =
+        typeof<RemoteConfiguration>.Assembly.GetCustomAttribute<TargetFrameworkAttribute>()
+        |> nonNull
+        |> _.FrameworkName
+        |> FrameworkName
+
+    let targetFramework = $"net{framework.Version.Major}.{framework.Version.Minor}"
+
     let project =
-        "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType><DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference></PropertyGroup><ItemGroup>"
+        "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>"
+        + targetFramework
+        + "</TargetFramework><OutputType>Exe</OutputType><DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference></PropertyGroup><ItemGroup>"
         + reference "ClaimCore.Cli" typeof<RemoteConfiguration>.Assembly.Location
         + reference "ClaimCore.HostSecurity" typeof<PrivateFileFailure>.Assembly.Location
         + reference "FSharp.Core" typeof<unit>.Assembly.Location

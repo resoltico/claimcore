@@ -10,7 +10,7 @@ let private forbidden =
 let violations directory =
     let files =
         Directory.EnumerateFiles(directory, "*.dll", SearchOption.AllDirectories)
-        |> Seq.map (Path.GetFileNameWithoutExtension >> nonNull)
+        |> Seq.map Path.GetFileNameWithoutExtension
         |> Set.ofSeq
 
     use dependencies =

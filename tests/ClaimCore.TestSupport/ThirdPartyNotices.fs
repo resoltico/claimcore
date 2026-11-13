@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.ThirdPartyNotices
+module internal ClaimCore.TestSupport.ThirdPartyNotices
 
 open System
 open System.IO
@@ -20,7 +20,7 @@ let private explained name known (relative: string) =
     || (relative.StartsWith("wwwroot/", StringComparison.Ordinal)
         && not (runtimeFile relative))
     || (Path.GetExtension relative = ".pdb"
-        && Set.contains (Path.ChangeExtension(relative, ".dll") |> nonNull) known)
+        && Set.contains (Path.ChangeExtension(relative, ".dll")) known)
 
 let qualify root directory project =
     let name = ThirdPartyNoticeAssets.assemblyName root project

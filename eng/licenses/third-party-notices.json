@@ -5,7 +5,7 @@
     {
       "file": "Microsoft-MIT.txt",
       "sha256": "480d420fd388a3ce0cecb73d79aee3f02f70fee060e95f4727b1335feff33201",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/5a2162bea6845eabc1fc721624a43568c65db3b1/src/fsharp/License.txt"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f/src/fsharp/License.txt"
     },
     {
       "file": "IdentityModel-MIT.txt",
@@ -15,22 +15,22 @@
     {
       "file": "DotNet-Foundation-MIT.txt",
       "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/runtime/LICENSE.TXT"
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f/src/runtime/LICENSE.TXT"
     },
     {
       "file": "AspNetCore-NOTICES.txt",
-      "sha256": "52af3d603b6d069e635f8afd08ec44ec01559255b5f3afd161ae9e6fe7e7aa54",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/aspnetcore/THIRD-PARTY-NOTICES.txt"
+      "sha256": "fe970484b338399def0b81b24d8a6005122d5c9f559a257c2ad22cbb83644cab",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f/src/aspnetcore/THIRD-PARTY-NOTICES.txt"
     },
     {
       "file": "Runtime-NOTICES.txt",
-      "sha256": "66f1d4e44973185519bb4aa8a9718eb22fc7af2cc532e3ae9cfc4c127ee7fc54",
-      "source": "https://raw.githubusercontent.com/dotnet/dotnet/0427b9abbead3fa64c6655eb4290c537397131fa/src/runtime/THIRD-PARTY-NOTICES.TXT"
+      "sha256": "4790bb15f0edd1b105aecb05174fc6c589d4d9fad0c50616ef5f7dc365f1c8a6",
+      "source": "https://raw.githubusercontent.com/dotnet/dotnet/297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f/src/runtime/THIRD-PARTY-NOTICES.TXT"
     },
     {
       "file": "SDK-Host-NOTICES.txt",
-      "sha256": "2dc8f8c5a39401e928b5784ab564eb8b3ceb99ead3df8f260e0cab7e0bbecc7a",
-      "source": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-osx-arm64.tar.gz (SHA-512-verified SDK distribution root ThirdPartyNotices.txt)"
+      "sha256": "d30078edf6426ec7ef9427b3048b407fee214d1eb7834a681a3a09290387d591",
+      "source": "https://builds.dotnet.microsoft.com/dotnet/Sdk/11.0.100/dotnet-sdk-11.0.100-osx-arm64.tar.gz (SHA-512-verified SDK distribution root ThirdPartyNotices.txt)"
     },
     {
       "file": "PostgreSQL-NPGSQL.txt",
@@ -77,7 +77,7 @@
     },
     {
       "id": "FSharp.Core",
-      "version": "10.1.403",
+      "version": "11.0.101",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt"
@@ -98,12 +98,12 @@
         "resources:zh-Hant/FSharp.Core.resources.dll",
         "runtime:FSharp.Core.dll"
       ],
-      "packageRevision": "5a2162bea6845eabc1fc721624a43568c65db3b1",
-      "licenseRevision": "5a2162bea6845eabc1fc721624a43568c65db3b1"
+      "packageRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f",
+      "licenseRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f"
     },
     {
       "id": "Microsoft.AspNetCore.Authentication.JwtBearer",
-      "version": "10.0.14",
+      "version": "11.0.0",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -113,12 +113,12 @@
       "assets": [
         "runtime:Microsoft.AspNetCore.Authentication.JwtBearer.dll"
       ],
-      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
-      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
+      "packageRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f",
+      "licenseRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f"
     },
     {
       "id": "Microsoft.AspNetCore.Authentication.OpenIdConnect",
-      "version": "10.0.14",
+      "version": "11.0.0",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -128,12 +128,12 @@
       "assets": [
         "runtime:Microsoft.AspNetCore.Authentication.OpenIdConnect.dll"
       ],
-      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
-      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
+      "packageRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f",
+      "licenseRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f"
     },
     {
       "id": "Microsoft.Bcl.Cryptography",
-      "version": "10.0.14",
+      "version": "11.0.0",
       "repository": "https://github.com/dotnet/dotnet",
       "texts": [
         "Microsoft-MIT.txt",
@@ -143,38 +143,8 @@
       "assets": [
         "runtime:Microsoft.Bcl.Cryptography.dll"
       ],
-      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
-      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
-    },
-    {
-      "id": "Microsoft.Extensions.DependencyInjection.Abstractions",
-      "version": "10.0.14",
-      "repository": "https://github.com/dotnet/dotnet",
-      "texts": [
-        "Microsoft-MIT.txt",
-        "DotNet-Foundation-MIT.txt",
-        "Runtime-NOTICES.txt"
-      ],
-      "assets": [
-        "runtime:Microsoft.Extensions.DependencyInjection.Abstractions.dll"
-      ],
-      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
-      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
-    },
-    {
-      "id": "Microsoft.Extensions.Logging.Abstractions",
-      "version": "10.0.14",
-      "repository": "https://github.com/dotnet/dotnet",
-      "texts": [
-        "Microsoft-MIT.txt",
-        "DotNet-Foundation-MIT.txt",
-        "Runtime-NOTICES.txt"
-      ],
-      "assets": [
-        "runtime:Microsoft.Extensions.Logging.Abstractions.dll"
-      ],
-      "packageRevision": "0427b9abbead3fa64c6655eb4290c537397131fa",
-      "licenseRevision": "0427b9abbead3fa64c6655eb4290c537397131fa"
+      "packageRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f",
+      "licenseRevision": "297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f"
     },
     {
       "id": "Microsoft.IdentityModel.Abstractions",

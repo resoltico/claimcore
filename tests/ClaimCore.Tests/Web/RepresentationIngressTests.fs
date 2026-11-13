@@ -134,7 +134,19 @@ let tests =
                     Encoding.UTF8.GetBytes
                         """{"kind":"CASE","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1,"act":{"kind":"CLOSE"}}"""
 
-                let send values =
+                let withActor principal work =
+                    task {
+                        let services =
+                            ClaimCore.Tests.DecisionFixtures.services
+                                ClaimCore.Tests.DecisionFixtures.installation
+                                ClaimCore.Tests.DecisionFixtures.calendar
+                                principal
+
+                        let! result = work services
+                        return Some result
+                    }
+
+                let send (values: string list) =
                     task {
                         use scope = provider.CreateScope()
                         use input = new MemoryStream(body)
@@ -159,18 +171,6 @@ let tests =
                         context.Request.Body <- input
                         context.Response.Body <- output
                         context.Connection.RemoteIpAddress <- IPAddress.Loopback
-
-                        let withActor principal work =
-                            task {
-                                let services =
-                                    ClaimCore.Tests.DecisionFixtures.services
-                                        ClaimCore.Tests.DecisionFixtures.installation
-                                        ClaimCore.Tests.DecisionFixtures.calendar
-                                        principal
-
-                                let! result = work services
-                                return Some result
-                            }
 
                         let! result = ApiRoutes.handle handler configuration withActor context
                         do! result.ExecuteAsync context
