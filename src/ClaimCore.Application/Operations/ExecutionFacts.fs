@@ -15,7 +15,9 @@ type internal CaseFacts =
         Assignee: AccessView option
         ExistingOperation: RetainedOperation option
         Case: StoredCase option
-        PaymentContext: CasePaymentContext
+        State: CaseSubjectState option
+        Work: StoredWork option
+        PendingReminderDue: CalendarDate list
     }
 
 [<NoComparison>]
@@ -87,49 +89,23 @@ module internal ExecutionFacts =
                     ((record |> Option.map _.CaseId |> Option.toList)
                      @ (operationCase existing |> Option.toList))
 
-            let! paymentContext =
-                task {
-                    match record, paymentAct with
-                    | Some current, Some act when
-                        Access.canAct principal actor (Scope.Case current.CaseId) act
-                        ->
-                        match act with
-                        | CaseAct.RecordPayment _ ->
-                            return
-                                CasePaymentContext.Recording(
-                                    current.CaseId,
-                                    current.Snapshot.Revision,
-                                    existing.IsSome
-                                )
-                        | CaseAct.RemovePayment id ->
-                            let! selected = tx.ActivePayment(current.CaseId, id)
+            let! state =
+                match record, paymentAct with
+                | Some current, Some act when
+                    Access.canAct principal actor (Scope.Case current.CaseId) act
+                    ->
+                    tx.CaseState current.CaseId
+                | _ -> System.Threading.Tasks.Task.FromResult None
 
-                            match selected with
-                            | None ->
-                                return
-                                    CasePaymentContext.Removing(
-                                        current.CaseId,
-                                        current.Snapshot.Revision,
-                                        None,
-                                        None
-                                    )
-                            | Some selected ->
-                                let! remaining =
-                                    tx.PaymentBoundsExcluding(
-                                        current.CaseId,
-                                        PaymentEntry.id selected
-                                    )
+            let! work =
+                match state with
+                | Some state -> tx.FindWork state.CaseId
+                | None -> System.Threading.Tasks.Task.FromResult None
 
-                                return
-                                    CasePaymentContext.Removing(
-                                        current.CaseId,
-                                        current.Snapshot.Revision,
-                                        Some selected,
-                                        remaining
-                                    )
-                        | _ -> return CasePaymentContext.NoneRequired
-                    | _ -> return CasePaymentContext.NoneRequired
-                }
+            let! pendingDue =
+                match state with
+                | Some state -> tx.PendingReminderDue(state.CaseId, None)
+                | None -> System.Threading.Tasks.Task.FromResult []
 
             return
                 {
@@ -140,7 +116,9 @@ module internal ExecutionFacts =
                     Actor = actor
                     ExistingOperation = existing
                     Case = record
-                    PaymentContext = paymentContext
+                    State = state
+                    Work = work
+                    PendingReminderDue = pendingDue
                 }
         }
 

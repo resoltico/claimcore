@@ -287,6 +287,11 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.AccessRequestPage query =
                                             tx.AccessRequestPage query
 
+                                        member _.CaseState id = tx.CaseState id
+
+                                        member _.PendingReminderDue(parent, excluded) =
+                                            tx.PendingReminderDue(parent, excluded)
+
                                         member _.ActivePayment(parent, selection) =
                                             tx.ActivePayment(parent, selection)
 

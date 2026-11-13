@@ -374,13 +374,13 @@ let private storage () =
                     CaseProjection.Insert(
                         decided.After.CaseId,
                         decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After
+                        CaseIndex.create hdr.RecordedAt decided.After None []
                     )
                 | Some _, _ ->
                     CaseProjection.Update(
                         decided.After.CaseId,
                         decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After,
+                        CaseIndex.create hdr.RecordedAt decided.After None [],
                         decided.Payment
                     )
 

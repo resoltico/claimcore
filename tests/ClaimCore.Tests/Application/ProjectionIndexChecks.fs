@@ -15,7 +15,7 @@ let checks installation instant =
 
     let caseId = snapshot.CaseId
 
-    let index = CaseIndex.create instant snapshot
+    let index = CaseIndex.create instant snapshot None []
 
     let record: StoredCase =
         {

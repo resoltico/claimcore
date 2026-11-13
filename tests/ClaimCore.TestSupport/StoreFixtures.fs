@@ -86,7 +86,9 @@ let internal inspectOperation fixture principal operation token =
                         return
                             {
                                 Maintenance = maintenance
-                                PaymentContext = CasePaymentContext.NoneRequired
+                                State = None
+                                Work = None
+                                PendingReminderDue = []
                                 CaseFacts.Assignee = None
                                 ObservedAt = tx.ObservedAt
                                 ExpiredBefore = frontier

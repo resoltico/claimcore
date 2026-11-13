@@ -12,6 +12,8 @@ module ProjectionVerification =
     type CaseWorkIndex =
         {
             CaseId: CaseId
+            Snapshot: CaseSnapshot
+            ChangedAt: DateTimeOffset
             Responsible: ActorId option
             FollowUp: CalendarDate option
             SearchText: string option
@@ -20,6 +22,8 @@ module ProjectionVerification =
     let caseWorkIndex (record: StoredCase) =
         {
             CaseId = record.CaseId
+            Snapshot = record.Snapshot
+            ChangedAt = record.Index.ChangedAt
             Responsible = record.Index.Responsible
             FollowUp = record.Index.FollowUp
             SearchText = record.Index.WorkSearchText
@@ -111,7 +115,7 @@ module ProjectionVerification =
                 Map.tryFind record.CaseId histories
                 |> known None VerificationFinding.CaseProjection
 
-            let expected = CaseIndex.create history.ChangedAt record.Snapshot
+            let expected = CaseIndex.create history.ChangedAt record.Snapshot None []
 
             do!
                 require
@@ -243,47 +247,32 @@ module ProjectionVerification =
         (reminders: Map<ReminderId, ReminderHistory>)
         (records: CaseWorkIndex list)
         =
-        let dates =
-            reminders
-            |> Map.values
-            |> Seq.fold
-                (fun dates history ->
-                    match history.State, history.Snapshot with
-                    | ReminderState.Pending, Some value ->
-                        let due = Reminder.due value
-
-                        Map.change
-                            history.CaseId
-                            (fun old ->
-                                Some(old |> Option.map (min due) |> Option.defaultValue due))
-                            dates
-                    | _ -> dates)
-                Map.empty
-
         records
         |> List.fold
             (fun state record ->
                 state
                 |> Result.bind (fun () ->
-                    let current =
-                        work
-                        |> Map.tryFind record.CaseId
-                        |> Option.bind _.Snapshot
-                        |> Option.map _.Work
+                    let current = work |> Map.tryFind record.CaseId |> Option.bind _.Snapshot
 
-                    let responsible = current |> Option.bind _.Responsible
+                    let pendingDue =
+                        reminders
+                        |> Map.values
+                        |> Seq.choose _.Snapshot
+                        |> Seq.filter (fun value ->
+                            Reminder.caseId value = record.CaseId
+                            && Reminder.state value = ReminderState.Pending)
+                        |> Seq.map Reminder.due
+                        |> Seq.toList
 
-                    let search =
-                        current
-                        |> Option.bind _.Summary
-                        |> Option.map (HandlingSummary.format >> TextSearch.normalize)
+                    let expected =
+                        CaseIndex.create record.ChangedAt record.Snapshot current pendingDue
 
                     require
                         None
                         VerificationFinding.CaseWorkProjection
-                        (record.Responsible = responsible
-                         && record.FollowUp = Map.tryFind record.CaseId dates
-                         && record.SearchText = search)))
+                        (record.Responsible = expected.Responsible
+                         && record.FollowUp = expected.FollowUp
+                         && record.SearchText = expected.WorkSearchText)))
             (Ok())
 
     let workIndex work reminders record =

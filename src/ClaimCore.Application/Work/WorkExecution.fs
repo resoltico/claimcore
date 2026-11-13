@@ -20,6 +20,7 @@ module internal WorkExecution =
             Values: OperationValues
             Current: ReceiptCurrent
             Projection: WorkChangeProjection
+            Index: (CaseId * CaseIndex) option
             Review: OperationReview
         }
 
@@ -215,6 +216,7 @@ module internal WorkExecution =
                         with
                         | Error refusal -> return Verdict.Refuse refusal
                         | Ok after ->
+                            let! pendingDue = tx.PendingReminderDue(parent.CaseId, None)
                             let recordedBy = LedgerEnvelope.actorId view.Actor
 
                             let summaryChangedAt, summaryRecordedBy =
@@ -264,6 +266,15 @@ module internal WorkExecution =
                                                     Some parent,
                                                     Some stored,
                                                     accounts
+                                                )
+                                            Index =
+                                                Some(
+                                                    parent.CaseId,
+                                                    CaseIndex.create
+                                                        parent.Index.ChangedAt
+                                                        parent.Snapshot
+                                                        (Some after)
+                                                        pendingDue
                                                 )
                                             Projection =
                                                 WorkChangeProjection.Work
@@ -408,6 +419,8 @@ module internal WorkExecution =
                 match Reminder.decide operation parent.Snapshot before reserved command with
                 | Error refusal -> return reminderRefusal parent before refusal
                 | Ok effects ->
+                    let! work = tx.FindWork parent.CaseId
+                    let! pendingDue = tx.PendingReminderDue(parent.CaseId, Some id)
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 
                     let stored value : StoredReminder =
@@ -441,6 +454,19 @@ module internal WorkExecution =
                                     OperationValues.Reminder
                                         { Command = command; Effects = effects }
                                 Current = ReceiptCurrent.Reminder(Some parent, accepted)
+                                Index =
+                                    Some(
+                                        parent.CaseId,
+                                        CaseIndex.create
+                                            parent.Index.ChangedAt
+                                            parent.Snapshot
+                                            (work |> Option.bind _.Snapshot)
+                                            (pendingDue
+                                             @ (values
+                                                |> List.filter (fun value ->
+                                                    Reminder.state value = ReminderState.Pending)
+                                                |> List.map Reminder.due))
+                                    )
                                 Projection =
                                     WorkChangeProjection.Reminder
                                         {
@@ -536,6 +562,7 @@ module internal WorkExecution =
                                         CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, id))
                                 Values = OperationValues.Note { Command = command; After = after }
                                 Current = ReceiptCurrent.Note(Some parent, Some after)
+                                Index = None
                                 Projection = WorkChangeProjection.Note after
                                 Review =
                                     OperationReview.Note
@@ -650,10 +677,19 @@ module internal WorkExecution =
                                             Command = proposal.Command
                                             Values = proposal.Values
                                             Current = proposal.Current
-                                            Projection = proposal.Projection
+                                            Projection = proposal.Projection, proposal.Index
                                         })
 
-                            return! ExecutionFacts.persist tx tx.ProjectWorkChange accepted
+                            let write (projection, index) =
+                                task {
+                                    do! tx.ProjectWorkChange projection
+
+                                    match index with
+                                    | Some(id, index) -> do! tx.ProjectCaseIndex(id, index)
+                                    | None -> ()
+                                }
+
+                            return! ExecutionFacts.persist tx write accepted
                         }
                 CancellationToken = token
             }

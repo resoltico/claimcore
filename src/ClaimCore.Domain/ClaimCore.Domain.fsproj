@@ -22,6 +22,7 @@
     <Compile Include="CaseActs.fs" />
     <Compile Include="FinancialPosition.fs" />
     <Compile Include="CaseStateModel.fs" />
+    <Compile Include="PaymentRows.fs" />
     <Compile Include="Reminders.fs" />
     <Compile Include="Notes.fs" />
     <Compile Include="PeopleActs.fs" />
@@ -50,5 +51,8 @@
     <Compile Include="CaseWorkPolicy.fs" />
     <Compile Include="CaseWorkDecision.fs" />
     <Compile Include="Validation.fs" />
+    <Compile Include="CaseSubject.fs" />
+    <Compile Include="CaseSearch.fs" />
+    <Compile Include="CaseIndex.fs" />
   </ItemGroup>
 </Project>

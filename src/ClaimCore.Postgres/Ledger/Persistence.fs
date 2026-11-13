@@ -26,6 +26,7 @@ module internal Persistence =
             DatabaseSession.parameter (index.Paid |> Option.map Money.value)
             DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
             DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
+            DatabaseSession.parameter index.WorkSearchText
         |]
 
     let case connection projection token =
@@ -35,7 +36,7 @@ module internal Persistence =
                 let! _ =
                     DatabaseSession.execute
                         connection
-                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17)"
+                        "INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17,$18)"
                         (caseParameters id snapshot index)
                         token
 
@@ -58,8 +59,8 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10::date,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14,paid_amount=$15 WHERE case_id=$1"
-                        (caseParameters id snapshot index |> Array.take 15)
+                        "UPDATE claimcore.cases SET case_reference=$2,revision=$3,state=$4,snapshot=$5,status=$6,progress=$7,changed_at=$8,search_text=$9,notified_on=$10::date,claimed_amount=$11,claimed_currency=$12,payable_amount=$13,payable_currency=$14,paid_amount=$15,responsible_actor=$16,follow_up=$17,work_search_text=$18 WHERE case_id=$1"
+                        (caseParameters id snapshot index)
                         token
 
                 if changed <> 1 then
@@ -85,6 +86,36 @@ module internal Persistence =
 
                 if changed <> 1 then
                     raise (RecordCorruptException "Case projection is absent.")
+        }
+
+    let caseIndex connection id (index: CaseIndex) token =
+        task {
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "UPDATE claimcore.cases SET responsible_actor=$2,follow_up=$3,work_search_text=$4,status=$5,progress=$6,changed_at=$7,search_text=$8,notified_on=$9::date,claimed_amount=$10,claimed_currency=$11,payable_amount=$12,payable_currency=$13,paid_amount=$14 WHERE case_id=$1"
+                    [|
+                        box (CaseId.value id)
+                        DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
+                        DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
+                        DatabaseSession.parameter index.WorkSearchText
+                        DatabaseSession.parameter (index.Status |> Option.map CaseStatus.token)
+                        DatabaseSession.parameter (index.Progress |> Option.map CaseProgress.token)
+                        box index.ChangedAt
+                        DatabaseSession.parameter index.SearchText
+                        DatabaseSession.parameter (
+                            index.NotifiedOn |> Option.map CalendarDate.value
+                        )
+                        DatabaseSession.parameter (index.Claimed |> Option.map Money.value)
+                        DatabaseSession.parameter (index.Claimed |> Option.map Money.currency)
+                        DatabaseSession.parameter (index.Payable |> Option.map Money.value)
+                        DatabaseSession.parameter (index.Payable |> Option.map Money.currency)
+                        DatabaseSession.parameter (index.Paid |> Option.map Money.value)
+                    |]
+                    token
+
+            if changed <> 1 then
+                raise (RecordCorruptException "Family index target is absent.")
         }
 
     let private register connection id principal token =
@@ -292,30 +323,17 @@ module internal Persistence =
                 if changed <> 1 then
                     raise (RecordCorruptException "Work projection is absent.")
 
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.cases SET responsible_actor=$2,work_search_text=$3 WHERE case_id=$1"
-                        [|
-                            box (CaseId.value value.CaseId)
-                            DatabaseSession.parameter (
-                                value.Work.Responsible |> Option.map ActorId.value
-                            )
-                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
-                        |]
-                        token
-
                 return ()
             | WorkChangeProjection.Reminder projection ->
-                let! parent =
+                do!
                     task {
                         match projection.Effects with
                         | ReminderEffects.Created value ->
                             do! reminderValue projection.ChangedAt projection.RecordedBy true value
-                            return Reminder.caseId value
+                            return ()
                         | ReminderEffects.Changed value ->
                             do! reminderValue projection.ChangedAt projection.RecordedBy false value
-                            return Reminder.caseId value
+                            return ()
                         | ReminderEffects.CompletedAndPlanned(completed, next) ->
                             do!
                                 reminderValue
@@ -325,15 +343,8 @@ module internal Persistence =
                                     completed
 
                             do! reminderValue projection.ChangedAt projection.RecordedBy true next
-                            return Reminder.caseId completed
+                            return ()
                     }
-
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.cases SET follow_up=(SELECT min(due) FROM claimcore.reminders WHERE case_id=$1 AND state='PENDING') WHERE case_id=$1"
-                        [| box (CaseId.value parent) |]
-                        token
 
                 return ()
         }

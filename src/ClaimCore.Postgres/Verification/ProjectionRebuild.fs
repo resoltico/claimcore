@@ -10,22 +10,10 @@ open ClaimCore.RecordFormat
 
 /// Owner-only maintenance. The ledger head lock excludes application writers throughout the scan.
 module internal ProjectionRebuild =
-    let private snapshot id (history: CaseHistory) =
-        match history.Snapshot, history.State, history.Reference with
-        | Some snapshot, _, _ -> snapshot
-        | None, CaseState.Erased, Some reference ->
-            {
-                CaseId = id
-                Reference = reference
-                Revision = history.Revision
-                State = CaseState.Erased
-            }
-        | _ -> raise (RecordCorruptException "Authoritative case reconstruction is incomplete.")
-
-    let private replaceCases connection (state: Replay.Scan) token =
+    let private replaceCases connection rows token =
         task {
-            for KeyValue(id, history) in state.Cases do
-                let snapshot = snapshot id history
+            for KeyValue(id, (owned: CaseSubjectRows, index)) in rows do
+                let snapshot = owned.Snapshot
 
                 match snapshot.State with
                 | CaseState.Erased ->
@@ -37,7 +25,7 @@ module internal ProjectionRebuild =
                                 box (CaseId.value id)
                                 box (CaseReference.format snapshot.Reference)
                                 box (Revision.value snapshot.Revision)
-                                box history.ChangedAt
+                                box owned.ChangedAt
                             |]
                             token
 
@@ -46,18 +34,10 @@ module internal ProjectionRebuild =
                     do!
                         Persistence.case
                             connection
-                            (CaseProjection.Insert(
-                                id,
-                                snapshot,
-                                CaseIndex.create history.ChangedAt snapshot
-                            ))
+                            (CaseProjection.Insert(id, snapshot, index))
                             token
-        }
 
-    let private replacePayments connection (state: Replay.Scan) token =
-        task {
-            for history in state.Cases |> Map.values do
-                for payment in history.PaymentProjections |> Map.values do
+                for payment in owned.Payments do
                     do! PaymentStorage.restore connection payment token
         }
 
@@ -241,6 +221,14 @@ module internal ProjectionRebuild =
                     match scanned with
                     | Error finding -> return Error finding
                     | Ok state ->
+                        let rows =
+                            Replay.caseRows state
+                            |> Result.defaultWith (fun _ ->
+                                raise (
+                                    RecordCorruptException
+                                        "Case rows are incomplete after authoritative replay."
+                                ))
+
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
                         for table in
@@ -263,8 +251,7 @@ module internal ProjectionRebuild =
                             ()
 
                         do! replacePeople connection state token
-                        do! replaceCases connection state token
-                        do! replacePayments connection state token
+                        do! replaceCases connection rows token
                         do! replaceWork connection state token
                         do! replaceNotes connection state token
                         do! replaceGrants connection state token

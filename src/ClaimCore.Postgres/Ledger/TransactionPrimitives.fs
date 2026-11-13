@@ -249,6 +249,45 @@ type private ReadTx
         member _.FindCase id =
             Projections.caseById connection installation id token
 
+        member _.CaseState id =
+            task {
+                let! record = Projections.caseById connection installation id token
+
+                match record with
+                | None -> return None
+                | Some record ->
+                    let! payments = PaymentStorage.owned connection id token
+
+                    return
+                        CaseSubject.restore
+                            record.Index.ChangedAt
+                            record.Snapshot
+                            (payments |> List.map (fun row -> row.PaymentId, row) |> Map.ofList)
+                        |> Result.map Some
+                        |> Result.defaultWith (fun _ ->
+                            raise (
+                                RecordCorruptException
+                                    "Case payment state does not match its aggregate."
+                            ))
+            }
+
+        member _.PendingReminderDue(parent, excluded) =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ("SELECT "
+                         + DatabaseSession.dateExpression "due"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state='PENDING' AND ($2::uuid IS NULL OR reminder_id<>$2)")
+                        [|
+                            box (CaseId.value parent)
+                            DatabaseSession.parameter (excluded |> Option.map ReminderId.value)
+                        |]
+                        token
+
+                return rows |> List.map (DatabaseSession.calendarDate 0 >> CalendarDate.ofDate)
+            }
+
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
 
@@ -446,6 +485,10 @@ type private WriteTx(connection, installation, head, observedAt, token) =
         member _.ProjectCase projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.case connection projection token
+
+        member _.ProjectCaseIndex(id, index) =
+            FailureDiagnostics.phase FailurePhase.Projection
+            Persistence.caseIndex connection id index token
 
         member _.ProjectWorkChange projection =
             FailureDiagnostics.phase FailurePhase.Projection

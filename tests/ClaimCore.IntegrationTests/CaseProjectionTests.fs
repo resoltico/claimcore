@@ -37,7 +37,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = snapshot.CaseId
         Snapshot = snapshot
-        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 

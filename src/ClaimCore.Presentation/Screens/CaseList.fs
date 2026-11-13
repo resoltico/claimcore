@@ -115,7 +115,7 @@ module CaseListScreen =
             match reply.ExactReference with
             | None -> screen
             | Some exact ->
-                let includeExact region =
+                let includeExact (region: Region) =
                     match region.Content with
                     | RegionContent.Table data ->
                         let exactSection =

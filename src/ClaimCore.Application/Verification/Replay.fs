@@ -167,243 +167,103 @@ type CaseHistory =
     }
 
 module internal CaseReplay =
-    let private nextState sequence previous act =
-        let before =
-            previous
-            |> Option.map (_.State >> CaseState.lifecycle)
-            |> Option.defaultValue Lifecycle.Active
-
-        Lifecycle.after before act
-        |> Option.map (fun state -> CaseState.ofLifecycle state ())
-        |> function
-            | Some state -> Ok state
-            | None -> Error(divergence (Some sequence) VerificationFinding.StateSequence)
-
-    let private snapshot sequence state reference payload =
-        match payload with
-        | VerifiedPayload.Case(_, Some decision) ->
-            let snapshot = decision.After
-
-            let matches =
-                CaseState.map ignore snapshot.State = state
-                && (reference |> Option.forall ((=) snapshot.Reference))
-
-            require (Some sequence) VerificationFinding.StateSequence matches
-            |> Result.map (fun () -> Some snapshot, Some snapshot.Reference)
-        | VerifiedPayload.Case(_, None)
-        | VerifiedPayload.Erased -> Ok(None, reference)
-        | _ -> Error(divergence (Some sequence) VerificationFinding.PayloadFormat)
+    let subject id (history: CaseHistory) =
+        history.Reference
+        |> Option.map (fun reference ->
+            {
+                CaseSubjectState.CaseId = id
+                Reference = reference
+                Revision = history.Revision
+                Lifecycle = CaseState.lifecycle history.State
+                Status = history.Status
+                Snapshot = history.Snapshot
+                Payments = history.PaymentProjections
+                ChangedAt = history.ChangedAt
+            })
 
     let apply histories (entry: StoredEffect) payload =
         match entry.Subject with
-        | EntryTarget.Note _
-        | EntryTarget.Work _
-        | EntryTarget.Reminder _
-        | EntryTarget.People _ ->
-            Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, businessDate) ->
+            let at = Some entry.Sequence
+            let previous = Map.tryFind id histories
+            let state = previous |> Option.bind (subject id)
+
+            let stamp =
+                {
+                    SubjectStamp.Position = entry.Position
+                    OperationId = entry.OperationId
+                    ActorId = entry.ActorId
+                    RecordedAt = entry.RecordedAt
+                }
+
+            let structure =
+                {
+                    CaseSubjectStructure.Stamp = stamp
+                    CaseId = id
+                    Reference = entry.CreationReference
+                    Revision = revision
+                    Act = act
+                    RemovedPayment =
+                        match entry.Descriptor with
+                        | EffectDescriptor.Case(_, _, _, _, Some(PaymentReference.Removed id)) ->
+                            Some id
+                        | _ -> None
+                }
+
+            let applyErased () =
+                CaseSubject.applyErased state structure
+                |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
             result {
-                let previous = Map.tryFind id histories
-
-                let expected =
-                    previous |> Option.map _.Revision |> Option.defaultValue Revision.zero
-
                 do!
                     require
-                        (Some entry.Sequence)
-                        VerificationFinding.RevisionSequence
-                        (Revision.value expected < Revision.Maximum
-                         && revision = Revision.successor expected)
-
-                do!
-                    require
-                        (Some entry.Sequence)
+                        at
                         VerificationFinding.HistoryStart
-                        ((previous.IsNone) = (act = CaseActKind.Open))
+                        (previous.IsNone = (act = CaseActKind.Open))
 
-                let entries =
-                    previous |> Option.map _.PaymentProjections |> Option.defaultValue Map.empty
+                do!
+                    require
+                        at
+                        VerificationFinding.HistoryStart
+                        (if act = CaseActKind.Open then
+                             id = CaseId.ofOperationId entry.OperationId
+                         else
+                             entry.CreationReference.IsNone)
 
-                let active =
-                    entries
-                    |> Map.toList
-                    |> List.choose (fun (id, row) ->
-                        match row.Content with
-                        | PaymentProjectionContent.Available(entry, false) -> Some(id, entry)
-                        | _ -> None)
-                    |> Map.ofList
-
-                let cleared (entries: Map<OperationId, PaymentProjectionRow>) =
-                    entries
-                    |> Map.map (fun _ row ->
-                        { row with
-                            Content =
-                                match row.Content with
-                                | PaymentProjectionContent.Available(_, removed)
-                                | PaymentProjectionContent.Cleared removed ->
-                                    PaymentProjectionContent.Cleared removed
-                        })
-
-                let accepting (content: PaymentProjectionContent) : PaymentProjectionRow =
-                    {
-                        CaseId = id
-                        PaymentId = entry.OperationId
-                        Position = EffectPosition.create entry.Sequence entry.Index |> Option.get
-                        Content = content
-                    }
-
-                let! payments =
+                let! next =
                     match payload with
                     | VerifiedPayload.Case(_, None) when
                         act = CaseActKind.Erase
-                        && previous |> Option.exists (fun value -> value.Snapshot.IsNone)
+                        && (state |> Option.exists (fun state -> state.Snapshot.IsNone))
                         ->
-                        Ok(cleared entries)
+                        applyErased ()
                     | VerifiedPayload.Case(request, recorded) ->
-                        let before = previous |> Option.bind _.Snapshot
+                        CaseSubject.decide businessDate state request
+                        |> Result.mapError (fun _ ->
+                            divergence at VerificationFinding.StateSequence)
+                        |> Result.bind (fun expected ->
+                            require
+                                at
+                                VerificationFinding.StateSequence
+                                (recorded = Some expected
+                                 || (expected.After.State = CaseState.Erased && recorded.IsNone))
+                            |> Result.map (fun () -> CaseSubject.apply stamp state expected))
+                    | VerifiedPayload.Erased -> applyErased ()
+                    | _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
-                        let context =
-                            match request.Act, before with
-                            | CaseAct.RecordPayment _, Some parent ->
-                                CasePaymentContext.Recording(
-                                    id,
-                                    parent.Revision,
-                                    Map.containsKey request.OperationId entries
-                                )
-                            | CaseAct.RemovePayment selected, Some parent ->
-                                let found = Map.tryFind selected active
-                                let remaining = Map.remove selected active
-
-                                let dates =
-                                    if found.IsNone || remaining.IsEmpty then
-                                        None
-                                    else
-                                        let dates =
-                                            remaining
-                                            |> Map.values
-                                            |> Seq.map PaymentEntry.date
-                                            |> Seq.toList
-
-                                        PaymentDateBounds.create (List.min dates) (List.max dates)
-
-                                CasePaymentContext.Removing(id, parent.Revision, found, dates)
-                            | _ -> CasePaymentContext.NoneRequired
-
-                        match Case.decideSnapshot businessDate context request before with
-                        | Ok expected when
-                            (recorded = Some expected
-                             || (expected.After.State = CaseState.Erased && recorded.IsNone))
-                            ->
-                            match expected.After.State, expected.Payment with
-                            | CaseState.Erased, _ -> Ok(cleared entries)
-                            | _, Some(PaymentDifference.Recorded payment) ->
-                                Ok(
-                                    Map.add
-                                        (PaymentEntry.id payment)
-                                        (accepting (
-                                            PaymentProjectionContent.Available(payment, false)
-                                        ))
-                                        entries
-                                )
-                            | _, Some(PaymentDifference.Removed payment) ->
-                                let origin = Map.find (PaymentEntry.id payment) entries
-
-                                Ok(
-                                    Map.add
-                                        (PaymentEntry.id payment)
-                                        { origin with
-                                            Content =
-                                                PaymentProjectionContent.Available(payment, true)
-                                        }
-                                        entries
-                                )
-                            | _ -> Ok entries
-                        | _ ->
-                            Error(
-                                divergence (Some entry.Sequence) VerificationFinding.StateSequence
-                            )
-                    | VerifiedPayload.Erased when act = CaseActKind.RecordPayment ->
-                        Ok(
-                            Map.add
-                                entry.OperationId
-                                (accepting (PaymentProjectionContent.Cleared false))
-                                entries
-                        )
-                    | VerifiedPayload.Erased when act = CaseActKind.RemovePayment ->
-                        match entry.Descriptor with
-                        | EffectDescriptor.Case(_, _, _, _, Some(PaymentReference.Removed selected)) ->
-                            match Map.tryFind selected entries with
-                            | Some row ->
-                                match row.Content with
-                                | PaymentProjectionContent.Cleared false ->
-                                    Ok(
-                                        Map.add
-                                            selected
-                                            { row with
-                                                Content = PaymentProjectionContent.Cleared true
-                                            }
-                                            entries
-                                    )
-                                | PaymentProjectionContent.Available(value, false) ->
-                                    Ok(
-                                        Map.add
-                                            selected
-                                            { row with
-                                                Content =
-                                                    PaymentProjectionContent.Available(value, true)
-                                            }
-                                            entries
-                                    )
-                                | _ ->
-                                    Error(
-                                        divergence
-                                            (Some entry.Sequence)
-                                            VerificationFinding.StateSequence
-                                    )
-                            | None ->
-                                Error(
-                                    divergence
-                                        (Some entry.Sequence)
-                                        VerificationFinding.StateSequence
-                                )
-                        | _ ->
-                            Error(
-                                divergence (Some entry.Sequence) VerificationFinding.PayloadFormat
-                            )
-                    | VerifiedPayload.Erased when act = CaseActKind.Erase -> Ok(cleared entries)
-                    | VerifiedPayload.Erased -> Ok entries
-                    | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-
-                let! state = nextState entry.Sequence previous act
-
-                let reference =
-                    if act = CaseActKind.Open then
-                        entry.CreationReference
-                    else
-                        previous |> Option.bind _.Reference
-
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.HistoryStart
-                        (reference.IsSome
-                         && (if act = CaseActKind.Open then
-                                 id = CaseId.ofOperationId entry.OperationId
-                             else
-                                 entry.CreationReference.IsNone))
-
-                let! snapshot, reference = snapshot entry.Sequence state reference payload
+                let! next = next |> known at VerificationFinding.StateSequence
+                do! require at VerificationFinding.RevisionSequence (next.Revision = revision)
                 let first field = previous |> Option.bind field
 
                 let missing =
                     if StoredEffect.privateUnavailable entry then
-                        first _.MissingPayloadAt |> Option.orElse (Some entry.Sequence)
+                        first _.MissingPayloadAt |> Option.orElse at
                     else
                         first _.MissingPayloadAt
 
                 let present =
                     if StoredEffect.privateAvailable entry then
-                        first _.PresentPayloadAt |> Option.orElse (Some entry.Sequence)
+                        first _.PresentPayloadAt |> Option.orElse at
                     else
                         first _.PresentPayloadAt
 
@@ -411,31 +271,20 @@ module internal CaseReplay =
                     Map.add
                         id
                         {
-                            Status =
-                                match act with
-                                | CaseActKind.Open
-                                | CaseActKind.Reopen -> CaseStatus.Opened
-                                | CaseActKind.Close -> CaseStatus.Closed
-                                | _ ->
-                                    previous
-                                    |> Option.map _.Status
-                                    |> Option.defaultValue CaseStatus.Opened
-                            Revision = revision
-                            ChangedAt = entry.RecordedAt
-                            Snapshot = snapshot
-                            PaymentProjections = payments
-                            Reference = reference
-                            State = state
+                            Status = next.Status
+                            Revision = next.Revision
+                            ChangedAt = next.ChangedAt
+                            Snapshot = next.Snapshot
+                            PaymentProjections = next.Payments
+                            Reference = Some next.Reference
+                            State = CaseState.ofLifecycle next.Lifecycle ()
                             MissingPayloadAt = missing
                             PresentPayloadAt = present
-                            ErasedAt =
-                                if act = CaseActKind.Erase then
-                                    Some entry.Sequence
-                                else
-                                    None
+                            ErasedAt = if act = CaseActKind.Erase then at else None
                         }
                         histories
             }
+        | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
     let erasure histories =
         histories
@@ -1284,6 +1133,41 @@ module Replay =
             AvailableNonces = Set.empty
             ExpectedSeen = expected |> Option.exists ((=) LedgerPosition.genesis)
         }
+
+    let caseRows (state: Scan) =
+        state.Cases
+        |> Map.toList
+        |> List.fold
+            (fun rows (id, history) ->
+                result {
+                    let! rows = rows
+
+                    let! subject =
+                        CaseReplay.subject id history
+                        |> known None VerificationFinding.CaseProjection
+
+                    let! owned =
+                        CaseSubject.rows subject |> known None VerificationFinding.CaseProjection
+
+                    let work = state.Work |> Map.tryFind id |> Option.bind _.Snapshot
+
+                    let pendingDue =
+                        state.Reminders
+                        |> Map.values
+                        |> Seq.choose _.Snapshot
+                        |> Seq.filter (fun value ->
+                            Reminder.caseId value = id
+                            && Reminder.state value = ReminderState.Pending)
+                        |> Seq.map Reminder.due
+                        |> Seq.toList
+
+                    return
+                        Map.add
+                            id
+                            (owned, CaseIndex.create owned.ChangedAt owned.Snapshot work pendingDue)
+                            rows
+                })
+            (Ok Map.empty)
 
     let head (state: Scan) actual =
         require None VerificationFinding.Head (actual = Some state.Head)

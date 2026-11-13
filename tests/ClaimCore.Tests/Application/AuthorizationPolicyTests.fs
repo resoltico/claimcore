@@ -240,7 +240,7 @@ let private scopedAdvice () =
         {
             CaseId = target
             Snapshot = snapshot
-            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
@@ -337,7 +337,7 @@ let private noUsableCorrectionOffer () =
         {
             CaseId = target
             Snapshot = snapshot
-            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 

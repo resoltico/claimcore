@@ -17,47 +17,6 @@ type StoreFailure =
     | Cancelled
     | CommitOutcomeUnknown
 
-type CaseIndex =
-    {
-        Responsible: ActorId option
-        FollowUp: CalendarDate option
-        Status: CaseStatus option
-        Progress: CaseProgress option
-        ChangedAt: DateTimeOffset
-        SearchText: string option
-        WorkSearchText: string option
-        NotifiedOn: CalendarDate option
-        Claimed: Money option
-        Payable: Money option
-        Paid: Money option
-    }
-
-module CaseIndex =
-    let create changedAt (snapshot: CaseSnapshot) =
-        let fields = CaseState.fields snapshot.State
-
-        {
-            Responsible = None
-            FollowUp = None
-            Status = fields |> Option.map _.Status
-            Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
-            ChangedAt = changedAt
-            SearchText = fields |> Option.map CaseSearch.text
-            WorkSearchText = None
-            NotifiedOn =
-                fields
-                |> Option.map (fun fields ->
-                    Registration.incidentNotificationDate fields.Registration)
-            Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
-            Paid =
-                fields
-                |> Option.bind (fun fields ->
-                    FinancialPosition.totals fields.Finance |> Option.map _.Paid)
-            Payable =
-                fields
-                |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)
-        }
-
 type StoredCase =
     {
         CaseId: CaseId
@@ -482,20 +441,6 @@ type AccessRequestPageQuery =
         Limit: int
     }
 
-/// Private payment content becomes unavailable after parent erasure; accepting provenance remains.
-[<RequireQualifiedAccess>]
-type PaymentProjectionContent =
-    | Available of PaymentEntry * removed: bool
-    | Cleared of removed: bool
-
-type PaymentProjectionRow =
-    {
-        CaseId: CaseId
-        PaymentId: OperationId
-        Position: EffectPosition
-        Content: PaymentProjectionContent
-    }
-
 type PaymentPageQuery =
     {
         CaseId: CaseId
@@ -511,6 +456,9 @@ type IReadTx =
     abstract Access: AccessQuery -> Task<AccessView>
     abstract AccessCases: PrincipalKey * CaseId list -> Task<AccessView>
     abstract FindCase: CaseId -> Task<StoredCase option>
+    abstract CaseState: CaseId -> Task<CaseSubjectState option>
+    abstract PendingReminderDue: CaseId * ReminderId option -> Task<CalendarDate list>
+
     abstract FindCaseByReference: string -> Task<StoredCase option>
 
     abstract PaymentPage:
@@ -560,6 +508,7 @@ type IWriteTx =
     abstract AdvanceExpiryFrontier: DateTimeOffset -> Task<DateTimeOffset>
     abstract Append: RetainedOperation -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
+    abstract ProjectCaseIndex: CaseId * CaseIndex -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
     abstract ProjectPeople: PeopleProjection -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>

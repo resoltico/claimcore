@@ -106,7 +106,14 @@ let locked people current existing : LockedFacts<CaseFacts> =
         PayloadNonce = nonce
         Read =
             {
-                PaymentContext = CasePaymentContext.NoneRequired
+                State =
+                    current
+                    |> Option.map (fun record ->
+                        CaseSubject.restore record.Index.ChangedAt record.Snapshot Map.empty
+                        |> Result.defaultWith (fun _ ->
+                            invalidOp "Invalid synthetic owned case state."))
+                Work = None
+                PendingReminderDue = []
                 Assignee = None
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant

@@ -67,7 +67,7 @@ module internal CaseExecution =
         Case.ofAccepted record.Snapshot
         |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
         |> Result.bind (fun value ->
-            let indexed = CaseIndex.create record.Index.ChangedAt record.Snapshot
+            let indexed = CaseIndex.create record.Index.ChangedAt record.Snapshot None []
 
             if
                 { indexed with
@@ -139,14 +139,18 @@ module internal CaseExecution =
             let before =
                 match view.Case with
                 | None -> Ok None
-                | Some record -> current installationId record |> Result.map Some
+                | Some record ->
+                    match view.State with
+                    | Some state when
+                        state.CaseId = record.CaseId && state.Snapshot = Some record.Snapshot
+                        ->
+                        current installationId record |> Result.map Some
+                    | _ -> Error CoreFault.StoreIntegrityError
 
             match before with
             | Error fault -> Verdict.Fail fault
             | Ok before ->
-                match
-                    Case.decide (calendar.DateAt view.ObservedAt) view.PaymentContext request before
-                with
+                match CaseSubject.decide (calendar.DateAt view.ObservedAt) view.State request with
                 | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
                 | Error(CaseDecisionError.InvalidContext _) ->
                     Verdict.Fail CoreFault.StoreIntegrityError
@@ -158,11 +162,32 @@ module internal CaseExecution =
         _installationId
         (_calendar: IBusinessCalendar)
         (request: CaseCommand)
+        (write: LedgerWriteContext)
         (view: CaseFacts)
         (after: CaseDecision)
         =
-        let snapshot = after.After
-        let index = CaseIndex.create view.ObservedAt snapshot
+        let stamp =
+            {
+                SubjectStamp.Position =
+                    EffectPosition.create (Sequence.successor write.Head.Sequence) 0 |> Option.get
+                OperationId = request.OperationId
+                ActorId = LedgerEnvelope.actorId view.Actor
+                RecordedAt = view.ObservedAt
+            }
+
+        let rows =
+            CaseSubject.apply stamp view.State after
+            |> Option.bind CaseSubject.rows
+            |> Option.defaultWith (fun () -> invalidOp "A decided case has complete rows.")
+
+        let snapshot = rows.Snapshot
+
+        let index =
+            CaseIndex.create
+                rows.ChangedAt
+                snapshot
+                (view.Work |> Option.bind _.Snapshot)
+                view.PendingReminderDue
 
         let id = snapshot.CaseId
 
@@ -269,9 +294,11 @@ module internal CaseExecution =
             else
                 propose services.InstallationId services.Calendar command view)
         |> Verdict.bind (fun (_, after) ->
-            let plan = project installationId calendar command view after
-
-            LedgerEnvelope.accept services view.Actor write plan)
+            try
+                let plan = project installationId calendar command write view after
+                LedgerEnvelope.accept services view.Actor write plan
+            with :? System.OverflowException ->
+                Verdict.Fail CoreFault.InternalError)
 
     let run (services: ServiceContext) (request: TargetedRequest) token =
         let store = services.Store

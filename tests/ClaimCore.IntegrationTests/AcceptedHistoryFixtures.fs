@@ -125,7 +125,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             {
                 CaseId = id
                 Snapshot = snapshot
-                Index = CaseIndex.create entry.RecordedAt snapshot
+                Index = CaseIndex.create entry.RecordedAt snapshot None []
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
 
@@ -144,7 +144,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         Verdict.Proceed(
             entry,
-            CaseProjection.Insert(id, snapshot, CaseIndex.create entry.RecordedAt snapshot),
+            CaseProjection.Insert(id, snapshot, CaseIndex.create entry.RecordedAt snapshot None []),
             receipt
         )
 

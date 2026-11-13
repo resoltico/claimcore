@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 
-/// Indexed bounded entry/context reads; Domain alone updates financial totals and counts.
+/// Owned payment rows and scoped disclosure reads; Domain alone updates financial facts.
 module internal PaymentStorage =
     let private row value =
         let identity =
@@ -180,13 +180,13 @@ module internal PaymentStorage =
                 }
         }
 
-    let projections connection token =
+    let private projectionsFor connection parent token =
         task {
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    "SELECT case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed FROM claimcore.case_payments ORDER BY payment_id"
-                    [||]
+                    "SELECT case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed FROM claimcore.case_payments WHERE ($1::uuid IS NULL OR case_id=$1) ORDER BY payment_id"
+                    [| DatabaseSession.parameter (parent |> Option.map CaseId.value) |]
                     token
 
             return
@@ -226,6 +226,11 @@ module internal PaymentStorage =
                         Content = content
                     })
         }
+
+    let projections connection token = projectionsFor connection None token
+
+    let owned connection parent token =
+        projectionsFor connection (Some parent) token
 
     let restore connection (payment: PaymentProjectionRow) token =
         task {
