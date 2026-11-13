@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseListCommandTests
 
+open ClaimCore.Wire.Export
+
 open System
 open System.IO
 open System.Text

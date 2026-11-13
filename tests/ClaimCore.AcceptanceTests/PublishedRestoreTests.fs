@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.PublishedRestoreTests
 
+open ClaimCore.Domain
+
 open System
 open System.IO
 open System.Net.Http
@@ -58,7 +60,7 @@ let private openFrame operationId reference =
                 |}
             act =
                 {|
-                    kind = "OPEN"
+                    kind = CaseActKind.token CaseActKind.Open
                     values =
                         {|
                             incidentDate = "2026-09-01"

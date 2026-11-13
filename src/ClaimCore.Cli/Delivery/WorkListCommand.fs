@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Wire.Export
+
 open ClaimCore.CommandLine
 
 open System.Text
@@ -11,31 +13,6 @@ open ClaimCore.Presentation
 
 /// Live page traversal retains the request filters and refuses repeated continuations.
 module internal WorkListCommand =
-    let private csv row =
-        String.concat "," (List.map CsvCell.format row) + "\r\n"
-        |> Encoding.UTF8.GetBytes
-
-    let private reminderRows rows =
-        rows
-        |> List.map (fun (row: ReminderReadModel) ->
-            let value = row.Reminder
-
-            csv
-                [
-                    CaseId.format (Reminder.caseId value)
-                    CaseReference.format row.Reference
-                    ReminderId.format (Reminder.id value)
-                    Revision.format (Reminder.revision value)
-                    ReminderAction.format (Reminder.action value)
-                    CalendarDate.format (Reminder.due value)
-                    ReminderState.token (Reminder.state value)
-                    ReplyTextFormat.instant row.RecordedAt
-                    ActorId.format row.RecordedBy.ActorId
-                    ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage row.RecordedBy
-                    ReplyTextFormat.boolean row.Active
-                ])
-        |> Array.concat
-
     let private runPages
         (io: ReadPageIO)
         (prepared: PreparedVerb)
@@ -154,22 +131,7 @@ module internal WorkListCommand =
             let request = Frames.value Api.reminders initial |> Option.get
 
             if prepared.Format = VerbFormat.Csv then
-                io.Output(
-                    csv
-                        [
-                            "caseId"
-                            "caseReference"
-                            "reminderId"
-                            "revision"
-                            "action"
-                            "dueDate"
-                            "state"
-                            "recordedAt"
-                            "recordedBy.actorId"
-                            "recordedBy.displayName"
-                            "active"
-                        ]
-                )
+                io.Output ReminderCsv.csvHeader
 
             runPages
                 io
@@ -178,7 +140,10 @@ module internal WorkListCommand =
                 (fun (request: ReminderListRequest) -> request.AfterCursor)
                 (fun cursor request -> { request with AfterCursor = cursor })
                 (fun (page: ReminderPage) -> page.NextCursor)
-                (fun page -> reminderRows page.Items)
+                (fun page ->
+                    ReminderCsv.csvRows
+                        (MessageCatalogs.render LocalizationPolicy.defaultLanguage)
+                        page.Items)
                 request
                 token
         else

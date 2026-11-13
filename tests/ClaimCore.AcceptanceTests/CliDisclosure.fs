@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliDisclosure
 
+open ClaimCore.Domain
+
 open ClaimCore.Json
 
 open System
@@ -160,7 +162,7 @@ let private directoryDetails fixture reference =
 
     apply
         {|
-            kind = "REGISTER"
+            kind = PeopleActKind.token PeopleActKind.Register
             profile =
                 {|
                     displayName = subject
@@ -170,7 +172,7 @@ let private directoryDetails fixture reference =
 
     apply
         {|
-            kind = "SET_PROFILE"
+            kind = PeopleActKind.token PeopleActKind.SetProfile
             profile =
                 {|
                     displayName = subject
@@ -198,14 +200,14 @@ let private directoryDetails fixture reference =
 
     apply
         {|
-            kind = "GRANT"
+            kind = PeopleActKind.token PeopleActKind.Grant
             role = "CASE_READER"
             scope = {| kind = "INSTALLATION" |}
         |}
 
     apply
         {|
-            kind = "GRANT"
+            kind = PeopleActKind.token PeopleActKind.Grant
             role = "CASE_HANDLER"
             scope =
                 {|

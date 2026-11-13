@@ -1750,7 +1750,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
       writes.push(request.url());
     }
   });
-  await page.goto(`${casePath(caseId)}/acts/AMEND_REGISTRATION`, {
+  await page.goto(`${casePath(caseId)}/acts/case.amendRegistration`, {
     waitUntil: "commit",
   });
   await page.locator('input[data-selects-fields~="claimantName"]').check();

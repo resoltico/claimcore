@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Wire.Export
+
 open ClaimCore.CommandLine
 
 open System.Text

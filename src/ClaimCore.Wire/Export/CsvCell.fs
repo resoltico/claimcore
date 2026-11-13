@@ -1,6 +1,6 @@
-namespace ClaimCore.Cli
+namespace ClaimCore.Wire.Export
 
-module internal CsvCell =
+module CsvCell =
     let neutralize (value: string) =
         let trigger character =
             match character with
@@ -12,7 +12,7 @@ module internal CsvCell =
             | '\r' -> true
             | _ -> false
 
-        let remaining = value.TrimStart [| ' '; '\t' |]
+        let remaining = value.TrimStart [| ' ' |]
 
         if
             (value.Length > 0 && trigger value[0])

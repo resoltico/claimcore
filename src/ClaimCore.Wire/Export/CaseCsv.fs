@@ -1,4 +1,4 @@
-namespace ClaimCore.Cli
+namespace ClaimCore.Wire.Export
 
 open System.Globalization
 open System.Text
@@ -7,7 +7,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
-module internal CaseCsv =
+module CaseCsv =
     [<NoEquality; NoComparison>]
     type private CsvColumn =
         {
@@ -69,7 +69,7 @@ module internal CaseCsv =
                 row.NextAction |> Option.map (fun next -> CaseDue.token next.DueState))
             column "pendingReminders" (fun row ->
                 Some(row.PendingReminders.ToString(CultureInfo.InvariantCulture)))
-            column "changedAt" (fun row -> Some(ReplyTextFormat.instant row.ChangedAt))
+            column "changedAt" (fun row -> Some(Csv.instant row.ChangedAt))
             {
                 Key = "basis.businessDate"
                 Value =
@@ -82,9 +82,7 @@ module internal CaseCsv =
             }
         ]
 
-    let private csv values =
-        String.concat "," (values |> List.map CsvCell.format) + "\r\n"
-        |> Encoding.UTF8.GetBytes
+    let private csv = Csv.row
 
     let csvHeader = columns |> List.map _.Key |> csv
 

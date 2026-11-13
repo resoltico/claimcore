@@ -13,7 +13,6 @@ import {
   exactAmount,
   exactInteger,
   exactMoney,
-  caseAge,
   recordedTime,
 } from "./format";
 import { renderCatalogKey, translate } from "./messages";
@@ -122,8 +121,6 @@ export const createPresenter = (
     exactAmount(value, preferences.displayLocale, currency),
   money: (value: string, currency: string) =>
     exactMoney(value, currency, preferences.displayLocale),
-  age: (notified: string | null, businessDate: string) =>
-    caseAge(notified, businessDate, preferences.displayLocale),
   recordedTime: (value: string, zone: string) =>
     recordedTime(value, zone, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),

@@ -485,7 +485,7 @@ let private supplementary fixture =
             expectedRevision = 0L
             act =
                 {|
-                    kind = "OPEN"
+                    kind = CaseActKind.token CaseActKind.Open
                     values = registration.RootElement
 
                 |}

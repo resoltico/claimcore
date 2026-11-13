@@ -10,13 +10,7 @@ type internal OwnedDirectory() =
     let root = FixtureFiles.directory ()
 
     let generated =
-        [
-            "ClaimCore.Cli"
-            "ClaimCore.Server"
-            "ClaimCore.Server"
-            "client-source"
-            "different-client"
-        ]
+        [ "ClaimCore.Cli"; "ClaimCore.Server"; "client-source"; "different-client" ]
 
     member _.Path = root
 

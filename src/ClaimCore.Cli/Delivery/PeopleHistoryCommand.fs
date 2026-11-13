@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Wire.Export
+
 open ClaimCore.CommandLine
 
 open System.Text
@@ -25,7 +27,13 @@ module internal PeopleHistoryCommand =
             match page with
             | Some(RepresentationReply.Data(Outcome.Succeeded page)) ->
                 io.Output PeopleHistoryCsv.csvHeader
-                io.Output(PeopleHistoryCsv.csvRows page.Entries)
+
+                io.Output(
+                    PeopleHistoryCsv.csvRows
+                        (MessageCatalogs.render LocalizationPolicy.defaultLanguage)
+                        page.Entries
+                )
+
                 let next = ReplyTextFormat.nextLines prepared.Language page.NextCursor
 
                 if not next.IsEmpty then

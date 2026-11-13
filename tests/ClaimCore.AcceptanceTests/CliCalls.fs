@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
+open ClaimCore.Domain
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Cli
@@ -197,7 +199,7 @@ let private grantFrame target role =
             target = target
             act =
                 {|
-                    kind = "GRANT"
+                    kind = PeopleActKind.token PeopleActKind.Grant
                     role = role
                     scope = installation
                 |}
@@ -213,7 +215,10 @@ let setGrant fixture target role active =
                 target = target
                 act =
                     {|
-                        kind = if active then "GRANT" else "REVOKE"
+                        kind =
+                            PeopleActKind.token (
+                                if active then PeopleActKind.Grant else PeopleActKind.Revoke
+                            )
                         role = role
                         scope = installation
                     |}
@@ -247,7 +252,7 @@ let private setupFrames fixture =
                     target = target
                     act =
                         {|
-                            kind = "REGISTER"
+                            kind = PeopleActKind.token PeopleActKind.Register
                             profile =
                                 {|
                                     displayName = displayName

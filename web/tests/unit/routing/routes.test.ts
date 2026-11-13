@@ -51,11 +51,11 @@ it("keeps worklist state in the URL and blocks mutation navigation and unload", 
   releaseLock();
 });
 it("restores a same-origin deep link once after login and refuses an external return", () => {
-  navigate("/cases/reference/CASE-0042/acts/DECIDE");
+  navigate("/cases/reference/CASE-0042/acts/case.decide");
   rememberLoginReturn();
   navigate("/cases");
   restoreLoginReturn();
-  expect(window.location.pathname).toBe("/cases/reference/CASE-0042/acts/DECIDE");
+  expect(window.location.pathname).toBe("/cases/reference/CASE-0042/acts/case.decide");
   navigate("/cases");
   restoreLoginReturn();
   expect(window.location.pathname).toBe("/cases");

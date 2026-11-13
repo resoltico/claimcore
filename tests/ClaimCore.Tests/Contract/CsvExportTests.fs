@@ -1,4 +1,6 @@
-module ClaimCore.Tests.CsvEffectProofTests
+module ClaimCore.Tests.CsvExportTests
+
+open ClaimCore.Wire.Export
 
 open System
 open System.IO
@@ -7,6 +9,7 @@ open Microsoft.VisualBasic.FileIO
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -41,7 +44,11 @@ let tests =
             }
 
         let people =
-            Array.append PeopleHistoryCsv.csvHeader (PeopleHistoryCsv.csvRows [ entry ])
+            Array.append
+                PeopleHistoryCsv.csvHeader
+                (PeopleHistoryCsv.csvRows
+                    (MessageCatalogs.render LocalizationPolicy.defaultLanguage)
+                    [ entry ])
             |> parse
 
         let timeline: CaseTimelineEntry =
@@ -78,3 +85,25 @@ let tests =
                 row["operationHash"]
                 (String.replicate 32 "ab")
                 "Hash belongs to complete root")
+
+[<Tests>]
+let formulaGuard =
+    testCase "CSV neutralizes every formula trigger including tabs after leading spaces" (fun () ->
+        for prefix in [ ""; "  " ] do
+            for trigger in [ '='; '+'; '-'; '@'; '\t'; '\r' ] do
+                let authored = prefix + string trigger + "value"
+
+                use source =
+                    new StringReader(Encoding.UTF8.GetString(Csv.row [ authored; "sentinel" ]))
+
+                use reader = new TextFieldParser(source)
+                reader.SetDelimiters [| "," |]
+                reader.HasFieldsEnclosedInQuotes <- true
+
+                Expect.equal
+                    (reader.ReadFields() |> nonNull |> List.ofArray)
+                    [ "'" + authored; "sentinel" ]
+                    "Independent CSV parsing preserves protected content"
+
+        for ordinary in [ ""; "plain"; "  plain"; "a=1" ] do
+            Expect.equal (CsvCell.neutralize ordinary) ordinary "Ordinary cells remain exact")

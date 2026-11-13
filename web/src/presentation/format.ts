@@ -52,26 +52,6 @@ export const moneyWithScale = (
   locale: DisplayLocale,
 ): string => `${decimalText(value, locale, displayScale)} ${currency}`;
 
-export const caseAge = (
-  notified: string | null,
-  businessDate: string,
-  locale: DisplayLocale,
-): string => {
-  if (notified === null || !isGregorianDate(notified) || !isGregorianDate(businessDate)) {
-    return "";
-  }
-  const days =
-    (new Date(`${businessDate}T00:00:00Z`).getTime() -
-      new Date(`${notified}T00:00:00Z`).getTime()) /
-    86400000;
-  return new Intl.NumberFormat(locale, {
-    style: "unit",
-    unit: "day",
-    unitDisplay: "long",
-    maximumFractionDigits: 0,
-  }).format(days);
-};
-
 export const recordedTime = (value: string, zone: string, locale: DisplayLocale): string =>
   new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",

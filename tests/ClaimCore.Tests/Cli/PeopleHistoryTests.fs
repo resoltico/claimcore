@@ -1,5 +1,7 @@
 module ClaimCore.Tests.PeopleHistoryTests
 
+open ClaimCore.Wire.Export
+
 open System
 open System.IO
 open System.Text
@@ -54,7 +56,11 @@ let private csvSubjects () =
         }
 
     let csv =
-        Array.append PeopleHistoryCsv.csvHeader (PeopleHistoryCsv.csvRows [ entry ])
+        Array.append
+            PeopleHistoryCsv.csvHeader
+            (PeopleHistoryCsv.csvRows
+                (MessageCatalogs.render LocalizationPolicy.defaultLanguage)
+                [ entry ])
 
     use source = new StringReader(Encoding.UTF8.GetString csv)
     use reader = new TextFieldParser(source)

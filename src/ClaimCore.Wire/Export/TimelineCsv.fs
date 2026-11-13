@@ -1,11 +1,11 @@
-namespace ClaimCore.Cli
+namespace ClaimCore.Wire.Export
 
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 /// CSV exports the supplied typed differences as canonical, unlocalized scalars.
-module internal TimelineCsv =
+module TimelineCsv =
     let private difference key format (change: ValueChange<'value>) =
         key,
         (change.Before |> Option.map format |> Option.defaultValue ""),
@@ -105,9 +105,7 @@ module internal TimelineCsv =
                     |> List.map (difference (prefix + "state") ReminderState.token)
             ]
 
-    let private csv cells =
-        (cells |> List.map CsvCell.format |> String.concat ",") + "\r\n"
-        |> Encoding.UTF8.GetBytes
+    let private csv = Csv.row
 
     let csvHeader =
         csv
@@ -165,7 +163,7 @@ module internal TimelineCsv =
                 Sequence.format (EffectPosition.sequence entry.Position)
                 string (EffectPosition.index entry.Position)
                 entry.OperationHash |> EntryHash.toBytes |> System.Convert.ToHexStringLower
-                ReplyTextFormat.instant entry.RecordedAt
+                Csv.instant entry.RecordedAt
                 ActorId.format entry.RecordedBy.ActorId
                 actorName
                 actorKind

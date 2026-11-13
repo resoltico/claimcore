@@ -58,12 +58,8 @@
     <Compile Include="Text/TextDescriptorValue.fs" />
     <Compile Include="Text/TextObservation.fs" />
     <Compile Include="Text/TextTable.fs" />
-    <Compile Include="Text/CsvCell.fs" />
-    <Compile Include="Text/TimelineCsv.fs" />
     <Compile Include="Text/ViewText.fs" />
     <Compile Include="Text/DiagnosticText.fs" />
-    <Compile Include="Text/CaseCsv.fs" />
-    <Compile Include="Text/PeopleHistoryCsv.fs" />
     <Compile Include="Text/HumanText.fs" />
     <Compile Include="Text/OperationText.fs" />
     <Compile Include="Text/ReplyText.fs" />

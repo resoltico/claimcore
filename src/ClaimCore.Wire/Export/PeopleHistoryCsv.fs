@@ -1,4 +1,4 @@
-namespace ClaimCore.Cli
+namespace ClaimCore.Wire.Export
 
 open System.Text
 open ClaimCore.Domain
@@ -6,7 +6,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
-module internal PeopleHistoryCsv =
+module PeopleHistoryCsv =
     let private principal (value: PrincipalKey) =
         let kind, issuer, subject = PrincipalKey.parts value
         [ Vocabulary.token PrincipalKind.vocabulary kind; issuer; subject; ""; ""; "" ]
@@ -31,26 +31,22 @@ module internal PeopleHistoryCsv =
         | PeopleHistoryFacts.ProfileErased
         | PeopleHistoryFacts.Disabled -> List.replicate 6 ""
 
-    let values (entry: PeopleHistoryEntry) =
+    let values render (entry: PeopleHistoryEntry) =
         [
             OperationId.format entry.OperationId
             Sequence.format (EffectPosition.sequence entry.Position)
             string (EffectPosition.index entry.Position)
             entry.OperationHash |> EntryHash.toBytes |> System.Convert.ToHexStringLower
-            ReplyTextFormat.instant entry.RecordedAt
+            Csv.instant entry.RecordedAt
             ActorId.format entry.RecordedBy.ActorId
-            ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage entry.RecordedBy
+            Csv.actorName render entry.RecordedBy
             ActorId.format entry.Target.ActorId
-            ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage entry.Target
+            Csv.actorName render entry.Target
             PeopleActKind.token (PeopleHistoryFacts.kind entry.Facts)
         ]
         @ facts entry.Facts
 
-    let private csv rows =
-        rows
-        |> List.map (List.map CsvCell.format >> String.concat ",")
-        |> String.concat "\r\n"
-        |> fun value -> Encoding.UTF8.GetBytes(value + "\r\n")
+    let private csv = Csv.rows
 
     let csvHeader =
         csv
@@ -75,8 +71,8 @@ module internal PeopleHistoryCsv =
                 ]
             ]
 
-    let csvRows entries =
+    let csvRows render entries =
         if List.isEmpty entries then
             Array.empty<byte>
         else
-            entries |> List.map values |> csv
+            entries |> List.map (values render) |> csv

@@ -105,7 +105,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     await dismissed.promise;
     expect(dialogs).toEqual(["beforeunload"]);
     await expect(page).toHaveURL(
-      (url) => url.pathname.endsWith("/acts/CLOSE") && url.pathname.startsWith("/cases/id/"),
+      (url) => url.pathname.endsWith("/acts/case.close") && url.pathname.startsWith("/cases/id/"),
     );
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);

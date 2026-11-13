@@ -135,7 +135,7 @@ let private principalRefusals fixture =
                         |}
                     act =
                         {|
-                            kind = "REGISTER"
+                            kind = PeopleActKind.token PeopleActKind.Register
                             profile =
                                 {|
                                     displayName = "Refusal fixture"

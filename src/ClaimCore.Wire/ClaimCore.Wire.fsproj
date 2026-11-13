@@ -49,6 +49,12 @@
     <Compile Include="Codecs/ReplyCodecs.fs" />
     <Compile Include="Codecs/OperationLookupCodecs.fs" />
     <Compile Include="Codecs/HumanOperationCodecs.fs" />
+    <Compile Include="Export/CsvCell.fs" />
+    <Compile Include="Export/Csv.fs" />
+    <Compile Include="Export/CaseCsv.fs" />
+    <Compile Include="Export/TimelineCsv.fs" />
+    <Compile Include="Export/PeopleHistoryCsv.fs" />
+    <Compile Include="Export/ReminderCsv.fs" />
     <Compile Include="Catalog/Codecs.fs" />
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Codecs/HostFailures.fs" />

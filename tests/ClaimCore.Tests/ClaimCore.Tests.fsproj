@@ -213,7 +213,7 @@
     <Compile Include="Cli/CliDisplayCultureTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
-    <Compile Include="Cli/CsvEffectProofTests.fs" />
+    <Compile Include="Contract/CsvExportTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

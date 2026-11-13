@@ -422,8 +422,8 @@ Activity and authority CSV exports include `operationId`, `sequence`, `effectInd
 `operationHash`. Order effects by the sequence/index pair; the hash commits the complete operation.
 
 CSV uses UTF-8 without BOM, CRLF and RFC 4180 quoting. Headers are qualified wire paths owned by
-[CaseCsv](../src/ClaimCore.Cli/Text/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Cli/Text/TimelineCsv.fs) and
-[AuthorityHistoryCsv](../src/ClaimCore.Cli/Text/PeopleHistoryCsv.fs). Empty cells represent absent/erased values.
+[CaseCsv](../src/ClaimCore.Wire/Export/CaseCsv.fs), [TimelineCsv](../src/ClaimCore.Wire/Export/TimelineCsv.fs) and
+[PeopleHistoryCsv](../src/ClaimCore.Wire/Export/PeopleHistoryCsv.fs). Empty cells represent absent/erased values.
 Every cell starting with a formula trigger (`=`, `+`, `-`, `@`, TAB or CR), including after leading
 spaces/TABs, receives an apostrophe before quoting. This alters affected cells; JSON preserves exact values.
 `--all` follows cursors and prints the header once. Case CSV adds `workRevision`, `paidAmount`, `paymentCount` and `lastPaymentDate`. Human text visibly
