@@ -20,8 +20,8 @@
     "source": "e3eeb9561f2e"
   },
   "act.CORRECT.meaning": {
-    "text": "잘못 기록된 정보를 정정합니다. 이미 지급된 청구 건의 결정을 변경하면 지급일도 확인, 대체 또는 삭제해야 합니다. 지급일을 삭제해도 환불되지는 않습니다.",
-    "source": "9693bda23166"
+    "text": "등록된 청구 또는 지급 결정 사실을 정정합니다. 지급 내역은 변경되지 않으며 지급 결정액은 지급 합계보다 적을 수 없습니다.",
+    "source": "c115bf28430f"
   },
   "act.DECIDE.label": {
     "text": "지급 결정 기록",
@@ -88,8 +88,8 @@
     "source": "0d13e856322a"
   },
   "act.RECORD_PAYMENT.meaning": {
-    "text": "결정된 금액 전액이 실제로 지급된 날짜를 기록합니다. 송금을 실행하거나 확인하는 작업은 아닙니다.",
-    "source": "8e73f70b8cc2"
+    "text": "실제로 지급한 날짜와 금액을 결정 통화로 기록합니다. 이 작업은 송금을 실행하거나 확인하지 않습니다.",
+    "source": "572c7a975cf2"
   },
   "act.REGISTER.label": {
     "text": "계정 등록",
@@ -384,12 +384,12 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "국가 코드에는 ASCII 대문자 두 글자를 사용하세요.",
-    "source": "fbf4339c8839"
+    "text": "ISO 3166-1에 공식 할당된 국가 코드 또는 XK, ZZ를 사용하세요. 지원 코드는 help schema에서 확인하세요.",
+    "source": "b1c9f16ea7e3"
   },
   "diagnostic.CURRENCY_FORMAT": {
-    "text": "통화 식별자에는 ASCII 대문자 세 글자(A–Z)를 사용하세요.",
-    "source": "adbb790bfab3"
+    "text": "지원되는 활성 ISO 4217 통화 코드를 사용하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다. help schema를 확인하세요.",
+    "source": "b7b6bcfa5ddb"
   },
   "diagnostic.DECIMAL_FORMAT": {
     "text": "음수가 아닌 소수 문자열을 사용하세요. 정수부는 최대 {maximumIntegerDigits}자리, 소수부는 최대 {maximumFractionalDigits}자리이며 부호, 지수, 불필요한 앞자리 0은 사용할 수 없습니다. 0.10은 유효하지만 00.10은 유효하지 않습니다.",
@@ -1192,8 +1192,8 @@
     "source": "a593cc9212ab"
   },
   "section.work.label": {
-    "text": "청구 건 업무",
-    "source": "a81fc1d573ac"
+    "text": "업무",
+    "source": "104ab9213e28"
   },
   "status.CLOSED.label": {
     "text": "종결됨",
@@ -1256,8 +1256,8 @@
     "source": "22a970d2e5b1"
   },
   "view.DECIDED_UNPAID.label": {
-    "text": "결정 후 미지급",
-    "source": "fbac96206d3c"
+    "text": "결정됨, 미완납",
+    "source": "7f02a3b67eef"
   },
   "view.DUE_TODAY.label": {
     "text": "오늘 기한",
@@ -1488,8 +1488,8 @@
     "source": "3ec88dfe4c38"
   },
   "field.incidentCountry.rule": {
-    "text": "대문자 두 글자를 사용하세요. {unknownCode}는 알 수 없음 또는 국제를 의미합니다.",
-    "source": "682819af1901"
+    "text": "ISO 3166-1에 공식 할당된 코드 또는 XK를 사용하세요. {unknownCode}는 알 수 없음 또는 국제를 뜻합니다.",
+    "source": "0ba1fe273220"
   },
   "field.incidentCountry.hint": {
     "text": "사고가 발생한 국가입니다.",
@@ -1516,8 +1516,8 @@
     "source": "f0ed705645cd"
   },
   "field.claimedCurrency.rule": {
-    "text": "ASCII 대문자 {length}글자(A–Z)입니다.",
-    "source": "2460daa09c6d"
+    "text": "지원되는 활성 ISO 4217 통화 목록의 ASCII 대문자 {length}자를 사용하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
+    "source": "b28bec5ff787"
   },
   "field.claimedCurrency.hint": {
     "text": "청구 금액의 통화입니다.",
@@ -1544,8 +1544,8 @@
     "source": "4f043cfac46b"
   },
   "field.payableCurrency.rule": {
-    "text": "ASCII 대문자 {length}글자(A–Z)입니다.",
-    "source": "2460daa09c6d"
+    "text": "지원되는 활성 ISO 4217 통화 목록의 ASCII 대문자 {length}자를 사용하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
+    "source": "b28bec5ff787"
   },
   "field.payableCurrency.hint": {
     "text": "지급할 금액의 통화입니다.",
@@ -1828,12 +1828,12 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "국가를 나타내는 두 글자를 입력하세요. 예: LV.",
-    "source": "a72f9540c0da"
+    "text": "LV와 같은 지원 국가 코드 또는 XK, ZZ를 선택하세요.",
+    "source": "d1667b590685"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
-    "text": "세 글자의 통화 코드를 입력하세요. 예: EUR.",
-    "source": "91065275e1e5"
+    "text": "EUR와 같은 지원 통화 코드를 선택하세요. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
+    "source": "02e7d4481412"
   },
   "diagnostic.EXPECTED_REVISION_RANGE.gui": {
     "text": "변경하기 전에 최신 기록을 검토하세요.",
@@ -1996,8 +1996,8 @@
     "source": "f4d5f36fe0e2"
   },
   "label.responsibleCases": {
-    "text": "담당 청구 건",
-    "source": "8b3937308b8d"
+    "text": "담당 중인 미종결 청구 건",
+    "source": "a47fb8d59c46"
   },
   "label.account": {
     "text": "계정",
@@ -2402,5 +2402,297 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "로그인 제공자와 계정 ID를 확인하세요.",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "증권 번호",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "보험사에서 사용하는 증권 번호입니다.",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "보험사 청구 참조 번호",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "이 청구에 대해 보험사에서 사용하는 참조 번호입니다.",
+    "source": "7686a3e64d99"
+  },
+  "label.page": {
+    "text": "페이지",
+    "source": "0a30a815d67d"
+  },
+  "label.shown": {
+    "text": "표시됨",
+    "source": "6ba2a0e0afd0"
+  },
+  "label.observedAt": {
+    "text": "관측 시각",
+    "source": "2f4add0f4415"
+  },
+  "label.nextCursor": {
+    "text": "다음 커서",
+    "source": "a6a87af2fefb"
+  },
+  "label.exactReference": {
+    "text": "참조 번호 정확히 일치",
+    "source": "9b014424509f"
+  },
+  "label.maintenance": {
+    "text": "유지보수",
+    "source": "17ccfa5b681e"
+  },
+  "label.operationPending": {
+    "text": "변경이 기록되었는지 확인 중입니다. 최종 확인 기한:",
+    "source": "ce14f32771aa"
+  },
+  "label.operationNotAccepted": {
+    "text": "이 변경은 기록되지 않았습니다.",
+    "source": "2b5a10b7c7ee"
+  },
+  "label.nextActions": {
+    "text": "다음 조치",
+    "source": "f6eb77625278"
+  },
+  "label.results": {
+    "text": "결과",
+    "source": "219c4a6c86a7"
+  },
+  "label.grantedAt": {
+    "text": "부여 시각",
+    "source": "62026a42b239"
+  },
+  "label.grantedBy": {
+    "text": "부여자",
+    "source": "b6f1129ef877"
+  },
+  "act.REMOVE_PAYMENT.label": {
+    "text": "지급 내역 제거",
+    "source": "3765d89e8401"
+  },
+  "act.REMOVE_PAYMENT.meaning": {
+    "text": "잘못 기록한 지급 내역을 제거합니다. 송금을 환불하거나 취소하지 않으며 이전 이력은 유지됩니다.",
+    "source": "839063316dd5"
+  },
+  "act.REMOVE_PAYMENT.done": {
+    "text": "지급 내역이 제거되었습니다.",
+    "source": "0aa96c610f64"
+  },
+  "field.paidAmount.label": {
+    "text": "지급액",
+    "source": "8ceb7388d942"
+  },
+  "field.paidAmount.hint": {
+    "text": "이 내역에서 실제로 지급한 금액입니다.",
+    "source": "d79a30c73c31"
+  },
+  "field.paidAmount.rule": {
+    "text": "양수를 입력하세요. 소수점 앞은 최대 {maximumIntegerDigits}자리, 뒤는 최대 {maximumFractionDigits}자리입니다. ASCII 숫자와 점을 사용하고 공백, 부호, 쉼표, 불필요한 앞자리 0은 넣지 마세요.",
+    "source": "58353f96c69b"
+  },
+  "field.paidCurrency.label": {
+    "text": "지급 통화",
+    "source": "ae69c7acaee6"
+  },
+  "field.paidCurrency.hint": {
+    "text": "결정 통화를 사용하세요.",
+    "source": "6cf93e635901"
+  },
+  "field.paidCurrency.rule": {
+    "text": "지원되는 활성 ISO 4217 통화 목록의 ASCII 대문자 {length}자를 사용하며 결정 통화와 일치해야 합니다. 펀드 및 비국가 통화 코드는 허용되지 않습니다.",
+    "source": "1a3ba1179c9c"
+  },
+  "field.paymentId.label": {
+    "text": "지급 ID",
+    "source": "d9c9afd83681"
+  },
+  "field.paymentId.rule": {
+    "text": "이 청구 건의 지급 내역을 수락한 작업의 UUID입니다.",
+    "source": "4e0e99e689fe"
+  },
+  "field.paymentId.hint": {
+    "text": "제거할 지급 내역을 선택하세요.",
+    "source": "58f0e00f40b7"
+  },
+  "label.paymentDecisionAndPayments": {
+    "text": "지급 결정 및 지급",
+    "source": "7f45e69a0511"
+  },
+  "label.paymentTotals": {
+    "text": "지급 합계",
+    "source": "0a5b354b39f8"
+  },
+  "label.payments": {
+    "text": "지급",
+    "source": "632e1c583941"
+  },
+  "label.paid": {
+    "text": "지급됨",
+    "source": "fb81b961af45"
+  },
+  "label.remaining": {
+    "text": "잔액",
+    "source": "f3e4352a5df6"
+  },
+  "label.paidTotals": {
+    "text": "통화별 지급 합계",
+    "source": "b0f6fe6c2d8f"
+  },
+  "label.paymentProgress": {
+    "text": "{payable} 중 {paid} 지급됨.",
+    "source": "accebf3db360"
+  },
+  "progress.PARTLY_PAID.label": {
+    "text": "일부 지급됨",
+    "source": "04739c2e8186"
+  },
+  "headline.PARTLY_PAID.label": {
+    "text": "일부 지급됨",
+    "source": "04739c2e8186"
+  },
+  "timeline.event.paymentRemoved": {
+    "text": "지급 내역 제거됨",
+    "source": "49cb55fa2f47"
+  },
+  "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
+    "text": "0보다 큰 지급액을 입력하세요.",
+    "source": "dc72fea18ef9"
+  },
+  "diagnostic.PAYMENT_CURRENCY_MISMATCH": {
+    "text": "지급과 지급 결정에는 같은 통화를 사용해야 합니다.",
+    "source": "2262e6b8225c"
+  },
+  "diagnostic.PAYMENT_EXCEEDS_PAYABLE": {
+    "text": "지급 합계는 지급 결정액을 초과할 수 없습니다.",
+    "source": "2c7d50d243f1"
+  },
+  "diagnostic.PAYMENT_ID_REQUIRED": {
+    "text": "기록된 지급 내역을 수락한 작업의 UUID를 사용하세요.",
+    "source": "c9b9c991dc30"
+  },
+  "diagnostic.DECISION_HAS_PAYMENTS": {
+    "text": "지급 내역이 있는 결정은 철회하거나 지울 수 없습니다. 잘못 기록한 내역만 제거하세요.",
+    "source": "e5471892d048"
+  },
+  "diagnostic.PAYMENT_NOT_FOUND": {
+    "text": "이 지급 내역은 더 이상 존재하지 않습니다. 계속하기 전에 현재 청구 건을 조회하세요.",
+    "source": "ffdd2d61ba68"
+  },
+  "act.ADD_NOTE.done": {
+    "text": "메모가 추가되었습니다.",
+    "source": "26e0eaebce58"
+  },
+  "act.ADD_NOTE.label": {
+    "text": "메모 추가",
+    "source": "63565c0485fe"
+  },
+  "act.ADD_NOTE.meaning": {
+    "text": "이 청구 건에 메모를 추가합니다. 청구 또는 지급 사실은 변경되지 않습니다.",
+    "source": "41497abc12f4"
+  },
+  "act.REMOVE_NOTE.done": {
+    "text": "메모가 제거되었습니다.",
+    "source": "bb424a5bfe68"
+  },
+  "act.REMOVE_NOTE.label": {
+    "text": "메모 제거",
+    "source": "c06bd11ad0f6"
+  },
+  "act.REMOVE_NOTE.meaning": {
+    "text": "이 메모를 현재 메모 목록에서 숨깁니다. 청구 건을 영구 삭제할 때까지 본문은 전체 이력에 남습니다.",
+    "source": "cf678694f353"
+  },
+  "diagnostic.NOTE_ID_REQUIRED": {
+    "text": "메모의 UUID를 사용하세요.",
+    "source": "a31db485d9f0"
+  },
+  "endpoint.case.notes.label": {
+    "text": "메모 목록 조회",
+    "source": "2d942e67f304"
+  },
+  "endpoint.case.notes.meaning": {
+    "text": "이 청구 건의 현재 메모를 최신순으로 조회합니다.",
+    "source": "b8ea9e007695"
+  },
+  "field.noteId.hint": {
+    "text": "이 청구 건의 현재 메모를 선택하세요.",
+    "source": "29e26279c2eb"
+  },
+  "field.noteId.label": {
+    "text": "메모 ID",
+    "source": "8b9788063828"
+  },
+  "field.noteId.rule": {
+    "text": "메모를 수락한 작업의 UUID를 사용하세요.",
+    "source": "1f9b8c600ca2"
+  },
+  "field.noteText.hint": {
+    "text": "이 청구 건을 처리하는 사람들을 위한 메모를 작성하세요.",
+    "source": "57ecb9740904"
+  },
+  "field.noteText.label": {
+    "text": "메모",
+    "source": "d8da2c49df39"
+  },
+  "field.noteText.rule": {
+    "text": "유니코드 문자 1–{maximumScalars}자를 사용하세요. 줄바꿈을 사용할 수 있습니다.",
+    "source": "97b31e9df4ef"
+  },
+  "label.notesCount": {
+    "text": "메모",
+    "source": "8a7525b1492f"
+  },
+  "section.notes.label": {
+    "text": "메모",
+    "source": "8a7525b1492f"
+  },
+  "subject.NOTE.label": {
+    "text": "메모",
+    "source": "d8da2c49df39"
+  },
+  "timeline.event.ADD_NOTE": {
+    "text": "메모 추가됨",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.REMOVE_NOTE": {
+    "text": "메모 제거됨",
+    "source": "b9096ff4a83e"
+  },
+  "timelineFilter.NOTES.label": {
+    "text": "메모",
+    "source": "8a7525b1492f"
+  },
+  "timelineKind.NOTE.label": {
+    "text": "메모",
+    "source": "d8da2c49df39"
+  },
+  "diagnostic.PAYMENT_COUNT_LIMIT": {
+    "text": "지급 내역 수가 지원되는 정확한 정수 한도에 도달했습니다.",
+    "source": "69c5c62b381d"
+  },
+  "endpoint.case.payments.label": {
+    "text": "지급 목록 조회",
+    "source": "3dfb132d17d1"
+  },
+  "endpoint.case.payments.meaning": {
+    "text": "이 청구 건의 유효한 지급 내역을 수락된 효과가 최신인 순서로 조회합니다.",
+    "source": "da08cd59df22"
+  },
+  "label.effectPosition": {
+    "text": "효과 위치",
+    "source": "5d28d0e1f16d"
+  },
+  "diagnostic.OPERATION_CLOCK_UNAVAILABLE": {
+    "text": "작업 생성 시각이 확정된 만료 경계보다 이전입니다. 다른 변경을 준비하기 전에 수락 여부를 확인하세요. 방금 준비한 변경이라면 운영자에게 시계 확인을 요청하세요.",
+    "source": "36382af1ed1b"
+  },
+  "label.operationHash": {
+    "text": "작업 해시",
+    "source": "1f0aeffb2f79"
+  },
+  "label.effectId": {
+    "text": "효과 식별자",
+    "source": "aa08b7d30ad9"
   }
 }

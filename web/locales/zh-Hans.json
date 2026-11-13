@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "尚未确认。回答将在 {finalAt} 前确定。",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "更改决定",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "更改",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "正在核实",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "编辑摘要",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "尚无付款记录。",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "更多备注",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "撰写备注…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "已显示：{shown} / {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "显示所有备注",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "重新分配",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "打开案件",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "此处仅保存更改的标识信息，不保存案件详情或原始请求。",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "此案件当前不提供该操作。",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "根据当前事实不可用。",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "更多付款",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "已显示：{shown} / {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "显示所有付款",
+    "source": "e1c9ee7b6ef7"
   }
 }

@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "Nicht gesendet: Der lokale Eintrag unbestätigter Änderungen kann nicht gespeichert werden. Prüfen Sie freien Speicher und Berechtigungen für ~/.local/state/claimcore und versuchen Sie es erneut.",
-    "source": "a01d12bb0ca1"
+    "text": "Nicht gesendet: Der lokale Eintrag für unbestätigte Änderungen kann nicht gespeichert werden. Prüfen Sie freien Speicherplatz und Berechtigungen des konfigurierten Zustandsverzeichnisses für die Wiederherstellung und versuchen Sie es erneut.",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "Der Dienst ist nicht verfügbar.",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "Zuständigkeit und Bearbeitungsnotizen",
-    "source": "0d198ac25683"
+    "text": "Zuständigkeit und Bearbeitungsnotiz",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` liest eine JSON-Anfrage von stdin; `session` liest eine Anfrage pro Zeile.\nFehlt einer Änderungsanfrage die Vorgangs-ID, erstellt die CLI eine und gibt sie aus.\nFormat und Grenzen: docs/integrating.md#cli-use.",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "Erkunden Sie Befehlsfamilien oder wählen Sie ein Hilfethema.",
-    "source": "2ccc9deab54d"
+    "text": "Erkunden Sie die Befehlsgruppen oder wählen Sie ein Thema. Verwenden Sie --format json für strukturierte Hilfe oder help exit-codes für Prozessergebnisse.",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "Strukturierter HTTPS-Client von ClaimCore. Hilfe und Erkundung funktionieren offline; call und session erfordern Authentifizierung.\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Help akzeptiert ein Thema und eine unterstützte Sprache; --format ist nicht verfügbar.",
-    "source": "9c397336a244"
+    "text": "Verwenden Sie help [topic | family [verb]] mit --format text|json und optional --language.",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "Unbekanntes Hilfethema.",
@@ -394,5 +394,17 @@
   "cli.text.operationPending": {
     "text": "Warte bis {finalAt} auf eine endgültige Antwort.",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "Fallnotizen",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} Erfolg.\n{rejected} Anfrage abgelehnt.\n{failed} Fehler; prüfen Sie den Zustellstatus vor einem erneuten Versuch.\n{unknown} Ergebnis unbekannt; prüfen Sie den ursprünglichen Vorgang.\n{usage} Aufruffehler.\n{internalError} Lokaler CLI-Fehler.\n{cancelled} Abgebrochen.",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "Zahlungseinträge des Falls",
+    "source": "942c7b3fea92"
   }
 }

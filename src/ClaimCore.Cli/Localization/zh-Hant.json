@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "未發送：無法保存本地未確認更改記錄。請檢查 ~/.local/state/claimcore 的可用空間和權限後重試。",
-    "source": "a01d12bb0ca1"
+    "text": "未傳送：無法儲存未確認更改的本機記錄。請檢查設定的復原狀態目錄的可用空間及權限，然後重試。",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "服務不可用。",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "責任分配與處理備注",
-    "source": "0d198ac25683"
+    "text": "負責人及處理摘要",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` 從標準輸入讀取一個 JSON 請求；`session` 每行讀取一個請求。\n如果更改請求沒有操作 ID，CLI 會創建並輸出 ID。\n準確格式和限制見 docs/integrating.md#cli-use。",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "瀏覽命令組或選擇幫助主題。",
-    "source": "2ccc9deab54d"
+    "text": "瀏覽命令群組或選擇主題。使用 --format json 取得結構化說明，或使用 help exit-codes 查看程序結果。",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "ClaimCore 結構化 HTTPS 用戶端。幫助和命令發現支援離線使用；call 和 session 需要身分驗證。\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "help 接受一個主題和一種支援的語言；不支援 --format。",
-    "source": "9c397336a244"
+    "text": "使用 help [topic | family [verb]]，搭配 --format text|json，並可選用 --language。",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "未知的幫助主題。",
@@ -394,5 +394,17 @@
   "cli.text.operationPending": {
     "text": "等待最終回答，截止時間為 {finalAt}。",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "案件備註",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} 成功。\n{rejected} 請求遭拒。\n{failed} 失敗；重試前請檢查送達狀態。\n{unknown} 結果未知；請檢查原始操作。\n{usage} 用法錯誤。\n{internalError} 本機 CLI 錯誤。\n{cancelled} 已取消。",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "案件付款記錄",
+    "source": "942c7b3fea92"
   }
 }

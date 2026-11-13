@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "Noch nicht bestätigt. Die Antwort ist bis {finalAt} endgültig.",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "Entscheidung ändern",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "Ändern",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "Wird geprüft",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "Bearbeitungsnotiz bearbeiten",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "Keine Zahlungseinträge erfasst.",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "Weitere Notizen",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "Notiz schreiben…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "Angezeigt: {shown} von {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "Alle Notizen anzeigen",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "Neu zuweisen",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "Fall öffnen",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "Hier wird nur die Kennung der Änderung gespeichert. Falldetails und die ursprüngliche Anfrage werden nicht gespeichert.",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "Diese Aktion wird für diesen Fall derzeit nicht angeboten.",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "Bei den aktuellen Fakten nicht verfügbar.",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "Weitere Zahlungen",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "Angezeigt: {shown} von {total}",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "Alle Zahlungen anzeigen",
+    "source": "e1c9ee7b6ef7"
   }
 }

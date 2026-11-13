@@ -113,7 +113,14 @@ hash. Presentation fills stale or missing entries with English at load time. The
 `--check` gates translation coverage for `en`, `lv` and `ar`. Other languages warn; malformed templates,
 invalid placeholders and forbidden glossary spellings still refuse generation. Generated outputs must
 match in every case. The [language policy](../src/ClaimCore.Presentation/Messages/Localization/LocalizationPolicy.fs)
-owns required languages, aliases, direction and regional defaults.
+owns development-required languages, aliases, direction and regional defaults.
+
+Release qualification checks every offered language with
+`dotnet run --project eng/ClaimCore.ContractGenerator -- --check-translations`; any missing or stale
+entry refuses publication. The release workflow checks out the verified tag and uses its pinned SDK
+before this check. Ordinary PRs keep development fallback rather than requiring every translation
+for each English edit. German, Spanish, Japanese, Korean and both Chinese catalogs are completed for
+the release candidate; native review is recommended.
 
 Use the [glossary](glossary.md). Keep GUI hints short and put exact syntax in rules. Shared scalar wording
 uses input-specific arguments derived by `ScalarGuidance`; equal rule text does not imply equal bounds.

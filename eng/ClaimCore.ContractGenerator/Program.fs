@@ -15,25 +15,39 @@ let private invocation arguments =
     | [| "--check"; "--output"; directory |] when not (String.IsNullOrWhiteSpace directory) ->
         Path.GetFullPath directory, true
     | _ ->
-        invalidArg (nameof arguments) "Use --output <directory> or --check [--output <directory>]."
+        invalidArg
+            (nameof arguments)
+            "Use --output <directory>, --check [--output <directory>], or --check-translations."
 
 [<EntryPoint>]
 let main arguments =
-    let output, checking = invocation arguments
-    let artifacts = ContractArtifacts.all ()
+    if arguments = [| "--check-translations" |] then
+        let issues = AuthoredMessages.issues ()
 
-    for issue in AuthoredMessages.issues () do
-        eprintfn "Translation %s: %s %s (English fallback)." issue.Reason issue.Language issue.Key
+        for issue in issues do
+            eprintfn "Release translation %s: %s %s." issue.Reason issue.Language issue.Key
 
-    if checking then
-        if
-            (AuthoredMessages.requiredIssues ()).IsEmpty
-            && ArtifactPublication.check output artifacts
-        then
-            0
-        else
-            eprintfn "Generated contracts differ. Regenerate with --output contracts."
-            1
+        if LocalizationPolicy.releaseReady issues then 0 else 1
     else
-        ArtifactPublication.publish output artifacts
-        0
+        let output, checking = invocation arguments
+        let artifacts = ContractArtifacts.all ()
+
+        for issue in AuthoredMessages.issues () do
+            eprintfn
+                "Translation %s: %s %s (English fallback)."
+                issue.Reason
+                issue.Language
+                issue.Key
+
+        if checking then
+            if
+                (AuthoredMessages.requiredIssues ()).IsEmpty
+                && ArtifactPublication.check output artifacts
+            then
+                0
+            else
+                eprintfn "Generated contracts differ. Regenerate with --output contracts."
+                1
+        else
+            ArtifactPublication.publish output artifacts
+            0

@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "No enviado: no se puede guardar el registro local de cambios sin confirmar. Comprueba el espacio libre y los permisos de ~/.local/state/claimcore e inténtalo de nuevo.",
-    "source": "a01d12bb0ca1"
+    "text": "No enviado: no se puede guardar el registro local de cambios sin confirmar. Compruebe el espacio libre y los permisos del directorio de estado configurado para la recuperación y vuelva a intentarlo.",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "El servicio no está disponible.",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "Responsabilidad y notas de tramitación",
-    "source": "0d198ac25683"
+    "text": "Responsabilidad y resumen de tramitación",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` lee una solicitud JSON desde stdin; `session` lee una solicitud por línea.\nSi una solicitud de cambio no tiene ID de operación, la CLI lo crea y lo imprime.\nConsulta el formato y los límites en docs/integrating.md#cli-use.",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "Explora las familias de comandos o elige un tema de ayuda.",
-    "source": "2ccc9deab54d"
+    "text": "Explore las familias de comandos o elija un tema. Use --format json para obtener ayuda estructurada o help exit-codes para los resultados del proceso.",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "Cliente HTTPS estructurado de ClaimCore. La ayuda y la exploración funcionan sin conexión; call y session requieren autenticación.\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Help acepta un tema y un idioma compatible; --format no está disponible.",
-    "source": "9c397336a244"
+    "text": "Use help [topic | family [verb]] con --format text|json y, opcionalmente, --language.",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "Tema de ayuda desconocido.",
@@ -394,5 +394,17 @@
   "cli.text.operationPending": {
     "text": "Esperando una respuesta definitiva hasta {finalAt}.",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "Notas del expediente",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} Correcto.\n{rejected} Solicitud rechazada.\n{failed} Fallo; compruebe la entrega antes de reintentar.\n{unknown} Resultado desconocido; compruebe la operación original.\n{usage} Error de uso.\n{internalError} Error local de la CLI.\n{cancelled} Cancelado.",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "Asientos de pago del expediente",
+    "source": "942c7b3fea92"
   }
 }

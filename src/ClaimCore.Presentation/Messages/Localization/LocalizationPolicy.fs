@@ -219,6 +219,9 @@ module LocalizationPolicy =
             Reason: string
         }
 
+    /// Publication requires every offered language, independently of development fallback policy.
+    let releaseReady (issues: Issue list) = List.isEmpty issues
+
     let sourceHash (text: string) =
         System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes text)
         |> Convert.ToHexStringLower

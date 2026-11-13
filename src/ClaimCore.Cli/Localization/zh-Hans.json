@@ -52,8 +52,8 @@
     "source": "459d594c59b3"
   },
   "cli.failure.RECOVERY_UNAVAILABLE": {
-    "text": "未发送：无法保存本地未确认更改记录。请检查 ~/.local/state/claimcore 的可用空间和权限后重试。",
-    "source": "a01d12bb0ca1"
+    "text": "未发送：无法保存未确认更改的本地记录。请检查配置的恢复状态目录的可用空间及权限，然后重试。",
+    "source": "bf924be63a75"
   },
   "cli.failure.SERVICE_UNAVAILABLE": {
     "text": "服务不可用。",
@@ -112,8 +112,8 @@
     "source": "1ff071b74e83"
   },
   "cli.family.work": {
-    "text": "责任分配与处理备注",
-    "source": "0d198ac25683"
+    "text": "负责人及处理摘要",
+    "source": "cc58af0433de"
   },
   "cli.help.call": {
     "text": "`call` 从标准输入读取一个 JSON 请求；`session` 每行读取一个请求。\n如果更改请求没有操作 ID，CLI 会创建并输出 ID。\n准确格式和限制见 docs/integrating.md#cli-use。",
@@ -144,8 +144,8 @@
     "source": "52ab73d5c107"
   },
   "cli.help.help": {
-    "text": "浏览命令组或选择帮助主题。",
-    "source": "2ccc9deab54d"
+    "text": "浏览命令组或选择主题。使用 --format json 获取结构化帮助，或使用 help exit-codes 查看进程结果。",
+    "source": "e601a5b87c90"
   },
   "cli.help.layout": {
     "text": "ClaimCore 结构化 HTTPS 客户端。帮助和命令发现支持离线使用；call 和 session 需要身份验证。\n{body}",
@@ -260,8 +260,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "help 接受一个主题和一种支持的语言；不支持 --format。",
-    "source": "9c397336a244"
+    "text": "使用 help [topic | family [verb]]，配合 --format text|json，并可选用 --language。",
+    "source": "b8af016df835"
   },
   "cli.usage.helpTopic": {
     "text": "未知的帮助主题。",
@@ -394,5 +394,17 @@
   "cli.text.operationPending": {
     "text": "等待最终回答，截止时间为 {finalAt}。",
     "source": "e6e58811f6cc"
+  },
+  "cli.family.note": {
+    "text": "案件备注",
+    "source": "54c2a0df2066"
+  },
+  "cli.help.exitCodes": {
+    "text": "{success} 成功。\n{rejected} 请求被拒绝。\n{failed} 失败；重试前请检查送达状态。\n{unknown} 结果未知；请检查原始操作。\n{usage} 用法错误。\n{internalError} 本地 CLI 错误。\n{cancelled} 已取消。",
+    "source": "26e472e5465d"
+  },
+  "cli.family.payment": {
+    "text": "案件付款记录",
+    "source": "942c7b3fea92"
   }
 }

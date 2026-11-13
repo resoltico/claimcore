@@ -750,5 +750,73 @@
   "ui.unconfirmedUntil": {
     "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
     "source": "fc1019052c76"
+  },
+  "ui.changeDecision": {
+    "text": "결정 변경",
+    "source": "a77099b9ff99"
+  },
+  "ui.changeResponsible": {
+    "text": "변경",
+    "source": "c0bf75bd78bf"
+  },
+  "ui.checking": {
+    "text": "확인 중",
+    "source": "0dfe1d63c9d8"
+  },
+  "ui.editSummary": {
+    "text": "요약 편집",
+    "source": "c04f3d9cb841"
+  },
+  "ui.noPayments": {
+    "text": "기록된 지급 내역이 없습니다.",
+    "source": "131347633495"
+  },
+  "ui.moreNotes": {
+    "text": "메모 더 보기",
+    "source": "290e950a5d5c"
+  },
+  "ui.notePlaceholder": {
+    "text": "메모 작성…",
+    "source": "14d759598e8e"
+  },
+  "ui.notesShown": {
+    "text": "표시: {total}개 중 {shown}개",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllNotes": {
+    "text": "모든 메모 보기",
+    "source": "28d554a1cdb1"
+  },
+  "ui.reassign": {
+    "text": "담당자 변경",
+    "source": "4591c339cfa6"
+  },
+  "ui.openCase": {
+    "text": "청구 건 열기",
+    "source": "c9479e041f82"
+  },
+  "ui.recoveryIdentityOnly": {
+    "text": "여기에는 변경 식별 정보만 저장됩니다. 청구 건 세부 정보와 원래 요청은 저장되지 않습니다.",
+    "source": "17dd96ae28f7"
+  },
+  "ui.actionNotOffered": {
+    "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
+    "source": "78dafa13c3bd"
+  },
+  "ui.choiceNotOffered": {
+    "text": "현재 사실로는 사용할 수 없습니다.",
+    "source": "d43925e74ff6"
+  },
+  "ui.morePayments": {
+    "text": "지급 더 보기",
+    "source": "a5bbc385d875"
+  },
+  "ui.paymentsShown": {
+    "text": "표시: {total}개 중 {shown}개",
+    "source": "3c0788d85a9a"
+  },
+  "ui.showAllPayments": {
+    "text": "모든 지급 보기",
+    "source": "e1c9ee7b6ef7"
   }
 }
