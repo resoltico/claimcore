@@ -10,17 +10,12 @@ in error: the light workspace shows 55, while the dark and Arabic views show the
 | [English dark workspace](images/foundations/case-workspace-dark.png) | The same workspace after the reviewed entry removal |
 | [Arabic narrow payment cards](images/foundations/payment-cards-ar.png) | RTL reading order and complete money values at 320 CSS pixels |
 | [Paged payments](images/foundations/paged-payments.png) | Current payment entries supplied through the authorized continuation |
-| [Assignee selection](images/foundations/assignee-selection.png) | Supplied account captions with a separate responsibility change |
-| [Correction groups](images/foundations/correction-groups.png) | Core current facts and selected registration/decision changes |
 | [Correction review](images/foundations/correction-review.png) | Before/after presentation and one confirmation in the review drawer |
 | [Authority receipt](images/foundations/authority-receipt.png) | The recorded account and ordered effects, with technical metadata collapsed |
-| [English recovery](images/foundations/recovery-en.png) | Recorded, pending and finally absent identities, with the Core receipt and case link |
-| [Arabic narrow recovery](images/foundations/recovery-ar.png) | The same recovery states in RTL at 320 CSS pixels |
 
-The captures come from the existing [payment](../web/e2e/payments.spec.ts),
-[case-work](../web/e2e/case-work.spec.ts), [correction](../web/e2e/localization-correction.spec.ts) and
-[authority](../web/e2e/stewardship-authority.spec.ts) and
-[recovery](../web/e2e/recovery-journal.spec.ts) journeys. Screenshots complement the executable
+The captures come from the [payment](../web/e2e/payments.spec.ts),
+[correction](../web/e2e/localization-correction.spec.ts) and
+[authority](../web/e2e/stewardship-authority.spec.ts) journeys. Screenshots complement the executable
 checks; human native-language and assistive-technology review remain unverified.
 
 See [Case work](case-work.md) and [People and access](people-and-access.md) for supported interactions.
