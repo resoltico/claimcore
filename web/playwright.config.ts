@@ -43,7 +43,7 @@ export default defineConfig({
   // Specs mutate shared actor grants and relay state within one isolated fixture.
   fullyParallel: false,
   forbidOnly: true,
-  maxFailures: 0,
+  maxFailures: 1,
   // Bound the complete matrix and workflow inventory, independently of per-test deadlines.
   globalTimeout: 20 * 60_000,
   workers: 1,
