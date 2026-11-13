@@ -346,7 +346,7 @@ let tests =
                         let recorded = if token = "case.erase" then None else Some decision
 
                         Expect.isOk
-                            (CaseReplay.apply
+                            (SubjectReplay.caseEffect
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, recorded)))
@@ -367,7 +367,7 @@ let tests =
                                 Some { decision with After = value }
 
                         match
-                            CaseReplay.apply
+                            SubjectReplay.caseEffect
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, forged))
@@ -403,7 +403,7 @@ let recordedBusinessDate =
                     command
                     { After = expected; Payment = None }
 
-            CaseReplay.apply
+            SubjectReplay.caseEffect
                 Map.empty
                 entry
                 (VerifiedPayload.Case(command, Some { After = expected; Payment = None }))
@@ -491,9 +491,12 @@ let paymentAmountTamper =
             let prior = Map.ofList[id, history before [ original ]]
 
             Expect.isOk
-                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some expected)))
+                (SubjectReplay.caseEffect
+                    prior
+                    stored
+                    (VerifiedPayload.Case(command, Some expected)))
                 "The exact recorded payment is the positive control"
 
             Expect.isError
-                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some forged)))
+                (SubjectReplay.caseEffect prior stored (VerifiedPayload.Case(command, Some forged)))
                 "Equal totals cannot conceal entry-level tampering")

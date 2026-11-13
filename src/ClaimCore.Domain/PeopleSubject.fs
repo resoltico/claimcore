@@ -109,6 +109,19 @@ module PeopleSubject =
                     People.applyChange target command.Target (state |> Option.map access) change
             })
 
+    /// The durable descriptor/profile pair is the recorded people effect; it does not contain a second actor snapshot.
+    let recordedChange (act: PeopleAct<ActorGrant, ActorProfile>) =
+        match act with
+        | PeopleAct.Register profile -> PeopleChange.Registered profile
+        | PeopleAct.Admit admission -> PeopleChange.Admitted(admission.Profile, admission.Grants)
+        | PeopleAct.ProvisionOwner(profile, roles) -> PeopleChange.OwnerProvisioned(profile, roles)
+        | PeopleAct.Grant grant -> PeopleChange.Granted(grant.Role, grant.Scope)
+        | PeopleAct.Revoke grant -> PeopleChange.Revoked(grant.Role, grant.Scope)
+        | PeopleAct.Enable -> PeopleChange.Enabled
+        | PeopleAct.Disable -> PeopleChange.Disabled
+        | PeopleAct.SetProfile profile -> PeopleChange.ProfileSet profile
+        | PeopleAct.EraseProfile -> PeopleChange.ProfileErased
+
     let private applyAccess
         (provenance: PeopleSubjectProvenance)
         (state: PeopleSubjectState option)

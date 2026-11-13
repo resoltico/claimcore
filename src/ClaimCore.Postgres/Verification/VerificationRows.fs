@@ -61,8 +61,15 @@ module internal VerificationRows =
             return state
         }
 
-    let cases connection installationId histories token =
+    let cases connection installationId (state: Replay.Scan) token =
         task {
+            let expected = Replay.caseRecords state
+
+            let basic (record: StoredCase) =
+                record.CaseId, record.Snapshot, record.SnapshotBytes
+
+            let bases = expected |> Result.map (Map.map (fun _ record -> basic record))
+
             let! checkedCases =
                 fold
                     connection
@@ -179,16 +186,90 @@ module internal VerificationRows =
                                         capture None VerificationFinding.CaseProjection (fun () ->
                                             Projections.caseRowWithIndex installationId index row)
 
-                                    let! seen =
-                                        ProjectionVerification.caseProjection
-                                            installationId
-                                            histories
-                                            seen
+                                    let! expectedRows = expected
+
+                                    let! expectedRow =
+                                        Map.tryFind record.CaseId expectedRows
+                                        |> known None VerificationFinding.CaseProjection
+
+                                    do!
+                                        ProjectionVerification.column
+                                            VerificationFinding.CaseProjection
+                                            basic
+                                            expectedRow
                                             record
+
+                                    let column finding get =
+                                        ProjectionVerification.column finding get expectedRow record
+
+                                    do!
+                                        column VerificationFinding.CaseStatusProjection (fun row ->
+                                            row.Index.Status)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CaseProgressProjection
+                                            (fun row -> row.Index.Progress)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CaseChangedAtProjection
+                                            (fun row -> row.Index.ChangedAt)
+
+                                    do!
+                                        column VerificationFinding.CaseSearchProjection (fun row ->
+                                            row.Index.SearchText)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CaseNotifiedOnProjection
+                                            (fun row -> row.Index.NotifiedOn)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CaseClaimedAmountProjection
+                                            (fun row -> row.Index.Claimed |> Option.map Money.value)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CaseClaimedCurrencyProjection
+                                            (fun row ->
+                                                row.Index.Claimed |> Option.map Money.currency)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CasePayableAmountProjection
+                                            (fun row -> row.Index.Payable |> Option.map Money.value)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CasePayableCurrencyProjection
+                                            (fun row ->
+                                                row.Index.Payable |> Option.map Money.currency)
+
+                                    do!
+                                        column
+                                            VerificationFinding.CasePaidAmountProjection
+                                            (fun row -> row.Index.Paid |> Option.map Money.value)
+
+                                    let! bases = bases
+
+                                    let! seen =
+                                        ProjectionVerification.row
+                                            VerificationFinding.CaseProjection
+                                            (fun (id, _, _) -> id)
+                                            bases
+                                            seen
+                                            (basic record)
 
                                     return
                                         seen,
-                                        ProjectionVerification.caseWorkIndex record :: workIndexes
+                                        (record.CaseId,
+                                         record.Index.Responsible,
+                                         record.Index.FollowUp,
+                                         record.Index.WorkSearchText)
+                                        :: workIndexes
+
                                 }
                         Initial = Set.empty, []
                         Finding = VerificationFinding.CaseProjection
@@ -198,7 +279,12 @@ module internal VerificationRows =
             return
                 checkedCases
                 |> Result.bind (fun (seen, workIndexes) ->
-                    ProjectionVerification.finishCases histories seen
+                    expected
+                    |> Result.bind (fun expected ->
+                        ProjectionVerification.finishRows
+                            VerificationFinding.CaseProjection
+                            expected
+                            seen)
                     |> Result.map (fun () -> List.rev workIndexes))
         }
 
@@ -368,7 +454,18 @@ module internal VerificationRows =
                             expectedReminders
                             reminders
 
+                    let! expectedCases = Replay.caseRows state
+
+                    let expectedIndexes =
+                        expectedCases
+                        |> Map.map (fun id (_, index) ->
+                            id, index.Responsible, index.FollowUp, index.WorkSearchText)
+
                     return!
-                        ProjectionVerification.workIndexes state.Work state.Reminders workIndexes
+                        ProjectionVerification.rows
+                            VerificationFinding.CaseWorkProjection
+                            (fun (id, _, _, _) -> id)
+                            expectedIndexes
+                            workIndexes
                 }
         }

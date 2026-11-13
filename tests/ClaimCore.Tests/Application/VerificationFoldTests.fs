@@ -240,14 +240,14 @@ let private caseChecks =
     [
         VerificationFinding.RevisionSequence,
         (fun () ->
-            CaseReplay.apply
+            SubjectReplay.caseEffect
                 Map.empty
                 (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
                 VerifiedPayload.Erased
             |> unitResult)
         VerificationFinding.HistoryStart,
         (fun () ->
-            CaseReplay.apply
+            SubjectReplay.caseEffect
                 (Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -260,7 +260,7 @@ let private caseChecks =
             |> unitResult)
         VerificationFinding.StateSequence,
         (fun () ->
-            CaseReplay.apply
+            SubjectReplay.caseEffect
                 (Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -273,7 +273,7 @@ let private caseChecks =
             |> unitResult)
         VerificationFinding.ErasureIncomplete,
         (fun () ->
-            CaseReplay.erasure (
+            SubjectReplay.caseErasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -286,7 +286,7 @@ let private caseChecks =
             ))
         VerificationFinding.PayloadWithoutErasure,
         (fun () ->
-            CaseReplay.erasure (
+            SubjectReplay.caseErasure (
                 Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -297,10 +297,17 @@ let private caseChecks =
             ))
         VerificationFinding.CaseProjection,
         (fun () ->
-            ProjectionVerification.cases
-                installation
-                (Map.ofList [ CaseFixtures.caseId id, history ])
-                [])
+            Replay.caseRecords
+                { state with
+                    Cases = Map.ofList [ CaseFixtures.caseId id, history ]
+                }
+            |> Result.bind (fun expected ->
+                ProjectionVerification.rows
+                    VerificationFinding.CaseProjection
+                    (fun (row: StoredCase) -> row.CaseId)
+                    expected
+                    [])
+            |> unitResult)
     ]
 
 let private peopleChecks =

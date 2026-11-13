@@ -280,7 +280,14 @@ module CaseSubject =
     let rows (state: CaseSubjectState) =
         let snapshot =
             match state.Snapshot, state.Lifecycle with
-            | Some snapshot, _ -> Some snapshot
+            | Some snapshot, _ when
+                snapshot.CaseId = state.CaseId
+                && snapshot.Reference = state.Reference
+                && snapshot.Revision = state.Revision
+                && CaseState.lifecycle snapshot.State = state.Lifecycle
+                ->
+                Some snapshot
+            | Some _, _ -> None
             | None, Lifecycle.Erased ->
                 Some
                     {

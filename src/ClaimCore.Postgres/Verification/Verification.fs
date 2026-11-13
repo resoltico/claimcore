@@ -152,7 +152,7 @@ module internal Verification =
 
     let projections connection installationId (state: Replay.Scan) token =
         task {
-            let! cases = VerificationRows.cases connection installationId state.Cases token
+            let! cases = VerificationRows.cases connection installationId state token
 
             match cases with
             | Error error -> return Error error
