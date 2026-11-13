@@ -7,20 +7,21 @@ precedence over region defaults.
 
 ## Language review
 
-English is the source. Required catalog coverage is en, lv and ar; the other languages can use generated
-English fallback for missing or stale translations. All eight translated languages have the review entry
-“AI-assisted revision 2026-11; human review pending”. No native-speaker approval is recorded.
+English is the source. All eight translated languages have current authored catalogs. Release
+qualification requires complete, current translations in every offered language. During development,
+coverage checks require en, lv and ar; other languages warn. Runtime resolution uses English for
+missing or stale translations. All translations are AI-assisted; native-speaker approval is unverified.
 
 | Language | Current status |
 | --- | --- |
-| Latvian (lv) | AI-revised; human review pending |
-| Arabic (ar) | AI-revised; human review pending |
-| Korean (ko) | Draft with English fallback; human review pending |
-| Japanese (ja) | Draft with English fallback; human review pending |
-| Simplified Chinese (zh-Hans) | Draft with English fallback; human review pending |
-| Traditional Chinese (zh-Hant) | Draft with English fallback; human review pending |
-| Spanish (es) | Draft with English fallback; human review pending |
-| German (de) | Draft with English fallback; human review pending |
+| Latvian (lv) | AI-assisted; human review pending |
+| Arabic (ar) | AI-assisted; human review pending |
+| Korean (ko) | AI-assisted; human review pending |
+| Japanese (ja) | AI-assisted; human review pending |
+| Simplified Chinese (zh-Hans) | AI-assisted; human review pending |
+| Traditional Chinese (zh-Hant) | AI-assisted; human review pending |
+| Spanish (es) | AI-assisted; human review pending |
+| German (de) | AI-assisted; human review pending |
 
 Korean 청구 건 (case) and 후속 조치 (reminder) are candidates needing native confirmation.
 Latvian uses versija for entity version, Datu pārvaldnieks for Data steward and Lietu apstrādātājs for
@@ -50,7 +51,7 @@ make UUID-shaped references unambiguous. See [Integrating](integrating.md#identi
 ## Facts, decision and payment
 
 A payment decision records its date, payable amount and currency. Payment records a date against that
-decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are positive entries with no total-50 business limit,
+decision. Progress is Undecided, Decided, Partly paid or Paid. Payments are positive entries,
 identified by their accepting operation UUID. Their sum cannot exceed payable, and all use the decision
 currency. Zero payable with no entries is Paid. Recording or removing an entry does not transfer or refund money.
 

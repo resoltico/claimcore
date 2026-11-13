@@ -14,7 +14,6 @@ List commands and outcomes, and link qualifying CI runs.
 
 State remaining limits and any required external coordination.
 
-## Contribution rights
+## Contribution terms
 
-Outside original contributions need the documented permission described in the
-[contribution rights policy](../PROJECT-NOTICE.md#contribution-rights) before merge.
+- [ ] I agree to the [contribution terms](https://github.com/resoltico/claimcore/blob/main/PROJECT-NOTICE.md#contribution-terms) for this contribution.

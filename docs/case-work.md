@@ -54,8 +54,8 @@ identified as either missing or outside your access.
 
 Choose **Decide** to record a decision date and payable amount with currency. A zero-payable decision is
 already Paid and needs no payment entry. Otherwise choose **Record payment**, enter its date and positive
-amount, review and confirm. There is no total-50 entry limit. Keep accurate entries; removal is only for
-correcting an entry recorded in error. The exact-integer count range is a technical limit.
+amount, review and confirm. Keep accurate entries; removal is only for correcting an entry recorded in
+error. Payment counts are bounded by the exact-integer range; page size does not limit the case total.
 
 Payments use the decision currency. Their sum cannot exceed payable. Each date is on or after the
 decision date and no later than the business date. A partial payment leaves the case Partly paid; the

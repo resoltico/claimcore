@@ -218,11 +218,11 @@ let tests =
             testCase
                 "supported server majors enforce their minimum minor and reject unlisted majors"
                 (fun () ->
-                    ServerSupport.require (System.Version(18, 6))
                     ServerSupport.require (System.Version(18, 7))
+                    ServerSupport.require (System.Version(18, 8))
 
                     for version in
-                        [ System.Version(18, 5); System.Version(17, 9); System.Version(19, 0) ] do
+                        [ System.Version(18, 6); System.Version(17, 9); System.Version(19, 0) ] do
                         Expect.throws
                             (fun () -> ServerSupport.require version)
                             "Unqualified major or too-old minor refuses"

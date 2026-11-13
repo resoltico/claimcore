@@ -40,8 +40,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "field.principal.issuer.hint": "موفر تسجيل الدخول لهذا الحساب.",
     "field.principal.subject.label": "معرّف تسجيل الدخول",
     "field.principal.subject.hint": "معرّف الحساب لدى موفر تسجيل الدخول.",
-    "diagnostic.PRINCIPAL_FORMAT":
-      "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
+    "diagnostic.PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
     "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
     "diagnostic.PAYMENT_EXCEEDS_PAYABLE": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
     "field.caseReference.label": "مرجع الملف",

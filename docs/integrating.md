@@ -213,11 +213,11 @@ explicit null clears only an optional value. Required nulls, half money and unkn
 CORRECT selects KEEP/UPDATE registration and KEEP/UPDATE/CLEAR decision. It cannot create a missing
 decision or an unchanged correction. Payments are separate entries identified by their accepting
 operation UUID. RECORD_PAYMENT needs date, positive paidAmount and paidCurrency; REMOVE_PAYMENT needs
-paymentId. There is no total-50 payment limit. The exact-integer count range remains a technical bound;
+paymentId. Payment counts are bounded by the exact-integer range, independently of page size;
 PAYMENT_COUNT_LIMIT refuses saturation without overflow. Remove an entry only to correct a recording
 error. Entries use the decision currency, summing to at most payable, with newly asserted dates on/after
 decision and no later than business date. Previously accepted dates survive calendar rollback.
-No CLEAR_PAYMENT, reaffirmation or payment correction branch remains. Changing a decision preserves entries and must satisfy their constraints;
+Changing a decision preserves entries and must satisfy their constraints;
 withdrawal/clearing requires zero active entries. Zero payable with no entries is Paid.
 
 `case.payments` is an authorized current-entry read, default 20 and maximum 50 entries per page. It
@@ -316,9 +316,10 @@ reserve it. CLI recovery therefore retains such attempts as **refused, awaiting 
 it removes them only after acceptance or final `NOT_ACCEPTED`. A subsequent actual send of the same
 attempt resets its local delivery knowledge to unconfirmed. No business payload is stored.
 
-CLI recovery format 3 stores identity and delivery knowledge and requires fresh CLI state.
-There are no migrations or compatibility readers. Browser journal format and business installation
-format are separate contracts.
+CLI recovery format 3 stores identity and delivery knowledge. Recovery files must match that format;
+there are no migrations or compatibility readers. Browser journal format and business installation
+format are separate contracts. Resolve uncertain attempts with their matching client before replacing
+or discarding local recovery state.
 
 `operation.get` takes the operation ID with the authenticated installation binding:
 

@@ -2,10 +2,26 @@
 
 ## [Unreleased]
 
-- Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
+## [0.17.0] - 2026-11-13
+
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.
+- PostgreSQL 18.7 or later in major 18 is required; evaluation and test images use 18.7. Contributors and frontend builds require Node 26.13.1.
+- Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
+- Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
+- Contributions are accepted under the [contribution terms](PROJECT-NOTICE.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
+- The 21 endpoints negotiate HUMAN documents and DATA projections; text and browser clients explicitly select HUMAN.
 - Revision-conflict change pages add a required `basis` (observedAt, businessDate, timeZone); regenerate clients. CLI conflict times use the business zone.
+- Tasks expose semantic input IDs, choices, issue targets and submitted collection rows.
 - Custom stores receive `CasePageQuery.Selection` (a `CaseSelection`) instead of copies of its six fields, matching `ReminderPageQuery`.
+- Custom stores use one operation root, ordered composite effect positions and independently erasable salted compartments; receipts commit the complete operation.
+- Retain trusted checkpoints outside backups. Restore admission requires isolated traffic and maintenance, verifies accepted history, raises expiry and invalidates restored sessions.
+- verify and rebuild use --checkpoint FILE; head emits the installation, accepted prefix/hash and durable expiry frontier.
+- initialize owner flags establish the baseline, first human owner, profile and optional roles atomically.
+- RECORD_PAYMENT accepts amounts/currency; REMOVE_PAYMENT targets the accepting operation ID.
+- CSV exposes paidAmount, paymentCount, lastPaymentDate and workRevision; payment dates and summaries remain exact across paging and replay.
+- Configure at least 15 runtime pool connections with default core permits; housekeeping reserves a connection alongside reads, writes, sessions and readiness.
+- Country/currency inputs require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse.
+- Update frontend tooling and locked dependencies, including Playwright 1.65.0, Vite 8.3.8, Prettier 3.10.1 and native TRX reporting 2.5.3. Refresh the Keycloak 26.8.2 image pin.
 - Compose restarts after `down` keep the existing installation: the initializer skips an initialized database instead of blocking Web.
 - A separate Compose restart workflow builds the evaluation stack and checks `down`/`up` on deployment changes and weekly.
 - Empty case views show one message without an empty page footer; unavailable cases omit retry advice, and optional open-case text fields are directly editable.
@@ -17,23 +33,12 @@
 - CLI usage reflects execution and dry-run requirements; schema help and missing-name errors list the available exports.
 - Closed stdout pipes end discovery and read output quietly; mutation output loss retains exit 4 and recovery guidance.
 - Delivered refusals remain in recovery as refused, awaiting final confirmation; only acceptance or final absence clears them.
-- Country/currency inputs require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse.
-- Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
 - CLI help and web notices link licensing and the build’s source archive; modified deployments must update the offered Corresponding Source.
-- The 21 endpoints negotiate HUMAN documents and DATA projections; text and browser clients explicitly select HUMAN.
-- Tasks expose semantic input IDs, choices, issue targets and submitted collection rows.
-- Custom stores use one operation root, ordered composite effect positions and independently erasable salted compartments; receipts commit the complete operation.
-- Retain trusted checkpoints outside backups. Restore admission requires isolated traffic and maintenance, verifies accepted history, raises expiry and invalidates restored sessions.
-- verify and rebuild use --checkpoint FILE; head emits the installation, accepted prefix/hash and durable expiry frontier.
 - Final operation absence commits expiry before replying; restored cookies require new sign-in, while bearer and CLI safety also depends on the trusted prefix and frontier.
-- initialize owner flags establish the baseline, first human owner, profile and optional roles atomically.
 - ClaimCore.Wire owns transport contracts, and ClaimCore.Presentation owns shared human presentation.
 - Domain values and shared operation policy are independent of JSON, storage and presentation. Custom stores supply bounded financial and transactional payment context.
 - Payments have no total-50 business limit. case.payments pages current entries, default 20 and maximum 50 per page; case reads retain only the latest three plus totals.
-- RECORD_PAYMENT accepts amounts/currency; REMOVE_PAYMENT targets the accepting operation ID.
 - Decision changes preserve entries and their currency and cover the paid total; withdrawal/clearing requires no entries. Zero payable is Paid without entries.
-- CSV exposes paidAmount, paymentCount, lastPaymentDate and workRevision; payment dates and summaries remain exact across paging and replay.
-- Configure at least 15 runtime pool connections with default core permits; housekeeping reserves a connection alongside reads, writes, sessions and readiness.
 - maintenance on/off controls the operator pause; inspect status before ending it. Hosts clean expired sessions and access hints.
 - Operator failures use closed categories and phase-aware outcomes without raw provider messages. Confirmed work survives cleanup failure; graceful stop drains admitted operations.
 - claimcore help supports --format text|json, and help exit-codes documents command outcomes.
