@@ -249,8 +249,9 @@ checks alone does not authorize merging or releasing. Keep public reports free o
 ## Licensing and contributions
 
 Read the [project notice](../PROJECT-NOTICE.md) before contributing or distributing modified builds.
-Outside original copyrightable contributions need documented rights-holder permission covering
-the public and intended commercial grants before merge; commercial contributor terms remain pending.
+Submitting a contribution accepts the [contribution terms](../PROJECT-NOTICE.md#contribution-terms).
+Confirm your agreement using the checkbox in the pull request template.
+
 Stage new source files before publishing. Publications capture tracked working files in `SOURCE.tar.gz`;
 keep inputs stable through frontend and native publication and inspect the archive before delivery.
 Source archives retain a `SOURCE-FILES` inventory for rebuilding publications without Git. When adding

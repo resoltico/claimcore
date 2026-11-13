@@ -8,6 +8,7 @@
 - PostgreSQL 18.7 or later in major 18 is required; evaluation and test images use 18.7. Contributors and frontend builds require Node 26.13.1.
 - Contributors require SDK 11.0.100; framework-dependent CLI installs require the .NET 11 runtime. Compose images now use .NET 11.
 - Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
+- Contributions are accepted under the [contribution terms](PROJECT-NOTICE.md#contribution-terms), which also let Ervins Strauhmanis license them commercially.
 - The 21 endpoints negotiate HUMAN documents and DATA projections; text and browser clients explicitly select HUMAN.
 - Revision-conflict change pages add a required `basis` (observedAt, businessDate, timeZone); regenerate clients. CLI conflict times use the business zone.
 - Tasks expose semantic input IDs, choices, issue targets and submitted collection rows.
