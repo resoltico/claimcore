@@ -25,7 +25,8 @@ Ordinary .NET builds do not run npm or generation. The frontend builds independe
 
 ## Project boundaries
 
-The [adopted foundations design](design/foundations.md) records the ownership and replacement decisions.
+The table below defines project ownership. Supported contracts are documented in
+[Integrating](integrating.md), and runtime and recovery procedures in [Operating](operating.md).
 
 | Project | Responsibility |
 | --- | --- |

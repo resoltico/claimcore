@@ -1135,7 +1135,19 @@
                     }
                   }
                 },
-                "payment": null
+                "payment": null,
+                "recordedFields": [
+                  "incidentDate",
+                  "incidentNotificationDate",
+                  "incidentCountry",
+                  "incidentDescription",
+                  "policyNumber",
+                  "insurerClaimReference",
+                  "claimantName",
+                  "insurerName",
+                  "claimedAmount",
+                  "claimedCurrency"
+                ]
               },
               "caseId": "10000000-0000-7000-8000-000000000001"
             },
@@ -1206,7 +1218,19 @@
                       }
                     }
                   },
-                  "payment": null
+                  "payment": null,
+                  "recordedFields": [
+                    "incidentDate",
+                    "incidentNotificationDate",
+                    "incidentCountry",
+                    "incidentDescription",
+                    "policyNumber",
+                    "insurerClaimReference",
+                    "claimantName",
+                    "insurerName",
+                    "claimedAmount",
+                    "claimedCurrency"
+                  ]
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
               },
@@ -2561,7 +2585,8 @@
                 "actorId": "40000000-0000-7000-8000-000000000001"
               },
               "caseLink": null,
-              "refreshCase": null
+              "refreshCase": null,
+              "recordedFields": []
             },
             "basis": {
               "kind": "SNAPSHOT",

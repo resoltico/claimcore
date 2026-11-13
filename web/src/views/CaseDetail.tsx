@@ -30,7 +30,15 @@ type CaseDetailProps = {
   onAct: (current: CurrentCase, act: ActKind, paymentId?: string) => void;
 };
 
-const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading: boolean }) => {
+const CurrentFeedback = ({
+  message,
+  loading,
+  onRetry,
+}: {
+  message: Notice | null;
+  loading: boolean;
+  onRetry: () => void;
+}) => {
   const p = usePresentation();
   return (
     <>
@@ -38,6 +46,11 @@ const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading
         <p className="error" role="alert">
           <NoticeView value={message} />
         </p>
+      )}
+      {message === null ||
+      (message.kind === "human" &&
+        !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(message.advice.action)) ? null : (
+        <Button onPress={onRetry}>{p.text("ui.tryAgain")}</Button>
       )}
       {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
     </>
@@ -215,7 +228,6 @@ const CaseDisclosure = ({
   onMutationLockChange = ignoreMutationLock,
   unavailableAct,
 }: CaseDetailProps) => {
-  const p = usePresentation();
   const current = useCaseDisclosure(target);
   const { historyAccess } = current;
   const timelineSelection = useTimelineSelection(historyAccess);
@@ -242,7 +254,14 @@ const CaseDisclosure = ({
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
-      <CurrentFeedback message={current.message} loading={current.loading} />
+      <CurrentFeedback
+        message={current.message}
+        loading={current.loading}
+        onRetry={() => {
+          current.revalidate();
+          document.getElementById("case-detail-title")?.focus();
+        }}
+      />
       {state?.screen.regions
         .filter((region) => region.role === "NOTICE")
         .map((region) => (
@@ -254,20 +273,6 @@ const CaseDisclosure = ({
         ))}
       {state === null || unavailableAct === undefined ? null : (
         <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
-      )}
-      {current.message === null ||
-      (current.message.kind === "human" &&
-        !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(
-          current.message.advice.action,
-        )) ? null : (
-        <Button
-          onPress={() => {
-            current.revalidate();
-            document.getElementById("case-detail-title")?.focus();
-          }}
-        >
-          {p.text("ui.tryAgain")}
-        </Button>
       )}
       {mounted === null ? null : (
         <CurrentPresentation

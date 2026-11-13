@@ -121,7 +121,13 @@ module UsageText =
             else
                 hints
 
-        String.concat "\n" (TerminalText.data (message language problem) :: hints)
+        let details =
+            match command, issue with
+            | Some CliCommand.Schema, UsageError.UnknownCommand _ ->
+                [ TerminalText.data (line language issue) ]
+            | _ -> []
+
+        String.concat "\n" (TerminalText.data (message language problem) :: (details @ hints))
         + "\n"
 
     let renderHost language arguments issue =

@@ -45,7 +45,11 @@ let kindGoldens =
                     PresentedValue.Date(Inputs.date "2026-11-04"),
                     [ "4 Nov 2026"; "4 nov. 2026"; "4 نوفمبر 2026" ]
                     PresentedValue.Instant(DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)),
-                    List.replicate 3 "2026-11-04T12:00:00.000000Z"
+                    [
+                        "4 Nov 2026 12:00 +00:00"
+                        "4 nov. 2026 12:00 +00:00"
+                        "4 نوفمبر 2026 12:00 +00:00"
+                    ]
                     PresentedValue.Party(Inputs.name "Tess"), List.replicate 3 "Tess"
                     PresentedValue.Text "Text", List.replicate 3 "Text"
                     PresentedValue.Narrative "First\nSecond", List.replicate 3 "First\nSecond"
@@ -310,12 +314,12 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        (ReplyTextFormat.instant receipt.Basis.ObservedAt)
+                        "1 Sep 2026 12:00 +00:00"
                         "The observation comes from the current receipt basis"
 
                     Expect.stringContains
                         output
-                        (ReplyTextFormat.instant receipt.RecordedAt)
+                        "1 Jan 2026 00:00 +00:00"
                         "Original recording time remains separate")
         ]
 

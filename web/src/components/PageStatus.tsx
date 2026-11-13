@@ -16,7 +16,9 @@ export const PageStatus = ({
   return (
     <>
       {empty ? <p>{p.text(emptyMessage)}</p> : null}
-      {empty ? null : <p>{p.text(cursor === null ? "ui.pageEnd" : "ui.pagePartial")}</p>}
+      {empty && cursor === null ? null : (
+        <p>{p.text(cursor === null ? "ui.pageEnd" : "ui.pagePartial")}</p>
+      )}
     </>
   );
 };
