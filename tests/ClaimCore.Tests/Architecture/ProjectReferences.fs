@@ -34,8 +34,7 @@ let read path =
     |> Seq.map (fun item ->
         item.GetProperty("Identity").GetString()
         |> nonNull
-        |> Path.GetFileNameWithoutExtension
-        |> nonNull)
+        |> Path.GetFileNameWithoutExtension)
     |> Set.ofSeq
 
 /// Allowed direct edges; removing an unnecessary edge preserves the boundary.

@@ -16,6 +16,9 @@
     <Compile Include="BoundedProcess.fs" />
     <Compile Include="OutputControls.fs" />
     <Compile Include="PublishedClientClosure.fs" />
+    <Compile Include="ThirdPartyNoticeManifest.fs" />
+    <Compile Include="ThirdPartyNoticeAssets.fs" />
+    <Compile Include="ThirdPartyNotices.fs" />
     <Compile Include="FixtureDisposal.fs" />
     <Compile Include="PostgresBaseline.fs" />
     <Compile Include="PostgresReadiness.fs" />

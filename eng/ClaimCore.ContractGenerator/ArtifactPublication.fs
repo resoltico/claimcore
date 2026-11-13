@@ -71,7 +71,7 @@ module ArtifactPublication =
             false
         else
             let entries = Directory.GetFileSystemEntries output
-            let actual = entries |> Array.map (Path.GetFileName >> nonNull) |> Set.ofArray
+            let actual = entries |> Array.map Path.GetFileName |> Set.ofArray
 
             actual = (expected.Keys |> Set.ofSeq)
             && entries |> Array.forall File.Exists
@@ -89,7 +89,7 @@ module ArtifactPublication =
 
             let produced =
                 Directory.GetFiles regenerated
-                |> Array.map (fun path -> Path.GetFileName path |> nonNull, File.ReadAllBytes path)
+                |> Array.map (fun path -> Path.GetFileName path, File.ReadAllBytes path)
                 |> Map.ofArray
 
             matches (Path.GetFullPath output) produced

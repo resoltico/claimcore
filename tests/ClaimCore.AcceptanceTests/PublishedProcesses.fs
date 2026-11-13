@@ -1,6 +1,7 @@
 module internal ClaimCore.AcceptanceTests.PublishedProcesses
 
 open System
+open ClaimCore.TestSupport
 open System.Diagnostics
 open System.Collections.Generic
 open System.IO

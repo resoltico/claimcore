@@ -8,13 +8,14 @@ the applicable final stages once, choosing CI or local execution as their owner.
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and per-stage TRX reports |
 | [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Only contracts; runtime catalogs resolve in Presentation; [generation instructions](../docs/contributing.md#generated-contracts) |
-| [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |
+| [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; native and acceptance checks verify actual publication contents |
 
 The [source release procedure](../docs/contributing.md#source-releases) explains the owner's inputs to the
 [release workflow](../.github/workflows/release.yml).
 CI success records executed checks, without granting release approval.
 
-The unit stage builds only its Debug dependency closure and runs assembly-scoped ArchUnitNET controls.
+The unit stage builds its Debug dependency closure, runs assembly-scoped ArchUnitNET controls and
+qualifies a real host CLI publication: apphost execution, dependency closure, notices and source archive.
 Pull requests use Linux x64 and Chromium. Main pushes, merge groups and manual dispatch use Linux x64,
 Linux musl and macOS ARM64, plus Chromium, Firefox and WebKit. Dependency advisories run on full events;
 the PR advisory job succeeds without auditing. Every job feeds Gate.

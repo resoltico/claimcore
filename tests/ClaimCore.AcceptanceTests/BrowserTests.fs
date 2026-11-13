@@ -28,11 +28,7 @@ let private sourceLocation (value: JsonElement) =
         && value.TryGetProperty("file", &file)
         && value.TryGetProperty("line", &line)
     then
-        Some(
-            (Path.GetFileName(file.GetString() |> nonNull) |> nonNull)
-            + ":"
-            + string (line.GetInt32())
-        )
+        Some(Path.GetFileName(file.GetString() |> nonNull) + ":" + string (line.GetInt32()))
     else
         None
 
@@ -139,7 +135,7 @@ let private failedSources output =
 // Only failed-spec attachments and process output are exported; authentication state stays private.
 let private retainFailureFiles output destination =
     for source in Directory.EnumerateFiles(output, "*", SearchOption.AllDirectories) do
-        let name = Path.GetFileName source |> nonNull
+        let name = Path.GetFileName source
 
         if
             name = "trace.zip"
@@ -161,12 +157,7 @@ let private run engine =
             Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
             |> Option.ofObj
             |> Option.map (fun report ->
-                Path.Combine(
-                    report,
-                    "failed-browser",
-                    engine,
-                    (Path.GetFileName fixture.Directory |> nonNull)
-                ))
+                Path.Combine(report, "failed-browser", engine, Path.GetFileName fixture.Directory))
 
         failureReport
         |> Option.iter (fun report ->

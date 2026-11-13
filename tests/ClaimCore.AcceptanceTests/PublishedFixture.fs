@@ -270,7 +270,7 @@ type Fixture() =
 
             FixtureFiles.write
                 directory
-                (Path.GetFileName path |> nonNull)
+                (Path.GetFileName path)
                 (replacement.Export X509ContentType.Pfx)
             |> ignore
 

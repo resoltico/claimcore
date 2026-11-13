@@ -158,6 +158,8 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
 commit: PRs run Linux x64 and Chromium; main pushes, merge groups and manual dispatch run Linux x64,
 Linux musl, macOS ARM64 and all three engines. Dispatch the full set on a substantial PR before review.
+Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
+published service/client integration runs on Linux x64.
 Do not duplicate that full qualification locally. Diagnose failures from their output
 and rerun the affected paths; preserve earlier failures in the report. Passing focused checks does not
 establish that unrun stages passed. Avoid duplicate full runs solely because both local and CI are available.
