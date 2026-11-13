@@ -7,7 +7,7 @@
   "cli.failure.AUTHENTICATION_FAILED": "Authentication failed.",
   "cli.failure.CANCELLED": "The request was cancelled.",
   "cli.failure.CONFIGURATION_INVALID": "CLI configuration is invalid.",
-  "cli.failure.CONTRACT_MISMATCH": "The client and service contracts do not match.",
+  "cli.failure.CONTRACT_MISMATCH": "This CLI and the service are different versions. Use the CLI from the same ClaimCore release as the service.",
   "cli.failure.INSTALLATION_MISMATCH": "Not sent: this request belongs to another installation. Resolve it against its original installation; prepare a fresh request for this installation.",
   "cli.failure.INTERNAL": "An internal client error occurred.",
   "cli.failure.INVALID_FRAME": "The input frame is invalid.",

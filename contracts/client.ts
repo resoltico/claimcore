@@ -215,7 +215,7 @@ export type CasesPage = { readonly "items": ReadonlyArray<CaseSummary>; readonly
 export type ConfirmationTarget = ConfirmationTarget_CASE_REFERENCE | ConfirmationTarget_OPERATION;
 export type ConfirmationTarget_CASE_REFERENCE = { readonly "kind": "CASE_REFERENCE"; readonly "reference": string; };
 export type ConfirmationTarget_OPERATION = { readonly "kind": "OPERATION"; readonly "operationId": Uuid; };
-export type ConflictChangePage = { readonly "disclosure": HistoryDisclosure; readonly "entries": ReadonlyArray<CaseTimelineEntry>; readonly "nextCursor": string | null; };
+export type ConflictChangePage = { readonly "basis": WorkDateBasis; readonly "disclosure": HistoryDisclosure; readonly "entries": ReadonlyArray<CaseTimelineEntry>; readonly "nextCursor": string | null; };
 export type ConflictChanges = ConflictChanges_PAGE | ConflictChanges_WITHHELD;
 export type ConflictChanges_PAGE = { readonly "kind": "PAGE"; readonly "page": ConflictChangePage; };
 export type ConflictChanges_WITHHELD = { readonly "kind": "WITHHELD"; };
@@ -1411,7 +1411,7 @@ function check_CasesPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|n
 function check_ConfirmationTarget(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_ConfirmationTarget_CASE_REFERENCE,check_ConfirmationTarget_OPERATION],"kind",{"CASE_REFERENCE":check_ConfirmationTarget_CASE_REFERENCE,"OPERATION":check_ConfirmationTarget_OPERATION}))(value,draft,path); }
 function check_ConfirmationTarget_CASE_REFERENCE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE_REFERENCE")],["reference",false,wireString(1,80,/^(?:[!-~]{1,80})(?![\s\S])/u,null,null)]]))(value,draft,path); }
 function check_ConfirmationTarget_OPERATION(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("OPERATION")],["operationId",false,check_Uuid]]))(value,draft,path); }
-function check_ConflictChangePage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["disclosure",false,check_HistoryDisclosure],["entries",false,wireArray(check_CaseTimelineEntry,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_ConflictChangePage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["disclosure",false,check_HistoryDisclosure],["entries",false,wireArray(check_CaseTimelineEntry,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_ConflictChanges(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_ConflictChanges_PAGE,check_ConflictChanges_WITHHELD],"kind",{"PAGE":check_ConflictChanges_PAGE,"WITHHELD":check_ConflictChanges_WITHHELD}))(value,draft,path); }
 function check_ConflictChanges_PAGE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("PAGE")],["page",false,check_ConflictChangePage]]))(value,draft,path); }
 function check_ConflictChanges_WITHHELD(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("WITHHELD")]]))(value,draft,path); }
@@ -2041,6 +2041,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "2fec3b2b360b189e645d2b93810670619052a61fce382c57996e17273230e996";
+export const consumerContractIdentity = "1d69b8d7a35539a431ff6d65a122f5c5678ab72b49239c918793b1870e01f47e";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

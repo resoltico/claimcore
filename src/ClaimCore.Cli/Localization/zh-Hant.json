@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "用戶端與伺服器端契約不匹配。",
-    "source": "2973576b3d8a"
+    "text": "此 CLI 與服務的版本不同。請使用與服務相同 ClaimCore 版本的 CLI。",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "未傳送：此請求屬於另一個安裝實例。請在原安裝實例中確定其結果；為當前安裝實例準備新請求。",

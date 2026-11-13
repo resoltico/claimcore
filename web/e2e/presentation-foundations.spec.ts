@@ -1138,8 +1138,11 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await expectAccessible(page);
   await page.getByRole("button", { name: "Keep editing", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeFocused();
+  const checkAccess = page.getByRole("button", { name: "Check access", exact: true });
+  // An automatic access check may still be in flight; restore access only for the explicit check.
+  await expect(checkAccess).toBeEnabled();
   hasAccess = true;
-  await page.getByRole("button", { name: "Check access", exact: true }).click();
+  await checkAccess.click();
   await page.getByRole("button", { name: "Continue current request", exact: true }).click();
   await page.getByRole("button", { name: "Send again", exact: true }).click();
   await expect.poll(() => bytes.length).toBe(2);

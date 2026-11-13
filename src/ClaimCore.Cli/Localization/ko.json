@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "클라이언트와 서비스 계약이 일치하지 않습니다.",
-    "source": "2973576b3d8a"
+    "text": "이 CLI와 서비스의 버전이 다릅니다. 서비스와 같은 ClaimCore 릴리스의 CLI를 사용하세요.",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "전송되지 않음: 이 요청은 다른 설치 환경에 속합니다. 원래 설치 환경에서 결과를 확정하고 이 설치 환경에는 새 요청을 준비하세요.",

@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open System.Globalization
+open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation

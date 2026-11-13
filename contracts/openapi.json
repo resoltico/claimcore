@@ -8842,6 +8842,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "disclosure": {
             "$ref": "#/components/schemas/HistoryDisclosure"
           },
@@ -8867,6 +8870,7 @@
           }
         },
         "required": [
+          "basis",
           "disclosure",
           "entries",
           "nextCursor"

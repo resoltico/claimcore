@@ -17,6 +17,13 @@ type Installation =
 exception internal InstallationRefusal of RuntimeOpenFault
 
 module internal InstallationCheck =
+    /// Database traffic uses TLS. GSS encryption is never negotiated, so hosts neither need nor probe
+    /// the system GSSAPI library.
+    let dataSource (connectionString: string) =
+        let settings = NpgsqlConnectionStringBuilder connectionString
+        settings.GssEncryptionMode <- GssEncryptionMode.Disable
+        NpgsqlDataSource.Create settings.ConnectionString
+
     let transport (settings: NpgsqlConnectionStringBuilder) =
         let loopback (host: string) =
             match IPAddress.TryParse host with

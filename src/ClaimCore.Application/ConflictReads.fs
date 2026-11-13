@@ -82,6 +82,7 @@ module internal ConflictReads =
                             RevisionConflictInfo.explain
                                 (ConflictChanges.Page
                                     {
+                                        Basis = ServiceContext.basis services tx.ObservedAt
                                         Disclosure = HistoryDisclosure.ofAccess erased full
                                         Entries = values
                                         NextCursor = cursor

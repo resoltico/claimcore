@@ -321,6 +321,10 @@ let nextAndConflicts =
                             |> RevisionConflictInfo.explain (
                                 ConflictChanges.Page
                                     {
+                                        Basis =
+                                            { ClaimCore.TestSupport.Inputs.workBasis with
+                                                TimeZoneId = "Europe/Riga"
+                                            }
                                         Disclosure = HistoryDisclosure.Full
                                         Entries = entries
                                         NextCursor = Some "literal-cursor"
@@ -346,6 +350,16 @@ let nextAndConflicts =
                             |> String.concat "\n"
 
                         Expect.stringContains text "Editor 50" "Every supplied author is visible"
+
+                        // 2026-08-31 12:00 UTC is 15:00 in Riga summer time.
+                        Expect.stringContains
+                            text
+                            "15:00 +03:00"
+                            "Conflict instants use the installation zone from the conflict basis"
+
+                        Expect.isFalse
+                            (text.Contains "+00:00")
+                            "Conflict instants are never shown in UTC when the zone is known"
 
                         Expect.equal
                             (text.Contains "Change 50")
@@ -445,3 +459,33 @@ let nextAndConflicts =
                             (output.Contains "REVIEW_LATEST" || output.Contains "{\"")
                             "No business tokens or JSON leak into prose")
         ]
+
+[<Tests>]
+let hostFailures =
+    testCase "host version and installation failures use CLI advice, not browser advice" (fun () ->
+        let text language code =
+            ReplyText.resultLines
+                language
+                None
+                (FrameResult.HostFailure { Code = code; Phase = None })
+            |> String.concat "\n"
+
+        Expect.stringContains
+            (text "en" HostFailureCode.ContractMismatch)
+            "Use the CLI from the same ClaimCore release as the service."
+            "English contract mismatch states the CLI's next step"
+
+        for language in LocalizationPolicy.languages do
+            for code, token in
+                [
+                    HostFailureCode.ContractMismatch, "CONTRACT_MISMATCH"
+                    HostFailureCode.InstallationMismatch, "INSTALLATION_MISMATCH"
+                ] do
+                let rendered = text language code
+                let browser = ReplyTextFormat.label language ("host." + token)
+
+                Expect.isFalse
+                    (rendered.Contains browser)
+                    $"{language} {token} does not show the browser reload advice"
+
+                Expect.stringContains rendered token $"{language} {token} keeps its code")
