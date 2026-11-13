@@ -6,15 +6,15 @@ const humanNotice = (value: EndpointOutcome): Notice | null => {
     if (value.outcome.kind === "REJECTED") {
       return { kind: "human", advice: value.outcome.rejection.advice };
     }
-    if (value.outcome.kind === "FAILED") {
-      return {
-        kind: "human",
-        advice: {
-          message: { messageId: value.outcome.fault.messageId, arguments: [] },
-          action: value.outcome.fault.action,
-        },
-      };
-    }
+  }
+  if (value.outcome.kind === "FAILED") {
+    return {
+      kind: "human",
+      advice: {
+        message: { messageId: value.outcome.fault.messageId, arguments: [] },
+        action: value.outcome.fault.action,
+      },
+    };
   }
   return null;
 };

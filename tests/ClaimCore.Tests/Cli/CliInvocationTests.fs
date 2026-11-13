@@ -59,7 +59,7 @@ let private options () =
             [ "help"; "secret-canary" ]
             [ "help"; "secret-canary" ]
             [ "help"; "summary"; "extra" ]
-            [ "help"; "acts"; "OPEN"; "extra" ]
+            [ "help"; "acts"; "case.open"; "extra" ]
             [ "schema"; "context"; "extra" ]
             [ "help"; "--format"; "text"; "--format"; "text" ]
         ] do
@@ -134,7 +134,7 @@ let private verbPreparation () =
 
     Expect.equal
         (JsonValue.tryMember "act" input)
-        (Some(JsonValue.Object [ "kind", JsonValue.String "CLOSE" ]))
+        (Some(JsonValue.Object [ "kind", JsonValue.String "case.close" ]))
         "Authored act remains exact"
 
     let preview =

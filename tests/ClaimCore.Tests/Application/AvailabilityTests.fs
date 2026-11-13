@@ -87,7 +87,7 @@ let private edgeActions =
         [
             testCase "availability does not substitute for payload validation" (fun () ->
                 let state = opened ()
-                Expect.contains (availableActs state) "DECIDE" "State eligibility"
+                Expect.contains (availableActs state) "case.decide" "State eligibility"
 
                 let invalid =
                     AuthoredCaseAct.Decide(

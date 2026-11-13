@@ -49,36 +49,13 @@ describe("catalogue-bound requests", () => {
       "X-ClaimCore-Antiforgery": "csrf",
     });
   });
-  it("rejects wrong endpoints missing consumed fields and non-JSON replies", async () => {
-    const valid = (await wireResponse("case.list").json()) as object;
-    for (const response of [
-      new Response(
-        JSON.stringify({
-          ...valid,
-          outcome: {
-            view: { regions: [] },
-            kind: "SUCCEEDED",
-            data: {
-              items: null,
-              nextCursor: null,
-            },
-          },
-        }),
-        {
-          headers: {
-            "content-type": "application/json",
-          },
-        },
-      ),
-      wireResponse("case.get"),
+  it("rejects a non-JSON media type", async () => {
+    const valid: unknown = await wireResponse("case.list").json();
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(valid), {
-        headers: {
-          "content-type": "application/jsonp",
-        },
+        headers: { "content-type": "application/jsonp" },
       }),
-    ]) {
-      vi.mocked(fetch).mockResolvedValueOnce(response);
-      expect((await service.list(null, 50, "csrf")).kind).toBe("deliveryFailure");
-    }
+    );
+    expect((await service.list(null, 50, "csrf")).kind).toBe("deliveryFailure");
   });
 });

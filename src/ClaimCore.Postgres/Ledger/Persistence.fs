@@ -149,7 +149,7 @@ module internal Persistence =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='PEOPLE' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE operation_sequence=$2 AND effect_index=$3 AND subject_kind='PEOPLE' AND subject_id=$1 AND act='people.eraseProfile')"
                         [|
                             box (ActorId.value id)
                             box (Sequence.value (EffectPosition.sequence sequence))

@@ -35,7 +35,7 @@ let tests =
 
         Expect.isError
             (read
-                """{"acts":["CLOSE"],"history":"FULL","recommended":null,"maintenance":{"active":true}}""")
+                """{"acts":["case.close"],"history":"FULL","recommended":null,"maintenance":{"active":true}}""")
             "A structurally valid write offer contradicts maintenance and is rejected semantically"
 
         Expect.isError

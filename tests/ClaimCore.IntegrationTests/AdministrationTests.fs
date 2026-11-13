@@ -197,7 +197,7 @@ let private checkpoints binary connection =
         let! retired = invoke binary connection [ "invalidate-restored-sessions" ] 2
         fault "INVOCATION_INVALID" retired
 
-        let! _ = invoke binary connection [ "rebuild" ] 2
+        let! _ = invoke binary connection [ "rebuild" ] 64
 
         for changed in
             [
@@ -205,7 +205,7 @@ let private checkpoints binary connection =
                 "-1:" + String.replicate 64 "0"
                 "1:NOT_A_HASH"
             ] do
-            let! _ = invoke binary connection [ "verify"; "--expect"; changed ] 2
+            let! _ = invoke binary connection [ "verify"; "--expect"; changed ] 64
             ()
     }
 

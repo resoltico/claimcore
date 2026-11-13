@@ -94,7 +94,9 @@ export const ActorOperation = ({
         offered={
           target.mode === "bound"
             ? target.offered
-            : offered.filter((kind) => model.entry.kind !== "people.admit" || kind === "people.admit")
+            : offered.filter(
+                (kind) => model.entry.kind !== "people.admit" || kind === "people.admit",
+              )
         }
         disclosureAvailable={available}
         open={open}

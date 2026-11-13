@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "此账户已停用。分配的角色仍可在权限审阅中查见。",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "关注事项",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "为查阅授权或权限历史记录而选择的已注册账户。",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "选择要审阅谁的访问权限。",

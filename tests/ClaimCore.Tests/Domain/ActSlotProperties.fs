@@ -86,18 +86,18 @@ let private peopleProperty =
 let private descriptions () =
     for token, expectedFamily, expectedPayload in
         [
-            "OPEN", "BUSINESS", "REGISTRATION"
-            "AMEND_REGISTRATION", "BUSINESS", "REGISTRATION_UPDATE"
-            "CORRECT", "BUSINESS", "CORRECTION"
-            "DECIDE", "BUSINESS", "DECISION"
-            "WITHDRAW_DECISION", "BUSINESS", "BARE"
-            "RECORD_PAYMENT", "BUSINESS", "PAYMENT"
-            "REMOVE_PAYMENT", "BUSINESS", "PAYMENT_ID"
-            "CLOSE", "BUSINESS", "BARE"
-            "REOPEN", "BUSINESS", "BARE"
-            "VOID", "STEWARDSHIP", "REASON"
-            "REINSTATE", "STEWARDSHIP", "REASON"
-            "ERASE", "STEWARDSHIP", "BARE"
+            "case.open", "BUSINESS", "REGISTRATION"
+            "case.amendRegistration", "BUSINESS", "REGISTRATION_UPDATE"
+            "case.correct", "BUSINESS", "CORRECTION"
+            "case.decide", "BUSINESS", "DECISION"
+            "case.withdrawDecision", "BUSINESS", "BARE"
+            "case.recordPayment", "BUSINESS", "PAYMENT"
+            "case.removePayment", "BUSINESS", "PAYMENT_ID"
+            "case.close", "BUSINESS", "BARE"
+            "case.reopen", "BUSINESS", "BARE"
+            "case.void", "STEWARDSHIP", "REASON"
+            "case.reinstate", "STEWARDSHIP", "REASON"
+            "case.erase", "STEWARDSHIP", "BARE"
         ] do
         let kind = CaseActKind.parse token |> Option.get
         let description = CaseActKind.describe kind
@@ -124,7 +124,7 @@ let private descriptions () =
 
         Expect.equal
             description.Revision
-            (if token = "OPEN" then
+            (if token = "case.open" then
                  RevisionInput.New
              else
                  RevisionInput.Expected)

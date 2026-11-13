@@ -64,7 +64,7 @@ it.each([
   {},
   reply({
     kind: "ACTIVE",
-    capabilities: ["MANAGE_ACCESS"],
+    capabilities: "MANAGE_ACCESS",
   }),
   {
     outcome: {

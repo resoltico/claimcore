@@ -204,7 +204,7 @@ let internal peopleWire kind issuer subject =
                 |}
             act =
                 {|
-                    kind = "REGISTER"
+                    kind = "people.register"
                     profile = {| displayName = "Authored" |}
                 |}
         |}

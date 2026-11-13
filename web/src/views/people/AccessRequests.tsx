@@ -4,8 +4,7 @@ import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HumanReadDocument_people_requests } from "@contracts/client";
-export type AccessRequestControl =
-  HumanReadDocument_people_requests["context"]["requests"][number];
+export type AccessRequestControl = HumanReadDocument_people_requests["context"]["requests"][number];
 import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useEndpointPage } from "../../hooks/useEndpointPage";

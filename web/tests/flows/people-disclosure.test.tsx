@@ -227,8 +227,7 @@ it("aborts prior people reads and ignores their late completion after an uncerta
 });
 const revalidatingReads = async () => {
   let finishContext: ((value: Awaited<ReturnType<typeof service.context>>) => void) | undefined;
-  let finishListing:
-    ((value: Awaited<ReturnType<typeof service.peopleList>>) => void) | undefined;
+  let finishListing: ((value: Awaited<ReturnType<typeof service.peopleList>>) => void) | undefined;
   const context = mockEndpoint("context")
     .mockResolvedValueOnce(success("context"))
     .mockImplementation(

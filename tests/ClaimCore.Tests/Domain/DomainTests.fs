@@ -295,7 +295,7 @@ let private paymentGuardTests =
                     "No transfer"
 
                 Expect.isFalse
-                    (availableActs claim |> List.contains "RECORD_PAYMENT")
+                    (availableActs claim |> List.contains "case.recordPayment")
                     "Advisory actions agree")
             testCase "payable can exceed claim and have a different currency" (fun () ->
                 let input =

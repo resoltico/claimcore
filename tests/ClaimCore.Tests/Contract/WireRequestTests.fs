@@ -115,7 +115,7 @@ let private scalarAdmission () =
             "Read reference format also reaches Application"
 
     let voided =
-        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"target\":{{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"}},\"expectedRevision\":1,\"act\":{{\"kind\":\"VOID\",\"reason\":\"\"}}}}"
+        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"target\":{{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"}},\"expectedRevision\":1,\"act\":{{\"kind\":\"case.void\",\"reason\":\"\"}}}}"
 
     Expect.isOk
         (admit (endpoint "operation.preview") voided)

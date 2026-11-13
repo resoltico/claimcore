@@ -189,12 +189,7 @@ const reads = (offered = true) => {
           ...context.outcome.document,
           context: {
             ...context.outcome.document.context,
-            tasks: [
-              "people.admit",
-              "people.grant",
-              "people.list",
-              "people.grants",
-            ],
+            tasks: ["people.admit", "people.grant", "people.list", "people.grants"],
             peopleIssuerSeed: "https://issuer.example/",
             views: offered ? ["PEOPLE"] : [],
           },

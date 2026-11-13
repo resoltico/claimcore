@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "此帳戶已停用。分配的角色仍可在權限審閱中查見。",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "關注事項",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "為查閱授權或權限歷史記錄而選擇的已註冊帳戶。",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "選擇要審閱誰的存取權限。",

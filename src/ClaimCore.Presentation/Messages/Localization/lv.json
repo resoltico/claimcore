@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "Konts ir atspējots. Piešķirtās lomas paliek redzamas pilnvaru pārskatīšanai.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "Jāpievērš uzmanība",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "Reģistrētais dalībnieks, kas atlasīts pilnvaru pārskatīšanai vai pilnvaru vēsturei.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "Izvēlieties, kura piekļuvi pārskatīt.",

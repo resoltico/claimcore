@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "يحتاج إلى الانتباه",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "الجهة المسجلة المحددة لمراجعة الصلاحيات أو سجل تغييراتها.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "اختر الحساب الذي تريد مراجعة صلاحياته.",

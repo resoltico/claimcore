@@ -94,7 +94,7 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
   if (segments[0] === "people-history") {
     const actors = new URLSearchParams(query).getAll("actorId");
     const actorId = actors[0] ?? "";
-    if (actors.length > 1) {
+    if (actors.length > 1 || (actors.length === 1 && actorId === "")) {
       return { screen: "missing" };
     }
     return { screen: "peopleHistory", actorId };

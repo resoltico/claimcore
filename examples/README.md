@@ -59,4 +59,4 @@ interaction context.
 NOT_ACCEPTED for your account after locked absence confirmation. `recovery list` and
 `recovery check ATTEMPT_ID` use the current account/installation; add `--format json` for automation.
 Interactive checks repeat pending answers until final. Restart recovery keeps identity only and cannot
-recreate a business request. See [delivery recovery](../docs/integrating.md#delivery-recovery).
+recreate a business request. See [delivery recovery](../docs/integrating.md#recover-an-uncertain-change).

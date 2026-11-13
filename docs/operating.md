@@ -4,6 +4,12 @@ The supplied Compose setup is for local evaluation. Operators choose and validat
 identity provider, storage, key custody, backups and monitoring. Start with
 [Getting started](getting-started.md) for a separate synthetic installation.
 
+`claimcore-server serve` starts the HTTPS host. The same executable supplies owner administration
+subcommands; it requires a subcommand and returns usage status 64 when none is supplied. Use
+`claimcore-server help` for administration and `claimcore-server serve --help` for host settings.
+Owner credentials belong only in the administration environment. The runtime image contains the
+server and its assets; the human CLI is distributed separately.
+
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
@@ -122,7 +128,7 @@ Operation IDs have a ten-minute first-execution lifetime with two minutes of fut
 Accepted lookup and replay come first. `operation.get` confirms expiry under the execution head lock,
 commits a monotonic `expiredBefore` cutoff, then returns final absence without a business append.
 Cancellation or uncertain acknowledgement does not establish final absence; a later lookup can resolve it.
-See [delivery recovery](integrating.md#delivery-recovery).
+See [delivery recovery](integrating.md#recover-an-uncertain-change).
 
 An unseen ID strictly older than the committed cutoff cannot execute in the intact installation, even
 after a backward wall-clock step. Equality is not expired. The cutoff preserves full timestamp precision.

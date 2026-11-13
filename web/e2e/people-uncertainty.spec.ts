@@ -26,7 +26,11 @@ const ownerGrant = async (page: Page, active: boolean) => {
     kind: "PEOPLE",
     operationId: mintOperationId(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
-    act: { kind: active ? "people.grant" : "people.revoke", role: "OWNER", scope: { kind: "INSTALLATION" } },
+    act: {
+      kind: active ? "people.grant" : "people.revoke",
+      role: "OWNER",
+      scope: { kind: "INSTALLATION" },
+    },
   });
 };
 const prepareAdmission = async (page: Page, issuer: string, subject: string) => {

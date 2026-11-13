@@ -193,7 +193,7 @@
   },
   "cli.text.peopleHistoryEmpty": {
     "text": "選択条件に一致する権限の変更はありません。",
-    "source": "4e76d78127bf"
+    "source": "551e9e8904a3"
   },
   "cli.text.code": {
     "text": "コード",

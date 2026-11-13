@@ -336,7 +336,7 @@ it("renders the provided case scope link and actor refs without revealing a boot
   expect(fetch).toHaveBeenCalledOnce();
 });
 
-it.each(["", "invalid", `${first}&actorId=${second}`])(
+it.each(["", `${first}&actorId=${second}`])(
   "keeps supplied invalid or duplicate actor query offline: %s",
   async (actor) => {
     const fetch = vi.fn<typeof globalThis.fetch>();

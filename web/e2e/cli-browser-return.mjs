@@ -46,7 +46,7 @@ const networks = new Map([
   ["net::ERR_BLOCKED_BY_RESPONSE", "blocked"],
   ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "blocked"],
   ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "blocked"],
-  ["net::ERR_CERT_PEOPLE_INVALID", "tls"],
+  ["net::ERR_CERT_AUTHORITY_INVALID", "tls"],
   ["net::ERR_CERT_DATE_INVALID", "tls"],
   ["net::ERR_CERT_COMMON_NAME_INVALID", "tls"],
   ["net::ERR_SSL_PROTOCOL_ERROR", "tls"],

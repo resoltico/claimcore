@@ -35,6 +35,15 @@ rendering, not linguistic approval. Human review records should identify the lan
 and contexts reviewed. [Workspace examples](workspace-examples.md) show synthetic case work,
 review and RTL layouts; executable localization journeys cover expanded text.
 
+## People, access and tasks
+
+**People** names the subject that registers accounts, maintains profiles, grants roles and enables or
+disables accounts. **Access** names rights and the policy that determines what a principal may do.
+The capabilities are `MANAGE_ACCESS` and `READ_ACCESS`; `people.*` endpoint IDs identify people reads
+and commands. **Actor** and **ActorId** remain the technical registered-identity terms, for both human
+and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the act
+identity in submissions, advice, receipts, history and CLI declarations.
+
 ## Account and sign-in identity
 
 A person uses a human account; automation uses a service account. In wire types, a principal is the exact
@@ -44,9 +53,9 @@ A display name or email address is not a sign-in identity and grants no access.
 
 ## Case identity and reference
 
-A CaseId is the UUID of its accepted OPEN change. Its original reference is immutable,
+A CaseId is the UUID of its accepted `case.open` change. Its original reference is immutable,
 ASCII-case-insensitively unique, retained after erasure and never reused. Tagged ID/reference selectors
-make UUID-shaped references unambiguous. See [Integrating](integrating.md#identity-and-records).
+make UUID-shaped references unambiguous. See [Integrating](integrating.md#authenticate).
 
 ## Facts, decision and payment
 
@@ -104,7 +113,7 @@ or credentials. Restart recovery checks the result and cannot reconstruct a subm
 `operation.get` returns accepted metadata under current disclosure rights, a pending deadline, or final
 NOT_ACCEPTED for the requester after locked absence confirmation. It appends nothing. Own metadata can
 remain available without case roles; business contents still require current rights.
-See [delivery recovery](integrating.md#delivery-recovery) and the [clock contract](operating.md#database-clock).
+See [delivery recovery](integrating.md#recover-an-uncertain-change) and the [clock contract](operating.md#database-clock).
 
 ## Inputs, outcomes and retained records
 

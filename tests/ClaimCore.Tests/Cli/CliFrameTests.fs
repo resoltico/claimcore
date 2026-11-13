@@ -259,9 +259,9 @@ let private schema arguments =
 
 let private offlineDiscovery () =
     for language, label in
-        [ "en", "Case payment entries"; "lv", "Lietas maksājumi"; "ar", "دفعات الملف" ] do
+        [ "en", "List payments"; "lv", "Uzskaitīt maksājumus"; "ar", "عرض الدفعات" ] do
         let document =
-            helpJson [ "--language"; language ]
+            helpJson [ "case"; "--language"; language ]
             |> Option.defaultWith (fun () -> failtest "Overview help required")
             |> StrictJson.read Limits.MaximumResponseBytes
             |> Fixtures.accepted
@@ -273,8 +273,8 @@ let private offlineDiscovery () =
 
         Expect.stringContains
             text
-            ("payment — " + label)
-            "Every required language describes the payment family offline"
+            ("payments — " + label)
+            "Every required language describes the case payments command offline"
 
     for args in [ []; [ "case"; "open" ]; [ "people"; "register" ]; [ "context" ] ] do
         Expect.isSome (helpJson args) "Offline catalogue read"

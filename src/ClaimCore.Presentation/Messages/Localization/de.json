@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "Das Konto ist deaktiviert. Zugewiesene Rollen bleiben zur Prüfung der Zugriffsrechte sichtbar.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "Handlungsbedarf",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "Der für die Prüfung der Zuweisungen oder des Zugriffsverlaufs ausgewählte registrierte Akteur.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "Wählen Sie, wessen Zugriff Sie prüfen möchten.",

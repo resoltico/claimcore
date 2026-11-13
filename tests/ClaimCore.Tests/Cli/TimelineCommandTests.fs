@@ -220,18 +220,18 @@ let tests =
 
                 let subjects =
                     [
-                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "act", "CLOSE"
+                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "task", "case.close"
                         TimelineSubject.Work(revision, WorkActKind.UpdateWork),
-                        "workAct",
-                        "UPDATE_WORK"
+                        "task",
+                        "work.update"
                         TimelineSubject.Reminder(
                             ReminderActKind.Create,
                             reminderId,
                             revision,
                             None
                         ),
-                        "reminderAct",
-                        "CREATE"
+                        "task",
+                        "reminder.create"
                     ]
 
                 for subject, vocabulary, token in subjects do

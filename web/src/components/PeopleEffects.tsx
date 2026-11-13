@@ -61,11 +61,7 @@ const EffectValues = ({ effect }: { effect: PeopleReviewEffect }) => {
 };
 
 /** The complete ordered effect list is supplied by the reviewed core plan. */
-export const PeopleEffects = ({
-  effects,
-}: {
-  effects: ReadonlyArray<PeopleReviewEffect>;
-}) => {
+export const PeopleEffects = ({ effects }: { effects: ReadonlyArray<PeopleReviewEffect> }) => {
   const p = usePresentation();
   return (
     <ol className="people-effects">

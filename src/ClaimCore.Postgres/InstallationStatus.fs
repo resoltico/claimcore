@@ -40,7 +40,7 @@ module internal InstallationStatus =
                 let! owner =
                     DatabaseSession.rows
                         connection
-                        "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a JOIN claimcore.ledger_effects e ON e.subject_id=a.actor_id WHERE e.subject_kind='PEOPLE' AND e.act='PROVISION_OWNER' ORDER BY e.operation_sequence,e.effect_index LIMIT 1"
+                        "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a JOIN claimcore.ledger_effects e ON e.subject_id=a.actor_id WHERE e.subject_kind='PEOPLE' AND e.act='people.provisionOwner' ORDER BY e.operation_sequence,e.effect_index LIMIT 1"
                         [||]
                         token
 

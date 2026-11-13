@@ -16,7 +16,7 @@ let private record (attempt: string) : RecoveryIdentity =
         AttemptId = Guid.Parse attempt
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
         Subject = ActSubject.Case
-        Act = "OPEN"
+        Act = "case.open"
         Refused = false
     }
 

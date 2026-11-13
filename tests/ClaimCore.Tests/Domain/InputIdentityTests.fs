@@ -25,7 +25,7 @@ let tests =
         | Ok _ -> failtest "Undeclared principal kinds cannot reach Domain."
 
         let role =
-            """{"kind":"GRANT","role":"UNDECLARED","scope":{"kind":"INSTALLATION"}}"""
+            """{"kind":"people.grant","role":"UNDECLARED","scope":{"kind":"INSTALLATION"}}"""
 
         match
             Codec.decode

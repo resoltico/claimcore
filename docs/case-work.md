@@ -148,4 +148,4 @@ The CLI never silently rebases.
 
 If delivery is uncertain, keep the original change identity. **Unconfirmed changes** checks it
 automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
-request. Follow [delivery recovery](integrating.md#delivery-recovery) before starting another change.
+request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.

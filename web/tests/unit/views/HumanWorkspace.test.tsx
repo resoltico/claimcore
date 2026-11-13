@@ -136,7 +136,7 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
   await screen.findByText("Core own account caption Ω");
   expect(
     screen.getByRole("heading", {
-      name: "People history",
+      name: "Access history",
       level: 1,
     }),
   ).toBeVisible();

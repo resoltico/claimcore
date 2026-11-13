@@ -80,7 +80,7 @@ let private principalRefusal arguments =
     Expect.equal (diagnostic.GetProperty("action").GetString()) "CORRECT_INPUT" "Repair action"
     let issues = diagnostic.GetProperty "issues"
     Expect.equal (issues.GetArrayLength()) 1 "Exactly the authored principal issue"
-    Expect.equal (issues[0].GetProperty("field").GetString()) "principal.issuer" "Issuer target"
+    Expect.equal (issues[0].GetProperty("input").GetString()) "input:principal.issuer" "Issuer target"
 
     Expect.equal
         (issues[0].GetProperty("code").GetString())

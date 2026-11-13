@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "La cuenta está desactivada. Los roles asignados siguen visibles para revisar el acceso.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "Atención",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "El actor registrado seleccionado para revisar las asignaciones o el historial de acceso.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "Elige de quién quieres revisar el acceso.",

@@ -4,10 +4,7 @@ import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 
-type PeopleInput = Extract<
-  Parameters<typeof service.preview>[0]["input"],
-  { kind: "PEOPLE" }
->;
+type PeopleInput = Extract<Parameters<typeof service.preview>[0]["input"], { kind: "PEOPLE" }>;
 const actorId = "10000000-0000-4000-8000-000000000001";
 const basis = { kind: "SNAPSHOT", observation: workBasis } as const;
 const resolvedScope = (scope: Scope): GrantScope =>
@@ -88,7 +85,9 @@ export const peopleAcceptance = (
             recordedFields: [],
             target: {
               kind: "PEOPLE",
-              actorId: ["people.register", "people.admit"].includes(input.act.kind) ? input.operationId : actorId,
+              actorId: ["people.register", "people.admit"].includes(input.act.kind)
+                ? input.operationId
+                : actorId,
             },
             caseLink: null,
             refreshCase: null,

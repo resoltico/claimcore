@@ -54,7 +54,7 @@ let tests =
                             "$"
                             (input
                                 "WORK"
-                                ("{\"kind\":\"UPDATE_WORK\",\"values\":{" + members + "}}"))
+                                ("{\"kind\":\"work.update\",\"values\":{" + members + "}}"))
                         |> accepted
                     with
                     | OperationInput.Work {
@@ -72,7 +72,7 @@ let tests =
                 Expect.isError
                     (RequestCodecs.operationInput.Read
                         "$"
-                        (input "CASE" "{\"kind\":\"UPDATE_WORK\",\"values\":{}}"))
+                        (input "CASE" "{\"kind\":\"work.update\",\"values\":{}}"))
                     "Retired financial work act refuses")
             testCase
                 "reminder command structure excludes caller attribution and enforces the entity revision"
@@ -81,14 +81,16 @@ let tests =
 
                     for act in
                         [
-                            "{\"kind\":\"CREATE\",\"action\":\"Call insurer\",\"dueDate\":\"2026-11-10\"}"
-                            "{\"kind\":\"UPDATE\","
+                            "{\"kind\":\"reminder.create\",\"action\":\"Call insurer\",\"dueDate\":\"2026-11-10\"}"
+                            "{\"kind\":\"reminder.update\","
                             + target
                             + ",\"action\":\"Call again\",\"dueDate\":\"2026-11-11\"}"
-                            "{\"kind\":\"COMPLETE\"," + target + "}"
-                            "{\"kind\":\"CANCEL\"," + target + "}"
-                            "{\"kind\":\"REOPEN\"," + target + ",\"dueDate\":\"2026-11-11\"}"
-                            "{\"kind\":\"COMPLETE_AND_PLAN_NEXT\","
+                            "{\"kind\":\"reminder.complete\"," + target + "}"
+                            "{\"kind\":\"reminder.cancel\"," + target + "}"
+                            "{\"kind\":\"reminder.reopen\","
+                            + target
+                            + ",\"dueDate\":\"2026-11-11\"}"
+                            "{\"kind\":\"reminder.completeAndPlanNext\","
                             + target
                             + ",\"action\":\"Review reply\",\"dueDate\":\"2026-11-11\"}"
                         ] do
@@ -98,9 +100,11 @@ let tests =
 
                     for act in
                         [
-                            "{\"kind\":\"COMPLETE\",\"reminderId\":\"" + child + "\"}"
-                            "{\"kind\":\"COMPLETE\"," + target + ",\"recordedAt\":\"2026-11-01\"}"
-                            "{\"kind\":\"CREATE\",\"action\":\"Call\",\"dueDate\":\"2026-11-10\",\"reminderId\":\""
+                            "{\"kind\":\"reminder.complete\",\"reminderId\":\"" + child + "\"}"
+                            "{\"kind\":\"reminder.complete\","
+                            + target
+                            + ",\"recordedAt\":\"2026-11-01\"}"
+                            "{\"kind\":\"reminder.create\",\"action\":\"Call\",\"dueDate\":\"2026-11-10\",\"reminderId\":\""
                             + child
                             + "\"}"
                         ] do

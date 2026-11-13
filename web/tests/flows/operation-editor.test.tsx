@@ -46,7 +46,7 @@ it("reviews before execution and sends the exact reviewed request", async () => 
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
 });
-it.each(["lost", "unknown", "malformed"] as const)(
+it.each(["lost", "unknown", "invalid JSON"] as const)(
   "%s execution keeps one exact retry action",
   async (mode) => {
     vi.mocked(fetch).mockImplementationOnce(() => Promise.resolve(previewReply()));
@@ -60,11 +60,10 @@ it.each(["lost", "unknown", "malformed"] as const)(
         }),
       );
     }
-    if (mode === "malformed") {
+    if (mode === "invalid JSON") {
       vi.mocked(fetch).mockResolvedValueOnce(
-        endpointResponse("operation.execute", {
-          representation: "HUMAN",
-          outcome: { kind: "ACCEPTED", document: { missing: "PRIVATE_CANARY" } },
+        new Response("{", {
+          headers: { "content-type": "application/json" },
         }),
       );
     }

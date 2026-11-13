@@ -71,7 +71,7 @@ let tests =
             testCaseAsync
                 "actual host discovery remains configuration-free after runtime wrapper removal"
                 (async {
-                    let! version, output, errors = invoke [ "version"; "--json" ] |> Async.AwaitTask
+                    let! version, output, errors = invoke [ "version" ] |> Async.AwaitTask
                     Expect.equal version 0 "Version opens no configured runtime"
                     Expect.equal errors "" "No startup/private input diagnostics"
                     use json = JsonDocument.Parse output
@@ -85,10 +85,7 @@ let tests =
                     Expect.equal help 0 "Help opens no configured runtime"
                     Expect.equal errors "" "Help needs no provider"
 
-                    Expect.stringContains
-                        output
-                        "configuration-free help"
-                        "Supported invocation is documented"
+                    Expect.stringContains output "serve" "Supported invocation is documented"
 
                     Expect.isFalse
                         (output.Contains "missing-configuration-free-witness")

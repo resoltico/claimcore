@@ -1429,7 +1429,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "アカウントは無効です。権限の確認のため、割り当て済みの役割は引き続き表示されます。",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "注意",
@@ -1713,7 +1713,7 @@
   },
   "input.actorId.rule": {
     "text": "役割の割り当てや権限履歴を確認する登録済みアカウント。",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "アクセス権限を確認する対象を選択してください。",

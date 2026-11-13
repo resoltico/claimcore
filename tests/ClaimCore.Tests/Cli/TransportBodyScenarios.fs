@@ -196,7 +196,7 @@ let internal nearFrameLimitBody endpoint failure =
         if failure then
             node
         else
-            node["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
+            node["outcome"] |> nonNull |> fun outcome -> outcome["rejection"] |> nonNull
 
     target["message"] <- System.Text.Json.Nodes.JsonValue.Create("x")
     let baseline = node.ToJsonString() |> bytes
