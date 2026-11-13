@@ -19,8 +19,8 @@ codes from SIX, excluding fund codes and X-prefixed non-national codes; XAF, XCD
 supported. This does not impose per-currency minor-unit admission rules. Picker search ranks exact code,
 code prefix, localized name prefix, then substring, using locale-aware case folding.
 
-Previously shape-valid unsupported values now refuse with a field diagnostic. Existing installations
-containing such values require a fresh installation; no migration or compatibility reader is provided.
+Unsupported values refuse with a field diagnostic. Use a fresh installation for these code contracts;
+there are no migrations or compatibility readers.
 
 ## HTTPS contract
 
@@ -308,6 +308,15 @@ IDs strictly older than that cutoff; equality is not expired. Out-of-window refu
 `observedAt` and `phase: NOT_STARTED`. `OPERATION_CLOCK_UNAVAILABLE` identifies the durable cutoff and
 current observation; check acceptance and ask the operator to check clock state for a just-prepared ID.
 Keep the dispatched ID and exact content while delivery is uncertain.
+
+A delivered business refusal is not final for an operation ID: rejected verdicts do not append or
+reserve it. CLI recovery therefore retains such attempts as **refused, awaiting final confirmation**;
+it removes them only after acceptance or final `NOT_ACCEPTED`. A subsequent actual send of the same
+attempt resets its local delivery knowledge to unconfirmed. No business payload is stored.
+
+CLI recovery format 3 stores identity and delivery knowledge and requires fresh CLI state.
+There are no migrations or compatibility readers. Browser journal format and business installation
+format are separate contracts.
 
 `operation.get` takes the operation ID with the authenticated installation binding:
 

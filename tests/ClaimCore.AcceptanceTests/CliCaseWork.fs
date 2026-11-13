@@ -154,6 +154,58 @@ let qualify (fixture: PublishedFixture.Fixture) =
         noteId
         "Published removal targets the added note on the same case"
 
+    let refusedOperation = id ()
+
+    verb
+        fixture
+        environment
+        [
+            "case"
+            "close"
+            reference
+            "--operation-id"
+            refusedOperation
+            "--expected-revision"
+            "0"
+        ]
+        2
+    |> require "REJECTED"
+    |> ignore
+
+    let listed =
+        ProcessRunner.dotnet
+            60_000
+            fixture.Cli
+            [ "recovery"; "list"; "--format"; "json" ]
+            environment
+            None
+
+    Expect.equal listed.ExitCode 0 "Read recovery after a real stale-version refusal"
+    use recovery = JsonDocument.Parse listed.StandardOutput
+
+    let refusedRecord =
+        recovery.RootElement.GetProperty("recovery").EnumerateArray()
+        |> Seq.find (fun entry -> entry.GetProperty("operationId").GetString() = refusedOperation)
+
+    Expect.isTrue
+        (refusedRecord.GetProperty("refused").GetBoolean())
+        "Delivered refusal is retained as knowledge, not final absence"
+
+    let recoveryText =
+        ProcessRunner.dotnet
+            60_000
+            fixture.Cli
+            [ "recovery"; "list"; "--format"; "text" ]
+            environment
+            None
+
+    Expect.equal recoveryText.ExitCode 0 "Human recovery list succeeds"
+
+    Expect.stringContains
+        (Encoding.UTF8.GetString recoveryText.StandardOutput)
+        "Refused, awaiting final confirmation"
+        "Do not present known refusal as an unknown delivery"
+
     Expect.equal (File.ReadAllText path) source "The caller's CRLF file is preserved"
     let initial = current ()
 

@@ -410,5 +410,9 @@
   "cli.usage.shellInteractiveRequired": {
     "text": "shell requiere un terminal interactivo y un inicio de sesión interactivo. Use session para solicitudes por tubería.",
     "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "Rechazado, pendiente de confirmación definitiva — intento {attemptId}: {subject} {act}; operación {operationId}.",
+    "source": "a1976e98bad0"
   }
 }

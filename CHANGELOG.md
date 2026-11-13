@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- CLI recovery uses format 3 and requires fresh CLI state; no migration or compatibility reader is provided.
+- Delivered refusals remain in recovery as refused, awaiting final confirmation; only acceptance or final absence clears them.
 - Country/currency inputs now require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse. Update code integrations.
 - Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
 - CLI help and web notices link licensing and the build’s source archive; modified deployments must update the offered Corresponding Source.

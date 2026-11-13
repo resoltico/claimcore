@@ -410,5 +410,9 @@
   "cli.usage.shellInteractiveRequired": {
     "text": "يتطلب shell طرفية تفاعلية وتسجيل دخول تفاعليًا. استخدم session للطلبات عبر الأنابيب.",
     "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "مرفوض، بانتظار التأكيد النهائي — المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",
+    "source": "a1976e98bad0"
   }
 }

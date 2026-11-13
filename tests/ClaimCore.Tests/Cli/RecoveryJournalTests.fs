@@ -17,6 +17,7 @@ let private record (attempt: string) : RecoveryIdentity =
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
         Subject = ActSubject.Case
         Act = "OPEN"
+        Refused = false
     }
 
 [<Tests>]
@@ -113,6 +114,7 @@ let tests =
                                         "operationId"
                                         "subject"
                                         "act"
+                                        "refused"
                                     ])
                                 "Exact identity-only grammar"
 
@@ -180,6 +182,45 @@ let tests =
                     finally
                         root.Delete true)
         ]
+
+[<Tests>]
+let refusalKnowledge =
+    testCase "a delivered refusal remains recoverable until final confirmation" (fun () ->
+        let root = Directory.CreateTempSubdirectory "claimcore-refused-journal-"
+
+        try
+            let identity = record "10000000-0000-7000-8000-000000000004"
+            Expect.isOk (RecoveryJournal.save root.FullName identity) "Publish before send"
+            Expect.isOk (RecoveryJournal.markRefused root.FullName identity) "Retain known refusal"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [ { identity with Refused = true } ])
+                "Refused attempts remain, labelled"
+
+            Expect.isOk
+                (RecoveryJournal.save root.FullName identity)
+                "Another actual send makes its delivery unconfirmed again"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [ identity ])
+                "Do not carry old refusal knowledge over a new send"
+
+            Expect.isOk
+                (RecoveryJournal.markRefused root.FullName identity)
+                "Refusal is known again"
+
+            Expect.isOk
+                (RecoveryJournal.remove root.FullName identity)
+                "Final confirmation clears only its immutable identity regardless of status"
+
+            Expect.equal
+                (RecoveryJournal.list root.FullName identity.Scope)
+                (Ok [])
+                "Final cleanup"
+        finally
+            root.Delete true)
 
 [<Tests>]
 let processTermination =
@@ -269,7 +310,7 @@ let strictFamilies =
                             "Current format publishes"
 
                         let path = Directory.GetFiles directory |> Array.exactlyOne
-                        let old = File.ReadAllText(path).Replace("\"format\":2", "\"format\":1")
+                        let old = File.ReadAllText(path).Replace("\"format\":3", "\"format\":2")
                         File.WriteAllText(path, old)
 
                         Expect.isError

@@ -410,5 +410,9 @@
   "cli.usage.shellInteractiveRequired": {
     "text": "shellには対話型端末と対話型サインインが必要です。パイプ経由のリクエストにはsessionを使用してください。",
     "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "拒否済み、最終確認待ち — 試行{attemptId}：{subject} {act}、操作{operationId}。",
+    "source": "a1976e98bad0"
   }
 }

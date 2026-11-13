@@ -410,5 +410,9 @@
   "cli.usage.shellInteractiveRequired": {
     "text": "shell nepieciešams interaktīvs terminālis un interaktīva pierakstīšanās. Caurulētiem pieprasījumiem izmantojiet session.",
     "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "Atteikts, gaida galīgo apstiprinājumu — mēģinājums {attemptId}: {subject} {act}; operācija {operationId}.",
+    "source": "a1976e98bad0"
   }
 }

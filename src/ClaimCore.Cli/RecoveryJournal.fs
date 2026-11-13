@@ -26,6 +26,7 @@ type internal RecoveryIdentity =
         OperationId: Guid
         Subject: ActSubject
         Act: string
+        Refused: bool
     }
 
     member this.Scope: RecoveryScope =
@@ -35,7 +36,7 @@ type internal RecoveryIdentity =
             ActorId = this.ActorId
         }
 
-/// Private identity-only files. Each local attempt publishes independently; unresolved files never expire.
+/// Private identity and delivery knowledge. Each attempt publishes independently; unresolved files never expire.
 module internal RecoveryJournal =
     let private directoryMode =
         UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
@@ -44,7 +45,7 @@ module internal RecoveryJournal =
     let private maximumBytes = 4096
 
     let identityCodec =
-        (Codec.record (fun origin installation actor attempt operation subject act () ->
+        (Codec.record (fun origin installation actor attempt operation subject act refused () ->
             {
                 ServiceOrigin = origin
                 InstallationId = installation
@@ -53,6 +54,7 @@ module internal RecoveryJournal =
                 OperationId = operation
                 Subject = subject
                 Act = act
+                Refused = refused
             })
         : Fields<RecoveryIdentity, _>)
         |> Codec.field "serviceOrigin" _.ServiceOrigin (Codec.boundedText 1 2048)
@@ -65,10 +67,11 @@ module internal RecoveryJournal =
             _.Subject
             (Codec.enumeration (Vocabulary.entries ActSubject.vocabulary))
         |> Codec.field "act" _.Act (Codec.boundedText 1 40)
+        |> Codec.field "refused" _.Refused Codec.boolean
         |> Codec.field
             "format"
             (fun _ -> ())
-            (Codec.integer 2L 2L |> Codec.map (fun _ -> ()) (fun () -> 2L))
+            (Codec.integer 3L 3L |> Codec.map (fun _ -> ()) (fun () -> 3L))
         |> Codec.build
 
 
@@ -172,7 +175,18 @@ module internal RecoveryJournal =
                     stream.Dispose()
 
                     if File.Exists destination then
-                        if readRecord destination = Ok record then Ok() else Error()
+                        match readRecord destination with
+                        | Ok current when current = record -> Ok()
+                        | Ok current when
+                            { current with
+                                Refused = record.Refused
+                            }
+                                =
+                                record
+                            ->
+                            File.Move(temporary, destination, true)
+                            Ok()
+                        | _ -> Error()
                     else
                         File.Move(temporary, destination, false)
                         Ok()
@@ -188,6 +202,10 @@ module internal RecoveryJournal =
                 with _ ->
                     ()
 
+    /// Delivery knowledge changes only the owned attempt's status, never its identity.
+    let markRefused directory record =
+        save directory { record with Refused = true }
+
     let remove directory record =
         try
             if not (privateDirectory directory) then
@@ -197,7 +215,15 @@ module internal RecoveryJournal =
 
                 if not (File.Exists target) then
                     Ok()
-                elif readRecord target = Ok record then
+                elif
+                    readRecord target
+                    |> Result.map (fun current ->
+                        { current with
+                            Refused = record.Refused
+                        })
+                        =
+                        Ok record
+                then
                     File.Delete target
                     Ok()
                 else

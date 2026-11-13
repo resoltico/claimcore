@@ -410,5 +410,9 @@
   "cli.usage.shellInteractiveRequired": {
     "text": "shell에는 대화형 터미널과 대화형 로그인이 필요합니다. 파이프로 전달하는 요청에는 session을 사용하세요.",
     "source": "1318499469cb"
+  },
+  "cli.text.recoveryRefusedAttempt": {
+    "text": "거부됨, 최종 확인 대기 — 시도 {attemptId}: {subject} {act}; 작업 {operationId}.",
+    "source": "a1976e98bad0"
   }
 }

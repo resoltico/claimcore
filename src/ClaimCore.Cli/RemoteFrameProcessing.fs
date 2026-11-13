@@ -132,6 +132,7 @@ module private FrameInvocation =
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
                     Subject = ActKind.subject kind
                     Act = ActKind.subjectActionToken kind
+                    Refused = false
                 }
 
             let directory =
@@ -173,8 +174,19 @@ module private FrameInvocation =
                                 beforeSend frame)
                             cancelled
 
-                    if current () && definitive reply then
-                        RecoveryJournal.remove directory identity |> ignore
+                    if current () then
+                        if definitive reply then
+                            RecoveryJournal.remove directory identity |> ignore
+                        else
+                            let refused =
+                                match reply.Frame.Result with
+                                | FrameResult.Reply value -> value.Class.Kind = ReplyKind.Rejected
+                                | FrameResult.HostFailure failure ->
+                                    failure.Phase = Some ExecutionPhase.NotStarted
+                                | FrameResult.LocalFailure _ -> false
+
+                            if reply.Frame.Delivery = DeliveryState.Delivered && refused then
+                                RecoveryJournal.markRefused directory identity |> ignore
 
                     return reply
         }

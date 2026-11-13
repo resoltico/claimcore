@@ -97,6 +97,11 @@ type CliMessage =
         subject: string *
         act: string *
         operationId: string
+    | [<MessageKey("cli.text.recoveryRefusedAttempt")>] RecoveryRefusedAttempt of
+        attemptId: string *
+        subject: string *
+        act: string *
+        operationId: string
     | [<MessageKey("cli.text.operationPending")>] OperationPending of finalAt: string
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
