@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "Los contratos del cliente y del servicio no coinciden.",
-    "source": "2973576b3d8a"
+    "text": "Esta CLI y el servicio tienen versiones distintas. Use la CLI de la misma versión de ClaimCore que el servicio.",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "No enviada: esta solicitud pertenece a otra instalación. Resuélvela en su instalación original; prepara una solicitud nueva para esta instalación.",

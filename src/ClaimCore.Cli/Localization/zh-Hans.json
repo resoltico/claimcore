@@ -32,8 +32,8 @@
     "source": "cbc456852dbe"
   },
   "cli.failure.CONTRACT_MISMATCH": {
-    "text": "客户端与服务端契约不匹配。",
-    "source": "2973576b3d8a"
+    "text": "此 CLI 与服务的版本不同。请使用与服务相同 ClaimCore 版本的 CLI。",
+    "source": "74dd9495b897"
   },
   "cli.failure.INSTALLATION_MISMATCH": {
     "text": "未发送：此请求属于另一个安装实例。请在原安装实例中确定其结果；为当前安装实例准备新请求。",

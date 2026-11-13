@@ -99,9 +99,20 @@ module internal ReplyText =
         | FrameResult.Reply reply -> replyLines details language request reply
         | FrameResult.HostFailure failure ->
             [
-                label
-                    language
-                    (DiagnosticCode.key (Vocabulary.token HostFailureCode.vocabulary failure.Code))
+                // The shared host messages advise browser actions; the CLI states its own next step.
+                match failure.Code with
+                | HostFailureCode.ContractMismatch ->
+                    MessageCatalogs.renderCli
+                        language
+                        (CliMessage.Failure ClientFailure.ContractMismatch)
+                | HostFailureCode.InstallationMismatch ->
+                    MessageCatalogs.renderCli
+                        language
+                        (CliMessage.Failure ClientFailure.InstallationMismatch)
+                | code ->
+                    label
+                        language
+                        (DiagnosticCode.key (Vocabulary.token HostFailureCode.vocabulary code))
                 line
                     language
                     (CliMessages.key CliMessage.CodeLabel)
