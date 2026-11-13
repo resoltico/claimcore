@@ -321,6 +321,10 @@ let nextAndConflicts =
                             |> RevisionConflictInfo.explain (
                                 ConflictChanges.Page
                                     {
+                                        Basis =
+                                            { ClaimCore.TestSupport.Inputs.workBasis with
+                                                TimeZoneId = "Europe/Riga"
+                                            }
                                         Disclosure = HistoryDisclosure.Full
                                         Entries = entries
                                         NextCursor = Some "literal-cursor"
@@ -346,6 +350,16 @@ let nextAndConflicts =
                             |> String.concat "\n"
 
                         Expect.stringContains text "Editor 50" "Every supplied author is visible"
+
+                        // 2026-08-31 12:00 UTC is 15:00 in Riga summer time.
+                        Expect.stringContains
+                            text
+                            "15:00 +03:00"
+                            "Conflict instants use the installation zone from the conflict basis"
+
+                        Expect.isFalse
+                            (text.Contains "+00:00")
+                            "Conflict instants are never shown in UTC when the zone is known"
 
                         Expect.equal
                             (text.Contains "Change 50")

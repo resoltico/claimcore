@@ -248,6 +248,7 @@ let private timelineLimit () =
             |> RevisionConflictInfo.explain (
                 ConflictChanges.Page
                     {
+                        Basis = ClaimCore.TestSupport.Inputs.workBasis
                         Disclosure = HistoryDisclosure.Full
                         Entries = List.replicate Paging.MaximumTimelinePageSize entry
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))

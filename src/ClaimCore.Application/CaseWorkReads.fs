@@ -49,7 +49,7 @@ module internal CaseWorkReads =
 
     let viewsFromSummaries
         (tx: IReadTx)
-        basis
+        (basis: WorkDateBasis)
         (records: StoredCase list)
         (summaries: Map<CaseId, CaseWorkSummary>)
         =
@@ -176,7 +176,7 @@ module internal CaseWorkReads =
             return result
         }
 
-    let views (tx: IReadTx) basis (records: StoredCase list) =
+    let views (tx: IReadTx) (basis: WorkDateBasis) (records: StoredCase list) =
         task {
             let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
             return! viewsFromSummaries tx basis records summaries
