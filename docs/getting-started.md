@@ -136,6 +136,7 @@ Choose **Open a case** and enter synthetic values. Use dates no later than the c
 | Claimed amount | 100.00 |
 | Currency | EUR |
 
+Open-case optional text fields are directly editable; leaving them blank omits the value.
 Incident description is optional; use it for a short account of what happened. Review the proposed
 facts and choose **Open case**. Expect **Case opened** and the case workspace. Return to Cases and
 search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.

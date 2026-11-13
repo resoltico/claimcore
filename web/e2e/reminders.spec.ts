@@ -51,7 +51,6 @@ test("stores exact optional LF incident text and clears it without a financial a
   await openAuthenticated(page);
   const reference = `NARRATIVE-${randomUUID()}`;
   await startOpen(page, reference);
-  await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   const description = `حادث في الطريق\n\n${"😀".repeat(584)}`;
   expect(Array.from(description)).toHaveLength(600);
   await fillBusinessField(page, "incidentDescription", description);

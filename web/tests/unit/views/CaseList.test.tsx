@@ -175,7 +175,38 @@ it.each([
     vi.fn().mockResolvedValue(
       response("case.list", {
         ...listed,
-        screen: { regions: [] },
+        screen: {
+          regions: [
+            {
+              role: "RESULTS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "caseReference",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [],
+                sections: [
+                  {
+                    titleId: "label.page",
+                    entries: [
+                      {
+                        key: "shown",
+                        labelId: "label.shown",
+                        prominence: "SECONDARY",
+                        value: { kind: "COUNT", value: 0 },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
+        },
         context: { ...listed.context, cases: [] },
       }),
     ),
@@ -183,6 +214,9 @@ it.each([
   navigate(`/cases?view=${view}`, true);
   render(<CaseList onSelect={vi.fn()} />);
   await screen.findByText("Nothing to show in this view.");
+  expect(screen.getAllByText("Nothing to show in this view.")).toHaveLength(1);
+  expect(screen.queryByRole("heading", { name: "Page" })).toBeNull();
+  expect(screen.queryByText("All results shown.")).toBeNull();
   expect(screen.getByRole("tab", { name: `${label} 0` })).toHaveAttribute("aria-selected", "true");
   expect(screen.queryByText("No cases to show.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();

@@ -255,7 +255,11 @@ const CaseDisclosure = ({
       {state === null || unavailableAct === undefined ? null : (
         <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
       )}
-      {current.message === null ? null : (
+      {current.message === null ||
+      (current.message.kind === "human" &&
+        !["RETRY_SAFE", "READ_CURRENT", "REVIEW_LATEST"].includes(
+          current.message.advice.action,
+        )) ? null : (
         <Button
           onPress={() => {
             current.revalidate();

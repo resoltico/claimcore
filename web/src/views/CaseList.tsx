@@ -112,11 +112,13 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
       )}
       {page.page !== null && !page.loading && page.message === null ? (
         <>
-          <PageStatus
-            empty={page.items.length === 0 && !customEmpty}
-            cursor={page.cursor}
-            emptyMessage="ui.noAccessibleCases"
-          />
+          {page.items.length === 0 && customEmpty ? null : (
+            <PageStatus
+              empty={page.items.length === 0}
+              cursor={page.cursor}
+              emptyMessage="ui.noAccessibleCases"
+            />
+          )}
           {page.items.length === 0 && customEmpty ? (
             <WorklistEmpty page={page} filtered={filtered} />
           ) : null}
@@ -149,52 +151,54 @@ const WorklistResults = ({
   const exact = page.page?.exactCaseId ?? null;
   return (
     <>
-      <PageTables
-        views={page.views}
-        {...(page.items.some((item) => item.assignment !== null)
-          ? {
-              renderActions: (key: string) => {
-                const row = page.items.find((item) => item.caseId === key);
-                return row !== undefined && row.assignment !== null ? (
-                  <Button
-                    id={`reassign-${row.caseId}`}
-                    variant="secondary"
-                    isDisabled={editing}
-                    onPress={() => {
-                      reassign(row);
-                    }}
-                  >
-                    {p.text("ui.reassign")}
-                  </Button>
-                ) : null;
-              },
-            }
-          : {})}
-        {...(exact === null
-          ? {}
-          : {
-              sectionLink: {
-                column: "exactReference",
-                href: casePath(exact),
-                follow: () => {
-                  onSelect({ kind: "ID", caseId: exact });
+      {page.items.length === 0 && exact === null ? null : (
+        <PageTables
+          views={page.views}
+          {...(page.items.some((item) => item.assignment !== null)
+            ? {
+                renderActions: (key: string) => {
+                  const row = page.items.find((item) => item.caseId === key);
+                  return row !== undefined && row.assignment !== null ? (
+                    <Button
+                      id={`reassign-${row.caseId}`}
+                      variant="secondary"
+                      isDisabled={editing}
+                      onPress={() => {
+                        reassign(row);
+                      }}
+                    >
+                      {p.text("ui.reassign")}
+                    </Button>
+                  ) : null;
                 },
-              },
-            })}
-        rowLink={(key) => {
-          const item = page.items.find((candidate) => candidate.caseId === key);
-          return item === undefined
-            ? undefined
+              }
+            : {})}
+          {...(exact === null
+            ? {}
             : {
-                column: "caseReference",
-                href: casePath(item.caseId),
-                id: `case-${item.caseId}`,
-                follow: () => {
-                  onSelect({ kind: "ID", caseId: item.caseId });
+                sectionLink: {
+                  column: "exactReference",
+                  href: casePath(exact),
+                  follow: () => {
+                    onSelect({ kind: "ID", caseId: exact });
+                  },
                 },
-              };
-        }}
-      />
+              })}
+          rowLink={(key) => {
+            const item = page.items.find((candidate) => candidate.caseId === key);
+            return item === undefined
+              ? undefined
+              : {
+                  column: "caseReference",
+                  href: casePath(item.caseId),
+                  id: `case-${item.caseId}`,
+                  follow: () => {
+                    onSelect({ kind: "ID", caseId: item.caseId });
+                  },
+                };
+          }}
+        />
+      )}
       {page.cursor === null ? null : (
         <button
           type="button"
