@@ -288,7 +288,11 @@ let reviews =
                                     }
                             Basis =
                                 { Inputs.workBasis with
-                                    ObservedAt = Inputs.workBasis.ObservedAt.AddDays 1.
+                                    // November has a stable abbreviation across the supported ICU versions.
+                                    // Keep observation on a different day from both business and recording dates.
+                                    BusinessDate = DateOnly(2026, 10, 31)
+                                    ObservedAt =
+                                        DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero)
                                 }
                         }
 
@@ -314,7 +318,7 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        "1 Sep 2026 12:00 +00:00"
+                        "1 Nov 2026 12:00 +00:00"
                         "The observation comes from the current receipt basis"
 
                     Expect.stringContains
