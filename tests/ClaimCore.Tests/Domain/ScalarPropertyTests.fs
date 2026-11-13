@@ -106,8 +106,7 @@ let private amountProperty =
                         (registration)
                 ))
 
-        let result =
-            CaseFixtures.decide today CasePaymentContext.NoneRequired candidate None
+        let result = CaseFixtures.decide today Map.empty candidate None
 
         return Result.isOk result = sample.Accepted
     }
@@ -167,8 +166,7 @@ let private validateText target value =
         else
             candidate
 
-    CaseFixtures.decide today CasePaymentContext.NoneRequired candidate None
-    |> Result.map ignore
+    CaseFixtures.decide today Map.empty candidate None |> Result.map ignore
 
 let private validText =
     gen {

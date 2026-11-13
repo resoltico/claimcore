@@ -198,7 +198,7 @@ let technicalCountEvidence () =
         }
 
     let command = Case.admit today (Some parent) request |> valid
-    let context = CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+    let context = Map.empty
 
     match Case.decideSnapshot today context command (Some parent) with
     | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues as refusal)) ->

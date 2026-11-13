@@ -103,7 +103,22 @@ let tests =
 
                     Expect.isError
                         (CaseSubject.restore before.ChangedAt before.Snapshot.Value payments)
-                        "The complete owned set must agree with its financial facts")
+                        "The complete owned set must agree with its financial facts"
+
+                    let foreign =
+                        { row with
+                            CaseId =
+                                CaseFixtures.caseId (
+                                    Guid.Parse "10000000-0000-4000-8000-000000000099"
+                                )
+                        }
+
+                    Expect.isError
+                        (CaseSubject.restore
+                            before.ChangedAt
+                            before.Snapshot.Value
+                            (Map.add row.PaymentId foreign before.Payments))
+                        "Owned rows cannot come from another case")
             testCase
                 "erasure retains reference identity and never reopens it as an absent case"
                 (fun () ->

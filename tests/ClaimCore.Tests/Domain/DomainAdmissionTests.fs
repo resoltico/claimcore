@@ -84,11 +84,7 @@ let private payload =
             )
 
         let rejected =
-            CaseFixtures.decide
-                today
-                CasePaymentContext.NoneRequired
-                (request 0L malformed)
-                (Some(paid ()))
+            CaseFixtures.decide today Map.empty (request 0L malformed) (Some(paid ()))
             |> Result.map ignore
 
         Expect.equal

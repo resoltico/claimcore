@@ -390,13 +390,11 @@ let private storage () =
             current <- Some decided.After
             retained, decided
 
-        let noContext _ = CasePaymentContext.NoneRequired
+        let noContext _ = Map.empty
         case (CaseAct.Open Inputs.registration) noContext |> ignore
         case (CaseAct.Decide Inputs.decision) noContext |> ignore
 
-        let recording (before: CaseSnapshot option) =
-            let before = before |> Option.get
-            CasePaymentContext.Recording(before.CaseId, before.Revision, false)
+        let recording (_before: CaseSnapshot option) = Map.empty
 
         let first, firstDecision =
             case
@@ -405,12 +403,12 @@ let private storage () =
                 ))
                 recording
 
-        case
-            (CaseAct.RecordPayment(
-                Inputs.paymentWith [ BusinessField.PaidAmount, "5" ] Inputs.payment
-            ))
-            recording
-        |> ignore
+        let _, secondDecision =
+            case
+                (CaseAct.RecordPayment(
+                    Inputs.paymentWith [ BusinessField.PaidAmount, "5" ] Inputs.payment
+                ))
+                recording
 
         let selected =
             match firstDecision.Payment with
@@ -419,14 +417,13 @@ let private storage () =
 
         let removal (before: CaseSnapshot option) =
             let before = before |> Option.get
-            let date = Inputs.date "2026-08-20"
 
-            CasePaymentContext.Removing(
-                before.CaseId,
-                before.Revision,
-                Some selected,
-                PaymentDateBounds.create date date
-            )
+            let remaining =
+                match secondDecision.Payment with
+                | Some(PaymentDifference.Recorded entry) -> entry
+                | _ -> failtest "Second recorded payment required"
+
+            ClaimCore.TestSupport.CaseFixtures.paymentRows before.CaseId [ selected; remaining ]
 
         let removed, _ =
             case (CaseAct.RemovePayment(OperationId.value first.Root.Header.OperationId)) removal

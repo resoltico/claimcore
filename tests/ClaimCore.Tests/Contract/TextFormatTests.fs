@@ -62,11 +62,7 @@ let private admissionInsideFormat () =
             (registration))
 
     Expect.isOk
-        (CaseFixtures.decide
-            today
-            CasePaymentContext.NoneRequired
-            (request 0L (AuthoredCaseAct.Open input))
-            None)
+        (CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open input)) None)
         "800 UTF-8 bytes admit"
 
     let input =
@@ -79,11 +75,7 @@ let private admissionInsideFormat () =
         "Format still admits"
 
     Expect.isError
-        (CaseFixtures.decide
-            today
-            CasePaymentContext.NoneRequired
-            (request 0L (AuthoredCaseAct.Open input))
-            None)
+        (CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open input)) None)
         "Admission refuses"
 
 let private stewardshipBoundaries () =

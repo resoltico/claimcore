@@ -33,8 +33,7 @@ let private accepted result =
 let private run (request: UnvalidatedCaseRequest) (current: CaseRecord option) =
     let context =
         match request.Act, current |> Option.map Case.snapshot with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+        | CaseAct.RecordPayment _, Some _ -> Map.empty
         | CaseAct.RemovePayment _, Some parent ->
             let entry =
                 parent.State
@@ -49,8 +48,8 @@ let private run (request: UnvalidatedCaseRequest) (current: CaseRecord option) =
                                 Inputs.payment
                         ))
 
-            CasePaymentContext.Removing(parent.CaseId, parent.Revision, entry, None)
-        | _ -> CasePaymentContext.NoneRequired
+            (ClaimCore.TestSupport.CaseFixtures.paymentRows (parent.CaseId) (Option.toList (entry)))
+        | _ -> Map.empty
 
     CaseFixtures.decide today context request current
     |> Result.map (fun decision -> Case.ofAccepted decision.After |> accepted)

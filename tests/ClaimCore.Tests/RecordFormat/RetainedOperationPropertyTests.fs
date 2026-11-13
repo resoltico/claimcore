@@ -51,8 +51,7 @@ let private opened name amount =
             }
         |> valid
 
-    let decision =
-        Case.decideSnapshot today CasePaymentContext.NoneRequired command None |> valid
+    let decision = Case.decideSnapshot today Map.empty command None |> valid
 
     let scope =
         CommandSkeleton.Case

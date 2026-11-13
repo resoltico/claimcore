@@ -298,9 +298,7 @@ let private exampleFrames () =
         Directory.GetFiles(Path.Combine(root, "examples"), "*.json") |> Array.sort
 
     Expect.equal files.Length 9 "Every published example frame is reached"
-    let mutable current = None
-    let mutable active = Map.empty<OperationId, PaymentEntry>
-    let mutable reserved = Set.empty<OperationId>
+    let mutable current: CaseSubjectState option = None
 
     for index, path in Array.indexed files do
         let input =
@@ -323,62 +321,32 @@ let private exampleFrames () =
             | OperationInput.Case request -> Inputs.referencedCase request
             | _ -> failtest "Example must be a case request"
 
-        let context =
-            match request.Act, current |> Option.map Case.snapshot with
-            | CaseAct.RecordPayment _, Some parent ->
-                CasePaymentContext.Recording(
-                    parent.CaseId,
-                    parent.Revision,
-                    Set.contains (CaseFixtures.operationId request.OperationId) reserved
-                )
-            | CaseAct.RemovePayment selected, Some parent ->
-                let selected = CaseFixtures.operationId selected
-                let found = Map.tryFind selected active
-
-                let dates =
-                    active
-                    |> Map.remove selected
-                    |> Map.values
-                    |> Seq.map PaymentEntry.date
-                    |> Seq.toList
-
-                let bounds =
-                    if dates.IsEmpty then
-                        None
-                    else
-                        PaymentDateBounds.create (List.min dates) (List.max dates)
-
-                CasePaymentContext.Removing(
-                    parent.CaseId,
-                    parent.Revision,
-                    found,
-                    if found.IsSome then bounds else None
-                )
-            | _ -> CasePaymentContext.NoneRequired
-
-        let decision =
-            CaseFixtures.decide (DateOnly(2026, 10, 15)) context request current
+        let command =
+            Case.admit (DateOnly(2026, 10, 15)) (current |> Option.bind _.Snapshot) request
             |> Fixtures.accepted
 
-        match decision.After.State, decision.Payment with
-        | CaseState.Erased, _ -> active <- Map.empty
-        | _, Some(PaymentDifference.Recorded entry) ->
-            active <- Map.add (PaymentEntry.id entry) entry active
-            reserved <- Set.add (PaymentEntry.id entry) reserved
-        | _, Some(PaymentDifference.Removed entry) ->
-            active <- Map.remove (PaymentEntry.id entry) active
-        | _ -> ()
+        let decision =
+            CaseSubject.decide (DateOnly(2026, 10, 15)) current command |> Fixtures.accepted
 
-        let next = Case.ofAccepted decision.After |> Fixtures.accepted
+        let stamp =
+            {
+                SubjectStamp.Position =
+                    EffectPosition.create (CaseFixtures.sequence (int64 index + 1L)) 0 |> Option.get
+                OperationId = command.OperationId
+                ActorId = CaseFixtures.actorId (Guid.Parse "10000000-0000-4000-8000-000000000001")
+                RecordedAt = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
+            }
+
+        let next = CaseSubject.apply stamp current decision |> Option.get
 
         Expect.equal
-            (ClaimCore.Domain.Case.snapshot next).Revision
+            next.Revision
             (CaseFixtures.revision (int64 (index + 1)))
             "Example revision sequence"
 
         current <- Some next
 
-    let final = current |> Option.get |> ClaimCore.Domain.Case.snapshot
+    let final = current |> Option.bind _.Snapshot |> Option.get
     Expect.equal (CaseReference.format final.Reference) "DEMO-0001" "Original reference retained"
 
     Expect.equal final.State ClaimCore.Domain.CaseState.Erased "Examples end with explicit erasure"

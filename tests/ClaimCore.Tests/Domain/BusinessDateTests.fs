@@ -13,11 +13,7 @@ open ClaimCore.Tests.Fixtures
 let private applyAt date act claim =
     let current = Case.snapshot claim
 
-    let context =
-        match act with
-        | CaseAct.RecordPayment _ ->
-            CasePaymentContext.Recording(current.CaseId, current.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
+    let context = Map.empty
 
     CaseFixtures.decide date context (request (Revision.value current.Revision) act) (Some claim)
     |> Result.map (fun decision -> Case.ofAccepted decision.After |> accepted)
@@ -40,7 +36,7 @@ let private openingAccumulatesAssertions =
             let outcome =
                 CaseFixtures.decide
                     (DateOnly(2026, 7, 31))
-                    CasePaymentContext.NoneRequired
+                    Map.empty
                     (request 0L (AuthoredCaseAct.Open facts))
                     None
 
@@ -174,7 +170,9 @@ let private clearedPaymentDateIsAbsent =
                 Inputs.payment
 
         let context =
-            CasePaymentContext.Removing(parent.CaseId, parent.Revision, Some selected, None)
+            (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                (parent.CaseId)
+                (Option.toList (Some selected)))
 
         current
         |> applyWith

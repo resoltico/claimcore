@@ -281,6 +281,12 @@ let private actualPayments () =
             ] do
             sql damage
 
+            let recovered = Service.execute actor original token |> awaitResult
+
+            match recovered.Outcome with
+            | ExecuteResult.AlreadyAccepted _ -> ()
+            | _ -> failwith "Current payment corruption or maintenance blocked exact replay."
+
             match Verification.verify database.OwnerSource None token |> awaitResult with
             | VerificationResult.Diverged finding ->
                 check

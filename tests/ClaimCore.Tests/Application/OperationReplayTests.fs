@@ -349,16 +349,14 @@ let erasedPayments =
                 |> valid
                 |> CaseAct.RecordPayment
 
-            let noContext _ = CasePaymentContext.NoneRequired
+            let noContext _ = Map.empty
             case 2 (CaseAct.Open registration) noContext |> ignore
             case 3 (CaseAct.Decide decision) noContext |> ignore
 
-            let recording (before: CaseSnapshot option) =
-                let before = before.Value in
-                CasePaymentContext.Recording(before.CaseId, before.Revision, false)
+            let recording (_before: CaseSnapshot option) = Map.empty
 
             let first = case 4 (payment "10") recording
-            case 5 (payment "5") recording |> ignore
+            let second = case 5 (payment "5") recording
 
             let selected =
                 match first.Payment with
@@ -368,14 +366,14 @@ let erasedPayments =
             let removal (before: CaseSnapshot option) =
                 let before = before.Value in
 
-                CasePaymentContext.Removing(
-                    before.CaseId,
-                    before.Revision,
-                    Some selected,
-                    PaymentDateBounds.create
-                        (CalendarDate.parse "2026-01-04" |> valid)
-                        (CalendarDate.parse "2026-01-04" |> valid)
-                )
+                let remaining =
+                    match second.Payment with
+                    | Some(PaymentDifference.Recorded entry) -> entry
+                    | _ -> failtest "Second recorded payment required"
+
+                ClaimCore.TestSupport.CaseFixtures.paymentRows
+                    before.CaseId
+                    [ selected; remaining ]
 
             case 6 (CaseAct.RemovePayment(OperationId.value (operation 4))) removal
             |> ignore

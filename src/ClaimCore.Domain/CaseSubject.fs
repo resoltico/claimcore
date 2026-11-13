@@ -42,19 +42,7 @@ type CaseSubjectRows =
     }
 
 module CaseSubject =
-    let active (state: CaseSubjectState) =
-        state.Payments
-        |> Map.toList
-        |> List.choose (fun (id, row) ->
-            match row.Content with
-            | PaymentProjectionContent.Available(entry, false) -> Some(id, entry)
-            | _ -> None)
-        |> Map.ofList
-
-    let private dates entries =
-        match entries |> Map.values |> Seq.map PaymentEntry.date |> Seq.toList with
-        | [] -> None
-        | values -> PaymentDateBounds.create (List.min values) (List.max values)
+    let active (state: CaseSubjectState) = CasePayments.active state.Payments
 
     let private cleared payments =
         payments
@@ -116,47 +104,21 @@ module CaseSubject =
                     | _ -> false)
                 && fields.Finance.PaymentCount = int64 entries.Count
                 && Amount.value fields.Finance.PaidAmount = total
-                && fields.Finance.PaymentDates = dates entries
+                && fields.Finance.PaymentDates = CasePayments.dates entries
 
         if not owned || not complete then
-            Error RecordViolation.InvalidPaymentContext
+            Error RecordViolation.InvalidPaymentState
         else
             Case.ofAccepted snapshot |> Result.map (fun _ -> state)
 
     let decide today (state: CaseSubjectState option) (command: CaseCommand) =
         let current = state |> Option.bind _.Snapshot
-        let entries = state |> Option.map active |> Option.defaultValue Map.empty
-
-        let context =
-            match command.Act, current with
-            | CaseAct.RecordPayment _, Some parent ->
-                CasePaymentContext.Recording(
-                    parent.CaseId,
-                    parent.Revision,
-                    state
-                    |> Option.exists (fun state ->
-                        Map.containsKey command.OperationId state.Payments)
-                )
-            | CaseAct.RemovePayment id, Some parent ->
-                let selected = Map.tryFind id entries
-
-                let remaining =
-                    selected
-                    |> Option.map (PaymentEntry.id >> fun id -> Map.remove id entries)
-                    |> Option.defaultValue entries
-
-                CasePaymentContext.Removing(
-                    parent.CaseId,
-                    parent.Revision,
-                    selected,
-                    dates remaining
-                )
-            | _ -> CasePaymentContext.NoneRequired
+        let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
 
         if state.IsSome && current.IsNone then
-            Error(CaseDecisionError.InvalidContext RecordViolation.InvalidFinancialPosition)
+            Error(CaseDecisionError.InvalidState RecordViolation.InvalidFinancialPosition)
         else
-            Case.decideSnapshot today context command current
+            Case.decideSnapshot today payments command current
 
     let apply (stamp: SubjectStamp) (state: CaseSubjectState option) (effect: CaseDecision) =
         let snapshot = effect.After
@@ -261,13 +223,13 @@ module CaseSubject =
                                     }
                                     payments
                             )
-                        | _ -> Error RecordViolation.InvalidPaymentContext
-                    | None -> Error RecordViolation.InvalidPaymentContext
+                        | _ -> Error RecordViolation.InvalidPaymentState
+                    | None -> Error RecordViolation.InvalidPaymentState
                 | CaseActKind.RecordPayment, _
-                | CaseActKind.RemovePayment, _ -> Error RecordViolation.InvalidPaymentContext
+                | CaseActKind.RemovePayment, _ -> Error RecordViolation.InvalidPaymentState
                 | CaseActKind.Erase, None -> Ok(cleared payments)
                 | _, None -> Ok payments
-                | _ -> Error RecordViolation.InvalidPaymentContext
+                | _ -> Error RecordViolation.InvalidPaymentState
 
             payments
             |> Result.map (fun payments ->

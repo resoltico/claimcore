@@ -14,7 +14,7 @@ let tests =
         let openCase id =
             CaseFixtures.decide
                 (DateOnly(2026, 9, 7))
-                CasePaymentContext.NoneRequired
+                Map.empty
                 {
                     OperationId = id
                     CaseReference = "Immutable-Reference"
@@ -36,7 +36,7 @@ let tests =
         let changed =
             CaseFixtures.decide
                 (DateOnly(2026, 9, 7))
-                CasePaymentContext.NoneRequired
+                Map.empty
                 {
                     OperationId = second
                     CaseReference = "immutable-reference"

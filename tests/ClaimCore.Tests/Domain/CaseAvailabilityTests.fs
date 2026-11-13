@@ -93,13 +93,7 @@ let tests =
                                 ExpectedRevision = 0L
                             }
 
-                        match
-                            CaseFixtures.decide
-                                today
-                                CasePaymentContext.NoneRequired
-                                request
-                                (Some before)
-                        with
+                        match CaseFixtures.decide today Map.empty request (Some before) with
                         | Error(CaseDecisionError.Refused(Refusal.RevisionConflict conflict)) ->
                             Expect.equal
                                 conflict.ActualRevision
@@ -112,7 +106,7 @@ let tests =
                     Expect.equal
                         (CaseFixtures.decide
                             today
-                            CasePaymentContext.NoneRequired
+                            Map.empty
                             (request 0L (AuthoredCaseAct.Bare BareAct.Close))
                             (Some erased))
                         (Error(
@@ -125,7 +119,7 @@ let tests =
                     Expect.equal
                         (CaseFixtures.decide
                             today
-                            CasePaymentContext.NoneRequired
+                            Map.empty
                             (request 0L (AuthoredCaseAct.Open registration))
                             (Some active))
                         (Error(

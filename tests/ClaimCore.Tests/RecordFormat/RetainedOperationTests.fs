@@ -46,11 +46,7 @@ let private decide number act (before: CaseSnapshot option) =
             }
         |> valid
 
-    let context =
-        match act, before with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
+    let context = Map.empty
 
     command, Case.decideSnapshot today context command before |> valid
 
@@ -658,16 +654,17 @@ let caseAndReminderMatrix =
 
             let context =
                 match act, before with
-                | CaseAct.RecordPayment _, Some before ->
-                    CasePaymentContext.Recording(before.CaseId, before.Revision, false)
+                | CaseAct.RecordPayment _, Some _ -> Map.empty
                 | CaseAct.RemovePayment _, Some before ->
                     let entry =
                         match paid.Payment with
                         | Some(PaymentDifference.Recorded entry) -> entry
                         | _ -> failtest "Known selected payment required"
 
-                    CasePaymentContext.Removing(before.CaseId, before.Revision, Some entry, None)
-                | _ -> CasePaymentContext.NoneRequired
+                    (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                        (before.CaseId)
+                        (Option.toList (Some entry)))
+                | _ -> Map.empty
 
             let decision = Case.decideSnapshot today context command before |> valid
             let value = caseOperation 30 command decision

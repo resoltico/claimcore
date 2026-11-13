@@ -22,8 +22,7 @@ let private run number revision act previous =
             Act = act
         }
     |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command ->
-        Case.decide today CasePaymentContext.NoneRequired command previous)
+    |> Result.bind (fun command -> Case.decide today Map.empty command previous)
     |> required
     |> _.After
     |> Case.ofAccepted

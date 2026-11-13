@@ -52,11 +52,7 @@ let commandInput =
     |> ClaimCore.Json.WireWriter.bytes
 
 let view reference : CaseSnapshot =
-    CaseFixtures.decide
-        (DateOnly(2026, 10, 13))
-        CasePaymentContext.NoneRequired
-        (request reference)
-        None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) Map.empty (request reference) None
     |> Result.map _.After
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 

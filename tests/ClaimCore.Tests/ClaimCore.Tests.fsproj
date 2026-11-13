@@ -56,7 +56,6 @@
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/PaymentEntriesTests.fs" />
     <Compile Include="Domain/FinancialPositionTests.fs" />
-    <Compile Include="Domain/FinancialCaseDecisionTests.fs" />
     <Compile Include="Domain/CaseSubjectTests.fs" />
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />

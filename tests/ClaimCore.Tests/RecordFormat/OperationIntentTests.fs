@@ -110,11 +110,7 @@ let tests =
                     |> valid
 
                 let before =
-                    Case.decideSnapshot
-                        (DateOnly(2026, 11, 9))
-                        CasePaymentContext.NoneRequired
-                        opening
-                        None
+                    Case.decideSnapshot (DateOnly(2026, 11, 9)) Map.empty opening None
                     |> valid
                     |> _.After
 
@@ -129,11 +125,7 @@ let tests =
                     |> valid
 
                 let after =
-                    Case.decideSnapshot
-                        (DateOnly(2026, 11, 9))
-                        CasePaymentContext.NoneRequired
-                        close
-                        (Some before)
+                    Case.decideSnapshot (DateOnly(2026, 11, 9)) Map.empty close (Some before)
                     |> valid
 
                 let header =

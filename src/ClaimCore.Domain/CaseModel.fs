@@ -8,23 +8,12 @@ open System
 type RecordViolation =
     | InvalidScalar of InputTarget * Violation
     | InvalidFinancialPosition
-    | InvalidPaymentContext
+    | InvalidPaymentState
     | RevisionOutOfRange
     | ReferenceMismatch
 
-/// Payment facts are loaded with the case under the same transaction lock.
 [<RequireQualifiedAccess>]
-type CasePaymentContext =
-    | NoneRequired
-    | Recording of CaseId * Revision * identityReserved: bool
-    | Removing of
-        CaseId *
-        Revision *
-        selected: PaymentEntry option *
-        remainingDates: PaymentDateBounds option
-
-[<RequireQualifiedAccess>]
-type internal AdmittedPaymentContext =
+type internal PaymentTransition =
     | NoneRequired
     | Recording of identityReserved: bool
     | Removing of (PaymentEntry * FinancialPosition) option
@@ -38,7 +27,7 @@ type CaseDecision =
 [<RequireQualifiedAccess>]
 type CaseDecisionError =
     | Refused of Refusal
-    | InvalidContext of RecordViolation
+    | InvalidState of RecordViolation
 
 /// Small Result computation expression; ordinary business refusals are values, not exceptions.
 module internal ResultFlow =

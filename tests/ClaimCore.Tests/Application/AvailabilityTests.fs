@@ -58,12 +58,9 @@ let private stateActions =
                                 |> Some
 
                         applyWith
-                            (CasePaymentContext.Removing(
-                                snapshot.CaseId,
-                                snapshot.Revision,
-                                selected,
-                                None
-                            ))
+                            ((ClaimCore.TestSupport.CaseFixtures.paymentRows
+                                (snapshot.CaseId)
+                                (Option.toList (selected))))
                             act
                             state
                     | _ -> apply act state

@@ -152,7 +152,7 @@ module internal CaseExecution =
             | Ok before ->
                 match CaseSubject.decide (calendar.DateAt view.ObservedAt) view.State request with
                 | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
-                | Error(CaseDecisionError.InvalidContext _) ->
+                | Error(CaseDecisionError.InvalidState _) ->
                     Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok after -> Verdict.Proceed(before, after)
         with :? System.OverflowException ->

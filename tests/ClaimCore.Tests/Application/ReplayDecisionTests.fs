@@ -282,16 +282,12 @@ let tests =
 
                         let context =
                             match act, before with
-                            | CaseAct.RecordPayment _, Some parent ->
-                                CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+                            | CaseAct.RecordPayment _, Some _ -> Map.empty
                             | CaseAct.RemovePayment _, Some parent ->
-                                CasePaymentContext.Removing(
-                                    parent.CaseId,
-                                    parent.Revision,
-                                    Some p0,
-                                    None
-                                )
-                            | _ -> CasePaymentContext.NoneRequired
+                                (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                                    (parent.CaseId)
+                                    (Option.toList (Some p0)))
+                            | _ -> Map.empty
 
                         let payment =
                             match act with

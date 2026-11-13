@@ -171,9 +171,7 @@ let internal retainedText () =
         |> accepted
         |> ignore
 
-        CaseFixtures.decide today CasePaymentContext.NoneRequired reaffirm (Some prior)
-        |> accepted
-        |> ignore
+        CaseFixtures.decide today Map.empty reaffirm (Some prior) |> accepted |> ignore
 
         let changed =
             { reaffirm with
@@ -188,7 +186,7 @@ let internal retainedText () =
             }
 
         Expect.isError
-            (CaseFixtures.decide today CasePaymentContext.NoneRequired changed (Some prior))
+            (CaseFixtures.decide today Map.empty changed (Some prior))
             "New assertions follow current admission"
 
 let internal peopleWire kind issuer subject =
