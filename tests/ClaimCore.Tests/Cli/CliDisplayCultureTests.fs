@@ -54,7 +54,7 @@ let tests =
                                 "1.000 BHD"
                                 "0.0000 EUR"
                                 "1,234.5678 EUR"
-                                "1,234.5678 ZZZ"
+                                "1,234.5678 JPY"
                             ]
                             "lv",
                             [
@@ -65,7 +65,7 @@ let tests =
                                 "1,000 BHD"
                                 "0,0000 EUR"
                                 "1\u00a0234,5678 EUR"
-                                "1\u00a0234,5678 ZZZ"
+                                "1\u00a0234,5678 JPY"
                             ]
                             "ar",
                             [
@@ -76,7 +76,7 @@ let tests =
                                 "1.000 BHD"
                                 "0.0000 EUR"
                                 "1,234.5678 EUR"
-                                "1,234.5678 ZZZ"
+                                "1,234.5678 JPY"
                             ]
                         ] do
                         let actual =
@@ -94,7 +94,7 @@ let tests =
                                     language
                                     (Inputs.money "1234.5678" "EUR")
                                     1
-                                ReplyTextFormat.money language (Inputs.money "1234.5678" "ZZZ")
+                                ReplyTextFormat.money language (Inputs.money "1234.5678" "JPY")
                             ]
 
                         Expect.equal

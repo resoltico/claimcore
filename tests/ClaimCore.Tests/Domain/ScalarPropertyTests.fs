@@ -113,12 +113,8 @@ let private amountProperty =
     }
 
 let private validCurrency =
-    Gen.array (Range.singleton 3) (Gen.char 'A' 'Z')
-    |> Gen.map (fun characters ->
-        {
-            Raw = String(characters)
-            Accepted = true
-        })
+    Gen.item [ "EUR"; "USD"; "JPY"; "BHD"; "XOF"; "XCG" ]
+    |> Gen.map (fun code -> { Raw = code; Accepted = true })
 
 let private invalidCurrency =
     [ ""; "EU"; "EURO"; "eur"; "E1R"; "ÉUR"; " EUR"; "EU\u0000" ]

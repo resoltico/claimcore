@@ -71,7 +71,12 @@ module Currency =
     let format (Currency value) = value
 
     let parse raw =
-        ScalarText.token Grammar Violation.CurrencyFormat raw |> Result.map Currency
+        ScalarText.token Grammar Violation.CurrencyFormat raw
+        |> Result.bind (fun code ->
+            if CodeVocabularies.containsCurrency code then
+                Ok(Currency code)
+            else
+                Error Violation.CurrencyFormat)
 
     let admit (value: Currency) = Ok value
 

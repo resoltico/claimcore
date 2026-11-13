@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Country/currency inputs now require [Core-supported codes](contracts/codes.ts); reserved/retired countries and non-national/fund currencies refuse. Update code integrations.
 - Original project work now uses AGPL-3.0-only; prior MPL grants remain valid. Keep source and notices with deployments; separate commercial terms are pending. See [scope](PROJECT-NOTICE.md).
 - CLI help and web notices link licensing and the build’s source archive; modified deployments must update the offered Corresponding Source.
 
@@ -53,6 +54,8 @@
 - Accepted receipt reads offer an explicit retry after admission pressure or transient network failure, without resubmitting the recorded change.
 
 - CLI note add/remove now publish their recovery identities correctly; journal validation and request assembly share Core operation subjects and action vocabularies.
+
+- Country and currency pickers use the same authored lists on every browser and rank exact codes, code prefixes, name prefixes, then substrings.
 
 ## [0.16.0] - 2026-11-06
 

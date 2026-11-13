@@ -24,6 +24,31 @@ module ContractDiscovery =
     let inputLabel (input: TaskInputId) =
         TaskInputPresentation.messageKey input "label"
 
+    let private supportedCodes language topic =
+        if topic = CliTopic.Help HelpTopic.Schema then
+            [
+                BusinessField.IncidentCountry,
+                "ISO 3166-1 + XK + ZZ",
+                CodeVocabularies.countryAsOf,
+                CodeVocabularies.countries
+                BusinessField.ClaimedCurrency,
+                "ISO 4217",
+                CodeVocabularies.currencyAsOf,
+                CodeVocabularies.currencies
+            ]
+            |> List.map (fun (field, standard, asOf, codes) ->
+                localized language (inputLabel (TaskInputId.Target(InputTarget.Field field)))
+                + " ("
+                + standard
+                + "; "
+                + asOf
+                + "): "
+                + String.concat " " codes
+                + "\n")
+            |> String.concat ""
+        else
+            ""
+
     let helpTopic language topic =
         (if topic = CliTopic.Help HelpTopic.Overview then
              LegalNotice.summary + "\n"
@@ -34,6 +59,7 @@ module ContractDiscovery =
         + (CliCommands.topicSynopses topic
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
            |> String.concat "")
+        + supportedCodes language topic
 
     let private openapi () =
         WireWriter.indentedBytes ClaimCore.Wire.OpenApi.document

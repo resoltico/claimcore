@@ -10,7 +10,7 @@ let tests =
         "core money display scale"
         [
             testCase
-                "ISO data has the pinned publication shape and leaves unknown currencies admissible"
+                "ISO display data has its pinned publication shape independently of eligibility"
                 (fun () ->
                     Expect.equal
                         CurrencyMinorUnits.all.Count
@@ -22,19 +22,10 @@ let tests =
                         (Map.ofList [ 0, 17; 2, 139; 3, 7; 4, 2 ])
                         "The independent source distribution protects the vendored set"
 
-                    for code in CurrencyMinorUnits.all |> Map.keys do
-                        Expect.isOk
-                            (Currency.parse code)
-                            "Every vendored key is a canonical currency code"
-
                     for code in [ "ZZZ"; "XAU"; "XXX" ] do
                         Expect.isNone
                             (Map.tryFind code CurrencyMinorUnits.all)
-                            "Unknown and N.A. values prescribe no minimum"
-
-                        Expect.isOk
-                            (Currency.parse code)
-                            "Presentation data does not narrow admission")
+                            "Unknown and N.A. values prescribe no minimum")
             testCase
                 "meaningful canonical precision wins over ISO minimum without retaining entered zeros"
                 (fun () ->
@@ -46,18 +37,14 @@ let tests =
                             "1.2000", "JPY", 1
                             "0.01", "USD", 2
                             "1", "BHD", 3
-                            "1", "CLF", 4
-                            "100.0000", "ZZZ", 0
-                            "1.2300", "ZZZ", 2
-                            "1", "XAU", 0
-                            "1.2345", "XAU", 4
+                            "1.2345", "JPY", 4
                         ] do
                         Expect.equal
                             (Money.displayScale (Inputs.money amount currency))
                             expected
                             "ISO scale never rounds away accepted meaningful digits"
 
-                    for code in [ "EUR"; "JPY"; "ZZZ" ] do
+                    for code in [ "EUR"; "JPY"; "BHD" ] do
                         Expect.equal
                             (Money.displayScale (Inputs.money "100.0000" code))
                             (Money.displayScale (Inputs.money "100" code))

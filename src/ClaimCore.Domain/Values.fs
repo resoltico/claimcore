@@ -237,7 +237,12 @@ module CountryCode =
         }
 
     let parse value =
-        ScalarText.token Grammar Violation.CountryFormat value |> Result.map CountryCode
+        ScalarText.token Grammar Violation.CountryFormat value
+        |> Result.bind (fun code ->
+            if CodeVocabularies.containsCountry code then
+                Ok(CountryCode code)
+            else
+                Error Violation.CountryFormat)
 
     let admit (value: CountryCode) = Ok value
 

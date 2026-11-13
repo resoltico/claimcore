@@ -5,6 +5,7 @@
     <Compile Include="Vocabulary/Roles.fs" />
     <Compile Include="Vocabulary/PrincipalKind.fs" />
     <Compile Include="Refusals/Violations.fs" />
+    <Compile Include="CodeVocabularies.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="NarrativeValues.fs" />
     <Compile Include="CurrencyMinorUnits.fs" />

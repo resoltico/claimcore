@@ -384,12 +384,12 @@
     "source": "50abf836badc"
   },
   "diagnostic.COUNTRY_FORMAT": {
-    "text": "استخدم حرفي ASCII كبيرين لرمز البلد.",
-    "source": "fbf4339c8839"
+    "text": "استخدم رمز بلد مُعيّنًا رسميًا وفق ISO 3166-1، أو XK أو ZZ. راجع help schema للرموز المدعومة.",
+    "source": "b1c9f16ea7e3"
   },
   "diagnostic.CURRENCY_FORMAT": {
-    "text": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
-    "source": "adbb790bfab3"
+    "text": "استخدم رمز عملة نشطًا ومدعومًا وفق ISO 4217. لا تُقبل رموز الصناديق أو الرموز غير الوطنية. راجع help schema.",
+    "source": "b7b6bcfa5ddb"
   },
   "diagnostic.DECIMAL_FORMAT": {
     "text": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
@@ -1488,8 +1488,8 @@
     "source": "3ec88dfe4c38"
   },
   "field.incidentCountry.rule": {
-    "text": "استخدم حرفين كبيرين. يعني {unknownCode} موقعًا غير معروف أو دوليًا.",
-    "source": "682819af1901"
+    "text": "استخدم رمزًا مُعيّنًا رسميًا وفق ISO 3166-1 أو XK. يعني {unknownCode} أن البلد غير معروف أو دولي.",
+    "source": "0ba1fe273220"
   },
   "field.incidentCountry.hint": {
     "text": "أين وقعت الواقعة.",
@@ -1516,8 +1516,8 @@
     "source": "f0ed705645cd"
   },
   "field.claimedCurrency.rule": {
-    "text": "{length} أحرف ASCII كبيرة من A إلى Z.",
-    "source": "2460daa09c6d"
+    "text": "{length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة المدعومة؛ لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
+    "source": "b28bec5ff787"
   },
   "field.claimedCurrency.hint": {
     "text": "اختر العملة التي طُلب بها المبلغ.",
@@ -1544,8 +1544,8 @@
     "source": "4f043cfac46b"
   },
   "field.payableCurrency.rule": {
-    "text": "{length} أحرف ASCII كبيرة من A إلى Z.",
-    "source": "2460daa09c6d"
+    "text": "{length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة المدعومة؛ لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
+    "source": "b28bec5ff787"
   },
   "field.payableCurrency.hint": {
     "text": "اختر العملة التي سيُدفع بها المبلغ.",
@@ -1828,12 +1828,12 @@
     "source": "8d5f43e9e470"
   },
   "diagnostic.COUNTRY_FORMAT.gui": {
-    "text": "أدخل حرفين للبلد، مثل LV.",
-    "source": "a72f9540c0da"
+    "text": "اختر رمز بلد مدعومًا، مثل LV، أو XK أو ZZ.",
+    "source": "d1667b590685"
   },
   "diagnostic.CURRENCY_FORMAT.gui": {
-    "text": "أدخل رمز عملة من ثلاثة أحرف، مثل EUR.",
-    "source": "91065275e1e5"
+    "text": "اختر رمز عملة مدعومًا، مثل EUR. لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
+    "source": "02e7d4481412"
   },
   "diagnostic.EXPECTED_REVISION_RANGE.gui": {
     "text": "راجع أحدث سجل قبل تغييره.",
@@ -2500,8 +2500,8 @@
     "source": "6cf93e635901"
   },
   "field.paidCurrency.rule": {
-    "text": "{length} أحرف ASCII كبيرة (A–Z)، مطابقة لعملة القرار.",
-    "source": "517e38360f74"
+    "text": "{length} أحرف ASCII كبيرة من قائمة عملات ISO 4217 النشطة المدعومة، مطابقة لعملة القرار؛ لا تُقبل رموز الصناديق أو الرموز غير الوطنية.",
+    "source": "1a3ba1179c9c"
   },
   "field.paymentId.label": {
     "text": "معرّف الدفعة",

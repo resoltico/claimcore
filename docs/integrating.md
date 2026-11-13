@@ -7,6 +7,21 @@ endpoint shapes; the [catalog](../contracts/catalog.json) owns meanings, binding
 output of `claimcore help` derives verbs, flags and choices from the current grammar.
 [Case work](case-work.md) explains the recorded business facts.
 
+## Supported country and currency codes
+
+[Core's authored snapshots](../src/ClaimCore.Domain/CodeVocabularies.fs) own eligibility and record their
+sources/as-of dates. [Generated code vocabularies](../contracts/codes.ts) publish the same sets to clients;
+`claimcore help schema` lists them offline. Intl supplies display names only, falling back to the code.
+
+Countries are officially assigned ISO 3166-1 alpha-2 codes plus XK (Kosovo) and ZZ (unknown/international).
+Reserved, transitional and other user-assigned codes are not accepted. Currencies are active ISO 4217
+codes from SIX, excluding fund codes and X-prefixed non-national codes; XAF, XCD, XOF, XPF and XCG remain
+supported. This does not impose per-currency minor-unit admission rules. Picker search ranks exact code,
+code prefix, localized name prefix, then substring, using locale-aware case folding.
+
+Previously shape-valid unsupported values now refuse with a field diagnostic. Existing installations
+containing such values require a fresh installation; no migration or compatibility reader is provided.
+
 ## HTTPS contract
 
 Session bootstrap uses GET. Other endpoints use POST `/api/<endpoint>` with literal dots and the input
