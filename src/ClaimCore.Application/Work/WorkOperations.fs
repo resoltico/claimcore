@@ -6,7 +6,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Work families share ledger identity, delivery and authorization; their business decisions stay typed.
-module internal WorkExecution =
+module internal WorkOperations =
     type Prepared =
         private
         | Work of OperationId * CaseSelector * Revision * ValidCaseWorkUpdate
@@ -14,7 +14,7 @@ module internal WorkExecution =
         | Note of OperationId * CaseSelector * NoteInput
 
     [<NoEquality; NoComparison>]
-    type private Proposal =
+    type Proposal =
         {
             Command: CommandSkeleton
             Values: OperationValues
@@ -79,7 +79,7 @@ module internal WorkExecution =
             Admission.map2
                 (fun result () -> result)
                 prepared
-                (CaseExecution.validateSelector request.Target)
+                (CaseOperations.validateSelector request.Target)
         |> ordered
 
     let prepareReminder (request: ReminderOperationRequest) =
@@ -91,7 +91,7 @@ module internal WorkExecution =
             Admission.map2
                 (fun result () -> result)
                 prepared
-                (CaseExecution.validateSelector request.Target)
+                (CaseOperations.validateSelector request.Target)
         |> ordered
 
     let prepareNote (request: NoteOperationRequest) =
@@ -103,7 +103,7 @@ module internal WorkExecution =
             Admission.map2
                 (fun result () -> result)
                 prepared
-                (CaseExecution.validateSelector request.Target)
+                (CaseOperations.validateSelector request.Target)
         |> ordered
 
     let private target =
@@ -639,75 +639,34 @@ module internal WorkExecution =
                 return view, Verdict.Fail CoreFault.InternalError
         }
 
-    let preview (services: ServiceContext) prepared token =
-        task {
-            let! result =
-                services.Store.Read(
+    let registration (services: ServiceContext) =
+        {
+            LoadAndDecide =
+                fun mode tx prepared ->
+                    propose (SubjectExecution.isCommit mode) services tx prepared
+            Actor = fun view -> view.Actor
+            Append =
+                fun prepared view proposal ->
                     {
-                        Work =
-                            fun tx ->
-                                task {
-                                    let! _, proposal = propose false services tx prepared
-
-                                    return
-                                        proposal
-                                        |> Verdict.outcome
-                                            (fun value -> Previewed.Reviewed value.Review)
-                                            Previewed.AlreadyAccepted
-                                }
-                        CancellationToken = token
+                        OperationId = identity prepared
+                        ObservedAt = view.ObservedAt
+                        ActorId = LedgerEnvelope.actorId view.Actor
+                        RecordedBy = view.Actor.Actor |> Option.map Actor.currentReference
+                        Command = proposal.Command
+                        Values = proposal.Values
+                        Current = proposal.Current
+                        Projection =
+                            fun operation ->
+                                proposal.Projection(LedgerEnvelope.stamp operation), proposal.Index
                     }
-                )
+            Project =
+                fun tx (projection, index) ->
+                    task {
+                        do! tx.ProjectWorkChange projection
 
-            return QueryResults.readResult result
+                        match index with
+                        | Some(id, index) -> do! tx.ProjectCaseIndex(id, index)
+                        | None -> ()
+                    }
+            Review = fun _ _ proposal -> proposal.Review
         }
-
-    let run (services: ServiceContext) prepared token =
-        services.Store.Write
-            {
-                Work =
-                    fun tx ->
-                        task {
-                            let! view, proposed = propose true services tx prepared
-
-                            let accepted =
-                                proposed
-                                |> Verdict.bind (fun proposal ->
-                                    LedgerEnvelope.accept
-                                        services
-                                        view.Actor
-                                        {
-                                            Head = tx.Head
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        {
-                                            OperationId = identity prepared
-                                            ObservedAt = view.ObservedAt
-                                            ActorId = LedgerEnvelope.actorId view.Actor
-                                            RecordedBy =
-                                                view.Actor.Actor
-                                                |> Option.map Actor.currentReference
-                                            Command = proposal.Command
-                                            Values = proposal.Values
-                                            Current = proposal.Current
-                                            Projection =
-                                                fun operation ->
-                                                    proposal.Projection(
-                                                        LedgerEnvelope.stamp operation
-                                                    ),
-                                                    proposal.Index
-                                        })
-
-                            let write (projection, index) =
-                                task {
-                                    do! tx.ProjectWorkChange projection
-
-                                    match index with
-                                    | Some(id, index) -> do! tx.ProjectCaseIndex(id, index)
-                                    | None -> ()
-                                }
-
-                            return! ExecutionFacts.persist tx write accepted
-                        }
-                CancellationToken = token
-            }

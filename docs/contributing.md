@@ -51,11 +51,15 @@ or Presentation. The published CLI excludes Application and Postgres. Product fr
 
 Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain/CaseFields.fs) declares
 field kinds and money relationships; typed records retain validated structure through execution.
-[QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns search and machine summary
-selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
+[CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
-`Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
+Subject contracts own `decide`, `apply`, `applyErased` and `rows`; execution and replay call the same
+Domain owners. [CaseSubject](../src/ClaimCore.Domain/CaseSubject.fs) retains erased identity and payment
+provenance separately from unavailable private content. [CaseIndex](../src/ClaimCore.Domain/CaseIndex.fs)
+alone derives the family index. [SubjectExecution](../src/ClaimCore.Application/Operations/SubjectExecution.fs)
+runs registered operations in one transaction path; replay validates the closed journal before applying
+those contracts.
 [TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
 inputs and choices; [TaskAssembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) assembles
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.

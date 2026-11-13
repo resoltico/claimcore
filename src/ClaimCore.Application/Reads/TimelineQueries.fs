@@ -15,7 +15,7 @@ module internal TimelineQueries =
             if not (QueryResults.validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
             else
-                match CaseExecution.validateSelector request.Target with
+                match CaseOperations.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =

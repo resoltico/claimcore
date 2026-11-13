@@ -158,21 +158,22 @@ let requestEffectAgreement =
             append
                 { state with
                     People =
-                        Map.change
-                            owner.ActorId
-                            (Option.map (fun person ->
-                                { person with
-                                    Actor = executor.Actor
+                        Map.ofList
+                            [
+                                owner.ActorId,
+                                {
+                                    PeopleSubjectState.Actor = executor.Actor
                                     Grants =
-                                        Map.add
-                                            {
-                                                ActorGrant.Role = Role.CaseHandler
-                                                Scope = Scope.Installation
-                                            }
-                                            (EffectPosition.create Sequence.first 0 |> Option.get)
-                                            person.Grants
-                                }))
-                            state.People
+                                        executor.Grants
+                                        |> List.mapi (fun index grant ->
+                                            grant,
+                                            EffectPosition.create Sequence.first index
+                                            |> Option.get)
+                                        |> Map.ofList
+                                    ProfileErasure =
+                                        Some(EffectPosition.create Sequence.first 1 |> Option.get)
+                                }
+                            ]
                 }
                 root
             |> unitResult

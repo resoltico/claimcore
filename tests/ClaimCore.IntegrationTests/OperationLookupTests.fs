@@ -94,7 +94,7 @@ let private owner fixture =
         let service = core fixture fixture.Owner
 
         let! provision =
-            PeopleExecution.provisionStore
+            PeopleOperations.provisionStore
                 service
                 (OperationIds.fresh ())
                 Inputs.ownerProfile

@@ -54,7 +54,7 @@ let internal genesis fixture =
                                 Expect.isNone view.Actor.Actor "No actor before provisioning"
 
                                 return!
-                                    PeopleExecution.provision
+                                    ClaimCore.TestSupport.StoreFixtures.provisionPeople
                                         (core fixture fixture.Owner)
                                         ((CaseFixtures.operationId (id fixture 1)))
                                         Inputs.ownerProfile
@@ -225,7 +225,7 @@ let internal lockedView fixture =
                                     "Existing identity in the same view"
 
                                 return!
-                                    CaseExecution.execute
+                                    ClaimCore.TestSupport.StoreFixtures.executeCase
                                         (core fixture fixture.Owner)
                                         (CaseFixtures.command original)
                                         {

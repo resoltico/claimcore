@@ -331,7 +331,7 @@ let internal atomicWrites fixture =
                                         []
 
                                 match
-                                    PeopleExecution.execute
+                                    ClaimCore.TestSupport.StoreFixtures.executePeople
                                         owner
                                         command
                                         {

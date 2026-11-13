@@ -40,7 +40,7 @@ module internal Advice =
         |> List.map (fun kind ->
             let reason =
                 match
-                    CaseExecution.permissionFor principal actor (CaseAct.probe kind) (Some record)
+                    CaseOperations.permissionFor principal actor (CaseAct.probe kind) (Some record)
                 with
                 | Error refusal -> refusal
                 | Ok() ->
@@ -83,7 +83,7 @@ module internal Advice =
         let installationId = services.InstallationId
         let principal = services.Principal
 
-        CaseExecution.current installationId record
+        CaseOperations.current installationId record
         |> Result.map (fun accepted ->
             let resource = Scope.Case record.CaseId
 

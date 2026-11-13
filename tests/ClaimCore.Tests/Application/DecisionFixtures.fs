@@ -144,7 +144,7 @@ let locked (people: AccessView) (current: StoredCase option) existing : LockedFa
     }
 
 let decide request view =
-    CaseExecution.execute
+    ClaimCore.TestSupport.StoreFixtures.executeCase
         (services installation calendar owner)
         (ClaimCore.TestSupport.CaseFixtures.command request)
         {
@@ -156,7 +156,7 @@ let decide request view =
 let executePeople installation principal request (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    PeopleExecution.execute
+    ClaimCore.TestSupport.StoreFixtures.executePeople
         (services installation calendar principal)
         request
         {
@@ -170,13 +170,19 @@ let executePeople installation principal request (view: LockedFacts<PeopleExecut
 
 let reviewPeople installation principal (request: ClaimCore.Domain.PeopleRequest) view =
     match People.parse request with
-    | Ok command -> PeopleExecution.review (services installation calendar principal) command view
+    | Ok command ->
+        PeopleOperations.decide
+            SubjectExecutionMode.Preview
+            (services installation calendar principal)
+            command
+            view
+        |> Verdict.map snd
     | Error refusal -> Verdict.Refuse refusal
 
 let provisionPeople installation operation principal (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    PeopleExecution.provision
+    ClaimCore.TestSupport.StoreFixtures.provisionPeople
         (services installation calendar principal)
         operation
         Inputs.ownerProfile

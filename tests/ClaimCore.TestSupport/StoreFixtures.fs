@@ -24,6 +24,33 @@ type internal Fixture =
         Dispose: unit -> unit
     }
 
+/// Pure fixtures compose the same decision and accepted-row path as the registered transaction runner.
+let internal executeCase services command (write: LedgerWriteContext) (view: CaseFacts) =
+    CaseOperations.decide (SubjectExecutionMode.Commit write) services command view
+    |> SubjectExecution.accept
+        services
+        view.Actor
+        write
+        (CaseOperations.append services command view)
+
+let internal executePeople
+    services
+    command
+    (write: LedgerWriteContext)
+    (view: PeopleExecutionFacts)
+    =
+    PeopleOperations.decide (SubjectExecutionMode.Commit write) services command view
+    |> SubjectExecution.accept
+        services
+        view.Actor
+        write
+        (PeopleOperations.append services command view)
+
+let internal provisionPeople (services: ServiceContext) operation profile roles write view =
+    match People.provision (OperationId.value operation) services.Principal profile roles with
+    | Error refusal -> Verdict.Refuse refusal
+    | Ok command -> executePeople services command write view
+
 let internal core fixture principal =
     Service.create
         BuildIdentity.current.Version
@@ -212,7 +239,7 @@ let internal disclosedFields receipt =
 let internal bootstrap fixture =
     task {
         let! result =
-            PeopleExecution.provisionStore
+            PeopleOperations.provisionStore
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile

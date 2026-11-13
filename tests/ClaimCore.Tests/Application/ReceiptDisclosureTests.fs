@@ -64,7 +64,8 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read
@@ -125,7 +126,8 @@ let private foreignScope () =
     let read = (locked both (Some caseA) (Some entry)).Read
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             read
@@ -142,7 +144,8 @@ let private foreignScope () =
         }
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             narrowed

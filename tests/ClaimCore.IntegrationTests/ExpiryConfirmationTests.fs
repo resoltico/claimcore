@@ -18,7 +18,7 @@ let private owner fixture =
     let service = core fixture fixture.Owner
 
     match
-        PeopleExecution.provisionStore
+        PeopleOperations.provisionStore
             service
             (id fixture 1)
             Inputs.ownerProfile

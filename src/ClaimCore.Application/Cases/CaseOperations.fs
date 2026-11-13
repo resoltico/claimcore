@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-module internal CaseExecution =
+module internal CaseOperations =
     [<NoComparison>]
     type TargetedRequest = private TargetedRequest of CaseOperationRequest
 
@@ -259,7 +259,7 @@ module internal CaseExecution =
             Projection = projection
         }
 
-    let review (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
+    let decide mode (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
         let id =
             view.Case
             |> Option.map _.CaseId
@@ -273,7 +273,7 @@ module internal CaseExecution =
                 Act = CaseAct.kind command.Act
                 SelectedPayment =
                     match command.Act with
-                    | CaseAct.RemovePayment selected -> Some selected
+                    | CaseAct.RemovePayment id -> Some id
                     | _ -> None
             }
 
@@ -281,108 +281,74 @@ module internal CaseExecution =
 
         authorizeIdentity services command identity view
         |> Verdict.bind (fun () ->
-            LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
+            if SubjectExecution.isCommit mode then
+                LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId
+            else
+                LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
         |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
             else
                 propose services.InstallationId services.Calendar command view)
 
-    let execute
-        (services: ServiceContext)
-        (command: CaseCommand)
-        (write: LedgerWriteContext)
-        (view: CaseFacts)
-        =
-        let installationId = services.InstallationId
-        let calendar = services.Calendar
+    let append (services: ServiceContext) command view (_, after) =
+        project services.InstallationId services.Calendar command view after
 
-        let id =
-            view.Case
-            |> Option.map _.CaseId
-            |> Option.defaultValue (CaseId.ofOperationId command.OperationId)
+    let registration (services: ServiceContext) =
+        {
+            LoadAndDecide =
+                fun mode tx request ->
+                    task {
+                        let! view =
+                            ExecutionFacts.case
+                                services
+                                tx
+                                (operationId request)
+                                (target request)
+                                (Some(act request))
 
-        let scope =
-            {
-                CaseCommandSkeleton.CaseId = id
-                Reference = command.Reference
-                ExpectedRevision = command.ExpectedRevision
-                Act = CaseAct.kind command.Act
-                SelectedPayment =
-                    match command.Act with
-                    | CaseAct.RemovePayment selected -> Some selected
-                    | _ -> None
-            }
-
-        let identity = OperationIntent.case command.OperationId scope command
-
-        authorizeIdentity services command identity view
-        |> Verdict.bind (fun () ->
-            LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId)
-        |> Verdict.bind (fun () ->
-            if view.Maintenance.Active then
-                Verdict.Refuse Refusal.RegisterMaintenance
-            else
-                propose services.InstallationId services.Calendar command view)
-        |> Verdict.bind (fun (_, after) ->
-            try
-                let plan = project installationId calendar command view after
-                LedgerEnvelope.accept services view.Actor write plan
-            with :? System.OverflowException ->
-                Verdict.Fail CoreFault.InternalError)
-
-    let run (services: ServiceContext) (request: TargetedRequest) token =
-        let store = services.Store
-
-        store.Write(
-            {
-                WriteOperation.Work =
-                    (fun tx ->
-                        task {
-                            let! view =
-                                ExecutionFacts.case
+                        match complete services request view with
+                        | Error refusal ->
+                            let! result =
+                                ConflictReads.refusal
                                     services
                                     tx
-                                    (operationId request)
-                                    (target request)
-                                    (let (TargetedRequest value) = request in Some value.Act)
+                                    view.Actor
+                                    view.Case
+                                    ChangeEntity.Case
+                                    (expected request)
+                                    refusal
 
-                            let admitted = complete services request view
+                            return
+                                view,
+                                (result
+                                 |> Result.map Verdict.Refuse
+                                 |> Result.defaultWith Verdict.Fail)
+                        | Ok command ->
+                            let! proposed =
+                                ConflictReads.verdict
+                                    services
+                                    tx
+                                    view.Actor
+                                    view.Case
+                                    ChangeEntity.Case
+                                    (Revision.value command.ExpectedRevision)
+                                    (decide mode services command view)
 
-                            match admitted with
-                            | Error refusal ->
-                                return!
-                                    ConflictReads.verdict
-                                        services
-                                        tx
-                                        view.Actor
-                                        view.Case
-                                        ChangeEntity.Case
-                                        (expected request)
-                                        (Verdict.Refuse refusal)
-                            | Ok command ->
-                                let verdict =
-                                    execute
-                                        services
-                                        command
-                                        {
-                                            Head = tx.Head
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        view
+                            return view, Verdict.map (fun decision -> command, decision) proposed
+                    }
+            Actor = fun view -> view.Actor
+            Append = fun _ view (command, decision) -> append services command view decision
+            Project = fun tx rows -> tx.ProjectCase rows
+            Review =
+                fun _ view (_, (before, after)) ->
+                    let before = before |> Option.map Case.snapshot
 
-                                let! verdict =
-                                    ConflictReads.verdict
-                                        services
-                                        tx
-                                        view.Actor
-                                        view.Case
-                                        ChangeEntity.Case
-                                        (Revision.value command.ExpectedRevision)
-                                        verdict
-
-                                return! ExecutionFacts.persist tx tx.ProjectCase verdict
-                        })
-                CancellationToken = token
-            }
-        )
+                    OperationReview.Case
+                        {
+                            Before = before
+                            Proposed = after.After
+                            Changes = CaseChanges.review before after
+                            Context = ServiceContext.runtime services view.ObservedAt
+                        }
+        }

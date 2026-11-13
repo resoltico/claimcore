@@ -60,7 +60,8 @@ let private replay () =
         "Replay precedes current revision checks"
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             laterView.Read
@@ -100,7 +101,8 @@ let private reviewAndTime () =
     let view = locked worker None None
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read

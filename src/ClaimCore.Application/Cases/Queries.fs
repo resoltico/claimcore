@@ -35,7 +35,7 @@ module internal Queries =
         =
         let principal = services.Principal
 
-        if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
+        if not (CaseOperations.authorize principal view.Actor Capability.ReadCase view.Case) then
             unavailable
         else
             match view.Case with
@@ -113,7 +113,7 @@ module internal Queries =
         let store = services.Store
 
         task {
-            match CaseExecution.validateSelector selector with
+            match CaseOperations.validateSelector selector with
             | Error refusal -> return! RequestRefusals.read services token refusal
             | Ok _ ->
                 let! result =
@@ -127,7 +127,7 @@ module internal Queries =
 
                                         match view.Case with
                                         | Some record when
-                                            CaseExecution.authorize
+                                            CaseOperations.authorize
                                                 services.Principal
                                                 view.Actor
                                                 Capability.ReadCase
@@ -231,7 +231,7 @@ module internal Queries =
             if not (validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
             else
-                match CaseExecution.validateSelector request.Target with
+                match CaseOperations.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -441,7 +441,7 @@ module internal Queries =
 
 
     let private summary installation principal actor paused (work: CaseWorkView) next record =
-        CaseExecution.current installation record
+        CaseOperations.current installation record
         |> Result.map (fun _ ->
             {
                 CaseSummary.CaseId = record.Snapshot.CaseId
@@ -567,7 +567,7 @@ module internal Queries =
 
                         return
                             if
-                                CaseExecution.authorize
+                                CaseOperations.authorize
                                     services.Principal
                                     actor
                                     Capability.ReadCase

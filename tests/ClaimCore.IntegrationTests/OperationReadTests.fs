@@ -23,7 +23,7 @@ let private runtime () =
         let service = core fixture fixture.Owner
 
         let bootstrap =
-            PeopleExecution.provisionStore
+            PeopleOperations.provisionStore
                 service
                 (id fixture 1)
                 Inputs.ownerProfile

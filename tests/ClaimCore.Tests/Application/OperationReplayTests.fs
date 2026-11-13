@@ -152,8 +152,8 @@ let tests =
                     let beforeErase = append initial (erased admitted)
 
                     Expect.equal
-                        beforeErase.Actors[actor 2].Grants
-                        grants
+                        (beforeErase.Actors[actor 2].Grants |> Set.ofList)
+                        (Set.ofList grants)
                         "Unavailable profile never drops retained grants"
 
                     Expect.isNone
@@ -189,8 +189,8 @@ let tests =
                         "Later re-profile survives"
 
                     Expect.equal
-                        after.Actors[actor 2].Grants
-                        grants
+                        (after.Actors[actor 2].Grants |> Set.ofList)
+                        (Set.ofList grants)
                         "Re-profile never changes earlier grants"
 
                     Expect.isOk

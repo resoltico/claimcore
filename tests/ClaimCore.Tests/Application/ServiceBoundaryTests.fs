@@ -227,12 +227,12 @@ let oneRound =
             }
 
         let prepared =
-            CaseExecution.prepare request |> Result.defaultWith (string >> failtest)
+            CaseOperations.prepare request |> Result.defaultWith (string >> failtest)
 
         let snapshot = (locked worker None None).Read
 
         let actual =
-            CaseExecution.complete (services installation calendar owner) prepared snapshot
+            CaseOperations.complete (services installation calendar owner) prepared snapshot
 
         match actual with
         | Error(Refusal.InvalidInput issues) ->

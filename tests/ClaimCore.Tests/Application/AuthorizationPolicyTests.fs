@@ -468,7 +468,11 @@ let denialDisclosure =
                     []
 
             let permission view target =
-                CaseExecution.permission ClaimCore.Tests.DecisionFixtures.owner view command target
+                CaseOperations.permission
+                    ClaimCore.Tests.DecisionFixtures.owner
+                    view
+                    command
+                    target
 
             Expect.equal
                 (permission readable (Some stored))

@@ -83,7 +83,7 @@ module internal NoteQueries =
                             Violation.PageLimitRange NotePaging.MaximumLimit
                         ))
             else
-                match CaseExecution.validateSelector request.Target with
+                match CaseOperations.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =

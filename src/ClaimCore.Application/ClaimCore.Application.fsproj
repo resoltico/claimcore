@@ -22,9 +22,10 @@
     <Compile Include="Operations/SubjectProvenance.fs" />
     <Compile Include="Operations/ExecutionFacts.fs" />
     <Compile Include="Operations/LedgerEnvelope.fs" />
-    <Compile Include="Cases/CaseExecution.fs" />
-    <Compile Include="People/PeopleExecution.fs" />
+    <Compile Include="Operations/SubjectExecution.fs" />
+    <Compile Include="Cases/CaseOperations.fs" />
     <Compile Include="People/PeopleReviews.fs" />
+    <Compile Include="People/PeopleOperations.fs" />
     <Compile Include="Work/CaseWorkReads.fs" />
     <Compile Include="Reads/Advice.fs" />
     <Compile Include="People/PeopleQueries.fs" />
@@ -33,7 +34,7 @@
     <Compile Include="Cases/PaymentQueries.fs" />
     <Compile Include="Cases/Queries.fs" />
     <Compile Include="Operations/OperationQueries.fs" />
-    <Compile Include="Work/WorkExecution.fs" />
+    <Compile Include="Work/WorkOperations.fs" />
     <Compile Include="Work/WorkQueries.fs" />
     <Compile Include="Work/ViewQueries.fs" />
     <Compile Include="Reads/TimelineQueries.fs" />

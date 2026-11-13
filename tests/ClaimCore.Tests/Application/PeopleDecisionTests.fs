@@ -257,12 +257,13 @@ let private reviewAndFences () =
     let view = peopleView worker AccessView.empty None
 
     match
-        PeopleExecution.review
+        PeopleOperations.decide
+            SubjectExecutionMode.Preview
             (DecisionFixtures.services installation calendar owner)
             request
             view.Read
     with
-    | Verdict.Proceed { Change = PeopleChange.Registered _ } -> ()
+    | Verdict.Proceed(_, { Change = PeopleChange.Registered _ }) -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     let scoped =

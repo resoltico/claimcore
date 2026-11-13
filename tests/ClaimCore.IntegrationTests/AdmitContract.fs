@@ -580,7 +580,7 @@ let internal atomicWrites fixture =
                                             (PeopleRequests.targetCases command)
 
                                     let verdict =
-                                        PeopleExecution.execute
+                                        ClaimCore.TestSupport.StoreFixtures.executePeople
                                             owner
                                             command
                                             {

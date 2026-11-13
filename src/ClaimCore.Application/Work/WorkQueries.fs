@@ -37,7 +37,7 @@ module internal WorkQueries =
     let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
         task {
             match
-                CaseExecution.validateSelector request.Target, ReminderId.create request.ReminderId
+                CaseOperations.validateSelector request.Target, ReminderId.create request.ReminderId
             with
             | Error refusal, _ -> return! RequestRefusals.read services token refusal
             | _, None ->
@@ -174,7 +174,7 @@ module internal WorkQueries =
 
                 let selector =
                     request.Target
-                    |> Option.map CaseExecution.validateSelector
+                    |> Option.map CaseOperations.validateSelector
                     |> Option.defaultValue (Ok())
 
                 match Admission.map2 (fun () text -> text) selector text with
