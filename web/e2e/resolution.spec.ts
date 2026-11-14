@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { type ResponseFor } from "@contracts/client";
 import { openRecovery } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
@@ -89,6 +90,9 @@ for (const reload of [false, true]) {
     await page.unroute("**/api/operation.get");
     await (await resolved).json();
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
+    if (!reload) {
+      await expectCaseReadsSettled(page);
+    }
     await expectAccessible(page);
   });
 }
