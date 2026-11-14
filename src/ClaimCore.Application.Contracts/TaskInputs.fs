@@ -5,6 +5,7 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type InputSource =
     | Authored
+    | Binding
     | OperationIdentity
     | ExpectedRevision
 
@@ -34,7 +35,6 @@ type TaskInputId =
     | ReminderState
     | ReminderDue
     | IncludeInactive
-    | ResponsibilityChange
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskInputId =
@@ -60,8 +60,6 @@ module TaskInputId =
         | TaskInputId.TimelineFilter -> "timelineFilter"
         | TaskInputId.Order -> "order"
         | TaskInputId.Due -> "due"
-        | TaskInputId.ResponsibilityChange ->
-            BusinessField.key BusinessField.ResponsibleActor + "Action"
         | TaskInputId.Assignment -> "assignment"
 
     /// Opaque semantic tokens distinguish facts and group inputs from similarly named query controls.
@@ -97,10 +95,11 @@ module TaskInputId =
          |> List.choose (fun (target, _) ->
              match target with
              | InputTarget.Field _
-             | InputTarget.Group _ -> None
+             | InputTarget.Group _
+             | InputTarget.Scope
+             | InputTarget.CaseId -> None
              | _ -> Some(TaskInputId.Target target)))
         @ extras
-        @ [ TaskInputId.ResponsibilityChange ]
 
     let all =
         (BusinessField.declarations
@@ -113,24 +112,24 @@ module TaskInputId =
 
 /// Collection identity is independent of transport members and UI-local row keys.
 [<RequireQualifiedAccess>]
-type TaskCollectionId = | AuthorityGrants
+type TaskCollectionId = | PeopleGrants
 
 module TaskCollectionId =
     let key =
         function
-        | TaskCollectionId.AuthorityGrants -> "authorityGrants"
+        | TaskCollectionId.PeopleGrants -> "peopleGrants"
 
     let input =
         function
-        | TaskCollectionId.AuthorityGrants -> TaskInputId.Target InputTarget.Grants
+        | TaskCollectionId.PeopleGrants -> TaskInputId.Target InputTarget.Grants
 
     let minimumRows =
         function
-        | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MinimumGrants
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MinimumGrants
 
     let maximumRows =
         function
-        | TaskCollectionId.AuthorityGrants -> AuthorityAdmission.MaximumGrants
+        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
 
 /// Submitted ordinals correlate responses with an immutable client-owned row map.
 type TaskRowTarget =
@@ -166,11 +165,15 @@ type TaskInputIssue =
 module TaskInputIssue =
     let ofDomain (issue: InputIssue) =
         {
-            Input = TaskInputId.Target issue.Target
+            Input =
+                match issue.Target with
+                | InputTarget.Scope -> TaskInputId.Scope
+                | InputTarget.CaseId -> TaskInputId.CaseId
+                | target -> TaskInputId.Target target
             Row =
                 issue.GrantRow
                 |> Option.bind (
-                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.AuthorityGrants
+                    GrantOrdinal.value >> TaskRowTarget.create TaskCollectionId.PeopleGrants
                 )
             Violation = issue.Violation
             RelatedDate = issue.RelatedDate

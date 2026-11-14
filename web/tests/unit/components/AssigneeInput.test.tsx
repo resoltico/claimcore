@@ -1,11 +1,12 @@
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { isResponseFor, type HumanResponseByEndpoint } from "@contracts/client";
+import type { HumanResponseByEndpoint } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { AssigneeInput } from "../../../src/components/AssigneeInput";
 import { productMetadata } from "../../../src/protocol/productMetadata";
 import type { CurrentCase } from "../../../src/protocol/types";
-
 const saved = "00000000-0000-4000-8000-000000000001";
 const choice = "00000000-0000-4000-8000-000000000002";
 const current: CurrentCase = {
@@ -20,32 +21,43 @@ const current: CurrentCase = {
               key: "responsible",
               labelId: "field.responsibleActor.label",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core saved assignee Ω" },
+              value: {
+                kind: "TEXT",
+                value: "Core saved assignee Ω",
+              },
             },
           ],
         },
       },
     ],
   },
-  context: {
+  subject: {
     kind: "CASE",
-    history: "NONE",
     caseId: "00000000-0000-4000-8000-000000000003",
     revision: 7,
     workRevision: 2,
-    tasks: ["WORK:UPDATE_WORK"],
-    editableInputs: ["field:responsibleActor"],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: { summary: null, responsible: saved },
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
   },
+  actions: [
+    operationAffordance(
+      "work.update",
+      {
+        kind: "WORK",
+        target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000003" },
+        expectedRevision: 2,
+      },
+      {
+        ...prefixedInputs("field:", {
+          handlingSummary: null,
+          responsibleActor: saved,
+        }),
+      },
+      ["field:responsibleActor"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -75,12 +87,37 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
                   isMoney: false,
                 },
               ],
-              rows: [{ key: choice, values: [{ kind: "TEXT", value: "Core opaque choice Ψ" }] }],
+              rows: [
+                {
+                  key: choice,
+                  actions: [
+                    operationAffordance(
+                      "work.update",
+                      {
+                        kind: "WORK",
+                        target: { kind: "ID", caseId: current.subject.caseId },
+                        expectedRevision: 2,
+                      },
+                      { "field:responsibleActor": choice },
+                    ),
+                  ],
+                  values: [
+                    {
+                      kind: "TEXT",
+                      value: "Core opaque choice Ψ",
+                    },
+                  ],
+                },
+              ],
             },
           },
         ],
       },
-      context: { kind: "ASSIGNEES", actorIds: [choice], nextCursor: null },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: current.basis,
       disclosure: "CURRENT",
     },
@@ -91,18 +128,18 @@ const field = productMetadata.catalog.fields.find(
 )!;
 afterEach(() => vi.unstubAllGlobals());
 const supply = () => {
-  expect(isResponseFor("case.assignees", "HUMAN", page)).toBe(true);
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue(
       new Response(JSON.stringify(page), {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     ),
   );
 };
-
 it("renders saved and offered core captions independently of typed identities and submits the selected handle", async () => {
   supply();
   const change = vi.fn();
@@ -117,22 +154,30 @@ it("renders saved and offered core captions independently of typed identities an
     />,
   );
   expect(screen.getByText("Core saved assignee Ω")).toBeVisible();
-  const radio = await screen.findByRole("radio", { name: "Core opaque choice Ψ" });
+  const radio = await screen.findByRole("radio", {
+    name: "Core opaque choice Ψ",
+  });
   await userEvent.click(radio);
   expect(change).toHaveBeenCalledWith(choice);
   expect(screen.queryByText(saved)).not.toBeInTheDocument();
   expect(screen.queryByText(choice)).not.toBeInTheDocument();
 });
-
 it("does not infer the selected caption when its permitted input identity is absent", async () => {
   supply();
   const withoutSeed: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      seeds: { ...current.context.seeds, work: null },
-      editableInputs: [],
-    },
+    actions: [
+      operationAffordance(
+        "work.update",
+        {
+          kind: "WORK",
+          target: { kind: "ID", caseId: current.subject.caseId },
+          expectedRevision: current.subject.workRevision,
+        },
+        {},
+        [],
+      ),
+    ],
   };
   render(
     <AssigneeInput
@@ -144,6 +189,8 @@ it("does not infer the selected caption when its permitted input identity is abs
       onChange={vi.fn()}
     />,
   );
-  await screen.findByRole("radio", { name: "Core opaque choice Ψ" });
+  await screen.findByRole("radio", {
+    name: "Core opaque choice Ψ",
+  });
   expect(screen.queryByText("Core saved assignee Ω")).not.toBeInTheDocument();
 });

@@ -126,7 +126,7 @@ let private withProbe check =
                 true
             |> fun pending -> pending.GetAwaiter().GetResult()
 
-        StoreFixtures.acceptedAuthority granted
+        StoreFixtures.acceptedPeople granted
 
     let traced = ProbedStore(database.Fixture.Store)
 
@@ -164,16 +164,16 @@ let private withProbe check =
     let registered =
         Service.execute
             admin
-            (OperationInput.Authority(
-                StoreFixtures.authorityRequest
+            (OperationInput.People(
+                StoreFixtures.peopleRequest
                     (operationId 10)
                     scopedPrincipal
-                    (AuthorityAct.Register Inputs.actorProfile)
+                    (PeopleAct.Register Inputs.actorProfile)
             ))
             CancellationToken.None
         |> fun pending -> pending.GetAwaiter().GetResult()
 
-    StoreFixtures.acceptedAuthority registered
+    StoreFixtures.acceptedPeople registered
 
     let granted =
         StoreFixtures.grant
@@ -187,7 +187,7 @@ let private withProbe check =
             true
         |> fun pending -> pending.GetAwaiter().GetResult()
 
-    StoreFixtures.acceptedAuthority granted
+    StoreFixtures.acceptedPeople granted
     let scoped = core scopedPrincipal
     traced.Calls.Clear()
     check current scoped traced operationId
@@ -223,7 +223,7 @@ let tests =
         "case-list read sequencing"
         [
             testCase
-                "summary integrity failure wins and prevents later lookup or authority reads"
+                "summary integrity failure wins and prevents later lookup or people reads"
                 (fun () ->
                     withProbe (fun core _ traced _operationId ->
                         traced.CorruptPage <- true
@@ -239,8 +239,8 @@ let tests =
                             "No later reference lookup"
 
                         Expect.isFalse
-                            (traced.Calls.Contains "Authority")
-                            "No later target authority read"))
+                            (traced.Calls.Contains "Access")
+                            "No later target people read"))
 
             testCase "validated visible exact hit reuses disclosure without later reads" (fun () ->
                 withProbe (fun core _ traced operationId ->
@@ -259,7 +259,7 @@ let tests =
                         "Visible validated identity needs no second lookup"
 
                     Expect.isFalse
-                        (traced.Calls.Contains "Authority")
+                        (traced.Calls.Contains "Access")
                         "Visible row already passed snapshot disclosure"))
             testCase
                 "readable exact reference outside a page still needs lookup and authorization"
@@ -280,7 +280,7 @@ let tests =
                             "One fallback lookup"
 
                         Expect.equal
-                            (traced.Calls |> Seq.filter ((=) "Authority") |> Seq.length)
+                            (traced.Calls |> Seq.filter ((=) "Access") |> Seq.length)
                             1
                             "Independent target authorization"))
             testCase "readable exact reference survives an empty filtered page" (fun () ->
@@ -294,7 +294,7 @@ let tests =
                         "Empty page does not suppress lookup"
 
                     Expect.isTrue
-                        (traced.Calls.Contains "Authority")
+                        (traced.Calls.Contains "Access")
                         "Outside-filter target is authorized"))
             testCase
                 "partial and absent reference searches retain fallback and nonmatches"
@@ -317,7 +317,7 @@ let tests =
                                 "Valid reference syntax still probes absence"
 
                             Expect.isFalse
-                                (traced.Calls.Contains "Authority")
+                                (traced.Calls.Contains "Access")
                                 "No target to authorize"))
             testCase
                 "unreadable exact target remains undisclosed beside a visible partial match"
@@ -334,7 +334,7 @@ let tests =
                         Expect.isNone result.ExactReference "Other exact target is not disclosed"
 
                         Expect.isTrue
-                            (traced.Calls.Contains "Authority")
+                            (traced.Calls.Contains "Access")
                             "Fallback still checks target scope"))
             testCase
                 "scoped visible match avoids rereads and malformed reference syntax does not probe"

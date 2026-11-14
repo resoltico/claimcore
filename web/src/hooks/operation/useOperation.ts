@@ -1,3 +1,5 @@
+import { operationActions, type OperationAffordance } from "../../operation/affordances";
+
 import { createDraft } from "../../operation/operationDraft";
 import { ownerScope, sameOwnerScope } from "../../protocol/ownerScope";
 import type { MutationLockChange } from "../useWorkspaceMutationLock";
@@ -5,7 +7,7 @@ import { useEndpointCache } from "../EndpointProvider";
 import { operationId as mintOperationId } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
-import { rebasedTaskBinding } from "../../operation/operationConflict";
+import { rebasedOperationBinding } from "../../operation/operationConflict";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -31,7 +33,7 @@ import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest } from "../../protocol/preparedRequest";
 import type { FormValues, FormValue } from "../../protocol/forms";
-import { TaskInputError, type TaskBindingSource } from "../../operation/taskForm";
+import type { OperationBinding } from "@contracts/client";
 import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
 import { operationEntry } from "../../protocol/operationCatalog";
 import {
@@ -46,10 +48,12 @@ import {
 import type { LocalSource } from "../../operation/operationTypes";
 import type { Notice } from "../../protocol/notices";
 type Options = {
-  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER" | "NOTE";
-  prefill?: FormValues;
-  binding?: TaskBindingSource;
-  targetIdentity?: string;
+  affordance?: OperationAffordance | undefined;
+  affordances?: ReadonlyArray<OperationAffordance>;
+  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
+  prefill?: FormValues | undefined;
+  binding?: OperationBinding | undefined;
+  targetIdentity?: string | undefined;
   kind: string;
   current: CurrentCase | null;
   credential: string;
@@ -69,29 +73,25 @@ type Options = {
 const targetKey = (options: Options): string =>
   JSON.stringify([
     options.subject,
-    options.current?.context.caseId ?? null,
+    options.current?.subject.caseId ?? null,
     options.targetIdentity ?? null,
-    options.binding?.kind === "AUTHORITY" ? (options.binding.principal ?? null) : null,
+    options.binding !== undefined && "actorId" in options.binding ? options.binding.actorId : null,
   ]);
-type AuthorityBinding = Extract<
-  TaskBindingSource,
-  {
-    kind: "AUTHORITY";
-  }
->;
-const initialBinding = (options: Options): TaskBindingSource => {
+const initialBinding = (options: Options): OperationBinding => {
   if (options.binding !== undefined) {
     return options.binding;
   }
-  if (options.subject === "AUTHORITY") {
+  if (options.subject === "PEOPLE") {
     return {
-      kind: "AUTHORITY",
+      kind: "PEOPLE",
     };
   }
   const { current } = options;
   if (options.subject === "CASE" && current === null) {
     return {
-      kind: "NEW_CASE",
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "" },
+      expectedRevision: 0,
     };
   }
   if (current === null) {
@@ -99,20 +99,20 @@ const initialBinding = (options: Options): TaskBindingSource => {
   }
   const target = {
     kind: "ID",
-    caseId: current.context.caseId,
+    caseId: current.subject.caseId,
   } as const;
   switch (options.subject) {
     case "CASE":
       return {
         kind: "CASE",
         target,
-        revision: current.context.revision,
+        expectedRevision: current.subject.revision,
       };
     case "WORK":
       return {
         kind: "WORK",
         target,
-        workRevision: current.context.workRevision,
+        expectedRevision: current.subject.workRevision,
       };
     case "NOTE":
       return {
@@ -126,22 +126,40 @@ const initialBinding = (options: Options): TaskBindingSource => {
       };
   }
 };
+const suppliedAffordance = (options: Options, kind: string) => {
+  const actions = [
+    ...(options.affordance === undefined ? [] : [options.affordance]),
+    ...(options.affordances ?? []),
+    ...(options.current?.actions ?? []),
+  ];
+  return actions.find(
+    (action): action is OperationAffordance =>
+      action.task === kind && action.task !== "people.requests.dismiss",
+  );
+};
 const fresh = (
   options: Options,
   kind = options.kind,
   prefill: FormValues = {},
-  binding?: TaskBindingSource,
+  binding?: OperationBinding,
+  selected?: OperationAffordance,
 ): OperationState => {
-  const selectedBinding = binding ?? initialBinding(options);
+  const affordance = selected ?? suppliedAffordance(options, kind);
+  const selectedBinding =
+    binding ??
+    (kind === options.kind ? options.binding : undefined) ??
+    affordance?.binding ??
+    initialBinding(options);
   const values = {
-    ...initialOperationValues(options.subject, kind, options.current),
+    ...(affordance === undefined ? {} : initialOperationValues(affordance)),
     ...options.prefill,
     ...prefill,
   };
+  const epoch = options.contextEpoch ?? 0;
   const context = {
     generation: 0,
-    owner: ownerScope(options.recoveryScope, options.contextEpoch ?? 0),
-    epoch: options.contextEpoch ?? 0,
+    owner: ownerScope(options.recoveryScope, epoch),
+    epoch,
     credential: options.credential,
     target: targetKey(options),
   };
@@ -153,6 +171,7 @@ const fresh = (
       selectedBinding,
       values,
       context.owner,
+      affordance ?? null,
     ),
     disclosed: {
       review: null,
@@ -471,8 +490,8 @@ const executeOwnedAttempt = async (
       format: 2,
       attemptId: effect.identity.id,
       operationId,
-      subject: executing.source.prepared.input.kind,
-      act: executing.source.prepared.input.act.kind,
+      subject: executing.source.prepared.input.binding.kind,
+      act: executing.source.prepared.input.task,
     };
     context.attempts.set(operationId, record);
   }
@@ -682,13 +701,19 @@ const prepareValues = (
   state: OperationState,
   options: Options,
   values: FormValues,
-  binding: TaskBindingSource = state.draft.binding,
+  binding: OperationBinding = state.draft.binding,
 ): LocalSource => {
   const task = operationEntry(state.draft.entry);
-  const submission = assembleOperation(task, options.normalizeValues?.(values, task) ?? values, {
-    ...binding,
-    operationId: mintOperationId(),
-  });
+  const affordance = state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind);
+  if (affordance === undefined || affordance.blocked !== null) {
+    throw new Error("A current Core affordance is required.");
+  }
+  const submission = assembleOperation(
+    task,
+    options.normalizeValues?.(values, task) ?? values,
+    binding,
+    mintOperationId(),
+  );
   return {
     prepared: prepareRequest("operation.execute", submission.command),
     submittedRows: submission.submittedRows,
@@ -715,7 +740,7 @@ const reviewLatestDraft = (
       state,
       options,
       values,
-      rebasedTaskBinding(conflict.source.prepared.input, conflict.latest.revision),
+      rebasedOperationBinding(conflict.source.prepared.input, conflict.latest.revision),
     );
     dispatch({
       type: "REVIEW_LATEST",
@@ -725,14 +750,14 @@ const reviewLatestDraft = (
       values,
       source,
     });
-  } catch (error) {
+  } catch {
     dispatch({
       type: "REFUSE",
       notice: {
         kind: "local",
         reason: "invalidInput",
       },
-      target: error instanceof TaskInputError ? error.input : null,
+      target: null,
       uncertain: false,
       disclosure: false,
     });
@@ -752,14 +777,14 @@ const previewDraft = (
       identity: identity(options, state.disclosed.context.generation),
       generation: state.draft.generation,
     });
-  } catch (error) {
+  } catch {
     dispatch({
       type: "REFUSE",
       notice: {
         kind: "local",
         reason: "invalidInput",
       },
-      target: error instanceof TaskInputError ? error.input : null,
+      target: null,
       uncertain: false,
       disclosure: false,
     });
@@ -834,11 +859,11 @@ const editing = (
         });
         return;
       }
-      if (options.subject !== "AUTHORITY" && options.current !== null) {
+      if (options.subject !== "PEOPLE" && options.current !== null) {
         dispatch({
           type: "READ_CURRENT",
           identity: identity(options, state.disclosed.context.generation),
-          caseId: options.current.context.caseId,
+          caseId: options.current.subject.caseId,
           reference: "",
         });
       }
@@ -847,7 +872,8 @@ const editing = (
       acknowledgedUncertainty = false,
       kind = options.kind,
       prefill?: FormValues,
-      binding?: AuthorityBinding,
+      binding?: OperationBinding,
+      affordance?: OperationAffordance,
     ) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
@@ -865,6 +891,7 @@ const editing = (
             prefill,
             binding ??
               (state.draft.target === targetKey(options) ? state.draft.binding : undefined),
+            affordance,
           ),
           abandon: acknowledgedUncertainty,
         });
@@ -926,7 +953,8 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   !state.disclosed.refused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.context.tasks.includes("CASE:OPEN") === true;
+  requester?.actions.some((action) => action.task === "case.open" && action.blocked === null) ===
+  true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
@@ -986,8 +1014,8 @@ const requesterRecoveryScope = (
     ? undefined
     : {
         serviceOrigin: location.origin,
-        installationId: requester.context.installationId,
-        actorId: requester.context.actorId,
+        installationId: requester.subject.installationId,
+        actorId: requester.subject.actorId,
       };
 const operationOwnership = (state: OperationState, options: Options, contextEpoch: number) => {
   const observedOwner = ownerScope(options.recoveryScope, contextEpoch);
@@ -1003,23 +1031,29 @@ const operationOwnership = (state: OperationState, options: Options, contextEpoc
       (observedOwner !== null && !sameOwnerScope(original, observedOwner)));
   return { ownerVerified, scopeVerified, ownerChanged };
 };
+const resolveOperationOptions = (
+  supplied: Options,
+  requester: ReturnType<typeof useRequesterContext>,
+  journal: ReturnType<typeof useRecoveryJournal>,
+  contextEpoch: number,
+): Options => {
+  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
+  const requesterActions = requester === null ? [] : operationActions(requester.actions);
+  return {
+    ...supplied,
+    affordances: [...(supplied.affordances ?? []), ...requesterActions],
+    contextEpoch,
+    journal: supplied.journal ?? journal,
+    ...(recoveryScope === undefined ? {} : { recoveryScope }),
+  };
+};
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
   const journal = useRecoveryJournal();
   const session = useContext(SessionContext);
   const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
-  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
-  const options: Options = {
-    ...supplied,
-    contextEpoch,
-    journal: supplied.journal ?? journal,
-    ...(recoveryScope === undefined
-      ? {}
-      : {
-          recoveryScope,
-        }),
-  };
+  const options = resolveOperationOptions(supplied, requester, journal, contextEpoch);
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const { ownerVerified, scopeVerified, ownerChanged } = operationOwnership(
     state,
@@ -1064,6 +1098,7 @@ export const useOperation = (supplied: Options) => {
     ...view,
     task: operationEntry(state.draft.entry),
     bindingSource: state.draft.binding,
+    affordance: state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind),
     ownerVerified,
     ...controls,
     preview: () => (ownerVerified ? controls.preview() : Promise.resolve()),
@@ -1096,7 +1131,7 @@ export const useOperation = (supplied: Options) => {
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.disclosed.caseObservation : null,
     revalidating: state.disclosed.read !== null,
-    canRevalidateCase: options.subject !== "AUTHORITY" && options.current !== null,
+    canRevalidateCase: options.subject !== "PEOPLE" && options.current !== null,
     review: disclosureCurrent ? view.review : null,
     receipt: disclosureCurrent ? view.receipt : null,
     contextChanged: state.draft.target !== target,

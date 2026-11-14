@@ -1,4 +1,10 @@
-import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+import {
+  caseSubject,
+  caseDocumentInput,
+  caseIdentityScreen,
+} from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import {
   humanReadHttpReply as response,
   humanReadReply,
@@ -23,12 +29,23 @@ import { wireReply } from "../support/reply.fixtures";
 import { definition, operationId } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput(
   {
-    tasks: ["CASE:CLOSE"],
-    caseId: "20000000-0000-4000-8000-000000000001",
-    revision: 1,
+    subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 1,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
     history: "FULL",
   },
-  closeCaseScreen,
+  caseIdentityScreen,
 );
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn());
@@ -55,6 +72,12 @@ const queueListPages = () => {
               rows: [
                 {
                   key: "20000000-0000-4000-8000-000000000001",
+                  link: {
+                    endpoint: "case.get",
+                    input: {
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                    },
+                  },
                   values: [{ kind: "REFERENCE", value: "CASE-1" }],
                 },
               ],
@@ -62,13 +85,19 @@ const queueListPages = () => {
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: "next",
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: "next",
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -92,6 +121,12 @@ const queueListPages = () => {
               rows: [
                 {
                   key: "20000000-0000-4000-8000-000000000002",
+                  link: {
+                    endpoint: "case.get",
+                    input: {
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000002" },
+                    },
+                  },
                   values: [{ kind: "REFERENCE", value: "CASE-2" }],
                 },
               ],
@@ -99,13 +134,19 @@ const queueListPages = () => {
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [{ caseId: "20000000-0000-4000-8000-000000000002", assignment: null }],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -131,13 +172,19 @@ const queueListPages = () => {
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -200,7 +247,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
-  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "CLOSE");
+  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "case.close");
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");
   await user.click(getButton("Load more"));
@@ -346,6 +393,12 @@ it("routes dashboard list selections and the new-case act into the typed editor"
               rows: [
                 {
                   key: "20000000-0000-4000-8000-000000000001",
+                  link: {
+                    endpoint: "case.get",
+                    input: {
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                    },
+                  },
                   values: [{ kind: "REFERENCE", value: "CASE-1" }],
                 },
               ],
@@ -353,13 +406,19 @@ it("routes dashboard list selections and the new-case act into the typed editor"
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -383,6 +442,12 @@ it("routes dashboard list selections and the new-case act into the typed editor"
               rows: [
                 {
                   key: "20000000-0000-4000-8000-000000000001",
+                  link: {
+                    endpoint: "case.get",
+                    input: {
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                    },
+                  },
                   values: [{ kind: "REFERENCE", value: "CASE-1" }],
                 },
               ],
@@ -390,13 +455,19 @@ it("routes dashboard list selections and the new-case act into the typed editor"
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

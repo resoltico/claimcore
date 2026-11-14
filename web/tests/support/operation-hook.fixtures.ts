@@ -1,3 +1,4 @@
+import { operationAffordance } from "./affordances.fixtures";
 import type { PreparedRequest } from "../../src/protocol/preparedRequest";
 import { recoveryOptions } from "./recovery.fixtures";
 import { renderHook } from "@testing-library/react";
@@ -12,7 +13,7 @@ export const hook = () =>
       useOperation({
         ...recoveryOptions,
         subject: "CASE",
-        kind: "CLOSE",
+        kind: "case.close",
         current: target,
         credential,
         onLockChange: vi.fn(),
@@ -28,19 +29,17 @@ export const preview = (
   prepared: PreparedRequest<"operation.execute"> = preparedFor(),
 ): ApiResult<ServiceResponse<"operation.preview">> => {
   const { input } = prepared;
-  if (input.kind !== "CASE" || (input.act.kind !== "OPEN" && input.act.kind !== "CLOSE")) {
+  if (
+    input.binding.kind !== "CASE" ||
+    (input.task !== "case.open" && input.task !== "case.close")
+  ) {
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
-  const source = input.act.kind === "OPEN" ? openReview : closeReview;
-  let { caseId } = current.context;
-  if (input.target.kind === "ID") {
-    ({ caseId } = input.target);
-  }
-  if (input.act.kind === "OPEN") {
-    caseId = input.operationId;
-  }
+  const source = input.task === "case.open" ? openReview : closeReview;
   const reference =
-    input.target.kind === "REFERENCE" ? input.target.caseReference : "CASE-SERIALIZATION";
+    input.binding.target.kind === "REFERENCE"
+      ? input.binding.target.caseReference
+      : "CASE-SERIALIZATION";
   return {
     kind: "outcome",
     status: 200,
@@ -53,15 +52,11 @@ export const preview = (
           ...source,
           document: {
             ...source.document,
-            context: {
-              ...source.document.context,
-              target: {
-                kind: "CASE",
-                caseId,
-                beforeRevision: input.act.kind === "OPEN" ? null : input.expectedRevision,
-              },
+            subject: {
+              ...source.document.subject,
               confirmation: { kind: "CASE_REFERENCE", reference },
             },
+            actions: [operationAffordance(input.task, input.binding, input.inputs, [])],
           },
         },
       },

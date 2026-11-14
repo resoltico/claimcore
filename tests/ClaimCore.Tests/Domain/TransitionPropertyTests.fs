@@ -56,7 +56,7 @@ let private paymentContext act (current: CaseRecord) =
     let parent = Case.snapshot current
 
     match act with
-    | CaseAct.RecordPayment _ -> CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+    | CaseAct.RecordPayment _ -> Map.empty
     | CaseAct.RemovePayment _ ->
         let selected =
             parent.State
@@ -71,8 +71,8 @@ let private paymentContext act (current: CaseRecord) =
                             Inputs.payment
                     ))
 
-        CasePaymentContext.Removing(parent.CaseId, parent.Revision, selected, None)
-    | _ -> CasePaymentContext.NoneRequired
+        (ClaimCore.TestSupport.CaseFixtures.paymentRows (parent.CaseId) (Option.toList (selected)))
+    | _ -> Map.empty
 
 let private record (decision: CaseDecision) =
     Case.ofAccepted decision.After |> accepted
@@ -235,7 +235,7 @@ let private reach state =
     | Voided ->
         CaseFixtures.decide
             today
-            CasePaymentContext.NoneRequired
+            Map.empty
             (actRequest 1L ((AuthoredCaseAct.Void "Entry error")))
             (Some(opened ()))
         |> accepted
@@ -243,7 +243,7 @@ let private reach state =
     | Erased ->
         CaseFixtures.decide
             today
-            CasePaymentContext.NoneRequired
+            Map.empty
             (actRequest 1L ((AuthoredCaseAct.Bare BareAct.Erase)))
             (Some(opened ()))
         |> accepted

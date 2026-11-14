@@ -32,6 +32,12 @@ const result = (reference: string): ApiResult<ListResponse> => ({
                 rows: [
                   {
                     key: "20000000-0000-4000-8000-000000000001",
+                    link: {
+                      endpoint: "case.get",
+                      input: {
+                        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                      },
+                    },
                     values: [{ kind: "REFERENCE", value: reference }],
                   },
                 ],
@@ -40,13 +46,11 @@ const result = (reference: string): ApiResult<ListResponse> => ({
             },
           ],
         },
-        context: {
-          kind: "CASES",
-          nextCursor: null,
-          tasks: [],
-          cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-          exactCaseId: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       },
@@ -72,7 +76,7 @@ const selectPage = (response: ListResponse) => {
           )
         : [],
     ),
-    nextCursor: document.context.nextCursor,
+    nextCursor: document.nextCursor,
   };
 };
 const pageInput = (cursor: string | null) => ({

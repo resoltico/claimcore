@@ -91,7 +91,7 @@ let internal caseErasure fixture =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         for n, reference in [ 10, "CONTRACT-001"; 11, "CONTRACT-002" ] do
             let! opened =

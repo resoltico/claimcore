@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliReplyLossTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -107,7 +109,7 @@ let private physicalReplyLoss () =
 
     use client = new HttpClient(handler)
     client.Timeout <- TimeSpan.FromSeconds 5.
-    let invocation = authorityFrame ()
+    let invocation = peopleFrame ()
     let mutable dispatched = false
 
     let reply =

@@ -69,11 +69,7 @@ let private acceptedRecord (decision: CaseDecision) =
     Case.ofAccepted decision.After |> accepted
 
 let opened () =
-    CaseFixtures.decide
-        today
-        CasePaymentContext.NoneRequired
-        (request 0L (AuthoredCaseAct.Open registration))
-        None
+    CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open registration)) None
     |> accepted
     |> acceptedRecord
 
@@ -85,16 +81,7 @@ let applyWith context act claim =
         (Some claim)
     |> Result.map acceptedRecord
 
-let apply act claim =
-    let current = Case.snapshot claim
-
-    let context =
-        match act with
-        | CaseAct.RecordPayment _ ->
-            CasePaymentContext.Recording(current.CaseId, current.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
-
-    applyWith context act claim
+let apply act claim = applyWith Map.empty act claim
 
 let decided () =
     opened () |> apply (AuthoredCaseAct.Decide decision) |> accepted

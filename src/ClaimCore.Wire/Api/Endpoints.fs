@@ -246,16 +246,23 @@ module Api =
             Effect = EndpointEffect.OperationalWrite
         }
 
-    let private actorRead query input name data =
+    let private actorEndpoint endpoint input name data =
+        let task =
+            match endpoint with
+            | ActorEndpoint.Query query -> TaskId.Query query
+            | ActorEndpoint.Command command -> TaskId.Command command
+            | ActorEndpoint.Operation _ ->
+                invalidArg (nameof endpoint) "Operations have their own replies."
+
         {
-            Id = EndpointId.Actor(ActorEndpoint.Query query)
+            Id = EndpointId.Actor endpoint
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
             Input = input
             Output =
                 RepresentationCodecs.reply
                     name
-                    (HumanDocumentCodecs.readReplyFor query)
+                    (HumanDocumentCodecs.readReplyFor task)
                     (ReplyCodecs.dataReadReply (name + ".DATA_RESULT") data)
             Classify =
                 function
@@ -265,6 +272,9 @@ module Api =
             Unavailable =
                 fun _ -> RepresentationReply.Data(Outcome.Failed CoreFault.StoreUnavailable)
         }
+
+    let private actorRead query input name data =
+        actorEndpoint (ActorEndpoint.Query query) input name data
 
     let context =
         actorRead QueryTaskId.Context RequestCodecs.empty "ContextReply" ResponseCodecs.contextReply
@@ -335,15 +345,15 @@ module Api =
             "ReminderReadReply"
             WorkReadCodecs.reminder
 
-    let operationPreviewUnavailable input : PreviewReply =
+    let operationPreviewUnavailable (input: OperationSubmission) : PreviewReply =
         {
-            OperationId = OperationInput.operationId input
+            OperationId = input.OperationId
             Outcome = Outcome.Failed CoreFault.StoreUnavailable
         }
 
-    let operationExecuteUnavailable input : ExecuteReply =
+    let operationExecuteUnavailable (input: OperationSubmission) : ExecuteReply =
         {
-            OperationId = OperationInput.operationId input
+            OperationId = input.OperationId
             Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
         }
 
@@ -358,7 +368,7 @@ module Api =
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
-            Input = RequestCodecs.operationInput
+            Input = OperationSubmissionCodecs.submission
             Output =
                 RepresentationCodecs.reply
                     "PreviewReply"
@@ -371,7 +381,7 @@ module Api =
             Correlation =
                 Some
                     {
-                        Request = OperationInput.operationId
+                        Request = fun (input: OperationSubmission) -> input.OperationId
                         Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
             Unavailable = operationPreviewUnavailable >> RepresentationReply.Data
@@ -382,7 +392,7 @@ module Api =
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
             Method = HttpMethod.Post
             Effect = EndpointEffect.LedgerExecution
-            Input = RequestCodecs.operationInput
+            Input = OperationSubmissionCodecs.submission
             Output =
                 RepresentationCodecs.reply
                     "ExecuteReply"
@@ -394,7 +404,7 @@ module Api =
             Correlation =
                 Some
                     {
-                        Request = OperationInput.operationId
+                        Request = fun (input: OperationSubmission) -> input.OperationId
                         Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
             Unavailable = operationExecuteUnavailable >> RepresentationReply.Data
@@ -423,37 +433,37 @@ module Api =
             Unavailable = operationGetUnavailable >> RepresentationReply.Data
         }
 
-    let authorityList =
+    let peopleList =
         actorRead
-            QueryTaskId.AuthorityList
+            QueryTaskId.PeopleList
             RequestCodecs.actorListRequest
             "ActorsReply"
             ResponseCodecs.actorsPage
 
-    let authorityGrants =
+    let peopleGrants =
         actorRead
-            QueryTaskId.AuthorityGrants
+            QueryTaskId.PeopleGrants
             RequestCodecs.grantsRequest
             "GrantsReply"
             ResponseCodecs.grantsPage
 
-    let authorityHistory =
+    let peopleHistory =
         actorRead
-            QueryTaskId.AuthorityHistory
-            RequestCodecs.authorityHistoryRequest
-            "AuthorityHistoryReply"
-            AuthorityHistoryCodecs.page
+            QueryTaskId.PeopleHistory
+            RequestCodecs.peopleHistoryRequest
+            "PeopleHistoryReply"
+            PeopleHistoryCodecs.page
 
-    let authorityRequests =
+    let peopleRequests =
         actorRead
-            QueryTaskId.AuthorityRequests
+            QueryTaskId.PeopleRequests
             RequestCodecs.accessRequestsRequest
             "AccessRequestsReply"
             ResponseCodecs.accessRequestsPage
 
-    let authorityRequestsDismiss =
-        { actorRead
-              QueryTaskId.AuthorityRequestsDismiss
+    let peopleRequestsDismiss =
+        { actorEndpoint
+              (ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss)
               RequestCodecs.accessRequestDismissRequest
               "AccessRequestDismissReply"
               Codec.nullValue with
@@ -484,15 +494,13 @@ module Api =
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             EndpointDefinition.create operationExecute
         | (ActorEndpoint.Query QueryTaskId.OperationGet) -> EndpointDefinition.create operationGet
-        | (ActorEndpoint.Query QueryTaskId.AuthorityList) -> EndpointDefinition.create authorityList
-        | (ActorEndpoint.Query QueryTaskId.AuthorityGrants) ->
-            EndpointDefinition.create authorityGrants
-        | (ActorEndpoint.Query QueryTaskId.AuthorityHistory) ->
-            EndpointDefinition.create authorityHistory
-        | (ActorEndpoint.Query QueryTaskId.AuthorityRequests) ->
-            EndpointDefinition.create authorityRequests
-        | (ActorEndpoint.Query QueryTaskId.AuthorityRequestsDismiss) ->
-            EndpointDefinition.create authorityRequestsDismiss
+        | (ActorEndpoint.Query QueryTaskId.PeopleList) -> EndpointDefinition.create peopleList
+        | (ActorEndpoint.Query QueryTaskId.PeopleGrants) -> EndpointDefinition.create peopleGrants
+        | (ActorEndpoint.Query QueryTaskId.PeopleHistory) -> EndpointDefinition.create peopleHistory
+        | (ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
+            EndpointDefinition.create peopleRequests
+        | (ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss) ->
+            EndpointDefinition.create peopleRequestsDismiss
 
     let definitions =
         (HostEndpoint.all |> List.map defineHost)

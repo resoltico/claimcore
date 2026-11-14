@@ -1,5 +1,5 @@
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import type { CaseSelector, HumanReadDocument_caseGet, Screen } from "@contracts/client";
+import type { CaseSelector, HumanReadDocument_case_get, Screen } from "@contracts/client";
 import { useState, type ReactNode } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
@@ -112,7 +112,7 @@ const CurrentPresentation = ({
   );
 };
 
-const asCurrentCase = (state: HumanReadDocument_caseGet | null) =>
+const asCurrentCase = (state: HumanReadDocument_case_get | null) =>
   state !== null && isCurrentCase(state) ? state : null;
 const CaseHeader = ({
   target,
@@ -120,7 +120,7 @@ const CaseHeader = ({
   state,
   onAct,
 }: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & {
-  state: HumanReadDocument_caseGet | null;
+  state: HumanReadDocument_case_get | null;
 }) => {
   const p = usePresentation();
   const current = asCurrentCase(state);
@@ -168,7 +168,7 @@ const UnavailableAct = ({
   onAct,
 }: {
   value: ActKind;
-  state: HumanReadDocument_caseGet;
+  state: HumanReadDocument_case_get;
   onAct: CaseDetailProps["onAct"];
 }) => {
   const p = usePresentation();
@@ -213,7 +213,7 @@ const useTimelineSelection = (access: string) => {
   };
 };
 const timelineDisclosure = (
-  state: HumanReadDocument_caseGet | null,
+  state: HumanReadDocument_case_get | null,
   access: string,
 ): "ERASED" | "FULL" | "SUMMARY" => {
   if (state?.disclosure === "ERASED") {

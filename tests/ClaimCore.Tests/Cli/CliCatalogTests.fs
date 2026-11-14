@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliCatalogTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text
@@ -58,7 +60,7 @@ let private byteLimits () =
         Grammar.prepare (fun () -> operationId) args
 
     let emptyInput =
-        """{"kind":"CASE","operationId":"11111111-2222-7333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
+        """{"operationId":"11111111-2222-7333-8444-555555555555","task":"case.void","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1},"inputs":{"input:reason":""}}"""
 
     let remaining =
         Limits.MaximumRequestBytes - System.Text.Encoding.UTF8.GetByteCount emptyInput
@@ -121,7 +123,9 @@ let private replacement () =
     let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
 
     let request =
-        RequestCodecs.operationInput.Read "$" (Frames.input frame) |> Fixtures.accepted
+        OperationSubmissionCodecs.submission.Read "$" (Frames.input frame)
+        |> Fixtures.accepted
+        |> ClaimCore.TestSupport.Submissions.command
 
     match request with
     | OperationInput.Case {

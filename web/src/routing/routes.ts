@@ -1,5 +1,4 @@
 import type { CaseSelector } from "@contracts/client";
-import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
   | { screen: "home" }
@@ -10,7 +9,7 @@ export type Route =
   | { screen: "caseAct"; target: CaseSelector; act: string; paymentId?: string }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
-  | { screen: "authorityHistory"; actorId: string }
+  | { screen: "peopleHistory"; actorId: string }
   | { screen: "missing" };
 
 const opaque = (value: string): string =>
@@ -47,14 +46,14 @@ export const actPath = (target: CaseSelector, act: string): string =>
 const caseActRoute = (target: CaseSelector, segment: string, query: string): Route => {
   const act = decodeURIComponent(segment);
   const paymentIds = new URLSearchParams(query).getAll("paymentId");
-  if (act === "REMOVE_PAYMENT" && (paymentIds.length !== 1 || paymentIds[0] === "")) {
+  if (act === "case.removePayment" && (paymentIds.length !== 1 || paymentIds[0] === "")) {
     return { screen: "missing" };
   }
   return {
     screen: "caseAct",
     target,
     act,
-    ...(act === "REMOVE_PAYMENT" ? { paymentId: paymentIds[0]! } : {}),
+    ...(act === "case.removePayment" ? { paymentId: paymentIds[0]! } : {}),
   };
 };
 const caseRoute = (segments: string[], query: string): Route => {
@@ -68,7 +67,7 @@ const caseRoute = (segments: string[], query: string): Route => {
     segments[1] === "id"
       ? { kind: "ID" as const, caseId: decodeURIComponent(segments[2]!) }
       : { kind: "REFERENCE" as const, caseReference: referenceFrom(segments[2]!) };
-  if (!["id", "reference"].includes(segments[1]!) || !isRequest("case.get", { target })) {
+  if (!["id", "reference"].includes(segments[1]!)) {
     return { screen: "missing" };
   }
   if (segments.length === 3) {
@@ -92,16 +91,13 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
   if (segments[0] === "cases") {
     return { screen: "cases", query };
   }
-  if (segments[0] === "authority-history") {
+  if (segments[0] === "people-history") {
     const actors = new URLSearchParams(query).getAll("actorId");
     const actorId = actors[0] ?? "";
-    if (
-      actors.length > 1 ||
-      (actors.length === 1 && !isRequest("authority.history", { limit: 50, actorId }))
-    ) {
+    if (actors.length > 1 || (actors.length === 1 && actorId === "")) {
       return { screen: "missing" };
     }
-    return { screen: "authorityHistory", actorId };
+    return { screen: "peopleHistory", actorId };
   }
   return segments[0] === "reminders" ? { screen: "reminders", query } : null;
 };

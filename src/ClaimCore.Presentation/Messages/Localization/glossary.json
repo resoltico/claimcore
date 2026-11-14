@@ -186,16 +186,16 @@
     "de": "Version"
   },
   "access": {
-    "forbidden": {},
     "en": "access",
     "lv": "piekļuve",
-    "ar": "الصلاحيات",
+    "ar": "الوصول",
     "ko": "접근 권한",
-    "ja": "アクセス",
+    "ja": "アクセス権",
     "zh-Hans": "访问权限",
     "zh-Hant": "存取權限",
     "es": "acceso",
-    "de": "Zugriff"
+    "de": "Zugriff",
+    "forbidden": {}
   },
   "all cases": {
     "forbidden": {},
@@ -232,5 +232,29 @@
     "zh-Hant": "處理摘要",
     "es": "resumen de tramitación",
     "de": "Bearbeitungsnotiz"
+  },
+  "people": {
+    "en": "people",
+    "lv": "personas",
+    "ar": "الأشخاص",
+    "ko": "사람",
+    "ja": "利用者",
+    "zh-Hans": "人员",
+    "zh-Hant": "人員",
+    "es": "personas",
+    "de": "Personen",
+    "forbidden": {}
+  },
+  "task ID": {
+    "en": "task ID",
+    "lv": "uzdevuma ID",
+    "ar": "معرّف المهمة",
+    "ko": "작업 ID",
+    "ja": "タスク ID",
+    "zh-Hans": "任务 ID",
+    "zh-Hant": "工作 ID",
+    "es": "ID de tarea",
+    "de": "Aufgaben-ID",
+    "forbidden": {}
   }
 }

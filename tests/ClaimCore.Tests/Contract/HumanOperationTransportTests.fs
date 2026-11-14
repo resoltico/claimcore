@@ -37,7 +37,7 @@ let private exercise endpoint unavailable describe input core =
         let mutable completed = 0
 
         let route =
-            ClaimCore.Web.Route.represented
+            ClaimCore.Server.Route.represented
                 endpoint
                 unavailable
                 describe
@@ -151,7 +151,10 @@ let tests =
                                 "Canonical transport choices"
                         | _ -> failtest "Every actor and no host declares representation selection"
 
-                    let authored = Api.operationPreview.Input.Write ResponseExamples.previewInput
+                    let authored =
+                        (Api.operationPreview.Input.Write
+                         << ClaimCore.TestSupport.Submissions.ofCommand None)
+                            ResponseExamples.previewInput
 
                     Expect.isNone
                         (JsonValue.tryMember "representation" authored)
@@ -164,8 +167,8 @@ let tests =
                         exercise
                             Api.operationPreview
                             Api.operationPreviewUnavailable
-                            HumanReplies.preview
-                            ResponseExamples.previewInput
+                            HumanReplies.previewSubmission
+                            (Submissions.ofCommand None ResponseExamples.previewInput)
                             ResponseExamples.preview
                         |> Async.AwaitTask
 
@@ -182,7 +185,7 @@ let tests =
                             Api.operationExecute
                             Api.operationExecuteUnavailable
                             (fun _ reply -> HumanReplies.execute reply)
-                            input
+                            (Submissions.ofCommand None input)
                             accepted
                         |> Async.AwaitTask
 
@@ -318,7 +321,9 @@ let tests =
                             }
 
                     let frame =
-                        Frames.create Api.operationPreview input
+                        (Frames.create Api.operationPreview
+                         << ClaimCore.TestSupport.Submissions.ofCommand None)
+                            input
                         |> required
                         |> Frames.withRepresentation Representation.Human
 
@@ -352,7 +357,7 @@ let tests =
                         }
 
                     let route =
-                        ClaimCore.Web.Route.represented
+                        ClaimCore.Server.Route.represented
                             Api.operationExecute
                             Api.operationExecuteUnavailable
                             (fun _ _ -> failwith "Synthetic projection failure")
@@ -361,7 +366,13 @@ let tests =
                                 invoked <- invoked + 1
                                 Task.FromResult core)
 
-                    let prepared = route.Prepare(Api.operationExecute.Input.Write input) |> required
+                    let prepared =
+                        route.Prepare(
+                            (Api.operationExecute.Input.Write
+                             << ClaimCore.TestSupport.Submissions.ofCommand None)
+                                input
+                        )
+                        |> required
 
                     let! result =
                         prepared.Invoke

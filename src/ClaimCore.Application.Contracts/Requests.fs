@@ -38,7 +38,7 @@ type GrantsRequest =
         Limit: int
     }
 
-type AuthorityHistoryRequest =
+type PeopleHistoryRequest =
     {
         TargetActorId: Guid option
         AfterCursor: string option

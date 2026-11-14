@@ -52,7 +52,11 @@ it.each([
                   rows: includeRow
                     ? [
                         {
-                          key: current.context.caseId,
+                          key: current.subject.caseId,
+                          link: {
+                            endpoint: "case.get",
+                            input: { target: { kind: "ID", caseId: current.subject.caseId } },
+                          },
                           values: [{ kind: "REFERENCE", value: fields.caseReference }],
                         },
                       ]
@@ -61,13 +65,11 @@ it.each([
               },
             ],
           },
-          context: {
-            kind: "CASES",
-            cases: includeRow ? [{ caseId: current.context.caseId, assignment: null }] : [],
-            tasks: [],
-            exactCaseId: null,
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: workBasis },
           disclosure: "CURRENT",
         }),
@@ -85,7 +87,11 @@ it.each([
       value: {
         ...humanReadReply("case.summary", {
           screen: { regions: [] },
-          context: { kind: "EMPTY" },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: workBasis },
           disclosure: "CURRENT",
         }),

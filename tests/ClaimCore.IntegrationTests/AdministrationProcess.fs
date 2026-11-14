@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.AdministrationProcess
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Diagnostics
@@ -51,7 +53,7 @@ let publishConfiguration configuration directory =
         let project =
             Path.Combine(
                 ClaimCore.TestSupport.RepositoryRoot.find (),
-                "src/ClaimCore.Database/ClaimCore.Database.fsproj"
+                "src/ClaimCore.Server/ClaimCore.Server.fsproj"
             )
 
         let config =
@@ -100,7 +102,7 @@ let publishConfiguration configuration directory =
                 failure
                 [ fun () -> retain result.StandardOutput result.StandardError ]
 
-        return Path.Combine(directory, "claimcore-database.dll")
+        return Path.Combine(directory, "claimcore-server.dll")
     }
 
 let publish directory =

@@ -1,18 +1,12 @@
 import catalog from "@contracts/catalog.json" with { type: "json" };
 import {
   consumerContractIdentity,
-  isCatalogDocument,
   type ProductMetadata,
   type CatalogDocument,
 } from "@contracts/client";
-const admitCatalogDocument = (value: unknown): CatalogDocument => {
-  if (!isCatalogDocument(value)) {
-    throw new Error("Invalid generated presentation catalog.");
-  }
-  return value;
-};
 export const productMetadata: ProductMetadata = {
-  catalog: admitCatalogDocument(catalog),
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The JSON and its type are emitted by the same generator.
+  catalog: catalog as CatalogDocument,
   productVersion: catalog.productVersion,
   contractIdentity: consumerContractIdentity,
 };

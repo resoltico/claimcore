@@ -85,7 +85,7 @@ let private restorationTests =
                             BusinessField.ClaimedAmount, "1000"
                         ]
                         Inputs.registration
-                    |> RequestCodecs.registration.Write
+                    |> ClaimCore.RecordFormat.CanonicalInputs.registration.Write
                     |> function
                         | JsonValue.Object fields ->
                             JsonValue.Object(fields @ [ "incidentDescription", JsonValue.Null ])
@@ -157,7 +157,7 @@ let private precisionAndRoundTripTests =
                 let claim =
                     CaseFixtures.decide
                         today
-                        CasePaymentContext.NoneRequired
+                        Map.empty
                         (request 0L (AuthoredCaseAct.Open facts))
                         None
                     |> accepted
@@ -216,7 +216,7 @@ let private decimalGrammarTests =
                     Expect.isTrue
                         (CaseFixtures.decide
                             today
-                            CasePaymentContext.NoneRequired
+                            Map.empty
                             (request 0L (AuthoredCaseAct.Open facts))
                             None
                          |> isInvalid)
@@ -238,7 +238,7 @@ let private dateGrammarTests =
                     Expect.isTrue
                         (CaseFixtures.decide
                             today
-                            CasePaymentContext.NoneRequired
+                            Map.empty
                             (request 0L (AuthoredCaseAct.Open facts))
                             None
                          |> isInvalid)
@@ -259,7 +259,7 @@ let private currencyGrammarTests =
                     Expect.isTrue
                         (CaseFixtures.decide
                             today
-                            CasePaymentContext.NoneRequired
+                            Map.empty
                             (request 0L (AuthoredCaseAct.Open facts))
                             None
                          |> isInvalid)
@@ -274,11 +274,7 @@ let private authoredUnicodeRoundTrip () =
                 (registration))
 
         let claim =
-            CaseFixtures.decide
-                today
-                CasePaymentContext.NoneRequired
-                (request 0L (AuthoredCaseAct.Open facts))
-                None
+            CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open facts)) None
             |> accepted
             |> _.After
 

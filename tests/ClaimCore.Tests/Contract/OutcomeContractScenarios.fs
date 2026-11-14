@@ -166,13 +166,13 @@ let internal queryCodecs () =
         (RepresentationReply.Data
             {
                 OperationReply.OperationId = id
-                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(authority, true))
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(people, true))
             })
 
     |> ignore
 
     admitted
-        Api.authorityList.Output
+        Api.peopleList.Output
         (RepresentationReply.Data(
             Outcome.Succeeded
                 {
@@ -186,7 +186,7 @@ let internal queryCodecs () =
 
 
 let internal executeOutcomes () =
-    for receiptValue in [ receipt; authority ] do
+    for receiptValue in [ receipt; people ] do
         for outcome, exit in
             [
                 ExecuteResult.Accepted(receiptValue), 0
@@ -327,7 +327,7 @@ let internal diagnostics () =
     for value, expectedCode in
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
-            (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
+            (ClaimCore.Domain.Refusal.People PeopleRefusal.LastOwner), "LAST_OWNER"
             (ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)),
             "NOT_AUTHORIZED"
             (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
@@ -337,7 +337,7 @@ let internal diagnostics () =
             admitted Api.caseGet.Output (RepresentationReply.Data(Outcome.Rejected value))
 
         Expect.equal
-            (result.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
+            (result.GetProperty("outcome").GetProperty("rejection").GetProperty("code").GetString())
             expectedCode
             "The refusal carries its stable code"
 
@@ -445,7 +445,7 @@ let internal actionTokens () =
         let result =
             admitted Api.caseGet.Output (RepresentationReply.Data(Outcome.Rejected refusal))
 
-        let data = result.GetProperty("outcome").GetProperty("data")
+        let data = result.GetProperty("outcome").GetProperty("rejection")
 
         Expect.equal (data.GetProperty("action").GetString()) expected "Literal wire guidance"
 
@@ -465,9 +465,9 @@ let internal actionTokens () =
             field
             |> Option.iter (fun target ->
                 Expect.equal
-                    (encodedIssues.Head.GetProperty("field").GetString())
-                    target
-                    "The issue retains its own field")
+                    (encodedIssues.Head.GetProperty("input").GetString())
+                    ("input:" + target)
+                    "The issue retains its declared input token")
         | _ ->
             let mutable encodedTarget = Unchecked.defaultof<JsonElement>
             let hasTarget = data.TryGetProperty("target", &encodedTarget)

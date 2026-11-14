@@ -1,38 +1,29 @@
+import type { CaseSubmission, CurrentCase } from "../../src/api/service";
+import { prefixedInputs } from "../support/submission-inputs";
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+import type { RequestByEndpoint, HumanRejection } from "@contracts/client";
 
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
-
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
-import { isRequest } from "../../src/protocol/client";
-import type { HumanRejection } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-
 import { chooseOption } from "../support/choice-entry";
-
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../../src/api/service";
+
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
-type SentDraft = {
-  operationId: string;
-  target: { kind: "REFERENCE"; caseReference: string };
-  expectedRevision: number;
-  act: {
-    kind: string;
-    values: Record<string, string>;
-  };
-};
+type SentDraft = Omit<CaseSubmission, "inputs"> & { inputs: Readonly<Record<string, unknown>> };
 const sentDraft = (call: number): SentDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[call]?.[1]?.body;
   if (typeof body !== "string") {
@@ -40,7 +31,10 @@ const sentDraft = (call: number): SentDraft => {
   }
   return JSON.parse(body) as SentDraft;
 };
-const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "CORRECT") => (
+const editor = (
+  current: CurrentCase | null,
+  initialAct: "case.open" | "case.close" | "case.correct",
+) => (
   <OperationEditor
     definition={definition}
     current={current}
@@ -51,11 +45,10 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
   />
 );
 const preparedResponse = (_url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const input: unknown = JSON.parse(requestText(options?.body));
-  if (!isRequest("operation.preview", input)) {
-    throw new Error("Typed preview command required");
-  }
-  const reply = reviewed(prepareRequest("operation.execute", input));
+  const operationPreviewRequest = JSON.parse(
+    requestText(options?.body),
+  ) as RequestByEndpoint["operation.preview"];
+  const reply = reviewed(prepareRequest("operation.execute", operationPreviewRequest));
   if (reply.kind !== "outcome") {
     throw new Error("Current review required");
   }
@@ -69,7 +62,10 @@ const refusedResponse = () =>
       rejection: {
         kind: "REFUSED",
         advice: {
-          message: { messageId: "diagnostic.IDEMPOTENCY_CONFLICT", arguments: [] },
+          message: {
+            messageId: "diagnostic.IDEMPOTENCY_CONFLICT",
+            arguments: [],
+          },
           action: "STOP_AND_INVESTIGATE",
         },
       },
@@ -80,7 +76,15 @@ const validationRefusal: HumanRejection = {
   advice: {
     message: {
       messageId: "diagnostic.INVALID_INPUT",
-      arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
+      arguments: [
+        {
+          key: "issueCount",
+          value: {
+            kind: "COUNT",
+            value: 1,
+          },
+        },
+      ],
     },
     action: "CORRECT_INPUT",
   },
@@ -89,28 +93,45 @@ const validationRefusal: HumanRejection = {
       input: "field:claimantName",
       row: null,
       related: null,
-      message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
+      message: {
+        messageId: "diagnostic.TEXT_REQUIRED",
+        arguments: [],
+      },
     },
   ],
 };
 const staleRefusal: HumanRejection = {
   kind: "CONFLICT",
   advice: {
-    message: { messageId: "diagnostic.REVISION_CONFLICT", arguments: [] },
+    message: {
+      messageId: "diagnostic.REVISION_CONFLICT",
+      arguments: [],
+    },
     action: "REVIEW_LATEST",
   },
   actualRevision: 2,
   document: {
-    screen: { regions: [] },
-    context: { kind: "CONTINUATION", nextCursor: null },
-    basis: { kind: "UNAVAILABLE" },
+    screen: {
+      regions: [],
+    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
+    basis: {
+      kind: "UNAVAILABLE",
+    },
     disclosure: "WITHHELD",
   },
 };
 const rejectedResponse = (rejection: HumanRejection) =>
   endpointResponse("operation.preview", {
     representation: "HUMAN",
-    outcome: { kind: "REJECTED", rejection },
+    outcome: {
+      kind: "REJECTED",
+      rejection,
+    },
   });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("allocates a new ID when editing a definitely refused reviewed request", async () => {
@@ -119,7 +140,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockImplementationOnce(preparedResponse)
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  render(editor(null, "OPEN"));
+  render(editor(null, "case.open"));
   fillRegistrationInputs({
     claimantName: "Synthetic A",
   });
@@ -142,15 +163,26 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   );
   expect(claimant).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
-  expect(sentDraft(0).act.values["claimantName"]).toBe("Synthetic A");
-  expect(sentDraft(2).act.values["claimantName"]).toBe("Synthetic B");
+  expect(sentDraft(0).inputs["field:claimantName"]).toBe("Synthetic A");
+  expect(sentDraft(2).inputs["field:claimantName"]).toBe("Synthetic B");
 });
 it("re-previews the same authored revision after preview loss despite a changed current observation", async () => {
   const user = userEvent.setup();
   const current: CurrentCase = caseDocumentInput({
-    tasks: ["CASE:CLOSE"],
-    caseId: "20000000-0000-4000-8000-000000000001",
-    revision: 1,
+    subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 1,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
     history: "FULL",
   });
   vi.mocked(globalThis.fetch)
@@ -161,20 +193,23 @@ it("re-previews the same authored revision after preview loss despite a changed 
         representation: "HUMAN",
         outcome: {
           kind: "SUCCEEDED",
-          document: { ...current, context: { ...current.context, revision: 2 } },
+          document: {
+            ...current,
+            subject: { ...current.subject, revision: 2 },
+          },
         },
       }),
     );
-  const view = render(editor(current, "CLOSE"));
+  const view = render(editor(current, "case.close"));
   await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
   view.rerender(
     editor(
       {
         ...current,
-        context: { ...current.context, revision: 2 },
+        subject: { ...current.subject, revision: 2 },
       },
-      "CLOSE",
+      "case.close",
     ),
   );
   await user.click(getButton("Review changes"));
@@ -185,31 +220,43 @@ it("re-previews the same authored revision after preview loss despite a changed 
   const { operationId: nextId, ...nextCommand } = sentDraft(1);
   expect(nextCommand).toEqual(firstCommand);
   expect(nextId).not.toBe(firstId);
-  expect(sentDraft(1).expectedRevision).toBe(1);
+  expect(sentDraft(1).binding.expectedRevision).toBe(1);
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
 const paidCase: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CORRECT"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", {
+          paymentDecisionDate: "2026-09-03",
+          payableAmount: "9.99",
+          payableCurrency: "EUR",
+        }),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: fields.registration,
-    decision: {
-      paymentDecisionDate: "2026-09-03",
-      payableAmount: "9.99",
-      payableCurrency: "EUR",
-    },
-  },
 });
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {
   const user = userEvent.setup();
   const current = paidCase;
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
-  render(editor(current, "CORRECT"));
+  render(editor(current, "case.correct"));
   const registration = document.querySelector<HTMLSelectElement>(
     'fieldset[id="field-group:registration"]',
   );
@@ -230,19 +277,11 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   }
   const draft: unknown = JSON.parse(body);
   expect(draft).toMatchObject({
-    act: {
-      kind: "CORRECT",
-      groups: {
-        registration: {
-          kind: "UPDATE",
-          values: {
-            claimantName: "Corrected claimant",
-          },
-        },
-        decision: {
-          kind: "KEEP",
-        },
-      },
+    task: "case.correct",
+    inputs: {
+      "group:registration": "UPDATE",
+      "field:claimantName": "Corrected claimant",
+      "group:decision": "KEEP",
     },
   });
 });

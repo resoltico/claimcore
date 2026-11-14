@@ -4,6 +4,12 @@ The supplied Compose setup is for local evaluation. Operators choose and validat
 identity provider, storage, key custody, backups and monitoring. Start with
 [Getting started](getting-started.md) for a separate synthetic installation.
 
+`claimcore-server serve` starts the HTTPS host. The same executable supplies owner administration
+subcommands; it requires a subcommand and returns usage status 64 when none is supplied. Use
+`claimcore-server help` for administration and `claimcore-server serve --help` for host settings.
+Owner credentials belong only in the administration environment. The runtime image contains the
+server and its assets; the human CLI is distributed separately.
+
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
@@ -18,7 +24,7 @@ image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json). Fr
 distributions require the .NET runtime matching the SDK baseline in [global.json](../global.json);
 the supplied application images include their pinned runtime.
 
-Initialize with `claimcore-database initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
+Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
@@ -66,14 +72,14 @@ replace a confirmed result or the primary failure. See `claimcore help exit-code
 Use database-owner credentials to pause register writes before a repair:
 
 ```sh
-claimcore-database status
-claimcore-database maintenance on
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
+claimcore-server maintenance on
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
-claimcore-database status
-claimcore-database maintenance off
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
+claimcore-server maintenance off
 ```
 
 Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
@@ -81,7 +87,7 @@ it off. After a lost acknowledgement, inspect fresh status rather than guessing.
 resume automatically. Rebuild preserves history, replaces projections atomically, reports prior divergence
 and leaves the pause active.
 
-Maintenance pauses case, work, reminder, note and authority changes. Authorized reads, authentication,
+Maintenance pauses case, work, reminder, note and people changes. Authorized reads, authentication,
 accepted-operation replay and final absence checks continue. It is not an all-host drain. For quiescence,
 remove new traffic and gracefully stop every host; inspect process exit and outstanding database work.
 Keep traffic isolated after an uncertain owner procedure.
@@ -89,7 +95,7 @@ Keep traffic isolated after an uncertain owner procedure.
 Every host cleans expired sessions and access requests in bounded batches every ten minutes with up to
 one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
 No manual prune command is required. See [housekeeping](../src/ClaimCore.Postgres/Housekeeping.fs)
-and the [host service](../src/ClaimCore.Web/HousekeepingService.fs) for the enforced limits and scheduling.
+and the [host service](../src/ClaimCore.Server/HousekeepingService.fs) for the enforced limits and scheduling.
 
 ## Access review and sessions
 
@@ -97,7 +103,7 @@ Use [People and access](people-and-access.md) for account, profile and role task
 access; an Auditor with that role for all cases can review it. Inspect each account's grant pages through
 the final continuation: row summaries do not list every assignment.
 
-`claimcore authority history --actor-id ID` filters the account whose access changed, rather than the
+`claimcore people history --actor-id ID` filters the account whose access changed, rather than the
 executor. Every page rechecks current rights. Case erasure does not erase grants or access history.
 Review the exact sign-in identity, role and scope before recording access. Selecting a different person
 does not rewrite a prepared request; starting their change requires explicit discard consent.
@@ -122,7 +128,7 @@ Operation IDs have a ten-minute first-execution lifetime with two minutes of fut
 Accepted lookup and replay come first. `operation.get` confirms expiry under the execution head lock,
 commits a monotonic `expiredBefore` cutoff, then returns final absence without a business append.
 Cancellation or uncertain acknowledgement does not establish final absence; a later lookup can resolve it.
-See [delivery recovery](integrating.md#delivery-recovery).
+See [delivery recovery](integrating.md#recover-an-uncertain-change).
 
 An unseen ID strictly older than the committed cutoff cannot execute in the intact installation, even
 after a backward wall-clock step. Equality is not expired. The cutoff preserves full timestamp precision.
@@ -154,7 +160,7 @@ object accepted by `--checkpoint FILE`; save it in an absolute private path with
 
 ```sh
 umask 077
-claimcore-database head > /PRIVATE/checkpoint.json
+claimcore-server head > /PRIVATE/checkpoint.json
 ```
 
 The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
@@ -172,13 +178,13 @@ With traffic still isolated, use the independently retained checkpoint, not a re
 the restored database:
 
 ```sh
-claimcore-database maintenance on
-claimcore-database admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server maintenance on
+claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # If authoritative history is sound and only projections diverge:
-claimcore-database rebuild --checkpoint /PRIVATE/checkpoint.json
-claimcore-database verify --checkpoint /PRIVATE/checkpoint.json
-claimcore-database status
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
+claimcore-server status
 ```
 
 Restore admission verifies installation and accepted prefix, raises the frontier to the greater current
@@ -271,7 +277,7 @@ The browser dispatches directly and cancels obsolete reads. A 429 produces a bus
 automatically retried. `Retry-After: 1` is a hint, not a larger admission allowance.
 
 Set CLAIMCORE_WEB_CORE_PERMITS and CLAIMCORE_WEB_CORE_QUEUE within the bounds declared by
-[AdmissionPolicy](../src/ClaimCore.Web/Admission.fs). The private runtime connection string must
+[AdmissionPolicy](../src/ClaimCore.Server/Admission.fs). The private runtime connection string must
 enable pooling and reserve `2 * CORE_PERMITS + 7` connections: 15 with default permits. This includes
 both work pools, session storage, readiness and housekeeping. Other processes and owner tools need
 separate capacity planning. POOL_CAPACITY_INSUFFICIENT identifies inadequate configuration without

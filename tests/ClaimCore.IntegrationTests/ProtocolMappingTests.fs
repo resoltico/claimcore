@@ -7,8 +7,8 @@ open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Web
-open ClaimCore.Web.Composition
+open ClaimCore.Server
+open ClaimCore.Server.Composition
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
@@ -73,7 +73,7 @@ let private assertServerIdentity endpoint input reply =
             (JsonValue.tryMember "operationId" receipt)
             (Some(Codec.uuid.Write(guid "operationId" input)))
             "Lookup receipt identity"
-    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.AuthorityGrants) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleGrants) when
         kind = JsonValue.String "SUCCEEDED"
         ->
         let actor = memberValue "data" outcome |> memberValue "actor"

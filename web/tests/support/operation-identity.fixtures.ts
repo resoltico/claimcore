@@ -5,8 +5,12 @@ const owner = {
   actorId: testWorkspaceIdentity.actorId,
   sessionEpoch: 0,
 };
-import type { OperationState, EffectIdentity } from "../../src/operation/operationState";
-import { operationReducer } from "../../src/operation/operationState";
+import {
+  type OperationState,
+  type EffectIdentity,
+  operationReducer,
+} from "../../src/operation/operationState";
+
 import { valuesFor, preparedFor, current } from "./operation-form.fixtures";
 import { closeReview } from "./operation-documents.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
@@ -31,7 +35,7 @@ export const initial = (): OperationState => {
       owner,
       entry: {
         subject: "CASE",
-        kind: "CLOSE",
+        kind: "case.close",
       },
       target: "CASE:CASE-SERIALIZATION",
       binding: {
@@ -40,13 +44,14 @@ export const initial = (): OperationState => {
           kind: "REFERENCE",
           caseReference: "CASE-SERIALIZATION",
         },
-        revision: 4,
+        expectedRevision: 4,
       },
       dateEntries: {},
       values: valuesFor(),
       baseline: valuesFor(),
       generation: 0,
       pendingDiscard: null,
+      affordance: null,
     },
     disclosed: {
       review: null,

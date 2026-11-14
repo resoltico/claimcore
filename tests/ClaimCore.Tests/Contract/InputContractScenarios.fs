@@ -55,7 +55,12 @@ let internal integerLexemes () =
     let wire =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
+            (ClaimCore.TestSupport.Inputs.caseOperation (
+                { caseRequest registration with
+                    Act = AuthoredCaseAct.Bare BareAct.Close
+                }
+             )
+             |> Submissions.ofCommand None)
         |> Encoding.UTF8.GetString
 
     for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
@@ -167,13 +172,11 @@ let internal retainedText () =
             Api.operationExecute.Input
             (Codec.encode
                 Api.operationExecute.Input
-                (ClaimCore.TestSupport.Inputs.caseOperation input))
+                (ClaimCore.TestSupport.Inputs.caseOperation input |> Submissions.ofCommand None))
         |> accepted
         |> ignore
 
-        CaseFixtures.decide today CasePaymentContext.NoneRequired reaffirm (Some prior)
-        |> accepted
-        |> ignore
+        CaseFixtures.decide today Map.empty reaffirm (Some prior) |> accepted |> ignore
 
         let changed =
             { reaffirm with
@@ -188,26 +191,25 @@ let internal retainedText () =
             }
 
         Expect.isError
-            (CaseFixtures.decide today CasePaymentContext.NoneRequired changed (Some prior))
+            (CaseFixtures.decide today Map.empty changed (Some prior))
             "New assertions follow current admission"
 
-let internal authorityWire kind issuer subject =
+let internal peopleWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
         {|
-            kind = "AUTHORITY"
             operationId = id.ToString("D")
-            target =
-                {|
-                    kind = kind
-                    issuer = issuer
-                    subject = subject
-                |}
-            act =
-                {|
-                    kind = "REGISTER"
-                    profile = {| displayName = "Authored" |}
-                |}
+            task = "people.register"
+            binding = {| kind = "PEOPLE" |}
+            inputs =
+                Map.ofList
+                    [
+                        "input:principal.kind", kind
+                        "input:principal.issuer", issuer
+                        "input:principal.subject", subject
+                        "input:profile.displayName", "Authored"
+                    ]
         |}
+
 
 let internal principalAdmission () =
     let expected =
@@ -237,20 +239,20 @@ let internal principalAdmission () =
         ]
 
     for admitted, kind, issuer, subject in expected do
-        let wire = authorityWire kind issuer subject
+        let wire = peopleWire kind issuer subject
 
         let syntax =
             Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire
             |> accepted
 
         Expect.equal
-            (match syntax with
-             | OperationInput.Authority request -> Authority.parse request |> Result.isOk
+            (match Submissions.command syntax with
+             | OperationInput.People request -> People.parse request |> Result.isOk
              | _ -> false)
             admitted
             "Only authoritative principal admission judges identity semantics"
 
-    let invalidKind = authorityWire "UNKNOWN" "https://issuer.example/" "subject"
+    let invalidKind = peopleWire "UNKNOWN" "https://issuer.example/" "subject"
 
     Expect.isError
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input invalidKind)
@@ -268,7 +270,7 @@ let internal policyHints () =
         200
         "Current policy is a nonvalidating hint"
 
-let internal authorityFieldPresentation () =
+let internal peopleFieldPresentation () =
     use document = artifact "catalog.json"
     let root = document.RootElement
     let fields = root.GetProperty("inputFields").EnumerateArray() |> Seq.toList
@@ -316,7 +318,6 @@ let internal authorityFieldPresentation () =
             | TaskInputId.TimelineFilter
             | TaskInputId.Order
             | TaskInputId.Due
-            | TaskInputId.ResponsibilityChange
             | TaskInputId.Assignment -> "input."
 
         Expect.equal
@@ -349,7 +350,8 @@ let internal decoderProperty =
     let seed =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
+            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration)
+             |> Submissions.ofCommand None)
 
     let generator = Gen.choice [ DecoderCorpora.jsonLike; DecoderCorpora.mutated seed ]
 

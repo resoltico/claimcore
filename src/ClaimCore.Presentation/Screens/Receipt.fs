@@ -1,0 +1,465 @@
+namespace ClaimCore.Presentation
+
+open System
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ScreenEntries
+open CaseScreen
+
+module ReceiptScreen =
+    let receiptHeader reference act =
+        section
+            "label.recordedChange"
+            ([ value "act" "label.action" Prominence.Primary act ]
+             @ (reference
+                |> Option.toList
+                |> List.map (fun reference ->
+                    value
+                        "reference"
+                        "field.caseReference.label"
+                        Prominence.Primary
+                        (PresentedValue.Reference reference))))
+
+    let receiptDisclosure key =
+        [
+            section
+                "label.recordedFacts"
+                [
+                    value
+                        "disclosure"
+                        "label.details"
+                        Prominence.Primary
+                        (PresentedValue.Absent key)
+                ]
+        ]
+
+    let receiptReminderVersion (version: ReminderVersion) =
+        section
+            "label.reminder"
+            ([
+                value
+                    "id"
+                    "field.reminderId.label"
+                    Prominence.Primary
+                    (PresentedValue.Identifier(ReminderId.format version.ReminderId))
+                value
+                    "revision"
+                    "label.reminderRevision"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(Revision.format version.Revision))
+             ]
+             @ (match version.Snapshot with
+                | ReminderDisclosure.Disclosed item ->
+                    reminderEntries item
+                    |> List.filter (fun entry ->
+                        not (entry.Key.EndsWith(".id", StringComparison.Ordinal)))
+                | ReminderDisclosure.Withheld ->
+                    [
+                        value
+                            "disclosure"
+                            "label.details"
+                            Prominence.Primary
+                            (PresentedValue.Absent "label.detailsWithheld")
+                    ]
+                | ReminderDisclosure.Erased ->
+                    [
+                        value
+                            "disclosure"
+                            "label.details"
+                            Prominence.Primary
+                            (PresentedValue.Absent "lifecycle.ERASED.label")
+                    ]))
+
+    let caseReceipt (item: CaseReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code CaseActKind.vocabulary item.Act)
+            section
+                "label.recordedFacts"
+                [
+                    value
+                        "revision"
+                        "label.revisionLabel"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format item.Revision))
+                ]
+        ]
+        @ (match item.Snapshot with
+           | SnapshotDisclosure.Disclosed live ->
+               caseFacts
+                   {
+                       CaseId = item.CaseId
+                       Reference = item.Reference
+                       Revision = item.Revision
+                       State = LiveCase.toState live.State
+                   }
+           | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
+           | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
+        []
+
+    let workReceipt (item: WorkReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code WorkActKind.vocabulary item.Act)
+            section
+                "section.work.label"
+                [
+                    value
+                        "revision"
+                        "label.workRevision"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format item.Revision))
+                ]
+        ]
+        @ (match item.Snapshot with
+           | WorkDisclosure.Disclosed work -> [ section "section.work.label" (workEntries work) ]
+           | WorkDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
+           | WorkDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
+        []
+
+    let reminderReceipt (item: ReminderReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code ReminderActKind.vocabulary item.Act)
+        ]
+        @ (match item.Effects with
+           | ReminderReceiptEffects.Single version -> [ receiptReminderVersion version ]
+           | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
+               [ receiptReminderVersion completed; receiptReminderVersion next ]),
+        []
+
+    let peopleReceipt (item: PeopleReceipt) =
+        [
+            receiptHeader None (code PeopleActKind.vocabulary item.Act)
+            section
+                "label.account"
+                [
+                    value
+                        "target"
+                        "label.targetAccount"
+                        Prominence.Primary
+                        (match item.TargetActor with
+                         | PeopleTargetDisclosure.Disclosed actor -> PresentedValue.Actor actor
+                         | PeopleTargetDisclosure.Withheld _ ->
+                             PresentedValue.Absent "label.detailsWithheld")
+                ]
+        ]
+        @ (item.Effects
+           |> List.map (fun effect ->
+               section
+                   "label.effect"
+                   [
+                       value
+                           "act"
+                           "label.action"
+                           Prominence.Primary
+                           (code PeopleActKind.vocabulary effect.Act)
+                       value
+                           ("effect." + string (EffectId.index effect.Id) + ".position")
+                           "label.effectPosition"
+                           Prominence.Detail
+                           (PresentedValue.Identifier(EffectPosition.format effect.Position))
+                       value
+                           ("effect." + string (EffectId.index effect.Id) + ".id")
+                           "label.effectId"
+                           Prominence.Detail
+                           (PresentedValue.Identifier(EffectId.format effect.Id))
+                   ])),
+        [
+            value
+                "targetId"
+                "input.actorId.label"
+                Prominence.Detail
+                (PresentedValue.Identifier(
+                    ActorId.format (PeopleTargetDisclosure.actorId item.TargetActor)
+                ))
+        ]
+
+    let sections (receipt: OperationReceipt) =
+        let body, knownTarget =
+            match receipt.Subject with
+            | ReceiptSubject.Case item -> caseReceipt item
+            | ReceiptSubject.Work item -> workReceipt item
+            | ReceiptSubject.Note item ->
+                let entries =
+                    match item.Snapshot with
+                    | NoteDisclosure.Disclosed note -> NotesScreen.entries note
+                    | NoteDisclosure.Erased ->
+                        [
+                            value
+                                "noteText"
+                                "field.noteText.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesErased")
+                        ]
+                    | NoteDisclosure.Withheld ->
+                        [
+                            value
+                                "noteText"
+                                "field.noteText.label"
+                                Prominence.Secondary
+                                (PresentedValue.Absent "label.changesWithheld")
+                        ]
+
+                [
+                    section
+                        "section.notes.label"
+                        (value
+                            "caseReference"
+                            "field.caseReference.label"
+                            Prominence.Primary
+                            (PresentedValue.Reference item.Reference)
+                         :: entries)
+                ],
+                [
+                    value
+                        "noteId"
+                        "field.noteId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(NoteId.format item.NoteId))
+                ]
+            | ReceiptSubject.Reminder item -> reminderReceipt item
+            | ReceiptSubject.People item -> peopleReceipt item
+
+        body
+        @ [
+            section
+                "label.recordDetails"
+                ([
+                    value
+                        "operationId"
+                        "field.operationId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(OperationId.format receipt.OperationId))
+                    value
+                        "sequence"
+                        "label.sequence"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
+                    value
+                        "operationHash"
+                        "label.operationHash"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(
+                            receipt.Position.EntryHash
+                            |> EntryHash.toBytes
+                            |> Convert.ToHexStringLower
+                        ))
+                    value
+                        "recordedBy"
+                        "label.recordedBy"
+                        Prominence.Primary
+                        (PresentedValue.Actor receipt.RecordedBy)
+                 ]
+                 @ knownTarget)
+        ]
+
+    /// Host session presentation contains no antiforgery-token value.
+
+
+    let private recordedFacts (receipt: OperationReceipt) (screen: Screen) =
+        let selected =
+            match receipt.Subject with
+            | ReceiptSubject.Case value ->
+                match value.Snapshot with
+                | SnapshotDisclosure.Disclosed shown ->
+                    Some(shown.RecordedFields |> List.map FieldPresentation.labelId |> Set.ofList)
+                | _ -> Some Set.empty
+            | ReceiptSubject.Work _ ->
+                Some(Set.ofList [ "field.handlingSummary.label"; "field.responsibleActor.label" ])
+            | _ -> None
+
+        let isRecorded label =
+            selected |> Option.map (Set.contains label) |> Option.defaultValue true
+
+        let markEntry (entry: Entry) =
+            { entry with
+                Recorded = isRecorded entry.LabelId
+            }
+
+        let markSection (section: Section) =
+            { section with
+                Entries = List.map markEntry section.Entries
+            }
+
+        let regions =
+            screen.Regions
+            |> List.map (fun region ->
+                let content =
+                    match region.Content with
+                    | RegionContent.Entries values ->
+                        RegionContent.Entries(List.map markEntry values)
+                    | RegionContent.Table table ->
+                        RegionContent.Table
+                            { table with
+                                Columns =
+                                    table.Columns
+                                    |> List.map (fun column ->
+                                        { column with
+                                            Recorded = isRecorded column.LabelId
+                                        })
+                                Sections = List.map markSection table.Sections
+                            }
+                    | content -> content
+
+                { region with Content = content })
+
+        { screen with Regions = regions }
+
+    let view (receipt: OperationReceipt) =
+        let source = sections receipt
+        let record = List.last source
+        let body = source |> List.take (source.Length - 1)
+
+        let payments =
+            match receipt.Subject with
+            | ReceiptSubject.Case {
+                                      Snapshot = SnapshotDisclosure.Disclosed live
+                                  } ->
+                let fields =
+                    match live.State with
+                    | LiveCase.Active fields
+                    | LiveCase.Voided fields -> fields
+
+                Some(
+                    PaymentsScreen.table
+                        fields.Finance
+                        (live.Payment
+                         |> Option.map (PaymentDifference.entry >> List.singleton)
+                         |> Option.defaultValue [])
+                )
+            | _ -> None
+
+        let facts =
+            body
+            |> List.filter (fun section ->
+                payments.IsNone
+                || section.TitleId
+                   <> Vocabulary.messageKey RecordGroup.vocabulary RecordGroup.Decision "label")
+            |> List.filter (fun section -> section.TitleId <> "label.recordedChange")
+            |> List.map (fun section ->
+                { section with
+                    Entries = section.Entries |> List.filter (technical >> not)
+                })
+
+        let technical = body |> List.collect _.Entries |> List.filter technical
+
+        let act =
+            match receipt.Subject with
+            | ReceiptSubject.Case item -> ActKind.Case item.Act
+            | ReceiptSubject.Work item -> ActKind.Work item.Act
+            | ReceiptSubject.Note item -> ActKind.Note item.Act
+            | ReceiptSubject.Reminder item -> ActKind.Reminder item.Act
+            | ReceiptSubject.People item -> ActKind.People item.Act
+
+        let reference =
+            match receipt.Subject with
+            | ReceiptSubject.Case item -> Some item.Reference
+            | ReceiptSubject.Work item -> Some item.Reference
+            | ReceiptSubject.Note item -> Some item.Reference
+            | ReceiptSubject.Reminder item -> Some item.Reference
+            | ReceiptSubject.People _ -> None
+
+        let stateEntries =
+            match receipt.Subject with
+            | ReceiptSubject.Case item ->
+                match item.Snapshot with
+                | SnapshotDisclosure.Disclosed live ->
+                    [
+                        match live.State with
+                        | LiveCase.Active fields ->
+                            value
+                                "status"
+                                "field.status.label"
+                                Prominence.Primary
+                                (code CaseStatus.vocabulary fields.Status)
+                        | LiveCase.Voided _ ->
+                            value
+                                "lifecycle"
+                                "input.lifecycle.label"
+                                Prominence.Primary
+                                (code Lifecycle.vocabulary Lifecycle.Voided)
+
+                        let fields =
+                            match live.State with
+                            | LiveCase.Active fields
+                            | LiveCase.Voided fields -> fields
+
+                        value
+                            "progress"
+                            "input.progress.label"
+                            Prominence.Primary
+                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial fields.Finance))
+                    ]
+                | SnapshotDisclosure.Erased ->
+                    [
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Erased)
+                    ]
+                | SnapshotDisclosure.Withheld -> []
+            | _ -> []
+
+        let identity =
+            (receiptHeader reference (code ActKind.vocabulary act)).Entries
+            @ stateEntries
+            @ [
+                value
+                    "recordedAt"
+                    "label.recordedAt"
+                    Prominence.Primary
+                    (PresentedValue.Instant receipt.RecordedAt)
+            ]
+
+        let message =
+            if act = ActKind.People PeopleActKind.ProvisionOwner then
+                "label.recorded"
+            else
+                Vocabulary.messageKey ActKind.vocabulary act "done"
+
+        Screen.create (
+            [
+                region
+                    RegionRole.Notice
+                    None
+                    (RegionContent.Notice
+                        {
+                            MessageId = message
+                            Reason = None
+                            Tone = NoticeTone.Info
+                        })
+            ]
+            @ [ entryRegion RegionRole.Identity (Some "label.recordedChange") identity ]
+            @ factRegions facts
+            @ (payments
+               |> Option.map (fun table ->
+                   region
+                       RegionRole.Payments
+                       (Some "label.paymentDecisionAndPayments")
+                       (RegionContent.Table table))
+               |> Option.toList)
+            @ [
+                entryRegion
+                    RegionRole.Details
+                    (Some "label.recordDetails")
+                    (technical
+                     @ record.Entries
+                     @ [
+                         value
+                             "observedAt"
+                             "label.observedAt"
+                             Prominence.Detail
+                             (PresentedValue.Instant receipt.Basis.ObservedAt)
+                         value
+                             "businessDate"
+                             "label.businessDate"
+                             Prominence.Detail
+                             (PresentedValue.Date(CalendarDate.ofDate receipt.Basis.BusinessDate))
+                         value
+                             "timeZone"
+                             "label.timeZone"
+                             Prominence.Detail
+                             (PresentedValue.Text receipt.Basis.TimeZoneId)
+                     ])
+            ]
+        )
+        |> recordedFacts receipt

@@ -76,10 +76,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
                 ((ClaimCore.TestSupport.Inputs.caseListPage ({ AfterCursor = token; Limit = 1 })))
                 (CancellationToken.None))
 
-        Expect.equal
-            (succeeded crossed).Items.Length
-            1
-            "Current authority permits sharing a position"
+        Expect.equal (succeeded crossed).Items.Length 1 "Current people permits sharing a position"
 
         let! extra =
             grant
@@ -92,7 +89,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
                 }
                 true
 
-        acceptedAuthority extra
+        acceptedPeople extra
 
         let! changed =
             (Service.list
@@ -250,7 +247,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
 
-        let! authority =
+        let! people =
             (Service.actors
                 actor
                 ({
@@ -261,11 +258,11 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
                 })
                 (CancellationToken.None))
 
-        match authority with
+        match people with
         | Outcome.Succeeded _ -> ()
-        | _ -> failtest "Authority review unavailable"
+        | _ -> failtest "People review unavailable"
 
-        Expect.equal proxy.ReadCalls 3 "Authority review performs no separate actor read"
+        Expect.equal proxy.ReadCalls 3 "People review performs no separate actor read"
 
         let! grants =
             (Service.grants
@@ -298,7 +295,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
                 }
                 true
 
-        acceptedAuthority scoped
+        acceptedPeople scoped
 
         let! readers =
             (Service.list
@@ -321,12 +318,12 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.contains
             offers
             InstallationOffer.Open
-            "Same-page authority supplies registration advice"
+            "Same-page people supplies registration advice"
 
         Expect.contains
             offers
-            (InstallationOffer.AuthorityAct AuthorityKind.Grant)
-            "Authority act advice is owned by core"
+            (InstallationOffer.PeopleAct PeopleActKind.Register)
+            "Installation advice offers registration without a selected actor"
     }
 
 let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
@@ -419,7 +416,7 @@ let tests =
                 "case continuation preserves key order and permits changed page sizes"
                 (run caseLimits)
             testCaseAsync
-                "case positions may be shared under current authority and survive irrelevant grant changes"
+                "case positions may be shared under current people and survive irrelevant grant changes"
                 (run sharedPosition)
             testCaseAsync
                 "timeline positions bind the normalized resource and permit changed limits"

@@ -50,7 +50,7 @@ let private storage () =
                 }
 
             let command =
-                CommandSkeleton.Authority
+                CommandSkeleton.People
                     {
                         TargetActorId = target
                         Principal = principal
@@ -60,7 +60,7 @@ let private storage () =
             RetainedOperation.create
                 header
                 command
-                (OperationValues.Authority { Profile = saved })
+                (OperationValues.People { Profile = saved })
                 nonce
             |> valid
             |> _.Root
@@ -111,7 +111,7 @@ let private storage () =
                 owner
                 actor
                 (principal "owner")
-                (AuthorityAct.ProvisionOwner(0, Authority.initialOwnerRoles))
+                (PeopleAct.ProvisionOwner(0, People.initialOwnerRoles))
                 (Some(profile "Owner"))
                 (fun () -> RandomNumberGenerator.GetBytes 32)
         // Bootstrap executor is the actor created by this same operation.
@@ -146,7 +146,7 @@ let private storage () =
                 targetOperation
                 target
                 targetPrincipal
-                (AuthorityAct.Admit { Profile = 0; Grants = grants })
+                (PeopleAct.Admit { Profile = 0; Grants = grants })
                 (Some(profile "Private target"))
                 (fun () -> RandomNumberGenerator.GetBytes 32)
 
@@ -159,7 +159,7 @@ let private storage () =
             |> Option.get
 
         match (read targetOperation).Values with
-        | RetainedOperationValues.Authority(RetainedProfile.Available actual) ->
+        | RetainedOperationValues.People(RetainedProfile.Available actual) ->
             Expect.equal
                 (ActorProfile.authored actual).DisplayName
                 "Private target"
@@ -167,7 +167,7 @@ let private storage () =
         | _ -> failtest "Available profile required"
 
         let erased =
-            create (operation ()) target targetPrincipal AuthorityAct.EraseProfile None (fun () ->
+            create (operation ()) target targetPrincipal PeopleAct.EraseProfile None (fun () ->
                 failtest "Erasure requested a private nonce")
 
         write erased (fun connection ->
@@ -184,7 +184,7 @@ let private storage () =
 
         Expect.equal
             cleared.Values
-            (RetainedOperationValues.Authority RetainedProfile.Unavailable)
+            (RetainedOperationValues.People RetainedProfile.Unavailable)
             "Only the private profile becomes unavailable"
 
         Expect.equal
@@ -199,7 +199,7 @@ let private storage () =
                 (operation ())
                 target
                 targetPrincipal
-                (AuthorityAct.SetProfile 0)
+                (PeopleAct.SetProfile 0)
                 (Some(profile "Later profile"))
                 (fun () -> reused)
 
@@ -215,7 +215,7 @@ let private storage () =
         |> ignore
 
         match (read later.Header.OperationId).Values with
-        | RetainedOperationValues.Authority(RetainedProfile.Available actual) ->
+        | RetainedOperationValues.People(RetainedProfile.Available actual) ->
             Expect.equal
                 (ActorProfile.authored actual).DisplayName
                 "Later profile"
@@ -227,7 +227,7 @@ let private storage () =
                 (operation ())
                 target
                 targetPrincipal
-                (AuthorityAct.SetProfile 0)
+                (PeopleAct.SetProfile 0)
                 (Some(profile "Duplicate nonce"))
                 (fun () -> reused)
 
@@ -310,6 +310,7 @@ let private storage () =
             "Four accepted operations remain after all negative controls"
 
         let mutable current: CaseSnapshot option = None
+        let mutable owned: CaseSubjectState option = None
 
         let case act context =
             let identity = operation ()
@@ -362,27 +363,34 @@ let private storage () =
                     (fun () -> RandomNumberGenerator.GetBytes 32)
                 |> valid
 
-            let projection =
+            let stamp =
+                {
+                    SubjectStamp.Position = EffectPosition.create hdr.Sequence 0 |> Option.get
+                    OperationId = hdr.OperationId
+                    ActorId = hdr.ActorId
+                    RecordedAt = hdr.RecordedAt
+                }
+
+            let after = CaseSubject.apply stamp owned decided |> Option.get
+
+            let family =
                 match current, decided.After.State with
-                | _, CaseState.Erased ->
-                    CaseProjection.Erase(
-                        decided.After.CaseId,
-                        decided.After.Revision,
-                        hdr.RecordedAt
-                    )
                 | None, _ ->
-                    CaseProjection.Insert(
-                        decided.After.CaseId,
-                        decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After
-                    )
-                | Some _, _ ->
-                    CaseProjection.Update(
-                        decided.After.CaseId,
-                        decided.After,
-                        CaseIndex.create hdr.RecordedAt decided.After,
-                        decided.Payment
-                    )
+                    CaseFamily.onCaseCreated after.CaseId |> CaseFamily.rows |> Result.toOption
+                | _, CaseState.Erased ->
+                    CaseFamily.onCaseErased after (CaseFamily.onCaseCreated after.CaseId)
+                    |> Result.bind CaseFamily.rows
+                    |> Result.toOption
+                | _ -> None
+
+            let projection =
+                {
+                    CaseProjection.Rows = CaseSubject.rows after |> Option.get
+                    Index = CaseIndex.create hdr.RecordedAt decided.After None []
+                    Family = family
+                }
+
+            owned <- Some after
 
             write retained.Root (fun connection ->
                 Persistence.case connection projection token |> sync)
@@ -390,13 +398,11 @@ let private storage () =
             current <- Some decided.After
             retained, decided
 
-        let noContext _ = CasePaymentContext.NoneRequired
+        let noContext _ = Map.empty
         case (CaseAct.Open Inputs.registration) noContext |> ignore
         case (CaseAct.Decide Inputs.decision) noContext |> ignore
 
-        let recording (before: CaseSnapshot option) =
-            let before = before |> Option.get
-            CasePaymentContext.Recording(before.CaseId, before.Revision, false)
+        let recording (_before: CaseSnapshot option) = Map.empty
 
         let first, firstDecision =
             case
@@ -405,12 +411,12 @@ let private storage () =
                 ))
                 recording
 
-        case
-            (CaseAct.RecordPayment(
-                Inputs.paymentWith [ BusinessField.PaidAmount, "5" ] Inputs.payment
-            ))
-            recording
-        |> ignore
+        let _, secondDecision =
+            case
+                (CaseAct.RecordPayment(
+                    Inputs.paymentWith [ BusinessField.PaidAmount, "5" ] Inputs.payment
+                ))
+                recording
 
         let selected =
             match firstDecision.Payment with
@@ -419,14 +425,13 @@ let private storage () =
 
         let removal (before: CaseSnapshot option) =
             let before = before |> Option.get
-            let date = Inputs.date "2026-08-20"
 
-            CasePaymentContext.Removing(
-                before.CaseId,
-                before.Revision,
-                Some selected,
-                PaymentDateBounds.create date date
-            )
+            let remaining =
+                match secondDecision.Payment with
+                | Some(PaymentDifference.Recorded entry) -> entry
+                | _ -> failtest "Second recorded payment required"
+
+            ClaimCore.TestSupport.CaseFixtures.paymentRows before.CaseId [ selected; remaining ]
 
         let removed, _ =
             case (CaseAct.RemovePayment(OperationId.value first.Root.Header.OperationId)) removal
@@ -481,5 +486,5 @@ let private storage () =
 [<Tests>]
 let tests =
     testCase
-        "protected PostgreSQL roots append atomically and preserve selectively erased authority"
+        "protected PostgreSQL roots append atomically and preserve selectively erased people"
         storage

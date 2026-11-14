@@ -1,9 +1,10 @@
-import { caseDocumentInput } from "./case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "./case-document.fixtures";
+import { operationAffordance } from "./affordances.fixtures";
 
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { OperationDraft, CurrentCase } from "../../src/api/service";
+import type { CaseSubmission, CurrentCase } from "../../src/api/service";
 import { SettingsWorkspace } from "../../src/views/SettingsWorkspace";
 import { useRoute } from "../../src/routing/useRoute";
 import type userEvent from "@testing-library/user-event";
@@ -12,9 +13,20 @@ import { definition, fields } from "./service-ui.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { endpointResponse } from "./transport-response.fixtures";
 export const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEditor>>) => {
@@ -25,7 +37,7 @@ const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEdito
         <OperationEditor
           definition={definition}
           current={current}
-          initialAct="CLOSE"
+          initialAct="case.close"
           onClose={vi.fn()}
           onCommitted={vi.fn()}
           onMutationLockChange={vi.fn()}
@@ -39,21 +51,21 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
   <EditorWorkspace {...overrides} />
 );
 
-export const draftAt = (index: number): OperationDraft => {
+export const draftAt = (index: number): CaseSubmission => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("Expected one serialized canonical request.");
   }
-  return JSON.parse(body) as OperationDraft;
+  return JSON.parse(body) as CaseSubmission;
 };
 /** Interaction review borrows only declared task bindings; display/policy oracles are independently authored. */
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   const task = taskForCommand(draft);
   if (
-    draft.act.kind !== "CLOSE" &&
-    draft.act.kind !== "AMEND_REGISTRATION" &&
-    draft.act.kind !== "CORRECT"
+    draft.task !== "case.close" &&
+    draft.task !== "case.amendRegistration" &&
+    draft.task !== "case.correct"
   ) {
     throw new Error("This interaction fixture reviews CLOSE, AMEND_REGISTRATION or CORRECT only");
   }
@@ -64,31 +76,32 @@ export const previewReply = (index = 0): Response => {
       review: {
         document: {
           screen: { regions: [] },
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: task.id,
-            inputs: [
-              ...new Set(
-                [
-                  ...task.inputs,
-                  ...task.collections.flatMap((collection) => collection.inputs),
-                ].map((input) => input.id),
-              ),
-            ],
-            consequence: task.consequence,
-            target: {
-              kind: "CASE",
-              caseId: current.context.caseId,
-              beforeRevision: draft.expectedRevision,
-            },
             confirmation: {
               kind: "CASE_REFERENCE",
               reference:
-                draft.target.kind === "REFERENCE"
-                  ? draft.target.caseReference
+                draft.binding.target.kind === "REFERENCE"
+                  ? draft.binding.target.caseReference
                   : fields.caseReference,
             },
+            consequence: task.consequence,
           },
+          actions: [
+            operationAffordance(
+              task.id,
+              {
+                kind: "CASE",
+                target: { kind: "ID", caseId: current.subject.caseId },
+                expectedRevision: draft.binding.expectedRevision,
+              },
+              {},
+              [],
+            ),
+          ],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: current.basis,
           disclosure: "CURRENT",
         },

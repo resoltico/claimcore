@@ -7,12 +7,12 @@ export const useOperationObservation = (initialOperationId = "") => {
     initialOperationId === "" ? null : initialOperationId,
   );
   const requester = useRequesterContext();
-  const installationId = requester?.context.installationId;
+  const installationId = requester?.subject.installationId;
   const query = useEndpoint(
     "operation.get",
     { operationId: submitted ?? "" },
     submitted !== null && installationId !== undefined,
-    JSON.stringify([installationId, requester?.context.actorId]),
+    JSON.stringify([installationId, requester?.subject.actorId]),
     installationId,
   );
   const changeOperationId = (value: string): void => {

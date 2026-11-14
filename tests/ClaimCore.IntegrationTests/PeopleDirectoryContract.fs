@@ -25,11 +25,11 @@ let private principal subject =
 let private register fixture owner operation principal =
     Service.execute
         owner
-        (OperationInput.Authority(
-            Inputs.authorityRequest
+        (OperationInput.People(
+            Inputs.peopleRequest
                 (id fixture operation)
                 principal
-                (AuthorityAct.Register Inputs.actorProfile)
+                (PeopleAct.Register Inputs.actorProfile)
         ))
         token
 
@@ -54,7 +54,7 @@ let private grantRole fixture owner operation principal role scope active =
         let! result =
             grant owner (id fixture operation) principal { Role = role; Scope = scope } active
 
-        acceptedAuthority result
+        acceptedPeople result
     }
 
 let internal summaries fixture =
@@ -86,8 +86,7 @@ let internal summaries fixture =
         let personId =
             (accepted created).Subject
             |> function
-                | ReceiptSubject.Authority value ->
-                    AuthorityTargetDisclosure.actorId value.TargetActor
+                | ReceiptSubject.People value -> PeopleTargetDisclosure.actorId value.TargetActor
                 | _ -> failtest "Expected actor"
 
         let! noRoles = directory owner person
@@ -157,12 +156,12 @@ let internal summaries fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id fixture 1015) person AuthorityAct.Disable
+                (OperationInput.People(
+                    Inputs.peopleRequest (id fixture 1015) person PeopleAct.Disable
                 ))
                 token
 
-        acceptedAuthority disabled
+        acceptedPeople disabled
         let! blocked = directory owner person
 
         Expect.equal
@@ -173,29 +172,29 @@ let internal summaries fixture =
         Expect.equal
             blocked.Roles
             assigned.Roles
-            "Disabling never hides assigned role facts from authority review"
+            "Disabling never hides assigned role facts from people review"
 
         let! preview =
             Service.preview
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id fixture 1016) person AuthorityAct.Enable
+                (OperationInput.People(
+                    Inputs.peopleRequest (id fixture 1016) person PeopleAct.Enable
                 ))
                 token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
             let target = review.Target |> Option.get
 
             Expect.equal
                 target.State
                 AccountState.Disabled
-                "Authority review carries the actual target assignment state"
+                "People review carries the actual target assignment state"
 
             Expect.equal
                 target.Roles
                 assigned.Roles
-                "Authority review sees all target roles, not only its selected scope"
+                "People review sees all target roles, not only its selected scope"
         | other -> failtestf "Disabled target remains reviewable: %A" other
 
         do! grantRole fixture owner 1017 person Role.CaseReader (GrantTarget.CaseId a.CaseId) false
@@ -229,8 +228,7 @@ let internal corruptAssignment fixture =
         let actorId =
             (accepted registered).Subject
             |> function
-                | ReceiptSubject.Authority value ->
-                    AuthorityTargetDisclosure.actorId value.TargetActor
+                | ReceiptSubject.People value -> PeopleTargetDisclosure.actorId value.TargetActor
                 | _ -> failtest "Expected actor"
 
         let core = core fixture service
@@ -247,15 +245,26 @@ let internal corruptAssignment fixture =
                     Work =
                         fun tx ->
                             task {
+                                let! actor = tx.FindActor actorId
+                                let! state = tx.PeopleState actor.Value.Principal
+                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+
+                                let grant =
+                                    {
+                                        ActorGrant.Role = Role.DataSteward
+                                        Scope = Scope.Case case.CaseId
+                                    }
+
                                 do!
-                                    tx.ProjectAuthority(
-                                        AuthorityProjection.AddGrant(
-                                            actorId,
-                                            Role.DataSteward,
-                                            Some case.CaseId,
-                                            (EffectPosition.create Sequence.first 0 |> Option.get)
-                                        )
-                                    )
+                                    tx.ProjectPeople
+                                        { rows with
+                                            Grants =
+                                                Map.add
+                                                    grant
+                                                    (EffectPosition.create Sequence.first 0
+                                                     |> Option.get)
+                                                    rows.Grants
+                                        }
 
                                 return Verdict.Proceed()
                             }
@@ -389,7 +398,7 @@ let internal maximumRoles fixture =
         let! owner = bootstrap fixture
         let target = principal "seven-directory-roles"
         let! registered = register fixture owner 1050 target
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let roles =
             [

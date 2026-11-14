@@ -18,11 +18,11 @@ let private owner fixture =
     let service = core fixture fixture.Owner
 
     match
-        AuthorityExecution.provisionStore
+        PeopleOperations.provisionStore
             service
             (id fixture 1)
             Inputs.ownerProfile
-            Authority.initialOwnerRoles
+            People.initialOwnerRoles
             token
         |> sync
     with
@@ -180,11 +180,11 @@ let private confirmed () =
                                     Due = "2027-01-01"
                                 }
                     }
-                OperationInput.Authority(
-                    Inputs.authorityRequest
+                OperationInput.People(
+                    Inputs.peopleRequest
                         (Guid.CreateVersion7())
                         fixture.Owner
-                        (AuthorityAct.SetProfile Inputs.actorProfile)
+                        (PeopleAct.SetProfile Inputs.actorProfile)
                 )
             ]
 

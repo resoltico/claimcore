@@ -1,5 +1,7 @@
 module ClaimCore.Tests.ClientAdmissionTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Cli
 
 open System
@@ -66,11 +68,14 @@ let private authoritativeIdentityAdmission () =
             Expect.equal
                 (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (payload sample)
                  |> Result.mapError _.Reason
-                 |> Result.bind (function
-                     | OperationInput.Authority request ->
-                         ClaimCore.Domain.Authority.parse request
-                         |> Result.mapError (fun _ -> "invalid principal")
-                     | _ -> Error "Expected authority request")
+                 |> Result.bind (
+                     Submissions.command
+                     >> function
+                         | OperationInput.People request ->
+                             ClaimCore.Domain.People.parse request
+                             |> Result.mapError (fun _ -> "invalid principal")
+                         | _ -> Error "Expected people request"
+                 )
                  |> Result.isOk)
                 (expected.GetBoolean())
                 ("Unchanged authoritative identity admission: " + text "id" sample)
@@ -102,7 +107,7 @@ let private reminderRevisionAdmission () =
 
     let raw revision =
         sprintf
-            """{"endpoint":"operation.execute","input":{"kind":"REMINDER","operationId":"%s","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"act":{"kind":"COMPLETE","reminderId":"%s","expectedRevision":%d}}}"""
+            """{"endpoint":"operation.execute","input":{"operationId":"%s","task":"reminder.complete","binding":{"kind":"REMINDER","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"reminderId":"%s","expectedRevision":%d},"inputs":{}}}"""
             (operationId.ToString("D"))
             reminderId
             revision
@@ -180,7 +185,7 @@ let private reminderRevisionAdmission () =
     Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "0")
     |> targeted
 
-    Grammar.reminderIntent (arguments "0") |> targeted
+    Grammar.draft (arguments "0") |> targeted
 
     Expect.isOk
         (Grammar.prepare
@@ -214,7 +219,7 @@ let private reminderRevisionAdmission () =
 
 let private pageBounds () =
     let directory =
-        match (ResponseExamples.defaultReply Api.authorityGrants) with
+        match (ResponseExamples.defaultReply Api.peopleGrants) with
         | RepresentationReply.Data(Outcome.Succeeded page) -> page
         | _ -> failtest "Successful directory input"
 
@@ -232,9 +237,9 @@ let private pageBounds () =
 
     let pages =
         [
-            "authority.list",
+            "people.list",
             Codec.encode
-                Api.authorityList.Output
+                Api.peopleList.Output
                 (RepresentationReply.Data(
                     Outcome.Succeeded
                         {
@@ -243,9 +248,9 @@ let private pageBounds () =
                             NextCursor = None
                         }
                 ))
-            "authority.grants",
+            "people.grants",
             Codec.encode
-                Api.authorityGrants.Output
+                Api.peopleGrants.Output
                 (RepresentationReply.Data(
                     Outcome.Succeeded
                         { directory with

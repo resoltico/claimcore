@@ -1,52 +1,38 @@
 import type { CurrentCase } from "../../api/service";
 import { isCaseAct, type ActKind } from "../../operation/metadata";
-import { RegionView } from "../../ui/regions/RegionView";
 import { Actions } from "../../ui/regions/Actions";
-
-const recommendation = (current: CurrentCase) =>
-  current.screen.regions.find((region) => region.role === "RECOMMENDATION");
+const caseActions = (current: CurrentCase) =>
+  current.actions.filter((action) => isCaseAct(action.task));
 export const CaseActions = ({
   current,
   onAct,
 }: {
   current: CurrentCase;
   onAct: (act: ActKind) => void;
-}) => {
-  const region = recommendation(current);
-  if (region === undefined) {
-    return null;
-  }
-  return (
-    <RegionView
-      region={region}
-      onAct={(act) => {
-        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
-          onAct(act);
-        }
-      }}
-    />
-  );
-};
+}) => (
+  <Actions
+    actions={caseActions(current)}
+    onAction={(action) => {
+      if (isCaseAct(action.task)) {
+        onAct(action.task);
+      }
+    }}
+  />
+);
 export const CaseActionAlternatives = ({
   current,
   onAct,
 }: {
   current: CurrentCase;
   onAct: (act: ActKind) => void;
-}) => {
-  const content = recommendation(current)?.content;
-  if (content?.kind !== "ACTIONS") {
-    return null;
-  }
-  return (
-    <Actions
-      content={content}
-      expandOther
-      onAct={(act) => {
-        if (isCaseAct(act) && current.context.tasks.includes(`CASE:${act}`)) {
-          onAct(act);
-        }
-      }}
-    />
-  );
-};
+}) => (
+  <Actions
+    actions={caseActions(current)}
+    expandOther
+    onAction={(action) => {
+      if (isCaseAct(action.task)) {
+        onAct(action.task);
+      }
+    }}
+  />
+);

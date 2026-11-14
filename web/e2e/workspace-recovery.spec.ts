@@ -1,8 +1,8 @@
+import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
-import { isResponseFor, isRequest } from "../src/protocol/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
@@ -11,52 +11,85 @@ import {
   browserRequest,
   sessionToken,
 } from "./session-helpers";
-import { syntheticPrincipals } from "./authority-setup";
+import { syntheticPrincipals } from "./people-setup";
 import { trackForegroundRequests } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
-
 const operationId = (value: unknown): string => {
-  if (!isRequest("operation.preview", value)) {
-    throw new Error("Expected the exact authored preview request.");
-  }
-  return value.operationId;
+  const operationPreviewRequest = value as RequestByEndpoint["operation.preview"];
+  return operationPreviewRequest.operationId;
 };
-
 test("context interruption recovers through an explicit in-page read retry", async ({ page }) => {
   await openAuthenticated(page);
   await page.route("**/api/context", (route) => route.abort("connectionfailed"));
   await page.reload();
-  await expect(page.getByRole("button", { name: "Try again", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", {
+      name: "Try again",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "Cases",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   await page.unroute("**/api/context");
-  await page.getByRole("button", { name: "Try again", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
+  await page
+    .getByRole("button", {
+      name: "Try again",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Cases",
+      exact: true,
+      level: 1,
+    }),
+  ).toBeVisible();
   await expectAccessible(page);
 });
-
 test("keyboard navigation focuses the editor and restores its invoking control on return", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  const open = page.getByRole("link", { name: "Open a case", exact: true });
+  const open = page.getByRole("link", {
+    name: "Open a case",
+    exact: true,
+  });
   await open.focus();
   await page.keyboard.press("Enter");
-  const editor = page.getByRole("dialog", { name: "Open a case", exact: true });
+  const editor = page.getByRole("dialog", {
+    name: "Open a case",
+    exact: true,
+  });
   await expect(editor).toBeVisible();
   expect(await editor.evaluate((element) => element.contains(document.activeElement))).toBe(true);
-  await editor.getByRole("button", { name: "Close", exact: true }).first().focus();
+  await editor
+    .getByRole("button", {
+      name: "Close",
+      exact: true,
+    })
+    .first()
+    .focus();
   await page.keyboard.press("Enter");
   await expect(editor).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Cases",
+      exact: true,
+      level: 1,
+    }),
+  ).toBeVisible();
   await expect(open).toBeFocused();
 });
-
-test("authority refusal preserves authored input through Settings and needs a fresh review and explicit consent", async ({
+test("people refusal preserves authored input through Settings and needs a fresh review and explicit consent", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await goToView(page, "people");
-  await expect(page.locator("#authority-title")).toBeVisible();
+  await expect(page.locator("#people-title")).toBeVisible();
   // This raw fixture is a separate client; let the app's bounded People/bootstrap reads settle.
   await page.waitForLoadState("networkidle");
   const source = await syntheticPrincipals();
@@ -76,13 +109,15 @@ test("authority refusal preserves authored input through Settings and needs a fr
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "AUTHORITY",
       operationId: mintOperationId(),
-      target: { kind: "HUMAN", issuer: "", subject: subjectValue },
-      act: {
-        kind: "ADMIT",
-        profile: { displayName: profileName, contact: null },
-        grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      inputs: {
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "",
+        "input:principal.subject": subjectValue,
+        "input:profile.displayName": profileName,
+        "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
       },
     }),
   });
@@ -93,16 +128,31 @@ test("authority refusal preserves authored input through Settings and needs a fr
   expect(rawIssuer.payload).toMatchObject({
     outcome: {
       kind: "REJECTED",
-      data: {
+      rejection: {
         code: "INVALID_INPUT",
         action: "CORRECT_INPUT",
-        issues: [{ field: "principal.issuer", code: "TEXT_REQUIRED" }],
+        issues: [
+          {
+            input: "input:principal.issuer",
+            code: "TEXT_REQUIRED",
+            row: null,
+          },
+        ],
       },
     },
   });
   const requests = trackForegroundRequests(page);
-  await page.getByRole("button", { name: "Add person", exact: true }).first().click();
-  const editor = page.getByRole("dialog", { name: "Add person", exact: true });
+  await page
+    .getByRole("button", {
+      name: "Add person",
+      exact: true,
+    })
+    .first()
+    .click();
+  const editor = page.getByRole("dialog", {
+    name: "Add person",
+    exact: true,
+  });
   const issuer = editor.locator('[name="input:principal.issuer"]');
   const subject = editor.locator('[name="input:principal.subject"]');
   const profile = editor.locator('[name="input:profile.displayName"]');
@@ -110,28 +160,48 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(issuer).toBeEnabled();
   await profile.fill(profileName);
   await subject.fill(subjectValue);
-  await editor.getByRole("radio", { name: "Case reader", exact: true }).check();
+  await editor
+    .getByRole("radio", {
+      name: "Case reader",
+      exact: true,
+    })
+    .check();
   await subject.fill("");
   const first = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
-  await editor.getByRole("button", { name: "Review changes", exact: true }).click();
+  await editor
+    .getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    })
+    .click();
   const response = await first;
   expect(response.status()).toBe(200);
-  const reply: unknown = await response.json();
-  if (!isResponseFor("operation.preview", "HUMAN", reply) || reply.outcome.kind !== "REJECTED") {
+  const operationPreviewReply = (await response.json()) as ResponseFor<
+    "operation.preview",
+    "HUMAN"
+  >;
+  if (
+    operationPreviewReply.representation !== "HUMAN" ||
+    operationPreviewReply.outcome.kind !== "REJECTED"
+  ) {
     throw new Error("Expected an Application subject refusal.");
   }
-  if (reply.outcome.rejection.kind !== "INPUT") {
+  if (operationPreviewReply.outcome.rejection.kind !== "INPUT") {
     throw new Error("Expected semantic principal input issues.");
   }
-  expect(reply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
+  expect(operationPreviewReply.outcome.rejection.advice.action).toBe("CORRECT_INPUT");
   expect(
-    reply.outcome.rejection.issues.map((issue) => ({
+    operationPreviewReply.outcome.rejection.issues.map((issue) => ({
       input: issue.input,
       row: issue.row,
       messageId: issue.message.messageId,
     })),
   ).toEqual([
-    { input: "input:principal.subject", row: null, messageId: "diagnostic.TEXT_REQUIRED" },
+    {
+      input: "input:principal.subject",
+      row: null,
+      messageId: "diagnostic.TEXT_REQUIRED",
+    },
   ]);
   await expectInputRefusal(page, subject, "en", {
     meaning: inputMessage("en", "field.principal.subject.hint"),
@@ -144,13 +214,15 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(editor.locator("button[data-confirm-operation]")).toHaveCount(0);
   const refused: unknown = response.request().postDataJSON();
   expect(refused).toEqual({
-    kind: "AUTHORITY",
     operationId: operationId(refused),
-    target: { kind: "HUMAN", issuer: source.issuer, subject: "" },
-    act: {
-      kind: "ADMIT",
-      profile: { displayName: profileName },
-      grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": source.issuer,
+      "input:principal.subject": "",
+      "input:profile.displayName": profileName,
+      "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
     },
   });
   await subject.fill(subjectValue);
@@ -165,24 +237,34 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(profile).toHaveValue(profileName);
   expect(requests).toEqual(["POST /api/operation.preview"]);
   const next = page.waitForResponse((value) => value.url().endsWith("/api/operation.preview"));
-  await editor.getByRole("button", { name: "Review changes", exact: true }).click();
+  await editor
+    .getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    })
+    .click();
   const reviewedResponse = await next;
-  const reviewed: unknown = await reviewedResponse.json();
+  const operationPreviewReply2 = (await reviewedResponse.json()) as ResponseFor<
+    "operation.preview",
+    "HUMAN"
+  >;
   if (
-    !isResponseFor("operation.preview", "HUMAN", reviewed) ||
-    reviewed.outcome.kind !== "REVIEWED"
+    operationPreviewReply2.representation !== "HUMAN" ||
+    operationPreviewReply2.outcome.kind !== "REVIEWED"
   ) {
-    throw new Error("Expected a fresh authority review after correction.");
+    throw new Error("Expected a fresh people review after correction.");
   }
   const corrected: unknown = reviewedResponse.request().postDataJSON();
   expect(corrected).toEqual({
-    kind: "AUTHORITY",
     operationId: operationId(corrected),
-    target: { kind: "HUMAN", issuer: source.issuer, subject: subjectValue },
-    act: {
-      kind: "ADMIT",
-      profile: { displayName: profileName },
-      grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": source.issuer,
+      "input:principal.subject": subjectValue,
+      "input:profile.displayName": profileName,
+      "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
     },
   });
   const correctedId = operationId(corrected);
@@ -200,26 +282,37 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(consent).toBeEnabled();
   await expect(editor.locator(".screen-details")).toContainText(correctedId);
   expect(requests).toEqual(["POST /api/operation.preview", "POST /api/operation.preview"]);
-  await editor.getByRole("button", { name: "Return to editing", exact: true }).click();
+  await editor
+    .getByRole("button", {
+      name: "Return to editing",
+      exact: true,
+    })
+    .click();
   const repeated = page.waitForResponse((value) => value.url().endsWith("/api/operation.preview"));
-  await editor.getByRole("button", { name: "Review changes", exact: true }).click();
+  await editor
+    .getByRole("button", {
+      name: "Review changes",
+      exact: true,
+    })
+    .click();
   const repeatedResponse = await repeated;
   const repeatedReply: unknown = await repeatedResponse.json();
   const reviewedBytes = repeatedResponse.request().postDataBuffer();
   expect(reviewedBytes).not.toBeNull();
-  const repeatedInput: unknown = repeatedResponse.request().postDataJSON();
-  if (
-    !isRequest("operation.preview", repeatedInput) ||
-    !isRequest("operation.preview", corrected)
-  ) {
-    throw new Error("Expected typed repeated commands.");
-  }
-  expect(repeatedInput.operationId).not.toBe(corrected.operationId);
-  expect({ ...repeatedInput, operationId: corrected.operationId }).toEqual(corrected);
-  if (!isResponseFor("operation.preview", "HUMAN", repeatedReply)) {
+  const operationPreviewRequest = repeatedResponse
+    .request()
+    .postDataJSON() as RequestByEndpoint["operation.preview"];
+  const operationPreviewRequest2 = corrected as RequestByEndpoint["operation.preview"];
+  expect(operationPreviewRequest.operationId).not.toBe(operationPreviewRequest2.operationId);
+  expect({
+    ...operationPreviewRequest,
+    operationId: operationPreviewRequest2.operationId,
+  }).toEqual(operationPreviewRequest2);
+  const operationPreviewReply3 = repeatedReply as ResponseFor<"operation.preview", "HUMAN">;
+  if (operationPreviewReply3.representation !== "HUMAN") {
     throw new Error("Expected a typed repeated review.");
   }
-  expect(repeatedReply.outcome.kind).toBe("REVIEWED");
+  expect(operationPreviewReply3.outcome.kind).toBe("REVIEWED");
   expect(requests).toEqual([
     "POST /api/operation.preview",
     "POST /api/operation.preview",

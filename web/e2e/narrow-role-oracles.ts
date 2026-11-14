@@ -1,10 +1,8 @@
+import { type ResponseFor, endpoints } from "@contracts/client";
 import { showAccountActions } from "./workspace-navigation";
 import { expect, type Page } from "@playwright/test";
-import { endpoints } from "@contracts/client";
 import { browserRequest, sessionToken } from "./session-helpers";
 import { randomUUID } from "node:crypto";
-import { isResponseFor } from "../src/protocol/client";
-
 export const refusedRead = async (
   page: Page,
   endpoint: "case.get",
@@ -18,18 +16,17 @@ export const refusedRead = async (
   await dispatch();
   const response = await waiting;
   expect(response.status()).toBe(200);
-  const payload: unknown = await response.json();
-  if (!isResponseFor(endpoint, "HUMAN", payload)) {
+  const endpointReply = (await response.json()) as ResponseFor<typeof endpoint, "HUMAN">;
+  if (!(!("representation" in endpointReply) || endpointReply.representation === "HUMAN")) {
     throw new Error("Expected an admitted HUMAN refusal.");
   }
-  const { outcome } = payload;
+  const { outcome } = endpointReply;
   if (outcome.kind !== "REJECTED") {
     throw new Error("Narrow read did not return its actual authorization refusal.");
   }
   expect(outcome.rejection.kind).toBe("REFUSED");
   expect(outcome.rejection.advice.message.messageId).toBe("diagnostic.RESOURCE_UNAVAILABLE");
 };
-
 export const metadataTimeline = async (page: Page, caseReference: string) => {
   const reply = await browserRequest(page, "/api/case.timeline", {
     method: "POST",
@@ -38,24 +35,29 @@ export const metadataTimeline = async (page: Page, caseReference: string) => {
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      target: { kind: "REFERENCE", caseReference },
+      target: {
+        kind: "REFERENCE",
+        caseReference,
+      },
       filter: "FACTS",
       limit: 50,
     }),
   });
   expect(reply.status).toBe(200);
+  const caseTimelineReply = reply.payload as ResponseFor<"case.timeline", "DATA">;
   if (
-    !isResponseFor("case.timeline", "DATA", reply.payload) ||
-    reply.payload.outcome.kind !== "SUCCEEDED"
+    caseTimelineReply.representation !== "DATA" ||
+    caseTimelineReply.outcome.kind !== "SUCCEEDED"
   ) {
     throw new Error("A metadata reader must receive an admitted timeline.");
   }
-  expect(reply.payload.outcome.data.items.length).toBeGreaterThan(0);
-  for (const entry of reply.payload.outcome.data.items) {
-    expect(entry.changes).toEqual({ kind: "WITHHELD" });
+  expect(caseTimelineReply.outcome.data.items.length).toBeGreaterThan(0);
+  for (const entry of caseTimelineReply.outcome.data.items) {
+    expect(entry.changes).toEqual({
+      kind: "WITHHELD",
+    });
   }
 };
-
 const directCaseRefusal = async (page: Page, reference: string) => {
   const endpoint = endpoints.find((entry) => entry.id === "case.get")!;
   const reply = await browserRequest(page, endpoint.path, {
@@ -64,37 +66,60 @@ const directCaseRefusal = async (page: Page, reference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: reference } }),
+    body: JSON.stringify({
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
+    }),
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (
-    !isResponseFor("case.get", "DATA", reply.payload) ||
-    reply.payload.outcome.kind !== "REJECTED"
-  ) {
-    throw new Error("A case without read authority must return a typed public refusal.");
+  const caseGetReply = reply.payload as ResponseFor<"case.get", "DATA">;
+  if (caseGetReply.representation !== "DATA" || caseGetReply.outcome.kind !== "REJECTED") {
+    throw new Error("A case without read people must return a typed public refusal.");
   }
-  expect(reply.payload.outcome.data.code).toBe("RESOURCE_UNAVAILABLE");
-  return reply.payload.outcome;
+  expect(caseGetReply.outcome.rejection.code).toBe("RESOURCE_UNAVAILABLE");
+  return caseGetReply.outcome;
 };
-
 export const opaqueCaseRefusal = async (page: Page, reference: string) => {
   const actual = await directCaseRefusal(page, reference);
   const missing = await directCaseRefusal(page, `MISSING-${randomUUID()}`);
   expect(actual).toEqual(missing);
 };
-
 export const noCaseWorkspace = async (page: Page) => {
-  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  const signOut = page.getByRole("button", {
+    name: "Sign out",
+    exact: true,
+  });
   if (!(await signOut.isVisible())) {
     await showAccountActions(page);
   }
   await expect(signOut).toBeVisible();
-  await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Open by exact reference", exact: true }),
+    page.getByRole("link", {
+      name: "Cases",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      name: "Cases",
+      exact: true,
+      level: 1,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", {
+      name: "Open a case",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", {
+      name: "Open by exact reference",
+      exact: true,
+    }),
   ).toHaveCount(0);
   await expect(page.locator("section.case-detail")).toHaveCount(0);
 };

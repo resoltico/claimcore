@@ -16,7 +16,7 @@
   "ui.after": "After: {value}",
   "ui.anyFilter": "Any",
   "ui.appearance": "Appearance",
-  "ui.authorityAction": "Access change",
+  "ui.peopleAction": "Access change",
   "ui.backToCases": "Back to cases",
   "ui.before": "Before: {value}",
   "ui.calendar": "Open calendar",
@@ -38,7 +38,7 @@
   "ui.conflict.loading": "Loading the latest version…",
   "ui.conflict.reviewLatest": "Review against latest",
   "ui.conflict.title": "This case has changed",
-  "ui.continueAuthorityRequest": "Continue current request",
+  "ui.continuePeopleRequest": "Continue current request",
   "ui.contract": "Contract identity",
   "ui.copied": "{label} copied.",
   "ui.copy": "Copy {label}",
@@ -160,7 +160,6 @@
   "ui.settings": "Settings",
   "ui.settingsIntroduction": "These preferences apply to this browser. They never change recorded values.",
   "ui.shell.administration": "Administration",
-  "ui.shell.authorityHistory": "Authority history",
   "ui.shell.businessDateChanged": "The business date is now {date}. Refresh to update due dates.",
   "ui.shell.checkNow": "Check now",
   "ui.shell.people": "People & access",
@@ -203,5 +202,6 @@
   "ui.choiceNotOffered": "Not available with the current facts.",
   "ui.morePayments": "More payments",
   "ui.paymentsShown": "Shown: {shown} of {total}",
-  "ui.showAllPayments": "Show all payments"
+  "ui.showAllPayments": "Show all payments",
+  "ui.resourceUnavailable": "This item is unavailable."
 }

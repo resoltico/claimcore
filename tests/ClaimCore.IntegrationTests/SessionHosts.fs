@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.SessionHosts
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open System
@@ -14,7 +16,7 @@ open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Postgres
-open ClaimCore.Web
+open ClaimCore.Server
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.Authentication

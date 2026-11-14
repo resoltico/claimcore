@@ -346,7 +346,7 @@ let tests =
 
                             Expect.isFalse
                                 (DatabaseSession.value<bool> 0 rows.Head)
-                                "Direct ownership alone does not reveal this authority"
+                                "Direct ownership alone does not reveal this people"
 
                             Expect.equal
                                 (DatabaseSession.value<bool> 1 rows.Head)
@@ -361,6 +361,6 @@ let tests =
                                 refused
                                     (fun () ->
                                         InstallationCheck.openRuntime database.RuntimeSource token)
-                                    "Owner authority is refused"
+                                    "Owner people is refused"
                         }))
         ]

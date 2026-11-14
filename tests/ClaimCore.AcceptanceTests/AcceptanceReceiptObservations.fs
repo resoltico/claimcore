@@ -109,7 +109,7 @@ let sameRecordedReceipt (fixture: PublishedFixture.Fixture) name (expected: Json
 let contentGuards =
     testCase "receipt comparison preserves every non-basis member and raw nested value" (fun () ->
         let receipt =
-            """{"basis":{"observedAt":"current-one"},"operationId":"stable-id","position":{"sequence":7,"entryHash":"hash"},"recordedAt":"event-time","recordedBy":{"actorId":"recorder","displayName":{"kind":"NAMED","value":"Current recorder"}},"subject":{"revision":3,"effects":[{"act":"SET_PROFILE"}],"snapshot":{"fields":{"amount":"1.2345","text":"literal\\nparagraph"}}}}"""
+            """{"basis":{"observedAt":"current-one"},"operationId":"stable-id","position":{"sequence":7,"entryHash":"hash"},"recordedAt":"event-time","recordedBy":{"actorId":"recorder","displayName":{"kind":"NAMED","value":"Current recorder"}},"subject":{"revision":3,"effects":[{"act":"people.setProfile"}],"snapshot":{"fields":{"amount":"1.2345","text":"literal\\nparagraph"}}}}"""
 
         let event text =
             use document = JsonDocument.Parse(text: string)
@@ -131,7 +131,7 @@ let contentGuards =
                 "\"actorId\":\"recorder\"", "\"actorId\":\"other-recorder\""
                 "Current recorder", "Different current recorder"
                 "\"revision\":3", "\"revision\":4"
-                "SET_PROFILE", "ERASE_PROFILE"
+                "people.setProfile", "people.eraseProfile"
                 "1.2345", "1.2340"
                 "literal\\\\nparagraph", "literal\\nparagraph"
                 "\"operationId\":", "\"unexpected\":\"must remain visible\",\"operationId\":"

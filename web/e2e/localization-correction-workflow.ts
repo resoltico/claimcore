@@ -1,28 +1,32 @@
+import { prefixedInputs } from "../tests/support/submission-inputs";
+import { type ResponseFor, endpoints, type OperationReceipt } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import type { CaseFields, OperationDraft } from "../src/protocol/types";
+import type { CaseFields, CaseSubmission } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";
-import { isResponseFor } from "../src/protocol/client";
-import { endpoints, type OperationReceipt } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
-
 export type Modes = Readonly<{
   registration: "KEEP" | "UPDATE";
   decision: "KEEP" | "UPDATE" | "CLEAR";
   payable?: string;
 }>;
 type CaseDataReceipt = OperationReceipt & {
-  subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
+  subject: Extract<
+    OperationReceipt["subject"],
+    {
+      kind: "CASE";
+    }
+  >;
 };
 type SeedStep = Readonly<{
   operationId?: string;
-  act: OperationDraft["act"];
+  task: CaseSubmission["task"];
+  inputs: CaseSubmission["inputs"];
   fields: CaseFields;
 }>;
-
 const setupRegistration = {
   incidentDate: "2026-09-01",
   incidentNotificationDate: "2026-09-02",
@@ -32,18 +36,19 @@ const setupRegistration = {
   claimedAmount: "1200.50",
   claimedCurrency: "EUR",
 };
-
 const setupDecision = {
   paymentDecisionDate: "2026-09-03",
   payableAmount: "300.25",
   payableCurrency: "EUR",
 };
-
 const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
   const opened: CaseFields = {
     caseReference: reference,
     status: "OPENED",
-    registration: { ...setupRegistration, claimedAmount: "1200.5" },
+    registration: {
+      ...setupRegistration,
+      claimedAmount: "1200.5",
+    },
     finance: {
       decision: null,
       paidAmount: "0",
@@ -54,7 +59,10 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   };
   const decided: CaseFields = {
     ...opened,
-    finance: { ...opened.finance, decision: setupDecision },
+    finance: {
+      ...opened.finance,
+      decision: setupDecision,
+    },
   };
   const paymentId = mintOperationId();
   const paid: CaseFields = {
@@ -68,30 +76,43 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     },
   };
   const steps: SeedStep[] = [
-    { act: { kind: "OPEN", values: setupRegistration }, fields: opened },
-    { act: { kind: "DECIDE", values: setupDecision }, fields: decided },
+    {
+      task: "case.open",
+      inputs: { ...prefixedInputs("field:", setupRegistration) },
+      fields: opened,
+    },
+    {
+      task: "case.decide",
+      inputs: { ...prefixedInputs("field:", setupDecision) },
+      fields: decided,
+    },
     {
       operationId: paymentId,
-      act: {
-        kind: "RECORD_PAYMENT",
-        values: { paymentDate: "2026-09-05", paidAmount: "300.25", paidCurrency: "EUR" },
+      task: "case.recordPayment",
+      inputs: {
+        "field:paymentDate": "2026-09-05",
+        "field:paidAmount": "300.25",
+        "field:paidCurrency": "EUR",
       },
       fields: paid,
     },
   ];
   if (status === "CLOSED") {
     steps.push({
-      act: { kind: "CLOSE" },
-      fields: { ...paid, status: "CLOSED" },
+      task: "case.close",
+      inputs: {},
+      fields: {
+        ...paid,
+        status: "CLOSED",
+      },
     });
   }
   return steps;
 };
-
 const acceptSetup = async (
   page: Page,
   token: string,
-  request: OperationDraft,
+  request: CaseSubmission,
   fields: CaseFields,
 ): Promise<CaseDataReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
@@ -109,10 +130,11 @@ const acceptSetup = async (
   });
   expect(reply.status).toBe(200);
   expect(reply.cacheControl).toContain("no-store");
-  if (!isResponseFor("operation.execute", "DATA", reply.payload)) {
+  const operationExecuteReply = reply.payload as ResponseFor<"operation.execute", "DATA">;
+  if (operationExecuteReply.representation !== "DATA") {
     throw new Error("E2E_CORRECTION_SETUP_RESPONSE_INVALID");
   }
-  const { outcome } = reply.payload;
+  const { outcome } = operationExecuteReply;
   if (outcome.kind !== "ACCEPTED") {
     throw new Error(`E2E_CORRECTION_SETUP_${outcome.kind}`);
   }
@@ -123,17 +145,17 @@ const acceptSetup = async (
     ...outcome.data,
     subject: outcome.data.subject,
   };
-  const revision = request.expectedRevision + 1;
+  const revision = request.binding.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  if (request.target.kind !== "REFERENCE") {
+  if (request.binding.target.kind !== "REFERENCE") {
     throw new Error("Reference fixture positive control");
   }
-  expect(receipt.subject.caseReference).toBe(request.target.caseReference);
-  expect(receipt.subject.act).toBe(request.act.kind);
+  expect(receipt.subject.caseReference).toBe(request.binding.target.caseReference);
+  expect(receipt.subject.act).toBe(request.task);
   expect(receipt.subject.revision).toBe(revision);
   const recordedFields = (() => {
-    switch (request.act.kind) {
-      case "OPEN":
+    switch (request.task) {
+      case "case.open":
         return [
           "incidentDate",
           "incidentNotificationDate",
@@ -146,11 +168,11 @@ const acceptSetup = async (
           "claimedAmount",
           "claimedCurrency",
         ];
-      case "DECIDE":
+      case "case.decide":
         return ["paymentDecisionDate", "payableAmount", "payableCurrency"];
-      case "RECORD_PAYMENT":
+      case "case.recordPayment":
         return ["paymentDate", "paidAmount", "paidCurrency"];
-      case "CLOSE":
+      case "case.close":
         return [];
       default:
         throw new Error("Unexpected paid-case setup act");
@@ -159,9 +181,12 @@ const acceptSetup = async (
   expect(receipt.subject.snapshot).toEqual({
     kind: "DISCLOSED",
     recordedFields,
-    state: { kind: "ACTIVE", fields },
+    state: {
+      kind: "ACTIVE",
+      fields,
+    },
     payment:
-      request.act.kind === "RECORD_PAYMENT"
+      request.task === "case.recordPayment"
         ? {
             kind: "RECORDED",
             entry: {
@@ -174,7 +199,6 @@ const acceptSetup = async (
   });
   return receipt;
 };
-
 export const paidCase = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
   const token = await sessionToken(page);
   let recordedBy: string | undefined;
@@ -184,12 +208,15 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       page,
       token,
       {
-        kind: "CASE",
         operationId: step.operationId ?? mintOperationId(),
-        target: { kind: "REFERENCE", caseReference: reference },
-        expectedRevision: revision,
-        act: step.act,
-      },
+        task: step.task,
+        binding: {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: reference },
+          expectedRevision: revision,
+        },
+        inputs: step.inputs,
+      } as CaseSubmission,
       step.fields,
     );
     const { recordedBy: acceptedActor } = receipt;
@@ -201,7 +228,12 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
     revision = acceptedRevision;
   }
   await (await showExactLookup(page)).fill(reference);
-  await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Open by exact reference",
+      exact: true,
+    })
+    .click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await showCaseRecordDetails(page);
   await expect(
@@ -212,12 +244,15 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
-  await startAct(page, "CORRECT", language);
+  await startAct(page, "case.correct", language);
   for (const group of ["registration", "decision"] as const) {
     await chooseChoice(page, `group:${group}`, modes[group]);
   }
   const replacements = {
-    registration: { claimantName: "A\u0308 العربية\u200D <tag>", claimedAmount: "1.0000" },
+    registration: {
+      claimantName: "A\u0308 العربية\u200D <tag>",
+      claimedAmount: "1.0000",
+    },
     decision: {
       paymentDecisionDate: "2026-09-04",
       payableAmount: modes.payable ?? "400.2500",
@@ -243,12 +278,18 @@ export const currentCase = async (page: Page, caseReference: string) => {
       "Content-Type": "application/json",
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
-    body: JSON.stringify({ target: { kind: "REFERENCE", caseReference } }),
+    body: JSON.stringify({
+      target: {
+        kind: "REFERENCE",
+        caseReference,
+      },
+    }),
   });
-  if (!isResponseFor("case.get", "DATA", result.payload)) {
+  const caseGetReply = result.payload as ResponseFor<"case.get", "DATA">;
+  if (caseGetReply.representation !== "DATA") {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
   }
-  const { payload } = result;
+  const payload = caseGetReply;
   if (payload.outcome.kind !== "SUCCEEDED" || payload.outcome.data.state.kind === "ERASED") {
     throw new Error("E2E_CORRECTION_CASE_MISSING");
   }
@@ -266,15 +307,19 @@ export const history = async (page: Page, caseReference: string) => {
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      target: { kind: "REFERENCE", caseReference },
+      target: {
+        kind: "REFERENCE",
+        caseReference,
+      },
       limit: 50,
       filter: "FACTS",
     }),
   });
-  if (!isResponseFor("case.timeline", "DATA", result.payload)) {
+  const caseTimelineReply = result.payload as ResponseFor<"case.timeline", "DATA">;
+  if (caseTimelineReply.representation !== "DATA") {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
-  const { payload } = result;
+  const payload = caseTimelineReply;
   if (payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_CORRECTION_HISTORY_MISSING");
   }
@@ -287,7 +332,11 @@ export const expectResultFields = (
 ) => {
   const decisions = {
     KEEP: before.fields.finance.decision,
-    UPDATE: { paymentDecisionDate: "2026-09-04", payableAmount: "400.25", payableCurrency: "EUR" },
+    UPDATE: {
+      paymentDecisionDate: "2026-09-04",
+      payableAmount: "400.25",
+      payableCurrency: "EUR",
+    },
     CLEAR: null,
   };
   expect(after).toEqual({
@@ -303,7 +352,10 @@ export const expectResultFields = (
               claimedAmount: "1",
             }
           : before.fields.registration,
-      finance: { ...before.fields.finance, decision: decisions[modes.decision] },
+      finance: {
+        ...before.fields.finance,
+        decision: decisions[modes.decision],
+      },
     },
   });
 };

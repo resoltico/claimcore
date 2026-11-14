@@ -1,15 +1,15 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReadDocument_case_get,
+  HumanReview,
+  HumanReceiptDocument,
+} from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, TestSession } from "../../support/presentation-test-support";
 import { ReminderQueueWork } from "../../../src/views/work/ReminderQueueWork";
-import {
-  isRequest,
-  type HumanReadDocument_caseGet,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const reminderId = "00000000-0000-4000-8000-000000000002";
 const basis = {
@@ -20,42 +20,51 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const current: HumanReadDocument_caseGet = {
-  screen: { regions: [] },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 4,
-    workRevision: 6,
-    history: "NONE",
-    tasks: [],
-    editableInputs: [],
-    correction: null,
-    seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
-    notes: [],
-    payments: [],
-    nextActions: [],
+const current: HumanReadDocument_case_get = {
+  screen: {
+    regions: [],
   },
+  subject: { kind: "CASE", caseId, revision: 4, workRevision: 6 },
+  actions: [],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
-    context: {
-      kind: "REVIEW",
-      task: "REMINDER:REMINDER_COMPLETE",
-      target: { kind: "REMINDER", caseId, existing: { reminderId, revision: 9 } },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:reminderId",
-        "input:expectedReminderRevision",
-      ],
-      consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CORE-SELECTED" },
+    screen: {
+      regions: [],
     },
+    subject: {
+      kind: "REVIEW",
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "CORE-SELECTED",
+      },
+      consequence: "ROUTINE",
+    },
+    actions: [
+      operationAffordance(
+        "reminder.complete",
+        {
+          kind: "REMINDER",
+          target: { kind: "ID", caseId },
+          reminderId,
+          expectedRevision: 0,
+        },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -72,20 +81,32 @@ const receipt: HumanReceiptDocument = {
               key: "receipt",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core accepted reminder Ψ" },
+              value: {
+                kind: "TEXT",
+                value: "Core accepted reminder Ψ",
+              },
             },
           ],
         },
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "REMINDER", caseId, versions: [{ reminderId, revision: 10 }] },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -105,26 +126,33 @@ const page = {
             },
           ],
           rows: [
-            { key: reminderId, values: [{ kind: "TEXT", value: "Core selected reminder Ω" }] },
+            {
+              key: reminderId,
+              actions: [
+                operationAffordance("reminder.complete", {
+                  kind: "REMINDER",
+                  target: { kind: "ID", caseId },
+                  reminderId,
+                  expectedRevision: 9,
+                }),
+              ],
+              values: [
+                {
+                  kind: "TEXT",
+                  value: "Core selected reminder Ω",
+                },
+              ],
+            },
           ],
         },
       },
     ],
   },
-  context: {
-    kind: "REMINDERS",
-    nextCursor: null,
-    reminders: [
-      {
-        caseId,
-        reminderId,
-        revision: 9,
-        tasks: ["REMINDER:REMINDER_COMPLETE"],
-        actionSeed: null,
-        dueDateSeed: null,
-      },
-    ],
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -136,34 +164,57 @@ it("takes one parent read and carries the selected reminder version through revi
       let outcome: unknown;
       let operationId: string | undefined;
       if (requestAddress(url).endsWith("reminder.list")) {
-        outcome = { kind: "SUCCEEDED", document: page };
+        outcome = {
+          kind: "SUCCEEDED",
+          document: page,
+        };
       } else if (requestAddress(url).endsWith("case.get")) {
-        outcome = { kind: "SUCCEEDED", document: current };
+        outcome = {
+          kind: "SUCCEEDED",
+          document: current,
+        };
       } else if (requestAddress(url).endsWith("operation.get")) {
-        const lookup: unknown = JSON.parse(requestText(options?.body));
-        if (!isRequest("operation.get", lookup)) {
-          throw new Error("Typed receipt lookup required");
-        }
-        ({ operationId } = lookup);
-        outcome = { kind: "ACCEPTED", document: receipt, byRequester: true };
+        const operationGetRequest = JSON.parse(
+          requestText(options?.body),
+        ) as RequestByEndpoint["operation.get"];
+        ({ operationId } = operationGetRequest);
+        outcome = {
+          kind: "ACCEPTED",
+          document: receipt,
+          byRequester: true,
+        };
       } else {
-        const command: unknown = JSON.parse(requestText(options?.body));
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Invalid assembled reminder command");
-        }
-        ({ operationId } = command);
+        const operationExecuteRequest = JSON.parse(
+          requestText(options?.body),
+        ) as RequestByEndpoint["operation.execute"];
+        ({ operationId } = operationExecuteRequest);
         sent.push(requestText(options?.body));
         outcome = requestAddress(url).endsWith("preview")
-          ? { kind: "REVIEWED", review }
-          : { kind: "ACCEPTED", document: receipt };
+          ? {
+              kind: "REVIEWED",
+              review,
+            }
+          : {
+              kind: "ACCEPTED",
+              document: receipt,
+            };
       }
       return new Response(
         JSON.stringify({
           representation: "HUMAN",
-          ...(operationId === undefined ? {} : { operationId }),
+          ...(operationId === undefined
+            ? {}
+            : {
+                operationId,
+              }),
           outcome,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
     }),
   );
@@ -174,7 +225,11 @@ it("takes one parent read and carries the selected reminder version through revi
     </TestSession>,
   );
   await screen.findByText("Core selected reminder Ω");
-  await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: /complete/iu,
+    }),
+  );
   await waitFor(() => {
     expect(screen.getByRole("dialog").querySelector("[data-confirm-operation]")).not.toBeNull();
   });
@@ -188,9 +243,17 @@ it("takes one parent read and carries the selected reminder version through revi
   expect(sent).toHaveLength(2);
   expect(sent[1]).toBe(sent[0]);
   expect(JSON.parse(sent[0]!)).toMatchObject({
-    kind: "REMINDER",
-    target: { kind: "ID", caseId },
-    act: { kind: "COMPLETE", reminderId, expectedRevision: 9 },
+    task: "reminder.complete",
+    binding: {
+      kind: "REMINDER",
+      target: {
+        kind: "ID",
+        caseId,
+      },
+      reminderId,
+      expectedRevision: 9,
+    },
+    inputs: {},
   });
   expect(fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("case.get"))).toHaveLength(
     1,

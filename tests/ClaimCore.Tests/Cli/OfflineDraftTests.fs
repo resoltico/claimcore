@@ -1,5 +1,7 @@
 module ClaimCore.Tests.OfflineDraftTests
 
+open ClaimCore.CommandLine
+
 open System.Text
 open System.Text.Json
 open Expecto
@@ -53,11 +55,8 @@ let tests =
                             (input.TryGetProperty("operationId", &ignored))
                             "No operation is allocated"
 
-                        let parent, key =
-                            if revisionPath.StartsWith("act.") then
-                                input.GetProperty("act"), "expectedRevision"
-                            else
-                                input, revisionPath
+                        let parent, key = input.GetProperty("binding"), "expectedRevision"
+                        ignore revisionPath
 
                         Expect.isFalse
                             (parent.TryGetProperty(key, &ignored))
@@ -86,7 +85,7 @@ let tests =
                 | Error issues ->
                     Expect.contains
                         issues
-                        (ClaimCore.Presentation.UsageError.MissingOption "--expected-revision")
+                        (ClaimCore.CommandLine.UsageError.MissingOption "--expected-revision")
                         "Automation has no implicit read"
                 | Ok _ -> failtest "An executable command cannot invent its version")
             testCase
@@ -95,14 +94,9 @@ let tests =
                     for args in
                         [
                             [
-                                "authority"
+                                "people"
                                 "set-profile"
-                                "--principal-kind"
-                                "human"
-                                "--issuer"
-                                "https://issuer.example/"
-                                "--subject"
-                                "offline-person"
+                                "10000000-0000-7000-8000-000000000001"
                                 "--name"
                                 "Editable profile"
                             ]
@@ -163,7 +157,11 @@ let tests =
                         Frames.admit value.Bytes
                         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
-                    let input = Frames.value Api.operationExecute frame |> Option.get
+                    let input =
+                        (Frames.value Api.operationExecute
+                         >> Option.map ClaimCore.TestSupport.Submissions.command)
+                            frame
+                        |> Option.get
 
                     match input with
                     | ClaimCore.Application.Contracts.OperationInput.Case command ->

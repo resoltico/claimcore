@@ -97,7 +97,7 @@ let all () : IEndpointInput list =
                 }
         yield
             EndpointValues.input
-                Api.authorityList
+                Api.peopleList
                 {
                     Role = None
                     Text = None
@@ -106,7 +106,7 @@ let all () : IEndpointInput list =
                 }
         yield
             EndpointValues.input
-                Api.authorityGrants
+                Api.peopleGrants
                 {
                     ActorId = targetId
                     AfterCursor = None
@@ -114,14 +114,14 @@ let all () : IEndpointInput list =
                 }
         yield
             EndpointValues.input
-                Api.authorityHistory
+                Api.peopleHistory
                 {
                     TargetActorId = None
                     AfterCursor = None
                     Limit = 50
                 }
-        yield EndpointValues.input Api.authorityRequests page
-        yield EndpointValues.input Api.authorityRequestsDismiss principal
+        yield EndpointValues.input Api.peopleRequests page
+        yield EndpointValues.input Api.peopleRequestsDismiss principal
         yield EndpointValues.input Api.operationGet { OperationId = targetId }
         for preview in [ true; false ] do
             // Both operation endpoints consume the same authored input type.
@@ -132,14 +132,16 @@ let all () : IEndpointInput list =
                     match value with
                     | OperationInput.Case input ->
                         OperationInput.Case { input with OperationId = fresh }
-                    | OperationInput.Authority input ->
-                        OperationInput.Authority { input with OperationId = fresh }
+                    | OperationInput.People input ->
+                        OperationInput.People { input with OperationId = fresh }
                     | OperationInput.Note input ->
                         OperationInput.Note { input with OperationId = fresh }
                     | OperationInput.Work input ->
                         OperationInput.Work { input with OperationId = fresh }
                     | OperationInput.Reminder input ->
                         OperationInput.Reminder { input with OperationId = fresh }
+
+                let value = Submissions.ofCommand (Some targetId) value
 
                 if preview then
                     EndpointValues.input Api.operationPreview value
@@ -170,11 +172,11 @@ let all () : IEndpointInput list =
 
             yield
                 bind (
-                    OperationInput.Authority
+                    OperationInput.People
                         {
                             OperationId = operation
                             Target = principal
-                            Act = AuthorityAct.Register Inputs.actorProfile
+                            Act = PeopleAct.Register Inputs.actorProfile
                         }
                 )
 

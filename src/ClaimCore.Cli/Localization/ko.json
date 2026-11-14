@@ -59,7 +59,7 @@
     "text": "서비스를 사용할 수 없습니다.",
     "source": "6468ac9f9bca"
   },
-  "cli.family.authority": {
+  "cli.family.people": {
     "text": "사람 및 접근 권한",
     "source": "1e133caaec46"
   },
@@ -191,9 +191,9 @@
     "text": "직접 부여된 역할: {direct}; 설치 환경에서 상속된 역할: {inherited}; 유효 역할: {effective}",
     "source": "db07af8055e6"
   },
-  "cli.text.authorityHistoryEmpty": {
+  "cli.text.peopleHistoryEmpty": {
     "text": "이 선택 조건에 맞는 권한 변경이 없습니다.",
-    "source": "4e76d78127bf"
+    "source": "551e9e8904a3"
   },
   "cli.text.code": {
     "text": "코드",

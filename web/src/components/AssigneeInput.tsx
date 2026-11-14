@@ -6,7 +6,7 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
-import type { HumanReadDocument_caseAssignees, HumanResponseByEndpoint } from "@contracts/client";
+import type { HumanReadDocument_case_assignees, HumanResponseByEndpoint } from "@contracts/client";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "./CatalogDate";
@@ -15,7 +15,7 @@ type Props = TypedFieldProps & { current: CurrentCase };
 const AssigneeChoices = ({
   page,
   ...props
-}: TypedFieldProps & { page: HumanReadDocument_caseAssignees }) => {
+}: TypedFieldProps & { page: HumanReadDocument_case_assignees }) => {
   const p = usePresentation();
   if (page.basis.kind !== "SNAPSHOT") {
     return (
@@ -26,7 +26,7 @@ const AssigneeChoices = ({
   }
   const zone = page.basis.observation.timeZone;
   const content = page.screen.regions.find((region) => region.role === "RESULTS")?.content;
-  if (page.context.actorIds.length === 0) {
+  if (content?.kind === "TABLE" && content.rows.length === 0) {
     return <p>{p.text("ui.noEligibleAccounts")}</p>;
   }
   if (content?.kind !== "TABLE") {
@@ -34,9 +34,11 @@ const AssigneeChoices = ({
   }
   return (
     <ul>
-      {page.context.actorIds.map((actorId) => {
-        const row = content.rows.find((candidate) => candidate.key === actorId);
-        return row === undefined ? null : (
+      {content.rows.map((row) => {
+        const action = row.actions?.find((candidate) => candidate.task === "work.update");
+        const actorId =
+          action?.task === "work.update" ? action.seeds["field:responsibleActor"] : undefined;
+        return typeof actorId === "string" ? (
           <li key={actorId}>
             <label>
               <input
@@ -57,14 +59,19 @@ const AssigneeChoices = ({
               )}
             </label>
           </li>
-        );
+        ) : null;
       })}
     </ul>
   );
 };
 const SelectedAssignee = ({ current, value }: Pick<Props, "current" | "value">) => {
   const p = usePresentation();
-  if (value === "" || current.context.seeds.work?.responsible !== value) {
+  if (
+    value === "" ||
+    current.actions.find((action) => action.task === "work.update")?.seeds[
+      "field:responsibleActor"
+    ] !== value
+  ) {
     return null;
   }
   const content = current.screen.regions.find((region) => region.role === "WORK")?.content;
@@ -87,9 +94,9 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const requester = useRequesterContext();
-  const { caseId } = current.context;
-  const actorId = requester?.context.actorId;
-  const installationId = requester?.context.installationId;
+  const { caseId } = current.subject;
+  const actorId = requester?.subject.actorId;
+  const installationId = requester?.subject.installationId;
   // Cursor ownership includes the authenticated disclosure scope, even for the same case.
   const owner = useMemo(
     () => ({ caseId, credential, epoch, actorId, installationId }),
@@ -142,10 +149,10 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
             </button>
             <button
               type="button"
-              disabled={result.loading || page.context.nextCursor === null}
+              disabled={result.loading || page.nextCursor === null}
               onClick={() => {
-                if (page.context.nextCursor !== null) {
-                  setPaging({ owner, cursors: [...cursors, page.context.nextCursor] });
+                if (page.nextCursor !== null) {
+                  setPaging({ owner, cursors: [...cursors, page.nextCursor] });
                 }
               }}
             >

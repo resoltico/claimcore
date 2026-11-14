@@ -119,7 +119,7 @@ let reviews =
                                 Context = context
                             }
 
-                    let delta = ReviewScreen.operationReview None review
+                    let delta = ReviewScreen.operationReview None None review
 
                     Expect.equal
                         (delta.Changes |> List.map _.Key)
@@ -216,7 +216,7 @@ let reviews =
                             Context = context
                         }
 
-                let delta = ReviewScreen.operationReview None (review proposed)
+                let delta = ReviewScreen.operationReview None None (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -231,6 +231,7 @@ let reviews =
 
                 let erased =
                     ReviewScreen.operationReview
+                        None
                         None
                         (review { before with State = CaseState.Erased })
 
@@ -256,7 +257,7 @@ let reviews =
                         "First\nSecond"
                         "Only the narrative kind admits LF layout")
             testCase
-                "withheld authority target is explicit and never given an erased profile name"
+                "withheld people target is explicit and never given an erased profile name"
                 (fun () ->
                     let identity = CaseFixtures.actorId CliReplyFixtures.id
 
@@ -264,14 +265,14 @@ let reviews =
                         { CliReplyFixtures.receipt with
                             RecordedBy = account
                             Subject =
-                                ReceiptSubject.Authority
+                                ReceiptSubject.People
                                     {
-                                        Act = AuthorityKind.Disable
-                                        TargetActor = AuthorityTargetDisclosure.Withheld identity
+                                        Act = PeopleActKind.Disable
+                                        TargetActor = PeopleTargetDisclosure.Withheld identity
                                         Effects =
                                             [
                                                 {
-                                                    Act = AuthorityKind.Disable
+                                                    Act = PeopleActKind.Disable
                                                     Id =
                                                         EffectId.create
                                                             CliReplyFixtures.receipt.OperationId
@@ -358,7 +359,7 @@ let assignmentIdentity =
                     Context = context
                 }
 
-        let delta = ReviewScreen.operationReview None review
+        let delta = ReviewScreen.operationReview None None review
 
         Expect.equal
             delta.Changes

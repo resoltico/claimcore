@@ -59,7 +59,7 @@
     "text": "サービスを利用できません。",
     "source": "6468ac9f9bca"
   },
-  "cli.family.authority": {
+  "cli.family.people": {
     "text": "利用者とアクセス権限",
     "source": "1e133caaec46"
   },
@@ -191,9 +191,9 @@
     "text": "直接の役割：{direct}、設置環境からの役割：{inherited}、有効な役割：{effective}",
     "source": "db07af8055e6"
   },
-  "cli.text.authorityHistoryEmpty": {
+  "cli.text.peopleHistoryEmpty": {
     "text": "選択条件に一致する権限の変更はありません。",
-    "source": "4e76d78127bf"
+    "source": "551e9e8904a3"
   },
   "cli.text.code": {
     "text": "コード",

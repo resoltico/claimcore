@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+- Fresh installation is required for InstallationFormat 3; stored act identities now use dotted task IDs.
+- Submit operations as {operationId, task, binding, inputs}; use declared input tokens, omit to keep updates, and null only for clearable inputs.
+- Regenerate HUMAN clients: documents carry subject, actions, links and paging; each row carries its own controls instead of separate handle arrays.
+- Assignee reads include caseId and workRevision; payment reads include workRevision to bind controls to their observed case/work versions.
+- Core supplies People primary actions and editable seeds; tasks preview when every authored input is acquired; editable UPDATE hints remain omitted until selected.
+- Stage rows render their supplied query links and primary or blocked actions through the generic renderer.
+- People receipt reads offer explicit retry after a read failure without resending the accepted change.
+- Existing-person operations select ActorId in bindings; CLI person changes take an actor-ID operand instead of principal flags.
+- Replace claimcore-database with claimcore-server subcommands; start hosting with claimcore-server serve. Missing-command usage exits 64.
+- Use people.* endpoints and MANAGE_ACCESS/READ_ACCESS capabilities. CLI verbs follow dotted IDs, including case notes and case payments.
+- Regenerate clients: rejected replies use rejection, failed replies share fault with messageId, and input issues use input tokens and row ordinals.
+- Subject contracts share access, maintenance and lifetime admission in execution, preview and replay; case writes load all owned payments.
+- Work, reminder and note timeline differences use subject-owned retained application, preserving accepted values and integrity checks.
+- The browser trusts server-owned payloads while retaining contract identity, operation echo and byte bounds; generated runtime validators are removed.
+- One runtime image serves and administers the installation; the human CLI is distributed separately. Compose retains status-then-initialize restart behavior.
+- Wire owns CSV columns and serialization; cells starting with TAB after leading spaces now receive the formula-protection prefix.
+- Native acceptance and Chromium run in isolated shards. Offline CLI checks run in-process with published smoke coverage.
+- Docs-only pull requests run configuration, lint and unit; main pushes, merge groups and manual dispatch keep full verification.
+- Project folders follow subject and interface responsibilities; shared command-line types live in ClaimCore.CommandLine. The store port is an internal seam.
+
 ## [0.17.0] - 2026-11-13
 
 - Fresh installation is required for InstallationFormat 2, and CLI recovery format 3 requires fresh CLI state.

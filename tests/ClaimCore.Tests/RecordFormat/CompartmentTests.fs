@@ -36,7 +36,7 @@ let private seal () =
     |> valid
 
 // Independent byte derivation, before the product encoder: u32 frame length, UTF-8 tag,
-// u32 format=2, RFC4122 installation/operation, owner-kind/UUID, purpose, ordinal,
+// u32 format=3, RFC4122 installation/operation, owner-kind/UUID, purpose, ordinal,
 // reference count/reference, exactly 32 nonce bytes, then u32 UTF-8 payload length/payload.
 // Python stdlib struct/uuid/hashlib independently gave 149 bytes and the literal digest below.
 let private preimage =
@@ -45,7 +45,7 @@ let private preimage =
         [
             "00000015"
             "436c61696d436f72652e436f6d706172746d656e74"
-            "00000002"
+            "00000003"
             "00000000000040008000000000000001"
             "00000000000070008000000000000002"
             "01"
@@ -61,7 +61,7 @@ let private preimage =
     |> Convert.FromHexString
 
 let private digest =
-    Convert.FromHexString "ebc234ab1404b683d936f542b1929302640ed31f929c82eda6be871a2b592540"
+    Convert.FromHexString "dd0bbf62770b0ac413b1ec2da4414ed06fd6147eb5703972aefe3ef7b9154d75"
 
 [<Tests>]
 let tests =

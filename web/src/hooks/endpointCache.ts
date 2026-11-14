@@ -1,6 +1,5 @@
 import type { EndpointId, Representation } from "@contracts/client";
 import type { ApiResult, EndpointOutcome, ServiceResponse } from "../protocol/types";
-import { isResponseFor } from "../protocol/client";
 import { localNotice } from "../protocol/notices";
 import { isDisclosureRefused } from "../api/outcomes";
 export type CacheSnapshot = Readonly<{
@@ -60,16 +59,18 @@ export function typedResult<K extends EndpointId, R extends Representation>(
   representation: R,
 ): ApiResult<ServiceResponse<K, R>> | null;
 export function typedResult<K extends EndpointId>(
-  endpoint: K,
+  _endpoint: K,
   result: ApiResult<EndpointOutcome> | null,
   representation: Representation = "HUMAN",
 ): ApiResult<ServiceResponse<K, Representation>> | null {
   if (result === null || result.kind !== "outcome") {
     return result;
   }
-  return isResponseFor(endpoint, representation, result.value)
-    ? { ...result, value: result.value }
-    : { kind: "deliveryFailure", notice: localNotice("incomplete") };
+  if ("representation" in result.value && result.value.representation !== representation) {
+    return { kind: "deliveryFailure", notice: localNotice("incomplete") };
+  }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Cache keys bind endpoint and representation; the server owns payload admission.
+  return { ...result, value: result.value as ServiceResponse<K, Representation> };
 }
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();

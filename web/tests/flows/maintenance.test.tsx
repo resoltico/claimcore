@@ -1,8 +1,16 @@
 import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
+import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -16,7 +24,6 @@ import { RequesterContext } from "../../src/hooks/useRequesterContext";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { UnresolvedNotice } from "../../src/views/operation/UnresolvedNotice";
 import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
-import { activeRequester } from "../support/human-requester.fixtures";
 
 import { fields } from "../support/service-ui.fixtures";
 import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
@@ -33,16 +40,25 @@ import {
 } from "../support/recovery.fixtures";
 
 const current = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
-  revision: 1,
+  subject: { ...caseSubject, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { ...prefixedInputs("field:", fields.registration ?? {}) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "NONE",
-  editableInputs: [...registrationInputs],
-  seeds: { ...emptyCaseSeeds, registration: fields.registration },
 });
 const paused = caseDocumentInput({
-  tasks: [],
-  caseId: current.context.caseId,
-  revision: 1,
+  subject: { ...caseSubject, caseId: current.subject.caseId, revision: 1 },
+  actions: [],
   history: "NONE",
 });
 afterEach(() => {
@@ -77,7 +93,7 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
       <OperationEditor
         definition={productMetadata}
         current={current}
-        initialAct="AMEND_REGISTRATION"
+        initialAct="case.amendRegistration"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
@@ -109,9 +125,12 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
   });
-  expect(preview.mock.calls[0]![0].input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
-    values: { claimantName: "Retained local draft" },
+  expect({
+    task: preview.mock.calls[0]![0].input.task,
+    inputs: preview.mock.calls[0]![0].input.inputs,
+  }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Retained local draft" },
   });
 });
 
@@ -125,7 +144,8 @@ it("automatically checks unconfirmed identity when Core has withdrawn write task
     <RequesterContext
       value={{
         ...activeRequester,
-        context: { ...activeRequester.context, tasks: [], views: ["OPERATIONS"] },
+        actions: installationActions([]),
+        links: requesterLinks(["OPERATIONS"], []),
         screen: {
           regions: [
             {

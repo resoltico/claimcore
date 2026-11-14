@@ -28,7 +28,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "COMPLETE_AND_PLAN_NEXT",
+              "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
                 "completed": {
@@ -100,7 +100,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "COMPLETE_AND_PLAN_NEXT",
+              "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
                 "completed": {
@@ -172,7 +172,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "COMPLETE_AND_PLAN_NEXT",
+              "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
                 "completed": {
@@ -244,7 +244,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "COMPLETE_AND_PLAN_NEXT",
+              "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
                 "completed": {

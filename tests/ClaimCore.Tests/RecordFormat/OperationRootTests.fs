@@ -31,7 +31,7 @@ let private header =
     }
 
 let private commandText =
-    """{"act":"REMOVE_NOTE","caseId":"00000000-0000-7000-8000-000000000003","compartment":null,"kind":"NOTE","noteId":"00000000-0000-7000-8000-000000000007"}"""
+    """{"act":"note.remove","caseId":"00000000-0000-7000-8000-000000000003","compartment":null,"kind":"NOTE","noteId":"00000000-0000-7000-8000-000000000007"}"""
 
 let private effectText =
     """{"caseId":"00000000-0000-7000-8000-000000000003","kind":"NOTE_REMOVED","noteId":"00000000-0000-7000-8000-000000000007"}"""
@@ -39,7 +39,7 @@ let private effectText =
 let private command = CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note))
 let private effect = EffectDescriptor.NoteRemoved(parent, note)
 
-// Independent stdlib derivation: framed ASCII domain tag, format2, RFC4122 UUIDs,
+// Independent stdlib derivation: framed ASCII domain tag, format3, RFC4122 UUIDs,
 // i64BE sequence, prior hash, operation/executor UUIDs, i64BE UTC ticks,
 // optional business-date flag + u32BE zero-based Gregorian day, then framed canonical
 // command, effect count, each ordinal/framed descriptor, compartment count/descriptors/hashes.
@@ -51,7 +51,7 @@ let private prefix =
             [
                 "00000013"
                 "436c61696d436f72652e4f7065726174696f6e"
-                "00000002"
+                "00000003"
                 "00000000000040008000000000000001"
                 "000000000000002a"
                 "0000000000000000000000000000000000000000000000000000000000000000"
@@ -64,7 +64,7 @@ let private prefix =
     )
 
 let private digest =
-    Convert.FromHexString "de5fce1c92243a3aae460d76598133ae1d2cda18a31ff0644208512cdd441587"
+    Convert.FromHexString "014470a76e9cb310bf4901960457c5d235543edc667f5e00d45b398c4a00cfb0"
 
 let private expectedHash = EntryHash.ofBytes digest |> Option.get
 
@@ -163,10 +163,10 @@ let tests =
                         OperationRoot.append header command [ effect ] [ compartment ] |> valid
 
                     let commandText =
-                        """{"act":"REMOVE_PAYMENT","caseId":"00000000-0000-7000-8000-000000000003","compartment":0,"expectedRevision":4,"kind":"CASE","reference":"STRUCTURE-1","selectedPayment":"00000000-0000-7000-8000-000000000007"}"""
+                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","compartment":0,"expectedRevision":4,"kind":"CASE","reference":"STRUCTURE-1","selectedPayment":"00000000-0000-7000-8000-000000000007"}"""
 
                     let effectText =
-                        """{"act":"REMOVE_PAYMENT","caseId":"00000000-0000-7000-8000-000000000003","creationReference":null,"kind":"CASE","payment":{"kind":"REMOVED","operationId":"00000000-0000-7000-8000-000000000007"},"revision":5}"""
+                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","creationReference":null,"kind":"CASE","payment":{"kind":"REMOVED","operationId":"00000000-0000-7000-8000-000000000007"},"revision":5}"""
 
                     let descriptorBytes =
                         Convert.FromHexString
@@ -174,15 +174,15 @@ let tests =
 
                     let commitment =
                         Convert.FromHexString
-                            "ebc234ab1404b683d936f542b1929302640ed31f929c82eda6be871a2b592540"
+                            "dd0bbf62770b0ac413b1ec2da4414ed06fd6147eb5703972aefe3ef7b9154d75"
 
                     let bytes =
                         Array.concat
                             [
                                 prefix
-                                Convert.FromHexString "000000ce"
+                                Convert.FromHexString "000000d2"
                                 utf8 commandText
-                                Convert.FromHexString "0000000100000000000000ce"
+                                Convert.FromHexString "0000000100000000000000d2"
                                 utf8 effectText
                                 Convert.FromHexString "000000010000001e"
                                 descriptorBytes
@@ -191,9 +191,9 @@ let tests =
 
                     let hash =
                         Convert.FromHexString
-                            "bb3f12cfa528c9ff987db2de8728a83e7d6b9189aacc57b56bda881459f7fbbd"
+                            "cecc8d84b86e43c050deed54a3d003a75a07dc344b36f623367cf2589f7871d1"
 
-                    Expect.equal bytes.Length 626 "Hand-counted salted root framing"
+                    Expect.equal bytes.Length 634 "Hand-counted salted root framing"
                     Expect.equal (SHA256.HashData bytes) hash "Independent salted root derivation"
 
                     Expect.equal
@@ -290,7 +290,7 @@ let tests =
                 (fun () ->
                     let pretty =
                         utf8
-                            """{ "kind":"NOTE", "noteId":"00000000-0000-7000-8000-000000000007", "caseId":"00000000-0000-7000-8000-000000000003", "act":"REMOVE_NOTE", "compartment":null }"""
+                            """{ "kind":"NOTE", "noteId":"00000000-0000-7000-8000-000000000007", "caseId":"00000000-0000-7000-8000-000000000003", "act":"note.remove", "compartment":null }"""
 
                     Expect.isOk
                         (OperationRoot.restore header pretty [ 0, utf8 effectText ] [] expectedHash)
@@ -393,7 +393,7 @@ let publicCodecMatrix =
     testCase "all declared command families retain their typed public metadata" (fun () ->
         let principal = PrincipalKey.human "https://issuer.example/" "م Ā 😀" |> valid
         let target = ActorId.ofOperationId operation
-        let authorityHeader = { header with BusinessDate = None }
+        let peopleHeader = { header with BusinessDate = None }
 
         let grant =
             {
@@ -401,8 +401,8 @@ let publicCodecMatrix =
                 Scope = Scope.Case parent
             }
 
-        let authority act =
-            CommandSkeleton.Authority
+        let people act =
+            CommandSkeleton.People
                 {
                     TargetActorId = target
                     Principal = principal
@@ -410,7 +410,7 @@ let publicCodecMatrix =
                 }
 
         let ownerHeader =
-            { authorityHeader with
+            { peopleHeader with
                 Sequence = Sequence.first
                 ActorId = target
             }
@@ -435,17 +435,15 @@ let publicCodecMatrix =
                                     else
                                         None
                             }
-                yield authorityHeader, authority (AuthorityAct.Register 0)
-                yield
-                    authorityHeader,
-                    authority (AuthorityAct.Admit { Profile = 0; Grants = [ grant ] })
-                yield authorityHeader, authority (AuthorityAct.SetProfile 0)
-                yield authorityHeader, authority AuthorityAct.EraseProfile
-                yield authorityHeader, authority (AuthorityAct.Grant grant)
-                yield authorityHeader, authority (AuthorityAct.Revoke grant)
-                yield authorityHeader, authority AuthorityAct.Enable
-                yield authorityHeader, authority AuthorityAct.Disable
-                yield ownerHeader, authority (AuthorityAct.ProvisionOwner(0, [ Role.Auditor ]))
+                yield peopleHeader, people (PeopleAct.Register 0)
+                yield peopleHeader, people (PeopleAct.Admit { Profile = 0; Grants = [ grant ] })
+                yield peopleHeader, people (PeopleAct.SetProfile 0)
+                yield peopleHeader, people PeopleAct.EraseProfile
+                yield peopleHeader, people (PeopleAct.Grant grant)
+                yield peopleHeader, people (PeopleAct.Revoke grant)
+                yield peopleHeader, people PeopleAct.Enable
+                yield peopleHeader, people PeopleAct.Disable
+                yield ownerHeader, people (PeopleAct.ProvisionOwner(0, [ Role.Auditor ]))
                 yield header, CommandSkeleton.Work(parent, Revision.zero)
                 yield header, CommandSkeleton.Note(NoteCommandSkeleton.Add parent)
                 yield header, command

@@ -28,9 +28,7 @@ let tests =
     testList
         "service contract"
         [
-            testCase
-                "technical authority inputs retain owned presentation"
-                authorityFieldPresentation
+            testCase "technical people inputs retain owned presentation" peopleFieldPresentation
             testCase
                 "principal syntax and authoritative identity admission remain distinct"
                 principalAdmission

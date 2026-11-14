@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.PublishedRestoreTests
 
+open ClaimCore.Domain
+
 open System
 open System.IO
 open System.Net.Http
@@ -45,32 +47,20 @@ let private sessions (fixture: PublishedFixture.Fixture) =
     command.ExecuteScalar() |> unbox<int64>
 
 let private openFrame operationId reference =
-    frame
-        "operation.execute"
-        {|
-            kind = "CASE"
-            operationId = operationId
-            expectedRevision = 0
-            target =
-                {|
-                    kind = "REFERENCE"
-                    caseReference = reference
-                |}
-            act =
-                {|
-                    kind = "OPEN"
-                    values =
-                        {|
-                            incidentDate = "2026-09-01"
-                            incidentNotificationDate = "2026-09-02"
-                            incidentCountry = "LV"
-                            claimantName = "Restore claimant"
-                            insurerName = "Restore insurer"
-                            claimedAmount = "10"
-                            claimedCurrency = "EUR"
-                        |}
-                |}
-        |}
+    let registration =
+        ClaimCore.TestSupport.Inputs.registrationWith
+            [
+                BusinessField.IncidentDate, "2026-09-01"
+                BusinessField.IncidentNotificationDate, "2026-09-02"
+                BusinessField.IncidentCountry, "LV"
+                BusinessField.ClaimantName, "Restore claimant"
+                BusinessField.InsurerName, "Restore insurer"
+                BusinessField.ClaimedAmount, "10"
+                BusinessField.ClaimedCurrency, "EUR"
+            ]
+            ClaimCore.TestSupport.Inputs.registration
+
+    frame "operation.execute" (caseSubmission operationId reference 0L (CaseAct.Open registration))
 
 let private bearer
     (fixture: PublishedFixture.Fixture)
@@ -253,11 +243,11 @@ let private qualify () =
             "An unseen expired command cannot execute after restore"
 
         Expect.equal
-            (rejected.GetProperty("data").GetProperty("code").GetString())
+            (rejected.GetProperty("rejection").GetProperty("code").GetString())
             "OPERATION_CLOCK_UNAVAILABLE"
             "Durable expiry protects bearer execution"
 
-        let refusal = rejected.GetProperty("data")
+        let refusal = rejected.GetProperty("rejection")
 
         Expect.equal
             (refusal.GetProperty("phase").GetString())

@@ -1,12 +1,21 @@
-import type { ActiveRequester } from "../../../src/hooks/useRequesterContext";
-import { activeRequester } from "../../support/human-requester.fixtures";
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
+import {
+  type ActiveRequester,
+  RequesterContext,
+  useRequesterContext,
+} from "../../../src/hooks/useRequesterContext";
+
 import { RecoveryProvider } from "../../../src/recovery/RecoveryContext";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
 import { render, screen, testWorkspaceIdentity } from "../../support/presentation-test-support";
 import { workBasis } from "../../support/inputs";
-import { RequesterContext, useRequesterContext } from "../../../src/hooks/useRequesterContext";
+
 import { WorkspaceHeader as Header } from "../../../src/views/WorkspaceHeader";
 
 const WorkspaceHeader = (props: Omit<ComponentProps<typeof Header>, "presentation">) => {
@@ -40,7 +49,8 @@ it("shows only supplied own role facts and keeps navigation independent from raw
         },
       ],
     },
-    context: { ...activeRequester.context, tasks: [], views: [] },
+    actions: installationActions([]),
+    links: requesterLinks([], []),
   };
   const header = (
     <WorkspaceHeader
@@ -54,10 +64,10 @@ it("shows only supplied own role facts and keeps navigation independent from raw
   );
   const view = render(<RequesterContext value={requester}>{header}</RequesterContext>);
   expect(screen.getByLabelText("Roles")).toHaveTextContent("Owner");
-  expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
-  expect(screen.queryByRole("link", { name: "Authority history" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "People and access" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "People history" })).toBeNull();
   expect(document.body).not.toHaveTextContent("https://issuer.example/");
-  expect(document.body).not.toHaveTextContent(requester.context.actorId);
+  expect(document.body).not.toHaveTextContent(requester.subject.actorId);
   view.rerender(<RequesterContext value={null}>{header}</RequesterContext>);
   expect(screen.queryByLabelText("Roles")).toBeNull();
   expect(document.body).not.toHaveTextContent("Owner");
@@ -68,7 +78,7 @@ it("keeps the shell search an explicitly secondary, labelled submit and preserve
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      views={["CASES"]}
+      views={["case.list"]}
       tasks={[]}
       locked={locked}
       openCase={vi.fn()}
@@ -90,7 +100,7 @@ it("keeps compact sidebar links named when their visual tooltip captions are hid
     <WorkspaceHeader
       route={{ screen: "cases", query: "" }}
       active="cases"
-      views={["CASES"]}
+      views={["case.list"]}
       tasks={[]}
       locked={false}
       openCase={vi.fn()}

@@ -1,0 +1,145 @@
+module ClaimCore.Tests.CsvExportTests
+
+open ClaimCore.Wire.Export
+
+open System
+open System.IO
+open System.Text
+open Microsoft.VisualBasic.FileIO
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
+open ClaimCore.Cli
+open ClaimCore.TestSupport
+
+let private parse bytes =
+    use source = new StringReader(Encoding.UTF8.GetString(bytes: byte array))
+    use reader = new TextFieldParser(source)
+    reader.SetDelimiters [| "," |]
+    reader.HasFieldsEnclosedInQuotes <- true
+    let header = reader.ReadFields() |> nonNull
+    let row = reader.ReadFields() |> nonNull
+    Expect.equal row.Length header.Length "Every field has one header"
+    List.zip (List.ofArray header) (List.ofArray row) |> Map.ofList
+
+let private parseRows (bytes: byte array) =
+    use input = new StringReader(Encoding.UTF8.GetString bytes)
+    use reader = new TextFieldParser(input)
+    reader.SetDelimiters [| "," |]
+    reader.HasFieldsEnclosedInQuotes <- true
+    reader.TrimWhiteSpace <- false
+    let rows = ResizeArray<string list>()
+
+    while not reader.EndOfData do
+        rows.Add(reader.ReadFields() |> nonNull |> Array.toList)
+
+    List.ofSeq rows
+
+[<Tests>]
+let tests =
+    testCase "CSV exports preserve operation proof and distinct effect provenance" (fun () ->
+        let raw = Guid.Parse "019a6b00-0000-7000-8000-000000000001"
+        let operation = CaseFixtures.operationId raw
+        let actor = Inputs.actorReference (CaseFixtures.actorId raw)
+        let hash = EntryHash.ofBytes (Array.create 32 0xabuy) |> Option.get
+        let position = EffectPosition.create (CaseFixtures.sequence 7L) 3 |> Option.get
+
+        let entry: PeopleHistoryEntry =
+            {
+                OperationId = operation
+                Position = position
+                OperationHash = hash
+                RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
+                RecordedBy = actor
+                Target = actor
+                Facts = PeopleHistoryFacts.Enabled
+            }
+
+        let people =
+            Array.append
+                PeopleHistoryCsv.csvHeader
+                (PeopleHistoryCsv.csvRows
+                    (MessageCatalogs.render LocalizationPolicy.defaultLanguage)
+                    [ entry ])
+            |> parse
+
+        let timeline: CaseTimelineEntry =
+            {
+                OperationId = operation
+                Position = position
+                OperationHash = hash
+                Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+                RecordedAt = entry.RecordedAt
+                RecordedBy = actor
+                Changes = TimelineChanges.Withheld
+            }
+
+        let activity =
+            Array.append
+                TimelineCsv.csvHeader
+                (TimelineCsv.csvRows
+                    {
+                        Disclosure = HistoryDisclosure.Full
+                        Basis = Inputs.workBasis
+                        CaseId = CaseFixtures.caseId raw
+                        Reference = Inputs.reference "CASE-PROOF"
+                        Items = [ timeline ]
+                        NextCursor = None
+                    })
+            |> parse
+
+        for row in [ people; activity ] do
+            Expect.equal row["operationId"] (raw.ToString "D") "Stable operation identity"
+            Expect.equal row["sequence"] "7" "Sequence is the operation position"
+            Expect.equal row["effectIndex"] "3" "Effect ordinal is retained independently"
+
+            Expect.equal
+                row["operationHash"]
+                (String.replicate 32 "ab")
+                "Hash belongs to complete root")
+
+[<Tests>]
+let formulaGuard =
+    testCase "CSV neutralizes every formula trigger including tabs after leading spaces" (fun () ->
+        for prefix in [ ""; "  " ] do
+            for trigger in [ '='; '+'; '-'; '@'; '\t'; '\r' ] do
+                let authored = prefix + string trigger + "value"
+
+                use source =
+                    new StringReader(Encoding.UTF8.GetString(Csv.row [ authored; "sentinel" ]))
+
+                use reader = new TextFieldParser(source)
+                reader.SetDelimiters [| "," |]
+                reader.HasFieldsEnclosedInQuotes <- true
+
+                Expect.equal
+                    (reader.ReadFields() |> nonNull |> List.ofArray)
+                    [ "'" + authored; "sentinel" ]
+                    "Independent CSV parsing preserves protected content"
+
+        for ordinary in [ ""; "plain"; "  plain"; "a=1" ] do
+            Expect.equal (CsvCell.neutralize ordinary) ordinary "Ordinary cells remain exact")
+
+[<Tests>]
+let cellEncoding =
+    testCase "CSV cell protection handles whitespace and leaves ordinary cells exact" (fun () ->
+        for authored, expected in
+            [
+                "", ""
+                "ordinary", "ordinary"
+                "a=1+1", "a=1+1"
+                "  ordinary", "  ordinary"
+                "  =1+1", "'  =1+1"
+                " \t+1", "' \t+1"
+                "  -1", "'  -1"
+                " \t@call", "' \t@call"
+                "\tordinary", "'\tordinary"
+                "\rordinary", "'\rordinary"
+                "  \rordinary", "'  \rordinary"
+                "'=1+1", "'=1+1"
+                "@call,\"quoted\"\r\nnext", "'@call,\"quoted\"\r\nnext"
+            ] do
+            let bytes = CsvCell.format authored + ",sentinel\r\n" |> Encoding.UTF8.GetBytes
+
+            Expect.equal (parseRows bytes) [ [ expected; "sentinel" ] ] "Independent CSV readback")

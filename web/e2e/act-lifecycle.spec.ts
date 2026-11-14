@@ -24,7 +24,7 @@ const expectRevision = async (page: Page, revision: string) => {
 const reference = (): string => `BROWSER-${randomUUID()}`;
 
 const decide = async (page: Page): Promise<void> => {
-  await completeAct(page, "DECIDE", {
+  await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "300.25",
     "Payable currency": "EUR",
@@ -37,11 +37,11 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   const caseReference = reference();
   await openAuthenticated(page);
   const opened = await openCase(page, caseReference);
-  await completeAct(page, "AMEND_REGISTRATION", {
+  await completeAct(page, "case.amendRegistration", {
     "Claimant name": "Synthetic amended claimant",
   });
   await decide(page);
-  await completeAct(page, "WITHDRAW_DECISION");
+  await completeAct(page, "case.withdrawDecision");
   await expectRevision(page, "4");
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(4);
   const opening = page
@@ -50,7 +50,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(opening).toHaveCount(1);
   await expect(opening).toContainText("Case opened");
   await expect(opening).toContainText(opened.operationId);
-  await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
+  await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   await expectAccessible(page);
 
   await openRecovery(page);
@@ -75,7 +75,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await decide(page);
-  await completeAct(page, "RECORD_PAYMENT", {
+  await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "300.25",
   });
@@ -86,9 +86,9 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectCaseReadsSettled(page);
-  await completeAct(page, "CLOSE");
+  await completeAct(page, "case.close");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
-  await completeAct(page, "REOPEN");
+  await completeAct(page, "case.reopen");
   await expectRevision(page, "6");
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(6);
   await expectAccessible(page);

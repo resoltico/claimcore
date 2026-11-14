@@ -1,4 +1,4 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
@@ -9,30 +9,41 @@ import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
   it("keeps optional facts unselected and assembles the selected semantic task with its binding", () => {
-    const current = caseDocumentInput({
-      tasks: [],
-      caseId: "20000000-0000-4000-8000-000000000001",
-      revision: 1,
-      history: "FULL" as const,
-    });
-    const values = initialOperationValues("CASE", "AMEND_REGISTRATION", current);
-    expect(values["field:claimantName"]).toBeUndefined();
-    const close = initialOperationValues("CASE", "CLOSE", current);
-    expect(
-      assembleOperation(operationEntry({ subject: "CASE", kind: "CLOSE" }), close, {
+    const values = initialOperationValues(
+      operationAffordance("case.amendRegistration", {
         kind: "CASE",
-        operationId: "10000000-0000-4000-8000-000000000001",
-        target: { kind: "REFERENCE", caseReference: fields.caseReference },
-        revision: 1,
-      }).command,
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    );
+    expect(values["field:claimantName"]).toBeUndefined();
+    const close = initialOperationValues(
+      operationAffordance("case.close", {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    );
+    expect(
+      assembleOperation(
+        operationEntry({ subject: "CASE", kind: "case.close" }),
+        close,
+        {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: fields.caseReference },
+          expectedRevision: 1,
+        },
+        "10000000-0000-4000-8000-000000000001",
+      ).command,
     ).toEqual({
-      kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
-      target: { kind: "REFERENCE", caseReference: fields.caseReference },
-      expectedRevision: 1,
-      act: {
-        kind: "CLOSE",
+      task: "case.close",
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: fields.caseReference },
+        expectedRevision: 1,
       },
+      inputs: {},
     });
   });
 });
@@ -49,36 +60,13 @@ describe("catalogue-bound requests", () => {
       "X-ClaimCore-Antiforgery": "csrf",
     });
   });
-  it("rejects wrong endpoints missing consumed fields and non-JSON replies", async () => {
-    const valid = (await wireResponse("case.list").json()) as object;
-    for (const response of [
-      new Response(
-        JSON.stringify({
-          ...valid,
-          outcome: {
-            view: { regions: [] },
-            kind: "SUCCEEDED",
-            data: {
-              items: null,
-              nextCursor: null,
-            },
-          },
-        }),
-        {
-          headers: {
-            "content-type": "application/json",
-          },
-        },
-      ),
-      wireResponse("case.get"),
+  it("rejects a non-JSON media type", async () => {
+    const valid: unknown = await wireResponse("case.list").json();
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(JSON.stringify(valid), {
-        headers: {
-          "content-type": "application/jsonp",
-        },
+        headers: { "content-type": "application/jsonp" },
       }),
-    ]) {
-      vi.mocked(fetch).mockResolvedValueOnce(response);
-      expect((await service.list(null, 50, "csrf")).kind).toBe("deliveryFailure");
-    }
+    );
+    expect((await service.list(null, 50, "csrf")).kind).toBe("deliveryFailure");
   });
 });

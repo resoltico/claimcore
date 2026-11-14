@@ -1,21 +1,22 @@
-import { taskChoices } from "@contracts/client";
+import {
+  taskChoices,
+  type CaseTimelineRequest,
+  type HistoryDisclosure,
+  type CaseSelector,
+  type RegionTimelineEntry,
+  type HumanResponseByEndpoint,
+} from "@contracts/client";
 import { isTerm } from "../../presentation/terms";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { PageTables } from "../../ui/PageTables";
 import { useCallback, useState, useEffect, useRef } from "react";
-import type {
-  CaseTimelineRequest,
-  HistoryDisclosure,
-  CaseSelector,
-  RegionTimelineEntry,
-  HumanResponseByEndpoint,
-} from "@contracts/client";
+
 import { Button } from "../../ui/Button";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import "./timeline.css";
+import {} from "./timeline.css";
 const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -32,7 +33,7 @@ const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
       region.content.kind === "TIMELINE" ? region.content.entries : [],
     ),
     screen: doc.screen,
-    nextCursor: doc.context.nextCursor,
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     disclosure: doc.disclosure,
   };

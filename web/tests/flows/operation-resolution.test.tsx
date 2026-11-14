@@ -48,7 +48,7 @@ const closeOperation = (journal: RecoveryJournal = testJournal) =>
         ...recoveryOptions,
         journal,
         subject: "CASE",
-        kind: "CLOSE",
+        kind: "case.close",
         current,
         credential,
         onLockChange: vi.fn(),

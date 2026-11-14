@@ -105,7 +105,7 @@ let private waiter (database: PostgresFixture.Database) settings =
 let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
     match result with
     | Ok {
-             Actor = ({ Actor = Some _ } as authority)
+             Actor = ({ Actor = Some _ } as people)
              Case = Some {
                              Snapshot = {
                                             State = (ClaimCore.Domain.CaseState.Active(fields) | CaseState.Voided(fields))
@@ -113,9 +113,9 @@ let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
                          }
          } ->
         Expect.equal
-            (List.contains Role.CaseHandler authority.Installation)
+            (List.contains Role.CaseHandler people.Installation)
             hasHandler
-            "Authority belongs to this snapshot"
+            "People belongs to this snapshot"
 
         Expect.equal
             (PartyName.format (Registration.claimant (fields.Registration)))
@@ -392,13 +392,13 @@ let tests =
                                         DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
                                     BusinessDate = None
                                 }
-                                (CommandSkeleton.Authority
+                                (CommandSkeleton.People
                                     {
                                         TargetActorId = target
                                         Principal = principal
-                                        Act = AuthorityAct.Enable
+                                        Act = PeopleAct.Enable
                                     })
-                                (OperationValues.Authority { Profile = None })
+                                (OperationValues.People { Profile = None })
                                 (fun () -> failtest "A public-only operation has no nonce")
                             |> Result.defaultWith (fun error ->
                                 failtestf "Public root fixture: %A" error)
@@ -436,7 +436,7 @@ let tests =
                         | _ -> failtest "Independent verification must reject the accepted gap"
                     }))
             testCaseAsync
-                "case data and authority remain in one snapshot across a concurrent change"
+                "case data and people remain in one snapshot across a concurrent change"
                 (run (fun database ->
                     task {
                         let! actor = caseWorker database.Fixture

@@ -8,13 +8,13 @@ type RelatedDate =
         Value: CalendarDate
     }
 
-/// Ordinal in the submitted authority grant collection, independent of client row identity.
+/// Ordinal in the submitted people grant collection, independent of client row identity.
 [<Struct>]
 type GrantOrdinal = private GrantOrdinal of int
 
 module GrantOrdinal =
     let create value =
-        if value < 0 || value >= AuthorityAdmission.MaximumGrants then
+        if value < 0 || value >= PeopleAdmission.MaximumGrants then
             None
         else
             Some(GrantOrdinal value)
@@ -71,7 +71,7 @@ type CaseRefusal =
     | PaymentNotFound
 
 [<RequireQualifiedAccess>]
-type AuthorityRefusal =
+type PeopleRefusal =
     | LastOwner
     | ActorAlreadyRegistered
     | ActorUnknown
@@ -89,7 +89,7 @@ type Refusal =
     | RevisionConflict of RevisionConflictInfo
     | Case of CaseRefusal
     | Reminder of ReminderRuleRefusal
-    | Authority of AuthorityRefusal
+    | People of PeopleRefusal
     | Access of AccessRefusal
     | OperationIdOutOfWindow of issuedAt: DateTimeOffset * observedAt: DateTimeOffset
     | OperationClockUnavailable of expiredBefore: DateTimeOffset * observedAt: DateTimeOffset

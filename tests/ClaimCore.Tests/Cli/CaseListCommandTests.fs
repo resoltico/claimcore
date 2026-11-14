@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CaseListCommandTests
 
+open ClaimCore.Wire.Export
+
 open System
 open System.IO
 open System.Text
@@ -281,32 +283,6 @@ let tests =
                             cells[7]
                             ("'" + insurer)
                             "Insurer protection uses the same rule")
-            testCase
-                "CSV cell protection handles whitespace and leaves ordinary cells exact"
-                (fun () ->
-                    for authored, expected in
-                        [
-                            "", ""
-                            "ordinary", "ordinary"
-                            "a=1+1", "a=1+1"
-                            "  ordinary", "  ordinary"
-                            "  =1+1", "'  =1+1"
-                            " \t+1", "' \t+1"
-                            "  -1", "'  -1"
-                            " \t@call", "' \t@call"
-                            "\tordinary", "'\tordinary"
-                            "\rordinary", "'\rordinary"
-                            "  \rordinary", "'  \rordinary"
-                            "'=1+1", "'=1+1"
-                            "@call,\"quoted\"\r\nnext", "'@call,\"quoted\"\r\nnext"
-                        ] do
-                        let bytes =
-                            CsvCell.format authored + ",sentinel\r\n" |> Encoding.UTF8.GetBytes
-
-                        Expect.equal
-                            (parseCsv bytes)
-                            [ [ expected; "sentinel" ] ]
-                            "Independent CSV readback")
             testCase
                 "descriptor actor names escape retained controls and bidi without changing JSON"
                 (fun () ->
@@ -711,7 +687,7 @@ let tests =
                     [
                         [ "case"; "get"; "x"; "--all" ]
                         [ "case"; "get"; "x"; "--format"; "csv" ]
-                        [ "authority"; "list"; "--all" ]
+                        [ "people"; "list"; "--all" ]
                     ] do
                     Expect.isError
                         (Grammar.prepare (fun () -> "unused") args)

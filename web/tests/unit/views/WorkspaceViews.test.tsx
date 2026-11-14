@@ -12,8 +12,8 @@ import {
   useWorkspaceViews,
   WorkspaceViewsStatus,
 } from "../../../src/views/WorkspaceViews";
-import type { HumanReadDocument_workViews } from "@contracts/client";
-const result = (document: HumanReadDocument_workViews) => ({
+import type { HumanReadDocument_work_views } from "@contracts/client";
+const result = (document: HumanReadDocument_work_views) => ({
   kind: "outcome" as const,
   status: 200,
   value: {
@@ -84,7 +84,7 @@ it("drops a prior requester's late counts even when the credential is reused and
   rendered.rerender(
     view({
       ...context,
-      context: { ...context.context, actorId: "10000000-0000-4000-8000-000000000099" },
+      subject: { ...context.subject, actorId: "10000000-0000-4000-8000-000000000099" },
     }),
   );
   await waitFor(() => {
@@ -120,7 +120,12 @@ it("drops a prior requester's late counts even when the credential is reused and
 });
 it("does not request or publish case counts without the case view", () => {
   const cases = mockEndpoint("work.views");
-  render(view({ ...context, context: { ...context.context, views: ["AUTHORITY"] } }));
+  render(
+    view({
+      ...context,
+      links: context.links.filter((link) => new Set<string>(["PEOPLE"]).has(link.labelId)),
+    }),
+  );
   expect(screen.getByRole("status")).toHaveTextContent("unverified");
   expect(cases).not.toHaveBeenCalled();
 });

@@ -5,7 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 
-/// Indexed bounded entry/context reads; Domain alone updates financial totals and counts.
+/// Owned payment rows and scoped disclosure reads; Domain alone updates financial facts.
 module internal PaymentStorage =
     let private row value =
         let identity =
@@ -26,18 +26,6 @@ module internal PaymentStorage =
         |> Result.defaultWith (fun _ ->
             raise (RecordCorruptException "Invalid projected payment entry."))
 
-    let active connection (parent, identity) token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    "SELECT payment_id,payment_date,paid_amount FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=$2 AND NOT removed AND payment_date IS NOT NULL"
-                    [| box (CaseId.value parent); box identity |]
-                    token
-
-            return rows |> List.tryHead |> Option.map row
-        }
-
     let latest connection (parent, limit) token =
         task {
             if limit < 1 || limit > PaymentPaging.MaximumLimit then
@@ -51,83 +39,6 @@ module internal PaymentStorage =
                     token
 
             return rows |> List.map row
-        }
-
-    let remainingDates connection (parent, selected) token =
-        task {
-            let! rows =
-                DatabaseSession.namedRows
-                    connection
-                    "SELECT (SELECT payment_date FROM claimcore.case_payments WHERE case_id=$1 AND payment_id<>$2 AND NOT removed AND payment_date IS NOT NULL ORDER BY payment_date ASC,payment_id ASC LIMIT 1) AS first_date,(SELECT payment_date FROM claimcore.case_payments WHERE case_id=$1 AND payment_id<>$2 AND NOT removed AND payment_date IS NOT NULL ORDER BY payment_date DESC,payment_id DESC LIMIT 1) AS last_date"
-                    [| box (CaseId.value parent); box (OperationId.value selected) |]
-                    token
-
-            match rows with
-            | [ row ] ->
-                match
-                    DatabaseSession.namedOptional<DateOnly> "first_date" row,
-                    DatabaseSession.namedOptional<DateOnly> "last_date" row
-                with
-                | None, None -> return None
-                | Some first, Some last ->
-                    match
-                        PaymentDateBounds.create
-                            (CalendarDate.ofDate first)
-                            (CalendarDate.ofDate last)
-                    with
-                    | Some bounds -> return Some bounds
-                    | None ->
-                        return
-                            raise (RecordCorruptException "Invalid projected payment boundaries.")
-                | _ ->
-                    return raise (RecordCorruptException "Incomplete projected payment boundaries.")
-            | _ -> return raise (RecordCorruptException "Missing payment boundary observation.")
-        }
-
-    let apply connection parent effect token =
-        task {
-            match effect with
-            | None -> ()
-            | Some(PaymentDifference.Recorded entry) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.case_payments(payment_id,case_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) SELECT $1,$2,l.sequence,e.effect_index,$3::date,$4,false FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE l.operation_id=$1 AND e.subject_kind='CASE' AND e.subject_id=$2 AND e.act='RECORD_PAYMENT'"
-                        [|
-                            box (OperationId.value (PaymentEntry.id entry))
-                            box (CaseId.value parent)
-                            box (CalendarDate.value (PaymentEntry.date entry))
-                            box (Amount.value (PaymentEntry.amount entry))
-                        |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Payment accepting effect is absent.")
-            | Some(PaymentDifference.Removed entry) ->
-                let! changed =
-                    DatabaseSession.execute
-                        connection
-                        "UPDATE claimcore.case_payments SET removed=true WHERE case_id=$1 AND payment_id=$2 AND NOT removed AND payment_date IS NOT NULL"
-                        [|
-                            box (CaseId.value parent)
-                            box (OperationId.value (PaymentEntry.id entry))
-                        |]
-                        token
-
-                if changed <> 1 then
-                    raise (RecordCorruptException "Selected active payment is absent.")
-        }
-
-    let erase connection parent token =
-        task {
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
-                    [| box (CaseId.value parent) |]
-                    token
-
-            return ()
         }
 
     let page
@@ -180,13 +91,13 @@ module internal PaymentStorage =
                 }
         }
 
-    let projections connection token =
+    let private projectionsFor connection parent token =
         task {
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    "SELECT case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed FROM claimcore.case_payments ORDER BY payment_id"
-                    [||]
+                    "SELECT case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed FROM claimcore.case_payments WHERE ($1::uuid IS NULL OR case_id=$1) ORDER BY payment_id"
+                    [| DatabaseSession.parameter (parent |> Option.map CaseId.value) |]
                     token
 
             return
@@ -227,6 +138,11 @@ module internal PaymentStorage =
                     })
         }
 
+    let projections connection token = projectionsFor connection None token
+
+    let owned connection parent token =
+        projectionsFor connection (Some parent) token
+
     let restore connection (payment: PaymentProjectionRow) token =
         task {
             let date, amount, removed =
@@ -240,7 +156,7 @@ module internal PaymentStorage =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7)"
+                    "INSERT INTO claimcore.case_payments(case_id,payment_id,accepting_sequence,effect_index,payment_date,paid_amount,removed) VALUES($1,$2,$3,$4,$5::date,$6,$7) ON CONFLICT(payment_id) DO UPDATE SET payment_date=EXCLUDED.payment_date,paid_amount=EXCLUDED.paid_amount,removed=EXCLUDED.removed WHERE claimcore.case_payments.case_id=EXCLUDED.case_id AND claimcore.case_payments.accepting_sequence=EXCLUDED.accepting_sequence AND claimcore.case_payments.effect_index=EXCLUDED.effect_index"
                     [|
                         box (CaseId.value payment.CaseId)
                         box (OperationId.value payment.PaymentId)

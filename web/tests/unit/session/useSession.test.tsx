@@ -16,45 +16,73 @@ const session = (data: Record<string, unknown>) =>
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const unsuccessful = [
-  ["REJECTED", { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" }],
-  ["FAILED", { code: "CORE_STORE_UNAVAILABLE", action: "RETRY_SAFE" }],
+  [
+    "REJECTED",
+    { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
+    { kind: "local", reason: "incomplete" },
+  ],
+  [
+    "FAILED",
+    {
+      code: "CORE_STORE_UNAVAILABLE",
+      action: "RETRY_SAFE",
+      messageId: "fault.CORE_STORE_UNAVAILABLE",
+    },
+    {
+      kind: "human",
+      advice: {
+        message: { messageId: "fault.CORE_STORE_UNAVAILABLE", arguments: [] },
+        action: "RETRY_SAFE",
+      },
+    },
+  ],
 ] as const;
 
-it.each(unsuccessful)("surfaces a valid %s session bootstrap outcome", async (tag, data) => {
-  vi.mocked(fetch).mockResolvedValueOnce(
-    endpointResponse("session", { outcome: { kind: tag, data } }),
-  );
-  const { result } = renderHook(() => useSession());
-  await waitFor(() => {
+it.each(unsuccessful)(
+  "surfaces a valid %s session bootstrap outcome",
+  async (tag, data, message) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      endpointResponse("session", {
+        outcome: { kind: tag, [tag === "REJECTED" ? "rejection" : "fault"]: data },
+      }),
+    );
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => {
+      expect(result.current.state).toMatchObject({
+        kind: "failure",
+        message,
+      });
+    });
+  },
+);
+
+it.each(unsuccessful)(
+  "surfaces a valid %s logout without claiming success",
+  async (tag, data, message) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      session({ authenticated: true, antiforgeryToken: "token" }),
+    );
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => {
+      expect(result.current.state.kind).toBe("authenticated");
+    });
+    const previousEpoch = result.current.state.epoch;
+    vi.mocked(fetch).mockResolvedValueOnce(
+      endpointResponse("session.logout", {
+        outcome: { kind: tag, [tag === "REJECTED" ? "rejection" : "fault"]: data },
+      }),
+    );
+    await act(async () => {
+      await result.current.logout();
+    });
     expect(result.current.state).toMatchObject({
       kind: "failure",
-      message: { kind: "diagnostic", diagnostic: { code: data.code } },
+      epoch: previousEpoch + 1,
+      message,
     });
-  });
-});
-
-it.each(unsuccessful)("surfaces a valid %s logout without claiming success", async (tag, data) => {
-  vi.mocked(fetch).mockResolvedValueOnce(
-    session({ authenticated: true, antiforgeryToken: "token" }),
-  );
-  const { result } = renderHook(() => useSession());
-  await waitFor(() => {
-    expect(result.current.state.kind).toBe("authenticated");
-  });
-  const previousEpoch = result.current.state.epoch;
-  vi.mocked(fetch).mockResolvedValueOnce(
-    endpointResponse("session.logout", { outcome: { kind: tag, data } }),
-  );
-  await act(async () => {
-    await result.current.logout();
-  });
-  expect(result.current.state).toMatchObject({
-    kind: "failure",
-    epoch: previousEpoch + 1,
-    message: { kind: "diagnostic", diagnostic: { code: data.code } },
-  });
-  expect("token" in result.current.state).toBe(false);
-});
+    expect("token" in result.current.state).toBe(false);
+  },
+);
 
 it("fails a malformed authenticated session and leaves logout inert", async () => {
   const fetch = vi.mocked(globalThis.fetch);
@@ -67,7 +95,7 @@ it("fails a malformed authenticated session and leaves logout inert", async () =
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-it("surfaces invalid snapshots after session refresh and logout responses", async () => {
+it("refuses an invalid refresh and clears credentials after confirmed logout", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(session({ authenticated: false, antiforgeryToken: "anonymous" }));
   const { result } = renderHook(() => useSession());
@@ -84,10 +112,12 @@ it("surfaces invalid snapshots after session refresh and logout responses", asyn
   await waitFor(() => {
     expect(result.current.state.kind).toBe("authenticated");
   });
-  fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: null }));
+  fetch.mockResolvedValueOnce(
+    endpointResponse("session.logout", { outcome: { kind: "SUCCEEDED", data: null } }),
+  );
   await result.current.logout();
   await waitFor(() => {
-    expect(result.current.state.kind).toBe("failure");
+    expect(result.current.state).toMatchObject({ kind: "anonymous", token: null });
   });
 });
 

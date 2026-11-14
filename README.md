@@ -8,12 +8,12 @@ adjudicate coverage or transfer money.
 ## Try it
 
 Follow [Getting started](docs/getting-started.md) for a fresh synthetic installation, sign-in and first
-case. The [examples](examples/README.md) demonstrate nine changes through JSON calls and human commands.
+case. The [examples](examples/README.md) demonstrate changes through JSON calls and human commands.
 Operators manage identity, access, backups and erasure of copies outside the live database.
 Durable changes before 1.0 require a fresh installation.
 Build with the SDK pinned in [global.json](global.json); framework-dependent CLI distributions require its matching .NET runtime.
 
-The service has [21 HTTP endpoints](contracts/openapi.json). Actor endpoints negotiate HUMAN documents
+The [HTTP contract](contracts/openapi.json) defines the endpoints. Actor endpoints negotiate HUMAN documents
 with locale-neutral semantic Screens or DATA projections for automation. Native text and browser clients
 request HUMAN; JSON and CSV use DATA. A UUIDv7 identifies one change, with a ten-minute first-execution window. Unconfirmed changes
 are checked with `operation.get`; the browser checks them automatically.
@@ -52,8 +52,6 @@ See the current [English workspace](docs/images/foundations/case-workspace-light
 [Arabic RTL payment cards](docs/images/foundations/payment-cards-ar.png) and the
 [workspace examples](docs/workspace-examples.md).
 
-Korean 청구 건 (case) and 후속 조치 (reminder) need native confirmation. Automated checks do not establish
-human linguistic or assistive-technology approval. See the [glossary](docs/glossary.md#language-review).
 
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work; releases distribute source through

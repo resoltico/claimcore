@@ -5,7 +5,7 @@ open ClaimCore.Domain
 
 open System
 
-type AuthorityState =
+type PeopleState =
     {
         Profile: ActorProfile option
         Enabled: bool
@@ -14,7 +14,7 @@ type AuthorityState =
     }
 
 [<RequireQualifiedAccess>]
-type AuthorityReviewEffect =
+type PeopleReviewEffect =
     | Register of PrincipalKey
     | ProvisionOwner of PrincipalKey
     | SetProfile of ActorProfile
@@ -24,14 +24,14 @@ type AuthorityReviewEffect =
     | Enable
     | Disable
 
-type AuthorityReview =
+type PeopleReview =
     {
         Basis: WorkDateBasis
-        Effects: AuthorityReviewEffect list
+        Effects: PeopleReviewEffect list
         Target: ActorReviewItem option
         AccessScope: GrantScope
-        Before: AuthorityState
-        After: AuthorityState
+        Before: PeopleState
+        After: PeopleState
     }
 
 type WorkReview =
@@ -66,7 +66,7 @@ type NoteReview =
 [<RequireQualifiedAccess>]
 type OperationReview =
     | Case of AdvisoryReview
-    | Authority of AuthorityReview
+    | People of PeopleReview
     | Work of WorkReview
     | Reminder of ReminderReview
     | Note of NoteReview

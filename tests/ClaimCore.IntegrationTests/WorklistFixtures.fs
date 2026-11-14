@@ -249,7 +249,7 @@ let prepare () =
                     }
                     true
 
-            acceptedAuthority stewardship
+            acceptedPeople stewardship
 
             let fixture =
                 {

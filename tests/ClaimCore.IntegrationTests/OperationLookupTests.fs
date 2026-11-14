@@ -94,7 +94,7 @@ let private owner fixture =
         let service = core fixture fixture.Owner
 
         let! provision =
-            AuthorityExecution.provisionStore
+            PeopleOperations.provisionStore
                 service
                 (OperationIds.fresh ())
                 Inputs.ownerProfile
@@ -115,12 +115,12 @@ let private lookup service operation =
     }
 
 let private request operation =
-    OperationInput.Authority(
-        Inputs.authorityRequest
+    OperationInput.People(
+        Inputs.peopleRequest
             operation
             (PrincipalKey.human "https://issuer.example/" ("lookup-subject-" + string operation)
              |> Result.defaultWith (string >> invalidOp))
-            (AuthorityAct.Register Inputs.ownerProfile)
+            (PeopleAct.Register Inputs.ownerProfile)
     )
 
 let private headWaiter (db: PostgresFixture.Database) =
@@ -593,15 +593,15 @@ let tests =
                         let! registered =
                             Service.execute
                                 service
-                                (OperationInput.Authority(
-                                    Inputs.authorityRequest
+                                (OperationInput.People(
+                                    Inputs.peopleRequest
                                         (OperationIds.fresh ())
                                         observer
-                                        (AuthorityAct.Register Inputs.actorProfile)
+                                        (PeopleAct.Register Inputs.actorProfile)
                                 ))
                                 CancellationToken.None
 
-                        acceptedAuthority registered
+                        acceptedPeople registered
                         let operation = OperationIds.fresh ()
 
                         let! opened =

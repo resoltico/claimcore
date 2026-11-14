@@ -60,7 +60,11 @@ it.each([
     ) =>
       humanReadHttpReply("case.timeline", {
         screen: supplied(canary, count),
-        context: { kind: "PAGE", tasks: [], nextCursor: cursor },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: cursor,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure,
       });
@@ -119,7 +123,11 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
     return Promise.resolve(
       humanReadHttpReply("case.timeline", {
         screen: supplied(first ? "OLD_OWNER_FULL" : "NEW_OWNER_FULL", 1),
-        context: { kind: "PAGE", tasks: [], nextCursor: first ? "old-range" : null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: first ? "old-range" : null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "FULL",
       }),
@@ -145,7 +153,11 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
   late.resolve(
     humanReadHttpReply("case.timeline", {
       screen: supplied("OBSOLETE_SUMMARY", 0),
-      context: { kind: "PAGE", tasks: [], nextCursor: null },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "SUMMARY",
     }),

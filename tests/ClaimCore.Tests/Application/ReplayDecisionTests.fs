@@ -16,6 +16,9 @@ let private id = CaseFixtures.caseId operation
 let private reference = CaseFixtures.reference "REPLAY-EFFECT"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
+let private decisionContext =
+    CaseFixtures.recordedContext (DateOnly.FromDateTime instant.UtcDateTime)
+
 let private registration name =
     Inputs.registrationWith
         [ BusinessField.ClaimantName, name ]
@@ -83,46 +86,46 @@ let private closed = { paid with Status = CaseStatus.Closed }
 
 let private cases =
     [
-        "OPEN", None, AuthoredCaseAct.Open registration0, snapshot 1L (CaseState.Active opened)
-        "AMEND_REGISTRATION",
+        "case.open", None, AuthoredCaseAct.Open registration0, snapshot 1L (CaseState.Active opened)
+        "case.amendRegistration",
         Some(snapshot 1L (CaseState.Active opened)),
         AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration1),
         snapshot
             2L
             (CaseState.Active(fields registration1 FinancialPosition.undecided CaseStatus.Opened))
-        "DECIDE",
+        "case.decide",
         Some(snapshot 1L (CaseState.Active opened)),
         AuthoredCaseAct.Decide decision0,
         snapshot 2L (CaseState.Active decided)
-        "WITHDRAW_DECISION",
+        "case.withdrawDecision",
         Some(snapshot 3L (CaseState.Active decided)),
         AuthoredCaseAct.Bare BareAct.WithdrawDecision,
         snapshot 4L (CaseState.Active opened)
-        "RECORD_PAYMENT",
+        "case.recordPayment",
         Some(snapshot 3L (CaseState.Active decided)),
         AuthoredCaseAct.RecordPayment payment0,
         snapshot 4L (CaseState.Active paid)
-        "REMOVE_PAYMENT",
+        "case.removePayment",
         Some(snapshot 4L (CaseState.Active paid)),
         AuthoredCaseAct.RemovePayment(Guid.Parse "70000000-0000-7000-8000-000000000002"),
         snapshot 5L (CaseState.Active decided)
-        "CLOSE",
+        "case.close",
         Some(snapshot 4L (CaseState.Active paid)),
         AuthoredCaseAct.Bare BareAct.Close,
         snapshot 5L (CaseState.Active closed)
-        "REOPEN",
+        "case.reopen",
         Some(snapshot 5L (CaseState.Active closed)),
         AuthoredCaseAct.Bare BareAct.Reopen,
         snapshot 6L (CaseState.Active paid)
-        "VOID",
+        "case.void",
         Some(snapshot 5L (CaseState.Active closed)),
         AuthoredCaseAct.Void "Synthetic replayed correction",
         snapshot 6L (CaseState.Voided closed)
-        "REINSTATE",
+        "case.reinstate",
         Some(snapshot 6L (CaseState.Voided closed)),
         AuthoredCaseAct.Reinstate "Synthetic replayed correction",
         snapshot 7L (CaseState.Active closed)
-        "CORRECT",
+        "case.correct",
         Some(snapshot 4L (CaseState.Active paid)),
         AuthoredCaseAct.Correct
             {
@@ -134,7 +137,7 @@ let private cases =
             (CaseState.Active(
                 fields registration1 (CaseFixtures.finance (Some d1) [ p0 ]) CaseStatus.Opened
             ))
-        "ERASE",
+        "case.erase",
         Some(snapshot 6L (CaseState.Voided closed)),
         AuthoredCaseAct.Bare BareAct.Erase,
         snapshot 7L CaseState.Erased
@@ -191,21 +194,21 @@ let private request (before: CaseSnapshot option) act =
 let private tamper token (expected: CaseSnapshot) =
     let change (value: CaseFields) =
         match token with
-        | "OPEN"
-        | "AMEND_REGISTRATION"
-        | "CORRECT" ->
+        | "case.open"
+        | "case.amendRegistration"
+        | "case.correct" ->
             { value with
                 Status = CaseStatus.Closed
             }
-        | "DECIDE" ->
+        | "case.decide" ->
             { value with
                 Finance = CaseFixtures.finance (Some d0) [ p0 ]
             }
-        | "RECORD_PAYMENT" ->
+        | "case.recordPayment" ->
             { value with
                 Finance = CaseFixtures.finance (Some d1) [ p0 ]
             }
-        | "REMOVE_PAYMENT" ->
+        | "case.removePayment" ->
             { value with
                 Finance = CaseFixtures.finance (Some d1) []
             }
@@ -282,16 +285,12 @@ let tests =
 
                         let context =
                             match act, before with
-                            | CaseAct.RecordPayment _, Some parent ->
-                                CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
+                            | CaseAct.RecordPayment _, Some _ -> Map.empty
                             | CaseAct.RemovePayment _, Some parent ->
-                                CasePaymentContext.Removing(
-                                    parent.CaseId,
-                                    parent.Revision,
-                                    Some p0,
-                                    None
-                                )
-                            | _ -> CasePaymentContext.NoneRequired
+                                (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                                    (parent.CaseId)
+                                    (Option.toList (Some p0)))
+                            | _ -> Map.empty
 
                         let payment =
                             match act with
@@ -306,7 +305,7 @@ let tests =
                             (Ok decision)
                             "Hand-authored complete expected state"
 
-                        if token = "ERASE" then
+                        if token = "case.erase" then
                             Expect.isEmpty
                                 (CaseRecord.encodeSnapshot expected)
                                 "Erasure persists no business snapshot bytes"
@@ -347,17 +346,18 @@ let tests =
                                 command
                                 decision
 
-                        let recorded = if token = "ERASE" then None else Some decision
+                        let recorded = if token = "case.erase" then None else Some decision
 
                         Expect.isOk
-                            (CaseReplay.apply
+                            (SubjectReplay.caseEffect
+                                decisionContext
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, recorded)))
                             "Replacement fold positive control"
 
                         let forged =
-                            if token = "ERASE" then
+                            if token = "case.erase" then
                                 before
                                 |> Option.map (fun snapshot ->
                                     { After = snapshot; Payment = None })
@@ -371,7 +371,8 @@ let tests =
                                 Some { decision with After = value }
 
                         match
-                            CaseReplay.apply
+                            SubjectReplay.caseEffect
+                                decisionContext
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, forged))
@@ -407,7 +408,8 @@ let recordedBusinessDate =
                     command
                     { After = expected; Payment = None }
 
-            CaseReplay.apply
+            SubjectReplay.caseEffect
+                decisionContext
                 Map.empty
                 entry
                 (VerifiedPayload.Case(command, Some { After = expected; Payment = None }))
@@ -495,9 +497,17 @@ let paymentAmountTamper =
             let prior = Map.ofList[id, history before [ original ]]
 
             Expect.isOk
-                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some expected)))
+                (SubjectReplay.caseEffect
+                    decisionContext
+                    prior
+                    stored
+                    (VerifiedPayload.Case(command, Some expected)))
                 "The exact recorded payment is the positive control"
 
             Expect.isError
-                (CaseReplay.apply prior stored (VerifiedPayload.Case(command, Some forged)))
+                (SubjectReplay.caseEffect
+                    decisionContext
+                    prior
+                    stored
+                    (VerifiedPayload.Case(command, Some forged)))
                 "Equal totals cannot conceal entry-level tampering")

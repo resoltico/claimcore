@@ -1,6 +1,11 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
 import { navigate } from "../../../src/routing/navigation";
 import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
-import { activeRequester } from "../../support/human-requester.fixtures";
+
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { wireReply } from "../../support/reply.fixtures";
 import { stubDashboardContext } from "../../support/dashboard-context.fixtures";
@@ -71,30 +76,30 @@ it("chooses an advertised workspace only for the default entry route", async () 
         kind: "SUCCEEDED",
         document: {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: ["AUTHORITY", "OPERATIONS"],
-            tasks: [
-              "AUTHORITY:REGISTER",
-              "AUTHORITY:GRANT",
-              "AUTHORITY:REVOKE",
-              "AUTHORITY:ENABLE",
-              "AUTHORITY:DISABLE",
-            ],
-          },
+          actions: installationActions([
+            "people.register",
+            "people.grant",
+            "people.revoke",
+            "people.enable",
+            "people.disable",
+          ]),
+          links: requesterLinks(
+            ["PEOPLE", "OPERATIONS"],
+            ["people.register", "people.grant", "people.revoke", "people.enable", "people.disable"],
+          ),
         },
       },
     },
   });
-  mockEndpoint("authority.list").mockResolvedValue({
+  mockEndpoint("people.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("authority.list"),
+    value: wireReply("people.list"),
   });
-  mockEndpoint("authority.requests").mockResolvedValue({
+  mockEndpoint("people.requests").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("authority.requests"),
+    value: wireReply("people.requests"),
   });
   render(<Dashboard />);
   expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
@@ -118,11 +123,8 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
         kind: "SUCCEEDED",
         document: {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: ["AUTHORITY"],
-            tasks: ["query:authorityList"],
-          },
+          actions: installationActions(["people.list"]),
+          links: requesterLinks(["PEOPLE"], ["people.list"]),
         },
       },
     },

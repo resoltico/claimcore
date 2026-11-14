@@ -65,7 +65,10 @@ let private qualify () =
 
         let input = frame["input"] |> nonNull
         input["operationId"] <- JsonValue.Create operation
-        (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create("DRAIN-" + operation)
+
+        ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+            JsonValue.Create("DRAIN-" + operation)
+
         let bytes = Encoding.UTF8.GetBytes(frame.ToJsonString())
         let pending = Task.Run(fun () -> run fixture fixture.Environment bytes 0)
 

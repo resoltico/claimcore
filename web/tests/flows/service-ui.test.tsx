@@ -1,4 +1,6 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { workBasis } from "../support/inputs";
@@ -20,9 +22,20 @@ import { endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CLOSE"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 describe("catalog rendering", () => {
@@ -103,7 +116,7 @@ const acceptsOperation = async (): Promise<void> => {
               regions: [
                 {
                   role: "NOTICE",
-                  content: { kind: "NOTICE", tone: "INFO", messageId: "act.CLOSE.done" },
+                  content: { kind: "NOTICE", tone: "INFO", messageId: "task.case.close.done" },
                 },
                 {
                   role: "DETAILS",
@@ -132,7 +145,7 @@ const acceptsOperation = async (): Promise<void> => {
     <OperationEditor
       definition={definition}
       current={current}
-      initialAct="CLOSE"
+      initialAct="case.close"
       onClose={vi.fn()}
       onCommitted={committed}
       onMutationLockChange={vi.fn()}
@@ -173,13 +186,19 @@ const sessionLifecycle = async () => {
   fetch.mockResolvedValueOnce(
     humanReadHttpReply("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

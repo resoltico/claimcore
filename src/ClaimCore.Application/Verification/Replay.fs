@@ -8,153 +8,29 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.VerificationChecks
 
-module internal AuthorityReplay =
-    let private ownerGrant: ActorGrant =
+module internal ReplayContext =
+    let issue at =
+        function
+        | ExecutorIssue.ActorNotEnabled -> divergence at VerificationFinding.ActorNotEnabled
+        | ExecutorIssue.HumanRequired -> divergence at VerificationFinding.HumanRequired
+        | ExecutorIssue.OwnerRequired -> divergence at VerificationFinding.OwnerRequired
+
+    let recorded (header: OperationHeader) principal access =
         {
-            Role = Role.Owner
-            Scope = Scope.Installation
+            DecisionContext.BusinessDate = header.BusinessDate
+            ObservedAt = header.RecordedAt
+            Principal = principal
+            Access = access
+            Maintenance = false
+            Lifetime = DecisionLifetime.Recorded
         }
 
-    let private owner (actor: ActorAuthority) =
-        actor.Enabled
-        && PrincipalKey.isHuman actor.Principal
-        && List.contains ownerGrant actor.Grants
+    let create (actors: Map<ActorId, ActorAccess>) (entry: StoredEffect) =
+        Map.tryFind entry.ActorId actors
+        |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
+        |> Result.map (fun actor ->
+            recorded entry.Operation.Root.Header actor.Principal (AccessView.ofActor (Some actor)))
 
-    let executor (actors: Map<ActorId, ActorAuthority>) (entry: StoredEffect) human ownerRequired =
-        result {
-            let! actor =
-                Map.tryFind entry.ActorId actors
-                |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
-
-            do! require (Some entry.Sequence) VerificationFinding.ActorNotEnabled actor.Enabled
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.HumanRequired
-                    (not human || PrincipalKey.isHuman actor.Principal)
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.OwnerRequired
-                    (not ownerRequired || owner actor)
-
-            return ()
-        }
-
-    let applyRoot
-        (cases: Set<CaseId>)
-        (actors: Map<ActorId, ActorAuthority>)
-        (operation: RetainedOperation)
-        (scope: AuthorityCommandSkeleton)
-        =
-        let at = Some operation.Root.Header.Sequence
-        let target = Map.tryFind scope.TargetActorId actors
-
-        let registering =
-            match scope.Act with
-            | AuthorityAct.Register _
-            | AuthorityAct.Admit _
-            | AuthorityAct.ProvisionOwner _ -> true
-            | _ -> false
-
-        let profile =
-            match operation.Values with
-            | RetainedOperationValues.Authority(RetainedProfile.Available value) -> Some value
-            | _ -> None
-
-        let grants =
-            match scope.Act with
-            | AuthorityAct.Admit value -> value.Grants
-            | AuthorityAct.Grant grant
-            | AuthorityAct.Revoke grant -> [ grant ]
-            | _ -> []
-
-        let authored (grant: ActorGrant) =
-            {
-                AuthoredGrant.Role = grant.Role
-                Scope =
-                    match grant.Scope with
-                    | Scope.Installation -> GrantTarget.Installation
-                    | Scope.Case id -> GrantTarget.CaseId id
-            }
-
-        let act = AuthorityAct.map authored (fun _ -> profile) scope.Act
-
-        let targets =
-            grants
-            |> List.choose (fun grant ->
-                match grant.Scope with
-                | Scope.Case id when Set.contains id cases -> Some(GrantTarget.CaseId id, id)
-                | _ -> None)
-            |> Map.ofList
-
-        let owner (actor: ActorAuthority) =
-            actor.Enabled
-            && PrincipalKey.isHuman actor.Principal
-            && List.contains
-                {
-                    Role = Role.Owner
-                    Scope = Scope.Installation
-                }
-                actor.Grants
-
-        let facts =
-            {
-                AuthorityFacts.TargetActor = target
-                TargetCases = targets
-                Requester = AuthorityView.ofActor (Map.tryFind operation.ActorId actors)
-                EnabledHumanOwners = Some(actors |> Map.values |> Seq.filter owner |> Seq.length)
-                ActorCount = Some actors.Count
-            }
-
-        result {
-            do!
-                require
-                    at
-                    VerificationFinding.AuthorityFold
-                    (if registering then
-                         target.IsNone
-                         && (actors
-                             |> Map.values
-                             |> Seq.forall (fun actor -> actor.Principal <> scope.Principal))
-                     else
-                         target |> Option.exists (fun actor -> actor.Principal = scope.Principal))
-
-            let! after =
-                Authority.replayRetained
-                    facts
-                    scope.TargetActorId
-                    operation.OperationId
-                    scope.Principal
-                    act
-                |> Result.mapError (function
-                    | Refusal.Authority AuthorityRefusal.HumanPrincipalRequired ->
-                        divergence at VerificationFinding.HumanRequired
-                    | _ -> divergence at VerificationFinding.AuthorityFold)
-
-            let next = Map.add scope.TargetActorId after actors
-
-            do!
-                require
-                    at
-                    VerificationFinding.AuthorityFold
-                    (next |> Map.values |> Seq.exists owner)
-
-            return next
-        }
-
-
-namespace ClaimCore.Application
-
-open ClaimCore.RecordFormat
-
-
-open System
-open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-open ClaimCore.Application.VerificationChecks
 
 type CaseHistory =
     {
@@ -169,331 +45,6 @@ type CaseHistory =
         PresentPayloadAt: Sequence option
         ErasedAt: Sequence option
     }
-
-module internal CaseReplay =
-    let private nextState sequence previous act =
-        let before =
-            previous
-            |> Option.map (_.State >> CaseState.lifecycle)
-            |> Option.defaultValue Lifecycle.Active
-
-        Lifecycle.after before act
-        |> Option.map (fun state -> CaseState.ofLifecycle state ())
-        |> function
-            | Some state -> Ok state
-            | None -> Error(divergence (Some sequence) VerificationFinding.StateSequence)
-
-    let private snapshot sequence state reference payload =
-        match payload with
-        | VerifiedPayload.Case(_, Some decision) ->
-            let snapshot = decision.After
-
-            let matches =
-                CaseState.map ignore snapshot.State = state
-                && (reference |> Option.forall ((=) snapshot.Reference))
-
-            require (Some sequence) VerificationFinding.StateSequence matches
-            |> Result.map (fun () -> Some snapshot, Some snapshot.Reference)
-        | VerifiedPayload.Case(_, None)
-        | VerifiedPayload.Erased -> Ok(None, reference)
-        | _ -> Error(divergence (Some sequence) VerificationFinding.PayloadFormat)
-
-    let apply histories (entry: StoredEffect) payload =
-        match entry.Subject with
-        | EntryTarget.Note _
-        | EntryTarget.Work _
-        | EntryTarget.Reminder _
-        | EntryTarget.Authority _ ->
-            Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-        | EntryTarget.Case(id, revision, act, businessDate) ->
-            result {
-                let previous = Map.tryFind id histories
-
-                let expected =
-                    previous |> Option.map _.Revision |> Option.defaultValue Revision.zero
-
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.RevisionSequence
-                        (Revision.value expected < Revision.Maximum
-                         && revision = Revision.successor expected)
-
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.HistoryStart
-                        ((previous.IsNone) = (act = CaseActKind.Open))
-
-                let entries =
-                    previous |> Option.map _.PaymentProjections |> Option.defaultValue Map.empty
-
-                let active =
-                    entries
-                    |> Map.toList
-                    |> List.choose (fun (id, row) ->
-                        match row.Content with
-                        | PaymentProjectionContent.Available(entry, false) -> Some(id, entry)
-                        | _ -> None)
-                    |> Map.ofList
-
-                let cleared (entries: Map<OperationId, PaymentProjectionRow>) =
-                    entries
-                    |> Map.map (fun _ row ->
-                        { row with
-                            Content =
-                                match row.Content with
-                                | PaymentProjectionContent.Available(_, removed)
-                                | PaymentProjectionContent.Cleared removed ->
-                                    PaymentProjectionContent.Cleared removed
-                        })
-
-                let accepting (content: PaymentProjectionContent) : PaymentProjectionRow =
-                    {
-                        CaseId = id
-                        PaymentId = entry.OperationId
-                        Position = EffectPosition.create entry.Sequence entry.Index |> Option.get
-                        Content = content
-                    }
-
-                let! payments =
-                    match payload with
-                    | VerifiedPayload.Case(_, None) when
-                        act = CaseActKind.Erase
-                        && previous |> Option.exists (fun value -> value.Snapshot.IsNone)
-                        ->
-                        Ok(cleared entries)
-                    | VerifiedPayload.Case(request, recorded) ->
-                        let before = previous |> Option.bind _.Snapshot
-
-                        let context =
-                            match request.Act, before with
-                            | CaseAct.RecordPayment _, Some parent ->
-                                CasePaymentContext.Recording(
-                                    id,
-                                    parent.Revision,
-                                    Map.containsKey request.OperationId entries
-                                )
-                            | CaseAct.RemovePayment selected, Some parent ->
-                                let found = Map.tryFind selected active
-                                let remaining = Map.remove selected active
-
-                                let dates =
-                                    if found.IsNone || remaining.IsEmpty then
-                                        None
-                                    else
-                                        let dates =
-                                            remaining
-                                            |> Map.values
-                                            |> Seq.map PaymentEntry.date
-                                            |> Seq.toList
-
-                                        PaymentDateBounds.create (List.min dates) (List.max dates)
-
-                                CasePaymentContext.Removing(id, parent.Revision, found, dates)
-                            | _ -> CasePaymentContext.NoneRequired
-
-                        match Case.decideSnapshot businessDate context request before with
-                        | Ok expected when
-                            (recorded = Some expected
-                             || (expected.After.State = CaseState.Erased && recorded.IsNone))
-                            ->
-                            match expected.After.State, expected.Payment with
-                            | CaseState.Erased, _ -> Ok(cleared entries)
-                            | _, Some(PaymentDifference.Recorded payment) ->
-                                Ok(
-                                    Map.add
-                                        (PaymentEntry.id payment)
-                                        (accepting (
-                                            PaymentProjectionContent.Available(payment, false)
-                                        ))
-                                        entries
-                                )
-                            | _, Some(PaymentDifference.Removed payment) ->
-                                let origin = Map.find (PaymentEntry.id payment) entries
-
-                                Ok(
-                                    Map.add
-                                        (PaymentEntry.id payment)
-                                        { origin with
-                                            Content =
-                                                PaymentProjectionContent.Available(payment, true)
-                                        }
-                                        entries
-                                )
-                            | _ -> Ok entries
-                        | _ ->
-                            Error(
-                                divergence (Some entry.Sequence) VerificationFinding.StateSequence
-                            )
-                    | VerifiedPayload.Erased when act = CaseActKind.RecordPayment ->
-                        Ok(
-                            Map.add
-                                entry.OperationId
-                                (accepting (PaymentProjectionContent.Cleared false))
-                                entries
-                        )
-                    | VerifiedPayload.Erased when act = CaseActKind.RemovePayment ->
-                        match entry.Descriptor with
-                        | EffectDescriptor.Case(_, _, _, _, Some(PaymentReference.Removed selected)) ->
-                            match Map.tryFind selected entries with
-                            | Some row ->
-                                match row.Content with
-                                | PaymentProjectionContent.Cleared false ->
-                                    Ok(
-                                        Map.add
-                                            selected
-                                            { row with
-                                                Content = PaymentProjectionContent.Cleared true
-                                            }
-                                            entries
-                                    )
-                                | PaymentProjectionContent.Available(value, false) ->
-                                    Ok(
-                                        Map.add
-                                            selected
-                                            { row with
-                                                Content =
-                                                    PaymentProjectionContent.Available(value, true)
-                                            }
-                                            entries
-                                    )
-                                | _ ->
-                                    Error(
-                                        divergence
-                                            (Some entry.Sequence)
-                                            VerificationFinding.StateSequence
-                                    )
-                            | None ->
-                                Error(
-                                    divergence
-                                        (Some entry.Sequence)
-                                        VerificationFinding.StateSequence
-                                )
-                        | _ ->
-                            Error(
-                                divergence (Some entry.Sequence) VerificationFinding.PayloadFormat
-                            )
-                    | VerifiedPayload.Erased when act = CaseActKind.Erase -> Ok(cleared entries)
-                    | VerifiedPayload.Erased -> Ok entries
-                    | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-
-                let! state = nextState entry.Sequence previous act
-
-                let reference =
-                    if act = CaseActKind.Open then
-                        entry.CreationReference
-                    else
-                        previous |> Option.bind _.Reference
-
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.HistoryStart
-                        (reference.IsSome
-                         && (if act = CaseActKind.Open then
-                                 id = CaseId.ofOperationId entry.OperationId
-                             else
-                                 entry.CreationReference.IsNone))
-
-                let! snapshot, reference = snapshot entry.Sequence state reference payload
-                let first field = previous |> Option.bind field
-
-                let missing =
-                    if StoredEffect.privateUnavailable entry then
-                        first _.MissingPayloadAt |> Option.orElse (Some entry.Sequence)
-                    else
-                        first _.MissingPayloadAt
-
-                let present =
-                    if StoredEffect.privateAvailable entry then
-                        first _.PresentPayloadAt |> Option.orElse (Some entry.Sequence)
-                    else
-                        first _.PresentPayloadAt
-
-                return
-                    Map.add
-                        id
-                        {
-                            Status =
-                                match act with
-                                | CaseActKind.Open
-                                | CaseActKind.Reopen -> CaseStatus.Opened
-                                | CaseActKind.Close -> CaseStatus.Closed
-                                | _ ->
-                                    previous
-                                    |> Option.map _.Status
-                                    |> Option.defaultValue CaseStatus.Opened
-                            Revision = revision
-                            ChangedAt = entry.RecordedAt
-                            Snapshot = snapshot
-                            PaymentProjections = payments
-                            Reference = reference
-                            State = state
-                            MissingPayloadAt = missing
-                            PresentPayloadAt = present
-                            ErasedAt =
-                                if act = CaseActKind.Erase then
-                                    Some entry.Sequence
-                                else
-                                    None
-                        }
-                        histories
-            }
-
-    let erasure histories =
-        histories
-        |> Map.values
-        |> Seq.choose (fun history ->
-            if history.State = CaseState.Erased && history.PresentPayloadAt.IsSome then
-                Some(divergence history.ErasedAt VerificationFinding.ErasureIncomplete)
-            elif history.State <> CaseState.Erased && history.MissingPayloadAt.IsSome then
-                Some(divergence history.MissingPayloadAt VerificationFinding.PayloadWithoutErasure)
-            else
-                None)
-        |> Seq.sortBy _.Sequence
-        |> Seq.tryHead
-        |> function
-            | Some finding -> Error finding
-            | None -> Ok()
-
-    let matchesProjection _installationId histories (record: StoredCase) =
-        match Map.tryFind record.CaseId histories with
-        | None -> false
-        | Some history ->
-            let identity =
-                record.Snapshot.CaseId = record.CaseId
-                && history.Reference = Some record.Snapshot.Reference
-
-            let state =
-                match record.Snapshot.State with
-                | CaseState.Erased ->
-                    history.State = CaseState.Erased
-                    && history.MissingPayloadAt.IsSome
-                    && Array.isEmpty record.SnapshotBytes
-                | CaseState.Active _
-                | CaseState.Voided _ ->
-                    history.State <> CaseState.Erased
-                    && history.MissingPayloadAt.IsNone
-                    && history.Snapshot = Some record.Snapshot
-                    && (history.Snapshot
-                        |> Option.exists (fun snapshot ->
-                            ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot =
-                                record.SnapshotBytes))
-                    && CaseState.map ignore record.Snapshot.State = history.State
-
-            identity && record.Snapshot.Revision = history.Revision && state
-
-
-namespace ClaimCore.Application
-
-open ClaimCore.RecordFormat
-
-open System
-open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-open ClaimCore.RecordFormat
-open ClaimCore.Application.VerificationChecks
 
 type WorkHistory =
     {
@@ -520,7 +71,205 @@ type ReminderHistory =
     }
 
 /// Causal cross-entity reconstruction includes roots, structural erased identities and fixed pairs.
-module internal WorkReplay =
+type NoteHistory =
+    {
+        CaseId: CaseId
+        Removed: bool
+        Snapshot: Note option
+        CreatedPosition: EffectPosition
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
+        MissingPayloadAt: Sequence option
+        PresentPayloadAt: Sequence option
+    }
+
+
+module internal SubjectReplay =
+
+    [<RequireQualifiedAccess>]
+    type Content<'command, 'recorded> =
+        | Available of 'command * 'recorded
+        | Erased
+
+    /// Every available effect is independently decided before application; erased content takes the structural owner path.
+    let run at finding matches decide apply applyErased content =
+        try
+            match content with
+            | Content.Available(command, recorded) ->
+                result {
+                    let! expected = decide command
+                    do! require at finding (matches expected recorded)
+                    return! apply expected
+                }
+            | Content.Erased -> applyErased ()
+        with SubjectStateInvalid _ ->
+            Error(divergence at finding)
+
+    let caseState id (history: CaseHistory) =
+        history.Reference
+        |> Option.map (fun reference ->
+            {
+                CaseSubjectState.CaseId = id
+                Reference = reference
+                Revision = history.Revision
+                Lifecycle = CaseState.lifecycle history.State
+                Status = history.Status
+                Snapshot = history.Snapshot
+                Payments = history.PaymentProjections
+                ChangedAt = history.ChangedAt
+            })
+
+    let caseEffect context histories (entry: StoredEffect) payload =
+        match entry.Subject with
+        | EntryTarget.Case(id, revision, act, _businessDate) ->
+            let at = Some entry.Sequence
+            let previous = Map.tryFind id histories
+            let state = previous |> Option.bind (caseState id)
+
+            let stamp =
+                {
+                    SubjectStamp.Position = entry.Position
+                    OperationId = entry.OperationId
+                    ActorId = entry.ActorId
+                    RecordedAt = entry.RecordedAt
+                }
+
+            let structure =
+                {
+                    CaseSubjectStructure.Stamp = stamp
+                    CaseId = id
+                    Reference = entry.CreationReference
+                    Revision = revision
+                    Act = act
+                    RemovedPayment =
+                        match entry.Descriptor with
+                        | EffectDescriptor.Case(_, _, _, _, Some(PaymentReference.Removed id)) ->
+                            Some id
+                        | _ -> None
+                }
+
+            let finding =
+                function
+                | RecordViolation.InvalidRevisionSequence ->
+                    divergence at VerificationFinding.RevisionSequence
+                | RecordViolation.InvalidHistoryStart ->
+                    divergence at VerificationFinding.HistoryStart
+                | _ -> divergence at VerificationFinding.StateSequence
+
+            let applyErased () =
+                // Preserve the verifier's access-failure category; the subject still enforces this
+                // same policy when applying its structural effect.
+                CaseSubject.authorizeStructure context id act
+                |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
+                |> Result.bind (fun () ->
+                    CaseSubject.applyErased context state structure |> Result.mapError finding)
+
+            result {
+                do! CaseSubject.validateStructure state structure |> Result.mapError finding
+
+                let! content =
+                    match payload with
+                    | VerifiedPayload.Case(_, None) when
+                        act = CaseActKind.Erase
+                        && (state |> Option.exists (fun state -> state.Snapshot.IsNone))
+                        ->
+                        Ok Content.Erased
+                    | VerifiedPayload.Case(request, recorded) ->
+                        Ok(Content.Available(request, recorded))
+                    | VerifiedPayload.Erased -> Ok Content.Erased
+                    | _ -> Error(divergence at VerificationFinding.PayloadFormat)
+
+                let! next =
+                    run
+                        at
+                        VerificationFinding.StateSequence
+                        (fun (expected: CaseDecision) (recorded: CaseDecision option) ->
+                            recorded = Some expected
+                            || (expected.After.State = CaseState.Erased && recorded.IsNone))
+                        (fun command ->
+                            CaseSubject.decide context state command
+                            |> Result.mapError (function
+                                | Refusal.Access _ -> divergence at VerificationFinding.PeopleFold
+                                | _ -> divergence at VerificationFinding.StateSequence))
+                        (fun expected -> Ok(CaseSubject.apply stamp state expected))
+                        applyErased
+                        content
+
+                let! next = next |> known at VerificationFinding.StateSequence
+                do! require at VerificationFinding.RevisionSequence (next.Revision = revision)
+                let first field = previous |> Option.bind field
+
+                let missing =
+                    if StoredEffect.privateUnavailable entry then
+                        first _.MissingPayloadAt |> Option.orElse at
+                    else
+                        first _.MissingPayloadAt
+
+                let present =
+                    if StoredEffect.privateAvailable entry then
+                        first _.PresentPayloadAt |> Option.orElse at
+                    else
+                        first _.PresentPayloadAt
+
+                return
+                    Map.add
+                        id
+                        {
+                            Status = next.Status
+                            Revision = next.Revision
+                            ChangedAt = next.ChangedAt
+                            Snapshot = next.Snapshot
+                            PaymentProjections = next.Payments
+                            Reference = Some next.Reference
+                            State = CaseState.ofLifecycle next.Lifecycle ()
+                            MissingPayloadAt = missing
+                            PresentPayloadAt = present
+                            ErasedAt = if act = CaseActKind.Erase then at else None
+                        }
+                        histories
+            }
+        | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+
+    let caseErasure (histories: Map<CaseId, CaseHistory>) =
+        histories
+        |> Map.values
+        |> Seq.choose (fun history ->
+            if history.State = CaseState.Erased && history.PresentPayloadAt.IsSome then
+                Some(divergence history.ErasedAt VerificationFinding.ErasureIncomplete)
+            elif history.State <> CaseState.Erased && history.MissingPayloadAt.IsSome then
+                Some(divergence history.MissingPayloadAt VerificationFinding.PayloadWithoutErasure)
+            else
+                None)
+        |> Seq.sortBy _.Sequence
+        |> Seq.tryHead
+        |> function
+            | Some finding -> Error finding
+            | None -> Ok()
+
+    let workState id erased (history: WorkHistory) : WorkSubjectState =
+        {
+            CaseId = id
+            Revision = history.Revision
+            Snapshot = history.Snapshot
+            ChangedAt = history.ChangedAt
+            RecordedBy = history.RecordedBy
+            SummaryChangedAt = history.SummaryChangedAt
+            SummaryRecordedBy = history.SummaryRecordedBy
+            Erased = erased
+        }
+
+    let reminderState id erased (history: ReminderHistory) : ReminderSubjectState =
+        {
+            ReminderId = id
+            CaseId = history.CaseId
+            Revision = history.Revision
+            Status = Some history.State
+            Snapshot = history.Snapshot
+            RecordedAt = history.RecordedAt
+            RecordedBy = history.RecordedBy
+            Erased = erased
+        }
+
     let private evidence (entry: StoredEffect) missing present =
         (if StoredEffect.privateUnavailable entry then
              missing |> Option.orElse (Some entry.Sequence)
@@ -531,9 +280,9 @@ module internal WorkReplay =
          else
              present)
 
-    let apply
+    let workEffect
         (cases: Map<CaseId, CaseHistory>)
-        (actors: Map<ActorId, ActorAuthority>)
+        (actors: Map<ActorId, ActorAccess>)
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)
         (entry: StoredEffect)
@@ -551,11 +300,7 @@ module internal WorkReplay =
             actors
             |> Map.tryFind actorId
             |> Option.exists (fun actor ->
-                decide actor.Principal (AuthorityView.ofActor (Some actor)) caseId)
-
-        let authorized caseId actorId =
-            policy caseId actorId (fun principal authority caseId ->
-                CaseWorkPolicy.authorize principal authority caseId |> Result.isOk)
+                decide actor.Principal (AccessView.ofActor (Some actor)) caseId)
 
         let eligible caseId actorId =
             policy caseId actorId CaseWorkPolicy.eligibleAssignee
@@ -563,9 +308,6 @@ module internal WorkReplay =
         let parent caseId =
             result {
                 let! parent = Map.tryFind caseId cases |> known
-                do! check (parent.State = CaseState.Active())
-                do! check (authorized caseId entry.ActorId)
-                do! AuthorityReplay.executor actors entry true false
                 return parent
             }
 
@@ -574,19 +316,14 @@ module internal WorkReplay =
             | EntryTarget.Case(id, _, CaseActKind.Open, _) ->
                 do! check (not (Map.containsKey id work))
 
-                let root =
-                    {
-                        CaseWorkSnapshot.CaseId = id
-                        Revision = Revision.zero
-                        Work = CaseWork.empty
-                    }
+                let initial = (CaseFamily.onCaseCreated id).Work.Value
 
                 return
                     Map.add
                         id
                         {
                             Revision = Revision.zero
-                            Snapshot = Some root
+                            Snapshot = initial.Snapshot
                             ChangedAt = None
                             RecordedBy = None
                             SummaryChangedAt = None
@@ -596,240 +333,204 @@ module internal WorkReplay =
                         }
                         work,
                     reminders
-            | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
-                let work =
-                    work
-                    |> Map.change
-                        id
-                        (Option.map (fun value ->
-                            { value with
-                                Snapshot = None
-                                SummaryChangedAt = None
-                                SummaryRecordedBy = None
-                            }))
+            | EntryTarget.Work descriptor ->
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
+                let! parent = parent descriptor.CaseId
+                let! parentState = caseState descriptor.CaseId parent |> known
+                let! previous = Map.tryFind descriptor.CaseId work |> known
+                let before = workState descriptor.CaseId false previous
 
-                let reminders =
-                    reminders
-                    |> Map.map (fun _ value ->
-                        if value.CaseId = id then
-                            { value with Snapshot = None }
-                        else
-                            value)
+                let stamp =
+                    {
+                        SubjectStamp.Position = entry.Position
+                        OperationId = entry.OperationId
+                        ActorId = entry.ActorId
+                        RecordedAt = entry.RecordedAt
+                    }
 
-                return work, reminders
-            | EntryTarget.Work subject ->
-                let! parent = parent subject.CaseId
-                let! previous = Map.tryFind subject.CaseId work |> known
-
-                do!
-                    check (
-                        Revision.value previous.Revision < Revision.Maximum
-                        && subject.Revision = Revision.successor previous.Revision
-                    )
-
-                let! snapshot =
+                let! content =
                     match payload with
                     | VerifiedPayload.Work(request, actual) ->
-                        result {
-                            let! before = previous.Snapshot |> known
-                            let! parentSnapshot = parent.Snapshot |> known
-
-                            let! expected =
-                                CaseWorkDecision.decide
-                                    parentSnapshot
-                                    (match request.Update.Responsible with
-                                     | WorkValue.Set id -> eligible subject.CaseId id
-                                     | _ -> true)
-                                    request.ExpectedRevision
-                                    request.Update
-                                    before
-                                |> Result.mapError (fun _ ->
-                                    divergence at VerificationFinding.StateSequence)
-
-                            do! check (actual = expected)
-
-                            let responsibilityChanged =
-                                before.Work.Responsible <> actual.Work.Responsible
-
-                            do!
-                                check (
-                                    not responsibilityChanged || parent.Status = CaseStatus.Opened
-                                )
-
-                            do!
-                                check (
-                                    match request.Update.Responsible with
-                                    | WorkValue.Set id -> eligible subject.CaseId id
-                                    | _ -> true
-                                )
-
-                            return Some actual
-                        }
-                    | VerifiedPayload.Erased -> Ok None
+                        Ok(Content.Available(request, actual))
+                    | VerifiedPayload.Erased -> Ok Content.Erased
                     | _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
-                let summaryChangedAt, summaryRecordedBy =
-                    match snapshot |> Option.bind (fun value -> value.Work.Summary) with
-                    | None -> None, None
-                    | Some summary when
-                        previous.Snapshot |> Option.bind (fun value -> value.Work.Summary) =
-                            Some summary
-                        ->
-                        previous.SummaryChangedAt, previous.SummaryRecordedBy
-                    | Some _ -> Some entry.RecordedAt, Some entry.ActorId
+                let decide (request: WorkDecisionInput) =
+                    WorkSubject.decide
+                        context
+                        entry.OperationId
+                        {
+                            Parent = parentState
+                            AssigneeEligible = eligible descriptor.CaseId
+                        }
+                        (Some before)
+                        {
+                            ExpectedRevision = request.ExpectedRevision
+                            Update = request.Update
+                        }
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
+                let! applied =
+                    run
+                        at
+                        VerificationFinding.StateSequence
+                        (=)
+                        decide
+                        (fun expected ->
+                            Ok(
+                                WorkSubject.apply
+                                    entry.RecordedAt
+                                    entry.ActorId
+                                    (Some before)
+                                    expected
+                            ))
+                        (fun () ->
+                            WorkSubject.applyErased
+                                context
+                                stamp
+                                parentState
+                                descriptor.Revision
+                                (Some before)
+                            |> Result.mapError (fun _ ->
+                                divergence at VerificationFinding.StateSequence))
+                        content
+
+                let! applied = applied |> known
+                do! check (applied.Revision = descriptor.Revision)
 
                 let missing, present =
                     evidence entry previous.MissingPayloadAt previous.PresentPayloadAt
 
                 return
                     Map.add
-                        subject.CaseId
+                        descriptor.CaseId
                         {
-                            Revision = subject.Revision
-                            Snapshot = snapshot
-                            ChangedAt = Some entry.RecordedAt
-                            RecordedBy = Some entry.ActorId
-                            SummaryChangedAt = summaryChangedAt
-                            SummaryRecordedBy = summaryRecordedBy
+                            Revision = applied.Revision
+                            Snapshot = applied.Snapshot
+                            ChangedAt = applied.ChangedAt
+                            RecordedBy = applied.RecordedBy
+                            SummaryChangedAt = applied.SummaryChangedAt
+                            SummaryRecordedBy = applied.SummaryRecordedBy
                             MissingPayloadAt = missing
                             PresentPayloadAt = present
                         }
                         work,
                     reminders
-            | EntryTarget.Reminder subject ->
-                let! parent = parent subject.CaseId
-                let creating = subject.Act = ReminderActKind.Create
+            | EntryTarget.Reminder descriptor ->
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
+                let! parent = parent descriptor.CaseId
+                let! parentState = caseState descriptor.CaseId parent |> known
+                let previous = Map.tryFind descriptor.ReminderId reminders
+                let before = previous |> Option.map (reminderState descriptor.ReminderId false)
 
-                let! previous =
-                    if creating then
-                        check (not (Map.containsKey subject.ReminderId reminders))
-                        |> Result.map (fun () -> None)
-                    else
-                        Map.tryFind subject.ReminderId reminders |> known |> Result.map Some
-
-                do! check (entry.CreationReference.IsNone)
-
-                do!
-                    check (
-                        previous
-                        |> Option.forall (fun value ->
-                            Revision.value value.Revision < Revision.Maximum)
-                    )
-
-                do!
-                    check (
-                        subject.Revision =
-                            (previous
-                             |> Option.map (_.Revision >> Revision.successor)
-                             |> Option.defaultValue Revision.first)
-                    )
-
-                do! check (previous |> Option.forall (fun value -> value.CaseId = subject.CaseId))
-
-                let terminalCleanup =
-                    subject.Act = ReminderActKind.Complete || subject.Act = ReminderActKind.Cancel
-
-                do! check (terminalCleanup || parent.Status = CaseStatus.Opened)
-
-                let! state =
-                    ReminderState.after subject.Act (previous |> Option.map _.State)
-                    |> function
-                        | Some state -> Ok state
-                        | None -> Error(divergence at VerificationFinding.StateSequence)
-
-                do!
-                    check (
-                        (subject.NextReminderId.IsSome) =
-                            (subject.Act = ReminderActKind.CompleteAndPlanNext)
-                    )
-
-                do!
-                    check (
-                        not creating
-                        || subject.ReminderId = ReminderId.ofOperationId entry.OperationId
-                    )
-
-                do!
-                    check (
-                        subject.NextReminderId
-                        |> Option.forall (fun id ->
-                            id = ReminderId.ofOperationId entry.OperationId
-                            && id <> subject.ReminderId
-                            && not (Map.containsKey id reminders))
-                    )
-
-                let! primary, next =
-                    match payload with
-                    | VerifiedPayload.Reminder(request, actual) ->
-                        result {
-                            let before = previous |> Option.bind _.Snapshot
-                            let! parentSnapshot = parent.Snapshot |> known
-
-                            let! expected =
-                                Reminder.decide
-                                    request.OperationId
-                                    parentSnapshot
-                                    before
-                                    (subject.NextReminderId
-                                     |> Option.exists (fun id -> Map.containsKey id reminders))
-                                    request.Command
-                                |> Result.mapError (fun _ ->
-                                    divergence at VerificationFinding.StateSequence)
-
-                            do! check (expected = actual)
-
-                            match actual with
-                            | ReminderEffects.Created value
-                            | ReminderEffects.Changed value -> return Some value, None
-                            | ReminderEffects.CompletedAndPlanned(completed, next) ->
-                                return Some completed, Some next
-                        }
-                    | VerifiedPayload.Erased -> Ok(None, None)
-                    | _ -> Error(divergence at VerificationFinding.PayloadFormat)
-
-                let missing, present =
-                    evidence
-                        entry
-                        (previous |> Option.bind _.MissingPayloadAt)
-                        (previous |> Option.bind _.PresentPayloadAt)
-
-                let history =
+                let stamp =
                     {
-                        CaseId = subject.CaseId
-                        Revision = subject.Revision
-                        State = state
-                        Snapshot = primary
+                        SubjectStamp.Position = entry.Position
+                        OperationId = entry.OperationId
+                        ActorId = entry.ActorId
                         RecordedAt = entry.RecordedAt
-                        RecordedBy = entry.ActorId
-                        MissingPayloadAt = missing
-                        PresentPayloadAt = present
                     }
 
-                let reminders = Map.add subject.ReminderId history reminders
+                let dependencies =
+                    {
+                        ReminderSubjectDependencies.Parent = parentState
+                        IdentityReserved =
+                            if descriptor.Act = ReminderActKind.Create then
+                                previous.IsSome
+                            else
+                                descriptor.NextReminderId
+                                |> Option.exists (fun id -> Map.containsKey id reminders)
+                    }
+
+                let! structural =
+                    ReminderSubject.applyErased
+                        context
+                        dependencies
+                        before
+                        {
+                            Stamp = stamp
+                            CaseId = descriptor.CaseId
+                            ReminderId = descriptor.ReminderId
+                            Revision = descriptor.Revision
+                            Act = descriptor.Act
+                            NextReminderId = descriptor.NextReminderId
+                        }
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
+                let! content =
+                    match payload with
+                    | VerifiedPayload.Reminder(request, actual) ->
+                        Ok(Content.Available(request, actual))
+                    | VerifiedPayload.Erased -> Ok Content.Erased
+                    | _ -> Error(divergence at VerificationFinding.PayloadFormat)
+
+                let decide (request: ReminderDecisionInput) =
+                    ReminderSubject.decide
+                        context
+                        request.OperationId
+                        dependencies
+                        before
+                        request.Command
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
+                let! applied =
+                    run
+                        at
+                        VerificationFinding.StateSequence
+                        (=)
+                        decide
+                        (fun expected ->
+                            Ok(
+                                ReminderSubject.apply
+                                    entry.RecordedAt
+                                    entry.ActorId
+                                    before
+                                    expected
+                            ))
+                        (fun () -> Ok structural)
+                        content
+
+                let shape (state: ReminderSubjectState) =
+                    state.ReminderId, state.CaseId, state.Revision, state.Status
+
+                do! check (List.map shape applied = List.map shape structural)
 
                 let reminders =
-                    match subject.NextReminderId with
-                    | None -> reminders
-                    | Some id ->
-                        Map.add
-                            id
-                            { history with
-                                Revision = Revision.first
-                                State =
-                                    ReminderState.after ReminderActKind.Create None |> Option.get
-                                Snapshot = next
-                                MissingPayloadAt =
-                                    (if StoredEffect.privateUnavailable entry then at else None)
-                                PresentPayloadAt =
-                                    (if StoredEffect.privateAvailable entry then at else None)
-                            }
-                            reminders
+                    applied
+                    |> List.fold
+                        (fun
+                            (reminders: Map<ReminderId, ReminderHistory>)
+                            (state: ReminderSubjectState) ->
+                            let previous = Map.tryFind state.ReminderId reminders
+
+                            let missing, present =
+                                evidence
+                                    entry
+                                    (previous |> Option.bind _.MissingPayloadAt)
+                                    (previous |> Option.bind _.PresentPayloadAt)
+
+                            let history =
+                                {
+                                    CaseId = state.CaseId
+                                    Revision = state.Revision
+                                    State = state.Status.Value
+                                    Snapshot = state.Snapshot
+                                    RecordedAt = state.RecordedAt
+                                    RecordedBy = state.RecordedBy
+                                    MissingPayloadAt = missing
+                                    PresentPayloadAt = present
+                                }
+
+                            Map.add state.ReminderId history reminders)
+                        reminders
 
                 return work, reminders
             | _ -> return work, reminders
         }
 
-    let erasure
+    let workErasure
         (cases: Map<CaseId, CaseHistory>)
         (work: Map<CaseId, WorkHistory>)
         (reminders: Map<ReminderId, ReminderHistory>)
@@ -863,33 +564,25 @@ module internal WorkReplay =
         |> List.fold (fun state next -> state |> Result.bind (fun () -> next)) (Ok())
 
 
-namespace ClaimCore.Application
+    let noteState id erased (history: NoteHistory) : NoteSubjectState =
+        {
+            NoteId = id
+            CaseId = history.CaseId
+            Removed = Some history.Removed
+            Snapshot = history.Snapshot
+            Created =
+                {
+                    Position = history.CreatedPosition
+                    OperationId = OperationId.create (NoteId.value id) |> Option.get
+                    ActorId = history.RecordedBy
+                    RecordedAt = history.RecordedAt
+                }
+            Erased = erased
+        }
 
-open ClaimCore.RecordFormat
-
-
-open System
-open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-open ClaimCore.RecordFormat
-open ClaimCore.Application.VerificationChecks
-
-type NoteHistory =
-    {
-        CaseId: CaseId
-        Removed: bool
-        Snapshot: Note option
-        CreatedPosition: EffectPosition
-        RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
-        MissingPayloadAt: Sequence option
-        PresentPayloadAt: Sequence option
-    }
-
-module internal NoteReplay =
-    let apply
+    let noteEffect
         (cases: Map<CaseId, CaseHistory>)
-        (actors: Map<ActorId, ActorAuthority>)
+        (actors: Map<ActorId, ActorAccess>)
         (notes: Map<NoteId, NoteHistory>)
         (entry: StoredEffect)
         payload
@@ -902,78 +595,71 @@ module internal NoteReplay =
 
         result {
             match entry.Subject with
-            | EntryTarget.Note subject ->
-                let! parent = Map.tryFind subject.CaseId cases |> known
-                do! check (parent.State = CaseState.Active())
-                do! AuthorityReplay.executor actors entry true false
-                let! actor = Map.tryFind entry.ActorId actors |> known
+            | EntryTarget.Note descriptor ->
+                let! parent = Map.tryFind descriptor.CaseId cases |> known
+                let! parentState = caseState descriptor.CaseId parent |> known
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
 
-                do!
-                    check (
-                        CaseWorkPolicy.authorize
-                            actor.Principal
-                            (AuthorityView.ofActor (Some actor))
-                            subject.CaseId
-                        |> Result.isOk
-                    )
+                let prior = Map.tryFind descriptor.NoteId notes
+                let before = prior |> Option.map (noteState descriptor.NoteId false)
 
-                let prior = Map.tryFind subject.NoteId notes
-                let adding = subject.Act = NoteActKind.AddNote
+                let stamp =
+                    {
+                        SubjectStamp.Position = entry.Position
+                        OperationId = entry.OperationId
+                        ActorId = entry.ActorId
+                        RecordedAt = entry.RecordedAt
+                    }
 
-                do!
-                    check (
-                        if adding then
-                            prior.IsNone && subject.NoteId = NoteId.ofOperationId entry.OperationId
-                        else
-                            prior
-                            |> Option.exists (fun value ->
-                                value.CaseId = subject.CaseId && not value.Removed)
-                    )
+                let structure =
+                    {
+                        NoteSubjectStructure.Stamp = stamp
+                        CaseId = descriptor.CaseId
+                        NoteId = descriptor.NoteId
+                        Act = descriptor.Act
+                    }
 
-                let! snapshot =
+                let! structural =
+                    NoteSubject.applyErased context parentState before structure
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
+                let! content =
                     match payload with
-                    | VerifiedPayload.Note(request, actual) when
-                        parent.Snapshot.IsNone && subject.Act = NoteActKind.RemoveNote
-                        ->
-                        check (
-                            request.Command = NoteCommand.RemoveNote(subject.CaseId, subject.NoteId)
-                            && Note.id actual = subject.NoteId
-                            && Note.caseId actual = subject.CaseId
-                            && Note.text actual = None
-                        )
-                        |> Result.map (fun () -> Some actual)
                     | VerifiedPayload.Note(request, actual) ->
-                        result {
-                            let! parent = parent.Snapshot |> known
-
-                            let! expected =
-                                Note.decide
-                                    entry.OperationId
-                                    parent
-                                    (prior |> Option.bind _.Snapshot)
-                                    request.Command
-                                |> Result.mapError (fun _ ->
-                                    divergence at VerificationFinding.StateSequence)
-
-                            do! check (expected = actual)
-                            return Some actual
-                        }
-                    | VerifiedPayload.Erased -> Ok None
+                        Ok(Content.Available(request, actual))
+                    | VerifiedPayload.Erased -> Ok Content.Erased
                     | _ -> Error(divergence at VerificationFinding.PayloadFormat)
+
+                let decide (request: NoteDecisionInput) =
+                    NoteSubject.decide context entry.OperationId parentState before request.Command
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
+
+                let! applied =
+                    run
+                        at
+                        VerificationFinding.StateSequence
+                        (=)
+                        decide
+                        (fun expected -> Ok(NoteSubject.apply stamp before expected))
+                        (fun () -> Ok structural)
+                        content
+
+                let shape (state: NoteSubjectState) =
+                    state.NoteId, state.CaseId, state.Removed
+
+                do! check (Option.map shape applied = Option.map shape structural)
+
+                let! applied = applied |> known
 
                 let history =
                     {
-                        CaseId = subject.CaseId
-                        Removed = not adding
-                        Snapshot = snapshot
-                        CreatedPosition =
-                            prior
-                            |> Option.map _.CreatedPosition
-                            |> Option.defaultValue entry.Position
-                        RecordedAt =
-                            prior |> Option.map _.RecordedAt |> Option.defaultValue entry.RecordedAt
-                        RecordedBy =
-                            prior |> Option.map _.RecordedBy |> Option.defaultValue entry.ActorId
+                        CaseId = applied.CaseId
+                        Removed = applied.Removed.Value
+                        Snapshot = applied.Snapshot
+                        CreatedPosition = applied.Created.Position
+                        RecordedAt = applied.Created.RecordedAt
+                        RecordedBy = applied.Created.ActorId
                         MissingPayloadAt =
                             if StoredEffect.privateUnavailable entry then
                                 prior |> Option.bind _.MissingPayloadAt |> Option.orElse at
@@ -986,11 +672,11 @@ module internal NoteReplay =
                                 prior |> Option.bind _.PresentPayloadAt
                     }
 
-                return Map.add subject.NoteId history notes
+                return Map.add descriptor.NoteId history notes
             | _ -> return notes
         }
 
-    let erasure (cases: Map<CaseId, CaseHistory>) (notes: Map<NoteId, NoteHistory>) =
+    let noteErasure (cases: Map<CaseId, CaseHistory>) (notes: Map<NoteId, NoteHistory>) =
         notes
         |> Map.values
         |> Seq.fold
@@ -1016,7 +702,8 @@ module internal NoteReplay =
                         Ok()))
             (Ok())
 
-/// Deterministic operation replay. Command authority is fixed before any effect is applied.
+
+/// Deterministic operation replay. Command access is fixed before any effect is applied.
 module Replay =
     type ProfileHistory =
         {
@@ -1031,14 +718,231 @@ module Replay =
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
             Notes: Map<NoteId, NoteHistory>
-            Actors: Map<ActorId, ActorAuthority>
-            GrantSources: Map<ActorId * Role * Scope, EffectPosition>
+            People: Map<ActorId, PeopleSubjectState>
             Accepted: Map<OperationId, ActorId>
             Profiles: Map<ActorId, ProfileHistory>
             References: Map<string, CaseId>
             AvailableNonces: Set<string>
             ExpectedSeen: bool
         }
+
+        member this.Actors = this.People |> Map.map (fun _ state -> PeopleSubject.access state)
+
+        member this.GrantSources =
+            this.People
+            |> Map.toList
+            |> List.collect (fun (id, state) ->
+                state.Grants
+                |> Map.toList
+                |> List.map (fun (grant, position) -> (id, grant.Role, grant.Scope), position))
+            |> Map.ofList
+
+    let private replayPeople
+        (state: Scan)
+        (operation: RetainedOperation)
+        (scope: PeopleCommandSkeleton)
+        =
+        let at = Some operation.Root.Header.Sequence
+
+        let before =
+            Map.tryFind scope.TargetActorId state.People
+            |> Option.orElseWith (fun () ->
+                match scope.Act with
+                | PeopleAct.Register _
+                | PeopleAct.Admit _
+                | PeopleAct.ProvisionOwner _ ->
+                    state.People
+                    |> Map.values
+                    |> Seq.tryFind (fun state -> state.Actor.Principal = scope.Principal)
+                | _ -> None)
+
+        let actors = state.Actors
+
+        let grants =
+            match scope.Act with
+            | PeopleAct.Admit value -> value.Grants
+            | PeopleAct.Grant grant
+            | PeopleAct.Revoke grant -> [ grant ]
+            | _ -> []
+
+        let authored (grant: ActorGrant) =
+            {
+                AuthoredGrant.Role = grant.Role
+                Scope =
+                    match grant.Scope with
+                    | Scope.Installation -> GrantTarget.Installation
+                    | Scope.Case id -> GrantTarget.CaseId id
+            }
+
+        let dependencies =
+            {
+                PeopleSubjectDependencies.TargetCases =
+                    grants
+                    |> List.choose (fun grant ->
+                        match grant.Scope with
+                        | Scope.Case id when Map.containsKey id state.Cases ->
+                            Some(GrantTarget.CaseId id, id)
+                        | _ -> None)
+                    |> Map.ofList
+                EnabledHumanOwners =
+                    Some(
+                        actors |> Map.values |> Seq.filter People.isEnabledHumanOwner |> Seq.length
+                    )
+                ActorCount = Some actors.Count
+            }
+
+        let recordedContext =
+            match Map.tryFind operation.ActorId actors, scope.Act with
+            | Some actor, _ ->
+                Ok(
+                    ReplayContext.recorded
+                        operation.Root.Header
+                        actor.Principal
+                        (AccessView.ofActor (Some actor))
+                )
+            | None, PeopleAct.ProvisionOwner _ ->
+                Ok(ReplayContext.recorded operation.Root.Header scope.Principal AccessView.empty)
+            | _ -> Error(divergence at VerificationFinding.PeopleFold)
+
+        let provenance = SubjectProvenance.people operation
+
+        let profile =
+            match operation.Values with
+            | RetainedOperationValues.People(RetainedProfile.Available value) -> Some value
+            | _ -> None
+
+        let resolved =
+            PeopleAct.traverse
+                Ok
+                (fun _ -> profile |> Option.map Ok |> Option.defaultValue (Error()))
+                scope.Act
+
+        let finding =
+            function
+            | Refusal.People PeopleRefusal.HumanPrincipalRequired ->
+                divergence at VerificationFinding.HumanRequired
+            | _ -> divergence at VerificationFinding.PeopleFold
+
+        result {
+            let! context = recordedContext
+
+            let! content =
+                match resolved with
+                | Ok act ->
+                    People.restoreCommand
+                        operation.OperationId
+                        scope.Principal
+                        (PeopleAct.map authored id act)
+                    |> Result.mapError finding
+                    |> Result.map (fun command ->
+                        SubjectReplay.Content.Available(command, PeopleSubject.recordedChange act))
+                | Error() -> Ok SubjectReplay.Content.Erased
+
+            let decide command =
+                PeopleSubject.decide context dependencies before command
+                |> Result.mapError finding
+
+            let apply effect =
+                PeopleSubject.apply provenance before effect
+                |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
+
+            let erased () =
+                PeopleSubject.applyErased
+                    context
+                    dependencies
+                    provenance
+                    before
+                    scope.TargetActorId
+                    operation.OperationId
+                    scope.Principal
+                    (PeopleAct.map authored (fun _ -> None) scope.Act)
+                |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
+
+            let! after =
+                SubjectReplay.run
+                    at
+                    VerificationFinding.PeopleFold
+                    (fun (expected: PeopleSubjectEffect) recorded -> expected.Change = recorded)
+                    decide
+                    apply
+                    erased
+                    content
+
+            let! after = after |> known at VerificationFinding.PeopleFold
+
+            do!
+                require
+                    at
+                    VerificationFinding.PeopleFold
+                    (after.Actor.ActorId = scope.TargetActorId)
+
+            let next = Map.add scope.TargetActorId after state.People
+
+            do!
+                require
+                    at
+                    VerificationFinding.PeopleFold
+                    (next
+                     |> Map.values
+                     |> Seq.exists (PeopleSubject.access >> People.isEnabledHumanOwner))
+
+            return next
+        }
+
+    let private clearFamily (state: Scan) (parent: CaseSubjectState) =
+        let id = parent.CaseId
+
+        let family =
+            {
+                CaseFamilyState.Work =
+                    state.Work |> Map.tryFind id |> Option.map (SubjectReplay.workState id false)
+                Reminders =
+                    state.Reminders
+                    |> Map.filter (fun _ history -> history.CaseId = id)
+                    |> Map.map (fun id history -> SubjectReplay.reminderState id false history)
+                Notes =
+                    state.Notes
+                    |> Map.filter (fun _ history -> history.CaseId = id)
+                    |> Map.map (fun id history -> SubjectReplay.noteState id false history)
+            }
+
+        CaseFamily.onCaseErased parent family
+        |> Result.mapError (fun _ -> divergence None VerificationFinding.StateSequence)
+        |> Result.map (fun family ->
+            let work =
+                state.Work
+                |> Map.change
+                    id
+                    (Option.map (fun history ->
+                        let owned = family.Work.Value
+
+                        { history with
+                            Snapshot = owned.Snapshot
+                            SummaryChangedAt = owned.SummaryChangedAt
+                            SummaryRecordedBy = owned.SummaryRecordedBy
+                        }))
+
+            let reminders =
+                state.Reminders
+                |> Map.map (fun id history ->
+                    match Map.tryFind id family.Reminders with
+                    | Some owned ->
+                        { history with
+                            Snapshot = owned.Snapshot
+                        }
+                    | None -> history)
+
+            let notes =
+                state.Notes
+                |> Map.map (fun id history ->
+                    match Map.tryFind id family.Notes with
+                    | Some owned ->
+                        { history with
+                            Snapshot = owned.Snapshot
+                        }
+                    | None -> history)
+
+            work, reminders, notes)
 
     let link (state: Scan) sequence previous =
         require
@@ -1051,24 +955,24 @@ module Replay =
     let private profile history (entry: StoredEffect) =
 
         match entry.Descriptor with
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.SetProfile _) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.SetProfile _) ->
             let current =
                 Map.tryFind id history |> Option.defaultValue { Missing = None; Present = None }
 
             let next =
                 match entry.Operation.Values with
-                | RetainedOperationValues.Authority RetainedProfile.Unavailable ->
+                | RetainedOperationValues.People RetainedProfile.Unavailable ->
                     { current with
                         Missing = Option.orElse current.Missing (Some entry.Position)
                     }
-                | RetainedOperationValues.Authority(RetainedProfile.Available _) ->
+                | RetainedOperationValues.People(RetainedProfile.Available _) ->
                     { current with
                         Present = Option.orElse current.Present (Some entry.Position)
                     }
                 | _ -> current
 
             Ok(Map.add id next history)
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.EraseProfile) ->
+        | EffectDescriptor.People(id, PeopleEffectDescriptor.EraseProfile) ->
             match Map.tryFind id history |> Option.bind _.Present with
             | Some position ->
                 Error(
@@ -1079,55 +983,13 @@ module Replay =
             | None -> Ok(Map.remove id history)
         | _ -> Ok history
 
-    let private grantSource sources (entry: StoredEffect) =
-        match entry.Descriptor with
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.ProvisionOwner _) ->
-            Map.add (id, Role.Owner, Scope.Installation) entry.Position sources
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.Grant grant) ->
-            Map.add (id, grant.Role, grant.Scope) entry.Position sources
-        | EffectDescriptor.Authority(id, AuthorityEffectDescriptor.Revoke grant) ->
-            Map.remove (id, grant.Role, grant.Scope) sources
-        | _ -> sources
-
-    let private authorizeCase actors (entry: StoredEffect) payload =
-        result {
-            let! actor =
-                Map.tryFind entry.ActorId actors
-                |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
-
-            let! parent, act =
-                match entry.Subject with
-                | EntryTarget.Case(id, _, act, _) -> Ok(id, act)
-                | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-
-            let human =
-                List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
-
-            do! AuthorityReplay.executor actors entry human false
-            let view = AuthorityView.ofActor (Some actor)
-
-            let scope =
-                if act = CaseActKind.Open then
-                    Scope.Installation
-                else
-                    Scope.Case parent
-
-            let permitted =
-                match payload with
-                | VerifiedPayload.Case(command, _) ->
-                    Authority.canAct actor.Principal view scope command.Act
-                | VerifiedPayload.Erased -> Authority.canAdvertise actor.Principal view scope act
-                | _ -> false
-
-            do! require (Some entry.Sequence) VerificationFinding.AuthorityFold permitted
-        }
-
     let append
         installationId
         (expected: LedgerPosition option)
         (state: Scan)
         (operation: RetainedOperation)
         =
+        let actors = state.Actors
         let root = operation.Root
         let at = Some root.Header.Sequence
 
@@ -1160,15 +1022,10 @@ module Replay =
                      && nonces
                         |> List.forall (fun nonce -> not (Set.contains nonce state.AvailableNonces)))
 
-            let! actors =
+            let! people =
                 match root.Structure.Command with
-                | CommandSkeleton.Authority scope ->
-                    AuthorityReplay.applyRoot
-                        (state.Cases |> Map.keys |> Set.ofSeq)
-                        state.Actors
-                        operation
-                        scope
-                | _ -> Ok state.Actors
+                | CommandSkeleton.People scope -> replayPeople state operation scope
+                | _ -> Ok state.People
 
             let! next =
                 StoredEffect.ofOperation operation
@@ -1184,10 +1041,18 @@ module Replay =
                                     match entry.Subject with
                                     | EntryTarget.Case(id, _, act, _) ->
                                         result {
-                                            do! authorizeCase state.Actors entry payload
+                                            let! context = ReplayContext.create actors entry
+
+                                            do!
+                                                CaseSubject.executor context act
+                                                |> Result.mapError (ReplayContext.issue at)
 
                                             let! cases =
-                                                CaseReplay.apply current.Cases entry payload
+                                                SubjectReplay.caseEffect
+                                                    context
+                                                    current.Cases
+                                                    entry
+                                                    payload
 
                                             let! references =
                                                 match act, entry.CreationReference with
@@ -1228,25 +1093,41 @@ module Replay =
                                         && entry.Index = 1
                                     | _ -> false
 
-                                let! work, reminders =
-                                    if secondaryReminder then
-                                        Ok(current.Work, current.Reminders)
-                                    else
-                                        WorkReplay.apply
-                                            current.Cases
-                                            state.Actors
-                                            current.Work
-                                            current.Reminders
-                                            entry
-                                            payload
+                                let! work, reminders, notes =
+                                    match entry.Subject with
+                                    | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
+                                        result {
+                                            let! parent =
+                                                Map.tryFind id cases
+                                                |> Option.bind (SubjectReplay.caseState id)
+                                                |> known at VerificationFinding.StateSequence
 
-                                let! notes =
-                                    NoteReplay.apply
-                                        current.Cases
-                                        state.Actors
-                                        current.Notes
-                                        entry
-                                        payload
+                                            return! clearFamily current parent
+                                        }
+                                    | _ ->
+                                        result {
+                                            let! work, reminders =
+                                                if secondaryReminder then
+                                                    Ok(current.Work, current.Reminders)
+                                                else
+                                                    SubjectReplay.workEffect
+                                                        current.Cases
+                                                        actors
+                                                        current.Work
+                                                        current.Reminders
+                                                        entry
+                                                        payload
+
+                                            let! notes =
+                                                SubjectReplay.noteEffect
+                                                    current.Cases
+                                                    actors
+                                                    current.Notes
+                                                    entry
+                                                    payload
+
+                                            return work, reminders, notes
+                                        }
 
                                 return
                                     { current with
@@ -1256,7 +1137,6 @@ module Replay =
                                         Notes = notes
                                         References = references
                                         Profiles = profiles
-                                        GrantSources = grantSource current.GrantSources entry
                                     }
                             }))
                     (Ok state)
@@ -1266,7 +1146,7 @@ module Replay =
             return
                 { next with
                     Head = root.Position
-                    Actors = actors
+                    People = people
                     Accepted = Map.add operation.OperationId operation.ActorId state.Accepted
                     AvailableNonces = Set.union state.AvailableNonces (Set.ofList nonces)
                     ExpectedSeen = state.ExpectedSeen || seen
@@ -1280,14 +1160,120 @@ module Replay =
             Work = Map.empty
             Reminders = Map.empty
             Notes = Map.empty
-            Actors = Map.empty
-            GrantSources = Map.empty
+            People = Map.empty
             Accepted = Map.empty
             Profiles = Map.empty
             References = Map.empty
             AvailableNonces = Set.empty
             ExpectedSeen = expected |> Option.exists ((=) LedgerPosition.genesis)
         }
+
+    let caseRows (state: Scan) =
+        state.Cases
+        |> Map.toList
+        |> List.fold
+            (fun rows (id, history) ->
+                result {
+                    let! rows = rows
+
+                    do!
+                        require
+                            None
+                            VerificationFinding.CaseProjection
+                            (if history.State = CaseState.Erased then
+                                 history.MissingPayloadAt.IsSome
+                             else
+                                 history.MissingPayloadAt.IsNone)
+
+                    let! subject =
+                        SubjectReplay.caseState id history
+                        |> known None VerificationFinding.CaseProjection
+
+                    let! owned =
+                        CaseSubject.rows subject |> known None VerificationFinding.CaseProjection
+
+                    let work = state.Work |> Map.tryFind id |> Option.bind _.Snapshot
+
+                    let pendingDue =
+                        state.Reminders
+                        |> Map.values
+                        |> Seq.choose _.Snapshot
+                        |> Seq.filter (fun value ->
+                            Reminder.caseId value = id
+                            && Reminder.state value = ReminderState.Pending)
+                        |> Seq.map Reminder.due
+                        |> Seq.toList
+
+                    return
+                        Map.add
+                            id
+                            (owned, CaseIndex.create owned.ChangedAt owned.Snapshot work pendingDue)
+                            rows
+                })
+            (Ok Map.empty)
+
+    let caseRecords state =
+        caseRows state
+        |> Result.map (
+            Map.map (fun id (rows, index) ->
+                {
+                    StoredCase.CaseId = id
+                    Snapshot = rows.Snapshot
+                    SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot rows.Snapshot
+                    Index = index
+                })
+        )
+
+    let private projectRows finding project histories =
+        histories
+        |> Map.toList
+        |> List.fold
+            (fun rows (id, history) ->
+                result {
+                    let! rows = rows
+                    let! row = project id history |> known None finding
+                    return Map.add id row rows
+                })
+            (Ok Map.empty)
+
+    let workRows (state: Scan) =
+        projectRows
+            VerificationFinding.CaseWorkProjection
+            (fun id history ->
+                SubjectReplay.workState
+                    id
+                    ((Map.find id state.Cases).State = CaseState.Erased)
+                    history
+                |> WorkSubject.rows)
+            state.Work
+
+    let reminderRows (state: Scan) =
+        projectRows
+            VerificationFinding.CaseWorkProjection
+            (fun id (history: ReminderHistory) ->
+                SubjectReplay.reminderState
+                    id
+                    ((Map.find history.CaseId state.Cases).State = CaseState.Erased)
+                    history
+                |> ReminderSubject.rows)
+            state.Reminders
+
+    let noteRows (state: Scan) =
+        projectRows
+            VerificationFinding.CaseNotesProjection
+            (fun id (history: NoteHistory) ->
+                SubjectReplay.noteState
+                    id
+                    ((Map.find history.CaseId state.Cases).State = CaseState.Erased)
+                    history
+                |> NoteSubject.rows)
+            state.Notes
+
+    let peopleRows (state: Scan) =
+        projectRows
+            VerificationFinding.PeopleProjection
+            (fun _ state -> PeopleSubject.rows state)
+            state.People
 
     let head (state: Scan) actual =
         require None VerificationFinding.Head (actual = Some state.Head)
@@ -1310,6 +1296,6 @@ module Replay =
                     (Some(EffectPosition.sequence position))
                     VerificationFinding.PayloadWithoutErasure
             )
-        | None -> CaseReplay.erasure state.Cases
-        |> Result.bind (fun () -> WorkReplay.erasure state.Cases state.Work state.Reminders)
-        |> Result.bind (fun () -> NoteReplay.erasure state.Cases state.Notes)
+        | None -> SubjectReplay.caseErasure state.Cases
+        |> Result.bind (fun () -> SubjectReplay.workErasure state.Cases state.Work state.Reminders)
+        |> Result.bind (fun () -> SubjectReplay.noteErasure state.Cases state.Notes)

@@ -27,9 +27,12 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operation = id ()
     let reference = "CLI-RESOLUTION-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
-    let values = (input["act"] |> nonNull)["values"] |> nonNull
-    values["claimedAmount"] <- JsonValue.Create "1.0000"
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create reference
+
+    let values = input["inputs"] |> nonNull
+    values["field:claimedAmount"] <- JsonValue.Create "1.0000"
 
     {
         Bytes = Encoding.UTF8.GetBytes(source.ToJsonString())
@@ -53,7 +56,7 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
 
     let subject = receipt.GetProperty "subject"
     Expect.equal (field "kind" subject) "CASE" "Case receipt"
-    Expect.equal (field "act" subject) "OPEN" "No changed act"
+    Expect.equal (field "act" subject) "case.open" "No changed act"
     Expect.equal (field "caseReference" subject) submitted.Reference "No changed target"
     Expect.equal (subject.GetProperty("revision").GetInt64()) 1L "No implicit rebase"
 
@@ -182,7 +185,10 @@ let private idlessCall (fixture: PublishedFixture.Fixture) =
 
     let input = source["input"] |> nonNull
     Expect.isNull input["operationId"] "The public example omits its operation identity"
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create("CLI-IDLESS-" + id ())
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create("CLI-IDLESS-" + id ())
+
     let bytes = Encoding.UTF8.GetBytes(source.ToJsonString())
     let result = invoke fixture fixture.Environment [ "call" ] bytes 0
     let reply = parse 0 result

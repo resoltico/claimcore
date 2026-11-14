@@ -1,0 +1,570 @@
+module ClaimCore.TestSupport.ScopedPeopleContract
+
+open ClaimCore.TestSupport
+
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open System
+open System.Threading
+open System.Threading.Tasks
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Application
+open ClaimCore.TestSupport.StoreFixtures
+
+open ClaimCore.TestSupport.StoreContractReads
+
+let internal peopleChanges fixture =
+    task {
+        let! owner = bootstrap fixture
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "reader"
+            |> Result.defaultWith (string >> failtest)
+
+        do! registerReader fixture owner target
+        let! read = inspectPeople fixture (target) (CancellationToken.None)
+
+        match read with
+        | Ok({ Actor = Some actor } as people) ->
+            Expect.equal
+                actor.ActorId
+                ((CaseFixtures.actorId (id fixture 2)))
+                "Registration identity"
+
+            Expect.equal people.Installation [ Role.CaseReader ] "Added grant"
+        | _ -> failtest "Missing actor"
+
+        let! removed =
+            grant
+                owner
+                (id fixture 4)
+                target
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                false
+
+        acceptedPeople removed
+
+        let! disabled =
+            (Service.execute
+                owner
+                (OperationInput.People(peopleRequest (id fixture 5) target (PeopleAct.Disable)))
+                (CancellationToken.None))
+
+        acceptedPeople disabled
+        let! read = inspectPeople fixture (target) (CancellationToken.None)
+
+        match read with
+        | Ok({ Actor = Some actor } as people) ->
+            Expect.isFalse actor.Enabled "Disabled"
+            Expect.isEmpty people.Installation "Removed"
+        | _ -> failtest "Missing actor"
+    }
+
+let internal scopedHandler fixture (admin: ServiceContext) reference =
+    task {
+        let target =
+            PrincipalKey.service "https://issuer.example/" "scoped-handler"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            (Service.execute
+                admin
+                (OperationInput.People(
+                    peopleRequest
+                        (id fixture 30)
+                        target
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
+                (CancellationToken.None))
+
+        acceptedPeople registered
+
+        let! granted =
+            grant
+                admin
+                (id fixture 31)
+                target
+                {
+                    Role = Role.CaseHandler
+                    Scope = (GrantTarget.CaseReference reference)
+                }
+                true
+
+        acceptedPeople granted
+        return target, core fixture target
+    }
+
+let internal checkScopedAdvice (actor: ServiceContext) reference =
+    task {
+        let! result =
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference(reference)
+                })
+                (CancellationToken.None))
+
+        match result with
+        | Outcome.Succeeded value ->
+            Expect.equal
+                value.Advice.History
+                HistoryAccess.Full
+                "Case-scoped full history is advised"
+
+            let _correction =
+                value.Advice.Correction
+                |> Option.defaultWith (fun () -> failtest "Correct needs choices")
+
+            Expect.contains value.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
+
+            Expect.equal
+                value.Snapshot.Revision
+                (CaseFixtures.revision (2L))
+                "The snapshot owns the expected revision"
+
+        | _ -> failtest "Expected readable scoped case"
+    }
+
+let internal advisedCase fixture reference =
+    task {
+        let! admin = caseWorker fixture
+
+        let! opened =
+            (Service.execute
+                admin
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request fixture 20 reference 0L (AuthoredCaseAct.Open registration)
+                ))
+                (CancellationToken.None))
+
+        accepted opened |> ignore
+
+        let decision =
+            (ClaimCore.TestSupport.Inputs.decisionFrom
+                [
+                    BusinessField.PaymentDecisionDate, ("2026-08-15")
+                    BusinessField.PayableAmount, ("750.0000")
+                    BusinessField.PayableCurrency, ("EUR")
+                ])
+
+        let! decided =
+            (Service.execute
+                admin
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request fixture 21 reference 1L (AuthoredCaseAct.Decide decision)
+                ))
+                (CancellationToken.None))
+
+        accepted decided |> ignore
+        return admin
+    }
+
+let internal refusedAdvice fixture (actor: ServiceContext) pending =
+    task {
+        let! refused =
+            (Service.execute
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                (CancellationToken.None))
+
+        Expect.equal
+            refused.Outcome
+            (ExecuteResult.Rejected(Refusal.Access(AccessRefusal.NotAuthorized Capability.Register)))
+            "Revocation is decided again under lock"
+
+        let! current =
+            (Service.get
+                actor
+                ({
+                    Target = CaseSelector.Reference(pending.CaseReference)
+                })
+                (CancellationToken.None))
+
+        match current with
+        | Outcome.Succeeded value ->
+            Expect.equal
+                value.Snapshot.Revision
+                (CaseFixtures.revision (2L))
+                "Refusal preserves the projection"
+
+            Expect.equal
+                value.Advice.History
+                HistoryAccess.Summary
+                "Fresh advice reflects revoked full history"
+
+            Expect.isFalse
+                (List.contains CaseActKind.Correct value.Advice.Acts)
+                "No stale act offer"
+        | _ -> failtest "Reader remains authorized"
+
+        let! entries = caseTimeline fixture pending.CaseReference None 50
+
+        Expect.equal
+            (storedPage entries).Entries.Length
+            2
+            "Revoked execution appends no case acceptance"
+    }
+
+let internal revokedAdvice fixture =
+    task {
+        let reference = "SCOPED-ADVICE"
+        let! admin = advisedCase fixture reference
+        let! target, actor = scopedHandler fixture admin reference
+        do! checkScopedAdvice actor reference
+
+        let correction: AuthoredCorrection =
+            {
+                Registration =
+                    Amendment.Update(
+                        Inputs.registrationUpdate (
+                            ClaimCore.TestSupport.Inputs.registrationWith
+                                [ BusinessField.ClaimedAmount, ("1001.0000") ]
+                                (registration)
+                        )
+                    )
+                Decision = Change.Keep
+            }
+
+        let pending = request fixture 35 reference 2L (AuthoredCaseAct.Correct correction)
+
+        let! preview =
+            (Service.preview
+                actor
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                (CancellationToken.None))
+
+        match preview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ()
+        | _ -> failtest "Expected authoritative correction review"
+
+        let! removed =
+            grant
+                admin
+                (id fixture 32)
+                target
+                {
+                    Role = Role.CaseHandler
+                    Scope = (GrantTarget.CaseReference reference)
+                }
+                false
+
+        acceptedPeople removed
+
+        let! reader =
+            grant
+                admin
+                (id fixture 33)
+                target
+                {
+                    Role = Role.CaseReader
+                    Scope = (GrantTarget.CaseReference reference)
+                }
+                true
+
+        acceptedPeople reader
+        do! refusedAdvice fixture actor pending
+    }
+
+let internal scopedWorker fixture =
+    task {
+        let! admin = caseWorker fixture
+
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "many-scopes"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            (Service.execute
+                admin
+                (OperationInput.People(
+                    peopleRequest
+                        (id fixture 20)
+                        principal
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
+                (CancellationToken.None))
+
+        acceptedPeople registered
+
+        let! installed =
+            grant
+                admin
+                (id fixture 21)
+                principal
+                {
+                    Role = Role.CaseRegistrar
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople installed
+
+        for number in 1..12 do
+            let reference = $"SCOPE-{number}"
+
+            let! opened =
+                (Service.execute
+                    admin
+                    (ClaimCore.TestSupport.Inputs.caseOperation (
+                        request
+                            fixture
+                            (100 + number)
+                            reference
+                            0L
+                            (AuthoredCaseAct.Open registration)
+                    ))
+                    (CancellationToken.None))
+
+            accepted opened |> ignore
+
+            let! granted =
+                grant
+                    admin
+                    (id fixture (200 + number))
+                    principal
+                    {
+                        Role = Role.CaseReader
+                        Scope = (GrantTarget.CaseReference reference)
+                    }
+                    true
+
+            acceptedPeople granted
+
+        return principal
+    }
+
+let internal scopedPeople fixture =
+    task {
+        let inspectGlobal principal =
+            fixture.Store.Read
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! facts = tx.GlobalReadFacts principal in return facts.People
+                            }
+                    CancellationToken = CancellationToken.None
+                }
+
+        let! principal = scopedWorker fixture
+
+        let! read =
+            inspectCase fixture (principal) (None) ("SCOPE-1") (CancellationToken.None)
+
+        let view = read |> Result.defaultWith (fun _ -> failtest "Scoped case read")
+
+        Expect.equal
+            view.Actor.Installation
+            [ Role.CaseRegistrar ]
+            "Installation grants remain available"
+
+        Expect.equal view.Actor.Cases.Count 1 "Unrelated case grants are not read"
+
+        let! identity =
+            inspectCase
+                fixture
+                (principal)
+                (Some(id fixture 102))
+                ("SCOPE-1")
+                (CancellationToken.None)
+
+        let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
+
+        Expect.equal identity.Actor.Cases.Count 2 "Existing operation adds only its own case people"
+
+        let! observed =
+            inspectOperation
+                fixture
+                (principal)
+                ((CaseFixtures.operationId (id fixture 102)))
+                (CancellationToken.None)
+
+        let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
+        Expect.equal observed.Actor.Cases.Count 1 "Observation reads the accepted entry scope only"
+        let! context = inspectPeople fixture (principal) (CancellationToken.None)
+        let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
+        Expect.isEmpty context.Cases "Context never enumerates assigned grants"
+        Expect.isTrue context.HasScopedCases "EXISTS reports assigned visibility"
+
+        let admin = core fixture fixture.Owner
+
+        let unknown =
+            PrincipalKey.human "https://issuer.example/" "unknown-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! missing = inspectGlobal unknown
+
+        Expect.equal
+            (storedPage missing)
+            AccessView.empty
+            "A missing principal remains a genuinely absent actor"
+
+        let roleless =
+            PrincipalKey.human "https://issuer.example/" "roleless-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            Service.execute
+                admin
+                (OperationInput.People(
+                    peopleRequest
+                        (id fixture 430)
+                        roleless
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
+                CancellationToken.None
+
+        acceptedPeople registered
+        let! noGrants = inspectGlobal roleless
+        let noGrants = storedPage noGrants
+        Expect.isSome noGrants.Actor "A zero-grant actor is retained by the left join"
+
+        Expect.equal
+            (noGrants.Installation, noGrants.Cases, noGrants.HasScopedCases)
+            ([], Map.empty, false)
+            "A zero-grant actor has no invented visibility"
+
+        for operation, act, enabled in
+            [ 420, PeopleAct.Disable, false; 421, PeopleAct.Enable, true ] do
+            let! changed =
+                Service.execute
+                    admin
+                    (OperationInput.People(peopleRequest (id fixture operation) principal act))
+                    CancellationToken.None
+
+            acceptedPeople changed
+            let! observed = inspectGlobal principal
+            let observed = storedPage observed
+
+            Expect.equal
+                (observed.Actor |> Option.map _.Enabled)
+                (Some enabled)
+                "Current actor availability remains independently reported"
+
+            Expect.isTrue
+                observed.HasScopedCases
+                "Scoped presence is a fact even while the actor is disabled"
+
+            Expect.isEmpty observed.Cases "Global people does not enumerate scoped grants"
+
+        let service =
+            PrincipalKey.service "https://issuer.example/" "service-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registeredService =
+            Service.execute
+                admin
+                (OperationInput.People(
+                    peopleRequest
+                        (id fixture 440)
+                        service
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
+                CancellationToken.None
+
+        acceptedPeople registeredService
+
+        let! grantedService =
+            grant
+                admin
+                (id fixture 441)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                true
+
+        acceptedPeople grantedService
+        let! serviceContext = inspectGlobal service
+        let serviceContext = storedPage serviceContext
+        Expect.isTrue serviceContext.HasScopedCases "A service's valid scoped read remains visible"
+        Expect.isEmpty serviceContext.Installation "A scoped read is not an installation grant"
+
+        Expect.isEmpty
+            serviceContext.Cases
+            "Service global context does not enumerate case identities"
+
+        for operation, role in [ 442, Role.CaseHandler; 443, Role.PaymentRecorder ] do
+            let! granted =
+                grant
+                    admin
+                    (id fixture operation)
+                    service
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedPeople granted
+
+        let! installedService = inspectGlobal service
+        let installedService = storedPage installedService
+
+        Expect.equal
+            (List.sort installedService.Installation)
+            (List.sort [ Role.CaseHandler; Role.PaymentRecorder ])
+            "Global facts retain every installation grant without enumerating scoped grants"
+
+        Expect.isEmpty installedService.Cases "Installation joins do not load case grants"
+
+        Expect.isTrue
+            installedService.HasScopedCases
+            "Scoped presence remains independent of installation grants"
+
+        let! revoked =
+            grant
+                admin
+                (id fixture 444)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                false
+
+        acceptedPeople revoked
+        let! installationOnly = inspectGlobal service
+        let installationOnly = storedPage installationOnly
+
+        Expect.equal
+            (List.sort installationOnly.Installation)
+            (List.sort installedService.Installation)
+            "Removing the last scoped grant preserves both installation grants"
+
+        Expect.isFalse
+            installationOnly.HasScopedCases
+            "Installation visibility does not invent scoped presence"
+
+        Expect.isEmpty installationOnly.Cases "A global view never enumerates case grants"
+
+        let pending =
+            request
+                fixture
+                102
+                "SCOPE-1"
+                1L
+                (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
+
+        let! conflict =
+            (Service.execute
+                (Service.create
+                    BuildIdentity.current.Version
+                    fixture.InstallationId
+                    fixture.Store
+                    fixture.Calendar
+                    principal)
+                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                (CancellationToken.None))
+
+        Expect.equal
+            conflict.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
+            "Both scopes preserve content exclusion"
+    }

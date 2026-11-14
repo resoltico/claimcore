@@ -12,7 +12,7 @@ export type FormCollection = Readonly<{
   rows: ReadonlyArray<Readonly<{ key: string; values: FormValues }>>;
 }>;
 export type FormValue =
-  null | string | boolean | ReadonlyArray<string> | LocalizedAmount | FormCollection;
+  null | string | number | boolean | ReadonlyArray<string> | LocalizedAmount | FormCollection;
 export type FormValues = Readonly<Record<string, FormValue>>;
 export const isLocalizedAmount = (value: FormValue | undefined): value is LocalizedAmount =>
   typeof value === "object" &&

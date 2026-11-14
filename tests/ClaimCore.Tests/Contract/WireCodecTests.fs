@@ -255,7 +255,8 @@ let paymentCountIssue =
         "technical payment count issue decodes without a business capacity parameter"
         (fun () ->
             let raw =
-                Encoding.UTF8.GetBytes """{"code":"PAYMENT_COUNT_LIMIT","field":"payment"}"""
+                Encoding.UTF8.GetBytes
+                    """{"code":"PAYMENT_COUNT_LIMIT","input":"group:payment","row":null}"""
 
             let issue = Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> Fixtures.accepted
 

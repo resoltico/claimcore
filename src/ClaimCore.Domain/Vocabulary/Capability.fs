@@ -13,8 +13,8 @@ type Capability =
     | RecordPayment
     | Close
     | Steward
-    | ManageAuthority
-    | ReadAuthority
+    | ManageAccess
+    | ReadAccess
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Capability =

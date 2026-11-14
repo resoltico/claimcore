@@ -58,8 +58,8 @@ const view = (
             context === null
               ? null
               : {
-                  actorId: context.context.actorId,
-                  installationId: context.context.installationId,
+                  actorId: context.subject.actorId,
+                  installationId: context.subject.installationId,
                   credential,
                   sessionEpoch: epoch,
                   serviceOrigin: location.origin,
@@ -155,7 +155,7 @@ it("aborts an old owner's read and ignores its completion after an account chang
     view(
       {
         ...requester,
-        context: { ...requester.context, actorId: "20000000-0000-4000-8000-000000000099" },
+        subject: { ...requester.subject, actorId: "20000000-0000-4000-8000-000000000099" },
       },
       "other",
       1,
@@ -245,7 +245,7 @@ const receiptView: Screen = {
             key: "act",
             labelId: "label.action",
             prominence: "PRIMARY",
-            value: { kind: "CODE", vocabulary: "act", token: "OPEN" },
+            value: { kind: "CODE", vocabulary: "task", token: "case.open" },
           },
           {
             key: "caseReference",
@@ -266,13 +266,28 @@ const receiptView: Screen = {
 };
 const savedReceipt: HumanReceiptDocument = {
   screen: receiptView,
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "CASE", caseId: recoveryRecord().operationId, revision: 1 },
-    caseLink: recoveryRecord().operationId,
-    refreshCase: recoveryRecord().operationId,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: recoveryRecord().operationId } },
+      },
+    },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: recoveryRecord().operationId } },
+      },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -294,15 +309,12 @@ const recorded = (byRequester = true) => ({
 });
 
 it("retains a recorded card with Core facts, time and disclosed case navigation after cleanup", async () => {
-  await testJournal.put({ ...recoveryRecord(), act: "VOID" });
+  await testJournal.put({ ...recoveryRecord(), act: "case.void" });
   const get = vi.spyOn(service, "operationGet").mockResolvedValue(recorded());
   const execute = vi.spyOn(service, "execute");
   render(view(requester));
   const link = await screen.findByRole("link", { name: "Open case" });
-  expect(link).toHaveAttribute(
-    "href",
-    `/cases/id/${savedReceipt.context.target.kind === "CASE" ? savedReceipt.context.target.caseId : ""}`,
-  );
+  expect(link).toHaveAttribute("href", `/cases/id/${recoveryRecord().operationId}`);
   expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
   expect(screen.getByText("RECOVERY-CASE")).toBeVisible();
   expect(screen.getByText("Open a case")).toBeVisible();
@@ -351,7 +363,9 @@ it.each(["WITHHELD", "ERASED"] as const)(
             ...savedReceipt,
             disclosure,
             screen: { regions: [] },
-            context: { ...savedReceipt.context, caseLink: null, refreshCase: null },
+            links: savedReceipt.links.filter(
+              (link) => link.rel !== "OPEN_CASE" && link.rel !== "FOLLOW_UP",
+            ),
           },
         },
       },
@@ -377,7 +391,7 @@ it("uses the Core navigation handle for a withheld historical receipt without in
           ...savedReceipt,
           disclosure: "WITHHELD",
           screen: { regions: [] },
-          context: { ...savedReceipt.context, refreshCase: null },
+          links: savedReceipt.links.filter((link) => link.rel !== "FOLLOW_UP"),
         },
       },
     },
@@ -429,8 +443,8 @@ it.each(["actor", "installation", "epoch", "invalidation"])(
         view(
           {
             ...requester,
-            context: {
-              ...requester.context,
+            subject: {
+              ...requester.subject,
               ...(change === "actor" ? { actorId: "20000000-0000-4000-8000-000000000099" } : {}),
               ...(change === "installation"
                 ? { installationId: "90000000-0000-4000-8000-000000000099" }

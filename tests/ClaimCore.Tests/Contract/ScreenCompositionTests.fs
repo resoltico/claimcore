@@ -24,6 +24,83 @@ let private matches name expected build =
         Expect.isTrue (Screen.valid screen.Regions) "Only facts repeat")
 
 [<Tests>]
+let invalidTables =
+    testCase "screen constructors refuse duplicate rows widths and incomplete row groups" (fun () ->
+        let row key values =
+            {
+                Link = None
+                Actions = []
+                RegionRow.Key = key
+                Values = values
+                Detail = None
+            }
+
+        let column: Column =
+            {
+                Recorded = false
+                Key = "value"
+                LabelId = "label.details"
+                Prominence = Prominence.Primary
+                IsMoney = false
+            }
+
+        let values = [ PresentedValue.Text "retained" ]
+
+        let table rows groups =
+            {
+                Columns = [ column ]
+                Rows = rows
+                Groups = groups
+                Sections = []
+                Meter = None
+            }
+
+        let invalid =
+            [
+                table [ row "same" values; row "same" values ] []
+                table [ row "one" [] ] []
+                table
+                    [ row "one" values ]
+                    [
+                        {
+                            TitleId = "label.details"
+                            Count = 1L
+                            RowKeys = [ "other" ]
+                        }
+                    ]
+            ]
+
+        let valid =
+            Screen.create
+                [
+                    {
+                        Link = None
+                        Actions = []
+                        Role = RegionRole.Results
+                        TitleId = None
+                        Content = RegionContent.Table(table [ row "one" values ] [])
+                    }
+                ]
+
+        Expect.equal valid.Regions.Length 1 "A valid table still constructs"
+
+        for value in invalid do
+            Expect.throwsT<System.ArgumentException>
+                (fun () ->
+                    Screen.create
+                        [
+                            {
+                                Link = None
+                                Actions = []
+                                Role = RegionRole.Results
+                                TitleId = None
+                                Content = RegionContent.Table value
+                            }
+                        ]
+                    |> ignore)
+                "Invalid table structure is refused before serialization")
+
+[<Tests>]
 let tests =
     testList
         "screen composition"
@@ -130,7 +207,6 @@ let tests =
                     RegionRole.Identity
                     RegionRole.Attention
                     RegionRole.Progress
-                    RegionRole.Recommendation
                     RegionRole.Facts
                     RegionRole.Payments
                     RegionRole.Work
@@ -198,15 +274,15 @@ let tests =
             matches "timeline" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
                 data Api.caseTimeline |> TimelineScreen.view)
             matches "people" [ RegionRole.Results; RegionRole.Details ] (fun () ->
-                data Api.authorityList |> PeopleScreen.view)
+                data Api.peopleList |> PeopleScreen.view)
             matches
                 "person"
                 [ RegionRole.Account; RegionRole.Access; RegionRole.Details ]
-                (fun () -> data Api.authorityGrants |> PersonScreen.view)
+                (fun () -> data Api.peopleGrants |> PersonScreen.view)
             matches "access history" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
-                data Api.authorityHistory |> AccessHistoryScreen.view)
+                data Api.peopleHistory |> AccessHistoryScreen.view)
             matches "access requests" [ RegionRole.Results; RegionRole.Details ] (fun () ->
-                data Api.authorityRequests |> AccessRequestsScreen.view)
+                data Api.peopleRequests |> AccessRequestsScreen.view)
             matches
                 "context"
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]

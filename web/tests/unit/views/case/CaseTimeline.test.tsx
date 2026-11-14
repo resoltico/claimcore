@@ -18,7 +18,10 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
     const input = JSON.parse(requestText(init?.body)) as { filter?: string };
     const item =
       input.filter === "WORK"
-        ? { ...openedTimelineEntry, summary: { messageId: "act.UPDATE_WORK.label", arguments: [] } }
+        ? {
+            ...openedTimelineEntry,
+            summary: { messageId: "task.work.update.label", arguments: [] },
+          }
         : openedTimelineEntry;
     return Promise.resolve(response("case.timeline", timelineDocument([item])));
   });

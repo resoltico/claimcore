@@ -37,7 +37,7 @@ it.each(["AVAILABLE", "DISABLED", "NOT_ELIGIBLE"] as const)(
     const view = render(
       <ActorIdentity
         actor={actorRefInput({
-          actorId: activeRequester.context.actorId,
+          actorId: activeRequester.subject.actorId,
           displayName: { kind: "NAMED", value: name },
           availability,
         })}

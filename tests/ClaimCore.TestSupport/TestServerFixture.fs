@@ -25,7 +25,7 @@ open Microsoft.Extensions.DependencyInjection.Extensions
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Application
-open ClaimCore.Web
+open ClaimCore.Server
 open ClaimCore.TestSupport.HandlerStub
 
 let origin = Uri "https://localhost:5443"
@@ -235,7 +235,7 @@ type Host
             assets
             (configuration certificate)
             (if forActor.IsSome then
-                 ClaimCore.Web.ApiRoutes.route
+                 ClaimCore.Server.ApiRoutes.route
              else
                  facade.Handlers)
             (fun principal action ->

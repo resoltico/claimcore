@@ -159,11 +159,7 @@ let phase2 =
                     correction
 
             let result =
-                CaseFixtures.decide
-                    (DateOnly(2026, 7, 1))
-                    CasePaymentContext.NoneRequired
-                    request
-                    (Some before)
+                CaseFixtures.decide (DateOnly(2026, 7, 1)) Map.empty request (Some before)
 
             let actual =
                 match result with

@@ -1,4 +1,4 @@
-import { isRequest } from "@contracts/client";
+import { type RequestByEndpoint } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
@@ -22,7 +22,9 @@ const operationEcho = (endpoint: string): object => {
     "operationId" in request &&
     ["operation.preview", "operation.execute", "operation.get"].includes(endpoint)
   ) {
-    echo = { operationId: request["operationId"] };
+    echo = {
+      operationId: request["operationId"],
+    };
   }
   return echo;
 };
@@ -32,14 +34,26 @@ export const endpointResponse = (endpoint: string, reply: unknown, status = 200)
     new ReadableStream<Uint8Array>(
       {
         pull(controller) {
-          const value = isObject(reply) ? { ...reply, ...operationEcho(endpoint) } : reply;
+          const value = isObject(reply)
+            ? {
+                ...reply,
+                ...operationEcho(endpoint),
+              }
+            : reply;
           controller.enqueue(new TextEncoder().encode(JSON.stringify(value)));
           controller.close();
         },
       },
-      { highWaterMark: 0 },
-    ) as unknown as BodyInit,
-    { status, headers: { "content-type": "application/json" } },
+      {
+        highWaterMark: 0,
+      },
+    ) as BodyInit,
+    {
+      status,
+      headers: {
+        "content-type": "application/json",
+      },
+    },
   );
 
 /** Refuse a non-text request rather than silently stringifying an unsupported body. */
@@ -49,11 +63,9 @@ export const requestText = (body: BodyInit | null | undefined): string => {
   }
   return body;
 };
-
 export const operationRequest = (body: BodyInit | null | undefined) => {
-  const value: unknown = JSON.parse(requestText(body));
-  if (!isRequest("operation.execute", value)) {
-    throw new Error("Expected a current operation command");
-  }
-  return value;
+  const operationExecuteRequest = JSON.parse(
+    requestText(body),
+  ) as RequestByEndpoint["operation.execute"];
+  return operationExecuteRequest;
 };

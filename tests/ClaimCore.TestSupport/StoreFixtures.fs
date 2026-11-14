@@ -24,6 +24,72 @@ type internal Fixture =
         Dispose: unit -> unit
     }
 
+let internal caseContext services mode (view: CaseFacts) =
+    SubjectExecution.context
+        services
+        mode
+        view.ObservedAt
+        view.Actor
+        view.Maintenance
+        view.ExpiredBefore
+
+let internal peopleContext services mode (view: PeopleExecutionFacts) =
+    SubjectExecution.context
+        services
+        mode
+        view.ObservedAt
+        view.Actor
+        view.Maintenance
+        view.ExpiredBefore
+
+/// Pure fixtures compose the same decision and accepted-row path as the registered transaction runner.
+let internal executeCase services command (write: LedgerWriteContext) (view: CaseFacts) =
+    CaseOperations.decide
+        (SubjectExecution.context
+            services
+            (SubjectExecutionMode.Commit write)
+            view.ObservedAt
+            view.Actor
+            view.Maintenance
+            view.ExpiredBefore)
+        services
+        command
+        view
+    |> SubjectExecution.accept
+        services
+        view.Actor
+        write
+        (CaseOperations.append services command view)
+
+let internal executePeople
+    services
+    command
+    (write: LedgerWriteContext)
+    (view: PeopleExecutionFacts)
+    =
+    PeopleOperations.decide
+        (SubjectExecutionMode.Commit write)
+        (SubjectExecution.context
+            services
+            (SubjectExecutionMode.Commit write)
+            view.ObservedAt
+            view.Actor
+            view.Maintenance
+            view.ExpiredBefore)
+        services
+        command
+        view
+    |> SubjectExecution.accept
+        services
+        view.Actor
+        write
+        (PeopleOperations.append services command view)
+
+let internal provisionPeople (services: ServiceContext) operation profile roles write view =
+    match People.provision (OperationId.value operation) services.Principal profile roles with
+    | Error refusal -> Verdict.Refuse refusal
+    | Ok command -> executePeople services command write view
+
 let internal core fixture principal =
     Service.create
         BuildIdentity.current.Version
@@ -47,15 +113,15 @@ let internal inspectCase fixture principal operation reference token =
         }
     )
 
-type internal AuthorityInspection =
+type internal PeopleInspection =
     {
-        Needed: AuthorityFact list
+        Needed: PeopleFact list
         OperationId: Guid
         Target: PrincipalKey
         CaseTargets: GrantTarget list
     }
 
-let internal inspectTarget fixture principal (query: AuthorityInspection) token =
+let internal inspectTarget fixture principal (query: PeopleInspection) token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
@@ -86,7 +152,10 @@ let internal inspectOperation fixture principal operation token =
                         return
                             {
                                 Maintenance = maintenance
-                                PaymentContext = CasePaymentContext.NoneRequired
+                                State = None
+                                Family = None
+                                Work = None
+                                PendingReminderDue = []
                                 CaseFacts.Assignee = None
                                 ObservedAt = tx.ObservedAt
                                 ExpiredBefore = frontier
@@ -98,21 +167,21 @@ let internal inspectOperation fixture principal operation token =
                                     | ReceiptCurrent.Work(value, _, _)
                                     | ReceiptCurrent.Reminder(value, _)
                                     | ReceiptCurrent.Note(value, _) -> value
-                                    | ReceiptCurrent.Authority _ -> None
+                                    | ReceiptCurrent.People _ -> None
                             }
                     })
             CancellationToken = token
         }
     )
 
-let internal inspectAuthority fixture principal token =
+let internal inspectPeople fixture principal token =
     fixture.Store.Read(
         {
             ReadOperation.Work =
                 (fun tx ->
-                    tx.Authority(
+                    tx.Access(
                         {
-                            AuthorityQuery.Principal = principal
+                            AccessQuery.Principal = principal
                             CaseId = None
                         }
                     ))
@@ -139,7 +208,7 @@ let internal actRequest fixture n reference revision act : UnvalidatedCaseReques
         Act = act
     }
 
-let internal authorityRequest = Inputs.authorityRequest
+let internal peopleRequest = Inputs.peopleRequest
 
 let internal registration: RegistrationInput = Inputs.registration
 
@@ -189,10 +258,10 @@ let internal replayReceipt (reply: ExecuteReply) =
     | ExecuteResult.AlreadyAccepted receipt -> receipt
     | other -> failtestf "Expected already accepted operation, received %A." other
 
-let internal acceptedAuthority outcome =
+let internal acceptedPeople outcome =
     match accepted outcome with
-    | { Subject = ReceiptSubject.Authority _ } -> ()
-    | _ -> failtest "Expected accepted authority operation."
+    | { Subject = ReceiptSubject.People _ } -> ()
+    | _ -> failtest "Expected accepted people operation."
 
 let internal caseReceipt (receipt: OperationReceipt) =
     match receipt.Subject with
@@ -209,7 +278,7 @@ let internal disclosedFields receipt =
 let internal bootstrap fixture =
     task {
         let! result =
-            AuthorityExecution.provisionStore
+            PeopleOperations.provisionStore
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile
@@ -218,7 +287,7 @@ let internal bootstrap fixture =
 
         match result with
         | Ok(Verdict.Proceed _) -> ()
-        | _ -> failtest "Initial owner must be accepted."
+        | other -> failtestf "Initial owner must be accepted: %A." other
 
         return core fixture fixture.Owner
     }
@@ -226,11 +295,11 @@ let internal bootstrap fixture =
 let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGrant) active =
     (Service.execute
         actor
-        (OperationInput.Authority(
-            authorityRequest
+        (OperationInput.People(
+            peopleRequest
                 operationId
                 target
-                ((if active then AuthorityAct.Grant else AuthorityAct.Revoke) grant)
+                ((if active then PeopleAct.Grant else PeopleAct.Revoke) grant)
         ))
         (CancellationToken.None))
 
@@ -251,7 +320,7 @@ let internal caseWorker fixture =
                     }
                     true
 
-            acceptedAuthority outcome
+            acceptedPeople outcome
 
         return owner
     }

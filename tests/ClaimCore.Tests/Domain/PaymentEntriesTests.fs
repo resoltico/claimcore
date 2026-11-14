@@ -6,6 +6,7 @@ open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Tests.PropertyHarness
 open ClaimCore.Domain
+open ClaimCore.TestSupport
 
 let private today = DateOnly(2026, 11, 8)
 
@@ -17,59 +18,26 @@ let private accepted =
 let private operation (number: int) =
     Guid.Parse("00000000-0000-7000-8000-" + number.ToString("x12"))
 
-// A test-side store of accepted effects supplies the bounded transaction context.
-// It never decides financial admission or constructs the expected Domain result.
+// Scenarios exercise the subject contract; expectations below remain independently authored.
 type private Scenario =
     {
-        Snapshot: CaseSnapshot
-        Entries: PaymentEntry list
-        Reserved: Set<OperationId>
+        State: CaseSubjectState
     }
+
+    member this.Snapshot = this.State.Snapshot |> Option.get
+    member this.Entries = CaseSubject.active this.State |> Map.values |> Seq.toList
 
 let private snapshot (scenario: Scenario) = scenario.Snapshot
 
-let private fields scenario =
+let private fields (scenario: Scenario) =
     scenario.Snapshot.State |> CaseState.fields |> Option.get
 
-let private eligible scenario =
+let private eligible (scenario: Scenario) =
     Case.ofAccepted scenario.Snapshot |> accepted |> Case.eligibleActs
 
 let private sendOn date number act (previous: Scenario option) =
     let before = previous |> Option.map _.Snapshot
-    let entries = previous |> Option.map _.Entries |> Option.defaultValue []
-    let reserved = previous |> Option.map _.Reserved |> Option.defaultValue Set.empty
-
-    let context =
-        match act, before with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(
-                parent.CaseId,
-                parent.Revision,
-                Set.contains (OperationId.create (operation number) |> Option.get) reserved
-            )
-        | CaseAct.RemovePayment selected, Some parent ->
-            let found =
-                entries
-                |> List.tryFind (fun entry -> OperationId.value (PaymentEntry.id entry) = selected)
-
-            let dates =
-                entries
-                |> List.filter (fun entry -> OperationId.value (PaymentEntry.id entry) <> selected)
-                |> List.map PaymentEntry.date
-
-            let bounds =
-                if dates.IsEmpty then
-                    None
-                else
-                    PaymentDateBounds.create (List.min dates) (List.max dates)
-
-            CasePaymentContext.Removing(
-                parent.CaseId,
-                parent.Revision,
-                found,
-                if found.IsSome then bounds else None
-            )
-        | _ -> CasePaymentContext.NoneRequired
+    let state = previous |> Option.map _.State
 
     Case.admit
         date
@@ -81,24 +49,24 @@ let private sendOn date number act (previous: Scenario option) =
                 before |> Option.map (_.Revision >> Revision.value) |> Option.defaultValue 0L
             Act = act
         }
-    |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command -> Case.decideSnapshot date context command before)
+    |> Result.bind (CaseSubject.decide (CaseFixtures.recordedContext date) state)
     |> Result.map (fun decision ->
-        let entries, reserved =
-            match decision.After.State, decision.Payment with
-            | CaseState.Erased, _ -> [], reserved
-            | _, Some(PaymentDifference.Recorded entry) ->
-                entries @ [ entry ], Set.add (PaymentEntry.id entry) reserved
-            | _, Some(PaymentDifference.Removed entry) ->
-                entries
-                |> List.filter (fun item -> PaymentEntry.id item <> PaymentEntry.id entry),
-                reserved
-            | _ -> entries, reserved
+        let stamp =
+            {
+                SubjectStamp.Position =
+                    EffectPosition.create
+                        (ClaimCore.TestSupport.CaseFixtures.sequence (int64 number))
+                        0
+                    |> Option.get
+                OperationId = OperationId.create (operation number) |> Option.get
+                ActorId =
+                    ActorId.create (Guid.Parse "00000000-0000-4000-8000-000000000001")
+                    |> Option.get
+                RecordedAt = DateTimeOffset(date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
+            }
 
         {
-            Snapshot = decision.After
-            Entries = entries
-            Reserved = reserved
+            State = CaseSubject.apply stamp state decision |> Option.get
         })
 
 let private send number act previous = sendOn today number act (Some previous)
@@ -159,7 +127,7 @@ let private correction amount currency : AuthoredCaseAct =
 
 let private positiveError result =
     match result with
-    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
+    | Error(Refusal.InvalidInput issues) ->
         Expect.isTrue
             (InputIssues.toList issues
              |> List.exists (fun issue ->
@@ -243,8 +211,7 @@ let tests =
                         send 58 (CaseAct.Void "Entry error") current |> accepted
                     ] do
                     match send 59 (payment "2026-09-07" "1" "EUR") protectedState with
-                    | Error(CaseDecisionError.Refused(Refusal.Case(CaseRefusal.NotOffered _))) ->
-                        ()
+                    | Error(Refusal.Case(CaseRefusal.NotOffered _)) -> ()
                     | other -> failtestf "Lifecycle protection: %A" (Result.map ignore other)
 
                 let removed = send 54 (CaseAct.RemovePayment(operation 3)) current |> accepted
@@ -357,7 +324,7 @@ let tests =
 
                     Expect.equal
                         (send 3 (payment "2026-09-08" "1" "EUR") current |> Result.map ignore)
-                        (Error(CaseDecisionError.Refused Refusal.IdempotencyConflict))
+                        (Error Refusal.IdempotencyConflict)
                         "The same accepting identity cannot create a second entry")
             testCase "erasure removes every payment entry with the case facts" (fun () ->
                 let erased =

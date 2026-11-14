@@ -23,11 +23,11 @@ let private runtime () =
         let service = core fixture fixture.Owner
 
         let bootstrap =
-            AuthorityExecution.provisionStore
+            PeopleOperations.provisionStore
                 service
                 (id fixture 1)
                 Inputs.ownerProfile
-                Authority.initialOwnerRoles
+                People.initialOwnerRoles
                 token
             |> sync
 
@@ -63,7 +63,7 @@ let private runtime () =
 
         let first =
             read (fun tx ->
-                tx.AuthorityHistoryPage
+                tx.PeopleHistoryPage
                     {
                         TargetActorId = None
                         BeforePosition = None
@@ -77,7 +77,7 @@ let private runtime () =
 
         let second =
             read (fun tx ->
-                tx.AuthorityHistoryPage
+                tx.PeopleHistoryPage
                     {
                         TargetActorId = None
                         BeforePosition = first.Next
@@ -273,7 +273,7 @@ let private runtime () =
         | VerificationResult.Diverged finding ->
             Expect.equal
                 finding.Finding
-                VerificationFinding.AuthorityProjection
+                VerificationFinding.PeopleProjection
                 "Wrong effect ordinal is detected independently of valid source FK"
         | other -> failtestf "Poisoned grant provenance must diverge: %A" other
 
@@ -291,7 +291,7 @@ let private runtime () =
 
         Expect.equal
             (rebuilt.PreviousDivergence |> Option.map _.Finding)
-            (Some VerificationFinding.AuthorityProjection)
+            (Some VerificationFinding.PeopleProjection)
             "Rebuild reports and repairs exact effect provenance"
 
         match administration.Verify(Some checkpoint, token) |> sync with
@@ -348,23 +348,32 @@ let private profileReplayBeforeAdmission () =
                         let retained =
                             RetainedOperation.create
                                 header
-                                (CommandSkeleton.Authority
+                                (CommandSkeleton.People
                                     {
                                         TargetActorId = target
                                         Principal = fixture.Owner
-                                        Act = AuthorityAct.SetProfile 0
+                                        Act = PeopleAct.SetProfile 0
                                     })
-                                (OperationValues.Authority { Profile = Some profile })
+                                (OperationValues.People { Profile = Some profile })
                                 (fun () -> Security.Cryptography.RandomNumberGenerator.GetBytes 32)
                             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
+                        let! before = PeopleStateStorage.load connection fixture.Owner token
                         let! _ = OperationStorage.append connection retained.Root token
+                        let person = before.Value
 
-                        do!
-                            Persistence.authority
-                                connection
-                                (AuthorityProjection.SetProfile(target, profile))
-                                token
+                        let rows =
+                            PeopleSubject.rows
+                                { person with
+                                    Actor =
+                                        { person.Actor with
+                                            Profile = Some profile
+                                        }
+                                    ProfileErasure = None
+                                }
+                            |> Option.get
+
+                        do! Persistence.people connection rows token
 
                         do! DatabaseSession.commit transaction token
                         return retained
@@ -374,8 +383,8 @@ let private profileReplayBeforeAdmission () =
         let execute operation =
             Service.execute
                 service
-                (OperationInput.Authority(
-                    Inputs.authorityRequest operation fixture.Owner (AuthorityAct.SetProfile input)
+                (OperationInput.People(
+                    Inputs.peopleRequest operation fixture.Owner (PeopleAct.SetProfile input)
                 ))
                 token
             |> sync
@@ -423,6 +432,6 @@ let tests =
                 "PostgreSQL operation readers, same-root continuation and projection rebuild"
                 runtime
             testCase
-                "accepted authority replay precedes current profile admission"
+                "accepted people replay precedes current profile admission"
                 profileReplayBeforeAdmission
         ]

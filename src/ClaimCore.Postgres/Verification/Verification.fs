@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 open Npgsql
 
 /// Deterministic precedence: ledger order with link/hash/commitment/format checks first, then
-/// history and retained authority rules; erasure, projections, head and checkpoint follow.
+/// history and retained access rules; erasure, projections, head and checkpoint follow.
 module internal Verification =
     /// Root batches are bounded and interpreted inside one repeatable-read snapshot.
     let private scan
@@ -152,18 +152,17 @@ module internal Verification =
 
     let projections connection installationId (state: Replay.Scan) token =
         task {
-            let! cases = VerificationRows.cases connection installationId state.Cases token
+            let! cases = VerificationRows.cases connection installationId state token
 
             match cases with
             | Error error -> return Error error
             | Ok workIndexes ->
-                let! authority =
-                    VerificationRows.authority connection state.Actors state.GrantSources token
+                let! people = VerificationRows.people connection state token
 
-                match authority with
+                match people with
                 | Error error -> return Error error
                 | Ok() ->
-                    let! work = WorkProjectionVerification.verify connection state workIndexes token
+                    let! work = VerificationRows.family connection state workIndexes token
 
                     match work with
                     | Error finding -> return Error finding

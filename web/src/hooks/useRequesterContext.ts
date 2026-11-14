@@ -3,7 +3,7 @@ import type { HumanReadDocument_context } from "@contracts/client";
 
 export type ActiveRequester = HumanReadDocument_context & {
   readonly disclosure: "CURRENT";
-  readonly context: HumanReadDocument_context["context"] & {
+  readonly subject: HumanReadDocument_context["subject"] & {
     readonly state: "ACTIVE";
     readonly installationId: string;
     readonly actorId: string;
@@ -12,9 +12,9 @@ export type ActiveRequester = HumanReadDocument_context & {
 };
 export const isActiveRequester = (value: HumanReadDocument_context): value is ActiveRequester =>
   value.disclosure === "CURRENT" &&
-  value.context.state === "ACTIVE" &&
-  value.context.installationId !== null &&
-  value.context.actorId !== null &&
+  value.subject.state === "ACTIVE" &&
+  value.subject.installationId !== null &&
+  value.subject.actorId !== null &&
   value.basis.kind === "SNAPSHOT";
 
 /** One authorized Core document owns requester controls, presentation and observed calendar. */

@@ -48,68 +48,60 @@ let private documents () =
             }
     ]
 
-let private nonNull value =
-    value |> Option.ofObj |> Option.defaultWith (fun () -> failtest "Missing node")
-
 [<Tests>]
 let tests =
     testList
         "note human controls"
         [
             testCase
-                "case card and paged notes bind typed removal identities to core display rows"
+                "case and paged note rows carry exact removal controls with their captions"
                 (fun () ->
-                    for value in documents () do
-                        let handles, tasks =
-                            match value.Context with
-                            | InteractionContext.Case c -> c.Notes, c.Tasks
-                            | InteractionContext.NotePage c -> c.Notes, c.Tasks
-                            | _ -> failtest "Note controls required"
+                    for document in documents () do
+                        let rows =
+                            document.Screen.Regions
+                            |> List.collect (fun region ->
+                                match region.Content with
+                                | RegionContent.Table table when region.Role = RegionRole.Notes ->
+                                    table.Rows
+                                | _ -> [])
+
+                        let row = List.exactlyOne rows
+                        let action = List.exactlyOne row.Actions
 
                         Expect.equal
-                            handles
-                            [ { NoteId = id; CanRemove = true } ]
-                            "Only identity and control permission"
-
-                        Expect.contains
-                            tasks
+                            action.Task
                             (TaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
-                            "Core removal task"
+                            "The removal task is supplied by Core"
+
+                        Expect.equal
+                            action.Binding
+                            (OperationBinding.Note(
+                                CaseSelector.Id ResponseExamples.caseRead.Snapshot.CaseId,
+                                Some(NoteId.value id)
+                            ))
+                            "No row-key lookup binds the note"
 
                         Expect.isOk
-                            (Codec.encode HumanDocumentCodecs.document value
+                            (Codec.encode HumanDocumentCodecs.document document
                              |> Codec.decode 65536 HumanDocumentCodecs.document)
-                            "Actual boundary"
+                            "Actual native boundary")
+            testCase "read-only notes do not retain a removal control" (fun () ->
+                let readOnly =
+                    { notes with
+                        Items =
+                            notes.Items |> List.map (fun note -> { note with CanRemove = false })
+                    }
 
-                        let captions =
-                            value.Screen.Regions
-                            |> List.filter (fun region -> region.Role = RegionRole.Notes)
+                let document =
+                    HumanReadDocuments.notes
+                        {
+                            Basis = Inputs.workBasis
+                            CaseId = ResponseExamples.snapshot.CaseId
+                            Reference = ResponseExamples.snapshot.Reference
+                            Notes = readOnly
+                            NextCursor = None
+                        }
 
-                        Expect.equal captions.Length 1 "Supplied Notes Screen retained")
-            testCase
-                "missing, duplicate, unoffered and tightened note controls are refused"
-                (fun () ->
-                    for value in documents () do
-                        let bytes = Codec.encode HumanDocumentCodecs.document value
-
-                        for mutate in
-                            [
-                                (fun (n: JsonNode) ->
-                                    (nonNull n["context"])["notes"] <- JsonArray())
-                                (fun n ->
-                                    let c = nonNull n["context"] in
-                                    let items = nonNull c["notes"] in
-                                    (items.AsArray()).Add(nonNull items[0] |> _.DeepClone()))
-                                (fun n -> (nonNull n["context"])["tasks"] <- JsonArray())
-                                (fun n ->
-                                    n["disclosure"] <-
-                                        System.Text.Json.Nodes.JsonValue.Create "WITHHELD")
-                            ] do
-                            let node = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull
-                            mutate node
-
-                            Expect.isError
-                                (Encoding.UTF8.GetBytes(node.ToJsonString())
-                                 |> Codec.decode 65536 HumanDocumentCodecs.document)
-                                "Control binding")
+                let controls = Screen.affordances document.Screen
+                Expect.isEmpty controls "The row's permission owns removal visibility")
         ]

@@ -28,9 +28,10 @@ export const CaseReassignment = ({
 }) => {
   const p = usePresentation();
   const { row } = selection;
+  const caseId = row.binding.target.kind === "ID" ? row.binding.target.caseId : "";
   const query = useEndpoint(
     "case.get",
-    { target: { kind: "ID", caseId: row.caseId } },
+    { target: { kind: "ID", caseId } },
     disclosureAvailable,
     selection.readId,
   );
@@ -63,24 +64,15 @@ export const CaseReassignment = ({
       </Dialog>
     );
   }
-  if (row.assignment === null) {
-    return null;
-  }
   return (
     <WorkOperation
       current={parent}
       subject="WORK"
-      kind="UPDATE_WORK"
+      kind="work.update"
       targetIdentity={selection.readId}
-      binding={{
-        kind: "WORK",
-        target: { kind: "ID", caseId: row.caseId },
-        workRevision: row.assignment.revision,
-      }}
-      prefill={{
-        "input:responsibleActorAction": "SET",
-        "field:responsibleActor": row.assignment.responsibleSeed ?? "",
-      }}
+      affordance={row}
+      binding={row.binding}
+      prefill={{ "field:responsibleActor": row.seeds["field:responsibleActor"] ?? "" }}
       disclosureAvailable={disclosureAvailable}
       onClose={close}
       onRecorded={recorded}

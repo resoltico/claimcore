@@ -3,22 +3,6 @@ namespace ClaimCore.Application.Contracts
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
-type TaskMoneyId =
-    | Claimed
-    | Payable
-    | Paid
-
-module TaskMoneyId =
-    let fields money =
-        let amount =
-            match money with
-            | TaskMoneyId.Claimed -> BusinessField.ClaimedAmount
-            | TaskMoneyId.Payable -> BusinessField.PayableAmount
-            | TaskMoneyId.Paid -> BusinessField.PaidAmount
-
-        amount, (BusinessField.describe amount).Pairs.Value
-
-[<RequireQualifiedAccess>]
 type TaskChoiceId =
     | Role
     | PrincipalKind
@@ -35,7 +19,6 @@ type TaskChoiceId =
     | Due
     | ReminderState
     | ReminderDue
-    | WorkChange
     | RegistrationCorrection
     | DecisionCorrection
 
@@ -65,7 +48,6 @@ module TaskChoiceId =
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderState.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
-        | TaskChoiceId.WorkChange -> vocabularyTokens WorkChoice.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
             Amendment.actions |> List.map CorrectionGroupAction.token
         | TaskChoiceId.DecisionCorrection -> Change.actions |> List.map CorrectionGroupAction.token
@@ -87,7 +69,6 @@ module TaskChoiceId =
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
         | TaskChoiceId.ReminderState -> Vocabulary.name ReminderState.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
-        | TaskChoiceId.WorkChange -> Vocabulary.name WorkChoice.vocabulary
         | TaskChoiceId.RegistrationCorrection
         | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary
 
@@ -95,7 +76,8 @@ module TaskChoiceId =
         function
         | TaskInputId.Target InputTarget.Role -> Some TaskChoiceId.Role
         | TaskInputId.Target InputTarget.PrincipalKind -> Some TaskChoiceId.PrincipalKind
-        | TaskInputId.Scope -> Some TaskChoiceId.Scope
+        | TaskInputId.Scope
+        | TaskInputId.Target InputTarget.Scope -> Some TaskChoiceId.Scope
         | TaskInputId.Lifecycle -> Some TaskChoiceId.Lifecycle
         | TaskInputId.Status -> Some TaskChoiceId.Status
         | TaskInputId.Progress -> Some TaskChoiceId.Progress
@@ -108,30 +90,17 @@ module TaskChoiceId =
         | TaskInputId.Due -> Some TaskChoiceId.Due
         | TaskInputId.ReminderState -> Some TaskChoiceId.ReminderState
         | TaskInputId.ReminderDue -> Some TaskChoiceId.ReminderDue
-        | TaskInputId.ResponsibilityChange -> Some TaskChoiceId.WorkChange
         | TaskInputId.Target(InputTarget.Group RecordGroup.Registration) ->
             Some TaskChoiceId.RegistrationCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Decision) ->
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter
         | TaskInputId.IncludeInactive -> None
-
-/// A selected update retains empty authored text; it never means omission or clearing.
-[<RequireQualifiedAccess>]
-type TaskUpdate<'value> =
-    | Keep
-    | Set of 'value
-
-[<RequireQualifiedAccess>]
-type OptionalTaskUpdate<'value> =
-    | Keep
-    | Clear
-    | Set of 'value
 
 [<RequireQualifiedAccess>]
 type TaskInputMode =
@@ -145,12 +114,20 @@ module TaskInputMode =
 
     let token = Vocabulary.token vocabulary
 
+[<RequireQualifiedAccess>]
+type TaskAtom =
+    | Text
+    | Integer
+    | Boolean
+
 /// Value rules remain with the referenced Domain input. This declaration owns task selection only.
 type TaskInputDeclaration =
     {
         Input: TaskInputId
         Mode: TaskInputMode
         Source: InputSource
+        Clearable: bool
+        Atom: TaskAtom
     }
 
 type TaskCollectionDeclaration =
@@ -179,6 +156,17 @@ module TaskDeclarations =
             Input = input
             Mode = mode
             Source = source
+            Clearable = false
+            Atom =
+                if
+                    source = InputSource.ExpectedRevision
+                    || input = TaskInputId.Target InputTarget.Limit
+                then
+                    TaskAtom.Integer
+                elif input = TaskInputId.IncludeInactive then
+                    TaskAtom.Boolean
+                else
+                    TaskAtom.Text
         }
 
     let private required input = definition TaskInputMode.Required input
@@ -211,6 +199,7 @@ module TaskDeclarations =
             required (target InputTarget.Role)
             required TaskInputId.Scope
             optional (field BusinessField.CaseReference)
+            optional TaskInputId.CaseId
         ]
 
     let private group mode group =
@@ -224,7 +213,10 @@ module TaskDeclarations =
                 else
                     mode
 
-            definition selected (field input))
+            { definition selected (field input) with
+                Clearable =
+                    mode = TaskInputMode.Update && (BusinessField.describe input).AllowsAbsence
+            })
 
     let private worklist =
         [
@@ -267,28 +259,34 @@ module TaskDeclarations =
                     | CaseActKind.Erase -> []
 
                 operation :: caseTarget :: revision :: values, []
-            | TaskId.Operation(ActKind.Authority kind) ->
+            | TaskId.Operation(ActKind.People kind) ->
                 let values, collections =
                     match kind with
-                    | AuthorityKind.Register
-                    | AuthorityKind.SetProfile -> profile, []
-                    | AuthorityKind.Admit ->
+                    | PeopleActKind.Register
+                    | PeopleActKind.SetProfile -> profile, []
+                    | PeopleActKind.Admit ->
                         profile,
                         [
                             {
-                                Collection = TaskCollectionId.AuthorityGrants
+                                Collection = TaskCollectionId.PeopleGrants
                                 Inputs = grant
                             }
                         ]
-                    | AuthorityKind.Grant
-                    | AuthorityKind.Revoke -> grant, []
-                    | AuthorityKind.Enable
-                    | AuthorityKind.Disable
-                    | AuthorityKind.EraseProfile -> [], []
-                    | AuthorityKind.ProvisionOwner ->
+                    | PeopleActKind.Grant
+                    | PeopleActKind.Revoke -> grant, []
+                    | PeopleActKind.Enable
+                    | PeopleActKind.Disable
+                    | PeopleActKind.EraseProfile -> [], []
+                    | PeopleActKind.ProvisionOwner ->
                         invalidArg (nameof task) "Owner provisioning is an operator task."
 
-                operation :: (principal @ values), collections
+                let identity =
+                    if kind = PeopleActKind.Register || kind = PeopleActKind.Admit then
+                        principal
+                    else
+                        [ required TaskInputId.ActorId ]
+
+                operation :: (identity @ values), collections
             | TaskId.Operation(ActKind.Work WorkActKind.UpdateWork) ->
                 [
                     operation
@@ -296,7 +294,6 @@ module TaskDeclarations =
                     required (target InputTarget.ExpectedWorkRevision)
                     optional (field BusinessField.ResponsibleActor)
                     optional (field BusinessField.HandlingSummary)
-                    optional TaskInputId.ResponsibilityChange
                 ],
                 []
             | TaskId.Operation(ActKind.Note kind) ->
@@ -330,6 +327,7 @@ module TaskDeclarations =
                     | ReminderActKind.Cancel -> identity
 
                 operation :: caseTarget :: values, []
+            | TaskId.Command CommandTaskId.PeopleRequestsDismiss -> principal, []
             | TaskId.Query query ->
                 let values =
                     match query with
@@ -355,16 +353,15 @@ module TaskDeclarations =
                     | QueryTaskId.ReminderGet ->
                         [ caseTarget; required (target InputTarget.ReminderId) ]
                     | QueryTaskId.OperationGet -> [ required (target InputTarget.OperationId) ]
-                    | QueryTaskId.AuthorityList ->
+                    | QueryTaskId.PeopleList ->
                         [
                             optional (target InputTarget.DirectorySearch)
                             optional TaskInputId.RoleFilter
                         ]
                         @ page
-                    | QueryTaskId.AuthorityGrants -> required TaskInputId.ActorId :: page
-                    | QueryTaskId.AuthorityHistory -> optional TaskInputId.ActorId :: page
-                    | QueryTaskId.AuthorityRequests -> page
-                    | QueryTaskId.AuthorityRequestsDismiss -> principal
+                    | QueryTaskId.PeopleGrants -> required TaskInputId.ActorId :: page
+                    | QueryTaskId.PeopleHistory -> optional TaskInputId.ActorId :: page
+                    | QueryTaskId.PeopleRequests -> page
                     | QueryTaskId.WorkViews
                     | QueryTaskId.Context -> []
 
@@ -374,13 +371,45 @@ module TaskDeclarations =
             Task = task
             Inputs =
                 match task with
-                | TaskId.Query _ ->
+                | TaskId.Query _
+                | TaskId.Command _ ->
                     inputs
                     |> List.map (fun input ->
                         { input with
                             Source = InputSource.Authored
                         })
-                | TaskId.Operation _ -> inputs
+                | TaskId.Operation kind ->
+                    inputs
+                    |> List.map (fun input ->
+                        let binding =
+                            match kind, input.Input with
+                            | (ActKind.Case _ | ActKind.Work _ | ActKind.Note _ | ActKind.Reminder _),
+                              TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
+                                true
+                            | ActKind.Case _, TaskInputId.Target InputTarget.PaymentId
+                            | ActKind.Note _, TaskInputId.Target InputTarget.NoteId
+                            | ActKind.Reminder _, TaskInputId.Target InputTarget.ReminderId
+                            | ActKind.People _, TaskInputId.ActorId -> true
+                            | _ -> false
+
+                        let clearable =
+                            match kind, input.Input with
+                            | ActKind.Work _,
+                              TaskInputId.Target(InputTarget.Field(BusinessField.ResponsibleActor | BusinessField.HandlingSummary)) ->
+                                true
+                            | ActKind.People PeopleActKind.SetProfile,
+                              TaskInputId.Target InputTarget.ProfileContact -> true
+                            | _ -> input.Clearable
+
+                        { input with
+                            Source = (if binding then InputSource.Binding else input.Source)
+                            Clearable = clearable
+                            Mode =
+                                if kind = ActKind.Work WorkActKind.UpdateWork && clearable then
+                                    TaskInputMode.Update
+                                else
+                                    input.Mode
+                        })
             Collections = collections
         }
 

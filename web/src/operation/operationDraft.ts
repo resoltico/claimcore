@@ -1,31 +1,37 @@
+import type { OperationAffordance } from "./affordances";
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { roleAdmitted } from "./roleAvailability";
 import type { OperationAction, OperationDraft } from "./operationTypes";
 import type { OperationSelection } from "../protocol/operationCatalog";
-import type { FormValues } from "../protocol/forms";
+import type { FormValue, FormValues } from "../protocol/forms";
 import type { OwnerScope } from "../protocol/ownerScope";
-import type { TaskBindingSource } from "./taskForm";
+import type { OperationBinding } from "@contracts/client";
+
+/** Selecting installation scope removes the case selection from the authored grant. */
+export const editGrantInput = (values: FormValues, input: string, value: FormValue): FormValues => {
+  const edited = { ...values, [input]: value };
+  if (input === "input:scope" && value === "CASE") {
+    edited["field:caseReference"] ??= "";
+  }
+  if (input === "input:scope" && value !== "CASE") {
+    delete edited["field:caseReference"];
+    delete edited["input:caseId"];
+  }
+  return edited;
+};
 
 export const createDraft = (
   entry: OperationSelection,
   target: string,
-  binding: TaskBindingSource,
+  binding: OperationBinding,
   authored: FormValues,
   owner: OwnerScope | null,
+  affordance: OperationAffordance | null,
 ): OperationDraft => {
   const values = { ...authored };
-  if (binding.kind === "AUTHORITY" && binding.principal !== undefined) {
-    delete values["input:principal.kind"];
-    delete values["input:principal.issuer"];
-    delete values["input:principal.subject"];
-  }
-  if (entry.kind === "REVOKE" && binding.kind === "AUTHORITY" && binding.grant !== undefined) {
-    delete values["input:role"];
-    delete values["input:scope"];
-    delete values["field:caseReference"];
-  }
   return {
     owner,
+    affordance,
     entry,
     target,
     binding,
@@ -40,8 +46,8 @@ export const createDraft = (
 type Edit = Extract<OperationAction, { type: "EDIT" }>;
 const clearsRoleSelection = (draft: OperationDraft, action: Edit): boolean => {
   if (
-    draft.entry.subject !== "AUTHORITY" ||
-    draft.entry.kind !== "GRANT" ||
+    draft.entry.subject !== "PEOPLE" ||
+    draft.entry.kind !== "people.grant" ||
     (action.path !== "input:principal.kind" && action.path !== "input:scope")
   ) {
     return false;
@@ -66,8 +72,7 @@ export const editDraft = (draft: OperationDraft, action: Edit): OperationDraft =
     dateEntries,
     generation: draft.generation + 1,
     values: {
-      ...draft.values,
-      [action.path]: action.value,
+      ...editGrantInput(draft.values, action.path, action.value),
       ...(clearsRoleSelection(draft, action) ? { "input:role": "" } : {}),
     },
   };

@@ -25,7 +25,7 @@ it("fetches the resolved same-origin pair without credentials and admits it befo
     headers: { Accept: "application/json" },
   });
   expect(catalogs.catalogFor("en")["ui.loading"]).toBe("Loading…");
-  expect(catalogs.catalogFor("en")["act.OPEN.label"]).toBe("Open a case");
+  expect(catalogs.catalogFor("en")["task.case.open.label"]).toBe("Open a case");
 });
 it("refuses an incomplete served pair while keeping the complete working language", async () => {
   vi.resetModules();

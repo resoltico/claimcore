@@ -22,9 +22,9 @@ module CaseWorkPolicy =
     let authorize principal actor caseId =
         let resource = Scope.Case caseId
 
-        if not (Authority.can principal actor Capability.ReadCase resource) then
+        if not (Access.can principal actor Capability.ReadCase resource) then
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-        elif not (Authority.can principal actor Capability.ManageCaseWork resource) then
+        elif not (Access.can principal actor Capability.ManageCaseWork resource) then
             Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork))
         else
             Ok()

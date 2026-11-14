@@ -23,7 +23,7 @@ open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.TestSupport.TestServerFixture
-open ClaimCore.Web
+open ClaimCore.Server
 
 type private SlowBody() =
     inherit HttpContent()
@@ -184,15 +184,15 @@ let private qualify () =
             let! registered =
                 Service.execute
                     actor
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id database.Fixture 10)
                             other
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     CancellationToken.None
 
-            acceptedAuthority registered
+            acceptedPeople registered
 
             let! granted =
                 grant
@@ -205,7 +205,7 @@ let private qualify () =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
             let! opened =
                 Service.execute

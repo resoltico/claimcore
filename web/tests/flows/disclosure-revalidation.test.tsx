@@ -1,21 +1,33 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { timelineDocument } from "../support/timeline-document.fixtures";
-import {
-  caseDocumentInput,
-  caseIdentityScreen,
-  closeCaseScreen,
-} from "../support/case-document.fixtures";
+import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { definition, fields } from "../support/service-ui.fixtures";
 const context = caseDocumentInput(
-  { tasks: ["CASE:CLOSE"], history: "FULL" },
+  {
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 1,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
+    history: "FULL",
+  },
   {
     regions: [
-      ...closeCaseScreen.regions.filter((region) => region.role !== "IDENTITY"),
+      ...caseIdentityScreen.regions.filter((region) => region.role !== "IDENTITY"),
       ...caseIdentityScreen.regions,
       {
         role: "FACTS",
@@ -102,10 +114,7 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
             })
           : response("case.get", {
               ...context,
-              context: {
-                ...context.context,
-                history: revoked ? "SUMMARY" : "FULL",
-              },
+              history: revoked ? "SUMMARY" : "FULL",
             }),
       );
     }),

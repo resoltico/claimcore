@@ -51,7 +51,7 @@
     "text": "화면 표시",
     "source": "3907fa7f8072"
   },
-  "ui.authorityAction": {
+  "ui.peopleAction": {
     "text": "접근 권한 변경",
     "source": "295239c1b29a"
   },
@@ -111,7 +111,7 @@
     "text": "닫기",
     "source": "7d9eb7acb13e"
   },
-  "ui.continueAuthorityRequest": {
+  "ui.continuePeopleRequest": {
     "text": "현재 요청 계속",
     "source": "ec9e7079a21a"
   },
@@ -559,10 +559,6 @@
     "text": "관리",
     "source": "4b42c6690ebe"
   },
-  "ui.shell.authorityHistory": {
-    "text": "권한 변경 이력",
-    "source": "2023c056fe61"
-  },
   "ui.shell.businessDateChanged": {
     "text": "업무 기준일이 {date}(으)로 변경되었습니다. 기한을 업데이트하려면 새로고침하세요.",
     "source": "efb3f0ec78c4"
@@ -818,5 +814,9 @@
   "ui.showAllPayments": {
     "text": "모든 지급 보기",
     "source": "e1c9ee7b6ef7"
+  },
+  "ui.resourceUnavailable": {
+    "text": "이 항목을 사용할 수 없습니다.",
+    "source": "46275555e5f4"
   }
 }

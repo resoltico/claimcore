@@ -21,7 +21,7 @@ let private operation number =
 let private parent = CaseId.ofOperationId (operation 1)
 let private today = DateOnly(2026, 11, 9)
 
-let private header number authority =
+let private header number people =
     {
         OperationHeader.InstallationId = Guid.Parse "00000000-0000-4000-8000-000000000001"
         Sequence = Sequence.create (int64 number + 10L) |> Option.get
@@ -29,7 +29,7 @@ let private header number authority =
         OperationId = operation number
         ActorId = ActorId.create (guid 9) |> Option.get
         RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
-        BusinessDate = if authority then None else Some today
+        BusinessDate = if people then None else Some today
     }
 
 let private nonce () = [| 0uy .. 31uy |]
@@ -46,11 +46,7 @@ let private decide number act (before: CaseSnapshot option) =
             }
         |> valid
 
-    let context =
-        match act, before with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
+    let context = Map.empty
 
     command, Case.decideSnapshot today context command before |> valid
 
@@ -318,7 +314,7 @@ let tests =
                         Expect.equal actual.Command input "Removal intent remains known"
                     | _ -> failtest "Removed note has no private contents")
             testCase
-                "mixed authority retains grants and an explicit unavailable profile after erasure"
+                "mixed people retains grants and an explicit unavailable profile after erasure"
                 (fun () ->
                     let hdr = header 4 true
                     let target = ActorId.ofOperationId hdr.OperationId
@@ -351,23 +347,23 @@ let tests =
                         ]
 
                     let command =
-                        CommandSkeleton.Authority
+                        CommandSkeleton.People
                             {
                                 TargetActorId = target
                                 Principal = principal
-                                Act = AuthorityAct.Admit { Profile = 0; Grants = grants }
+                                Act = PeopleAct.Admit { Profile = 0; Grants = grants }
                             }
 
                     let value =
                         RetainedOperation.create
                             hdr
                             command
-                            (OperationValues.Authority { Profile = Some profile })
+                            (OperationValues.People { Profile = Some profile })
                             nonce
                         |> valid
 
                     match (RetainedOperation.decode value.Root |> valid).Values with
-                    | RetainedOperationValues.Authority(RetainedProfile.Available actual) ->
+                    | RetainedOperationValues.People(RetainedProfile.Available actual) ->
                         Expect.equal
                             (ActorProfile.authored actual)
                             (ActorProfile.authored profile)
@@ -377,7 +373,7 @@ let tests =
                     let erasedRoot = clear value.Root
 
                     match (RetainedOperation.decode erasedRoot |> valid).Values with
-                    | RetainedOperationValues.Authority RetainedProfile.Unavailable -> ()
+                    | RetainedOperationValues.People RetainedProfile.Unavailable -> ()
                     | _ ->
                         failtest "Profile unavailability is explicit; no dummy profile is invented"
 
@@ -387,24 +383,24 @@ let tests =
                         "Grant values remain available for semantic replay"
 
                     let publicCommand =
-                        CommandSkeleton.Authority
+                        CommandSkeleton.People
                             {
                                 TargetActorId = target
                                 Principal = principal
-                                Act = AuthorityAct.EraseProfile
+                                Act = PeopleAct.EraseProfile
                             }
 
                     let noProfile =
                         RetainedOperation.create
                             (header 5 true)
                             publicCommand
-                            (OperationValues.Authority { Profile = None })
-                            (fun () -> failtest "Public authority act requested a nonce")
+                            (OperationValues.People { Profile = None })
+                            (fun () -> failtest "Public people act requested a nonce")
                         |> valid
 
                     Expect.equal
                         (RetainedOperation.decode noProfile.Root |> valid).Values
-                        (RetainedOperationValues.Authority RetainedProfile.NotRequired)
+                        (RetainedOperationValues.People RetainedProfile.NotRequired)
                         "No profile requirement differs from an erased required profile")
             testCase "work and note values reconstruct identities from their root" (fun () ->
                 let hdr = header 6 false
@@ -658,16 +654,17 @@ let caseAndReminderMatrix =
 
             let context =
                 match act, before with
-                | CaseAct.RecordPayment _, Some before ->
-                    CasePaymentContext.Recording(before.CaseId, before.Revision, false)
+                | CaseAct.RecordPayment _, Some _ -> Map.empty
                 | CaseAct.RemovePayment _, Some before ->
                     let entry =
                         match paid.Payment with
                         | Some(PaymentDifference.Recorded entry) -> entry
                         | _ -> failtest "Known selected payment required"
 
-                    CasePaymentContext.Removing(before.CaseId, before.Revision, Some entry, None)
-                | _ -> CasePaymentContext.NoneRequired
+                    (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                        (before.CaseId)
+                        (Option.toList (Some entry)))
+                | _ -> Map.empty
 
             let decision = Case.decideSnapshot today context command before |> valid
             let value = caseOperation 30 command decision

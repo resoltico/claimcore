@@ -9,7 +9,7 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
-open ClaimCore.Web
+open ClaimCore.Server
 open ClaimCore.Postgres
 open ClaimCore.Json
 open ClaimCore.TestSupport
@@ -111,7 +111,7 @@ let private dispatch () =
         let preview = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Preview)
 
         let preparedPreview =
-            preview.Prepare(Api.operationPreview.Input.Write input)
+            preview.Prepare(Api.operationPreview.Input.Write(Submissions.ofCommand None input))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let beforeWrites = writes
@@ -133,7 +133,7 @@ let private dispatch () =
         let execute = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Execute)
 
         let prepared =
-            execute.Prepare(Api.operationExecute.Input.Write input)
+            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None input))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let head () =
@@ -170,7 +170,7 @@ let private dispatch () =
                 }
 
         let changed =
-            execute.Prepare(Api.operationExecute.Input.Write changed)
+            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None changed))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let conflict =
@@ -184,7 +184,7 @@ let private dispatch () =
         Expect.equal
             (conflict.Wire
              |> memberValue "outcome"
-             |> memberValue "data"
+             |> memberValue "rejection"
              |> memberValue "code")
             (JsonValue.String "IDEMPOTENCY_CONFLICT")
             "Conflict is semantic, not duplicate append refusal"
@@ -233,11 +233,11 @@ let private dispatch () =
         let registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 40001)
                         reader
-                        (AuthorityAct.Register
+                        (PeopleAct.Register
                             {
                                 DisplayName = "Auditor input"
                                 Contact = None
@@ -249,8 +249,8 @@ let private dispatch () =
 
         let readerId =
             match registered.Subject with
-            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
-            | _ -> failtest "Authority receipt required"
+            | ReceiptSubject.People value -> PeopleTargetDisclosure.actorId value.TargetActor
+            | _ -> failtest "People receipt required"
 
         grant
             owner
@@ -262,7 +262,7 @@ let private dispatch () =
             }
             true
         |> sync
-        |> acceptedAuthority
+        |> acceptedPeople
 
         let person services =
             match
@@ -283,7 +283,7 @@ let private dispatch () =
 
         Expect.contains
             editable.Offers
-            AuthorityKind.SetProfile
+            PeopleActKind.SetProfile
             "Owner receives permitted person task"
 
         Expect.equal

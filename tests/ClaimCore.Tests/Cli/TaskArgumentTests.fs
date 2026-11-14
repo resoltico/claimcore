@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TaskArgumentTests
 
+open ClaimCore.CommandLine
+
 open System
 open Expecto
 open ClaimCore.Domain
@@ -14,7 +16,9 @@ let private prepare args =
     |> Result.defaultWith (fun errors -> failtestf "%A" errors)
 
 let private input args =
-    Frames.value Api.operationExecute (prepare args).Invocation
+    (Frames.value Api.operationExecute
+     >> Option.map ClaimCore.TestSupport.Submissions.command)
+        (prepare args).Invocation
     |> Option.defaultWith (fun () -> failtest "Executable operation required")
 
 [<Tests>]
@@ -98,11 +102,11 @@ let tests =
 
                         Expect.equal value.Decision Change.Clear "Decision clear is independent"
                     | _ -> failtest "Correction required")
-            testCase "compound authority roles retain submitted order and typed scopes" (fun () ->
+            testCase "compound people roles retain submitted order and typed scopes" (fun () ->
                 match
                     input
                         [
-                            "authority"
+                            "people"
                             "admit"
                             "--principal-kind"
                             "human"
@@ -118,7 +122,7 @@ let tests =
                             "auditor"
                         ]
                 with
-                | OperationInput.Authority { Act = AuthorityAct.Admit value } ->
+                | OperationInput.People { Act = PeopleAct.Admit value } ->
                     Expect.equal value.Profile.DisplayName "Editable name" "Profile input"
 
                     Expect.equal
@@ -134,14 +138,14 @@ let tests =
                             }
                         ]
                         "Submitted ordinal map follows this exact order"
-                | _ -> failtest "Compound authority admission required")
+                | _ -> failtest "Compound people admission required")
             testCase
                 "malformed metadata and unselected fields report usage without throwing or fabricating commands"
                 (fun () ->
                     for args in
                         [
                             [
-                                "authority"
+                                "people"
                                 "set-profile"
                                 "--principal-kind"
                                 "human"
@@ -229,7 +233,7 @@ let creationBasis =
             Expect.isTrue
                 (issues
                  |> List.exists (function
-                     | ClaimCore.Presentation.UsageError.UnknownOption("--expected-revision", _) ->
+                     | ClaimCore.CommandLine.UsageError.UnknownOption("--expected-revision", _) ->
                          true
                      | _ -> false))
                 "Supplying the retired override is a specific syntax refusal"

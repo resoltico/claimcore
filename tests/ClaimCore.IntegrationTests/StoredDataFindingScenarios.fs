@@ -16,7 +16,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 open ClaimCore.IntegrationTests.VerificationScenarioInputs
 open ClaimCore.IntegrationTests.LedgerFindingScenarios
-open ClaimCore.IntegrationTests.AuthorityFindingScenarios
+open ClaimCore.IntegrationTests.PeopleFindingScenarios
 
 
 let internal malformedProjection (database: PostgresFixture.Database) =
@@ -29,7 +29,7 @@ let internal malformedProjection (database: PostgresFixture.Database) =
                 "UPDATE claimcore.actors SET issuer='not-an-issuer' WHERE actor_id=$1"
                 [| box (id database.Fixture 1) |]
 
-        do! finding VerificationFinding.AuthorityProjection database
+        do! finding VerificationFinding.PeopleProjection database
     }
 
 let internal malformedInstant (database: PostgresFixture.Database) =

@@ -1,15 +1,16 @@
-import type { HumanReadDocument_workViews, PresentedValue } from "@contracts/client";
+import type { taskChoices, HumanReadDocument_work_views, PresentedValue } from "@contracts/client";
+
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
 
 type CaseViewFixture = {
   key: string;
-  view: HumanReadDocument_workViews["context"]["cases"][number]["view"];
+  view: (typeof taskChoices.caseView)[number];
   label: PresentedValue;
   count: PresentedValue;
 };
 type ReminderViewFixture = Omit<CaseViewFixture, "view"> & {
-  view: HumanReadDocument_workViews["context"]["reminders"][number]["view"];
+  view: (typeof taskChoices.reminderView)[number];
 };
 const cases: ReadonlyArray<CaseViewFixture> = [
   {
@@ -142,7 +143,7 @@ export const testWorkspaceViews = {
 export const workViewsDocument = (
   caseItems: ReadonlyArray<CaseViewFixture> = cases,
   reminderItems: ReadonlyArray<ReminderViewFixture> = reminders,
-): HumanReadDocument_workViews => ({
+): HumanReadDocument_work_views => ({
   screen: {
     regions: [
       {
@@ -153,19 +154,27 @@ export const workViewsDocument = (
             { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
             { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
           ],
-          rows: [...caseItems, ...reminderItems].map(({ key, label, count }) => ({
-            key,
-            values: [label, count],
-          })),
+          rows: [
+            ...caseItems.map(({ key, view, label, count }) => ({
+              key: `case:${key}`,
+              values: [label, count],
+              link: { endpoint: "case.list" as const, input: { limit: 20, view } },
+            })),
+            ...reminderItems.map(({ key, view, label, count }) => ({
+              key: `reminder:${key}`,
+              values: [label, count],
+              link: { endpoint: "reminder.list" as const, input: { limit: 20, view } },
+            })),
+          ],
         },
       },
     ],
   },
-  context: {
-    kind: "WORK_VIEWS",
-    cases: caseItems.map(({ key, view }) => ({ key, view })),
-    reminders: reminderItems.map(({ key, view }) => ({ key, view })),
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 });

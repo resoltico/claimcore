@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Web
+open ClaimCore.Server
 
 [<Tests>]
 let tests =

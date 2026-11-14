@@ -59,7 +59,7 @@
     "text": "服务不可用。",
     "source": "6468ac9f9bca"
   },
-  "cli.family.authority": {
+  "cli.family.people": {
     "text": "人员与访问权限",
     "source": "1e133caaec46"
   },
@@ -191,9 +191,9 @@
     "text": "直接角色：{direct}；来自安装实例的角色：{inherited}；生效角色：{effective}",
     "source": "db07af8055e6"
   },
-  "cli.text.authorityHistoryEmpty": {
+  "cli.text.peopleHistoryEmpty": {
     "text": "没有符合此选择条件的权限更改。",
-    "source": "4e76d78127bf"
+    "source": "551e9e8904a3"
   },
   "cli.text.code": {
     "text": "代码",

@@ -37,7 +37,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
     {
         CaseId = snapshot.CaseId
         Snapshot = snapshot
-        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+        Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
@@ -65,6 +65,18 @@ let private mismatch =
             Finding = VerificationFinding.CaseProjection
         }
 
+let private compare histories rows =
+    Replay.caseRecords
+        { Replay.initial None with
+            Cases = histories
+        }
+    |> Result.bind (fun expected ->
+        ProjectionVerification.rows
+            VerificationFinding.CaseProjection
+            (fun (row: StoredCase) -> row.CaseId)
+            expected
+            rows)
+
 let private collection () =
     let a = stored (snapshot "synthetic-a")
 
@@ -77,19 +89,13 @@ let private collection () =
     let histories =
         Map.ofList [ a.CaseId, history a.Snapshot; b.CaseId, history b.Snapshot ]
 
-    Expect.equal (ProjectionVerification.cases installation Map.empty []) (Ok()) "Empty coverage"
+    Expect.equal (compare Map.empty []) (Ok()) "Empty coverage"
 
     for rows in [ [ a; b ]; [ b; a ] ] do
-        Expect.equal
-            (ProjectionVerification.cases installation histories rows)
-            (Ok())
-            "Exact unordered coverage"
+        Expect.equal (compare histories rows) (Ok()) "Exact unordered coverage"
 
     for rows in [ [ a; a ]; [ a ]; [ a; b; a ]; [ a; stored (snapshot "unknown") ] ] do
-        Expect.equal
-            (ProjectionVerification.cases installation histories rows)
-            mismatch
-            "Exact collection finding"
+        Expect.equal (compare histories rows) mismatch "Exact collection finding"
 
 let private liveState () =
     Expect.isNone
@@ -158,10 +164,7 @@ let private liveState () =
                     }
             }
         ] do
-        Expect.equal
-            (ProjectionVerification.cases installation histories [ changed ])
-            mismatch
-            "Live mismatch"
+        Expect.equal (compare histories [ changed ]) mismatch "Live mismatch"
 
 let private erasedState () =
     Expect.isNone (CaseId.create Guid.Empty) "Erased cases also require admitted identity"
@@ -186,7 +189,7 @@ let private erasedState () =
         }
 
     let check (history: CaseHistory) (row: StoredCase) =
-        ProjectionVerification.cases installation (Map.ofList [ row.CaseId, history ]) [ row ]
+        compare (Map.ofList [ row.CaseId, history ]) [ row ]
 
     Expect.equal (check accepted row) (Ok()) "Erased identity and revision remain covered"
 
@@ -349,8 +352,7 @@ let private projectionBindings () =
     Expect.isOk (CaseRecord.decodeSnapshot noncanonical) "Whitespace retains snapshot meaning"
 
     Expect.equal
-        (ProjectionVerification.cases
-            installation
+        (compare
             histories
             [
                 { expected with
@@ -452,7 +454,7 @@ let private roundTrips database =
                 }
                 true
 
-        ClaimCore.TestSupport.StoreFixtures.acceptedAuthority grant
+        ClaimCore.TestSupport.StoreFixtures.acceptedPeople grant
 
         let check expectedState revision =
             task {

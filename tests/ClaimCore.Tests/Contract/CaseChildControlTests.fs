@@ -76,121 +76,86 @@ let private read () =
         NextActions = [ next ]
     }
 
+let private rowActions document role =
+    document.Screen.Regions
+    |> List.filter (fun region -> region.Role = role)
+    |> List.collect (fun region ->
+        match region.Content with
+        | RegionContent.Table table -> table.Rows |> List.collect _.Actions
+        | _ -> [])
+
 [<Tests>]
 let tests =
     testList
         "case child controls"
         [
-            testCase
-                "current case binds bounded payment and reminder controls to supplied rows"
-                (fun () ->
-                    let value = read ()
-                    let document = HumanCaseDocument.ofCore value
-
-                    match document.Context with
-                    | InteractionContext.Case control ->
-                        Expect.equal
-                            (List.exactlyOne control.Payments).PaymentId
-                            ResponseExamples.receipt.OperationId
-                            "Retained payment identity"
-
-                        Expect.isTrue
-                            (List.exactlyOne control.Payments).CanRemove
-                            "Authorized removal control"
-
-                        let next = List.exactlyOne control.NextActions
-                        Expect.equal next.CaseId value.Snapshot.CaseId "Parent identity"
-                        Expect.equal next.Revision Revision.first "Selected reminder revision"
-
-                        Expect.equal
-                            next.Tasks
-                            [ TaskId.Operation(ActKind.Reminder ReminderActKind.Complete) ]
-                            "Offered reminder task only"
-
-                        Expect.isNone next.ActionSeed "Completion discloses no editable action"
-                    | _ -> failtest "Case controls required"
-
-                    let bytes = Codec.encode HumanDocumentCodecs.document document
-
-                    Expect.isOk
-                        (Codec.decode 65536 HumanDocumentCodecs.document bytes)
-                        "Actual native boundary"
-
-                    for mutate in
-                        [
-                            (fun (context: JsonNode) -> context["payments"] <- JsonArray())
-                            (fun context -> context["nextActions"] <- JsonArray())
-                            (fun context -> context["tasks"] <- JsonArray())
-                        ] do
-                        let node = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull
-                        mutate (nonNull node["context"])
-
-                        Expect.isError
-                            (Encoding.UTF8.GetBytes(node.ToJsonString())
-                             |> Codec.decode 65536 HumanDocumentCodecs.document)
-                            "Missing or unoffered controls refused")
-
-            testCase "payment currency is an input seed only while recording is offered" (fun () ->
+            testCase "payment and reminder rows carry their own ready controls" (fun () ->
                 let value = read ()
-
-                let advice =
-                    CaseAdvice.create
-                        [ CaseActKind.RecordPayment ]
-                        None
-                        HistoryAccess.None
-                        ((Inputs.caseAdvice value.Snapshot.State).Blocked
-                         |> List.filter (fun item -> item.Act <> CaseActKind.RecordPayment))
-                    |> accepted
-
-                let offered = HumanCaseDocument.ofCore { value with Advice = advice }
-
-                let seed document =
-                    match document.Context with
-                    | InteractionContext.Case c -> c.Seeds.PaymentCurrency
-                    | _ -> failtest "Case controls required"
+                let document = HumanCaseDocument.ofCore value
+                let payment = rowActions document RegionRole.Payments |> List.exactlyOne
 
                 Expect.equal
-                    (seed offered)
-                    (Some "EUR")
-                    "Decision currency becomes the permitted authored payment default"
+                    payment.Task
+                    (TaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+                    "Only the offered row task"
 
-                Expect.isNone
-                    (seed (HumanCaseDocument.ofCore value))
-                    "Unrelated removal offers disclose no currency seed"
+                Expect.equal
+                    payment.Binding
+                    (OperationBinding.Case(
+                        CaseSelector.Id value.Snapshot.CaseId,
+                        Revision.value value.Snapshot.Revision,
+                        Some(OperationId.value ResponseExamples.receipt.OperationId)
+                    ))
+                    "Payment identity and version stay together"
+
+                let reminder = rowActions document RegionRole.NextActions |> List.exactlyOne
+
+                Expect.equal
+                    reminder.Task
+                    (TaskId.Operation(ActKind.Reminder ReminderActKind.Complete))
+                    "The selected reminder offers completion"
+
+                Expect.isEmpty reminder.Seeds "Completion needs no editable action or date"
 
                 Expect.isOk
-                    (Codec.encode HumanDocumentCodecs.document offered
+                    (Codec.encode HumanDocumentCodecs.document document
                      |> Codec.decode 65536 HumanDocumentCodecs.document)
-                    "Actual native seeded document"
+                    "The actual wire model round trips")
+            testCase
+                "payment currency prefill belongs only to the offered recording task"
+                (fun () ->
+                    let value = read ()
 
-                let invalid =
-                    match offered.Context with
-                    | InteractionContext.Case c ->
-                        { offered with
-                            Context =
-                                InteractionContext.Case
-                                    { c with
-                                        Tasks =
-                                            c.Tasks
-                                            |> List.filter (
-                                                (<>) (
-                                                    TaskId.Operation(
-                                                        ActKind.Case CaseActKind.RecordPayment
-                                                    )
-                                                )
-                                            )
-                                    }
-                            Screen =
-                                { offered.Screen with
-                                    Regions =
-                                        offered.Screen.Regions
-                                        |> List.filter (fun region ->
-                                            region.Role <> RegionRole.Recommendation)
-                                }
-                        }
-                    | _ -> failtest "Case controls required"
+                    let advice =
+                        CaseAdvice.create
+                            [ CaseActKind.RecordPayment ]
+                            None
+                            HistoryAccess.None
+                            ((Inputs.caseAdvice value.Snapshot.State).Blocked
+                             |> List.filter (fun item -> item.Act <> CaseActKind.RecordPayment))
+                        |> accepted
 
-                Expect.throwsT<ArgumentException>
-                    (fun () -> Codec.encode HumanDocumentCodecs.document invalid |> ignore)
-                    "Native producer refuses a seed that outlives its task offer")
+                    let offered = HumanCaseDocument.ofCore { value with Advice = advice }
+
+                    let record =
+                        offered.Actions
+                        |> List.find (fun action ->
+                            action.Task = TaskId.Operation(ActKind.Case CaseActKind.RecordPayment)
+                            && action.Blocked.IsNone)
+
+                    Expect.equal
+                        (Map.find (TaskAffordances.field BusinessField.PaidCurrency) record.Seeds)
+                        (SubmissionValue.Text "EUR")
+                        "Decision currency is the authored default"
+
+                    let unavailable = HumanCaseDocument.ofCore value
+
+                    Expect.isFalse
+                        (unavailable.Actions
+                         |> List.exists (fun action ->
+                             action.Blocked.IsNone
+                             && Map.containsKey
+                                 (TaskAffordances.field BusinessField.PaidCurrency)
+                                 action.Seeds))
+                        "Other tasks do not acquire that input seed")
         ]

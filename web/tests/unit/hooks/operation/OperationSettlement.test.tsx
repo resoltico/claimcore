@@ -1,3 +1,10 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReview,
+  HumanReceiptDocument,
+  HumanLookupResult,
+} from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { useEndpointCache } from "../../../../src/hooks/EndpointProvider";
 import { afterEach, expect, it, vi } from "vitest";
@@ -8,13 +15,6 @@ import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import type { RecoveryJournal, RecoveryRecord } from "../../../../src/protocol/recoveryJournal";
 import type { CurrentCase } from "../../../../src/protocol/types";
-import {
-  isRequest,
-  type HumanReview,
-  type HumanReceiptDocument,
-  type HumanLookupResult,
-} from "@contracts/client";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const basis = {
   kind: "SNAPSHOT",
@@ -25,36 +25,53 @@ const basis = {
   },
 } as const;
 const current: CurrentCase = {
-  screen: { regions: [] },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 7,
-    workRevision: 0,
-    history: "NONE",
-    tasks: ["CASE:CLOSE"],
-    editableInputs: [],
-    correction: null,
-    seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
-    notes: [],
-    payments: [],
-    nextActions: [],
+  screen: {
+    regions: [],
   },
+  subject: { kind: "CASE", caseId, revision: 7, workRevision: 0 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+      {},
+      [],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
-    context: {
-      kind: "REVIEW",
-      task: "CASE:CLOSE",
-      target: { kind: "CASE", caseId, beforeRevision: 7 },
-      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-      consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CORE-CASE" },
+    screen: {
+      regions: [],
     },
+    subject: {
+      kind: "REVIEW",
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "CORE-CASE",
+      },
+      consequence: "ROUTINE",
+    },
+    actions: [
+      operationAffordance(
+        "case.close",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -71,20 +88,32 @@ const receipt: HumanReceiptDocument = {
               key: "private",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Private original acceptance" },
+              value: {
+                kind: "TEXT",
+                value: "Private original acceptance",
+              },
             },
           ],
         },
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "CASE", caseId, revision: 8 },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -130,28 +159,37 @@ const fixture = async (
     vi.fn<typeof globalThis.fetch>().mockImplementation((url, options) =>
       Promise.try(() => {
         const input: unknown = JSON.parse(requestText(options?.body));
-        if (
-          requestAddress(url).endsWith("operation.get") &&
-          status !== undefined &&
-          isRequest("operation.get", input)
-        ) {
+        if (requestAddress(url).endsWith("operation.get") && status !== undefined) {
+          const operationGetRequest = input as RequestByEndpoint["operation.get"];
           return new Response(
             JSON.stringify({
               representation: "HUMAN",
-              operationId: input.operationId,
+              operationId: operationGetRequest.operationId,
               outcome: status,
             }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
+            {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
           );
         }
-        if (!isRequest("operation.execute", input)) {
-          throw new Error("Unexpected request");
-        }
         bodies.push(requestText(options?.body));
+        const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
         const response = (outcome: unknown) =>
           new Response(
-            JSON.stringify({ representation: "HUMAN", operationId: input.operationId, outcome }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
+            JSON.stringify({
+              representation: "HUMAN",
+              operationId: operationExecuteRequest.operationId,
+              outcome,
+            }),
+            {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
           );
         if (!requestAddress(url).endsWith("preview")) {
           executions += 1;
@@ -160,10 +198,18 @@ const fixture = async (
           }
         }
         return requestAddress(url).endsWith("preview")
-          ? response({ kind: "REVIEWED", review })
+          ? response({
+              kind: "REVIEWED",
+              review,
+            })
           : new Promise<Response>((resolve) => {
               complete = () => {
-                resolve(response({ kind: "ACCEPTED", document: receipt }));
+                resolve(
+                  response({
+                    kind: "ACCEPTED",
+                    document: receipt,
+                  }),
+                );
               };
             });
       }),
@@ -181,7 +227,7 @@ const fixture = async (
     };
     model = useOperation({
       subject: "CASE",
-      kind: "CLOSE",
+      kind: "case.close",
       current,
       credential,
       contextEpoch: epoch,
@@ -281,7 +327,6 @@ it("settles a confirmed dispatched acceptance after unmount without notifying a 
   expect(f.recorded).not.toHaveBeenCalled();
   expect(f.bodies).toHaveLength(2);
 });
-
 it("settles an exact retry after display invalidation without another send or identity", async () => {
   const f = await fixture(true);
   const original = f.get().prepared;
@@ -310,7 +355,6 @@ it("settles an exact retry after display invalidation without another send or id
   expect(new Set(f.bodies).size).toBe(1);
   expect(f.recorded).not.toHaveBeenCalled();
 });
-
 it("a replacement session cannot send the retained private request from an earlier session", async () => {
   const f = await fixture(true);
   f.view.rerender(f.ui(true, "replacement-credential", 1));
@@ -319,7 +363,6 @@ it("a replacement session cannot send the retained private request from an earli
   expect(f.bodies).toHaveLength(2);
   expect(f.records).toHaveLength(1);
 });
-
 it("does not send if disclosure changes while the original journal write is pending", async () => {
   const f = await fixture(false, true);
   await waitFor(() => {
@@ -362,7 +405,6 @@ it("keeps confirmed acceptance and its recovery identity when original-owner cle
   expect(f.bodies).toHaveLength(2);
   expect(f.recorded).not.toHaveBeenCalled();
 });
-
 it("a cache generation change masks the accepted artifact even when requester props stay unchanged", async () => {
   const f = await fixture();
   await act(() =>
@@ -405,7 +447,6 @@ it("a cache generation change during delivery settles without republishing the a
   expect(f.recorded).not.toHaveBeenCalled();
   expect(f.bodies).toHaveLength(2);
 });
-
 it("a cache invalidation cancels handoff while the original journal write is pending", async () => {
   const f = await fixture(false, true);
   await waitFor(() => {
@@ -425,13 +466,20 @@ it("a cache invalidation cancels handoff while the original journal write is pen
   expect(f.get().phase).toBe("EDITING");
   expect(f.recorded).not.toHaveBeenCalled();
 });
-
 const absence: HumanLookupResult = {
   kind: "NOT_ACCEPTED",
   document: {
-    screen: { regions: [] },
-    context: { kind: "EMPTY" },
-    basis: { kind: "UNAVAILABLE" },
+    screen: {
+      regions: [],
+    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
+    basis: {
+      kind: "UNAVAILABLE",
+    },
     disclosure: "NONE",
   },
 };
@@ -471,7 +519,10 @@ it.each([false, true])(
       expect(f.get().phase).toBe("EDITING");
     });
     expect(f.get().priorUncertain).toBe(false);
-    expect(f.get().notice).toEqual({ kind: "local", reason: "notAccepted" });
+    expect(f.get().notice).toEqual({
+      kind: "local",
+      reason: "notAccepted",
+    });
     expect(f.get().receipt).toBeNull();
     expect(f.records).toHaveLength(cleanupFails ? 1 : 0);
     expect(f.bodies).toHaveLength(2);
@@ -499,7 +550,13 @@ it("does not attribute a colliding operation accepted by another actor to the or
 it.each(["WITHHELD", "ERASED"] as const)(
   "settles acceptance with a %s receipt without reconstructing private facts",
   async (disclosure) => {
-    const masked: HumanReceiptDocument = { ...receipt, screen: { regions: [] }, disclosure };
+    const masked: HumanReceiptDocument = {
+      ...receipt,
+      screen: {
+        regions: [],
+      },
+      disclosure,
+    };
     const f = await fixture(true, false, false, {
       kind: "ACCEPTED",
       byRequester: true,

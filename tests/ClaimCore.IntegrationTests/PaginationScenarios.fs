@@ -49,15 +49,15 @@ let internal reader fixture (admin: ServiceContext) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 20)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (CancellationToken.None))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -70,7 +70,7 @@ let internal reader fixture (admin: ServiceContext) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return target, core fixture target
     }
 
@@ -116,15 +116,15 @@ let internal registerActors fixture (actor: ServiceContext) =
             let! registered =
                 (Service.execute
                     actor
-                    (OperationInput.Authority(
-                        authorityRequest
+                    (OperationInput.People(
+                        peopleRequest
                             (id fixture n)
                             target
-                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     (CancellationToken.None))
 
-            acceptedAuthority registered
+            acceptedPeople registered
     }
 
 let internal differentHistoryResource

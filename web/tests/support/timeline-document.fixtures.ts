@@ -1,4 +1,4 @@
-import type { HumanReadDocument_caseTimeline, RegionTimelineEntry } from "@contracts/client";
+import type { HumanReadDocument_case_timeline, RegionTimelineEntry } from "@contracts/client";
 import { workBasis } from "./inputs";
 
 export const openedTimelineEntry: RegionTimelineEntry = {
@@ -19,10 +19,14 @@ export const openedTimelineEntry: RegionTimelineEntry = {
 export const timelineDocument = (
   entries: ReadonlyArray<RegionTimelineEntry> = [],
   nextCursor: string | null = null,
-  disclosure: HumanReadDocument_caseTimeline["disclosure"] = "FULL",
-): HumanReadDocument_caseTimeline => ({
+  disclosure: HumanReadDocument_case_timeline["disclosure"] = "FULL",
+): HumanReadDocument_case_timeline => ({
   screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
-  context: { kind: "PAGE", tasks: [], nextCursor },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure,
 });

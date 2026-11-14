@@ -77,9 +77,9 @@ let internal casePage fixture principal visibility after limit =
                 (fun tx ->
                     task {
                         let! actor =
-                            tx.Authority(
+                            tx.Access(
                                 {
-                                    AuthorityQuery.Principal = principal
+                                    AccessQuery.Principal = principal
                                     CaseId = None
                                 }
                             )
@@ -92,8 +92,8 @@ let internal casePage fixture principal visibility after limit =
                                             DateBasis = Inputs.workBasis
                                             Visibility = visibility
                                             ActorId = actor.Actor.Value.ActorId
-                                            ReadRoles = Authority.readRoles principal
-                                            ForbiddenRoles = Authority.invalidRoles principal
+                                            ReadRoles = Access.readRoles principal
+                                            ForbiddenRoles = Access.invalidRoles principal
                                             Filter = CaseListFilter.empty<CaseSearchText>
                                         }
                                     AfterPosition = after
@@ -128,15 +128,15 @@ let internal assignedReader fixture (actor: ServiceContext) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 15)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (CancellationToken.None))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -149,7 +149,7 @@ let internal assignedReader fixture (actor: ServiceContext) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         return principal
     }
@@ -159,15 +159,15 @@ let internal registerReader fixture (owner: ServiceContext) target =
         let! registered =
             (Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 2)
                         target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (CancellationToken.None))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! added =
             grant
@@ -180,5 +180,5 @@ let internal registerReader fixture (owner: ServiceContext) target =
                 }
                 true
 
-        acceptedAuthority added
+        acceptedPeople added
     }

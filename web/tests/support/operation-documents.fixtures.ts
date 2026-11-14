@@ -1,3 +1,4 @@
+import { operationAffordance } from "./affordances.fixtures";
 import type { HumanReview, HumanReceiptDocument } from "@contracts/client";
 
 const basis = {
@@ -13,14 +14,26 @@ const basis = {
 export const closeReview: HumanReview = {
   document: {
     screen: { regions: [] },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "CASE:CLOSE",
-      target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 4 },
-      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-      consequence: "ROUTINE",
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-SERIALIZATION" },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 4,
+        },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -29,13 +42,28 @@ export const closeReview: HumanReview = {
 
 export const closeReceipt: HumanReceiptDocument = {
   screen: { regions: [] },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", revision: 5 },
-    caseLink: "20000000-0000-4000-8000-000000000001",
-    refreshCase: "20000000-0000-4000-8000-000000000001",
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+      },
+    },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+      },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "WITHHELD",
 };
@@ -43,32 +71,22 @@ export const closeReceipt: HumanReceiptDocument = {
 export const openReview: HumanReview = {
   document: {
     screen: { regions: [] },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "CASE:OPEN",
-      target: {
-        kind: "CASE",
-        caseId: "10000000-0000-7000-8000-000000000001",
-        beforeRevision: null,
-      },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:expectedRevision",
-        "field:incidentDate",
-        "field:incidentNotificationDate",
-        "field:incidentCountry",
-        "field:incidentDescription",
-        "field:policyNumber",
-        "field:insurerClaimReference",
-        "field:claimantName",
-        "field:insurerName",
-        "field:claimedAmount",
-        "field:claimedCurrency",
-      ],
-      consequence: "ROUTINE",
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "case.open",
+        { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },

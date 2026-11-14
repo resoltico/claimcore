@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliDiscoveryTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Application.Contracts
 open System
 open System.IO
@@ -34,7 +36,7 @@ let tests =
         "CLI discovery usage matrix"
         [
             testCase "families list their actual verbs instead of empty unknown commands" (fun () ->
-                for family in [ "case"; "work"; "reminder"; "authority"; "operation" ] do
+                for family in [ "case"; "work"; "reminder"; "people"; "operation" ] do
                     for arguments in
                         [ [ family ]; [ "help"; family ]; [ family; "--help" ]; [ family; "-h" ] ] do
                         let code, text = inspect arguments
@@ -204,14 +206,14 @@ let suggestionScope =
 [<Tests>]
 let historyTraversal =
     testCase
-        "CLI history help does not advertise traversal the authority CSV path cannot perform"
+        "CLI history help does not advertise traversal the people CSV path cannot perform"
         (fun () ->
-            let code, help = inspect [ "authority"; "history"; "--help" ]
-            Expect.equal code 0 "Authority history has grammar-derived help"
+            let code, help = inspect [ "people"; "history"; "--help" ]
+            Expect.equal code 0 "People history has grammar-derived help"
 
             Expect.isFalse
                 (help.Contains "--all")
-                "The current authority exporter returns one page with a cursor")
+                "The current people exporter returns one page with a cursor")
 
 [<Tests>]
 let assignedLanguage =

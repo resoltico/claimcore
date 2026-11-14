@@ -55,7 +55,7 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
     return null;
   }
   const task = taskForCommand(model.prepared.input);
-  const binding = review.document.context;
+  const binding = review.document.subject;
   const target = binding.confirmation;
   const expected = target.kind === "CASE_REFERENCE" ? target.reference : target.operationId;
   const irreversible = binding.consequence === "IRREVERSIBLE";

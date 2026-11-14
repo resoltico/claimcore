@@ -125,7 +125,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             {
                 CaseId = id
                 Snapshot = snapshot
-                Index = CaseIndex.create entry.RecordedAt snapshot
+                Index = CaseIndex.create entry.RecordedAt snapshot None []
                 SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
             }
 
@@ -144,7 +144,16 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
         Verdict.Proceed(
             entry,
-            CaseProjection.Insert(id, snapshot, CaseIndex.create entry.RecordedAt snapshot),
+            {
+                CaseProjection.Rows =
+                    {
+                        Snapshot = snapshot
+                        Payments = []
+                        ChangedAt = entry.RecordedAt
+                    }
+                Index = CaseIndex.create entry.RecordedAt snapshot None []
+                Family = CaseFamily.onCaseCreated id |> CaseFamily.rows |> Result.toOption
+            },
             receipt
         )
 
@@ -365,7 +374,7 @@ let private retainedPages (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority removed
+        acceptedPeople removed
 
         for request in
             [

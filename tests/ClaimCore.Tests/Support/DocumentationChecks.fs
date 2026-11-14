@@ -1,5 +1,7 @@
 module ClaimCore.Tests.DocumentationChecks
 
+open ClaimCore.CommandLine
+
 open System
 open System.Diagnostics
 open System.IO

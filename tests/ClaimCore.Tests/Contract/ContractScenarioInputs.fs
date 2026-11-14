@@ -65,16 +65,16 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }
 
-let internal authority =
+let internal people =
     let effects =
         [
             {
-                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                PeopleReceiptEffect.Act = PeopleActKind.Register
                 Id = EffectId.create receipt.OperationId 0 |> Option.get
                 Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
             }
             {
-                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                PeopleReceiptEffect.Act = PeopleActKind.SetProfile
                 Id = EffectId.create receipt.OperationId 1 |> Option.get
                 Position = EffectPosition.create receipt.Position.Sequence 1 |> Option.get
             }
@@ -82,10 +82,10 @@ let internal authority =
 
     { receipt with
         Subject =
-            ReceiptSubject.Authority
+            ReceiptSubject.People
                 {
-                    TargetActor = AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId id)
-                    Act = AuthorityKind.Register
+                    TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId id)
+                    Act = PeopleActKind.Register
                     Effects = effects
                 }
     }

@@ -187,11 +187,11 @@ let tests =
                 let! _ =
                     execute
                         owner
-                        (OperationInput.Authority(
-                            authorityRequest
+                        (OperationInput.People(
+                            peopleRequest
                                 (id fixture 99210)
                                 principal
-                                (AuthorityAct.Register Inputs.actorProfile)
+                                (PeopleAct.Register Inputs.actorProfile)
                         ))
 
                 let grantValue =
@@ -201,7 +201,7 @@ let tests =
                     }
 
                 let! granted = grant owner (id fixture 99211) principal grantValue true
-                acceptedAuthority granted
+                acceptedPeople granted
                 let reader = { owner with Principal = principal }
                 let! withheld = Service.timeline reader { request with Limit = 50 } token
 
@@ -238,7 +238,7 @@ let tests =
                         }
                         true
 
-                acceptedAuthority eligible
+                acceptedPeople eligible
 
                 for number, revision, responsibility in
                     [
@@ -282,8 +282,8 @@ let tests =
                 let! disabled =
                     execute
                         owner
-                        (OperationInput.Authority(
-                            authorityRequest (id fixture 99215) principal AuthorityAct.Disable
+                        (OperationInput.People(
+                            peopleRequest (id fixture 99215) principal PeopleAct.Disable
                         ))
 
                 disabled |> ignore
@@ -352,7 +352,7 @@ let tests =
                         }
                         true
 
-                acceptedAuthority steward
+                acceptedPeople steward
 
                 let! revoked =
                     grant
@@ -365,7 +365,7 @@ let tests =
                         }
                         false
 
-                acceptedAuthority revoked
+                acceptedPeople revoked
 
                 let! downgraded =
                     Service.timeline

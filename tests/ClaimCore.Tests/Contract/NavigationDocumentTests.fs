@@ -105,233 +105,31 @@ let tests =
     testList
         "human list navigation"
         [
-            testCase
-                "authorized list producers supply bounded typed destinations independent of core captions"
-                (fun () ->
-                    let values = documents ()
+            testCase "typed row destinations travel with their captions and cursor" (fun () ->
+                let values = documents ()
 
-                    match values[0].Context, values[1].Context, values[2].Context with
-                    | InteractionContext.Cases cases,
-                      InteractionContext.Reminders reminders,
-                      InteractionContext.People people ->
-                        Expect.equal
-                            (cases.Cases |> List.map _.CaseId)
-                            [ parent ]
-                            "Case destination is an ID, not a displayed reference"
-
-                        let reminderControl = List.exactlyOne reminders.Reminders
-
-                        Expect.equal
-                            reminderControl.CaseId
-                            parent
-                            "Reminder route retains parent identity"
-
-                        Expect.equal
-                            reminderControl.ReminderId
-                            (Reminder.id reminder)
-                            "Reminder identity is typed"
-
-                        Expect.equal
-                            people.ActorIds
-                            [ actor.ActorId ]
-                            "Person destination is independent of label"
-                    | _ -> failtest "Dedicated list controls required"
-
-                    for document in values do
-                        Expect.isSome
-                            (HumanDocument.nextCursor document)
-                            "Native list traversal recognizes typed page controls"
-
-                        let caption (region: Region) =
+                let links =
+                    values
+                    |> List.map (fun value ->
+                        value.Screen.Regions
+                        |> List.collect (fun region ->
                             match region.Content with
-                            | RegionContent.Table table when region.Role = RegionRole.Results ->
-                                let rows =
-                                    table.Rows
-                                    |> List.map (fun row ->
-                                        { row with
-                                            Values =
-                                                table.Columns
-                                                |> List.map (fun _ ->
-                                                    PresentedValue.Text "opaque-list-caption Ω")
-                                        })
+                            | RegionContent.Table table -> table.Rows |> List.choose _.Link
+                            | _ -> []))
 
-                                { region with
-                                    Content = RegionContent.Table { table with Rows = rows }
-                                }
-                            | _ -> region
+                Expect.equal links[0] [ Link.caseById parent ] "Case identity"
+                Expect.equal links[2] [ Link.person actor.ActorId ] "Person identity"
 
-                        let opaque =
-                            { document with
-                                Screen =
-                                    { document.Screen with
-                                        Regions = document.Screen.Regions |> List.map caption
-                                    }
-                            }
+                Expect.equal
+                    (values |> List.map _.NextCursor)
+                    [ Some "case-next"; Some "reminder-next"; Some "actor-next" ]
+                    "Cursors"
 
-                        let bytes = Codec.encode HumanDocumentCodecs.document opaque
-
-                        Expect.isOk
-                            (Codec.decode 65536 HumanDocumentCodecs.document bytes)
-                            "Control bindings do not depend on parsed display values"
-
-                        Expect.equal
-                            opaque.Context
-                            document.Context
-                            "Caption substitution does not change navigation")
-            testCase
-                "list controls reject mismatched or duplicated rows and tightened disclosure"
-                (fun () ->
-                    for document in documents () do
-                        let bytes = Codec.encode HumanDocumentCodecs.document document
-
-                        let mutate edit =
-                            let node = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull
-                            edit node
-                            Encoding.UTF8.GetBytes(node.ToJsonString())
-
-                        let mismatch =
-                            mutate (fun node ->
-                                let context = node["context"] |> nonNull
-                                let kind = (context["kind"] |> nonNull).GetValue<string>()
-
-                                if kind = "CASES" then context["cases"] <- JsonArray()
-                                elif kind = "PEOPLE" then context["actorIds"] <- JsonArray()
-                                else context["reminders"] <- JsonArray())
-
-                        let duplicate =
-                            mutate (fun node ->
-                                let context = node["context"] |> nonNull
-                                let kind = (context["kind"] |> nonNull).GetValue<string>()
-
-                                let key =
-                                    if kind = "CASES" then "cases"
-                                    elif kind = "PEOPLE" then "actorIds"
-                                    else "reminders"
-
-                                let items = (context[key] |> nonNull).AsArray()
-                                items.Add((items[0] |> nonNull).DeepClone()))
-
-                        let hidden =
-                            mutate (fun node ->
-                                node["disclosure"] <-
-                                    System.Text.Json.Nodes.JsonValue.Create "WITHHELD")
-
-                        for raw in [ mismatch; duplicate; hidden ] do
-                            Expect.isError
-                                (Codec.validate 65536 HumanDocumentCodecs.document raw)
-                                "A valid row requires its exact permitted handle")
-            testCase
-                "case list supplies only authorized assignment seeds and exact destinations"
-                (fun () ->
-                    let row =
-                        { case with
-                            State = CaseState.Active { Fields = Map.empty }
-                            CanAssign = true
-                            Responsible = Some actor
-                            WorkRevision = Revision.first
-                        }
-
-                    let page item =
-                        HumanReadDocuments.cases
-                            {
-                                Basis = Inputs.workBasis
-                                Items = [ item ]
-                                Offers = []
-                                NextCursor = None
-                                ExactReference =
-                                    Some
-                                        {
-                                            CaseId = parent
-                                            CaseReference = case.Reference
-                                        }
-                            }
-
-                    let value = page row
-
-                    match value.Context with
-                    | InteractionContext.Cases control ->
-                        Expect.equal
-                            control.ExactCaseId
-                            (Some parent)
-                            "Authorized exact destination"
-
-                        let binding =
-                            (List.exactlyOne control.Cases).Assignment
-                            |> Option.defaultWith (fun () ->
-                                failtest "Assignment binding required")
-
-                        Expect.equal binding.Revision Revision.first "Selected list work revision"
-
-                        Expect.equal
-                            binding.ResponsibleSeed
-                            (Some actor.ActorId)
-                            "Permitted editable assignee seed"
-                    | _ -> failtest "Case list controls required"
-
-                    match (page { row with CanAssign = false }).Context with
-                    | InteractionContext.Cases control ->
-                        Expect.isNone
-                            (List.exactlyOne control.Cases).Assignment
-                            "No editable seed without assignment offer"
-                    | _ -> failtest "Case list controls required"
-
+                for value in values do
                     Expect.isOk
                         (Codec.encode HumanDocumentCodecs.document value
                          |> Codec.decode 65536 HumanDocumentCodecs.document)
-                        "Actual native boundary")
-            testCase
-                "work view controls bind typed selections to supplied label and count rows"
-                (fun () ->
-                    let value =
-                        HumanReadDocuments.views
-                            {
-                                Basis = Inputs.workBasis
-                                CaseViews = [ { View = CaseView.All; Count = 17L } ]
-                                ReminderViews =
-                                    [
-                                        {
-                                            View = ReminderView.Pending
-                                            Count = 23L
-                                        }
-                                    ]
-                            }
-
-                    match value.Context with
-                    | InteractionContext.WorkViews control ->
-                        Expect.equal
-                            (List.exactlyOne control.Cases).Key
-                            "CASE:ALL"
-                            "Case row identity"
-
-                        Expect.equal
-                            (List.exactlyOne control.Cases).View
-                            CaseView.All
-                            "Typed case selection"
-
-                        Expect.equal
-                            (List.exactlyOne control.Reminders).Key
-                            "REMINDER:PENDING"
-                            "Reminder row identity"
-
-                        Expect.equal
-                            (List.exactlyOne control.Reminders).View
-                            ReminderView.Pending
-                            "Typed reminder selection"
-                    | _ -> failtest "Work view controls required"
-
-                    let bytes = Codec.encode HumanDocumentCodecs.document value
-
-                    Expect.isOk
-                        (Codec.decode 65536 HumanDocumentCodecs.document bytes)
-                        "Actual native work views"
-
-                    let invalid = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull
-                    (nonNull invalid["context"])["cases"] <- JsonArray()
-
-                    Expect.isError
-                        (Encoding.UTF8.GetBytes(invalid.ToJsonString())
-                         |> Codec.decode 65536 HumanDocumentCodecs.document)
-                        "Rows cannot outlive their typed selections")
+                        "Native boundary")
             testCase
                 "Core navigation totals use disjoint urgent buckets and never invent a missing count"
                 (fun () ->

@@ -59,10 +59,10 @@ let private case ids number revision act =
             Act = act
         }
 
-let private authority ids number (person: Actor) act =
+let private people ids number (person: Actor) act =
     let kind, issuer, subject = PrincipalKey.parts person.Principal
 
-    OperationInput.Authority
+    OperationInput.People
         {
             OperationId = id ids number
             Target =
@@ -152,11 +152,11 @@ let private fixture () =
             ] do
             execute
                 core
-                (authority
+                (people
                     ids
                     number
                     person
-                    (AuthorityAct.Register { DisplayName = name; Contact = None }))
+                    (PeopleAct.Register { DisplayName = name; Contact = None }))
             |> ignore
 
         for number, person, role in
@@ -168,11 +168,11 @@ let private fixture () =
             ] do
             execute
                 core
-                (authority
+                (people
                     ids
                     number
                     person
-                    (AuthorityAct.Grant
+                    (PeopleAct.Grant
                         {
                             Role = role
                             Scope = GrantTarget.Installation
@@ -189,11 +189,11 @@ let private fixture () =
 
         execute
             core
-            (authority
+            (people
                 ids
                 1004
                 reader
-                (AuthorityAct.Grant
+                (PeopleAct.Grant
                     {
                         Role = Role.CaseReader
                         Scope = GrantTarget.CaseId parent
@@ -750,11 +750,11 @@ let tests =
 
                     execute
                         core
-                        (authority
+                        (people
                             ids
                             20
                             assigned
-                            (AuthorityAct.SetProfile
+                            (PeopleAct.SetProfile
                                 {
                                     DisplayName = "Current renamed assignee"
                                     Contact = None
@@ -796,7 +796,7 @@ let tests =
                         (bytes.Contains("Current renamed assignee", StringComparison.Ordinal))
                         "Assignment context is not a summary-permission escape"
 
-                    execute core (authority ids 21 assigned AuthorityAct.EraseProfile) |> ignore
+                    execute core (people ids 21 assigned PeopleAct.EraseProfile) |> ignore
 
                     match (collect core None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->

@@ -4,12 +4,12 @@ import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
-import type { HumanReadDocument_caseList } from "@contracts/client";
+import type { HumanReadDocument_case_list } from "@contracts/client";
 import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../support/transport-response.fixtures";
 // The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
 vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
-const listed: HumanReadDocument_caseList = {
+const listed: HumanReadDocument_case_list = {
   screen: {
     regions: [
       {
@@ -27,6 +27,10 @@ const listed: HumanReadDocument_caseList = {
           rows: [
             {
               key: "20000000-0000-4000-8000-000000000001",
+              link: {
+                endpoint: "case.get",
+                input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+              },
               values: [{ kind: "REFERENCE", value: "ADVISED-CASE" }],
             },
           ],
@@ -34,20 +38,21 @@ const listed: HumanReadDocument_caseList = {
       },
     ],
   },
-  context: {
-    kind: "CASES",
-    cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-    tasks: [],
-    exactCaseId: null,
-    nextCursor: null,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };
 const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", {
     ...listed,
-    context: { ...listed.context, tasks: mayOpen ? ["CASE:OPEN"] : [], nextCursor },
+    nextCursor,
+    actions: listed.actions.filter((action) =>
+      new Set<string>(mayOpen ? ["case.open"] : []).has(action.task),
+    ),
   });
 afterEach(() => vi.unstubAllGlobals());
 it("opens the core-supplied exact reference without inferring it from the query or row count", async () => {
@@ -73,10 +78,22 @@ it("opens the core-supplied exact reference without inferring it from the query 
                 rows: [
                   {
                     key: "20000000-0000-4000-8000-000000000001",
+                    link: {
+                      endpoint: "case.get",
+                      input: {
+                        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                      },
+                    },
                     values: [{ kind: "REFERENCE", value: "OTHER-A" }],
                   },
                   {
                     key: "20000000-0000-4000-8000-000000000002",
+                    link: {
+                      endpoint: "case.get",
+                      input: {
+                        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000002" },
+                      },
+                    },
                     values: [{ kind: "REFERENCE", value: "OTHER-B" }],
                   },
                 ],
@@ -98,14 +115,16 @@ it("opens the core-supplied exact reference without inferring it from the query 
             },
           ],
         },
-        context: {
-          ...listed.context,
-          cases: [
-            ...listed.context.cases,
-            { caseId: "20000000-0000-4000-8000-000000000002", assignment: null },
-          ],
-          exactCaseId: "20000000-0000-4000-8000-000000000001",
-        },
+        links: [
+          {
+            rel: "OPEN_CASE",
+            labelId: "field.caseReference.label",
+            link: {
+              endpoint: "case.get",
+              input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+            },
+          },
+        ],
       }),
     ),
   );
@@ -148,6 +167,12 @@ it("does not expand non-ASCII search text into a reference identity", async () =
                 rows: [
                   {
                     key: "20000000-0000-4000-8000-000000000001",
+                    link: {
+                      endpoint: "case.get",
+                      input: {
+                        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                      },
+                    },
                     values: [{ kind: "REFERENCE", value: "S" }],
                   },
                 ],
@@ -207,7 +232,7 @@ it.each([
             },
           ],
         },
-        context: { ...listed.context, cases: [] },
+        links: [],
       }),
     ),
   );

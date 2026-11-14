@@ -15,6 +15,7 @@ type CasePaymentPage =
         CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
+        WorkRevision: Revision
         State: CaseState<FinancialPosition>
         Items: CasePaymentItem list
         NextCursor: string option

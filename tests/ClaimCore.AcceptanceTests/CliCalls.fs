@@ -1,5 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
+open ClaimCore.Domain
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Cli
@@ -10,6 +12,24 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
+
+let caseSubmission (operation: string) reference revision act =
+    let command =
+        Inputs.caseOperation
+            {
+                OperationId = Guid.Parse operation
+                CaseReference = reference
+                ExpectedRevision = revision
+                Act = act
+            }
+
+    let bytes =
+        ClaimCore.Json.Codec.encode
+            ClaimCore.Wire.OperationSubmissionCodecs.submission
+            (Submissions.ofCommand None command)
+
+    use document = JsonDocument.Parse bytes
+    document.RootElement.Clone()
 
 let frame endpoint input =
     JsonSerializer.Serialize {| endpoint = endpoint; input = input |}
@@ -166,7 +186,15 @@ let outcomeKind (reply: JsonElement) =
     reply.GetProperty("result").GetProperty("outcome").GetProperty("kind").GetString()
 
 let data (reply: JsonElement) =
-    reply.GetProperty("result").GetProperty("outcome").GetProperty("data")
+    let outcome = reply.GetProperty("result").GetProperty("outcome")
+
+    let memberName =
+        match outcome.GetProperty("kind").GetString() with
+        | "REJECTED" -> "rejection"
+        | "FAILED" -> "fault"
+        | _ -> "data"
+
+    outcome.GetProperty memberName
 
 let require expected reply =
     Expect.equal (outcomeKind reply) expected "Published outcome"
@@ -186,37 +214,64 @@ let principal (fixture: PublishedFixture.Fixture) kind subject =
         subject = subject
     |}
 
-let installation = {| kind = "INSTALLATION" |}
+let selectedActorId
+    fixture
+    (target:
+        {|
+            kind: string
+            issuer: string
+            subject: string
+        |})
+    =
+    let rec find cursor =
+        let page =
+            match cursor with
+            | None ->
+                human fixture "synthetic-owner" "people.list" {| limit = 50 |} 0
+                |> require "SUCCEEDED"
+            | Some cursor ->
+                human fixture "synthetic-owner" "people.list" {| limit = 50; cursor = cursor |} 0
+                |> require "SUCCEEDED"
 
-let private grantFrame target role =
+        let actor =
+            page.GetProperty("items").EnumerateArray()
+            |> Seq.tryFind (fun item ->
+                let principal = item.GetProperty("principal")
+
+                principal.GetProperty("kind").GetString() = target.kind
+                && principal.GetProperty("issuer").GetString() = target.issuer
+                && principal.GetProperty("subject").GetString() = target.subject)
+
+        match actor with
+        | Some actor -> actor.GetProperty("actor").GetProperty("actorId").GetString() |> nonNull
+        | None ->
+            match page.GetProperty("nextCursor").GetString() with
+            | null -> failtest "Synthetic target must be registered before actor selection."
+            | cursor -> find (Some cursor)
+
+    find None
+
+let private grantFrame actorId role =
     frame
         "operation.execute"
         {|
-            kind = "AUTHORITY"
             operationId = id ()
-            target = target
-            act =
-                {|
-                    kind = "GRANT"
-                    role = role
-                    scope = installation
-                |}
+            task = "people.grant"
+            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            inputs = dict [ "input:role", role; "input:scope", "INSTALLATION" ]
         |}
 
 let setGrant fixture target role active =
+    let actorId = selectedActorId fixture target
+
     let source =
         frame
             "operation.execute"
             {|
-                kind = "AUTHORITY"
                 operationId = id ()
-                target = target
-                act =
-                    {|
-                        kind = if active then "GRANT" else "REVOKE"
-                        role = role
-                        scope = installation
-                    |}
+                task = (if active then "people.grant" else "people.revoke")
+                binding = {| kind = "PEOPLE"; actorId = actorId |}
+                inputs = dict [ "input:role", role; "input:scope", "INSTALLATION" ]
             |}
 
     run fixture (interactiveEnvironment fixture "synthetic-owner" "valid") source 0
@@ -225,7 +280,7 @@ let setGrant fixture target role active =
 
 let grant fixture target role = setGrant fixture target role true
 
-let private setupFrames fixture =
+let private setupFrames (fixture: PublishedFixture.Fixture) =
     let registrations =
         [
             "SERVICE", "service", "Published service", [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
@@ -237,25 +292,24 @@ let private setupFrames fixture =
             [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
         ]
         |> List.collect (fun (kind, subject, displayName, roles) ->
-            let target = principal fixture kind subject
+            let operation = id ()
 
             frame
                 "operation.execute"
                 {|
-                    kind = "AUTHORITY"
-                    operationId = id ()
-                    target = target
-                    act =
-                        {|
-                            kind = "REGISTER"
-                            profile =
-                                {|
-                                    displayName = displayName
-                                    contact = null
-                                |}
-                        |}
+                    operationId = operation
+                    task = "people.register"
+                    binding = {| kind = "PEOPLE" |}
+                    inputs =
+                        dict
+                            [
+                                "input:principal.kind", box kind
+                                "input:principal.issuer", box fixture.Issuer
+                                "input:principal.subject", box subject
+                                "input:profile.displayName", box displayName
+                            ]
                 |}
-            :: (roles |> List.map (grantFrame target)))
+            :: (roles |> List.map (grantFrame operation)))
 
     registrations
 
@@ -264,7 +318,7 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
     Expect.equal result.StandardError.Length 0 "No private diagnostics"
     let lines = UTF8Encoding(false, true).GetString(result.StandardOutput).Split('\n')
     Expect.equal lines[lines.Length - 1] "" "Every reply ends with a newline"
-    Expect.equal (lines.Length - 1) expected "One reply for every authority frame"
+    Expect.equal (lines.Length - 1) expected "One reply for every people frame"
 
     for line in lines[.. lines.Length - 2] do
         let admitted =

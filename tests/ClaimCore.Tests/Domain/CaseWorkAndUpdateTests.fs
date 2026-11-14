@@ -30,11 +30,7 @@ let private registration =
     |> required
 
 let private run operation revision act current =
-    let context =
-        match act, current |> Option.map Case.snapshot with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
+    let context = Map.empty
 
     Case.parse
         {
@@ -263,7 +259,7 @@ let tests =
                 let principal = PrincipalKey.service "https://issuer.example/" "worker" |> required
 
                 let view =
-                    { AuthorityView.empty with
+                    { AccessView.empty with
                         Actor =
                             Some
                                 {
@@ -275,9 +271,7 @@ let tests =
                         Installation = [ Role.CaseHandler ]
                     }
 
-                Expect.isTrue
-                    (Authority.validActor principal view)
-                    "Role remains valid for services"
+                Expect.isTrue (Access.validActor principal view) "Role remains valid for services"
 
                 for capability in
                     [
@@ -287,11 +281,11 @@ let tests =
                         Capability.Close
                     ] do
                     Expect.isTrue
-                        (Authority.can principal view capability Scope.Installation)
+                        (Access.can principal view capability Scope.Installation)
                         "Existing service right retained"
 
                 Expect.isFalse
-                    (Authority.can principal view Capability.ManageCaseWork Scope.Installation)
+                    (Access.can principal view Capability.ManageCaseWork Scope.Installation)
                     "No human-only capability")
 
 

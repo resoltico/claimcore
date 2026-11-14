@@ -22,7 +22,7 @@ let private accepted value =
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private source =
-    """{"endpoint":"operation.execute","input":{"kind":"AUTHORITY","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"synthetic"},"act":{"kind":"REGISTER","profile":{"displayName":"Authored"}}}}"""
+    """{"endpoint":"operation.execute","input":{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"synthetic","input:profile.displayName":"Authored"}}}"""
 
 let private frozen () =
     let original = bytes source
@@ -72,8 +72,8 @@ let private preparedEncoding () =
 
     let subject =
         Frames.input escaped
-        |> JsonValue.tryMember "target"
-        |> Option.bind (JsonValue.tryMember "subject")
+        |> JsonValue.tryMember "inputs"
+        |> Option.bind (JsonValue.tryMember "input:principal.subject")
 
     Expect.equal
         subject
@@ -172,7 +172,7 @@ let private results () =
             {
 
                 ExecuteReply.OperationId = id
-                Outcome = ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
+                Outcome = ExecuteResult.Rejected(Refusal.People PeopleRefusal.LastOwner)
             }
 
     frameRoundTrip (reply (FrameResult.Reply output) DeliveryState.Delivered)

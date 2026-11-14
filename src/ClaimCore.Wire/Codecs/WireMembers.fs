@@ -1,0 +1,93 @@
+namespace ClaimCore.Wire
+
+open ClaimCore.Presentation
+
+open ClaimCore.Application.Contracts
+
+/// Technical request member names have one wire-contract owner.
+module WireMembers =
+    [<Literal>]
+    let Kind = "kind"
+
+    [<Literal>]
+    let OperationId = "operationId"
+
+    [<Literal>]
+    let ExpectedRevision = "expectedRevision"
+
+    [<Literal>]
+    let Act = "act"
+
+    [<Literal>]
+    let Values = "values"
+
+    [<Literal>]
+    let Groups = "groups"
+
+    [<Literal>]
+    let Reason = "reason"
+
+    [<Literal>]
+    let Target = "target"
+
+    [<Literal>]
+    let Issuer = "issuer"
+
+    [<Literal>]
+    let Subject = "subject"
+
+    [<Literal>]
+    let Role = "role"
+
+    [<Literal>]
+    let Scope = "scope"
+
+    [<Literal>]
+    let ActorId = "actorId"
+
+    [<Literal>]
+    let Detail = "detail"
+
+    [<Literal>]
+    let Cursor = "cursor"
+
+    [<Literal>]
+    let Limit = "limit"
+
+/// Named codec definitions are used by the codec and its semantic annotations.
+module RequestSchemas =
+    [<Literal>]
+    let ActorListRequest = "ActorListRequest"
+
+    [<Literal>]
+    let AccessRequestsRequest = "AccessRequestsRequest"
+
+    [<Literal>]
+    let AccessRequestDismissRequest = "AccessRequestDismissRequest"
+
+    [<Literal>]
+    let CaseSelector = "CaseSelector"
+
+    [<Literal>]
+    let CaseGetRequest = "CaseGetRequest"
+
+    [<Literal>]
+    let CaseListRequest = "CaseListRequest"
+
+    [<Literal>]
+    let CaseSummaryRequest = "CaseSummaryRequest"
+
+    [<Literal>]
+    let OperationGetRequest = "OperationGetRequest"
+
+    [<Literal>]
+    let GrantsRequest = "GrantsRequest"
+
+    [<Literal>]
+    let PeopleHistoryRequest = "PeopleHistoryRequest"
+
+    [<Literal>]
+    let Empty = "Empty"
+
+    [<Literal>]
+    let AssigneeRequest = "AssigneeRequest"

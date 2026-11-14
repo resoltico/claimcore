@@ -89,7 +89,7 @@ type CaseActDescription =
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseActKind =
     let vocabulary =
-        Vocabulary.ofUnion<CaseActKind> "act" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<CaseActKind> "task" TokenCasing.CamelCase (Some "case.")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

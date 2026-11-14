@@ -2,7 +2,6 @@ import { afterEach, vi, type Mock } from "vitest";
 import type { EndpointId, RequestByEndpoint } from "@contracts/client";
 import type { ApiResult, EndpointOutcome, ServiceResponse } from "../../src/api/service";
 import * as api from "../../src/api/service";
-import { isRequest } from "../../src/protocol/client";
 type Handler = (
   credential: string,
   input: RequestByEndpoint[EndpointId],
@@ -49,10 +48,8 @@ export const mockEndpoint = <K extends EndpointId>(endpoint: K) => {
     );
   }
   handlers.set(endpoint, (credential, input, signal) => {
-    if (!isRequest(endpoint, input)) {
-      throw new Error(`Endpoint fixture received malformed ${endpoint} input.`);
-    }
-    return mock(credential, input, signal);
+    const endpointRequest = input as RequestByEndpoint[typeof endpoint];
+    return mock(credential, endpointRequest, signal);
   });
   mocks.set(endpoint, mock);
   return mock;

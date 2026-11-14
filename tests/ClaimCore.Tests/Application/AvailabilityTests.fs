@@ -58,12 +58,9 @@ let private stateActions =
                                 |> Some
 
                         applyWith
-                            (CasePaymentContext.Removing(
-                                snapshot.CaseId,
-                                snapshot.Revision,
-                                selected,
-                                None
-                            ))
+                            ((ClaimCore.TestSupport.CaseFixtures.paymentRows
+                                (snapshot.CaseId)
+                                (Option.toList (selected))))
                             act
                             state
                     | _ -> apply act state
@@ -87,7 +84,7 @@ let private edgeActions =
         [
             testCase "availability does not substitute for payload validation" (fun () ->
                 let state = opened ()
-                Expect.contains (availableActs state) "DECIDE" "State eligibility"
+                Expect.contains (availableActs state) "case.decide" "State eligibility"
 
                 let invalid =
                     AuthoredCaseAct.Decide(

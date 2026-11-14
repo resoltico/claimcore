@@ -215,7 +215,8 @@ let private endpointStrictness () =
 
     let seed =
         requests[Api.operationExecute.Token]
-        |> List.find (fun value -> JsonValue.tryMember "kind" value = Some(JsonValue.String "CASE"))
+        |> List.find (fun value ->
+            JsonValue.tryMember "task" value = Some(JsonValue.String "case.open"))
 
     let memberName, kind = "undeclaredControl", "SYNTHETIC_KIND_CONTROL"
     let codec = Api.operationExecute.Input

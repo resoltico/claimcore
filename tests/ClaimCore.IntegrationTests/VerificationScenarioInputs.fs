@@ -72,15 +72,15 @@ let internal updateCase
             })
         nonce
 
-let internal updateAuthority act (value: RetainedOperation) =
+let internal updatePeople act (value: RetainedOperation) =
     let scope =
         match value.Root.Structure.Command with
-        | CommandSkeleton.Authority scope -> scope
-        | _ -> failtest "Authority root required"
+        | CommandSkeleton.People scope -> scope
+        | _ -> failtest "People root required"
 
     let profile =
         match value.Values with
-        | RetainedOperationValues.Authority(RetainedProfile.Available profile) -> Some profile
+        | RetainedOperationValues.People(RetainedProfile.Available profile) -> Some profile
         | _ -> None
 
     let nonce =
@@ -91,8 +91,8 @@ let internal updateAuthority act (value: RetainedOperation) =
 
     recreate
         value.Root.Header
-        (CommandSkeleton.Authority { scope with Act = act })
-        (OperationValues.Authority { Profile = profile })
+        (CommandSkeleton.People { scope with Act = act })
+        (OperationValues.People { Profile = profile })
         nonce
 
 let internal executor id (value: RetainedOperation) =
@@ -112,13 +112,13 @@ let internal register fixture (actor: ServiceContext) n principal =
         let! outcome =
             (Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture n)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority outcome
+        acceptedPeople outcome
     }

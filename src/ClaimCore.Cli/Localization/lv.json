@@ -59,7 +59,7 @@
     "text": "Pakalpojums nav pieejams.",
     "source": "6468ac9f9bca"
   },
-  "cli.family.authority": {
+  "cli.family.people": {
     "text": "Personas un piekļuve",
     "source": "1e133caaec46"
   },
@@ -191,9 +191,9 @@
     "text": "Tiešās lomas: {direct}; no instalācijas mantotās lomas: {inherited}; spēkā: {effective}",
     "source": "db07af8055e6"
   },
-  "cli.text.authorityHistoryEmpty": {
+  "cli.text.peopleHistoryEmpty": {
     "text": "Šai atlasei nav atbilstošu pilnvaru izmaiņu.",
-    "source": "4e76d78127bf"
+    "source": "551e9e8904a3"
   },
   "cli.text.code": {
     "text": "Kods",

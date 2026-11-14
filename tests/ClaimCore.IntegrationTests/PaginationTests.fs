@@ -47,15 +47,15 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 3)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -68,7 +68,7 @@ let private setup (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return admin, principal, core database.Fixture principal
     }
 
@@ -93,7 +93,7 @@ let private revocation (database: PostgresFixture.Database) =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
 
         let! next =
             (Service.list
@@ -145,14 +145,17 @@ type internal PausedPageStore
                                 { new IReadTx with
                                     member _.AccessRequestPage query = tx.AccessRequestPage query
 
-                                    member _.ActivePayment(parent, selection) =
-                                        tx.ActivePayment(parent, selection)
+                                    member _.CaseState id = tx.CaseState id
+
+                                    member _.CaseFamily id = tx.CaseFamily id
+
+                                    member _.PendingReminderDue(parent, excluded) =
+                                        tx.PendingReminderDue(parent, excluded)
+
 
                                     member _.LatestPayments(parent, selection) =
                                         tx.LatestPayments(parent, selection)
 
-                                    member _.PaymentBoundsExcluding(parent, selection) =
-                                        tx.PaymentBoundsExcluding(parent, selection)
 
                                     member _.PaymentPage query = tx.PaymentPage query
                                     member _.ObservedAt = tx.ObservedAt
@@ -167,17 +170,17 @@ type internal PausedPageStore
                                         }
 
 
-                                    member _.Authority
+                                    member _.Access
                                         ({
-                                             AuthorityQuery.Principal = principal
+                                             AccessQuery.Principal = principal
                                              CaseId = scope
                                          })
                                         =
                                         task {
                                             let! actor =
-                                                tx.Authority(
+                                                tx.Access(
                                                     {
-                                                        AuthorityQuery.Principal = principal
+                                                        AccessQuery.Principal = principal
                                                         CaseId = scope
                                                     }
                                                 )
@@ -191,8 +194,8 @@ type internal PausedPageStore
                                     member _.FindCaseByReference reference =
                                         tx.FindCaseByReference reference
 
-                                    member _.AuthorityCases(principal, ids) =
-                                        tx.AuthorityCases(principal, ids)
+                                    member _.AccessCases(principal, ids) =
+                                        tx.AccessCases(principal, ids)
 
                                     member _.FindWork id = tx.FindWork id
                                     member _.FindNote id = tx.FindNote id
@@ -226,8 +229,7 @@ type internal PausedPageStore
 
                                     member _.CaseSummary query = tx.CaseSummary query
 
-                                    member _.AuthorityHistoryPage query =
-                                        tx.AuthorityHistoryPage query
+                                    member _.PeopleHistoryPage query = tx.PeopleHistoryPage query
 
                                     member _.ActorPage
                                         ({
@@ -263,6 +265,10 @@ type internal PausedPageStore
 
                                     member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
                                     member _.ActorRefs ids = tx.ActorRefs ids
+                                    member _.ActorPrincipal id = tx.ActorPrincipal id
+
+                                    member _.PeopleState principal = tx.PeopleState principal
+
                                     member _.FindActor id = tx.FindActor id
                                     member _.AssigneePage query = tx.AssigneePage query
                                     member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
@@ -296,7 +302,7 @@ let private freshAdvice (actor: ServiceContext) cursor current =
 
         Expect.isFalse
             ((page next).Offers |> List.exists (fun offer -> offer = InstallationOffer.Open))
-            "Plain continuation uses current authority and does not restore registrar advice"
+            "Plain continuation uses current people and does not restore registrar advice"
     }
 
 let private snapshot (database: PostgresFixture.Database) =
@@ -314,7 +320,7 @@ let private snapshot (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority promoted
+        acceptedPeople promoted
 
         let! first =
             (Service.list actor ((ClaimCore.TestSupport.Inputs.caseListPage (query None 1))) (token))
@@ -359,7 +365,7 @@ let private snapshot (database: PostgresFixture.Database) =
                     }
                     false
 
-            acceptedAuthority revoked
+            acceptedPeople revoked
 
             let! later =
                 (Service.execute
@@ -391,7 +397,7 @@ let private snapshot (database: PostgresFixture.Database) =
 [<Tests>]
 let tests =
     testList
-        "database cursor authority"
+        "database cursor people"
         [
             testCaseAsync
                 "a real grant revocation refuses continuation on the next page"

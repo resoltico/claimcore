@@ -340,7 +340,7 @@ let tests =
                 "corrupt retained creation reference refuses without byte changes"
                 (run (
                     corruptHistory
-                        "UPDATE claimcore.ledger SET command=jsonb_set(command,'{caseReference}','\"WRONG-RETAINED-REFERENCE\"'::jsonb) WHERE command->>'kind'='CASE' AND command->>'act'='OPEN'"
+                        "UPDATE claimcore.ledger SET command=jsonb_set(command,'{reference}','\"WRONG-RETAINED-REFERENCE\"'::jsonb) WHERE command->>'kind'='CASE' AND command->>'act'='case.open'"
                 ))
             testCaseAsync "corrupt head refuses without byte changes" (run corruptHead)
             testCaseAsync

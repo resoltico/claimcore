@@ -1,5 +1,7 @@
+import type { RegionRow, HumanReadDocument_case_list, ResponseFor } from "@contracts/client";
+
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
-import type { HumanReadDocument_caseList, ResponseFor } from "@contracts/client";
+
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { useEndpoint } from "../../../src/hooks/useEndpoint";
@@ -13,9 +15,13 @@ const requester = {
     observation: { ...activeRequester.basis.observation, businessDate: "2026-11-04" },
   },
 };
-const document = (businessDate: string): HumanReadDocument_caseList => ({
+const document = (businessDate: string): HumanReadDocument_case_list => ({
   screen: { regions: [] },
-  context: { kind: "CASES", cases: [], nextCursor: null, exactCaseId: null, tasks: [] },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -97,8 +103,10 @@ const listInput = () => ({ limit: 50 });
 const listPage = (reply: ResponseFor<"case.list", "HUMAN">) =>
   reply.outcome.kind === "SUCCEEDED" && reply.outcome.document.basis.kind === "SNAPSHOT"
     ? {
-        items: reply.outcome.document.context.cases,
-        nextCursor: reply.outcome.document.context.nextCursor,
+        items: reply.outcome.document.screen.regions.flatMap((region) =>
+          region.content.kind === "TABLE" ? region.content.rows : [],
+        ),
+        nextCursor: reply.outcome.document.nextCursor,
         basis: reply.outcome.document.basis.observation,
         screen: reply.outcome.document.screen,
         disclosure: reply.outcome.document.disclosure,
@@ -106,11 +114,11 @@ const listPage = (reply: ResponseFor<"case.list", "HUMAN">) =>
     : null;
 const PageProbe = () => {
   const day = useBusinessDate(requester);
-  const page = useEndpointPage<
+  const page = useEndpointPage<"case.list", RegionRow, NonNullable<ReturnType<typeof listPage>>>(
     "case.list",
-    HumanReadDocument_caseList["context"]["cases"][number],
-    NonNullable<ReturnType<typeof listPage>>
-  >("case.list", listInput, listPage);
+    listInput,
+    listPage,
+  );
   return (
     <>
       <output data-testid="page-date">{page.page?.basis.businessDate ?? "loading"}</output>

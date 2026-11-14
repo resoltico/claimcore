@@ -177,8 +177,8 @@ button:disabled {
 .case-reminders select,
 .lookup input,
 .operation-editor select,
-.authority-panel select,
-.authority-panel input:not([type="checkbox"], [type="radio"]),
+.people-panel select,
+.people-panel input:not([type="checkbox"], [type="radio"]),
 .copy-value textarea {
   inline-size: 100%;
   min-inline-size: 0;

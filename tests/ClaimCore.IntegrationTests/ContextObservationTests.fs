@@ -58,16 +58,16 @@ let tests =
                     let! reply =
                         Service.execute
                             admin
-                            (OperationInput.Authority(
-                                authorityRequest
+                            (OperationInput.People(
+                                peopleRequest
                                     (id database.Fixture number)
                                     target
-                                    (AuthorityAct.Register Inputs.actorProfile)
+                                    (PeopleAct.Register Inputs.actorProfile)
                             ))
                             token
                         |> Async.AwaitTask
 
-                    acceptedAuthority reply
+                    acceptedPeople reply
 
                 for number, target in [ 101, activePrincipal; 104, disabled ] do
                     let! reply =
@@ -82,18 +82,18 @@ let tests =
                             true
                         |> Async.AwaitTask
 
-                    acceptedAuthority reply
+                    acceptedPeople reply
 
                 let! reply =
                     Service.execute
                         admin
-                        (OperationInput.Authority(
-                            authorityRequest (id database.Fixture 105) disabled AuthorityAct.Disable
+                        (OperationInput.People(
+                            peopleRequest (id database.Fixture 105) disabled PeopleAct.Disable
                         ))
                         token
                     |> Async.AwaitTask
 
-                acceptedAuthority reply
+                acceptedPeople reply
                 let observed = ObservedTransactions.Store(database.Fixture.Store)
 
                 let fixture =
@@ -174,9 +174,9 @@ let tests =
         })
 
 [<Tests>]
-let authorityPageBasis =
+let peoplePageBasis =
     testCaseAsync
-        "authority pages carry their database transaction basis without a client clock"
+        "people pages carry their database transaction basis without a client clock"
         (async {
             let! database = PostgresFixture.create () |> Async.AwaitTask
 
@@ -225,7 +225,7 @@ let authorityPageBasis =
                     check (read grants).Basis
 
                     let! history =
-                        Service.authorityHistory
+                        Service.peopleHistory
                             service
                             {
                                 TargetActorId = None
@@ -246,11 +246,11 @@ let authorityPageBasis =
                     let! preview =
                         Service.preview
                             service
-                            (OperationInput.Authority(
-                                authorityRequest
+                            (OperationInput.People(
+                                peopleRequest
                                     (id database.Fixture 120)
                                     fixture.Owner
-                                    (AuthorityAct.SetProfile
+                                    (PeopleAct.SetProfile
                                         {
                                             DisplayName = "Basis profile"
                                             Contact = None
@@ -260,7 +260,7 @@ let authorityPageBasis =
                         |> Async.AwaitTask
 
                     match preview.Outcome with
-                    | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+                    | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
                         check review.Basis
                     | other -> failtestf "%A" other
             finally

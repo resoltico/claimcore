@@ -50,7 +50,7 @@ let internal tests factory =
                 "admission effect failures restore projections and exact waiting hints"
                 (withFixture factory AdmitContract.atomicWrites)
             testCaseAsync
-                "admission preserves typed effects names authority scopes and erased replay"
+                "admission preserves typed effects names people scopes and erased replay"
                 (withFixture factory AdmitContract.lifecycle)
             testCaseAsync
                 "admission rejects normalized duplicates and preserves role admission"
@@ -101,8 +101,8 @@ let internal tests factory =
                 "Gregorian reminder endpoints and keysets preserve finite date extremes"
                 (withFixture factory CaseWorkContract.finiteDateRange)
             testCaseAsync
-                "targeted partial updates preserve facts and enforce payment removal authority"
-                (withFixture factory CaseWorkContract.partialUpdatesAndPaymentAuthority)
+                "targeted partial updates preserve facts and enforce payment removal people"
+                (withFixture factory CaseWorkContract.partialUpdatesAndPaymentPeople)
             testCaseAsync
                 "ID-scoped grants retain their case identity through review replay revocation and erasure"
                 (withFixture factory CaseSelectorContract.grantScopes)
@@ -122,43 +122,43 @@ let internal tests factory =
                 "triage visibility excludes forbidden roles independently of responsibility"
                 (withFixture factory WorklistTriageContract.assignmentExcludesForbiddenRoles)
             testCaseAsync
-                "authority history preserves typed facts and filtered newest-first pages"
-                (withFixture factory AuthorityHistoryContract.factsAndPaging)
+                "people history preserves typed facts and filtered newest-first pages"
+                (withFixture factory PeopleHistoryContract.factsAndPaging)
             testCaseAsync
-                "authority history requires installation read authority on every snapshot"
-                (withFixture factory AuthorityHistoryContract.permissions)
+                "people history requires installation read people on every snapshot"
+                (withFixture factory PeopleHistoryContract.permissions)
             testCaseAsync
-                "authority history rejects tampered payloads and malformed store pages"
-                (withFixture factory AuthorityHistoryContract.integrity)
+                "people history rejects tampered payloads and malformed store pages"
+                (withFixture factory PeopleHistoryContract.integrity)
             testCaseAsync
                 "lookup preserves roleless authorship and disclosed foreign receipts without writing before the deadline"
                 (withFixture factory OperationRecoveryContract.rolelessAuthorship)
             testCaseAsync
                 "meaningless scope refuses without append while meaningful dormant overlapping grants succeed"
-                (withFixture factory AuthorityReviewContract.meaningfulScopeAdmission)
+                (withFixture factory PeopleReviewContract.meaningfulScopeAdmission)
             testCaseAsync
-                "authority grant review shows only touched facts and writes nothing"
-                (withFixture factory AuthorityReviewContract.authorityGrantReview)
+                "people grant review shows only touched facts and writes nothing"
+                (withFixture factory PeopleReviewContract.peopleGrantReview)
             testCaseAsync
-                "authority execution rechecks a stale owner preview"
-                (withFixture factory AuthorityReviewContract.authorityReviewRechecks)
+                "people execution rechecks a stale owner preview"
+                (withFixture factory PeopleReviewContract.peopleReviewRechecks)
             testCaseAsync
-                "authority previews preserve last-owner and registered-principal refusals"
-                (withFixture factory AuthorityReviewContract.authorityReviewRefusals)
+                "people previews preserve last-owner and registered-principal refusals"
+                (withFixture factory PeopleReviewContract.peopleReviewRefusals)
             testCaseAsync
-                "authority read capability cannot authorize mutation preview"
-                (withFixture factory AuthorityReviewContract.authorityReadIsNotManage)
+                "people read capability cannot authorize mutation preview"
+                (withFixture factory PeopleReviewContract.peopleReadIsNotManage)
             testCaseAsync
-                "authority preview writes nothing and exact replay precedes fresh-state refusal"
-                (withFixture factory AuthorityReviewContract.authorityReviewReplay)
+                "people preview writes nothing and exact replay precedes fresh-state refusal"
+                (withFixture factory PeopleReviewContract.peopleReviewReplay)
             testCaseAsync
-                "authority loading stays bounded to the requested and accepted scopes"
-                (withFixture factory ScopedAuthorityContract.scopedAuthority)
+                "people loading stays bounded to the requested and accepted scopes"
+                (withFixture factory ScopedPeopleContract.scopedPeople)
             testCaseAsync
                 "scoped advice and preview never authorize execution after revocation"
-                (withFixture factory ScopedAuthorityContract.revokedAdvice)
+                (withFixture factory ScopedPeopleContract.revokedAdvice)
             testCaseAsync
-                "genesis append loads one view and co-commits authority"
+                "genesis append loads one view and co-commits people"
                 (withFixture factory LedgerWriteContract.genesis)
             testCaseAsync
                 "append replay and refusal preserve head and complete case projection"
@@ -179,6 +179,6 @@ let internal tests factory =
                 "ASCII reference folding and keyset continuation agree"
                 (withFixture factory CaseDisclosureContract.foldedOrdering)
             testCaseAsync
-                "authority changes and reads agree within snapshots"
-                (withFixture factory ScopedAuthorityContract.authorityChanges)
+                "people changes and reads agree within snapshots"
+                (withFixture factory ScopedPeopleContract.peopleChanges)
         ]

@@ -16,7 +16,7 @@ let private record (attempt: string) : RecoveryIdentity =
         AttemptId = Guid.Parse attempt
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
         Subject = ActSubject.Case
-        Act = "OPEN"
+        Act = "case.open"
         Refused = false
     }
 
@@ -31,7 +31,8 @@ let everyMutation =
                 |> List.choose (fun declaration ->
                     match declaration.Task with
                     | TaskId.Operation kind -> Some kind
-                    | TaskId.Query _ -> None)
+                    | TaskId.Query _
+                    | TaskId.Command _ -> None)
 
             Expect.isNonEmpty kinds "The actual human task inventory is exercised"
 
@@ -39,7 +40,7 @@ let everyMutation =
                 let identity =
                     { record (Guid.NewGuid().ToString("D")) with
                         Subject = ActKind.subject kind
-                        Act = ActKind.subjectActionToken kind
+                        Act = ActKind.token kind
                     }
 
                 Expect.isOk

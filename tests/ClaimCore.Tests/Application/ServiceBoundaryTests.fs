@@ -36,11 +36,11 @@ let private unavailable () = FailingStore()
 let private inputs () =
     [
         ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
-        OperationInput.Authority(
-            authorityRequest
+        OperationInput.People(
+            peopleRequest
                 (id 471)
                 other
-                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
         )
     ]
 
@@ -65,11 +65,11 @@ let private malformed () =
                 ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
-                OperationInput.Authority(
-                    authorityRequest
+                OperationInput.People(
+                    peopleRequest
                         Guid.Empty
                         other
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 )
             ]
 
@@ -227,12 +227,12 @@ let oneRound =
             }
 
         let prepared =
-            CaseExecution.prepare request |> Result.defaultWith (string >> failtest)
+            CaseOperations.prepare request |> Result.defaultWith (string >> failtest)
 
         let snapshot = (locked worker None None).Read
 
         let actual =
-            CaseExecution.complete (services installation calendar owner) prepared snapshot
+            CaseOperations.complete (services installation calendar owner) prepared snapshot
 
         match actual with
         | Error(Refusal.InvalidInput issues) ->

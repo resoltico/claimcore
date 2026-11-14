@@ -24,8 +24,8 @@ let private actor =
                 ProductVersion = "synthetic"
                 Basis = Inputs.workBasis
             }
-        Capability = [ Capability.ReadAuthority ]
-        View = [ View.Authority; View.Operations ]
+        Capability = [ Capability.ReadAccess ]
+        View = [ View.People; View.Operations ]
         Offers = []
         HasScopedCases = false
     }
@@ -36,114 +36,167 @@ let private document actor =
             Requester = RequesterState.Active actor
         }
 
-let private control value =
-    match value.Context with
-    | InteractionContext.Requester c -> c
-    | _ -> failtest "Requester controls required"
-
 [<Tests>]
 let tests =
     testList
         "requester human controls"
         [
-            testCase "authority reader navigation comes from advertised query tasks" (fun () ->
+            testCase "requester identity and navigation come from Core" (fun () ->
                 let value = document actor
-                let c = control value
+
+                match value.Subject with
+                | DocumentSubject.Requester identity ->
+                    Expect.equal identity.InstallationId (Some actor.InstallationId) "Installation"
+                    Expect.equal identity.ActorId (Some actor.ActorId) "Account"
+                | _ -> failtest "Requester subject required"
 
                 Expect.equal
-                    c.Tasks
-                    [
-                        TaskId.Query QueryTaskId.AuthorityList
-                        TaskId.Query QueryTaskId.AuthorityGrants
-                        TaskId.Query QueryTaskId.AuthorityHistory
-                    ]
-                    "Literal read task inventory"
+                    (value.Links |> List.map (_.Link >> Link.endpoint))
+                    [ QueryTaskId.PeopleList; QueryTaskId.OperationGet; QueryTaskId.PeopleHistory ]
+                    "Advertised destinations"
 
-                Expect.equal c.InstallationId (Some actor.InstallationId) "Owner installation"
-                Expect.equal c.ActorId (Some actor.ActorId) "Owner actor"
-
-                Expect.isNone
-                    c.AuthorityIssuerSeed
-                    "Read authority offers no editable authority seed"
+                Expect.isEmpty value.Actions "Read-only requester"
 
                 Expect.isOk
                     (Codec.encode HumanDocumentCodecs.document value
                      |> Codec.decode 65536 HumanDocumentCodecs.document)
-                    "Native reader document")
-            testCase
-                "maintenance withdraws mutation tasks and issuer seeds while Core supplies the notice"
-                (fun () ->
-                    let manager =
-                        { actor with
-                            Capability = [ Capability.ReadAuthority; Capability.ManageAuthority ]
-                            Offers =
-                                [
-                                    InstallationOffer.AuthorityAct AuthorityKind.Register
-                                    InstallationOffer.AuthorityAct AuthorityKind.Admit
-                                ]
+                    "Boundary")
+            testCase "maintenance removes authoring seeds and retains its Core notice" (fun () ->
+                let manager =
+                    { actor with
+                        Capability = [ Capability.ReadAccess; Capability.ManageAccess ]
+                        Offers =
+                            [
+                                InstallationOffer.PeopleAct PeopleActKind.Register
+                                InstallationOffer.PeopleAct PeopleActKind.Admit
+                            ]
+                    }
+
+                let current = document manager
+                Expect.equal current.Actions.Length 2 "Creation controls"
+
+                for action in current.Actions do
+                    Expect.equal
+                        (Map.tryFind
+                            (TaskAffordances.input InputTarget.PrincipalIssuer)
+                            action.Seeds)
+                        (Some(SubmissionValue.Text "https://issuer.example/"))
+                        "Issuer default"
+
+                let paused =
+                    document
+                        { manager with
+                            Maintenance = RegisterMaintenance.create true
                         }
 
-                    let openValue = document manager
+                Expect.isEmpty paused.Actions "No authoring during maintenance"
+
+                Expect.isTrue
+                    (paused.Screen.Regions
+                     |> List.exists (fun region ->
+                         match region.Content with
+                         | RegionContent.Notice notice ->
+                             notice.MessageId = "diagnostic.REGISTER_MAINTENANCE"
+                         | _ -> false))
+                    "Core notice"
+
+                Expect.isOk
+                    (Codec.encode HumanDocumentCodecs.document paused
+                     |> Codec.decode 65536 HumanDocumentCodecs.document)
+                    "Boundary")
+            testCase
+                "active requester construction requires identity and a snapshot basis"
+                (fun () ->
+                    let value = document actor
+
+                    let identity =
+                        {
+                            RequesterSubject.State = RequesterKind.Active
+                            InstallationId = None
+                            ActorId = Some actor.ActorId
+                        }
+
+                    Expect.throws
+                        (fun () ->
+                            HumanDocument.create
+                                (DocumentSubject.Requester identity)
+                                value.Screen
+                                []
+                                []
+                                None
+                                value.Basis
+                                value.Disclosure
+                                None
+                            |> ignore)
+                        "Missing installation refuses"
+
+                    Expect.throws
+                        (fun () ->
+                            HumanDocument.create
+                                value.Subject
+                                value.Screen
+                                []
+                                []
+                                None
+                                ObservationBasis.Unavailable
+                                value.Disclosure
+                                None
+                            |> ignore)
+                        "Missing active basis refuses")
+            testCase "case navigation supplies the existing Pending reminder default" (fun () ->
+                let value = document { actor with View = [ View.Cases ] }
+
+                let reminder =
+                    value.Links
+                    |> List.find (fun link -> Link.endpoint link.Link = QueryTaskId.ReminderList)
+
+                Expect.equal reminder.LabelId "label.reminders" "Core caption"
+
+                match reminder.Link with
+                | Link.ReminderList query ->
+                    Expect.equal
+                        query.View
+                        (Some ReminderView.Pending)
+                        "First supported reminder view"
+                | _ -> failtest "Reminder query required")
+            testCase
+                "actual owner creation offers construct and round trip a ready requester document"
+                (fun () ->
+                    let principal =
+                        PrincipalKey.human actor.Issuer "owner"
+                        |> Result.defaultWith (string >> failtest)
+
+                    let account =
+                        {
+                            Actor.ActorId = actor.ActorId
+                            Principal = principal
+                            Enabled = true
+                            Profile = None
+                        }
+
+                    let access =
+                        { AccessView.empty with
+                            Actor = Some account
+                            Installation = [ Role.Owner; Role.CaseRegistrar ]
+                            HasAssignedRoles = true
+                        }
+
+                    let offers = ClaimCore.Application.Advice.installationOffers principal access
 
                     Expect.equal
-                        (control openValue).AuthorityIssuerSeed
-                        (Some "https://issuer.example/")
-                        "Permitted editable issuer default"
+                        offers
+                        [
+                            InstallationOffer.Open
+                            InstallationOffer.PeopleAct PeopleActKind.Register
+                            InstallationOffer.PeopleAct PeopleActKind.Admit
+                        ]
+                        "Only bindings with no selected existing actor are offered here"
 
-                    Expect.contains
-                        (control openValue).Tasks
-                        (TaskId.Query QueryTaskId.AuthorityRequests)
-                        "Request review is independently offered"
-
-                    let paused =
-                        document
-                            { manager with
-                                Maintenance = RegisterMaintenance.create true
-                            }
-
-                    Expect.isNone
-                        (control paused).AuthorityIssuerSeed
-                        "No seed without an offered mutation"
-
-                    Expect.isFalse
-                        ((control paused).Tasks
-                         |> List.exists (function
-                             | TaskId.Operation _ -> true
-                             | _ -> false))
-                        "Maintenance closes ledger mutations"
-
-                    Expect.isTrue
-                        (paused.Screen.Regions
-                         |> List.exists (fun region ->
-                             match region.Content with
-                             | RegionContent.Notice notice ->
-                                 notice.MessageId = "diagnostic.REGISTER_MAINTENANCE"
-                             | _ -> false))
-                        "Core owns maintenance presentation"
+                    let value = document { actor with Offers = offers }
+                    Expect.equal value.Actions.Length 3 "Every real offer constructs"
 
                     Expect.isOk
-                        (Codec.encode HumanDocumentCodecs.document paused
+                        (Codec.encode HumanDocumentCodecs.document value
                          |> Codec.decode 65536 HumanDocumentCodecs.document)
-                        "Native paused document")
-            testCase
-                "requester structural boundary refuses missing active identity, missing basis and unoffered seeds"
-                (fun () ->
-                    let bytes = Codec.encode HumanDocumentCodecs.document (document actor)
-
-                    for change in
-                        [
-                            (fun (node: JsonNode) -> (nonNull node["context"])["actorId"] <- null)
-                            (fun node ->
-                                node["basis"] <- JsonNode.Parse("{\"kind\":\"UNAVAILABLE\"}"))
-                            (fun node ->
-                                (nonNull node["context"])["authorityIssuerSeed"] <-
-                                    JsonValue.Create "https://issuer.example/")
-                        ] do
-                        let node = JsonNode.Parse(Encoding.UTF8.GetString bytes) |> nonNull
-                        change node
-
-                        Expect.isError
-                            (Encoding.UTF8.GetBytes(node.ToJsonString())
-                             |> Codec.decode 65536 HumanDocumentCodecs.document)
-                            "Control binding refused")
+                        "Actual owner context boundary")
         ]

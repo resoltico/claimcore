@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { selectLanguage, settingsNavigation } from "./localization-support";
 
-const accessModule = /\/assets\/workspace~AuthorityPanel-[^/]+\.js$/u;
+const accessModule = /\/assets\/workspace~PeoplePanel-[^/]+\.js$/u;
 
 const reloadDocument = async (page: Page) => {
   const before = await page.evaluate(() => window.performance.timeOrigin);
@@ -105,10 +105,10 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await page.unroute(accessModule);
   await reloadDocument(page);
   await expect(page.getByRole("heading", { name: "People & access", exact: true })).toBeVisible();
-  await expect(page.locator(".authority-panel")).toBeVisible();
+  await expect(page.locator(".people-panel")).toBeVisible();
   const addPerson = page
     .getByRole("button", { name: "Add person", exact: true })
-    .and(page.locator(".authority-panel > button"));
+    .and(page.locator(".people-panel > button"));
   await expect(addPerson).toHaveCount(1);
   await addPerson.click();
   await expect(page.locator('[name="input:principal.subject"]')).toBeVisible();
@@ -146,7 +146,7 @@ test("offline Settings navigation guard preserves raw entry, review identity and
   const identity = await reviewDraft(page);
   expect((await event).postDataJSON()).toMatchObject({
     operationId: identity.operationId,
-    act: { values: { claimedAmount: "1234", claimedCurrency: "EUR" } },
+    inputs: { "field:claimedAmount": "1234", "field:claimedCurrency": "EUR" },
   });
   const review = page
     .getByRole("dialog")

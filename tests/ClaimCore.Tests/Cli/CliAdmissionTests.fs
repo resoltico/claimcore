@@ -1,5 +1,7 @@
 module ClaimCore.Tests.CliAdmissionTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.Text
 open Expecto
@@ -13,7 +15,7 @@ let private identity () = "11111111-2222-7333-8444-555555555555"
 
 let private baseArguments =
     [
-        "authority"
+        "people"
         "admit"
         "--principal-kind"
         "HUMAN"
@@ -31,8 +33,12 @@ let private prepared tail =
 let private admission tail =
     let value = prepared tail |> Fixtures.accepted
 
-    match Frames.value Api.operationExecute value.Invocation with
-    | Some(OperationInput.Authority { Act = AuthorityAct.Admit admission }) -> admission
+    match
+        (Frames.value Api.operationExecute
+         >> Option.map ClaimCore.TestSupport.Submissions.command)
+            value.Invocation
+    with
+    | Some(OperationInput.People { Act = PeopleAct.Admit admission }) -> admission
     | other -> failtestf "Expected a typed ADMIT operation: %A" other
 
 [<Tests>]
@@ -44,10 +50,10 @@ let tests =
                 let value =
                     Grammar.prepare
                         identity
-                        [ "authority"; "list"; "--text"; "ĀDAMS عادل"; "--limit"; "7" ]
+                        [ "people"; "list"; "--text"; "ĀDAMS عادل"; "--limit"; "7" ]
                     |> Fixtures.accepted
 
-                let request = Frames.value Api.authorityList value.Invocation |> Option.get
+                let request = Frames.value Api.peopleList value.Invocation |> Option.get
 
                 Expect.equal
                     request.Text
@@ -58,11 +64,11 @@ let tests =
 
                 Expect.equal
                     (Encoding.UTF8.GetString value.Bytes)
-                    "{\"endpoint\":\"authority.list\",\"input\":{\"text\":\"ĀDAMS عادل\",\"limit\":7}}"
+                    "{\"endpoint\":\"people.list\",\"input\":{\"text\":\"ĀDAMS عادل\",\"limit\":7}}"
                     "The wire codec defines member order"
 
                 Expect.stringContains
-                    (CommandGrammar.synopsis (TaskId.Query QueryTaskId.AuthorityList))
+                    (CommandGrammar.synopsis (TaskId.Query QueryTaskId.PeopleList))
                     "--text VALUE"
                     "Help uses the actual grammar")
             testCase
@@ -71,16 +77,7 @@ let tests =
                     for words, target in
                         [
                             [ "case"; "erase"; "CASE-X"; "--expected-revision"; "7" ], "CASE-X"
-                            [
-                                "authority"
-                                "erase-profile"
-                                "--principal-kind"
-                                "human"
-                                "--issuer"
-                                "https://id.example/"
-                                "--subject"
-                                "person"
-                            ],
+                            [ "people"; "erase-profile"; "10000000-0000-4000-8000-000000000001" ],
                             identity ()
                         ] do
                         let plain = Grammar.prepare identity words |> Fixtures.accepted
@@ -130,7 +127,7 @@ let tests =
             testCase "profile issuer is explicit in the actual prepared admission frame" (fun () ->
                 let withoutIssuer =
                     [
-                        "authority"
+                        "people"
                         "admit"
                         "--principal-kind"
                         "HUMAN"
@@ -152,13 +149,17 @@ let tests =
 
                 let prepared = Grammar.prepare identity words |> Fixtures.accepted
 
-                match Frames.value Api.operationExecute prepared.Invocation with
-                | Some(OperationInput.Authority request) ->
+                match
+                    (Frames.value Api.operationExecute
+                     >> Option.map ClaimCore.TestSupport.Submissions.command)
+                        prepared.Invocation
+                with
+                | Some(OperationInput.People request) ->
                     Expect.equal
                         request.Target.Issuer
                         "https://profile.example/"
                         "The wire principal is explicit; the server never infers it"
-                | other -> failtestf "Expected authority input: %A" other)
+                | other -> failtestf "Expected people input: %A" other)
             testCase "explicit issuer and structured modes bypass profile defaulting" (fun () ->
                 let profile = Map.ofList [ CliSetting.Issuer, "https://profile.example/" ]
 
@@ -167,7 +168,7 @@ let tests =
                         [ "--issuer"; "https://explicit.example/" ]
                         [ "--issuer=https://explicit.example/" ]
                     ] do
-                    let invocation = CliInvocation.Verb([ "authority"; "admit" ] @ issuer)
+                    let invocation = CliInvocation.Verb([ "people"; "admit" ] @ issuer)
 
                     Expect.equal
                         (CliInvocations.principalIssuer profile invocation)
@@ -276,7 +277,7 @@ let tests =
                             "The required collection has a named missing option"
                     | Ok _ -> failtest "ADMIT requires at least one role")
             testCase "discovery exposes repeated role syntax and rejects creation clears" (fun () ->
-                let operation = TaskId.Operation(ActKind.Authority AuthorityKind.Admit)
+                let operation = TaskId.Operation(ActKind.People PeopleActKind.Admit)
                 let text = CommandGrammar.synopsis operation
                 Expect.stringContains text "--name" "The profile name uses the human alias"
 
@@ -290,8 +291,7 @@ let tests =
                     "Creation cannot clear a profile value"
 
                 for language in [ "en"; "lv"; "ar" ] do
-                    let help =
-                        Discovery.commandHelp language [ "authority"; "admit" ] |> Option.get
+                    let help = Discovery.commandHelp language [ "people"; "admit" ] |> Option.get
 
                     Expect.stringContains
                         help

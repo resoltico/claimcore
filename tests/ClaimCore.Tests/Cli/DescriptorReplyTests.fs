@@ -10,25 +10,40 @@ open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private authorityReview () =
+let private peopleReview () =
     let reply: PreviewReply =
         {
             OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
             Outcome =
                 Outcome.Succeeded(
                     Previewed.Reviewed(
-                        OperationReview.Authority
+                        OperationReview.People
                             {
                                 Basis = Inputs.workBasis
                                 Effects =
                                     [
-                                        AuthorityReviewEffect.Grant
+                                        PeopleReviewEffect.Grant
                                             {
                                                 Role = Role.CaseReader
                                                 Scope = GrantScope.Installation
                                             }
                                     ]
-                                Target = None
+                                Target =
+                                    Some(
+                                        ActorReviewItem.ofActor
+                                            []
+                                            {
+                                                ActorId =
+                                                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                                                Principal =
+                                                    PrincipalKey.human
+                                                        "https://issuer.example/"
+                                                        "synthetic"
+                                                    |> Fixtures.accepted
+                                                Enabled = false
+                                                Profile = None
+                                            }
+                                    )
                                 AccessScope = GrantScope.Installation
                                 Before =
                                     {
@@ -56,11 +71,11 @@ let private authorityReview () =
         }
 
     CliReplies.humanPreview
-        (OperationInput.Authority
-            { CliReplyFixtures.authorityRequest with
+        (OperationInput.People
+            { CliReplyFixtures.peopleRequest with
                 OperationId = reply.OperationId
                 Act =
-                    AuthorityAct.Grant
+                    PeopleAct.Grant
                         {
                             Role = Role.CaseReader
                             Scope = GrantTarget.Installation
@@ -68,14 +83,14 @@ let private authorityReview () =
             })
         reply
 
-let rec private unknownAuthority =
+let rec private unknownPeople =
     function
-    | JsonValue.String "AUTHORITY" -> JsonValue.String "UNDECLARED"
+    | JsonValue.String "PEOPLE" -> JsonValue.String "UNDECLARED"
     | JsonValue.Object fields ->
         fields
-        |> List.map (fun (name, value) -> name, unknownAuthority value)
+        |> List.map (fun (name, value) -> name, unknownPeople value)
         |> JsonValue.Object
-    | JsonValue.Array values -> values |> List.map unknownAuthority |> JsonValue.Array
+    | JsonValue.Array values -> values |> List.map unknownPeople |> JsonValue.Array
     | value -> value
 
 let private account =
@@ -109,10 +124,10 @@ let tests =
     testList
         "typed reply presentation"
         [
-            testCase "authority review uses the typed branch and localized grants" (fun () ->
+            testCase "people review uses the typed branch and localized grants" (fun () ->
                 for language in [ "en"; "lv"; "ar" ] do
                     let lines =
-                        ReplyText.resultLines language None (FrameResult.Reply(authorityReview ()))
+                        ReplyText.resultLines language None (FrameResult.Reply(peopleReview ()))
 
                     let text = String.concat "\n" lines
 
@@ -133,10 +148,10 @@ let tests =
                          || text.Contains "{\"")
                         "Human output contains neither wire tags nor JSON")
             testCase "unknown tagged output is rejected at the typed boundary" (fun () ->
-                let original = authorityReview ()
+                let original = peopleReview ()
 
                 Expect.isError
-                    (ServiceReply.read original.Route (unknownAuthority original.Wire))
+                    (ServiceReply.read original.Route (unknownPeople original.Wire))
                     "The codec rejects an unknown union branch before rendering")
             testCase
                 "context and summary descriptors are localized in all human languages"
@@ -155,7 +170,7 @@ let tests =
                                     Api.caseSummary
                                     (ResponseExamples.defaultHuman Api.caseSummary)
                                 render
-                                    Api.authorityList
+                                    Api.peopleList
                                     (HumanReplies.read
                                         HumanReadDocuments.actors
                                         (Outcome.Succeeded
@@ -166,7 +181,7 @@ let tests =
                                             })
                                      |> RepresentationReply.Human)
                                 render
-                                    Api.authorityGrants
+                                    Api.peopleGrants
                                     (HumanReplies.read
                                         HumanReadDocuments.grants
                                         (Outcome.Succeeded
@@ -190,7 +205,7 @@ let tests =
                                             })
                                      |> RepresentationReply.Human)
                                 render
-                                    Api.authorityRequests
+                                    Api.peopleRequests
                                     (HumanReplies.read
                                         HumanReadDocuments.requests
                                         (Outcome.Succeeded
@@ -213,7 +228,7 @@ let tests =
                                             })
                                      |> RepresentationReply.Human)
                                 render
-                                    Api.authorityRequestsDismiss
+                                    Api.peopleRequestsDismiss
                                     (HumanReplies.read
                                         HumanReadDocuments.dismissed
                                         (Outcome.Succeeded())
@@ -332,6 +347,8 @@ let assigneePresentation =
 
             let page: AssigneePage =
                 {
+                    CaseId = ResponseExamples.snapshot.CaseId
+                    WorkRevision = Revision.zero
                     Basis = Inputs.workBasis
                     Items = [ actor ]
                     NextCursor = Some "next-page"
@@ -415,13 +432,13 @@ let fullDirectoryAndAuditDetails =
 
             let entries =
                 [
-                    AuthorityHistoryFacts.ProfileSet(Some profile)
-                    AuthorityHistoryFacts.Registered principal
-                    AuthorityHistoryFacts.OwnerProvisioned principal
+                    PeopleHistoryFacts.ProfileSet(Some profile)
+                    PeopleHistoryFacts.Registered principal
+                    PeopleHistoryFacts.OwnerProvisioned principal
                 ]
                 |> List.mapi (fun index facts ->
                     {
-                        AuthorityHistoryEntry.OperationId =
+                        PeopleHistoryEntry.OperationId =
                             OperationId.create (
                                 Guid.Parse(sprintf "10000000-0000-7000-8000-%012d" (index + 1))
                             )
@@ -436,7 +453,7 @@ let fullDirectoryAndAuditDetails =
                         Facts = facts
                     })
 
-            let history: AuthorityHistoryPage =
+            let history: PeopleHistoryPage =
                 {
                     Basis = Inputs.workBasis
                     Entries = entries
@@ -453,7 +470,7 @@ let fullDirectoryAndAuditDetails =
                         })
                     (Outcome.Succeeded history)
                 |> RepresentationReply.Human
-                |> CliReplies.ofValue Api.authorityHistory
+                |> CliReplies.ofValue Api.peopleHistory
 
             let text =
                 ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply wire)
@@ -476,7 +493,7 @@ let fullDirectoryAndAuditDetails =
                         entries
                         |> List.map (fun item ->
                             { item with
-                                Facts = AuthorityHistoryFacts.ProfileSet None
+                                Facts = PeopleHistoryFacts.ProfileSet None
                             })
                 }
 
@@ -515,7 +532,7 @@ let fullDirectoryAndAuditDetails =
             let directory =
                 HumanReplies.read HumanReadDocuments.actors (Outcome.Succeeded page)
                 |> RepresentationReply.Human
-                |> CliReplies.ofValue Api.authorityList
+                |> CliReplies.ofValue Api.peopleList
 
             let detailText =
                 ReplyText.resultLines "en" None (FrameResult.Reply directory)
@@ -531,10 +548,10 @@ let fullDirectoryAndAuditDetails =
 
             let exported =
                 CliReplies.ofValue
-                    Api.authorityList
+                    Api.peopleList
                     (RepresentationReply.Data(Outcome.Succeeded page))
 
-            match ServiceReply.value Api.authorityList exported with
+            match ServiceReply.value Api.peopleList exported with
             | Some(RepresentationReply.Data(Outcome.Succeeded value)) ->
                 Expect.equal
                     value.Items.Head.Roles
@@ -550,7 +567,7 @@ let emptyGrantPageDetails =
                 Contact = Some(ContactText.parse "empty-grants@example.test" |> Fixtures.accepted)
             }
 
-        let page: AuthorityGrantPage =
+        let page: PeopleGrantPage =
             {
                 Basis = Inputs.workBasis
                 Actor = target
@@ -563,7 +580,7 @@ let emptyGrantPageDetails =
         let reply =
             HumanReplies.read HumanReadDocuments.grants (Outcome.Succeeded page)
             |> RepresentationReply.Human
-            |> CliReplies.ofValue Api.authorityGrants
+            |> CliReplies.ofValue Api.peopleGrants
 
         let text =
             ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply reply)

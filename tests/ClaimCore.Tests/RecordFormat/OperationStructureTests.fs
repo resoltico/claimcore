@@ -154,7 +154,7 @@ let tests =
                 "mixed ADMIT retains grants when its independently owned profile is unavailable"
                 (fun () ->
                     let target = ActorId.ofOperationId operation
-                    let authorityHeader = { header with BusinessDate = None }
+                    let peopleHeader = { header with BusinessDate = None }
 
                     let grants =
                         [
@@ -169,48 +169,39 @@ let tests =
                         ]
 
                     let command =
-                        CommandSkeleton.Authority
+                        CommandSkeleton.People
                             {
                                 TargetActorId = target
                                 Principal = principal
-                                Act = AuthorityAct.Admit { Profile = 0; Grants = grants }
+                                Act = PeopleAct.Admit { Profile = 0; Grants = grants }
                             }
 
                     let effects =
                         [
-                            EffectDescriptor.Authority(
+                            EffectDescriptor.People(
                                 target,
-                                AuthorityEffectDescriptor.Register principal
+                                PeopleEffectDescriptor.Register principal
                             )
-                            EffectDescriptor.Authority(
-                                target,
-                                AuthorityEffectDescriptor.SetProfile 0
-                            )
-                            EffectDescriptor.Authority(
-                                target,
-                                AuthorityEffectDescriptor.Grant grants[0]
-                            )
-                            EffectDescriptor.Authority(
-                                target,
-                                AuthorityEffectDescriptor.Grant grants[1]
-                            )
+                            EffectDescriptor.People(target, PeopleEffectDescriptor.SetProfile 0)
+                            EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grants[0])
+                            EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grants[1])
                         ]
 
                     let profile =
                         content
-                            authorityHeader
+                            peopleHeader
                             0
                             (CompartmentOwner.ActorProfile target)
                             CompartmentPurpose.Profile
                             [ 1 ]
 
                     Expect.isOk
-                        (OperationStructure.append authorityHeader command effects [ profile ])
+                        (OperationStructure.append peopleHeader command effects [ profile ])
                         "Complete mixed command closes before append"
 
                     let restored =
                         OperationStructure.restore
-                            authorityHeader
+                            peopleHeader
                             command
                             effects
                             [ Compartment.withoutContent profile ]
@@ -224,14 +215,14 @@ let tests =
                     for forged in
                         [ effects |> List.rev; List.tail effects; effects @ [ effects[1] ] ] do
                         Expect.equal
-                            (OperationStructure.restore authorityHeader command forged [ profile ])
+                            (OperationStructure.restore peopleHeader command forged [ profile ])
                             (Error OperationStructureProblem.Effects)
                             "Missing, extra or reordered effects cannot close"
 
                     let changedGrant =
-                        EffectDescriptor.Authority(
+                        EffectDescriptor.People(
                             target,
-                            AuthorityEffectDescriptor.Grant
+                            PeopleEffectDescriptor.Grant
                                 { grants[0] with
                                     Scope = Scope.Case(parent 4)
                                 }
@@ -239,7 +230,7 @@ let tests =
 
                     Expect.equal
                         (OperationStructure.restore
-                            authorityHeader
+                            peopleHeader
                             command
                             [ effects[0]; effects[1]; changedGrant; effects[3] ]
                             [ profile ])
@@ -470,11 +461,11 @@ let tests =
                 "ADMIT and owner provisioning keep their declared task bounds and ordering"
                 (fun () ->
                     let target = ActorId.ofOperationId operation
-                    let authorityHeader = { header with BusinessDate = None }
+                    let peopleHeader = { header with BusinessDate = None }
 
                     let profile =
                         content
-                            authorityHeader
+                            peopleHeader
                             0
                             (CompartmentOwner.ActorProfile target)
                             CompartmentPurpose.Profile
@@ -490,38 +481,31 @@ let tests =
                         ]
 
                     let command grants =
-                        CommandSkeleton.Authority
+                        CommandSkeleton.People
                             {
                                 TargetActorId = target
                                 Principal = principal
-                                Act = AuthorityAct.Admit { Profile = 0; Grants = grants }
+                                Act = PeopleAct.Admit { Profile = 0; Grants = grants }
                             }
 
                     let effects =
                         [
                             yield
-                                EffectDescriptor.Authority(
+                                EffectDescriptor.People(
                                     target,
-                                    AuthorityEffectDescriptor.Register principal
+                                    PeopleEffectDescriptor.Register principal
                                 )
                             yield
-                                EffectDescriptor.Authority(
+                                EffectDescriptor.People(
                                     target,
-                                    AuthorityEffectDescriptor.SetProfile 0
+                                    PeopleEffectDescriptor.SetProfile 0
                                 )
                             for grant in grants ->
-                                EffectDescriptor.Authority(
-                                    target,
-                                    AuthorityEffectDescriptor.Grant grant
-                                )
+                                EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grant)
                         ]
 
                     let maximum =
-                        OperationStructure.append
-                            authorityHeader
-                            (command grants)
-                            effects
-                            [ profile ]
+                        OperationStructure.append peopleHeader (command grants) effects [ profile ]
                         |> valid
 
                     Expect.equal
@@ -542,20 +526,20 @@ let tests =
                                     }
                                 ]
                             )
-                            CommandSkeleton.Authority
+                            CommandSkeleton.People
                                 {
                                     TargetActorId = target
                                     Principal = principal
-                                    Act = AuthorityAct.Register 1
+                                    Act = PeopleAct.Register 1
                                 }
                         ] do
                         Expect.equal
-                            (OperationStructure.restore authorityHeader invalid effects [ profile ])
+                            (OperationStructure.restore peopleHeader invalid effects [ profile ])
                             (Error OperationStructureProblem.Command)
                             "Missing grants, duplicate grants, overflow and unknown profile ordinal are not accepted command shapes"
 
                     let ownerHeader =
-                        { authorityHeader with
+                        { peopleHeader with
                             Sequence = Sequence.first
                             ActorId = target
                         }
@@ -563,34 +547,31 @@ let tests =
                     let roles = [ Role.CaseHandler; Role.Auditor ]
 
                     let owner =
-                        CommandSkeleton.Authority
+                        CommandSkeleton.People
                             {
                                 TargetActorId = target
                                 Principal = principal
-                                Act = AuthorityAct.ProvisionOwner(0, roles)
+                                Act = PeopleAct.ProvisionOwner(0, roles)
                             }
 
                     let ownerEffects =
                         [
-                            EffectDescriptor.Authority(
+                            EffectDescriptor.People(
                                 target,
-                                AuthorityEffectDescriptor.ProvisionOwner principal
+                                PeopleEffectDescriptor.ProvisionOwner principal
                             )
-                            EffectDescriptor.Authority(
+                            EffectDescriptor.People(target, PeopleEffectDescriptor.SetProfile 0)
+                            EffectDescriptor.People(
                                 target,
-                                AuthorityEffectDescriptor.SetProfile 0
-                            )
-                            EffectDescriptor.Authority(
-                                target,
-                                AuthorityEffectDescriptor.Grant
+                                PeopleEffectDescriptor.Grant
                                     {
                                         Role = Role.CaseHandler
                                         Scope = Scope.Installation
                                     }
                             )
-                            EffectDescriptor.Authority(
+                            EffectDescriptor.People(
                                 target,
-                                AuthorityEffectDescriptor.Grant
+                                PeopleEffectDescriptor.Grant
                                     {
                                         Role = Role.Auditor
                                         Scope = Scope.Installation
@@ -611,7 +592,7 @@ let tests =
                         "Owner, profile and initial roles close in the first atomic operation"
 
                     Expect.equal
-                        (OperationStructure.restore authorityHeader owner ownerEffects [ profile ])
+                        (OperationStructure.restore peopleHeader owner ownerEffects [ profile ])
                         (Error OperationStructureProblem.Command)
                         "Owner provisioning cannot occur later or under a different executor")
         ]

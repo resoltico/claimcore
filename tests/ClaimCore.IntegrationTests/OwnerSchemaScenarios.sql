@@ -24,7 +24,7 @@ SELECT pg_temp.expect('owner cannot rewrite ledger metadata',
 SELECT pg_temp.expect('owner cannot replace private contents',
     $s$UPDATE claimcore.ledger_compartments SET payload = '\x00', nonce = NULL WHERE owner_kind='CASE'$s$,
     'CC003');
-SELECT pg_temp.expect('owner cannot clear an authority payload',
+SELECT pg_temp.expect('owner cannot clear a person profile payload',
     $s$UPDATE claimcore.ledger_compartments SET payload = NULL, nonce = NULL WHERE owner_kind='ACTOR_PROFILE'$s$,
     'CC003');
 SELECT pg_temp.expect('owner cannot delete a ledger row',

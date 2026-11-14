@@ -124,9 +124,14 @@ let fields group =
     let schema, definitions =
         match group with
         | "registration" ->
-            RequestCodecs.registration.Schema, RequestCodecs.registration.Definitions
-        | "decision" -> RequestCodecs.decision.Schema, RequestCodecs.decision.Definitions
-        | "payment" -> RequestCodecs.payment.Schema, RequestCodecs.payment.Definitions
+            ClaimCore.RecordFormat.CanonicalInputs.registration.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.registration.Definitions
+        | "decision" ->
+            ClaimCore.RecordFormat.CanonicalInputs.decision.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.decision.Definitions
+        | "payment" ->
+            ClaimCore.RecordFormat.CanonicalInputs.payment.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.payment.Definitions
         | _ -> invalidArg (nameof group) "Unknown record group."
 
     let rec keys =
@@ -182,7 +187,7 @@ let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
 
 let registration: RegistrationInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.registration
+        ClaimCore.RecordFormat.CanonicalInputs.registration
         "registration"
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
@@ -210,13 +215,13 @@ let registrationOn incident notification =
 
 let decision: DecisionInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.decision
+        ClaimCore.RecordFormat.CanonicalInputs.decision
         "decision"
         (Map.ofList [ "paymentDecisionDate", "2026-08-15"; "payableAmount", "750.00" ])
 
 let payment: PaymentInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.payment
+        ClaimCore.RecordFormat.CanonicalInputs.payment
         "payment"
         (Map.ofList [ "paymentDate", "2026-08-20"; "paidAmount", "750"; "paidCurrency", "EUR" ])
 
@@ -321,9 +326,9 @@ let decisionStateWith changes value =
 let paymentStateFrom values =
     Payment.replace values (admittedPayment payment) |> accepted
 
-let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
+let peopleRequest operationId target act : ClaimCore.Domain.PeopleRequest =
     match act with
-    | AuthorityAct.ProvisionOwner _ -> failtest "Owner provisioning is not an authored test input."
+    | PeopleAct.ProvisionOwner _ -> failtest "Owner provisioning is not an authored test input."
     | _ ->
         {
             OperationId = operationId
@@ -341,13 +346,18 @@ let caseActs registration decision payment reason =
                     [
                         "kind", JsonValue.String "UPDATE"
                         "values",
-                        RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
+                        ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate.Write(
+                            registrationUpdate registration
+                        )
                     ]
                 "decision",
                 JsonValue.Object
                     [
                         "kind", JsonValue.String "UPDATE"
-                        "values", RequestCodecs.decisionUpdate.Write(decisionUpdate decision)
+                        "values",
+                        ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate.Write(
+                            decisionUpdate decision
+                        )
                     ]
             ]
 
@@ -360,14 +370,21 @@ let caseActs registration decision payment reason =
             match payload with
             | ActPayload.Bare _ -> []
             | ActPayload.Registration ->
-                [ "values", RequestCodecs.registration.Write registration ]
+                [
+                    "values",
+                    ClaimCore.RecordFormat.CanonicalInputs.registration.Write registration
+                ]
             | ActPayload.RegistrationUpdate ->
                 [
                     "values",
-                    RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
+                    ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate.Write(
+                        registrationUpdate registration
+                    )
                 ]
-            | ActPayload.Decision -> [ "values", RequestCodecs.decision.Write decision ]
-            | ActPayload.Payment -> [ "values", RequestCodecs.payment.Write payment ]
+            | ActPayload.Decision ->
+                [ "values", ClaimCore.RecordFormat.CanonicalInputs.decision.Write decision ]
+            | ActPayload.Payment ->
+                [ "values", ClaimCore.RecordFormat.CanonicalInputs.payment.Write payment ]
             | ActPayload.PaymentId ->
                 [ "paymentId", JsonValue.String "10000000-0000-7000-8000-000000000003" ]
             | ActPayload.Reason -> [ "reason", JsonValue.String reason ]
@@ -375,7 +392,7 @@ let caseActs registration decision payment reason =
 
         let act =
             JsonValue.Object(("kind", JsonValue.String token) :: members)
-            |> RequestCodecs.caseAct.Read "$"
+            |> ClaimCore.RecordFormat.CanonicalInputs.caseAct.Read "$"
             |> Result.defaultWith (fun problem ->
                 failtestf "Declared act input refused: %A" problem)
 
@@ -404,48 +421,47 @@ let namedActorReference id name =
 
     ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)
 
-let authorityActs grants =
-    (Vocabulary.entries AuthorityKind.vocabulary |> List.map snd)
+let peopleActs grants =
+    (Vocabulary.entries PeopleActKind.vocabulary |> List.map snd)
     |> List.collect (fun token ->
-        let kind = AuthorityKind.parse token |> Option.get
+        let kind = PeopleActKind.parse token |> Option.get
 
         match kind with
-        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner(ownerProfile, []), token ]
-        | AuthorityKind.Register -> [ AuthorityAct.Register actorProfile, token ]
-        | AuthorityKind.Admit ->
+        | PeopleActKind.ProvisionOwner -> [ PeopleAct.ProvisionOwner(ownerProfile, []), token ]
+        | PeopleActKind.Register -> [ PeopleAct.Register actorProfile, token ]
+        | PeopleActKind.Admit ->
             if List.isEmpty grants then
                 []
             else
                 [
-                    AuthorityAct.Admit
+                    PeopleAct.Admit
                         {
                             Profile = actorProfile
-                            Grants = List.truncate AuthorityAdmission.MaximumGrants grants
+                            Grants = List.truncate PeopleAdmission.MaximumGrants grants
                         },
                     token
                 ]
-        | AuthorityKind.SetProfile -> [ AuthorityAct.SetProfile actorProfile, token ]
-        | AuthorityKind.EraseProfile -> [ AuthorityAct.EraseProfile, token ]
-        | AuthorityKind.Enable -> [ AuthorityAct.Enable, token ]
-        | AuthorityKind.Disable -> [ AuthorityAct.Disable, token ]
-        | AuthorityKind.Grant -> grants |> List.map (fun grant -> AuthorityAct.Grant grant, token)
-        | AuthorityKind.Revoke ->
-            grants |> List.map (fun grant -> AuthorityAct.Revoke grant, token))
+        | PeopleActKind.SetProfile -> [ PeopleAct.SetProfile actorProfile, token ]
+        | PeopleActKind.EraseProfile -> [ PeopleAct.EraseProfile, token ]
+        | PeopleActKind.Enable -> [ PeopleAct.Enable, token ]
+        | PeopleActKind.Disable -> [ PeopleAct.Disable, token ]
+        | PeopleActKind.Grant -> grants |> List.map (fun grant -> PeopleAct.Grant grant, token)
+        | PeopleActKind.Revoke -> grants |> List.map (fun grant -> PeopleAct.Revoke grant, token))
 
 /// Durable alternatives are independent of authored operation alternatives (ADMIT is not an effect).
-let authorityEffects grants =
+let peopleEffects grants =
     let profile =
         ActorProfile.parse actorProfile
         |> Result.defaultWith (fun _ -> failtest "Profile fixture")
 
     [
-        yield AuthorityEffect.Register principal, "REGISTER"
-        yield AuthorityEffect.ProvisionOwner principal, "PROVISION_OWNER"
-        yield AuthorityEffect.SetProfile profile, "SET_PROFILE"
-        yield AuthorityEffect.EraseProfile, "ERASE_PROFILE"
-        yield AuthorityEffect.Enable, "ENABLE"
-        yield AuthorityEffect.Disable, "DISABLE"
+        yield PeopleEffect.Register principal, "REGISTER"
+        yield PeopleEffect.ProvisionOwner principal, "PROVISION_OWNER"
+        yield PeopleEffect.SetProfile profile, "SET_PROFILE"
+        yield PeopleEffect.EraseProfile, "ERASE_PROFILE"
+        yield PeopleEffect.Enable, "ENABLE"
+        yield PeopleEffect.Disable, "DISABLE"
         for grant in grants do
-            yield AuthorityEffect.Grant grant, "GRANT"
-            yield AuthorityEffect.Revoke grant, "REVOKE"
+            yield PeopleEffect.Grant grant, "GRANT"
+            yield PeopleEffect.Revoke grant, "REVOKE"
     ]

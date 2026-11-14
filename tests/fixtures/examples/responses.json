@@ -2,8 +2,8 @@
   "source": "Hand-reviewed literal decoding examples. No updater or generated snapshots. Focused tests use builders for behavioral variants and boundary controls.",
   "cases": [
     {
-      "name": "authority.grants-response-0",
-      "endpoint": "authority.grants",
+      "name": "people.grants-response-0",
+      "endpoint": "people.grants",
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
@@ -42,8 +42,8 @@
       "valid": true
     },
     {
-      "name": "authority.history-all-facts",
-      "endpoint": "authority.history",
+      "name": "people.history-all-facts",
+      "endpoint": "people.history",
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
@@ -60,7 +60,7 @@
                   "availability": "AVAILABLE"
                 },
                 "act": {
-                  "kind": "DISABLE"
+                  "kind": "people.disable"
                 },
                 "target": {
                   "actorId": "10000000-0000-7000-8000-000000000001",
@@ -91,8 +91,8 @@
       "valid": true
     },
     {
-      "name": "authority.list-viewer-scoped-responsibility",
-      "endpoint": "authority.list",
+      "name": "people.list-viewer-scoped-responsibility",
+      "endpoint": "people.list",
       "valid": true,
       "value": {
         "outcome": {
@@ -157,7 +157,7 @@
     },
     {
       "name": "request-page",
-      "endpoint": "authority.requests",
+      "endpoint": "people.requests",
       "valid": true,
       "value": {
         "outcome": {
@@ -191,7 +191,7 @@
     },
     {
       "name": "request-dismissed",
-      "endpoint": "authority.requests.dismiss",
+      "endpoint": "people.requests.dismiss",
       "valid": true,
       "value": {
         "outcome": {
@@ -225,7 +225,9 @@
                 "availability": "AVAILABLE"
               }
             ],
-            "nextCursor": null
+            "nextCursor": null,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "workRevision": 0
           }
         },
         "representation": "DATA"
@@ -276,7 +278,7 @@
               "recommended": null,
               "blocked": [
                 {
-                  "act": "OPEN",
+                  "act": "case.open",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -284,7 +286,7 @@
                   }
                 },
                 {
-                  "act": "AMEND_REGISTRATION",
+                  "act": "case.amendRegistration",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -292,7 +294,7 @@
                   }
                 },
                 {
-                  "act": "CORRECT",
+                  "act": "case.correct",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -300,7 +302,7 @@
                   }
                 },
                 {
-                  "act": "DECIDE",
+                  "act": "case.decide",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -308,7 +310,7 @@
                   }
                 },
                 {
-                  "act": "WITHDRAW_DECISION",
+                  "act": "case.withdrawDecision",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -316,7 +318,7 @@
                   }
                 },
                 {
-                  "act": "RECORD_PAYMENT",
+                  "act": "case.recordPayment",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -324,7 +326,7 @@
                   }
                 },
                 {
-                  "act": "REMOVE_PAYMENT",
+                  "act": "case.removePayment",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -332,7 +334,7 @@
                   }
                 },
                 {
-                  "act": "CLOSE",
+                  "act": "case.close",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -340,7 +342,7 @@
                   }
                 },
                 {
-                  "act": "REOPEN",
+                  "act": "case.reopen",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -348,7 +350,7 @@
                   }
                 },
                 {
-                  "act": "VOID",
+                  "act": "case.void",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -356,7 +358,7 @@
                   }
                 },
                 {
-                  "act": "REINSTATE",
+                  "act": "case.reinstate",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -364,7 +366,7 @@
                   }
                 },
                 {
-                  "act": "ERASE",
+                  "act": "case.erase",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -563,27 +565,27 @@
             "nextCursor": "x",
             "offers": [
               {
-                "kind": "OPEN"
+                "kind": "case.open"
               },
               {
-                "kind": "AUTHORITY_ACT",
-                "act": "REGISTER"
+                "kind": "PEOPLE_ACT",
+                "act": "people.register"
               },
               {
-                "kind": "AUTHORITY_ACT",
-                "act": "ENABLE"
+                "kind": "PEOPLE_ACT",
+                "act": "people.enable"
               },
               {
-                "kind": "AUTHORITY_ACT",
-                "act": "GRANT"
+                "kind": "PEOPLE_ACT",
+                "act": "people.grant"
               },
               {
-                "kind": "AUTHORITY_ACT",
-                "act": "REVOKE"
+                "kind": "PEOPLE_ACT",
+                "act": "people.revoke"
               },
               {
-                "kind": "AUTHORITY_ACT",
-                "act": "DISABLE"
+                "kind": "PEOPLE_ACT",
+                "act": "people.disable"
               }
             ],
             "basis": {
@@ -737,7 +739,7 @@
                   "availability": "AVAILABLE"
                 },
                 "revision": 2,
-                "act": "COMPLETE_AND_PLAN_NEXT",
+                "act": "reminder.completeAndPlanNext",
                 "changes": {
                   "kind": "DISCLOSED",
                   "items": [
@@ -808,7 +810,7 @@
                   "availability": "AVAILABLE"
                 },
                 "revision": 2,
-                "act": "UPDATE_WORK",
+                "act": "work.update",
                 "changes": {
                   "kind": "DISCLOSED",
                   "items": [
@@ -885,7 +887,7 @@
                   "availability": "AVAILABLE"
                 },
                 "revision": 1,
-                "act": "OPEN",
+                "act": "case.open",
                 "changes": {
                   "kind": "DISCLOSED",
                   "items": [
@@ -1010,27 +1012,27 @@
               "timeZone": "x",
               "offers": [
                 {
-                  "kind": "OPEN"
+                  "kind": "case.open"
                 },
                 {
-                  "kind": "AUTHORITY_ACT",
-                  "act": "REGISTER"
+                  "kind": "PEOPLE_ACT",
+                  "act": "people.register"
                 },
                 {
-                  "kind": "AUTHORITY_ACT",
-                  "act": "ENABLE"
+                  "kind": "PEOPLE_ACT",
+                  "act": "people.enable"
                 },
                 {
-                  "kind": "AUTHORITY_ACT",
-                  "act": "GRANT"
+                  "kind": "PEOPLE_ACT",
+                  "act": "people.grant"
                 },
                 {
-                  "kind": "AUTHORITY_ACT",
-                  "act": "REVOKE"
+                  "kind": "PEOPLE_ACT",
+                  "act": "people.revoke"
                 },
                 {
-                  "kind": "AUTHORITY_ACT",
-                  "act": "DISABLE"
+                  "kind": "PEOPLE_ACT",
+                  "act": "people.disable"
                 }
               ],
               "capabilities": [
@@ -1042,12 +1044,12 @@
                 "RECORD_PAYMENT",
                 "CLOSE",
                 "STEWARD",
-                "MANAGE_AUTHORITY",
-                "READ_AUTHORITY"
+                "MANAGE_ACCESS",
+                "READ_ACCESS"
               ],
               "views": [
                 "CASES",
-                "AUTHORITY",
+                "PEOPLE",
                 "OPERATIONS"
               ],
               "hasScopedCases": false,
@@ -1105,7 +1107,7 @@
               "kind": "CASE",
               "caseReference": "x",
               "revision": 1,
-              "act": "OPEN",
+              "act": "case.open",
               "snapshot": {
                 "kind": "DISCLOSED",
                 "state": {
@@ -1188,7 +1190,7 @@
                 "kind": "CASE",
                 "caseReference": "x",
                 "revision": 1,
-                "act": "OPEN",
+                "act": "case.open",
                 "snapshot": {
                   "kind": "DISCLOSED",
                   "state": {
@@ -1482,10 +1484,10 @@
                 "availability": "AVAILABLE"
               },
               "acts": [
-                "UPDATE",
-                "COMPLETE",
-                "CANCEL",
-                "COMPLETE_AND_PLAN_NEXT"
+                "reminder.update",
+                "reminder.complete",
+                "reminder.cancel",
+                "reminder.completeAndPlanNext"
               ],
               "active": true,
               "timing": "UPCOMING",
@@ -1531,10 +1533,10 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "UPDATE",
-                  "COMPLETE",
-                  "CANCEL",
-                  "COMPLETE_AND_PLAN_NEXT"
+                  "reminder.update",
+                  "reminder.complete",
+                  "reminder.cancel",
+                  "reminder.completeAndPlanNext"
                 ],
                 "active": true,
                 "timing": "UPCOMING",
@@ -1561,7 +1563,7 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "REOPEN"
+                  "reminder.reopen"
                 ],
                 "active": false,
                 "timing": null,
@@ -1588,7 +1590,7 @@
                   "availability": "AVAILABLE"
                 },
                 "acts": [
-                  "REOPEN"
+                  "reminder.reopen"
                 ],
                 "active": true,
                 "timing": null,
@@ -1730,7 +1732,7 @@
       }
     },
     {
-      "name": "operation.execute.authority-response-0",
+      "name": "operation.execute.people-response-0",
       "endpoint": "operation.execute",
       "value": {
         "operationId": "10000000-0000-7000-8000-000000000001",
@@ -1752,11 +1754,11 @@
               "availability": "AVAILABLE"
             },
             "subject": {
-              "kind": "AUTHORITY",
-              "act": "REGISTER",
+              "kind": "PEOPLE",
+              "act": "people.register",
               "effects": [
                 {
-                  "act": "REGISTER",
+                  "act": "people.register",
                   "position": {
                     "sequence": 2,
                     "effectIndex": 0
@@ -1767,7 +1769,7 @@
                   }
                 },
                 {
-                  "act": "SET_PROFILE",
+                  "act": "people.setProfile",
                   "position": {
                     "sequence": 2,
                     "effectIndex": 1
@@ -1822,7 +1824,7 @@
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
               "revision": 1,
-              "act": "UPDATE_WORK",
+              "act": "work.update",
               "snapshot": {
                 "kind": "DISCLOSED",
                 "view": {
@@ -1877,7 +1879,7 @@
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "NARRATIVE-REMINDERS",
-              "act": "CREATE",
+              "act": "reminder.create",
               "effects": {
                 "kind": "SINGLE",
                 "reminder": {
@@ -1908,7 +1910,7 @@
       }
     },
     {
-      "name": "authority-admit-ordered-effects",
+      "name": "people-admit-ordered-effects",
       "endpoint": "operation.preview",
       "valid": true,
       "value": {
@@ -1917,7 +1919,7 @@
           "kind": "REVIEWED",
           "data": {
             "review": {
-              "kind": "AUTHORITY",
+              "kind": "PEOPLE",
               "target": null,
               "accessScope": {
                 "kind": "INSTALLATION"
@@ -1954,7 +1956,7 @@
               },
               "effects": [
                 {
-                  "kind": "REGISTER",
+                  "kind": "people.register",
                   "principal": {
                     "kind": "HUMAN",
                     "issuer": "https://issuer.example/",
@@ -1962,14 +1964,14 @@
                   }
                 },
                 {
-                  "kind": "SET_PROFILE",
+                  "kind": "people.setProfile",
                   "profile": {
                     "displayName": "Authored admission name",
                     "contact": "authored@example.invalid"
                   }
                 },
                 {
-                  "kind": "GRANT",
+                  "kind": "people.grant",
                   "grant": {
                     "role": "CASE_READER",
                     "scope": {
@@ -1978,7 +1980,7 @@
                   }
                 },
                 {
-                  "kind": "GRANT",
+                  "kind": "people.grant",
                   "grant": {
                     "role": "AUDITOR",
                     "scope": {
@@ -2147,7 +2149,7 @@
       }
     },
     {
-      "name": "operation.execute.authority-response-1",
+      "name": "operation.execute.people-response-1",
       "endpoint": "operation.execute",
       "value": {
         "operationId": "10000000-0000-7000-8000-000000000001",
@@ -2169,11 +2171,11 @@
               "availability": "AVAILABLE"
             },
             "subject": {
-              "kind": "AUTHORITY",
-              "act": "REGISTER",
+              "kind": "PEOPLE",
+              "act": "people.register",
               "effects": [
                 {
-                  "act": "REGISTER",
+                  "act": "people.register",
                   "position": {
                     "sequence": 2,
                     "effectIndex": 0
@@ -2184,7 +2186,7 @@
                   }
                 },
                 {
-                  "act": "SET_PROFILE",
+                  "act": "people.setProfile",
                   "position": {
                     "sequence": 2,
                     "effectIndex": 1
@@ -2231,9 +2233,10 @@
       "value": {
         "outcome": {
           "kind": "FAILED",
-          "data": {
+          "fault": {
             "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
+            "action": "RETRY_SAFE",
+            "messageId": "fault.CORE_STORE_UNAVAILABLE"
           }
         },
         "representation": "DATA"
@@ -2247,7 +2250,7 @@
         "operationId": "019fc6e8-1798-7000-8000-000000000042",
         "outcome": {
           "kind": "REJECTED",
-          "data": {
+          "rejection": {
             "code": "OPERATION_ID_OUT_OF_WINDOW",
             "action": "CORRECT_INPUT",
             "target": "operationId",
@@ -2312,11 +2315,11 @@
                 "availability": "AVAILABLE"
               },
               "subject": {
-                "kind": "AUTHORITY",
-                "act": "PROVISION_OWNER",
+                "kind": "PEOPLE",
+                "act": "people.provisionOwner",
                 "effects": [
                   {
-                    "act": "PROVISION_OWNER",
+                    "act": "people.provisionOwner",
                     "position": {
                       "sequence": 2,
                       "effectIndex": 0
@@ -2327,7 +2330,7 @@
                     }
                   },
                   {
-                    "act": "SET_PROFILE",
+                    "act": "people.setProfile",
                     "position": {
                       "sequence": 2,
                       "effectIndex": 1
@@ -2446,25 +2449,6 @@
                 }
               ]
             },
-            "context": {
-              "kind": "CASE",
-              "caseId": "20000000-0000-7000-8000-000000000001",
-              "revision": 1,
-              "workRevision": 0,
-              "tasks": [],
-              "editableInputs": [],
-              "correction": null,
-              "seeds": {
-                "registration": null,
-                "decision": null,
-                "work": null,
-                "paymentCurrency": null
-              },
-              "history": "NONE",
-              "notes": [],
-              "payments": [],
-              "nextActions": []
-            },
             "basis": {
               "kind": "SNAPSHOT",
               "observation": {
@@ -2473,7 +2457,17 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "disclosure": "CURRENT"
+            "disclosure": "CURRENT",
+            "actions": [],
+            "links": [],
+            "nextCursor": null,
+            "history": "NONE",
+            "subject": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0
+            }
           }
         }
       },
@@ -2510,25 +2504,6 @@
                   }
                 ]
               },
-              "context": {
-                "kind": "REVIEW",
-                "task": "CASE:CLOSE",
-                "target": {
-                  "kind": "CASE",
-                  "caseId": "20000000-0000-7000-8000-000000000001",
-                  "beforeRevision": 1
-                },
-                "inputs": [
-                  "input:operationId",
-                  "field:caseReference",
-                  "input:expectedRevision"
-                ],
-                "consequence": "ROUTINE",
-                "confirmation": {
-                  "kind": "CASE_REFERENCE",
-                  "reference": "AUTHORED-CASE"
-                }
-              },
               "basis": {
                 "kind": "SNAPSHOT",
                 "observation": {
@@ -2537,7 +2512,36 @@
                   "timeZone": "Etc/UTC"
                 }
               },
-              "disclosure": "CURRENT"
+              "disclosure": "CURRENT",
+              "actions": [
+                {
+                  "task": "case.close",
+                  "binding": {
+                    "kind": "CASE",
+                    "target": {
+                      "kind": "ID",
+                      "caseId": "20000000-0000-7000-8000-000000000001"
+                    },
+                    "expectedRevision": 1
+                  },
+                  "seeds": {},
+                  "editable": [],
+                  "choices": {},
+                  "primary": true,
+                  "blocked": null
+                }
+              ],
+              "links": [],
+              "nextCursor": null,
+              "history": null,
+              "subject": {
+                "kind": "REVIEW",
+                "confirmation": {
+                  "kind": "CASE_REFERENCE",
+                  "reference": "AUTHORED-CASE"
+                },
+                "consequence": "ROUTINE"
+              }
             },
             "presentation": {
               "changes": [],
@@ -2549,7 +2553,7 @@
       "valid": true
     },
     {
-      "name": "human-authority-receipt-document",
+      "name": "human-people-receipt-document",
       "endpoint": "operation.execute",
       "value": {
         "representation": "HUMAN",
@@ -2578,16 +2582,6 @@
                 }
               ]
             },
-            "context": {
-              "kind": "RECEIPT",
-              "target": {
-                "kind": "AUTHORITY",
-                "actorId": "40000000-0000-7000-8000-000000000001"
-              },
-              "caseLink": null,
-              "refreshCase": null,
-              "recordedFields": []
-            },
             "basis": {
               "kind": "SNAPSHOT",
               "observation": {
@@ -2596,14 +2590,22 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "disclosure": "CURRENT"
+            "disclosure": "CURRENT",
+            "actions": [],
+            "links": [],
+            "nextCursor": null,
+            "history": null,
+            "subject": {
+              "kind": "RECEIPT",
+              "operationId": "10000000-0000-7000-8000-000000000001"
+            }
           }
         }
       },
       "valid": true
     },
     {
-      "name": "human-receipt-rejects-case-resource-context",
+      "name": "human-receipt-rejects-case-resource-subject",
       "endpoint": "operation.execute",
       "value": {
         "representation": "HUMAN",
@@ -2632,25 +2634,6 @@
                 }
               ]
             },
-            "context": {
-              "kind": "CASE",
-              "caseId": "20000000-0000-7000-8000-000000000001",
-              "revision": 1,
-              "workRevision": 0,
-              "tasks": [],
-              "editableInputs": [],
-              "correction": null,
-              "seeds": {
-                "registration": null,
-                "decision": null,
-                "work": null,
-                "paymentCurrency": null
-              },
-              "history": "NONE",
-              "notes": [],
-              "payments": [],
-              "nextActions": []
-            },
             "basis": {
               "kind": "SNAPSHOT",
               "observation": {
@@ -2659,7 +2642,17 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "disclosure": "CURRENT"
+            "disclosure": "CURRENT",
+            "actions": [],
+            "links": [],
+            "nextCursor": null,
+            "history": "NONE",
+            "subject": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0
+            }
           }
         }
       },
@@ -2694,25 +2687,6 @@
                 }
               ]
             },
-            "context": {
-              "kind": "CASE",
-              "caseId": "20000000-0000-7000-8000-000000000001",
-              "revision": 1,
-              "workRevision": 0,
-              "tasks": [],
-              "editableInputs": [],
-              "correction": null,
-              "seeds": {
-                "registration": null,
-                "decision": null,
-                "work": null,
-                "paymentCurrency": null
-              },
-              "history": "NONE",
-              "notes": [],
-              "payments": [],
-              "nextActions": []
-            },
             "basis": {
               "kind": "SNAPSHOT",
               "observation": {
@@ -2721,7 +2695,17 @@
                 "timeZone": "Etc/UTC"
               }
             },
-            "disclosure": "CURRENT"
+            "disclosure": "CURRENT",
+            "actions": [],
+            "links": [],
+            "nextCursor": null,
+            "history": "NONE",
+            "subject": {
+              "kind": "CASE",
+              "caseId": "20000000-0000-7000-8000-000000000001",
+              "revision": 1,
+              "workRevision": 0
+            }
           },
           "data": {}
         }
@@ -2734,9 +2718,10 @@
       "value": {
         "outcome": {
           "kind": "FAILED",
-          "data": {
+          "fault": {
             "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
+            "action": "RETRY_SAFE",
+            "messageId": "fault.CORE_STORE_UNAVAILABLE"
           }
         }
       },
@@ -2770,7 +2755,8 @@
               }
             },
             "items": [],
-            "nextCursor": null
+            "nextCursor": null,
+            "workRevision": 0
           }
         }
       }

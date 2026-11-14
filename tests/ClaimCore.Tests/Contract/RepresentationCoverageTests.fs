@@ -84,7 +84,8 @@ let tests =
                                             "REJECTED"
                                             "FAILED"
                                         ]
-                                | ActorEndpoint.Query _ ->
+                                | ActorEndpoint.Query _
+                                | ActorEndpoint.Command _ ->
                                     set [ "SUCCEEDED"; "REJECTED"; "FAILED" ]
 
                             for representation in [ "HUMAN"; "DATA" ] do

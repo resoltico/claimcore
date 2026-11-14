@@ -147,14 +147,14 @@
     margin-inline: 0;
     overflow-wrap: anywhere;
   }
-  .authority-workspace {
+  .people-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
   }
-  .authority-table {
+  .people-table {
     display: table;
   }
-  .authority-columns {
+  .people-columns {
     display: table-header-group;
     position: static;
     inline-size: auto;
@@ -162,31 +162,31 @@
     overflow: visible;
     clip-path: none;
   }
-  .authority-rows {
+  .people-rows {
     display: table-row-group;
   }
-  .authority-row {
+  .people-row {
     display: table-row;
     border: 0;
     border-radius: 0;
     margin: 0;
   }
-  .authority-row > td,
-  .authority-columns th {
+  .people-row > td,
+  .people-columns th {
     display: table-cell;
     padding: var(--space-1) var(--space-2);
     vertical-align: middle;
     text-align: start;
     border-block-end: var(--border-width) solid var(--border-control);
   }
-  .authority-columns th {
+  .people-columns th {
     font-size: var(--text-sm);
     inline-size: 20%;
   }
-  .authority-columns th:first-child {
+  .people-columns th:first-child {
     inline-size: 40%;
   }
-  .authority-cell-label {
+  .people-cell-label {
     display: none;
   }
   .worklist-filters details[open] fieldset {

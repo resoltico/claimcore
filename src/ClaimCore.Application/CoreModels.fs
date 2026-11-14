@@ -49,15 +49,8 @@ type IBusinessCalendar =
     abstract DateAt: instant: DateTimeOffset -> DateOnly
 
 
-type internal AuthorityProposal =
-    {
-        TargetActorId: ActorId
-        Principal: PrincipalKey
-        Change: AuthorityChange
-    }
-
 [<NoEquality; NoComparison>]
-type internal AuthorityWriteContext =
+type internal LedgerWriteContext =
     {
         Head: LedgerPosition
         NewPayloadNonce: unit -> byte array

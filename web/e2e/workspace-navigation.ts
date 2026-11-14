@@ -51,7 +51,7 @@ export const showExactLookup = async (page: Page): Promise<Locator> => {
 };
 export const goToView = async (
   page: Page,
-  name: "cases" | "people" | "reminders" | "authority-history" | "recovery",
+  name: "cases" | "people" | "reminders" | "people-history" | "recovery",
 ): Promise<void> => {
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);

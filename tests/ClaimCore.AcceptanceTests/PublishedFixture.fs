@@ -420,8 +420,8 @@ type Fixture() =
     member _.Start() =
         task {
             cli <- PublishedProcesses.publish root directory "ClaimCore.Cli"
-            admin <- PublishedProcesses.publish root directory "ClaimCore.Database"
-            webBinary <- PublishedProcesses.publish root directory "ClaimCore.Web"
+            webBinary <- PublishedProcesses.publish root directory "ClaimCore.Server"
+            admin <- webBinary
             do! startPrerequisites postgres identity
             let! runtime = initialize directory postgres identity admin adminEnvironment
             let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)

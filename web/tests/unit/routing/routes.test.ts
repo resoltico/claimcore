@@ -14,14 +14,14 @@ it.each(["CASE-0042", "new", "NEW", ".", "..", "/", "%", "~", "~bmV3", "A/B", "1
     expect(
       parseRoute(
         new URL(
-          actPath({ kind: "REFERENCE", caseReference: reference }, "CORRECT"),
+          actPath({ kind: "REFERENCE", caseReference: reference }, "case.correct"),
           window.location.origin,
         ),
       ),
     ).toEqual({
       screen: "caseAct",
       target: { kind: "REFERENCE", caseReference: reference },
-      act: "CORRECT",
+      act: "case.correct",
     });
   },
 );
@@ -51,11 +51,11 @@ it("keeps worklist state in the URL and blocks mutation navigation and unload", 
   releaseLock();
 });
 it("restores a same-origin deep link once after login and refuses an external return", () => {
-  navigate("/cases/reference/CASE-0042/acts/DECIDE");
+  navigate("/cases/reference/CASE-0042/acts/case.decide");
   rememberLoginReturn();
   navigate("/cases");
   restoreLoginReturn();
-  expect(window.location.pathname).toBe("/cases/reference/CASE-0042/acts/DECIDE");
+  expect(window.location.pathname).toBe("/cases/reference/CASE-0042/acts/case.decide");
   navigate("/cases");
   restoreLoginReturn();
   expect(window.location.pathname).toBe("/cases");
@@ -75,11 +75,7 @@ it("keeps canonical case identity separate from a UUID-shaped reference", () => 
     screen: "case",
     target: { kind: "REFERENCE", caseReference: caseId },
   });
-  for (const invalid of [
-    "/cases/id/not-a-uuid",
-    "/cases/CASE-0042",
-    "/cases/id/00000000-0000-0000-0000-000000000000",
-  ]) {
+  for (const invalid of ["/cases/CASE-0042"]) {
     expect(parseRoute(new URL(invalid, location.origin))).toEqual({ screen: "missing" });
   }
 });
@@ -96,8 +92,8 @@ it("distinguishes default entry and the separate public areas", () => {
     screen: "reminders",
     query: "?view=pending",
   });
-  expect(parseRoute(new URL("/authority-history", location.origin))).toEqual({
-    screen: "authorityHistory",
+  expect(parseRoute(new URL("/people-history", location.origin))).toEqual({
+    screen: "peopleHistory",
     actorId: "",
   });
   expect(parseRoute(new URL("/recovery", location.origin))).toEqual({
@@ -108,19 +104,40 @@ it("distinguishes default entry and the separate public areas", () => {
 
 it("preserves the explicit history actor instead of broadening to all actors", () => {
   const actorId = "10000000-0000-4000-8000-000000000001";
-  expect(parseRoute(new URL(`/authority-history?actorId=${actorId}`, location.origin))).toEqual({
-    screen: "authorityHistory",
+  expect(parseRoute(new URL(`/people-history?actorId=${actorId}`, location.origin))).toEqual({
+    screen: "peopleHistory",
     actorId,
   });
 });
 it.each([
   "actorId=",
-  "actorId=not-an-actor",
-  "actorId=%0A10000000-0000-4000-8000-000000000001",
   "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000002",
   "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000001",
 ])("rejects a supplied ambiguous or invalid history actor: %s", (query) => {
-  expect(parseRoute(new URL(`/authority-history?${query}`, location.origin))).toEqual({
+  expect(parseRoute(new URL(`/people-history?${query}`, location.origin))).toEqual({
     screen: "missing",
   });
 });
+
+it.each(["not-a-uuid", "00000000-0000-0000-0000-000000000000"])(
+  "passes supplied case identity to the core: %s",
+  (caseId) => {
+    expect(parseRoute(new URL(casePath(caseId), location.origin))).toEqual({
+      screen: "case",
+      target: { kind: "ID", caseId },
+    });
+  },
+);
+it.each(["not-an-actor", "\n10000000-0000-4000-8000-000000000001"])(
+  "passes a supplied history actor to the core without broadening: %s",
+  (actorId) => {
+    expect(
+      parseRoute(
+        new URL(`/people-history?actorId=${encodeURIComponent(actorId)}`, location.origin),
+      ),
+    ).toEqual({
+      screen: "peopleHistory",
+      actorId,
+    });
+  },
+);

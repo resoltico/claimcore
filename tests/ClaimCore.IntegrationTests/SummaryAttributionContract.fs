@@ -26,11 +26,11 @@ let internal lifecycle fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id fixture 88000)
                         other
-                        (AuthorityAct.Register
+                        (PeopleAct.Register
                             {
                                 DisplayName = "Summary editor"
                                 Contact = None
@@ -53,7 +53,7 @@ let internal lifecycle fixture =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
         let editor = { owner with Principal = other }
 
@@ -181,12 +181,12 @@ let internal lifecycle fixture =
         let! erasedProfile =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest (id fixture 88010) other AuthorityAct.EraseProfile
+                (OperationInput.People(
+                    Inputs.peopleRequest (id fixture 88010) other PeopleAct.EraseProfile
                 ))
                 token
 
-        acceptedAuthority erasedProfile
+        acceptedPeople erasedProfile
         let! current = get ()
 
         Expect.equal

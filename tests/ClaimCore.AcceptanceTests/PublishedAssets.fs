@@ -13,7 +13,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     try
         let result =
-            ProcessRunner.dotnet 60_000 fixture.WebBinary [] fixture.WebEnvironment None
+            ProcessRunner.dotnet 60_000 fixture.WebBinary [ "serve" ] fixture.WebEnvironment None
 
         Expect.equal result.ExitCode 3 "Missing published index prevents host opening"
         use error = JsonDocument.Parse(ReadOnlyMemory result.StandardError)

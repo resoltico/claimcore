@@ -1,12 +1,11 @@
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
-import type { HumanReadDocument_authorityGrants } from "@contracts/client";
+import type { HumanReadDocument_people_grants } from "@contracts/client";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
 import { renderCatalogKey } from "../../presentation/messages";
 import { ConflictChanges } from "./ConflictChanges";
-import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { useCallback, useEffect, useRef, useId, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
@@ -23,14 +22,16 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   }
   return [
     ["operationId", input.operationId],
-    ["act", input.act.kind],
-    ...(input.kind === "CASE" && model.disclosureCurrent
+    ["act", input.task],
+    ...(input.binding.kind === "CASE" && model.disclosureCurrent
       ? ([
           [
-            input.target.kind === "REFERENCE" ? "caseReference" : "caseId",
-            input.target.kind === "REFERENCE" ? input.target.caseReference : input.target.caseId,
+            input.binding.target.kind === "REFERENCE" ? "caseReference" : "caseId",
+            input.binding.target.kind === "REFERENCE"
+              ? input.binding.target.caseReference
+              : input.binding.target.caseId,
           ],
-          ["expectedRevision", String(input.expectedRevision)],
+          ["expectedRevision", String(input.binding.expectedRevision)],
         ] as const)
       : []),
   ];
@@ -112,7 +113,7 @@ type Props = Omit<OperationFormProps, "onAct" | "model"> & {
   model: OperationModel;
   disclosureAvailable?: boolean;
   open?: boolean;
-  person?: HumanReadDocument_authorityGrants;
+  person?: HumanReadDocument_people_grants;
   completionAnchor?: React.RefObject<HTMLElement | null>;
 };
 type DiscardProps = {
@@ -201,8 +202,8 @@ const UnavailableDisclosure = ({
           available
             ? (model.notice ?? { kind: "local", reason: "incomplete" })
             : {
-                kind: "diagnostic",
-                diagnostic: resourceUnavailableDiagnostic,
+                kind: "local",
+                reason: "resourceUnavailable",
               }
         }
       />
@@ -334,7 +335,7 @@ const OperationTarget = ({
 }: {
   current: Props["current"];
   model: OperationModel;
-  person: HumanReadDocument_authorityGrants | undefined;
+  person: HumanReadDocument_people_grants | undefined;
 }) => {
   const document = model.review?.document ?? current ?? person ?? null;
   if (document !== null) {

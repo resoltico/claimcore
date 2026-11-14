@@ -6,25 +6,25 @@ import { strictByteProfile } from "@contracts/client";
 
 it("detaches replacement values and preserves decimal spelling after authoring changes", () => {
   const values = {
-    ...valuesFor("CORRECT"),
+    ...valuesFor("case.correct"),
     "group:registration": "UPDATE",
     "field:claimantName": "Before",
     "field:claimedAmount": "1.0000",
     "field:claimedCurrency": "EUR",
   };
-  const request = requestFor(values, "CORRECT");
+  const request = requestFor(values, "case.correct");
   const prepared = prepareRequest("operation.execute", request);
   Object.assign(values, { "field:claimantName": "After" });
   if (
-    request.kind !== "CASE" ||
-    request.act.kind !== "CORRECT" ||
-    request.act.groups.registration.kind !== "UPDATE"
+    request.binding.kind !== "CASE" ||
+    request.task !== "case.correct" ||
+    request.inputs["group:registration"] !== "UPDATE"
   ) {
     throw new Error("Missing correction fixture.");
   }
-  Object.assign(request.act.groups.registration.values, { claimantName: "Changed" });
-  expect(prepared.bytes).toContain('"claimantName":"Before"');
-  expect(prepared.bytes).toContain('"claimedAmount":"1.0000"');
+  Object.assign(request.inputs, { "field:claimantName": "Changed" });
+  expect(prepared.bytes).toContain('"field:claimantName":"Before"');
+  expect(prepared.bytes).toContain('"field:claimedAmount":"1.0000"');
   expect(prepared.input).not.toBe(request);
 });
 
@@ -33,32 +33,33 @@ it("the compiler rejects raw bytes and structural forgeries at mutation submissi
   // @ts-expect-error -- This rejecting control must fail compilation if raw strings become admissible.
   expect(boundary("{}")).toBe(true);
   const source = {
-    kind: "CASE",
     operationId: "10000000-0000-4000-8000-000000000001",
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
-    expectedRevision: 1,
-    act: {
-      kind: "CLOSE",
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      expectedRevision: 1,
     },
+    inputs: {},
   } as const;
   const forged = { endpoint: "operation.execute", bytes: "{}", input: source } as const;
   // @ts-expect-error -- A valid structural input still lacks the private prepared identity.
   expect(boundary(forged)).toBe(true);
   const prepared = prepareRequest("operation.execute", source);
   expect(boundary(prepared)).toBe(true);
-  expect(Object.isFrozen(prepared.input.act)).toBe(true);
+  expect(Object.isFrozen(prepared.input.inputs)).toBe(true);
   expect(prepared.bytes).toBe(JSON.stringify(source));
 });
 it("final prepared wire admission bounds actual UTF-8 bytes before dispatch", () => {
   const source = {
-    kind: "CASE",
     operationId: "10000000-0000-4000-8000-000000000001",
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
-    expectedRevision: 1,
-    act: {
-      kind: "VOID",
-      reason: "💼".repeat(strictByteProfile.maximumRequestBytes),
+    task: "case.void",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      expectedRevision: 1,
     },
+    inputs: { "input:reason": "💼".repeat(strictByteProfile.maximumRequestBytes) },
   } as const;
-  expect(() => prepareRequest("operation.execute", source)).toThrow("wire format");
+  expect(() => prepareRequest("operation.execute", source)).toThrow("byte allowance");
 });

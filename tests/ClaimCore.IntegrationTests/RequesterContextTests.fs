@@ -85,11 +85,11 @@ let private lifecycle (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id database.Fixture 710)
                         human
-                        (AuthorityAct.Register Inputs.ownerProfile)
+                        (PeopleAct.Register Inputs.ownerProfile)
                 ))
                 token
 
@@ -218,11 +218,11 @@ let private lockRace (database: PostgresFixture.Database) =
         let registering =
             Service.execute
                 (core fixture fixture.Owner)
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id database.Fixture 711)
                         target
-                        (AuthorityAct.Register Inputs.ownerProfile)
+                        (PeopleAct.Register Inputs.ownerProfile)
                 ))
                 token
 
@@ -260,8 +260,7 @@ let private lockRace (database: PostgresFixture.Database) =
 
         match context with
         | Outcome.Succeeded { Requester = RequesterState.NoRoles _ } -> ()
-        | other ->
-            failtestf "Post-lock authority snapshot must see committed registration: %A" other
+        | other -> failtestf "Post-lock people snapshot must see committed registration: %A" other
 
         let! retained =
             rows
@@ -285,15 +284,15 @@ let private administration (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id database.Fixture 720)
                         audit
-                        (AuthorityAct.Register Inputs.ownerProfile)
+                        (PeopleAct.Register Inputs.ownerProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -306,7 +305,7 @@ let private administration (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         for target in [ human; service ] do
             let! _ = Service.context (core fixture target) () token
@@ -376,14 +375,14 @@ let private administration (database: PostgresFixture.Database) =
             Expect.equal
                 denied
                 (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "Only MANAGE_AUTHORITY may inspect requests, including diagnostics"
+                "Only MANAGE_ACCESS may inspect requests, including diagnostics"
 
             let! denied = Service.dismissAccessRequest actor (PrincipalKey.toInput human) token
 
             Expect.equal
                 denied
                 (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "READ_AUTHORITY and an authenticated identity do not permit dismissal"
+                "READ_ACCESS and an authenticated identity do not permit dismissal"
 
         let! dismissed =
             Service.dismissAccessRequest owner (PrincipalKey.toInput human) token
@@ -424,6 +423,6 @@ let tests =
                 (run lifecycle)
             testCaseAsync "expiry is bounded and concurrent capacity stays capped" (run bounded)
             testCaseAsync
-                "authority snapshot follows principal lock after registration commits"
+                "people snapshot follows principal lock after registration commits"
                 (run lockRace)
         ]

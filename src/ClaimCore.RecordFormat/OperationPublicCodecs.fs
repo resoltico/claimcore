@@ -48,72 +48,67 @@ module OperationPublicCodecs =
     let private grant = grantFields |> build
     let private profile = record id |> field "profileCompartment" id ordinal
 
-    let private authorityAct =
+    let private peopleAct =
         tagged
-            "OperationAuthorityAct"
+            "OperationPeopleAct"
             [
                 variant
-                    (AuthorityKind.token AuthorityKind.Register)
-                    AuthorityAct.Register
+                    (PeopleActKind.token PeopleActKind.Register)
+                    PeopleAct.Register
                     (function
-                    | AuthorityAct.Register value -> Some value
+                    | PeopleAct.Register value -> Some value
                     | _ -> None)
                     profile
                 variant
-                    (AuthorityKind.token AuthorityKind.Admit)
-                    AuthorityAct.Admit
+                    (PeopleActKind.token PeopleActKind.Admit)
+                    PeopleAct.Admit
                     (function
-                    | AuthorityAct.Admit value -> Some value
+                    | PeopleAct.Admit value -> Some value
                     | _ -> None)
                     ((record (fun profile grants ->
                         {
-                            AuthorityAdmission.Profile = profile
+                            PeopleAdmission.Profile = profile
                             Grants = grants
                         })
-                     : Fields<AuthorityAdmission<ActorGrant, int>, _>)
+                     : Fields<PeopleAdmission<ActorGrant, int>, _>)
                      |> field "profileCompartment" _.Profile ordinal
-                     |> field
-                         "grants"
-                         _.Grants
-                         (boundedList 1 AuthorityAdmission.MaximumGrants grant))
+                     |> field "grants" _.Grants (boundedList 1 PeopleAdmission.MaximumGrants grant))
                 variant
-                    (AuthorityKind.token AuthorityKind.ProvisionOwner)
-                    (fun (profile, roles) -> AuthorityAct.ProvisionOwner(profile, roles))
+                    (PeopleActKind.token PeopleActKind.ProvisionOwner)
+                    (fun (profile, roles) -> PeopleAct.ProvisionOwner(profile, roles))
                     (function
-                    | AuthorityAct.ProvisionOwner(profile, roles) -> Some(profile, roles)
+                    | PeopleAct.ProvisionOwner(profile, roles) -> Some(profile, roles)
                     | _ -> None)
                     (record (fun profile roles -> profile, roles)
                      |> field "profileCompartment" fst ordinal
                      |> field
                          "roles"
                          snd
-                         (boundedList 0 Authority.initialOwnerRoles.Length RecordCodecs.role))
+                         (boundedList 0 People.initialOwnerRoles.Length RecordCodecs.role))
                 variant
-                    (AuthorityKind.token AuthorityKind.SetProfile)
-                    AuthorityAct.SetProfile
+                    (PeopleActKind.token PeopleActKind.SetProfile)
+                    PeopleAct.SetProfile
                     (function
-                    | AuthorityAct.SetProfile value -> Some value
+                    | PeopleAct.SetProfile value -> Some value
                     | _ -> None)
                     profile
-                unitVariant
-                    (AuthorityKind.token AuthorityKind.EraseProfile)
-                    AuthorityAct.EraseProfile
+                unitVariant (PeopleActKind.token PeopleActKind.EraseProfile) PeopleAct.EraseProfile
                 variant
-                    (AuthorityKind.token AuthorityKind.Grant)
-                    AuthorityAct.Grant
+                    (PeopleActKind.token PeopleActKind.Grant)
+                    PeopleAct.Grant
                     (function
-                    | AuthorityAct.Grant value -> Some value
+                    | PeopleAct.Grant value -> Some value
                     | _ -> None)
                     grantFields
                 variant
-                    (AuthorityKind.token AuthorityKind.Revoke)
-                    AuthorityAct.Revoke
+                    (PeopleActKind.token PeopleActKind.Revoke)
+                    PeopleAct.Revoke
                     (function
-                    | AuthorityAct.Revoke value -> Some value
+                    | PeopleAct.Revoke value -> Some value
                     | _ -> None)
                     grantFields
-                unitVariant (AuthorityKind.token AuthorityKind.Enable) AuthorityAct.Enable
-                unitVariant (AuthorityKind.token AuthorityKind.Disable) AuthorityAct.Disable
+                unitVariant (PeopleActKind.token PeopleActKind.Enable) PeopleAct.Enable
+                unitVariant (PeopleActKind.token PeopleActKind.Disable) PeopleAct.Disable
             ]
 
     let private case =
@@ -141,18 +136,18 @@ module OperationPublicCodecs =
         |> fixedField "kind" "CASE"
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
-    let private authority =
+    let private people =
         (record (fun target principal act ->
             {
-                AuthorityCommandSkeleton.TargetActorId = target
+                PeopleCommandSkeleton.TargetActorId = target
                 Principal = principal
                 Act = act
             })
-        : Fields<AuthorityCommandSkeleton, _>)
+        : Fields<PeopleCommandSkeleton, _>)
         |> field "targetActorId" _.TargetActorId actorId
         |> field "principal" _.Principal principal
-        |> field "act" _.Act authorityAct
-        |> fixedField "kind" "AUTHORITY"
+        |> field "act" _.Act peopleAct
+        |> fixedField "kind" "PEOPLE"
         |> build
 
     let private work =
@@ -219,11 +214,11 @@ module OperationPublicCodecs =
                     | _ -> None)
                     case
                 branch
-                    CommandSkeleton.Authority
+                    CommandSkeleton.People
                     (function
-                    | CommandSkeleton.Authority value -> Some value
+                    | CommandSkeleton.People value -> Some value
                     | _ -> None)
-                    authority
+                    people
                 branch
                     CommandSkeleton.Work
                     (function
@@ -264,54 +259,52 @@ module OperationPublicCodecs =
                     (record id |> field "operationId" id operationId)
             ]
 
-    let private authorityEffect =
+    let private peopleEffect =
         tagged
-            "OperationAuthorityEffect"
+            "OperationPeopleEffect"
             [
                 variant
-                    (AuthorityKind.token AuthorityKind.ProvisionOwner)
-                    AuthorityEffectDescriptor.ProvisionOwner
+                    (PeopleActKind.token PeopleActKind.ProvisionOwner)
+                    PeopleEffectDescriptor.ProvisionOwner
                     (function
-                    | AuthorityEffectDescriptor.ProvisionOwner value -> Some value
+                    | PeopleEffectDescriptor.ProvisionOwner value -> Some value
                     | _ -> None)
                     (record id |> field "principal" id principal)
                 variant
-                    (AuthorityKind.token AuthorityKind.Register)
-                    AuthorityEffectDescriptor.Register
+                    (PeopleActKind.token PeopleActKind.Register)
+                    PeopleEffectDescriptor.Register
                     (function
-                    | AuthorityEffectDescriptor.Register value -> Some value
+                    | PeopleEffectDescriptor.Register value -> Some value
                     | _ -> None)
                     (record id |> field "principal" id principal)
                 variant
-                    (AuthorityKind.token AuthorityKind.SetProfile)
-                    AuthorityEffectDescriptor.SetProfile
+                    (PeopleActKind.token PeopleActKind.SetProfile)
+                    PeopleEffectDescriptor.SetProfile
                     (function
-                    | AuthorityEffectDescriptor.SetProfile value -> Some value
+                    | PeopleEffectDescriptor.SetProfile value -> Some value
                     | _ -> None)
                     profile
                 unitVariant
-                    (AuthorityKind.token AuthorityKind.EraseProfile)
-                    AuthorityEffectDescriptor.EraseProfile
+                    (PeopleActKind.token PeopleActKind.EraseProfile)
+                    PeopleEffectDescriptor.EraseProfile
                 variant
-                    (AuthorityKind.token AuthorityKind.Grant)
-                    AuthorityEffectDescriptor.Grant
+                    (PeopleActKind.token PeopleActKind.Grant)
+                    PeopleEffectDescriptor.Grant
                     (function
-                    | AuthorityEffectDescriptor.Grant value -> Some value
+                    | PeopleEffectDescriptor.Grant value -> Some value
                     | _ -> None)
                     grantFields
                 variant
-                    (AuthorityKind.token AuthorityKind.Revoke)
-                    AuthorityEffectDescriptor.Revoke
+                    (PeopleActKind.token PeopleActKind.Revoke)
+                    PeopleEffectDescriptor.Revoke
                     (function
-                    | AuthorityEffectDescriptor.Revoke value -> Some value
+                    | PeopleEffectDescriptor.Revoke value -> Some value
                     | _ -> None)
                     grantFields
+                unitVariant (PeopleActKind.token PeopleActKind.Enable) PeopleEffectDescriptor.Enable
                 unitVariant
-                    (AuthorityKind.token AuthorityKind.Enable)
-                    AuthorityEffectDescriptor.Enable
-                unitVariant
-                    (AuthorityKind.token AuthorityKind.Disable)
-                    AuthorityEffectDescriptor.Disable
+                    (PeopleActKind.token PeopleActKind.Disable)
+                    PeopleEffectDescriptor.Disable
             ]
 
     let effect =
@@ -337,14 +330,14 @@ module OperationPublicCodecs =
                      |> field "creationReference" (fun (_, _, _, a, _) -> a) (nullable reference)
                      |> field "payment" (fun (_, _, _, _, a) -> a) (nullable payment))
                 variant
-                    "AUTHORITY"
-                    (fun (target, change) -> EffectDescriptor.Authority(target, change))
+                    "PEOPLE"
+                    (fun (target, change) -> EffectDescriptor.People(target, change))
                     (function
-                    | EffectDescriptor.Authority(target, change) -> Some(target, change)
+                    | EffectDescriptor.People(target, change) -> Some(target, change)
                     | _ -> None)
                     (record (fun target change -> target, change)
                      |> field "targetActorId" fst actorId
-                     |> field "change" snd authorityEffect)
+                     |> field "change" snd peopleEffect)
                 variant
                     "WORK"
                     (fun (parent, revision) -> EffectDescriptor.Work(parent, revision))

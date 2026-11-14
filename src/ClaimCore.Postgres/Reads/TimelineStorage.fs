@@ -30,10 +30,10 @@ module internal TimelineStorage =
                         connection
                         ("SELECT "
                          + DatabaseSession.dateExpression
-                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='OPEN' ORDER BY e.operation_sequence,e.effect_index LIMIT 1)"
+                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='case.open' ORDER BY e.operation_sequence,e.effect_index LIMIT 1)"
                          + ","
                          + DatabaseSession.dateExpression
-                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='CLOSE' ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT 1)")
+                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='case.close' ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT 1)")
                         [| box (CaseId.value parent) |]
                         token
 

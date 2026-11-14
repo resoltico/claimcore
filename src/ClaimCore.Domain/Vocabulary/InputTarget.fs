@@ -20,6 +20,8 @@ module InputTarget =
         | InputTarget.DirectorySearch -> "directorySearch"
         | InputTarget.Grants -> "grants"
         | InputTarget.Role -> "role"
+        | InputTarget.Scope -> "scope"
+        | InputTarget.CaseId -> "caseId"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
         | InputTarget.NoteId -> "noteId"
@@ -43,7 +45,7 @@ module InputTarget =
         (CaseFields.declarations
          |> List.filter _.IsAuthored
          |> List.map (fun row -> InputTarget.Field row.Field))
-        @ [ InputTarget.Group RecordGroup.Payment ]
+        @ (Vocabulary.all RecordGroup.vocabulary |> List.map InputTarget.Group)
         @ technical
 
     let vocabulary = Vocabulary.define "field" values token

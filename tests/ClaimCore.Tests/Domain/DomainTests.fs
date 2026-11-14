@@ -74,7 +74,7 @@ let private registrationTests =
                 Expect.isTrue
                     (CaseFixtures.decide
                         today
-                        CasePaymentContext.NoneRequired
+                        Map.empty
                         (request 0L (AuthoredCaseAct.Open facts))
                         None
                      |> isInvalid)
@@ -91,7 +91,7 @@ let private registrationTests =
                 Expect.isTrue
                     (CaseFixtures.decide
                         today
-                        CasePaymentContext.NoneRequired
+                        Map.empty
                         (request 0L (AuthoredCaseAct.Open facts))
                         None
                      |> isInvalid)
@@ -191,7 +191,7 @@ let private identityAndVersionTests =
                 let result =
                     CaseFixtures.decide
                         today
-                        CasePaymentContext.NoneRequired
+                        Map.empty
                         (request 0L (AuthoredCaseAct.Bare BareAct.Close))
                         (Some(opened ()))
 
@@ -207,7 +207,7 @@ let private identityAndVersionTests =
                 let result =
                     CaseFixtures.decide
                         today
-                        CasePaymentContext.NoneRequired
+                        Map.empty
                         (request 1L (AuthoredCaseAct.Bare BareAct.Close))
                         None
                     |> Result.map _.After
@@ -295,7 +295,7 @@ let private paymentGuardTests =
                     "No transfer"
 
                 Expect.isFalse
-                    (availableActs claim |> List.contains "RECORD_PAYMENT")
+                    (availableActs claim |> List.contains "case.recordPayment")
                     "Advisory actions agree")
             testCase "payable can exceed claim and have a different currency" (fun () ->
                 let input =
@@ -427,12 +427,9 @@ let private correctionTests =
                         Inputs.payment
 
                 let context =
-                    CasePaymentContext.Removing(
-                        parent.CaseId,
-                        parent.Revision,
-                        Some selected,
-                        None
-                    )
+                    (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                        (parent.CaseId)
+                        (Option.toList (Some selected)))
 
                 let after =
                     before
@@ -460,7 +457,9 @@ let private correctionTests =
                 let parent = Case.snapshot current
 
                 let context =
-                    CasePaymentContext.Removing(parent.CaseId, parent.Revision, None, None)
+                    (ClaimCore.TestSupport.CaseFixtures.paymentRows
+                        (parent.CaseId)
+                        (Option.toList (None)))
 
                 let result =
                     current

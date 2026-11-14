@@ -113,7 +113,11 @@ it("renders exact endpoint-supplied details and typed event arguments without a 
           kind: "SUCCEEDED",
           document: {
             screen: supplied,
-            context: { kind: "PAGE", nextCursor: null, tasks: [] },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis: { kind: "SNAPSHOT", observation: workBasis },
             disclosure: "FULL",
           },

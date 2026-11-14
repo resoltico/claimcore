@@ -13,7 +13,7 @@ module HistoryAccess =
     let vocabulary =
         Vocabulary.ofUnion<HistoryAccess> "historyAccess" TokenCasing.ScreamingSnake None
 
-/// The authority/lifecycle snapshot used to disclose a timeline page, including an empty page.
+/// The access/lifecycle snapshot used to disclose a timeline page, including an empty page.
 [<RequireQualifiedAccess>]
 type HistoryDisclosure =
     | Full

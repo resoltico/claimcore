@@ -5,7 +5,7 @@ open ClaimCore.Application.Contracts
 
 open System
 
-/// Request-scoped dependencies; authority is loaded afresh by each operation.
+/// Request-scoped dependencies; access is loaded afresh by each operation.
 [<NoEquality; NoComparison>]
 type ServiceContext =
     internal

@@ -29,7 +29,7 @@ it("maps supplied HUMAN input identities in their original order without reconst
       },
     ],
   };
-  const errors = inputErrors(rejection, operationTask("CASE:OPEN"), {}, null, {
+  const errors = inputErrors(rejection, operationTask("case.open"), {}, null, {
     kind: "local",
     reason: "invalidInput",
   });
@@ -47,7 +47,7 @@ it("maps supplied HUMAN input identities in their original order without reconst
 it("keeps a protocol fault single without deriving a business issue", () => {
   const notice: Notice = { kind: "local", reason: "invalidInput" };
   expect(
-    inputErrors(undefined, operationTask("CASE:OPEN"), {}, "field:incidentDate", notice),
+    inputErrors(undefined, operationTask("case.open"), {}, "field:incidentDate", notice),
   ).toEqual({ "field:incidentDate": notice });
-  expect(inputErrors(undefined, operationTask("CASE:OPEN"), {}, null, notice)).toEqual({});
+  expect(inputErrors(undefined, operationTask("case.open"), {}, null, notice)).toEqual({});
 });

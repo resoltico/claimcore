@@ -25,7 +25,8 @@ module internal NoteStorage =
         if
             DatabaseSession.namedValue<Guid> "subject_id" value <> NoteId.value id
             || DatabaseSession.namedValue<Guid> "parent_case_id" value <> CaseId.value parent
-            || DatabaseSession.namedValue<string> "act" value <> "ADD_NOTE"
+            || DatabaseSession.namedValue<string> "act" value
+               <> (NoteActKind.token NoteActKind.AddNote)
             || DatabaseSession.namedValue<string> "subject_kind" value <> "NOTE"
         then
             raise (RecordCorruptException "Note creation source disagrees.")
@@ -53,6 +54,18 @@ module internal NoteStorage =
             RecordedBy =
                 DatabaseSession.namedValue<Guid> "actor_id" value
                 |> DatabaseSession.admitted ActorId.create
+        }
+
+    let projectionRow value : NoteSubjectRows =
+        let record = row value
+
+        {
+            NoteId = Note.id record.Note
+            CaseId = Note.caseId record.Note
+            CreatedPosition = record.CreatedPosition
+            RecordedAt = record.RecordedAt
+            RecordedBy = record.RecordedBy
+            Text = Note.text record.Note
         }
 
     let find connection id token =

@@ -107,7 +107,7 @@ type WorkActKind = | UpdateWork
 
 module WorkActKind =
     let vocabulary =
-        Vocabulary.ofUnion<WorkActKind> "workAct" TokenCasing.ScreamingSnake None
+        Vocabulary.ofEntries "task" [ WorkActKind.UpdateWork, "work.update" ]
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

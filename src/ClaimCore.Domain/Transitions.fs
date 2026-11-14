@@ -140,7 +140,7 @@ module internal Transitions =
         | _ -> invalidOp "Applicable erasure evidence requires an erased result."
 
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
-    let private change today paymentContext evidence =
+    let private change today paymentTransition evidence =
         match evidence with
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
@@ -184,9 +184,9 @@ module internal Transitions =
                     })
         | Applicable.Paying(claim, decision, payment) ->
             let changed =
-                match paymentContext with
-                | AdmittedPaymentContext.Recording true -> Error Refusal.IdempotencyConflict
-                | AdmittedPaymentContext.Recording false ->
+                match paymentTransition with
+                | PaymentTransition.Recording true -> Error Refusal.IdempotencyConflict
+                | PaymentTransition.Recording false ->
                     FinancialPosition.record today payment claim.Finance
                     |> Result.map (fun finance -> { claim with Finance = finance })
                     |> Result.mapError (function
@@ -226,10 +226,9 @@ module internal Transitions =
             businessChange CaseActKind.RecordPayment claim changed
         | Applicable.Removing(claim, _, _) ->
             let changed =
-                match paymentContext with
-                | AdmittedPaymentContext.Removing None ->
-                    Error(Refusal.Case CaseRefusal.PaymentNotFound)
-                | AdmittedPaymentContext.Removing(Some(_, finance)) ->
+                match paymentTransition with
+                | PaymentTransition.Removing None -> Error(Refusal.Case CaseRefusal.PaymentNotFound)
+                | PaymentTransition.Removing(Some(_, finance)) ->
                     Ok { claim with Finance = finance }
                 | _ -> invalidOp "Payment removal requires its admitted entry context."
 
@@ -269,8 +268,8 @@ module internal Transitions =
         | Some before, Ok(CaseState.Active after) -> StateValidation.admit today (Some before) after
         | _ -> Ok()
 
-    let apply today paymentContext evidence =
-        let before, changed = change today paymentContext evidence
+    let apply today paymentTransition evidence =
+        let before, changed = change today paymentTransition evidence
 
         let admission =
             match evidence with

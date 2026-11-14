@@ -1,5 +1,5 @@
-import { isRequest } from "../src/protocol/client";
-import { applyAuthority } from "./authority-setup";
+import { type RequestByEndpoint } from "@contracts/client";
+import { applyPeople } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showAccountActions } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -15,16 +15,15 @@ import {
   expectPreferences,
 } from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
-
 test("updates supplied records without refetching while receipt disclosure refreshes after Settings", async ({
   page,
 }) => {
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
-  const history = page
-    .locator(".case-timeline-panel .region-timeline > li")
-    .filter({ hasText: opening.operationId });
+  const history = page.locator(".case-timeline-panel .region-timeline > li").filter({
+    hasText: opening.operationId,
+  });
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
   await selectFormat(page, "ar-EG");
@@ -33,27 +32,34 @@ test("updates supplied records without refetching while receipt disclosure refre
   const receiptReads: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/api/operation.get") {
-      const input: unknown = request.postDataJSON();
-      if (!isRequest("operation.get", input)) {
-        throw new Error("Expected identity-only receipt lookup");
-      }
-      receiptReads.push(input.operationId);
+      const operationGetRequest = request.postDataJSON() as RequestByEndpoint["operation.get"];
+      receiptReads.push(operationGetRequest.operationId);
     }
   });
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(page.getByText("Synthetic claimant", { exact: true }).first()).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: ui(language, "ui.timeline.title"), exact: true }),
-    ).toBeVisible();
-
     await expect(
       page
-        .locator(".case-actions > summary")
-        .filter({ hasText: ui(language, "ui.moreCaseActions") }),
+        .getByText("Synthetic claimant", {
+          exact: true,
+        })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: ui(language, "ui.timeline.title"),
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".case-actions > summary").filter({
+        hasText: ui(language, "ui.moreCaseActions"),
+      }),
     ).toBeVisible();
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
-    await expectPreferences(page, { displayLocale: "ar-EG" });
+    await expectPreferences(page, {
+      displayLocale: "ar-EG",
+    });
     await history.locator("details > summary").click();
     await expect(history.locator("details")).toContainText("١٬٢٠٠٫٥٠");
     await expect(history.locator("details")).toContainText("Synthetic claimant");
@@ -63,33 +69,61 @@ test("updates supplied records without refetching while receipt disclosure refre
   expect(receiptReads.length).toBeGreaterThan(0);
   expect(new Set(receiptReads)).toEqual(new Set([opening.operationId]));
 });
-
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   // This workflow owns the server-side ticket that logout revokes.
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   await login(page);
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
   await showAccountActions(page);
   await expect(
-    page.getByRole("button", { name: ui("ar", "ui.signOut"), exact: true }),
+    page.getByRole("button", {
+      name: ui("ar", "ui.signOut"),
+      exact: true,
+    }),
   ).toBeVisible();
   const logoutResponse = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/session.logout",
   );
-  await page.getByRole("button", { name: ui("ar", "ui.signOut"), exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: ui("ar", "ui.signOut"),
+      exact: true,
+    })
+    .click();
   expect((await logoutResponse).status()).toBe(200);
-  await expect(page.getByRole("link", { name: ui("ar", "ui.signIn"), exact: true })).toBeVisible();
-  await expect(page.getByText(ui("ar", "ui.loginInstructions"), { exact: true })).toBeVisible();
-  await expectPreferences(page, { displayLocale: "lv-LV" });
-  await login(page, ui("ar", "ui.cases"), ui("ar", "ui.signIn"));
-  await expectPreferences(page, { language: "ar" });
-  await expectPreferences(page, { displayLocale: "lv-LV" });
   await expect(
-    page.getByRole("heading", { name: ui("ar", "ui.cases"), exact: true, level: 1 }),
+    page.getByRole("link", {
+      name: ui("ar", "ui.signIn"),
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(ui("ar", "ui.loginInstructions"), {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expectPreferences(page, {
+    displayLocale: "lv-LV",
+  });
+  await login(page, ui("ar", "ui.cases"), ui("ar", "ui.signIn"));
+  await expectPreferences(page, {
+    language: "ar",
+  });
+  await expectPreferences(page, {
+    displayLocale: "lv-LV",
+  });
+  await expect(
+    page.getByRole("heading", {
+      name: ui("ar", "ui.cases"),
+      exact: true,
+      level: 1,
+    }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -106,42 +140,47 @@ test("preserves language and independent display preferences through real logout
   await selectLanguage(page, "en");
   await logout(page);
 });
-
 test("keeps exact old and new facts in the real timeline view", async ({ page }) => {
   await openAuthenticated(page);
   await selectFormat(page, "en-GB");
   const reference = `EXACT-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
-  await applyAuthority(page, {
-    kind: "CASE",
+  await applyPeople(page, {
     operationId: mintOperationId(),
-    target: { kind: "REFERENCE", caseReference: reference },
-    expectedRevision: 1,
-    act: {
-      kind: "AMEND_REGISTRATION",
-      values: { incidentDescription: "Earlier browser history\nOriginal exact paragraph" },
-    },
-  });
-  await applyAuthority(page, {
-    kind: "CASE",
-    operationId: mintOperationId(),
-    target: { kind: "REFERENCE", caseReference: reference },
-    expectedRevision: 2,
-    act: {
-      kind: "AMEND_REGISTRATION",
-      values: {
-        claimedAmount: "9876.5432",
-        claimedCurrency: "EUR",
-        incidentDate: "2026-09-07",
-        incidentNotificationDate: "2026-09-08",
-        incidentDescription: "Distinctive browser history\nSecond exact paragraph",
+    task: "case.amendRegistration",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
       },
+      expectedRevision: 1,
+    },
+    inputs: { "field:incidentDescription": "Earlier browser history\nOriginal exact paragraph" },
+  });
+  await applyPeople(page, {
+    operationId: mintOperationId(),
+    task: "case.amendRegistration",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
+      expectedRevision: 2,
+    },
+    inputs: {
+      "field:claimedAmount": "9876.5432",
+      "field:claimedCurrency": "EUR",
+      "field:incidentDate": "2026-09-07",
+      "field:incidentNotificationDate": "2026-09-08",
+      "field:incidentDescription": "Distinctive browser history\nSecond exact paragraph",
     },
   });
   await page.reload();
-  const row = page
-    .locator(".case-timeline-panel .region-timeline > li")
-    .filter({ hasText: "9,876.5432 EUR" });
+  const row = page.locator(".case-timeline-panel .region-timeline > li").filter({
+    hasText: "9,876.5432 EUR",
+  });
   await expect(row).toHaveCount(1);
   await row.locator("details > summary").click();
   await expect(row).toContainText("1,200.50 EUR");

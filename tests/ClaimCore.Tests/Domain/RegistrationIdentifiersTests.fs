@@ -22,8 +22,7 @@ let private run number revision act previous =
             Act = act
         }
     |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command ->
-        Case.decide today CasePaymentContext.NoneRequired command previous)
+    |> Result.bind (fun command -> Case.decide today Map.empty command previous)
     |> required
     |> _.After
     |> Case.ofAccepted
@@ -151,7 +150,7 @@ let tests =
             testCase
                 "canonical codecs use optional identifiers and flat atomic money pairs"
                 (fun () ->
-                    let encoded = RequestCodecs.registration.Write facts
+                    let encoded = ClaimCore.RecordFormat.CanonicalInputs.registration.Write facts
 
                     Expect.equal
                         (JsonValue.tryMember "policyNumber" encoded)
@@ -161,7 +160,7 @@ let tests =
                     let decoded =
                         Codec.decode
                             4096
-                            RequestCodecs.registrationUpdate
+                            ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate
                             (Encoding.UTF8.GetBytes
                                 "{\"policyNumber\":null,\"claimedAmount\":\"12.50\",\"claimedCurrency\":\"EUR\"}")
                         |> required
@@ -188,14 +187,14 @@ let tests =
                         Expect.isError
                             (Codec.decode
                                 4096
-                                RequestCodecs.registrationUpdate
+                                ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate
                                 (Encoding.UTF8.GetBytes json))
                             "Incomplete or nested money refuses"
 
                     Expect.isOk
                         (Codec.decode
                             4096
-                            RequestCodecs.decisionUpdate
+                            ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate
                             (Encoding.UTF8.GetBytes
                                 "{\"payableAmount\":\"12.50\",\"payableCurrency\":\"EUR\"}"))
                         "Decision money uses the same flat shape"
@@ -203,7 +202,7 @@ let tests =
                     Expect.isError
                         (Codec.decode
                             4096
-                            RequestCodecs.decisionUpdate
+                            ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate
                             (Encoding.UTF8.GetBytes "{\"payableAmount\":\"12.50\"}"))
                         "Decision money cannot be half asserted")
         ]

@@ -1,10 +1,13 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { selectFact } from "../support/field-entry";
 import { chooseOption, selectedOption } from "../support/choice-entry";
 
@@ -20,18 +23,46 @@ import { preferenceKey } from "../../src/presentation/preferences";
 
 const decision = { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" };
 const paidCase: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:CORRECT"],
-  revision: 1,
+  subject: { ...caseSubject, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: { ...emptyCaseSeeds, registration: fields.registration, decision },
 });
 const payable: CurrentCase = caseDocumentInput({
-  tasks: ["CASE:RECORD_PAYMENT"],
-  revision: 1,
+  subject: { ...caseSubject, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.recordPayment",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { "field:paidCurrency": decision?.payableCurrency ?? null },
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
-  seeds: { ...emptyCaseSeeds, paymentCurrency: decision?.payableCurrency ?? null },
 });
 const inputRefusal = (
   input: "field:paidAmount" | "group:payment",
@@ -73,7 +104,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   );
   render(
     editor({
-      initialAct: "CORRECT",
+      initialAct: "case.correct",
       current: paidCase,
     }),
   );
@@ -102,11 +133,13 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   await waitFor(() => {
     expect(globalThis.fetch).toHaveBeenCalledOnce();
   });
-  expect(draftAt(0).act).toMatchObject({
-    kind: "CORRECT",
-    groups: {
-      registration: { kind: "UPDATE", values: { claimedAmount: "1.0000", claimedCurrency: "EUR" } },
-      decision: { kind: "CLEAR" },
+  expect({ task: draftAt(0).task, inputs: draftAt(0).inputs }).toMatchObject({
+    task: "case.correct",
+    inputs: {
+      "group:registration": "UPDATE",
+      "field:claimedAmount": "1.0000",
+      "field:claimedCurrency": "EUR",
+      "group:decision": "CLEAR",
     },
   });
 });
@@ -121,7 +154,7 @@ it("associates a payment amount refusal with its generated field", async () => {
         Promise.resolve(inputRefusal("field:paidAmount", "diagnostic.PAYMENT_AMOUNT_POSITIVE")),
       ),
   );
-  render(editor({ initialAct: "RECORD_PAYMENT", current: payable }));
+  render(editor({ initialAct: "case.recordPayment", current: payable }));
   const amount = screen.getByRole("textbox", { name: "Paid amount" });
   await user.type(amount, "0");
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
@@ -143,7 +176,7 @@ it("shows the exact-integer payment limit as a group issue without inventing a f
     .mockResolvedValue(inputRefusal("group:payment", "diagnostic.PAYMENT_COUNT_LIMIT"));
   vi.stubGlobal("fetch", fetch);
   // The collection can fill after this readable snapshot and before authoritative preview.
-  render(editor({ initialAct: "RECORD_PAYMENT", current: payable }));
+  render(editor({ initialAct: "case.recordPayment", current: payable }));
   await user.type(screen.getByRole("textbox", { name: "Paid amount" }), "1");
   await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
   const summary = await screen.findByRole("alert");

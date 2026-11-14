@@ -1,11 +1,10 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import { createPresenter } from "../../src/presentation/presenter";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
-import { buildRequest } from "../../src/protocol/client";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { definition, operationId } from "../support/service-ui.fixtures";
-
 const arabicDigits = (value: string) =>
   value.replace(/[0-9]/gu, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]!);
 const amountOracle = (whole: string, fraction: string, locale: string) => {
@@ -23,7 +22,6 @@ const dateOracle = (year: string, month: string, day: string, locale: string) =>
   }
   return locale === "lv-LV" ? `${day}.${month}.${year}` : `${day}/${month}/${year}`;
 };
-
 it("preserves canonical values and frozen request identity over 500 seeded display vectors", () => {
   let seed = 739101;
   const next = () => {
@@ -46,19 +44,26 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
       claimedAmount: `${whole}.${fraction}`,
       incidentDate: `${year}-${month}-${day}`,
     };
-    const source = buildRequest(
-      "operation.execute",
-      assembleOperation(
-        operationEntry({ subject: "CASE", kind: "OPEN" }),
-        {
-          ...initialOperationValues("CASE", "OPEN", null),
-          "field:caseReference": reference,
-          "field:claimedAmount": values.claimedAmount,
-          "field:incidentDate": values.incidentDate,
-        },
-        { kind: "NEW_CASE", operationId },
-      ).command,
-    );
+    const source = assembleOperation(
+      operationEntry({
+        subject: "CASE",
+        kind: "case.open",
+      }),
+      {
+        ...initialOperationValues(
+          operationAffordance("case.open", {
+            kind: "CASE",
+            target: { kind: "REFERENCE", caseReference: "" },
+            expectedRevision: 0,
+          }),
+        ),
+        "field:caseReference": reference,
+        "field:claimedAmount": values.claimedAmount,
+        "field:incidentDate": values.incidentDate,
+      },
+      { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+      operationId,
+    ).command;
     const frozen = prepareRequest("operation.execute", source).input;
     const bytes = JSON.stringify(frozen);
     for (const choice of [index % 12, (index + 5) % 12]) {

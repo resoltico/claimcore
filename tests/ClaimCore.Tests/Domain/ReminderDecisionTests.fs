@@ -47,8 +47,7 @@ let private parent () =
                 )
         }
     |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command ->
-        Case.decide (DateOnly(2026, 11, 2)) CasePaymentContext.NoneRequired command None)
+    |> Result.bind (fun command -> Case.decide (DateOnly(2026, 11, 2)) Map.empty command None)
     |> required
     |> _.After
 

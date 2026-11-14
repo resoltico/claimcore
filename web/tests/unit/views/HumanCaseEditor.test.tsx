@@ -1,22 +1,16 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type { RequestByEndpoint, HumanReview, HumanReceiptDocument } from "@contracts/client";
 import {
   operationRequest,
   requestText,
   requestAddress,
 } from "../../support/transport-response.fixtures";
-
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { OperationEditor } from "../../../src/views/OperationEditor";
 import { productMetadata } from "../../../src/protocol/productMetadata";
-import {
-  isRequest,
-  isResponse,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
 import type { CurrentCase } from "../../../src/protocol/types";
-
 const caseId = "00000000-0000-4000-8000-000000000001";
 const paymentId = "019aa6a0-0000-7000-8000-000000000002";
 const basis = {
@@ -35,47 +29,72 @@ const current: CurrentCase = {
         content: {
           kind: "TABLE",
           columns: [
-            { key: "caption", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
+            {
+              key: "caption",
+              labelId: "label.details",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
           ],
-          rows: [{ key: paymentId, values: [{ kind: "TEXT", value: "Core saved payment Ω" }] }],
+          rows: [
+            {
+              key: paymentId,
+              values: [
+                {
+                  kind: "TEXT",
+                  value: "Core saved payment Ω",
+                },
+              ],
+            },
+          ],
         },
       },
     ],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 7,
-    workRevision: 4,
-    history: "NONE",
-    tasks: ["CASE:REMOVE_PAYMENT"],
-    editableInputs: [],
-    correction: null,
-    seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
-    notes: [],
-    payments: [{ paymentId, canRemove: true }],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId, revision: 7, workRevision: 4 },
+  actions: [
+    operationAffordance(
+      "case.removePayment",
+      { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7, paymentId },
+      {},
+      [],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
 const review: HumanReview = {
-  presentation: { changes: [], unchanged: [] },
+  presentation: {
+    changes: [],
+    unchanged: [],
+  },
   document: {
-    screen: { regions: [] },
-    context: {
-      kind: "REVIEW",
-      task: "CASE:REMOVE_PAYMENT",
-      target: { kind: "CASE", caseId, beforeRevision: 7 },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:expectedRevision",
-        "input:paymentId",
-      ],
-      consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "ORIGINAL-CASE" },
+    screen: {
+      regions: [],
     },
+    subject: {
+      kind: "REVIEW",
+      confirmation: {
+        kind: "CASE_REFERENCE",
+        reference: "ORIGINAL-CASE",
+      },
+      consequence: "ROUTINE",
+    },
+    actions: [
+      operationAffordance(
+        "case.removePayment",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7, paymentId },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -92,20 +111,32 @@ const receipt: HumanReceiptDocument = {
               key: "receipt",
               labelId: "label.details",
               prominence: "PRIMARY",
-              value: { kind: "TEXT", value: "Core full accepted case Ψ" },
+              value: {
+                kind: "TEXT",
+                value: "Core full accepted case Ψ",
+              },
             },
           ],
         },
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "CASE", caseId, revision: 8 },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -118,19 +149,28 @@ it("previews the typed selected payment and preserves selector spelling through 
       Promise.try(() => {
         const body = requestText(options?.body);
         const command: unknown = JSON.parse(body);
-        if (!isRequest("operation.execute", command)) {
-          throw new Error("Expected typed operation");
-        }
         bodies.push(body);
+        const operationExecuteRequest = command as RequestByEndpoint["operation.execute"];
         return new Response(
           JSON.stringify({
             representation: "HUMAN",
-            operationId: command.operationId,
+            operationId: operationExecuteRequest.operationId,
             outcome: requestAddress(url).endsWith("preview")
-              ? { kind: "REVIEWED", review }
-              : { kind: "ACCEPTED", document: receipt },
+              ? {
+                  kind: "REVIEWED",
+                  review,
+                }
+              : {
+                  kind: "ACCEPTED",
+                  document: receipt,
+                },
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
       }),
     ),
@@ -140,11 +180,14 @@ it("previews the typed selected payment and preserves selector spelling through 
     <OperationEditor
       definition={productMetadata}
       current={current}
-      initialAct="REMOVE_PAYMENT"
+      initialAct="case.removePayment"
       binding={{
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
-        revision: 7,
+        target: {
+          kind: "REFERENCE",
+          caseReference: "ORIGINAL-CASE",
+        },
+        expectedRevision: 7,
         paymentId,
       }}
       autoReview
@@ -161,55 +204,54 @@ it("previews the typed selected payment and preserves selector spelling through 
   );
   await screen.findByText("Core full accepted case Ψ");
   expect(committed).toHaveBeenCalledExactlyOnceWith(
-    receipt,
+    { document: receipt, caseId },
     operationRequest(bodies[0]).operationId,
   );
   expect(bodies).toHaveLength(2);
   expect(bodies[1]).toBe(bodies[0]);
   expect(JSON.parse(bodies[0]!)).toMatchObject({
-    kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: "ORIGINAL-CASE" },
-    expectedRevision: 7,
-    act: { kind: "REMOVE_PAYMENT", paymentId },
+    task: "case.removePayment",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: "ORIGINAL-CASE",
+      },
+      expectedRevision: 7,
+      paymentId,
+    },
+    inputs: {},
   });
 });
 it("takes the payment currency default only from an offered Core input seed", () => {
   const payment: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      tasks: ["CASE:RECORD_PAYMENT"],
-      payments: [{ paymentId, canRemove: false }],
-      seeds: { ...current.context.seeds, paymentCurrency: "EUR" },
-    },
+    actions: [
+      operationAffordance(
+        "case.recordPayment",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        { "field:paidCurrency": "EUR" },
+      ),
+    ],
   };
-  expect(
-    isResponse("case.get", {
-      representation: "HUMAN",
-      outcome: { kind: "SUCCEEDED", document: payment },
-    }),
-  ).toBe(true);
   render(
     <OperationEditor
       definition={productMetadata}
       current={payment}
-      initialAct="RECORD_PAYMENT"
+      initialAct="case.recordPayment"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );
-  expect(screen.getByRole("combobox", { name: /currency/iu })).toHaveValue("EUR");
   expect(
-    screen.queryByRole("textbox", { name: /expected.*revision|operation.*id/iu }),
-  ).not.toBeInTheDocument();
-  expect(
-    isResponse("case.get", {
-      representation: "HUMAN",
-      outcome: {
-        kind: "SUCCEEDED",
-        document: { ...payment, context: { ...payment.context, tasks: [] } },
-      },
+    screen.getByRole("combobox", {
+      name: /currency/iu,
     }),
-  ).toBe(false);
+  ).toHaveValue("EUR");
+  expect(
+    screen.queryByRole("textbox", {
+      name: /expected.*revision|operation.*id/iu,
+    }),
+  ).not.toBeInTheDocument();
 });

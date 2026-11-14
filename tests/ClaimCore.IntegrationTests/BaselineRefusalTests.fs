@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Domain
@@ -60,7 +62,7 @@ let private install identifier (bytes: byte array) (source: NpgsqlDataSource) =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC',2)"
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC',3)"
                 [||]
                 token
 

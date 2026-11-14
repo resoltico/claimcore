@@ -1,5 +1,7 @@
 module ClaimCore.Tests.TimelineCommandTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Text
@@ -218,18 +220,18 @@ let tests =
 
                 let subjects =
                     [
-                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "act", "CLOSE"
+                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "task", "case.close"
                         TimelineSubject.Work(revision, WorkActKind.UpdateWork),
-                        "workAct",
-                        "UPDATE_WORK"
+                        "task",
+                        "work.update"
                         TimelineSubject.Reminder(
                             ReminderActKind.Create,
                             reminderId,
                             revision,
                             None
                         ),
-                        "reminderAct",
-                        "CREATE"
+                        "task",
+                        "reminder.create"
                     ]
 
                 for subject, vocabulary, token in subjects do
@@ -498,7 +500,7 @@ let tests =
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language "act.CLOSE.label")
+                            (ReplyTextFormat.label language "task.case.close.label")
                             "The supplied act is localized."
 
                         Expect.stringContains

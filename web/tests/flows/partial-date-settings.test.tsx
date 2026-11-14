@@ -1,8 +1,10 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
 
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -11,12 +13,21 @@ import { editor } from "../support/presentation-state.fixtures";
 
 import { fields } from "../support/service-ui.fixtures";
 const current = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { ...prefixedInputs("field:", fields.registration ?? {}) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs],
-  seeds: { ...emptyCaseSeeds, registration: fields.registration },
 });
 import { service } from "../../src/api/service";
 import { changeField, selectFact } from "../support/field-entry";
@@ -55,7 +66,7 @@ it.each([
     const preview = vi.spyOn(service, "preview");
     const execute = vi.spyOn(service, "execute");
     const user = userEvent.setup();
-    render(editor({ current: null, initialAct: "OPEN" }));
+    render(editor({ current: null, initialAct: "case.open" }));
     for (const [type, value] of parts) {
       await enter(user, type!, value!);
     }
@@ -71,7 +82,7 @@ it.each([
 );
 it("keeps authored day/month meaning when the display locale changes order", async () => {
   const user = userEvent.setup();
-  render(editor({ current: null, initialAct: "OPEN" }));
+  render(editor({ current: null, initialAct: "case.open" }));
   await enter(user, "day", "12");
   await enter(user, "month", "10");
   await settings(user, "en-US");
@@ -87,7 +98,7 @@ it("keeps authored day/month meaning when the display locale changes order", asy
 it("protects a partial-only draft and clears its segments on explicit discard", async () => {
   const close = vi.fn();
   const user = userEvent.setup();
-  render(editor({ current: null, initialAct: "OPEN", onClose: close }));
+  render(editor({ current: null, initialAct: "case.open", onClose: close }));
   await enter(user, "day", "12");
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(await screen.findByRole("dialog", { name: "Discard these draft changes?" })).toBeVisible();
@@ -107,7 +118,7 @@ it("empties a stale canonical date atomically when its visible year is cleared a
   render(
     editor({
       current,
-      initialAct: "AMEND_REGISTRATION",
+      initialAct: "case.amendRegistration",
     }),
   );
   selectFact("incidentDate");
@@ -142,7 +153,7 @@ it("keeps a complete leap date canonical and emits only its ISO value after Arab
   });
   const execute = vi.spyOn(service, "execute");
   const user = userEvent.setup();
-  render(editor({ current: null, initialAct: "OPEN" }));
+  render(editor({ current: null, initialAct: "case.open" }));
   await enter(user, "year", "2024");
   await enter(user, "month", "2");
   await enter(user, "day", "29");
@@ -158,8 +169,9 @@ it("keeps a complete leap date canonical and emits only its ISO value after Arab
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    kind: "CASE",
-    act: { kind: "OPEN", values: { incidentDate: "2024-02-29" } },
+    task: "case.open",
+    binding: { kind: "CASE" },
+    inputs: { "field:incidentDate": "2024-02-29" },
   });
   expect(execute).not.toHaveBeenCalled();
 });
@@ -168,7 +180,7 @@ it("an unrelated name edit preserves partial dates while deselection clears only
   render(
     editor({
       current,
-      initialAct: "AMEND_REGISTRATION",
+      initialAct: "case.amendRegistration",
     }),
   );
   selectFact("incidentDate");

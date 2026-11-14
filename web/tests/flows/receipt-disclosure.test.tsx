@@ -2,12 +2,12 @@ import { actorRefInput } from "../support/inputs";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { authorityReceipt } from "../support/reply.fixtures";
+import { peopleReceipt } from "../support/reply.fixtures";
 import { definition } from "../support/service-ui.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 
 it("renders the supplied receipt view without assuming a case snapshot", async () => {
-  const receipt = authorityReceipt();
+  const receipt = peopleReceipt();
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(() =>

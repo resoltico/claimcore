@@ -1,8 +1,11 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { testJournal, recoveryScope } from "../support/recovery.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
@@ -56,18 +59,24 @@ const refusal = (kind: "access" | "session") =>
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
 const disclosedCurrent = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { ...prefixedInputs("field:", { ...fields.registration, claimantName: currentCanary }) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs],
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: { ...fields.registration, claimantName: currentCanary },
-  },
 });
 const preview = () => {
-  const task = operationTask("CASE:AMEND_REGISTRATION");
+  const task = operationTask("case.amendRegistration");
   return endpointResponse("operation.preview", {
     representation: "HUMAN",
     outcome: {
@@ -75,14 +84,26 @@ const preview = () => {
       review: {
         document: {
           screen: { regions: [] },
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: task.id,
-            inputs: task.inputs.map((input) => input.id),
-            consequence: task.consequence,
-            target: { kind: "CASE", caseId: disclosedCurrent.context.caseId, beforeRevision: 1 },
             confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
+            consequence: task.consequence,
           },
+          actions: [
+            operationAffordance(
+              task.id,
+              {
+                kind: "CASE",
+                target: { kind: "ID", caseId: disclosedCurrent.subject.caseId },
+                expectedRevision: 1,
+              },
+              {},
+              [],
+            ),
+          ],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: workBasis },
           disclosure: "CURRENT",
         },
@@ -131,7 +152,7 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
     editor({
       onMutationLockChange,
       current: disclosedCurrent,
-      initialAct: "AMEND_REGISTRATION",
+      initialAct: "case.amendRegistration",
     }),
   );
   selectFact("claimantName");
@@ -187,7 +208,7 @@ it.each(["access", "session"] as const)(
     expect((await testJournal.list(recoveryScope)).map((entry) => entry.operationId)).toContain(
       draftAt(1).operationId,
     );
-    expect(draftAt(1).expectedRevision).toBe(1);
+    expect(draftAt(1).binding.expectedRevision).toBe(1);
     await user.click(getButton("Send again"));
     expectPendingOnly(locked);
     await user.click(getButton("Send again"));

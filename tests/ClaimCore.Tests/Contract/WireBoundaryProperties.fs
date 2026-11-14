@@ -31,27 +31,39 @@ let private authoredIntent =
             OperationId.create (Guid.Parse "00000000-0000-7000-8000-000000000001")
             |> Option.get
 
-        let basis =
-            {
-                CaseTaskBasis.Operation = operation
-                Target = CaseSelector.Reference "SPELLED-Target"
-                Revision = Revision.create revision |> Option.get
-            }
-
-        let command =
-            TaskAssembly.amendRegistration
-                basis
-                { RegistrationAmendmentDraft.empty with
-                    ClaimantName = TaskUpdate.Set name
-                    IncidentDescription = OptionalTaskUpdate.Clear
-                    Claimed = TaskUpdate.Set { Amount = amount; Currency = "EUR" }
+        let submission =
+            OperationSubmission.admit
+                {
+                    OperationId = OperationId.value operation
+                    Task = ActKind.Case CaseActKind.AmendRegistration
+                    Binding =
+                        OperationBinding.Case(
+                            CaseSelector.Reference "SPELLED-Target",
+                            revision,
+                            None
+                        )
+                    Inputs =
+                        Map.ofList
+                            [
+                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                                SubmissionValue.Text name
+                                TaskInputId.Target(
+                                    InputTarget.Field BusinessField.IncidentDescription
+                                ),
+                                SubmissionValue.Clear
+                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount),
+                                SubmissionValue.Text amount
+                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimedCurrency),
+                                SubmissionValue.Text "EUR"
+                            ]
                 }
             |> admitted
 
-        let bytes = Codec.encode RequestCodecs.operationInput command
+        let bytes = Codec.encode OperationSubmissionCodecs.submission submission
 
         return
-            Codec.decode Limits.MaximumRequestBytes RequestCodecs.operationInput bytes = Ok command
+            Codec.decode Limits.MaximumRequestBytes OperationSubmissionCodecs.submission bytes =
+                Ok submission
     }
 
 let private total (codec: Codec<'value>) maximum samples =

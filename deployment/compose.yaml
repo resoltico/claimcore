@@ -82,14 +82,15 @@ services:
 
   administration:
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
+    image: ${CLAIMCORE_COMPOSE_PROJECT}-runtime
     build:
       context: ..
       dockerfile: deployment/Dockerfile
-      target: administration
+      target: runtime
     entrypoint: [/bin/sh, -c]
     # Restarts keep the installation: a readable existing installation skips initialization.
     # Initialization itself still refuses any nonempty database inside its locked transaction.
-    command: ['if dotnet /app/database/claimcore-database.dll status >/dev/null 2>&1; then echo "Existing installation found; initialization skipped."; else exec dotnet /app/database/claimcore-database.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" --owner-issuer "$$CLAIMCORE_OWNER_ISSUER" --owner-subject "$$CLAIMCORE_OWNER_SUBJECT" --owner-name "$$CLAIMCORE_OWNER_NAME" --owner-role CASE_HANDLER --owner-role PAYMENT_RECORDER --owner-role DATA_STEWARD; fi']
+    command: ['if dotnet /app/claimcore-server.dll status >/dev/null 2>&1; then echo "Existing installation found; initialization skipped."; else exec dotnet /app/claimcore-server.dll initialize "$$CLAIMCORE_BUSINESS_ZONE" --owner-issuer "$$CLAIMCORE_OWNER_ISSUER" --owner-subject "$$CLAIMCORE_OWNER_SUBJECT" --owner-name "$$CLAIMCORE_OWNER_NAME" --owner-role CASE_HANDLER --owner-role PAYMENT_RECORDER --owner-role DATA_STEWARD; fi']
     environment:
       CLAIMCORE_BUSINESS_ZONE: ${CLAIMCORE_BUSINESS_ZONE:?}
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
@@ -112,11 +113,13 @@ services:
     restart: "no"
 
   web:
+    command: [serve]
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
+    image: ${CLAIMCORE_COMPOSE_PROJECT}-runtime
     build:
       context: ..
       dockerfile: deployment/Dockerfile
-      target: web
+      target: runtime
     env_file:
       - ${CLAIMCORE_CONFIG_DIR}/web.env
     ports:

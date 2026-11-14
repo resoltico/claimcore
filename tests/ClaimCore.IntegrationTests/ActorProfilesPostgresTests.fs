@@ -81,7 +81,7 @@ let private projection (database: PostgresFixture.Database) =
                 "UPDATE claimcore.actors SET display_name='Wrong projection' WHERE actor_id=$1"
                 [| box (id database.Fixture 1) |]
 
-        do! finding VerificationFinding.AuthorityProfileProjection database
+        do! finding VerificationFinding.PeopleProfileProjection database
         do! enterMaintenance database
         let! result = ProjectionRebuild.rebuild database.OwnerSource before token
         Expect.isOk result "Verified profile history rebuilds the projection"
@@ -113,7 +113,7 @@ let private rollback (database: PostgresFixture.Database) =
 [<Tests>]
 let tests =
     testList
-        "authority profile SQL and fold boundaries"
+        "people profile SQL and fold boundaries"
         [
             testCaseAsync
                 "erasure frontier preserves later profile and rejects unauthorized holes"

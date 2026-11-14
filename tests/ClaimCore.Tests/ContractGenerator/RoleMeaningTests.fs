@@ -96,7 +96,7 @@ let tests =
 
                 for role in [ Role.CaseRegistrar; Role.CaseHandler ] do
                     Expect.contains
-                        (Authority.policy role)
+                        (Access.policy role)
                         Capability.Register
                         "Role includes registration facts"
 
@@ -116,7 +116,7 @@ let tests =
 
                 for role in [ Role.CaseRegistrar; Role.CaseHandler ] do
                     let scoped =
-                        AuthorityView.ofActor (
+                        AccessView.ofActor (
                             Some
                                 {
                                     Actor =
@@ -137,7 +137,7 @@ let tests =
                         )
 
                     Expect.isTrue
-                        (Authority.can principal scoped Capability.Register (Scope.Case caseId))
+                        (Access.can principal scoped Capability.Register (Scope.Case caseId))
                         "Case-scoped registration rights still permit edits to that existing case"
 
                     Expect.isFalse
@@ -156,7 +156,7 @@ let tests =
                     "Handler limitation"
 
                 Expect.isTrue
-                    (Authority.humanOnlyCapability Capability.ManageCaseWork)
+                    (Access.humanOnlyCapability Capability.ManageCaseWork)
                     "Services cannot manage work"
 
                 Expect.stringContains
@@ -164,8 +164,8 @@ let tests =
                     "Only people manage"
                     "Work is limited to people"
 
-                let authority principal role scope =
-                    AuthorityView.ofActor (
+                let people principal role scope =
+                    AccessView.ofActor (
                         Some
                             {
                                 Actor =
@@ -183,20 +183,20 @@ let tests =
                     PrincipalKey.service "https://roles.example/" "service-handler"
                     |> Result.defaultWith (string >> failtest)
 
-                let handler = authority service Role.CaseHandler (Scope.Case caseId)
+                let handler = people service Role.CaseHandler (Scope.Case caseId)
 
                 Expect.isTrue
-                    (Authority.can service handler Capability.Decide (Scope.Case caseId))
+                    (Access.can service handler Capability.Decide (Scope.Case caseId))
                     "The service handler retains ordinary decision rights"
 
                 Expect.isFalse
-                    (Authority.can service handler Capability.ManageCaseWork (Scope.Case caseId))
+                    (Access.can service handler Capability.ManageCaseWork (Scope.Case caseId))
                     "The same service handler cannot manage responsibility or reminders"
 
-                let caseAuditor = authority principal Role.Auditor (Scope.Case caseId)
+                let caseAuditor = people principal Role.Auditor (Scope.Case caseId)
 
                 Expect.isTrue
-                    (Authority.can
+                    (Access.can
                         principal
                         caseAuditor
                         Capability.ReadHistoryFull
@@ -204,27 +204,23 @@ let tests =
                     "A case auditor reads that case's full history"
 
                 Expect.isFalse
-                    (Authority.can
-                        principal
-                        caseAuditor
-                        Capability.ReadAuthority
-                        Scope.Installation)
+                    (Access.can principal caseAuditor Capability.ReadAccess Scope.Installation)
                     "A case auditor cannot review account access"
 
-                let installationAuditor = authority principal Role.Auditor Scope.Installation
+                let installationAuditor = people principal Role.Auditor Scope.Installation
 
                 Expect.isTrue
-                    (Authority.can
+                    (Access.can
                         principal
                         installationAuditor
-                        Capability.ReadAuthority
+                        Capability.ReadAccess
                         Scope.Installation)
-                    "Installation auditing includes authority review"
+                    "Installation auditing includes people review"
 
                 Expect.stringContains
                     (meaning "AUDITOR")
                     "With this role for all cases"
-                    "Authority review scope limitation"
+                    "People review scope limitation"
 
                 Expect.stringContains
                     (meaning "CASE_REGISTRAR")
@@ -232,8 +228,8 @@ let tests =
                     "Registrar editing purpose"
 
                 Expect.equal
-                    (Authority.policy Role.Owner |> Set.ofList)
-                    (set [ Capability.ManageAuthority; Capability.ReadAuthority ])
+                    (Access.policy Role.Owner |> Set.ofList)
+                    (set [ Capability.ManageAccess; Capability.ReadAccess ])
                     "Owner alone has no case-fact permission"
 
                 Expect.stringContains
@@ -241,11 +237,11 @@ let tests =
                     "Does not give access to cases"
                     "Owner limitation"
 
-                Expect.isTrue (Authority.humanOnlyRole Role.DataSteward) "Steward is human only"
+                Expect.isTrue (Access.humanOnlyRole Role.DataSteward) "Steward is human only"
                 Expect.stringContains (meaning "DATA_STEWARD") "For people" "Steward limitation"
 
                 Expect.isFalse
-                    (Authority.policy Role.Auditor |> List.contains Capability.ManageAuthority)
+                    (Access.policy Role.Auditor |> List.contains Capability.ManageAccess)
                     "Auditor cannot manage access"
 
                 Expect.stringContains (meaning "AUDITOR") "Cannot change" "Read-only audit meaning")

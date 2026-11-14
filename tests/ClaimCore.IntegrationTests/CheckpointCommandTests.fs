@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.CheckpointCommandTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Diagnostics
@@ -9,7 +11,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
 open ClaimCore.Wire
@@ -145,7 +147,13 @@ let private commandPath () =
                     [ "rebuild"; "--expect"; "0:old" ], "USAGE_ERROR", None
                     [ "invalidate-restored-sessions" ], "OPERATOR_FAULT", Some "INVOCATION_INVALID"
                 ] do
-                let! refused = invoke arguments ExitCode.Rejected
+                let expectedExit =
+                    if expectedKind = "USAGE_ERROR" then
+                        ExitCode.Usage
+                    else
+                        ExitCode.Rejected
+
+                let! refused = invoke arguments expectedExit
                 Expect.equal (kind refused) expectedKind "Exact retired-syntax refusal"
 
                 match expectedFault with

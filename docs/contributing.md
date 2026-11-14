@@ -7,7 +7,7 @@ client contracts in [Integrating](integrating.md), and deployment tasks in [Oper
 
 Install the SDK from [global.json](../global.json), Node from [.node-version](../.node-version), and npm
 from [web/package.json](../web/package.json). Bash and Python 3 are required. Docker is required for
-PostgreSQL, Web and published acceptance tests; workflow checks also require ShellCheck.
+PostgreSQL, Server and published acceptance tests; workflow checks also require ShellCheck.
 NSS `certutil` is required by certificate acceptance (`nss` on Homebrew, `libnss3-tools` on Ubuntu).
 The [CI workflow](../.github/workflows/ci.yml) declares the supported verification platforms.
 
@@ -31,7 +31,7 @@ The table below defines project ownership. Supported contracts are documented in
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON, codecs, schemas and writers |
-| Domain | Values, acts, transitions, authority and business refusals |
+| Domain | Values, acts, transitions, access policy and business refusals |
 | Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Transactions, replay, operation lookup, projections and verification |
@@ -39,9 +39,9 @@ The table below defines project ownership. Supported contracts are documented in
 | Wire | Endpoints, transport codecs, catalog, build and legal identity; references Presentation |
 | Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
-| Web | Authentication, request gates, host bindings and static assets |
+| Server | Authentication, request gates, host bindings, static assets and owner administration |
 | Cli | HTTPS client, command grammar, local recovery and terminal rendering |
-| Database | Owner administration commands |
+| CommandLine | Shared exit codes, usage errors, help and version frames |
 
 The [evaluated edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns exact project
 references. Domain is independent of transport and JSON. Application and Postgres do not depend on Wire
@@ -51,27 +51,31 @@ or Presentation. The published CLI excludes Application and Postgres. Product fr
 
 Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain/CaseFields.fs) declares
 field kinds and money relationships; typed records retain validated structure through execution.
-[QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns search and machine summary
-selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
+[CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
-`Lifecycle.after` and `ReminderState.after` own transitions used by execution and verification.
+Subject contracts own `decide`, `apply`, `applyErased` and `rows`; execution and replay call the same
+Domain owners. [CaseSubject](../src/ClaimCore.Domain/CaseSubject.fs) retains erased identity and payment
+provenance separately from unavailable private content. [CaseIndex](../src/ClaimCore.Domain/CaseIndex.fs)
+alone derives the family index. [SubjectExecution](../src/ClaimCore.Application/Operations/SubjectExecution.fs)
+runs registered operations in one transaction path; replay validates the closed journal before applying
+those contracts.
 [TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
-inputs and choices; [TaskAssembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) assembles
+inputs and choices; [OperationSubmission](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) assembles
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
-Generated typed constructors live in `contracts/client.ts`; collection row keys stay outside commands.
+Generated types and task metadata live in `contracts/client.ts`; collection row keys stay outside submissions.
 
-RecordFormat owns canonical business-input codecs and the single installation format. Wire embeds
-those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
+RecordFormat owns canonical business-input codecs and the single installation format. Wire owns closed submission maps and transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
 
 `Codec.validate` admits strict structural JSON without invoking semantic constructors. `Read` and
 `Codec.decode` also interpret typed values; `interpret`, `refine` and `buildResult` can apply additional
 core constraints without changing the schema. Structural `restrict` declarations provide an explicit
-raw validator. Check native and generated structural admission against authored examples; arbitrary
+raw validator. Check native structural admission against authored examples; arbitrary
 codec records and interpretation predicates do not establish schema equivalence.
 
-[IStore](../src/ClaimCore.Application/LedgerStorePort.fs) supplies snapshot read and head-locked write
+[IStore](../src/ClaimCore.Application/LedgerStorePort.fs) is the internal Application/Postgres seam,
+not an integrator custom-store contract. It supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.
 
@@ -95,12 +99,12 @@ A custom output directory contains the contract artifacts only.
 ## Core presentation and copy
 
 Host bindings compute locale-neutral screens with semantic regions through
-[screen presenters](../src/ClaimCore.Presentation/Presentation/Screens). Actor replies negotiate distinct
-HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded interaction context,
-observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
+[screen presenters](../src/ClaimCore.Presentation/Screens). Actor replies negotiate distinct
+HUMAN documents and DATA projections. A HUMAN document owns its subject, Screen, affordances, typed query links,
+observation, disclosure and cursor. Rows carry their own controls. DATA carries no Screen; browser and native text consume documents,
 while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
 [Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
-[typed assembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) owns their command construction.
+[submission assembly](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) owns their command construction.
 
 Keep action eligibility, lifecycle, reminder timing, disclosure and recommendations in their core owners.
 A client formats values and handles interaction; it does not compare replies against its submitted
@@ -155,12 +159,18 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 ```
 
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
-commit: PRs run Linux x64 and Chromium; main pushes, merge groups and manual dispatch run Linux x64,
+commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
 Linux musl, macOS ARM64 and all three engines. Dispatch the full set on a substantial PR before review.
 Deployment, schema and database-host changes also run `bash eng/compose-restart-smoke.sh` in the separate
 [Compose restart workflow](../.github/workflows/compose.yml) (weekly as well); it is outside the Gate, so check it.
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
 published service/client integration runs on Linux x64.
+Docs-only PRs run configuration, lint and unit. All changed paths must be under `docs/` or be Markdown
+outside `src/`, `web/` and `tests/`; `LICENSE`, `PROJECT-NOTICE.md` and `LICENSE-COMMERCIAL.md` always
+require the full PR set. Main pushes, merge groups and manual dispatch always run the full set.
+Offline CLI usage, help, schema and dry-run checks run in-process in unit; acceptance keeps one
+published smoke for each category.
+
 Do not duplicate that full qualification locally. Diagnose failures from their output
 and rerun the affected paths; preserve earlier failures in the report. Passing focused checks does not
 establish that unrun stages passed. Avoid duplicate full runs solely because both local and CI are available.
@@ -173,10 +183,10 @@ establish that unrun stages passed. Avoid duplicate full runs solely because bot
 | advisories | Native transitive vulnerabilities and npm audit at low severity; full CI events only |
 | workflows | ShellCheck and pinned Actionlint |
 | integration | PostgreSQL and Web suites |
-| postgres / web | One isolated suite |
+| postgres / server | One isolated suite |
 | browsers | Install locked Playwright engines when their version changes |
-| acceptance-native | Published service, CLI and deployment cases |
-| acceptance-browser | Chromium complete; Firefox/WebKit `@engine` cases |
+| acceptance-native | Published service, CLI and deployment; `CLAIMCORE_ACCEPTANCE_SHARD=walkthrough` or `remaining` selects one shard |
+| acceptance-browser | Chromium complete in two `CLAIMCORE_ACCEPTANCE_BROWSER_SHARD=1/2` or `2/2` shards; Firefox/WebKit `@engine` cases |
 | acceptance | Native acceptance, then the browser scopes |
 
 With current Release applications, acceptance assembly and frontend assets built, select a browser file:

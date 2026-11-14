@@ -1,3 +1,4 @@
+import { type ResponseByEndpoint } from "@contracts/client";
 import { showCaseActionMenu, caseActionButton } from "./case-workflow";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { showExactLookup } from "./workspace-navigation";
@@ -22,42 +23,51 @@ import {
   type NarrowRole,
   type RoleFixture,
 } from "./narrow-role-fixture";
-import { isResponse } from "../src/protocol/client";
-
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>> | undefined;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   stewardCookies = await authenticateSteward(browser, baseURL);
 });
-
 const openNarrowSession = (page: Page, heading: string): Promise<void> => {
   if (stewardCookies === undefined) {
     throw new Error("E2E_NARROW_SPEC_SESSION_NOT_INITIALIZED");
   }
   return openAuthenticated(page, heading, stewardCookies);
 };
-
 const findCase = async (page: Page, reference: string) => {
   await (await showExactLookup(page)).fill(reference);
-  await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Open by exact reference",
+      exact: true,
+    })
+    .click();
 };
-
 const expectContextAccess = async (page: Page) => {
   const token = await sessionToken(page);
   const definition = await browserRequest(page, "/api/context", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": token,
+    },
     body: "{}",
   });
   expect(definition.status).toBe(200);
   expect(definition.payload).toMatchObject({
-    outcome: { kind: "SUCCEEDED" },
+    outcome: {
+      kind: "SUCCEEDED",
+    },
   });
   expect(token.length).toBeGreaterThan(0);
 };
-
 const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scoped: boolean) => {
-  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", {
+      name: "Open a case",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   await findCase(page, fixture.reference);
   await expect(page.locator(".case-header-state")).toBeVisible();
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
@@ -70,14 +80,13 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   await showCaseActionMenu(page);
   if (role === "CASE_HANDLER") {
-    await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
+    await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   } else {
     await expect(
-      page
-        .getByRole("button")
-        .and(page.locator('button[data-act="CLOSE"]'))
-        .filter({ visible: true }),
-    ).toHaveCount(0);
+      page.getByRole("button").and(page.locator('button[data-act="case.close"]')).filter({
+        visible: true,
+      }),
+    ).toBeDisabled();
   }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
@@ -85,7 +94,12 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(1);
   }
   if (scoped) {
-    await page.getByRole("button", { name: "Back to cases", exact: true }).click();
+    await page
+      .getByRole("button", {
+        name: "Back to cases",
+        exact: true,
+      })
+      .click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
       page.locator(
@@ -96,7 +110,6 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await expect(page.locator("#case-detail-title")).toHaveText(fixture.unrelated);
   }
 };
-
 const cases: ReadonlyArray<readonly [string, NarrowRole | null, boolean]> = [
   ["installation reader", "CASE_READER", false],
   ["case reader", "CASE_READER", true],
@@ -104,7 +117,11 @@ const cases: ReadonlyArray<readonly [string, NarrowRole | null, boolean]> = [
   ["steward", "DATA_STEWARD", false],
   ["enabled actor without grants", null, false],
 ];
-const teardown: { current: (() => Promise<void>) | null } = { current: null };
+const teardown: {
+  current: (() => Promise<void>) | null;
+} = {
+  current: null,
+};
 test.afterEach(async () => {
   const cleanup = teardown.current;
   teardown.current = null;
@@ -159,7 +176,6 @@ for (const [name, role, scoped] of cases) {
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });
 }
-
 test("a fresh steward session does not restore a revoked ticket", async ({
   page,
   browser,
@@ -173,22 +189,25 @@ test("a fresh steward session does not restore a revoked ticket", async ({
   const expectAuthenticated = async (expected: boolean) => {
     const reply = await browserRequest(page, "/api/session");
     expect(reply.status).toBe(200);
-    if (!isResponse("session", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+    const sessionReply = reply.payload as ResponseByEndpoint["session"];
+    if (sessionReply.outcome.kind !== "SUCCEEDED") {
       throw new Error("E2E_STEWARD_SESSION_RESPONSE_INVALID");
     }
-    expect(reply.payload.outcome.data.authenticated).toBe(expected);
+    expect(sessionReply.outcome.data.authenticated).toBe(expected);
   };
   await context.addCookies(revoked);
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   await expect(page.locator(".login-card h1")).toBeVisible();
   await expectAuthenticated(false);
-
   const fresh = await authenticateSteward(browser, baseURL);
   await openAuthenticated(page, "Cases", fresh);
   await expectAuthenticated(true);
-
   await context.addCookies(revoked);
-  await page.goto("/", { waitUntil: "commit" });
+  await page.goto("/", {
+    waitUntil: "commit",
+  });
   await expect(page.locator(".login-card h1")).toBeVisible();
   await expectAuthenticated(false);
 });

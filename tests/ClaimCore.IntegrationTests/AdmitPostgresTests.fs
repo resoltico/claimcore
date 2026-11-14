@@ -29,7 +29,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
                 "UPDATE claimcore.actors SET display_name='Resurrected projection',display_name_search='resurrected projection',contact='Wrong contact',contact_search='wrong contact' WHERE actor_id=$1"
                 [| box (id database.Fixture 740) |]
 
-        do! finding VerificationFinding.AuthorityProfileProjection database
+        do! finding VerificationFinding.PeopleProfileProjection database
         do! enterMaintenance database
         let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource before token
 
@@ -85,11 +85,11 @@ let private duplicateHistory (database: PostgresFixture.Database) =
         let! admitted =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 930)
                         principal
-                        (AuthorityAct.Admit
+                        (PeopleAct.Admit
                             {
                                 Profile = Inputs.actorProfile
                                 Grants =
@@ -122,7 +122,7 @@ let private duplicateHistory (database: PostgresFixture.Database) =
 [<Tests>]
 let tests =
     testList
-        "atomic authority admission"
+        "atomic people admission"
         [
             testCaseAsync
                 "erased admission rebuild preserves all grants without reviving names"

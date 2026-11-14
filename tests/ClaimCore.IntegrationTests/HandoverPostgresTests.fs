@@ -39,15 +39,15 @@ let private handover (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id fixture 100)
                         principal
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
         let outgoing = CaseFixtures.actorId (id fixture 100)
         let incoming = CaseFixtures.actorId (id fixture 1)
 
@@ -62,7 +62,7 @@ let private handover (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
 
         let! second =
             Service.execute

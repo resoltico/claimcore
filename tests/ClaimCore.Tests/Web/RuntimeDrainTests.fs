@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Web.Composition
+open ClaimCore.Server.Composition
 
 [<Tests>]
 let tests =
@@ -145,7 +145,7 @@ let tests =
                         task {
                             try
                                 let! _ =
-                                    ClaimCore.Web.Program.withShutdown
+                                    ClaimCore.Server.HostProgram.withShutdown
                                         (fun () -> Task.FromException<int>(primary))
                                         (fun () -> Task.FromResult ShutdownOutcome.TeardownFailed)
                                         (fun outcome ->
@@ -168,7 +168,7 @@ let tests =
                         "Secondary teardown is still reported"
 
                     let! result =
-                        ClaimCore.Web.Program.withShutdown
+                        ClaimCore.Server.HostProgram.withShutdown
                             (fun () -> Task.FromResult 0)
                             (fun () -> Task.FromResult ShutdownOutcome.BoundExpired)
                             ignore

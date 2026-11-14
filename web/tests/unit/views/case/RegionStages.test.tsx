@@ -1,4 +1,6 @@
-import { expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import * as navigation from "../../../../src/routing/navigation";
+import { expect, it, vi } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
 import { RegionView } from "../../../../src/ui/regions/RegionView";
 it("renders the supplied nonlinear tracker without deriving completion, dates or amounts", () => {
@@ -63,4 +65,102 @@ it("preserves the complete numeric date and exact amount display scale", () => {
   expect(time).toHaveAttribute("datetime", "0001-01-01");
   expect(time.textContent).toBe("01/01/0001");
   expect(view.container).toHaveTextContent("123,456,789,012,345,678.0100 EUR");
+});
+
+it("renders supplied stage controls and follows its supplied query link", async () => {
+  const action = {
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      expectedRevision: 4,
+    },
+    seeds: {},
+    editable: [],
+    choices: {},
+    primary: true,
+    blocked: null,
+  } as const;
+  const onAction = vi.fn();
+  const follow = vi.spyOn(navigation, "navigate").mockImplementation(() => false);
+  render(
+    <RegionView
+      region={{
+        role: "PROGRESS",
+        content: {
+          kind: "STAGES",
+          current: "OPENED",
+          steps: [
+            {
+              stage: "OPENED",
+              reached: true,
+              date: null,
+              amount: null,
+              link: {
+                endpoint: "case.get",
+                input: { target: { kind: "REFERENCE", caseReference: "CASE-1" } },
+              },
+              actions: [action],
+            },
+          ],
+        },
+      }}
+      onAction={onAction}
+    />,
+  );
+  const button = screen.getByRole("button", { name: "Close the case" });
+  expect(button.classList.contains("primary")).toBe(true);
+  await userEvent.setup().click(button);
+  expect(onAction).toHaveBeenCalledExactlyOnceWith(action, undefined, expect.any(String));
+  const link = screen.getByRole("link", { name: "Opened" });
+  expect(link).toHaveAttribute("href", "/cases/reference/CASE-1");
+  await userEvent.setup().click(link);
+  expect(follow).toHaveBeenCalledExactlyOnceWith("/cases/reference/CASE-1");
+  follow.mockRestore();
+});
+
+it("keeps a supplied blocked stage action disabled", async () => {
+  const onAction = vi.fn();
+  render(
+    <RegionView
+      region={{
+        role: "PROGRESS",
+        content: {
+          kind: "STAGES",
+          current: "OPENED",
+          steps: [
+            {
+              stage: "OPENED",
+              reached: true,
+              date: null,
+              amount: null,
+              actions: [
+                {
+                  task: "case.close",
+                  binding: {
+                    kind: "CASE",
+                    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+                    expectedRevision: 4,
+                  },
+                  seeds: {},
+                  editable: [],
+                  choices: {},
+                  primary: false,
+                  blocked: {
+                    action: "ASK_FOR_ACCESS",
+                    message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      }}
+      onAction={onAction}
+    />,
+  );
+  const button = screen.getByRole("button");
+  expect(button).toBeDisabled();
+  await userEvent.setup().click(button);
+  expect(onAction).not.toHaveBeenCalled();
 });

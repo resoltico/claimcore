@@ -35,7 +35,7 @@ let tests =
                         }
                         true
 
-                acceptedAuthority stewardship
+                acceptedPeople stewardship
 
                 let write n revision act =
                     Service.execute

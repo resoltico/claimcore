@@ -18,9 +18,12 @@ let private input (fixture: PublishedFixture.Fixture) (field: string) value =
 
     let input = authored["input"] |> nonNull
     input["operationId"] <- JsonValue.Create(id ())
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create("INVALID-" + id ())
-    let values = (input["act"] |> nonNull)["values"] |> nonNull
-    values[field] <- JsonValue.Create<string> value
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create("INVALID-" + id ())
+
+    let values = input["inputs"] |> nonNull
+    values["field:" + field] <- JsonValue.Create<string> value
     input
 
 // Independent wire expectations: do not derive the oracle from the diagnostic codec.
@@ -53,10 +56,14 @@ let private assertIssues expected (refusal: JsonElement) =
         (List.length expected)
         "Every independent issue is reported exactly once"
 
-    for issue, (field, code) in List.zip actual expected do
+    for issue, ((field: string), code) in List.zip actual expected do
         Expect.equal
-            (issue.GetProperty("field").GetString())
-            field
+            (issue.GetProperty("input").GetString())
+            ((if field.StartsWith("principal.", System.StringComparison.Ordinal) then
+                  "input:"
+              else
+                  "field:")
+             + field)
             "Field guidance and issue order are retained"
 
         Expect.equal
@@ -64,8 +71,13 @@ let private assertIssues expected (refusal: JsonElement) =
             code
             "Domain owns the specific input cause"
 
+        Expect.equal
+            (issue.GetProperty("row").ValueKind)
+            JsonValueKind.Null
+            "A scalar issue has no collection ordinal"
+
         let parameters = issueParameters code
-        let names = Set.ofList ([ "field"; "code" ] @ (parameters |> List.map fst))
+        let names = Set.ofList ([ "input"; "row"; "code" ] @ (parameters |> List.map fst))
         Expect.equal (properties issue) names "Only declared parameters accompany each issue"
 
         for name, value in parameters do
@@ -125,23 +137,17 @@ let private principalRefusals fixture =
                 fixture
                 "operation.execute"
                 {|
-                    kind = "AUTHORITY"
                     operationId = id ()
-                    target =
-                        {|
-                            kind = "HUMAN"
-                            issuer = issuer
-                            subject = subject
-                        |}
-                    act =
-                        {|
-                            kind = "REGISTER"
-                            profile =
-                                {|
-                                    displayName = "Refusal fixture"
-                                    contact = null
-                                |}
-                        |}
+                    task = "people.register"
+                    binding = {| kind = "PEOPLE" |}
+                    inputs =
+                        dict
+                            [
+                                "input:principal.kind", box "HUMAN"
+                                "input:principal.issuer", box issuer
+                                "input:principal.subject", box subject
+                                "input:profile.displayName", box "Refusal fixture"
+                            ]
                 |}
                 2
 

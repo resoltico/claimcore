@@ -19,7 +19,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Presentation
 open ClaimCore.Wire
-open ClaimCore.Web
+open ClaimCore.Server
 open ClaimCore.TestSupport
 
 [<Tests>]
@@ -119,20 +119,20 @@ let tests =
                 let mutable dispatched = 0
 
                 let handler =
-                    ClaimCore.Web.Route.bind Api.operationExecute (fun _ input _ ->
+                    ClaimCore.Server.Route.bind Api.operationExecute (fun _ input _ ->
                         dispatched <- dispatched + 1
 
                         Task.FromResult(
                             RepresentationReply.Data
                                 {
-                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    ExecuteReply.OperationId = input.OperationId
                                     Outcome = ExecuteResult.OutcomeUnknown
                                 }
                         ))
 
                 let body =
                     Encoding.UTF8.GetBytes
-                        """{"kind":"CASE","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1,"act":{"kind":"CLOSE"}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.close","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1},"inputs":{}}"""
 
                 let withActor principal work =
                     task {

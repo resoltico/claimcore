@@ -1,4 +1,3 @@
-export { strictJsonBytes } from "../protocol/strictJson";
 /** Counts received bytes before retention; cancellation never waits on a hostile source. */
 export const responseBytes = async (
   response: Response,

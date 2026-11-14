@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
@@ -9,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { hostCases } from "../support/decoding-examples.fixtures";
+import { hostCases } from "../support/host-failure.fixtures";
 import { CaseList } from "../../src/views/CaseList";
 import { definition, fields, operationId } from "../support/service-ui.fixtures";
 const unavailable = {
@@ -165,23 +166,7 @@ it("reports absent and malformed operation observations without leaving stale re
   );
   expect(screen.queryByText(/Accepted operation/u)).toBeNull();
 });
-it("reports a found observation without a receipt as a protocol failure", async () => {
-  const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    endpointResponse("operation.get", {
-      representation: "HUMAN",
-      outcome: { kind: "ACCEPTED", byRequester: true },
-    }),
-  );
-  render(<OperationLookup definition={definition} />);
-  await user.type(screen.getByLabelText("Exact operation ID"), operationId);
-  await user.click(
-    screen.getByRole("button", {
-      name: "Look up recorded result",
-    }),
-  );
-  expect(await screen.findByRole("alert")).toBeVisible();
-});
+
 it("focuses and describes invalid operation identity then clears the stale error", async () => {
   const sample = hostCases().find((value) => value.id === "input-invalid");
   if (sample === undefined) {
@@ -220,13 +205,19 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
     response("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

@@ -16,10 +16,14 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { useRecoveryJournal } from "./JournalContext";
 import { subscribeRecovery } from "./indexedJournal";
-import { sameRecoveryScope, type RecoveryScope } from "../protocol/recoveryJournal";
+import {
+  sameRecoveryScope,
+  type RecoveryScope,
+  type RecoveryRecord,
+} from "../protocol/recoveryJournal";
 import { service, resultNotice } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
-import type { RecoveryRecord } from "../protocol/recoveryJournal";
+
 import type { Notice } from "../protocol/notices";
 
 type RecoveryOwner = OwnerScope & { scope: RecoveryScope; credential: string };
@@ -74,7 +78,14 @@ const attemptFeedback = (
             kind: "RECORDED",
             view: document.screen,
             timeZone: document.basis.observation.timeZone,
-            caseId: document.context.caseLink,
+            caseId:
+              document.links.flatMap((named) =>
+                named.rel === "OPEN_CASE" &&
+                named.link.endpoint === "case.get" &&
+                named.link.input.target.kind === "ID"
+                  ? [named.link.input.target.caseId]
+                  : [],
+              )[0] ?? null,
           }
         : { kind: "NOT_RECORDED", view: null },
     };
@@ -198,8 +209,8 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const installationId = identified?.installationId;
   const verified =
     requester !== null &&
-    requester.context.actorId === actorId &&
-    requester.context.installationId === installationId;
+    requester.subject.actorId === actorId &&
+    requester.subject.installationId === installationId;
   const journal = useRecoveryJournal();
   const scope = useMemo<RecoveryScope | null>(
     () =>

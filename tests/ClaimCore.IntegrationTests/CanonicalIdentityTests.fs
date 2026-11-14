@@ -93,7 +93,7 @@ let private casePairs (database: PostgresFixture.Database) =
                 "Retained typed values preserve authored reference and canonical decimal meaning"
     }
 
-let private authorityPairs (database: PostgresFixture.Database) =
+let private peoplePairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let input = opening database.Fixture 9310 "Canonical-Reference" "10.50" "Claimant"
@@ -107,15 +107,15 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 901)
                         target
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let grant reference =
             {
@@ -125,11 +125,11 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
         for number, act, effect in
             [
-                9320, AuthorityAct.Grant, AuthorityKind.Grant
-                9321, AuthorityAct.Revoke, AuthorityKind.Revoke
+                9320, PeopleAct.Grant, PeopleActKind.Grant
+                9321, PeopleAct.Revoke, PeopleActKind.Revoke
             ] do
             let left =
-                authorityRequest
+                peopleRequest
                     (id database.Fixture number)
                     target
                     (act (grant "Canonical-Reference"))
@@ -139,10 +139,10 @@ let private authorityPairs (database: PostgresFixture.Database) =
                     Act = act (grant "canonical-reference")
                 }
 
-            let! first = Service.execute actor (OperationInput.Authority left) token
+            let! first = Service.execute actor (OperationInput.People left) token
             let receipt = accepted first
             let! before = verified database
-            let! replay = Service.execute actor (OperationInput.Authority right) token
+            let! replay = Service.execute actor (OperationInput.People right) token
 
             expectReceipt
                 (replayReceipt replay)
@@ -150,15 +150,15 @@ let private authorityPairs (database: PostgresFixture.Database) =
                 "Reference-bearing grant/revoke inputs compare folded case references"
 
             let! after = verified database
-            Expect.equal after before "Authority replay appends nothing"
+            Expect.equal after before "People replay appends nothing"
             let! authored = retainedRequest database receipt
 
             let restored =
                 authored.Root.Structure.Effects
                 |> List.exactlyOne
                 |> function
-                    | EffectDescriptor.Authority(_, descriptor) -> descriptor
-                    | _ -> failtest "Retained authority effect required"
+                    | EffectDescriptor.People(_, descriptor) -> descriptor
+                    | _ -> failtest "Retained people effect required"
 
             let expected =
                 {
@@ -168,11 +168,11 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
             Expect.equal
                 restored
-                (if effect = AuthorityKind.Grant then
-                     AuthorityEffectDescriptor.Grant expected
+                (if effect = PeopleActKind.Grant then
+                     PeopleEffectDescriptor.Grant expected
                  else
-                     AuthorityEffectDescriptor.Revoke expected)
-                "The retained authority command uses the resolved case identity"
+                     PeopleEffectDescriptor.Revoke expected)
+                "The retained people command uses the resolved case identity"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =
@@ -202,15 +202,15 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 920)
                         outsider
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (token))
 
-        acceptedAuthority registered
+        acceptedPeople registered
         let other = core database.Fixture outsider
 
         let! hiddenEqual =
@@ -240,7 +240,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority stewardship
+        acceptedPeople stewardship
 
         let! erased =
             (Service.execute
@@ -270,17 +270,129 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         Expect.equal after before "An erased replay attempt appends nothing"
     }
 
+let private submissionMaps (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+
+        let decode source =
+            ClaimCore.Json.Codec.decode
+                ClaimCore.Wire.Limits.MaximumRequestBytes
+                ClaimCore.Wire.OperationSubmissionCodecs.submission
+                (System.Text.Encoding.UTF8.GetBytes(source: string))
+            |> Result.defaultWith (fun error -> failtestf "Submission admission: %A" error)
+
+        let opening =
+            opening database.Fixture 9400 "Map-Replay" "10.50" "Claimant"
+            |> Inputs.caseOperation
+            |> Submissions.ofCommand None
+
+        let! opened = Service.executeSubmission actor opening token
+        accepted opened |> ignore
+        let operation = (id database.Fixture 9401).ToString("D")
+
+        let raw inputs =
+            sprintf
+                """{"operationId":"%s","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"Map-Replay"},"expectedRevision":1},"inputs":{%s}}"""
+                operation
+                inputs
+
+        let first =
+            raw "\"field:policyNumber\":\"PN-1\",\"field:claimantName\":\"Changed\""
+            |> decode
+
+        let! result = Service.executeSubmission actor first token
+        let receipt = accepted result
+        let! before = verified database
+
+        let reordered =
+            raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-1\""
+            |> decode
+
+        let! replay = Service.executeSubmission actor reordered token
+
+        expectReceipt
+            (replayReceipt replay)
+            receipt
+            "Map member order does not change accepted identity"
+
+        let! conflict =
+            Service.executeSubmission
+                actor
+                (raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-2\""
+                 |> decode)
+                token
+
+        Expect.equal
+            conflict.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
+            "Changed map content cannot reuse an accepted operation ID"
+
+        for key in [ "unknown"; "input:noteText" ] do
+            let invalid = raw (sprintf "\"%s\":\"foreign\"" key)
+
+            Expect.isError
+                (ClaimCore.Json.Codec.decode
+                    ClaimCore.Wire.Limits.MaximumRequestBytes
+                    ClaimCore.Wire.OperationSubmissionCodecs.submission
+                    (System.Text.Encoding.UTF8.GetBytes invalid))
+                "Unknown and foreign keys cannot become dispatched writes"
+
+        let! after = verified database
+        Expect.equal after before "Replay, conflict and closed-map refusals append nothing"
+        let registration = id database.Fixture 9402
+
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "selected-person"
+            |> Result.defaultWith (string >> failtest)
+
+        let command =
+            OperationInput.People(
+                peopleRequest registration principal (PeopleAct.Register Inputs.actorProfile)
+            )
+
+        let! registered =
+            Service.executeSubmission actor (Submissions.ofCommand None command) token
+
+        acceptedPeople registered
+
+        let selected =
+            ActorId.ofOperationId (OperationId.create registration |> Option.get)
+            |> ActorId.value
+
+        let disable =
+            sprintf
+                """{"operationId":"%s","task":"people.disable","binding":{"kind":"PEOPLE","actorId":"%s"},"inputs":{}}"""
+                ((id database.Fixture 9403).ToString("D"))
+                (selected.ToString("D"))
+            |> decode
+
+        let! disabled = Service.executeSubmission actor disable token
+        let receipt = accepted disabled
+        let! repeated = Service.executeSubmission actor disable token
+
+        expectReceipt
+            (replayReceipt repeated)
+            receipt
+            "Actor selection resolves the same immutable identity for exact replay"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
         "canonical operation identity"
         [
             testCaseAsync
+                "declared submission maps preserve key-order replay conflict and actor selection"
+                (run submissionMaps)
+            testCaseAsync
                 "equivalent amounts and references replay while different content conflicts"
                 (run casePairs)
             testCaseAsync
-                "authority grant and revoke replay with respelled case references"
-                (run authorityPairs)
+                "people grant and revoke replay with respelled case references"
+                (run peoplePairs)
             testCaseAsync
                 "comparison stays opaque to unauthorized actors and erased content cannot replay"
                 (run disclosureAndErasure)

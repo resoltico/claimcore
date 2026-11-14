@@ -29,8 +29,9 @@ test("notes use reviewed unversioned writes, latest three, paging, removal and A
     await notes.getByRole("button", { name: "Add note", exact: true }).click();
     const reviewed = await preview;
     expect(reviewed.request().postDataJSON()).toMatchObject({
-      kind: "NOTE",
-      act: { kind: "ADD_NOTE", text: `Handling note ${number}\nSecond line` },
+      task: "note.add",
+      binding: { kind: "NOTE" },
+      inputs: { "input:noteText": `Handling note ${number}\nSecond line` },
     });
     expect(reviewed.request().postDataJSON()).not.toHaveProperty("expectedRevision");
     const dialog = page.getByRole("dialog");

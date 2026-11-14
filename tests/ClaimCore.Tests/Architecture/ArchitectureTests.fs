@@ -1,5 +1,7 @@
 module ClaimCore.Tests.Architecture.ArchitectureTests
 
+open ClaimCore.CommandLine
+
 open System
 open System.IO
 open System.Reflection
@@ -148,13 +150,7 @@ let private postgres () =
     for assembly in products.Value do
         let name = assembly.GetName().Name |> nonNull
 
-        if
-            not (
-                List.contains
-                    name
-                    [ "ClaimCore.Postgres"; "claimcore-server"; "claimcore-database" ]
-            )
-        then
+        if not (List.contains name [ "ClaimCore.Postgres"; "claimcore-server" ]) then
             check ArchitectureRule.Postgres assembly
 
     rejects ArchitectureRule.Postgres typeof<PostgresReference>
@@ -335,7 +331,6 @@ let tests =
             testCase "Domain excludes outer layers" domainBoundary
             testCase "hosts use only the service surface and ports" (fun () ->
                 check ArchitectureRule.ServiceSurface (Assembly.Load "claimcore-server")
-                check ArchitectureRule.ServiceSurface (Assembly.Load "claimcore-database")
                 rejects ArchitectureRule.ServiceSurface typeof<ApplicationInternalsFromWeb>)
             testCase "Domain is independent of JSON" (fun () ->
                 check ArchitectureRule.DomainJsonFree (Assembly.Load "ClaimCore.Domain")

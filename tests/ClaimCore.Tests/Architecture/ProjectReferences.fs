@@ -1,5 +1,7 @@
 module internal ClaimCore.Tests.Architecture.ProjectReferences
 
+open ClaimCore.CommandLine
+
 open System.Diagnostics
 open System.IO
 open System.Text.Json
@@ -40,13 +42,20 @@ let read path =
 /// Allowed direct edges; removing an unnecessary edge preserves the boundary.
 let allowed =
     [
+        "ClaimCore.CommandLine", [ "ClaimCore.Domain"; "ClaimCore.Json" ]
         "ClaimCore.Json", []
         "ClaimCore.Domain", []
         "ClaimCore.Application.Contracts", [ "ClaimCore.Domain" ]
         "ClaimCore.Presentation",
-        [ "ClaimCore.Domain"; "ClaimCore.Application.Contracts"; "ClaimCore.Json" ]
+        [
+            "ClaimCore.Domain"
+            "ClaimCore.Application.Contracts"
+            "ClaimCore.Json"
+            "ClaimCore.CommandLine"
+        ]
         "ClaimCore.Wire",
         [
+            "ClaimCore.CommandLine"
             "ClaimCore.RecordFormat"
             "ClaimCore.Domain"
             "ClaimCore.Application.Contracts"
@@ -69,8 +78,10 @@ let allowed =
             "ClaimCore.Json"
         ]
         "ClaimCore.HostSecurity", []
-        "ClaimCore.Web",
+        "ClaimCore.Server",
         [
+            "ClaimCore.CommandLine"
+            "ClaimCore.RecordFormat"
             "ClaimCore.Application.Contracts"
             "ClaimCore.Application"
             "ClaimCore.Postgres"
@@ -82,6 +93,7 @@ let allowed =
         ]
         "ClaimCore.Cli",
         [
+            "ClaimCore.CommandLine"
             "ClaimCore.Application.Contracts"
             "ClaimCore.Wire"
             "ClaimCore.Presentation"
@@ -89,18 +101,7 @@ let allowed =
             "ClaimCore.HostSecurity"
             "ClaimCore.Json"
         ]
-        "ClaimCore.Database",
-        [
-            "ClaimCore.RecordFormat"
-            "ClaimCore.Application.Contracts"
-            "ClaimCore.Application"
-            "ClaimCore.Postgres"
-            "ClaimCore.Wire"
-            "ClaimCore.Presentation"
-            "ClaimCore.Domain"
-            "ClaimCore.HostSecurity"
-            "ClaimCore.Json"
-        ]
+
     ]
     |> List.map (fun (name, edges) -> name, Set.ofList edges)
     |> Map.ofList

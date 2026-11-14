@@ -10,6 +10,6 @@ const runtime = {
 export const context = actorContextInput({
   ...runtime,
   capabilities: ["REGISTER"],
-  views: ["CASES", "AUTHORITY", "OPERATIONS"],
-  offers: [{ kind: "OPEN" }],
+  views: ["CASES", "PEOPLE", "OPERATIONS"],
+  offers: [{ kind: "case.open" }],
 });

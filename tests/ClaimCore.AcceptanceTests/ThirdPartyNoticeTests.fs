@@ -153,7 +153,7 @@ let private qualify () =
     try
         let mutable distributed = Set.empty
 
-        for name in [ "ClaimCore.Cli"; "ClaimCore.Database"; "ClaimCore.Web" ] do
+        for name in [ "ClaimCore.Cli"; "ClaimCore.Server"; "ClaimCore.Server" ] do
             let binary = PublishedProcesses.publish root directory name
             let output = Path.GetDirectoryName binary |> nonNull
             distributed <- Set.union distributed (ThirdPartyNotices.qualify root output name)

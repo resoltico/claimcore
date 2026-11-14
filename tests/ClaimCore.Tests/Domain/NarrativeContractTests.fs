@@ -27,11 +27,7 @@ let private registration description =
     |> required
 
 let private run number revision act current =
-    let context =
-        match act, current |> Option.map Case.snapshot with
-        | CaseAct.RecordPayment _, Some parent ->
-            CasePaymentContext.Recording(parent.CaseId, parent.Revision, false)
-        | _ -> CasePaymentContext.NoneRequired
+    let context = Map.empty
 
     Case.parse
         {

@@ -10,7 +10,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Tests.Fixtures
-open ClaimCore.Tests.AuthorityPolicyInputs
+open ClaimCore.Tests.AccessPolicyInputs
 
 
 let private matrix () =
@@ -44,9 +44,9 @@ let private matrix () =
                                 capability
 
                         Expect.equal
-                            (Authority.can
+                            (Access.can
                                 principal
-                                (AuthorityView.ofActor (Some current))
+                                (AccessView.ofActor (Some current))
                                 capability
                                 resource)
                             expected
@@ -92,15 +92,15 @@ let private invalidActors () =
             }
         ] do
         Expect.isFalse
-            (Authority.can
+            (Access.can
                 human
-                (AuthorityView.ofActor (Some invalid))
+                (AccessView.ofActor (Some invalid))
                 Capability.ReadCase
                 (Scope.Case caseId))
             "Invalid actor grants no rights"
 
     Expect.isFalse
-        (Authority.can human AuthorityView.empty Capability.ReadCase (Scope.Case caseId))
+        (Access.can human AccessView.empty Capability.ReadCase (Scope.Case caseId))
         "Absent actor grants no rights"
 
     let scoped =
@@ -114,10 +114,10 @@ let private invalidActors () =
             ]
 
     Expect.isFalse
-        (Authority.can
+        (Access.can
             human
-            (AuthorityView.ofActor (Some scoped))
-            Capability.ReadAuthority
+            (AccessView.ofActor (Some scoped))
+            Capability.ReadAccess
             Scope.Installation)
         "Case-scoped audit does not enumerate the installation"
 
@@ -147,7 +147,7 @@ let private caseActCapabilities () =
 
     for act, capability in cases do
         Expect.equal
-            (Authority.requiredCapabilities (CaseFixtures.act act))
+            (Access.requiredCapabilities (CaseFixtures.act act))
             [ capability ]
             "Independent act capability"
 
@@ -180,7 +180,7 @@ let private corrections () =
             }
 
         Expect.equal
-            (Authority.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct corrected)))
+            (Access.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct corrected)))
             expected
             "Each of the two asserted groups requires its own capability"
 
@@ -190,9 +190,9 @@ let private corrections () =
             }
 
         Expect.equal
-            (Authority.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct cleared)))
+            (Access.requiredCapabilities (CaseFixtures.act (AuthoredCaseAct.Correct cleared)))
             expected
-            "Clearing selects decision authority"
+            "Clearing selects decision access"
 
 let private paymentActions () =
     let handler =
@@ -223,20 +223,12 @@ let private paymentActions () =
         let validated = CaseFixtures.act act
 
         Expect.isFalse
-            (Authority.canAct
-                human
-                (AuthorityView.ofActor (Some handler))
-                (Scope.Case caseId)
-                validated)
-            "Case handling does not grant payment authority"
+            (Access.canAct human (AccessView.ofActor (Some handler)) (Scope.Case caseId) validated)
+            "Case handling does not grant payment access"
 
         Expect.isTrue
-            (Authority.canAct
-                human
-                (AuthorityView.ofActor (Some recorder))
-                (Scope.Case caseId)
-                validated)
-            "Payment recording authority covers entry removal"
+            (Access.canAct human (AccessView.ofActor (Some recorder)) (Scope.Case caseId) validated)
+            "Payment recording access covers entry removal"
 
 let private scopedAdvice () =
     let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
@@ -248,7 +240,7 @@ let private scopedAdvice () =
         {
             CaseId = target
             Snapshot = snapshot
-            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
@@ -258,7 +250,7 @@ let private scopedAdvice () =
             Role.PaymentRecorder, [], HistoryAccess.Summary
             Role.CaseHandler, [ "registration"; "decision" ], HistoryAccess.Full
         ] do
-        let authority =
+        let access =
             actor
                 human
                 [
@@ -271,7 +263,7 @@ let private scopedAdvice () =
         let advice =
             Queries.caseRecord
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
-                (AuthorityView.ofActor (Some authority))
+                (AccessView.ofActor (Some access))
                 (Inputs.workView record.Snapshot.State)
                 (Inputs.stageDisplay record.Snapshot.State)
                 Inputs.workBasis.ObservedAt
@@ -288,7 +280,7 @@ let private scopedAdvice () =
         Expect.equal advice.Advice.History expectedHistory "History reflects the actual grant"
 
         if expectedGroups.IsEmpty then
-            Expect.isNone advice.Advice.Correction "Payment authority exposes no correction group"
+            Expect.isNone advice.Advice.Correction "Payment access exposes no correction group"
 
             Expect.isFalse
                 (List.contains CaseActKind.Correct advice.Advice.Acts)
@@ -297,7 +289,7 @@ let private scopedAdvice () =
             Expect.contains
                 advice.Advice.Acts
                 CaseActKind.RemovePayment
-                "Recorder authority offers entry removal"
+                "Recorder access offers entry removal"
         else
             let correction =
                 advice.Advice.Correction
@@ -345,11 +337,11 @@ let private noUsableCorrectionOffer () =
         {
             CaseId = target
             Snapshot = snapshot
-            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot
+            Index = CaseIndex.create DateTimeOffset.UnixEpoch snapshot None []
             SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
         }
 
-    let authority =
+    let access =
         actor
             human
             [
@@ -362,7 +354,7 @@ let private noUsableCorrectionOffer () =
     let advice =
         Queries.caseRecord
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
-            (AuthorityView.ofActor (Some authority))
+            (AccessView.ofActor (Some access))
             (Inputs.workView record.Snapshot.State)
             (Inputs.stageDisplay record.Snapshot.State)
             Inputs.workBasis.ObservedAt
@@ -377,17 +369,15 @@ let private noUsableCorrectionOffer () =
 
 let private humanOnlyCapabilities () =
     Expect.equal
-        (Role.all |> List.filter Authority.humanOnlyRole)
+        (Role.all |> List.filter Access.humanOnlyRole)
         [ Role.Owner; Role.DataSteward ]
         "Role principal restrictions are independent of optional human-only capabilities"
 
     Expect.isTrue
-        (Authority.humanOnlyCapability Capability.ManageCaseWork)
+        (Access.humanOnlyCapability Capability.ManageCaseWork)
         "The capability is human-only"
 
-    Expect.isFalse
-        (Authority.humanOnlyRole Role.CaseHandler)
-        "Services retain CASE_HANDLER admission"
+    Expect.isFalse (Access.humanOnlyRole Role.CaseHandler) "Services retain CASE_HANDLER admission"
 
     let current =
         actor
@@ -399,15 +389,15 @@ let private humanOnlyCapabilities () =
                 }
             ]
 
-    let view = AuthorityView.ofActor (Some current)
-    Expect.isTrue (Authority.validActor service view) "Positive service handler control"
+    let view = AccessView.ofActor (Some current)
+    Expect.isTrue (Access.validActor service view) "Positive service handler control"
 
     Expect.isTrue
-        (Authority.can service view Capability.Decide Scope.Installation)
+        (Access.can service view Capability.Decide Scope.Installation)
         "Retained service capability"
 
     Expect.isFalse
-        (Authority.can service view Capability.ManageCaseWork Scope.Installation)
+        (Access.can service view Capability.ManageCaseWork Scope.Installation)
         "New capability is withheld"
 
     let forbidden =
@@ -421,7 +411,7 @@ let private humanOnlyCapabilities () =
         }
 
     Expect.isFalse
-        (Authority.validActor service (AuthorityView.ofActor (Some forbidden)))
+        (Access.validActor service (AccessView.ofActor (Some forbidden)))
         "A real human-only role remains an invalid service grant"
 
 [<Tests>]
@@ -436,14 +426,14 @@ let tests =
                 "all role, capability, principal and scope combinations match independent expectations"
                 matrix
             testCase
-                "invalid actors and installation authority boundaries are default deny"
+                "invalid actors and installation access boundaries are default deny"
                 invalidActors
             testCase
                 "ordinary business and stewardship acts have independent required capabilities"
                 caseActCapabilities
             testCase "correction choices require every selected group capability" corrections
             testCase
-                "payment entry actions require recorder authority and all-KEEP refuses"
+                "payment entry actions require recorder access and all-KEEP refuses"
                 paymentActions
             testCase "case scoped advice fixes unauthorized correction groups at KEEP" scopedAdvice
             testCase "correction choice advice shares unary execution guards" absentCorrectionValues
@@ -478,7 +468,11 @@ let denialDisclosure =
                     []
 
             let permission view target =
-                CaseExecution.permission ClaimCore.Tests.DecisionFixtures.owner view command target
+                CaseOperations.permission
+                    ClaimCore.Tests.DecisionFixtures.owner
+                    view
+                    command
+                    target
 
             Expect.equal
                 (permission readable (Some stored))
@@ -497,7 +491,7 @@ let denialDisclosure =
                 [
                     permission unreadable (Some stored)
                     permission disabled (Some stored)
-                    permission AuthorityView.empty (Some stored)
+                    permission AccessView.empty (Some stored)
                     permission readable None
                 ] do
                 Expect.equal
@@ -508,7 +502,7 @@ let denialDisclosure =
 [<Tests>]
 let workPolicy =
     testCase
-        "work offers and admission share current authority without disclosing unreadable cases"
+        "work offers and admission share current access without disclosing unreadable cases"
         (fun () ->
             let snapshot = opened () |> Case.snapshot
 
@@ -521,7 +515,7 @@ let workPolicy =
                             Scope = Scope.Installation
                         }
                     ]
-                |> fun value -> AuthorityView.ofActor (Some value)
+                |> fun value -> AccessView.ofActor (Some value)
 
             let reader =
                 actor
@@ -532,7 +526,7 @@ let workPolicy =
                             Scope = Scope.Installation
                         }
                     ]
-                |> fun value -> AuthorityView.ofActor (Some value)
+                |> fun value -> AccessView.ofActor (Some value)
 
             let disabled =
                 { handler with
@@ -545,14 +539,14 @@ let workPolicy =
                 (Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)))
                 "Readable case names the missing capability"
 
-            for authority in [ AuthorityView.empty; disabled ] do
+            for access in [ AccessView.empty; disabled ] do
                 Expect.equal
-                    (CaseWorkPolicy.authorize human authority snapshot.CaseId)
+                    (CaseWorkPolicy.authorize human access snapshot.CaseId)
                     (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
                     "Unreadable or disabled state is not disclosed"
 
                 Expect.isFalse
-                    (CaseWorkPolicy.canAssign human authority false snapshot)
+                    (CaseWorkPolicy.canAssign human access false snapshot)
                     "No assignment offer"
 
             Expect.isTrue
@@ -565,10 +559,10 @@ let workPolicy =
                 (CaseWorkPolicy.eligibleAssignee human handler snapshot.CaseId)
                 "Enabled human handler is eligible"
 
-            for authority in [ reader; disabled; AuthorityView.empty ] do
+            for access in [ reader; disabled; AccessView.empty ] do
                 Expect.isFalse
-                    (CaseWorkPolicy.eligibleAssignee human authority snapshot.CaseId)
-                    "Read access alone, disabled and absent authority cannot receive work"
+                    (CaseWorkPolicy.eligibleAssignee human access snapshot.CaseId)
+                    "Read access alone, disabled and absent access cannot receive work"
 
             Expect.isFalse
                 (CaseWorkPolicy.eligibleAssignee service handler snapshot.CaseId)

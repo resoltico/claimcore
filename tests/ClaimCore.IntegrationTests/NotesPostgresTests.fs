@@ -53,15 +53,15 @@ let private lifecycle database =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    Inputs.authorityRequest
+                (OperationInput.People(
+                    Inputs.peopleRequest
                         (id database.Fixture 100)
                         readerPrincipal
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -74,7 +74,7 @@ let private lifecycle database =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let reader = core database.Fixture readerPrincipal
 
         let! steward =
@@ -88,7 +88,7 @@ let private lifecycle database =
                 }
                 true
 
-        acceptedAuthority steward
+        acceptedPeople steward
 
         let! auditor =
             grant
@@ -101,7 +101,7 @@ let private lifecycle database =
                 }
                 true
 
-        acceptedAuthority auditor
+        acceptedPeople auditor
 
         for number in [ 110..113 ] do
             let! acceptedNote =

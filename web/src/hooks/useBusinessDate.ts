@@ -10,8 +10,8 @@ export const useBusinessDate = (requester: ActiveRequester | null) => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
 
-  const installationId = requester?.context.installationId;
-  const actorId = requester?.context.actorId;
+  const installationId = requester?.subject.installationId;
+  const actorId = requester?.subject.actorId;
   const date = requester?.basis.observation.businessDate;
   const available = requester !== null;
   const owner = useMemo(
@@ -26,8 +26,8 @@ export const useBusinessDate = (requester: ActiveRequester | null) => {
     let latest = date;
     return subscribeBusinessDates({
       credential,
-      installationId: requester.context.installationId,
-      actorId: requester.context.actorId,
+      installationId: requester.subject.installationId,
+      actorId: requester.subject.actorId,
       observed: (observed) => {
         if (observed !== latest) {
           latest = observed;

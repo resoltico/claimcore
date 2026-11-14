@@ -180,14 +180,14 @@ const owner = async (context, origin, fingerprint, csrf) => {
   if (
     value.outcome.kind !== "SUCCEEDED" ||
     value.outcome.data.requester.kind !== "ACTIVE" ||
-    !value.outcome.data.requester.capabilities.includes("MANAGE_AUTHORITY") ||
+    !value.outcome.data.requester.capabilities.includes("MANAGE_ACCESS") ||
     !value.outcome.data.requester.capabilities.includes("REGISTER") ||
     !value.outcome.data.requester.capabilities.includes("RECORD_PAYMENT") ||
     !value.outcome.data.requester.capabilities.includes("STEWARD") ||
     value.outcome.data.requester.self.displayName.kind !== "NAMED" ||
     value.outcome.data.requester.self.displayName.value !== "Authored deployment owner"
   ) {
-    throw new Error("Fresh owner authority was not initialized with its evaluation roles.");
+    throw new Error("Fresh owner people was not initialized with its evaluation roles.");
   }
   return value.outcome.data.requester;
 };
@@ -221,21 +221,21 @@ const qualify = async (origin, ca) => {
     const csrf = await session(context, origin, fingerprint);
     const requester = await owner(context, origin, fingerprint, csrf);
     const input = {
-      kind: "CASE",
       operationId: operationId(),
-      target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
-      expectedRevision: 0,
-      act: {
-        kind: "OPEN",
-        values: {
-          incidentDate: requester.businessDate,
-          incidentNotificationDate: requester.businessDate,
-          incidentCountry: "LV",
-          claimantName: "Synthetic deployment claimant",
-          insurerName: "Synthetic deployment insurer",
-          claimedAmount: "100",
-          claimedCurrency: "EUR",
-        },
+      task: "case.open",
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
+        expectedRevision: 0,
+      },
+      inputs: {
+        "field:incidentDate": requester.businessDate,
+        "field:incidentNotificationDate": requester.businessDate,
+        "field:incidentCountry": "LV",
+        "field:claimantName": "Synthetic deployment claimant",
+        "field:insurerName": "Synthetic deployment insurer",
+        "field:claimedAmount": "100",
+        "field:claimedCurrency": "EUR",
       },
     };
     const write = async (endpoint) =>

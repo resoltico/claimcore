@@ -96,7 +96,7 @@ let tests =
                          match entry.Changes with
                          | TimelineChanges.Disclosed _ -> true
                          | _ -> false))
-                    "Full-history authority receives typed differences"
+                    "Full-history people receives typed differences"
 
                 let encoded =
                     Codec.encode Api.operationExecute.Output (RepresentationReply.Data stale)
@@ -148,11 +148,11 @@ let tests =
                 let! registered =
                     Service.execute
                         owner
-                        (OperationInput.Authority(
-                            authorityRequest
+                        (OperationInput.People(
+                            peopleRequest
                                 (id fixture 77102)
                                 registrar
-                                (AuthorityAct.Register Inputs.actorProfile)
+                                (PeopleAct.Register Inputs.actorProfile)
                         ))
                         token
 
@@ -169,7 +169,7 @@ let tests =
                         }
                         true
 
-                acceptedAuthority granted
+                acceptedPeople granted
                 let reader = { owner with Principal = registrar }
                 let! hidden = caseWrite fixture reader 77104 61L (update "7000")
                 let hidden = page (conflict hidden.Outcome)

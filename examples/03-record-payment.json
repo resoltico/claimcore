@@ -1,19 +1,19 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 2,
-    "act": {
-      "kind": "RECORD_PAYMENT",
-      "values": {
-        "paymentDate": "2026-08-20",
-        "paidAmount": "750.00",
-        "paidCurrency": "EUR"
-      }
+    "task": "case.recordPayment",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 2
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
+    "inputs": {
+      "field:paymentDate": "2026-08-20",
+      "field:paidAmount": "750.00",
+      "field:paidCurrency": "EUR"
     }
   }
 }

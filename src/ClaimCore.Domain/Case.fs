@@ -174,10 +174,10 @@ module Case =
                     }
         }
 
-    let private transition today paymentContext act state =
+    let private transition today paymentTransition act state =
         Transitions.applicable state act
         |> Result.mapError Refusal.Case
-        |> Result.bind (Transitions.apply today paymentContext)
+        |> Result.bind (Transitions.apply today paymentTransition)
 
     let private create today (command: CaseCommand) =
         match command.Act with
@@ -194,7 +194,7 @@ module Case =
                 })
         | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
-    let private existing today paymentContext (request: CaseCommand) (record: CaseRecord) =
+    let private existing today paymentTransition (request: CaseCommand) (record: CaseRecord) =
         if
             CaseReference.identity record.Reference
             <> CaseReference.identity request.Reference
@@ -207,40 +207,53 @@ module Case =
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.revisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
-                transition today paymentContext act state
+                transition today paymentTransition act state
                 |> Result.map (fun state ->
                     { record with
                         Revision = Revision.successor record.Revision
                         State = state
                     })
 
-    let private paymentContext (command: CaseCommand) current context =
-        let matches parent revision (record: CaseRecord) =
-            record.CaseId = parent && record.Revision = revision
+    let private paymentTransition
+        (command: CaseCommand)
+        current
+        (payments: Map<OperationId, PaymentProjectionRow>)
+        =
+        let owned =
+            payments
+            |> Map.forall (fun id row ->
+                id = row.PaymentId
+                && (current
+                    |> Option.exists (fun (record: CaseRecord) -> record.CaseId = row.CaseId))
+                && (match row.Content with
+                    | PaymentProjectionContent.Available(entry, _) -> PaymentEntry.id entry = id
+                    | PaymentProjectionContent.Cleared _ -> true))
 
-        match command.Act, context, current with
-        | CaseAct.RecordPayment _,
-          CasePaymentContext.Recording(parent, revision, reserved),
-          Some record when matches parent revision record ->
-            Ok(AdmittedPaymentContext.Recording reserved)
-        | CaseAct.RemovePayment id,
-          CasePaymentContext.Removing(parent, revision, selected, remaining),
-          Some record when matches parent revision record ->
-            match selected, remaining, CaseState.fields record.State with
-            | None, None, _ -> Ok(AdmittedPaymentContext.Removing None)
-            | Some entry, _, Some claim when PaymentEntry.id entry = id ->
-                FinancialPosition.remove entry remaining claim.Finance
-                |> Result.map (fun after -> AdmittedPaymentContext.Removing(Some(entry, after)))
-                |> Result.mapError (fun _ -> RecordViolation.InvalidPaymentContext)
-            | _ -> Error RecordViolation.InvalidPaymentContext
-        | (CaseAct.RecordPayment _ | CaseAct.RemovePayment _), _, _ ->
-            Error RecordViolation.InvalidPaymentContext
-        | _, CasePaymentContext.NoneRequired, _ -> Ok AdmittedPaymentContext.NoneRequired
-        | _ -> Error RecordViolation.InvalidPaymentContext
+        if not owned then
+            Error RecordViolation.InvalidPaymentState
+        else
+            match command.Act, current with
+            | CaseAct.RecordPayment _, _ ->
+                Ok(PaymentTransition.Recording(Map.containsKey command.OperationId payments))
+            | CaseAct.RemovePayment id, Some record ->
+                let active = CasePayments.active payments
 
-    let decide today context (command: CaseCommand) current =
-        paymentContext command current context
-        |> Result.mapError CaseDecisionError.InvalidContext
+                match Map.tryFind id active, CaseState.fields record.State with
+                | None, _
+                | _, None -> Ok(PaymentTransition.Removing None)
+                | Some entry, Some claim ->
+                    FinancialPosition.remove
+                        entry
+                        (CasePayments.dates (Map.remove id active))
+                        claim.Finance
+                    |> Result.map (fun after -> PaymentTransition.Removing(Some(entry, after)))
+                    |> Result.mapError (fun _ -> RecordViolation.InvalidPaymentState)
+            | CaseAct.RemovePayment _, None -> Ok(PaymentTransition.Removing None)
+            | _ -> Ok PaymentTransition.NoneRequired
+
+    let decide today payments (command: CaseCommand) current =
+        paymentTransition command current payments
+        |> Result.mapError CaseDecisionError.InvalidState
         |> Result.bind (fun context ->
             (match current with
              | None -> create today command
@@ -251,18 +264,18 @@ module Case =
                     CaseDecision.After = snapshot after
                     Payment =
                         match command.Act, context with
-                        | CaseAct.RecordPayment payment, AdmittedPaymentContext.Recording false ->
+                        | CaseAct.RecordPayment payment, PaymentTransition.Recording false ->
                             Some(
                                 PaymentDifference.Recorded(
                                     PaymentEntry.recorded command.OperationId payment
                                 )
                             )
-                        | CaseAct.RemovePayment _, AdmittedPaymentContext.Removing(Some(entry, _)) ->
+                        | CaseAct.RemovePayment _, PaymentTransition.Removing(Some(entry, _)) ->
                             Some(PaymentDifference.Removed entry)
                         | _ -> None
                 }))
 
-    let decideSnapshot today context (command: CaseCommand) (previous: CaseSnapshot option) =
+    let decideSnapshot today payments (command: CaseCommand) (previous: CaseSnapshot option) =
         let before =
             match previous with
             | None -> Ok None
@@ -274,8 +287,8 @@ module Case =
             | Some snapshot -> ofAccepted snapshot |> Result.map Some
 
         before
-        |> Result.mapError CaseDecisionError.InvalidContext
-        |> Result.bind (decide today context command)
+        |> Result.mapError CaseDecisionError.InvalidState
+        |> Result.bind (decide today payments command)
 
     let actRefusal kind (record: CaseRecord) =
         match Transitions.applicable record.State (CaseAct.probe kind) with

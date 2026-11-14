@@ -86,6 +86,11 @@ let tests =
 
                 let page: ClaimCore.Application.Contracts.AssigneePage =
                     {
+                        CaseId =
+                            CaseFixtures.caseId (
+                                System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                            )
+                        WorkRevision = Revision.zero
                         Basis = Inputs.workBasis
                         Items = [ reference ]
                         NextCursor = None
@@ -96,7 +101,7 @@ let tests =
 
                 Expect.equal
                     text
-                    "{\"basis\":{\"observedAt\":\"2026-08-31T12:00:00.000000Z\",\"businessDate\":\"2026-08-31\",\"timeZone\":\"UTC\"},\"items\":[{\"actorId\":\"12345678-1234-4234-8234-123456789abc\",\"displayName\":{\"kind\":\"NAMED\",\"value\":\"Anna Ozola\"},\"principalKind\":\"HUMAN\",\"availability\":\"AVAILABLE\"}],\"nextCursor\":null}"
+                    "{\"caseId\":\"20000000-0000-4000-8000-000000000001\",\"workRevision\":0,\"basis\":{\"observedAt\":\"2026-08-31T12:00:00.000000Z\",\"businessDate\":\"2026-08-31\",\"timeZone\":\"UTC\"},\"items\":[{\"actorId\":\"12345678-1234-4234-8234-123456789abc\",\"displayName\":{\"kind\":\"NAMED\",\"value\":\"Anna Ozola\"},\"principalKind\":\"HUMAN\",\"availability\":\"AVAILABLE\"}],\"nextCursor\":null}"
                     "Authored independent wire shape"
 
                 Expect.equal

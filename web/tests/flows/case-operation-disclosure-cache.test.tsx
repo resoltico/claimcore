@@ -1,3 +1,9 @@
+import {
+  caseSubject,
+  caseDocumentInput,
+  caseIdentityScreen,
+} from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
@@ -7,7 +13,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { service, type CurrentCase } from "../../src/api/service";
-import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+
 import type { Screen } from "@contracts/client";
 import { definition } from "../support/service-ui.fixtures";
 const unavailable = {
@@ -19,7 +25,7 @@ const unavailable = {
 } as const;
 const disclosureScreen = (caption: string): Screen => ({
   regions: [
-    ...closeCaseScreen.regions,
+    ...caseIdentityScreen.regions,
     {
       role: "FACTS",
       content: {
@@ -37,18 +43,49 @@ const disclosureScreen = (caption: string): Screen => ({
   ],
 });
 const before = caseDocumentInput(
-  { tasks: ["CASE:CLOSE"], history: "NONE" },
+  {
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 1,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
+    history: "NONE",
+  },
   disclosureScreen("PRIOR_CASE_DISCLOSURE_CANARY"),
 );
 const after = caseDocumentInput(
-  { revision: 2, tasks: ["CASE:CLOSE"], history: "NONE" },
+  {
+    subject: { ...caseSubject, revision: 2 },
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 2,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
+    history: "NONE",
+  },
   disclosureScreen("POSITIVE_CURRENT_DISCLOSURE"),
 );
 const Workspace = () => {
   const [selected, setSelected] = useState<CurrentCase | null>(null);
   return selected === null ? (
     <CaseDetail
-      target={{ kind: "ID", caseId: before.context.caseId }}
+      target={{ kind: "ID", caseId: before.subject.caseId }}
       definition={definition.catalog}
       reloadSignal={0}
       onBack={vi.fn()}
@@ -60,7 +97,7 @@ const Workspace = () => {
     <OperationEditor
       definition={definition}
       current={selected}
-      initialAct="CLOSE"
+      initialAct="case.close"
       onClose={() => {
         setSelected(null);
       }}

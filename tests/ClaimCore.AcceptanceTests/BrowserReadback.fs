@@ -9,7 +9,7 @@ open CliCalls
 let private verifyReceipt reference operationId (current: JsonElement) (receipt: JsonElement) =
     let subject = receipt.GetProperty("subject")
     Expect.equal (subject.GetProperty("kind").GetString()) "CASE" "Browser case receipt"
-    Expect.equal (subject.GetProperty("act").GetString()) "OPEN" "Browser opening act"
+    Expect.equal (subject.GetProperty("act").GetString()) "case.open" "Browser opening act"
     Expect.equal (subject.GetProperty("revision").GetInt64()) 1L "One browser acceptance"
 
     Expect.isTrue

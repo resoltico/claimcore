@@ -37,7 +37,7 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 
 The initializer records the first owner, profile and evaluation roles in one transaction. Its operation
 ID is minted during initialization, so generated configuration has no dispatch deadline. A nonempty
-database refuses initialization; inspect `claimcore-database status` after an uncertain result.
+database refuses initialization; inspect `claimcore-server status` after an uncertain result.
 
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
 Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
@@ -155,7 +155,7 @@ date, which appears with the reminder. A past-due reminder remains Pending until
 completes, cancels or reschedules it. ClaimCore does not send reminder notifications.
 
 [Case work](case-work.md#plan-case-work) explains multiple reminders, complete-and-plan-next, decisions,
-payments and correction. [Integrating](integrating.md#delivery-recovery) explains recovery from
+payments and correction. [Integrating](integrating.md#recover-an-uncertain-change) explains recovery from
 interrupted submission.
 
 ## Optional CLI setup

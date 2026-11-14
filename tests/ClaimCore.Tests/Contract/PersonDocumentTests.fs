@@ -52,7 +52,7 @@ let tests =
                 "current policy advertises existing-account tasks only and maintenance removes them"
                 (fun () ->
                     let viewer roles =
-                        { AuthorityView.empty with
+                        { AccessView.empty with
                             Actor = Some actor
                             Installation = roles
                         }
@@ -66,12 +66,12 @@ let tests =
                     Expect.equal
                         (offers [ Role.Owner ] false)
                         [
-                            AuthorityKind.Grant
-                            AuthorityKind.Revoke
-                            AuthorityKind.Enable
-                            AuthorityKind.Disable
-                            AuthorityKind.SetProfile
-                            AuthorityKind.EraseProfile
+                            PeopleActKind.Grant
+                            PeopleActKind.Revoke
+                            PeopleActKind.Enable
+                            PeopleActKind.Disable
+                            PeopleActKind.SetProfile
+                            PeopleActKind.EraseProfile
                         ]
                         "Literal existing-account action inventory"
 
@@ -81,83 +81,49 @@ let tests =
 
                     Expect.isEmpty
                         (offers [ Role.Auditor ] false)
-                        "Read authority confers no mutation controls")
+                        "Read people confers no mutation controls")
+            testCase "person actions carry the target and permitted profile seeds" (fun () ->
+                let value = document [ PeopleActKind.SetProfile ] (Some profile)
+                Expect.equal value.Subject (DocumentSubject.Person actorId) "Typed target"
+                let action = List.exactlyOne value.Actions
+
+                Expect.equal
+                    action.Task
+                    (TaskId.Operation(ActKind.People PeopleActKind.SetProfile))
+                    "Core task"
+
+                Expect.equal
+                    action.Binding
+                    (OperationBinding.People(Some(ActorId.value actorId)))
+                    "Selected account"
+
+                Expect.isFalse action.Seeds.IsEmpty "Permitted profile seed"
+                Expect.equal value.NextCursor (Some "person-next") "Page cursor"
+                Expect.isEmpty (document [] None).Actions "Read-only person"
+
+                Expect.isOk
+                    (Codec.encode HumanDocumentCodecs.document value
+                     |> Codec.decode 65536 HumanDocumentCodecs.document)
+                    "Boundary")
+            testCase "Core chooses the primary person action" (fun () ->
+                let value =
+                    document
+                        [ PeopleActKind.Disable; PeopleActKind.Enable; PeopleActKind.Grant ]
+                        None
+
+                Expect.equal
+                    (value.Actions |> List.filter _.Primary |> List.map _.Task)
+                    [ TaskId.Operation(ActKind.People PeopleActKind.Grant) ]
+                    "Grant has the Core preference")
             testCase
-                "person target and editable profile remain separate from saved display"
+                "revocation controls belong to granted rows and retain permission boundaries"
                 (fun () ->
-                    let value = document [ AuthorityKind.SetProfile ] (Some profile)
+                    let parent = ResponseExamples.snapshot.CaseId
 
-                    match value.Context with
-                    | InteractionContext.Person control ->
-                        Expect.equal control.ActorId actorId "Typed target"
-                        Expect.equal control.Principal principal "No caption parsing"
-                        Expect.equal control.ProfileSeed (Some profile) "Permitted input seed"
-
-                        Expect.equal
-                            control.Tasks
-                            [ TaskId.Operation(ActKind.Authority AuthorityKind.SetProfile) ]
-                            "Core task"
-                    | _ -> failtest "Person context required"
-
-                    Expect.equal
-                        (HumanDocument.nextCursor value)
-                        (Some "person-next")
-                        "Page cursor"
-
-                    Expect.isOk
-                        (Codec.encode HumanDocumentCodecs.document value
-                         |> Codec.decode 65536 HumanDocumentCodecs.document)
-                        "Actual boundary"
-
-                    Expect.isOk
-                        (document [] None
-                         |> Codec.encode HumanDocumentCodecs.document
-                         |> Codec.decode 65536 HumanDocumentCodecs.document)
-                        "Read-only view"
-
-                    let bytes = Codec.encode HumanDocumentCodecs.document value
-
-                    let nonNull value =
-                        value
-                        |> Option.ofObj
-                        |> Option.defaultWith (fun () -> failtest "Missing node")
-
-                    for change in
-                        [
-                            (fun (node: JsonNode) ->
-                                (nonNull node["context"])["tasks"] <- JsonArray())
-                            (fun node ->
-                                (nonNull node["context"])["tasks"] <-
-                                    JsonArray(
-                                        System.Text.Json.Nodes.JsonValue.Create
-                                            "AUTHORITY:REGISTER"
-                                    ))
-                            (fun node ->
-                                node["disclosure"] <-
-                                    System.Text.Json.Nodes.JsonValue.Create "WITHHELD")
-                        ] do
-                        let node =
-                            JsonNode.Parse(System.Text.Encoding.UTF8.GetString bytes) |> nonNull
-
-                        change node
-
-                        Expect.isError
-                            (System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
-                             |> Codec.decode 65536 HumanDocumentCodecs.document)
-                            "Input permission/disclosure binding")
-            testCase
-                "revocation and responsibility destinations remain typed controls separate from captions"
-                (fun () ->
-                    let parent = ResponseExamples.caseRead.Snapshot.CaseId
-
-                    let item =
+                    let grant =
                         {
                             GrantReadModel.Role = Role.CaseReader
-                            Scope =
-                                GrantScope.Case(
-                                    parent,
-                                    ResponseExamples.caseRead.Snapshot.Reference
-                                )
+                            Scope = GrantScope.Case(parent, ResponseExamples.snapshot.Reference)
                             GrantedAt = Inputs.workBasis.ObservedAt
                             GrantedBy = ResponseExamples.caseRead.RecordedBy
                         }
@@ -166,80 +132,62 @@ let tests =
                         HumanReadDocuments.grants
                             {
                                 Basis = Inputs.workBasis
-                                Actor =
-                                    { ActorReviewItem.ofActor [] actor with
-                                        ResponsibleCases =
-                                            Some
-                                                {
-                                                    Count = 0L
-                                                    ResponsibleActor = actorId
-                                                }
-                                    }
+                                Actor = ActorReviewItem.ofActor [] actor
                                 Offers = offers
                                 ProfileSeed = None
-                                Items = [ item ]
+                                Items = [ grant ]
                                 NextCursor = None
                             }
 
-                    let value = read [ AuthorityKind.Revoke ]
+                    let rows document =
+                        document.Screen.Regions
+                        |> List.collect (fun region ->
+                            match region.Content with
+                            | RegionContent.Table table -> table.Rows
+                            | _ -> [])
 
-                    match value.Context with
-                    | InteractionContext.Person controls ->
-                        let selected = List.exactlyOne controls.Revocations
+                    let value = read [ PeopleActKind.Revoke ]
+                    let general = List.exactlyOne value.Actions
 
-                        Expect.equal
-                            selected.Key
-                            ("CASE_READER:" + CaseId.format parent)
-                            "Stable grant row"
+                    Expect.equal
+                        general.Binding
+                        (OperationBinding.People(Some(ActorId.value actorId)))
+                        "General revocation binds the known account"
 
-                        Expect.equal selected.Role Role.CaseReader "Selected role"
+                    Expect.contains
+                        general.Editable
+                        (TaskInputId.Target InputTarget.Role)
+                        "General revocation lets the user choose its role"
 
-                        Expect.equal
-                            selected.Scope
-                            (GrantSelectionScope.Case parent)
-                            "Case identity without a copied reference"
+                    let row = rows value |> List.exactlyOne
 
-                        let route =
-                            controls.ResponsibleCases
-                            |> Option.defaultWith (fun () ->
-                                failtest "Navigation required even for known zero")
+                    Expect.equal
+                        row.Link
+                        (Some(Link.caseById parent))
+                        "Case identity travels on the grant row"
 
-                        Expect.equal route.ResponsibleActor actorId "Selected account"
+                    let control = List.exactlyOne row.Actions
 
-                        Expect.equal
-                            (route.View, route.Lifecycle, route.Status)
-                            (CaseView.All, Lifecycle.Active, CaseStatus.Opened)
-                            "Core-owned active responsibility query"
-                    | _ -> failtest "Person controls required"
+                    Expect.equal
+                        control.Binding
+                        (OperationBinding.People(Some(ActorId.value actorId)))
+                        "Immutable selected account"
 
-                    match (read []).Context with
-                    | InteractionContext.Person controls ->
-                        Expect.isEmpty
-                            controls.Revocations
-                            "No command handles without revoke permission"
-                    | _ -> failtest "Person controls required"
+                    Expect.equal
+                        control.Seeds
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.Role,
+                                SubmissionValue.Text "CASE_READER"
+                                TaskInputId.Scope, SubmissionValue.Text "CASE"
+                                TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
+                                SubmissionValue.Text(
+                                    CaseReference.format ResponseExamples.snapshot.Reference
+                                )
+                            ])
+                        "Fixed role and scope, independent of caption"
 
-                    let bytes = Codec.encode HumanDocumentCodecs.document value
-
-                    Expect.isOk
-                        (Codec.decode 65536 HumanDocumentCodecs.document bytes)
-                        "Actual native boundary"
-
-                    for change in
-                        [
-                            (fun (context: JsonNode) -> context["revocations"] <- JsonArray())
-                            (fun context -> context["tasks"] <- JsonArray())
-                            (fun context ->
-                                (nonNull context["responsibleCases"])["responsibleActor"] <-
-                                    JsonValue.Create "00000000-0000-4000-8000-000000000099")
-                        ] do
-                        let node =
-                            JsonNode.Parse(System.Text.Encoding.UTF8.GetString bytes) |> nonNull
-
-                        change (nonNull node["context"])
-
-                        Expect.isError
-                            (System.Text.Encoding.UTF8.GetBytes(node.ToJsonString())
-                             |> Codec.decode 65536 HumanDocumentCodecs.document)
-                            "Unbound or unoffered controls refused")
+                    Expect.isEmpty
+                        ((read [] |> rows |> List.exactlyOne).Actions)
+                        "Read permission never grants revocation")
         ]

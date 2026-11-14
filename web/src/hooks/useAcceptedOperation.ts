@@ -12,8 +12,8 @@ export const useAcceptedOperation = () => {
           location.origin,
           state.epoch,
           state.token,
-          requester.context.installationId,
-          requester.context.actorId,
+          requester.subject.installationId,
+          requester.subject.actorId,
         ])
       : null;
   const latestOwner = useRef(owner);

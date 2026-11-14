@@ -60,7 +60,7 @@ error. Payment counts are bounded by the exact-integer range; page size does not
 Payments use the decision currency. Their sum cannot exceed payable. Each date is on or after the
 decision date and no later than the business date. A partial payment leaves the case Partly paid; the
 card shows payable, paid and remaining amounts, the latest three entries and total count. The paged
-`case.payments` read (CLI `payment list`) retrieves earlier current entries, 20 by default and at most 50 per page.
+`case.payments` read (CLI `case payments`) retrieves earlier current entries, 20 by default and at most 50 per page.
 Choose **Show all payments** in the workspace, then **More payments** to continue. Narrow layouts show
 the same supplied rows as cards; **Remove payment** remains attached to its current entry.
 
@@ -100,7 +100,7 @@ still disclose its text until case erasure; summary history does not reveal note
 
 ```sh
 claimcore note add CASE-REFERENCE --text "Called the claimant; awaiting documents."
-claimcore note list CASE-REFERENCE --all
+claimcore case notes CASE-REFERENCE --all
 claimcore help note remove
 ```
 
@@ -148,4 +148,4 @@ The CLI never silently rebases.
 
 If delivery is uncertain, keep the original change identity. **Unconfirmed changes** checks it
 automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
-request. Follow [delivery recovery](integrating.md#delivery-recovery) before starting another change.
+request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.

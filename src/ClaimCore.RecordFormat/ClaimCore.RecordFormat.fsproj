@@ -8,7 +8,7 @@
     <Compile Include="Compartment.fs" />
     <Compile Include="OperationStructure.fs" />
     <Compile Include="DecodeProblem.fs" />
-    <Compile Include="AuthorityRecordTypes.fs" />
+    <Compile Include="PeopleRecordTypes.fs" />
     <Compile Include="VocabularyCodec.fs" />
     <Compile Include="CanonicalInputs.fs" />
     <Compile Include="FinancialCodecs.fs" />

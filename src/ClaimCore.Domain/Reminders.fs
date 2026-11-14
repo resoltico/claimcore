@@ -30,7 +30,7 @@ type ReminderActKind =
 
 module ReminderActKind =
     let vocabulary =
-        Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<ReminderActKind> "task" TokenCasing.CamelCase (Some "reminder.")
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
@@ -183,10 +183,13 @@ module Reminder =
             Revision = Revision.successor reminder.Revision
         }
 
-    let private update reminder (plan: ReminderPlan) =
+    let private update admitPlan reminder (plan: ReminderPlan) =
         nextState ReminderActKind.Update reminder
         |> Result.bind (fun state ->
-            (if reminder.Action = plan.Action then Ok() else admit plan)
+            (if reminder.Action = plan.Action then
+                 Ok()
+             else
+                 admitPlan plan)
             |> Result.bind (fun () ->
                 if reminder.Action = plan.Action && reminder.Due = plan.Due then
                     Error ReminderRefusal.NoChanges
@@ -206,10 +209,10 @@ module Reminder =
             }
             |> ReminderEffects.Changed)
 
-    let private completeAndPlan operation newIdReserved reminder plan =
+    let private completeAndPlan admitPlan operation newIdReserved reminder plan =
         nextState ReminderActKind.CompleteAndPlanNext reminder
         |> Result.bind (fun state ->
-            admit plan
+            admitPlan plan
             |> Result.bind (fun () ->
                 if newIdReserved || ReminderId.ofOperationId operation = reminder.Id then
                     Error ReminderRefusal.IdentityReserved
@@ -220,7 +223,7 @@ module Reminder =
                     )
                     |> Ok))
 
-    let private change operation newIdReserved isOpen reminder act =
+    let private change admitPlan operation newIdReserved isOpen reminder act =
         let openRequired =
             match act with
             | ReminderChange.Complete -> ReminderActKind.Complete
@@ -241,12 +244,12 @@ module Reminder =
                 nextState ReminderActKind.Cancel reminder
                 |> Result.map (fun state -> changed state reminder |> ReminderEffects.Changed)
             | ReminderChange.Reopen due -> reopen reminder due
-            | ReminderChange.Update plan -> update reminder plan
+            | ReminderChange.Update plan -> update admitPlan reminder plan
             | ReminderChange.CompleteAndPlanNext plan ->
-                completeAndPlan operation newIdReserved reminder plan
+                completeAndPlan admitPlan operation newIdReserved reminder plan
 
     /// Entity effects share one decision; the parent decision supplies open/closed policy.
-    let decideEffects operation parentId isOpen current newIdReserved command =
+    let private effects admitPlan operation parentId isOpen current newIdReserved command =
         match command with
         | ReminderCommand.Create(_, plan) ->
             if not isOpen then
@@ -254,7 +257,7 @@ module Reminder =
             elif newIdReserved then
                 Error ReminderRefusal.IdentityReserved
             else
-                admit plan
+                admitPlan plan
                 |> Result.map (fun () -> create operation parentId plan |> ReminderEffects.Created)
         | ReminderCommand.Change(_, id, expected, act) ->
             match current with
@@ -263,7 +266,19 @@ module Reminder =
                 Error ReminderRefusal.NotFound
             | Some reminder when reminder.Revision <> expected ->
                 Error(ReminderRefusal.RevisionConflict reminder.Revision)
-            | Some reminder -> change operation newIdReserved isOpen reminder act
+            | Some reminder -> change admitPlan operation newIdReserved isOpen reminder act
+
+    let decideEffects operation parentId isOpen current newIdReserved command =
+        effects admit operation parentId isOpen current newIdReserved command
+
+    /// Accepted history already establishes parent eligibility and scalar admission at acceptance.
+    let transition operation current command =
+        let parent =
+            match command with
+            | ReminderCommand.Create(parent, _)
+            | ReminderCommand.Change(parent, _, _, _) -> parent
+
+        effects (fun _ -> Ok()) operation parent true current false command
 
     /// Pure decision over the actual locked parent/entity state.
     let decide operation (parent: CaseSnapshot) current newIdReserved command =

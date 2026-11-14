@@ -8,12 +8,7 @@ import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
 import { ReminderQueue } from "../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../src/routing/navigation";
-import {
-  isResponse,
-  type HumanReadDocument_caseList,
-  type HumanReadDocument_workViews,
-} from "@contracts/client";
-
+import type { HumanReadDocument_case_list, HumanReadDocument_work_views } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
 const exactId = "00000000-0000-4000-8000-000000000002";
 const basis = {
@@ -24,7 +19,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const counts: HumanReadDocument_workViews = {
+const counts: HumanReadDocument_work_views = {
   screen: {
     regions: [
       {
@@ -32,22 +27,46 @@ const counts: HumanReadDocument_workViews = {
         content: {
           kind: "TABLE",
           columns: [
-            { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
-            { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+            {
+              key: "count",
+              labelId: "label.total",
+              prominence: "SECONDARY",
+              isMoney: false,
+            },
+            {
+              key: "view",
+              labelId: "label.views",
+              prominence: "PRIMARY",
+              isMoney: false,
+            },
           ],
           rows: [
             {
               key: "case-choice",
+              link: { endpoint: "case.list", input: { view: "ALL", limit: 20 } },
               values: [
-                { kind: "COUNT", value: 17 },
-                { kind: "TEXT", value: "Core case tab Ω" },
+                {
+                  kind: "COUNT",
+                  value: 17,
+                },
+                {
+                  kind: "TEXT",
+                  value: "Core case tab Ω",
+                },
               ],
             },
             {
               key: "reminder-choice",
+              link: { endpoint: "reminder.list", input: { view: "PENDING", limit: 20 } },
               values: [
-                { kind: "COUNT", value: 23 },
-                { kind: "TEXT", value: "Core reminder tab Ψ" },
+                {
+                  kind: "COUNT",
+                  value: 23,
+                },
+                {
+                  kind: "TEXT",
+                  value: "Core reminder tab Ψ",
+                },
               ],
             },
           ],
@@ -55,15 +74,15 @@ const counts: HumanReadDocument_workViews = {
       },
     ],
   },
-  context: {
-    kind: "WORK_VIEWS",
-    cases: [{ key: "case-choice", view: "ALL" }],
-    reminders: [{ key: "reminder-choice", view: "PENDING" }],
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
-const cases: HumanReadDocument_caseList = {
+const cases: HumanReadDocument_case_list = {
   screen: {
     regions: [
       {
@@ -78,7 +97,18 @@ const cases: HumanReadDocument_caseList = {
               isMoney: false,
             },
           ],
-          rows: [{ key: caseId, values: [{ kind: "TEXT", value: "Core listed case Χ" }] }],
+          rows: [
+            {
+              key: caseId,
+              link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+              values: [
+                {
+                  kind: "TEXT",
+                  value: "Core listed case Χ",
+                },
+              ],
+            },
+          ],
           sections: [
             {
               titleId: "label.exactReference",
@@ -87,7 +117,10 @@ const cases: HumanReadDocument_caseList = {
                   key: "exactReference",
                   labelId: "field.caseReference.label",
                   prominence: "PRIMARY",
-                  value: { kind: "TEXT", value: "Core exact case Δ" },
+                  value: {
+                    kind: "TEXT",
+                    value: "Core exact case Δ",
+                  },
                 },
               ],
             },
@@ -96,24 +129,33 @@ const cases: HumanReadDocument_caseList = {
       },
     ],
   },
-  context: {
-    kind: "CASES",
-    cases: [{ caseId, assignment: null }],
-    exactCaseId: exactId,
-    tasks: [],
-    nextCursor: null,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId: exactId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
 const reply = (document: unknown) => ({
   representation: "HUMAN",
-  outcome: { kind: "SUCCEEDED", document },
+  outcome: {
+    kind: "SUCCEEDED",
+    document,
+  },
 });
 const response = (document: unknown) =>
   new Response(JSON.stringify(reply(document)), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 afterEach(() => vi.unstubAllGlobals());
 const service = () => {
@@ -126,15 +168,27 @@ const service = () => {
           return response(cases);
         case "/api/reminder.list":
           return response({
-            screen: { regions: [] },
-            context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+            screen: {
+              regions: [],
+            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           });
         case "/api/case.summary":
           return response({
-            screen: { regions: [] },
-            context: { kind: "EMPTY" },
+            screen: {
+              regions: [],
+            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           });
@@ -155,13 +209,31 @@ it("uses supplied tab labels/counts and separate typed row/exact-match destinati
       <CaseList onSelect={select} />
     </WorkspaceViewsProvider>,
   );
-  await screen.findByRole("tab", { name: "Core case tab Ω 17" });
-  const row = await screen.findByRole("link", { name: "Core listed case Χ" });
+  await screen.findByRole("tab", {
+    name: "Core case tab Ω 17",
+  });
+  const row = await screen.findByRole("link", {
+    name: "Core listed case Χ",
+  });
   await userEvent.click(row);
-  expect(select).toHaveBeenLastCalledWith({ kind: "ID", caseId });
-  await userEvent.click(screen.getByRole("link", { name: "Core exact case Δ" }));
-  expect(select).toHaveBeenLastCalledWith({ kind: "ID", caseId: exactId });
-  expect(screen.queryByRole("button", { name: "Reassign" })).not.toBeInTheDocument();
+  expect(select).toHaveBeenLastCalledWith({
+    kind: "ID",
+    caseId,
+  });
+  await userEvent.click(
+    screen.getByRole("link", {
+      name: "Core exact case Δ",
+    }),
+  );
+  expect(select).toHaveBeenLastCalledWith({
+    kind: "ID",
+    caseId: exactId,
+  });
+  expect(
+    screen.queryByRole("button", {
+      name: "Reassign",
+    }),
+  ).not.toBeInTheDocument();
 });
 it("renders the supplied reminder tab and keeps the server-declared manual filter values", async () => {
   const fetch = service();
@@ -171,45 +243,38 @@ it("renders the supplied reminder tab and keeps the server-declared manual filte
       <ReminderQueue />
     </WorkspaceViewsProvider>,
   );
-  await screen.findByRole("tab", { name: "Core reminder tab Ψ 23" });
-  await userEvent.click(screen.getByRole("button", { name: /manual filters/iu }));
-  expect(screen.getByRole("combobox", { name: /reminder state/iu })).toBeVisible();
+  await screen.findByRole("tab", {
+    name: "Core reminder tab Ψ 23",
+  });
+  await userEvent.click(
+    screen.getByRole("button", {
+      name: /manual filters/iu,
+    }),
+  );
+  expect(
+    screen.getByRole("combobox", {
+      name: /reminder state/iu,
+    }),
+  ).toBeVisible();
   expect(fetch.mock.calls.some(([url]) => requestAddress(url).endsWith("reminder.list"))).toBe(
     true,
   );
 });
-it("refuses missing, duplicated and mismatched workspace view controls and stale exact-match destinations", () => {
-  expect(isResponse("work.views", reply(counts))).toBe(true);
-  for (const context of [
-    { ...counts.context, cases: [] },
-    { ...counts.context, cases: [...counts.context.cases, ...counts.context.cases] },
-    { ...counts.context, cases: [{ key: "unbound", view: "ALL" }] },
-  ]) {
-    expect(isResponse("work.views", reply({ ...counts, context }))).toBe(false);
-  }
-  expect(isResponse("case.list", reply(cases))).toBe(true);
-  expect(
-    isResponse(
-      "case.list",
-      reply({
-        ...cases,
-        screen: { regions: [] },
-        disclosure: "WITHHELD",
-        context: { ...cases.context, cases: [] },
-      }),
-    ),
-  ).toBe(false);
-});
-
 it("renders Core navigation totals instead of adding tab counts in the shell", async () => {
   const row = (key: string, label: string, count: number) => ({
     key,
     values: [
-      { kind: "COUNT" as const, value: count },
-      { kind: "TEXT" as const, value: label },
+      {
+        kind: "COUNT" as const,
+        value: count,
+      },
+      {
+        kind: "TEXT" as const,
+        value: label,
+      },
     ],
   });
-  const navigation: HumanReadDocument_workViews = {
+  const navigation: HumanReadDocument_work_views = {
     ...counts,
     screen: {
       regions: [
@@ -222,13 +287,19 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
                 key: "cases",
                 labelId: "label.cases",
                 prominence: "PRIMARY",
-                value: { kind: "COUNT", value: 5 },
+                value: {
+                  kind: "COUNT",
+                  value: 5,
+                },
               },
               {
                 key: "reminders",
                 labelId: "label.reminders",
                 prominence: "PRIMARY",
-                value: { kind: "COUNT", value: 3 },
+                value: {
+                  kind: "COUNT",
+                  value: 3,
+                },
               },
             ],
           },
@@ -238,43 +309,63 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
           content: {
             kind: "TABLE",
             columns: [
-              { key: "count", labelId: "label.total", prominence: "SECONDARY", isMoney: false },
-              { key: "view", labelId: "label.views", prominence: "PRIMARY", isMoney: false },
+              {
+                key: "count",
+                labelId: "label.total",
+                prominence: "SECONDARY",
+                isMoney: false,
+              },
+              {
+                key: "view",
+                labelId: "label.views",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
             ],
             rows: [
-              row("all", "Core all cases", 17),
-              row("attention", "Core attention cases", 5),
-              row("pending", "Core pending reminders", 23),
-              row("overdue", "Core overdue reminders", 1),
-              row("today", "Core reminders today", 2),
+              {
+                ...row("all", "Core all cases", 17),
+                link: { endpoint: "case.list", input: { view: "ALL", limit: 20 } },
+              },
+              {
+                ...row("attention", "Core attention cases", 5),
+                link: { endpoint: "case.list", input: { view: "NEEDS_ATTENTION", limit: 20 } },
+              },
+              {
+                ...row("pending", "Core pending reminders", 23),
+                link: { endpoint: "reminder.list", input: { view: "PENDING", limit: 20 } },
+              },
+              {
+                ...row("overdue", "Core overdue reminders", 1),
+                link: { endpoint: "reminder.list", input: { view: "OVERDUE", limit: 20 } },
+              },
+              {
+                ...row("today", "Core reminders today", 2),
+                link: { endpoint: "reminder.list", input: { view: "TODAY", limit: 20 } },
+              },
             ],
           },
         },
       ],
     },
-    context: {
-      kind: "WORK_VIEWS",
-      cases: [
-        { key: "all", view: "ALL" },
-        { key: "attention", view: "NEEDS_ATTENTION" },
-      ],
-      reminders: [
-        { key: "pending", view: "PENDING" },
-        { key: "overdue", view: "OVERDUE" },
-        { key: "today", view: "TODAY" },
-      ],
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
   };
-  expect(isResponse("work.views", reply(navigation))).toBe(true);
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(navigation)));
   render(
     <RecoveryProvider identity={testWorkspaceIdentity}>
       <WorkspaceViewsProvider>
         <WorkspaceHeader
-          route={{ screen: "cases", query: "" }}
+          route={{
+            screen: "cases",
+            query: "",
+          }}
           presentation={null}
           active="cases"
-          views={["CASES"]}
+          views={["case.list"]}
           tasks={[]}
           locked={false}
           openCase={vi.fn()}
@@ -282,8 +373,26 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
       </WorkspaceViewsProvider>
     </RecoveryProvider>,
   );
-  expect((await screen.findAllByRole("link", { name: "Cases 5" })).length).toBeGreaterThan(0);
-  expect(screen.getAllByRole("link", { name: "Reminders 3" }).length).toBeGreaterThan(0);
-  expect(screen.queryByRole("link", { name: "Cases 17" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: "Reminders 23" })).not.toBeInTheDocument();
+  expect(
+    (
+      await screen.findAllByRole("link", {
+        name: "Cases 5",
+      })
+    ).length,
+  ).toBeGreaterThan(0);
+  expect(
+    screen.getAllByRole("link", {
+      name: "Reminders 3",
+    }).length,
+  ).toBeGreaterThan(0);
+  expect(
+    screen.queryByRole("link", {
+      name: "Cases 17",
+    }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("link", {
+      name: "Reminders 23",
+    }),
+  ).not.toBeInTheDocument();
 });

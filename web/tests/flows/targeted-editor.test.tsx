@@ -1,10 +1,13 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -21,17 +24,67 @@ import { productMetadata } from "../../src/protocol/productMetadata";
 import { fields } from "../support/service-ui.fixtures";
 
 const current = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION", "CASE:CORRECT", "CASE:CLOSE"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 4,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 4 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: fields.registration,
-    decision: fields.finance.decision,
-  },
 });
 import { service } from "../../src/api/service";
 import { changeField } from "../support/field-entry";
@@ -49,7 +102,7 @@ const editor = () =>
       <OperationEditor
         definition={productMetadata}
         current={current}
-        initialAct="AMEND_REGISTRATION"
+        initialAct="case.amendRegistration"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
         onMutationLockChange={vi.fn()}
@@ -74,10 +127,10 @@ it("sends only a selected registration fact and does not serialize retained cont
   editor();
   await name();
   const frame = await prepared(spy);
-  expect(frame.input).toMatchObject({ kind: "CASE", expectedRevision: 4 });
-  expect(frame.input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
-    values: { claimantName: "Only selected claimant" },
+  expect(frame.input).toMatchObject({ binding: { kind: "CASE", expectedRevision: 4 } });
+  expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Only selected claimant" },
   });
 });
 
@@ -98,9 +151,9 @@ it("selects and removes a complete money pair as one authoring event", async () 
   await userEvent.setup().click(pair);
   expect(screen.queryByRole("textbox", { name: "Claimed amount" })).toBeNull();
   const frame = await prepared(spy);
-  expect(frame.input.act).toEqual({
-    kind: "AMEND_REGISTRATION",
-    values: { claimantName: "Only selected claimant" },
+  expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Only selected claimant" },
   });
 });
 
@@ -131,7 +184,7 @@ it.each([
       },
     });
     const execute = vi.spyOn(service, "execute");
-    const path = actPath({ kind: "ID", caseId: current.context.caseId }, "AMEND_REGISTRATION");
+    const path = actPath({ kind: "ID", caseId: current.subject.caseId }, "case.amendRegistration");
     navigate(path);
     render(<Dashboard />);
     await screen.findByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u });
@@ -159,9 +212,9 @@ it.each([
     await switchFormat(display);
     expect(screen.getByRole("textbox", { name: "Claimed amount" })).toHaveValue(raw);
     const frame = await prepared(spy);
-    expect(frame.input.act).toEqual({
-      kind: "AMEND_REGISTRATION",
-      values: { claimedAmount: expected, claimedCurrency: "EUR" },
+    expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+      task: "case.amendRegistration",
+      inputs: { "field:claimedAmount": expected, "field:claimedCurrency": "EUR" },
     });
     const { operationId: reviewedId, ...reviewedInput } = frame.input;
     await switchFormat(entered);

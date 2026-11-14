@@ -61,7 +61,7 @@ let private setup fixture =
                 }
                 true
 
-        acceptedAuthority steward
+        acceptedPeople steward
 
         do!
             openCase
@@ -156,7 +156,7 @@ let private setup fixture =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
         return owner
     }
@@ -321,18 +321,18 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 100)
                         service
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
         let actorId =
             match (accepted registered).Subject with
-            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
-            | _ -> failtest "Expected authority receipt"
+            | ReceiptSubject.People value -> PeopleTargetDisclosure.actorId value.TargetActor
+            | _ -> failtest "Expected people receipt"
 
         for number, scope in
             [
@@ -351,7 +351,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                     }
                     true
 
-            acceptedAuthority granted
+            acceptedPeople granted
 
         let viewer = core fixture service
 
@@ -380,15 +380,26 @@ let internal assignmentExcludesForbiddenRoles fixture =
                     Work =
                         fun tx ->
                             task {
+                                let! actor = tx.FindActor actorId
+                                let! state = tx.PeopleState actor.Value.Principal
+                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+
+                                let grant =
+                                    {
+                                        ActorGrant.Role = Role.DataSteward
+                                        Scope = Scope.Case caseId
+                                    }
+
                                 do!
-                                    tx.ProjectAuthority(
-                                        AuthorityProjection.AddGrant(
-                                            actorId,
-                                            Role.DataSteward,
-                                            Some caseId,
-                                            (EffectPosition.create Sequence.first 0 |> Option.get)
-                                        )
-                                    )
+                                    tx.ProjectPeople
+                                        { rows with
+                                            Grants =
+                                                Map.add
+                                                    grant
+                                                    (EffectPosition.create Sequence.first 0
+                                                     |> Option.get)
+                                                    rows.Grants
+                                        }
 
                                 return Verdict.Proceed()
                             }
@@ -439,7 +450,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 }
                 false
 
-        acceptedAuthority installationRevoked
+        acceptedPeople installationRevoked
         let! scoped = summary viewer opened
 
         Expect.equal
@@ -458,7 +469,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 }
                 false
 
-        acceptedAuthority revoked
+        acceptedPeople revoked
         let! deniedSummary = Service.caseSummary viewer opened token
 
         Expect.equal

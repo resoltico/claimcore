@@ -111,6 +111,7 @@ type Variant<'U> =
     internal
         {
             Discriminator: string
+            SchemaName: string option
             ReadCase: string -> JsonValue -> Result<'U, Problem>
             Validation: string -> JsonValue -> Result<unit, Problem>
             WriteCase: 'U -> JsonValue option

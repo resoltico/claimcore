@@ -19,12 +19,12 @@ let payment = Inputs.admittedPayment
 let command input = Case.parse input |> accepted
 let validate input = Case.parse input |> Result.map ignore
 
-let decide today context input current =
+let decide today payments input current =
     let snapshot = current |> Option.map Case.snapshot
 
     Case.admit today snapshot input
     |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command -> Case.decide today context command current)
+    |> Result.bind (fun command -> Case.decide today payments command current)
 
 let canonical input =
     command input |> Case.canonical |> _.Authored
@@ -66,3 +66,52 @@ let sequence value = identifier Sequence.create value
 
 let paymentEntry id input =
     PaymentEntry.recorded (operationId id) (payment input)
+
+/// Authored accepted rows for tests of individual transitions; no financial decision is derived here.
+let paymentRows parent (entries: PaymentEntry list) =
+    entries
+    |> List.mapi (fun index entry ->
+        PaymentEntry.id entry,
+        {
+            PaymentProjectionRow.CaseId = parent
+            PaymentId = PaymentEntry.id entry
+            Position = EffectPosition.create (sequence (int64 index + 1L)) 0 |> Option.get
+            Content = PaymentProjectionContent.Available(entry, false)
+        })
+    |> Map.ofList
+
+/// Pure retained-transition fixtures exercise state rules; context admission has separate denied/current tests.
+let recordedContext (date: System.DateOnly) =
+    let principal =
+        PrincipalKey.human "https://issuer.example/" "subject-fixture" |> accepted
+
+    let actor =
+        {
+            Actor.ActorId = actorId (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
+            Principal = principal
+            Enabled = true
+            Profile = None
+        }
+
+    {
+        DecisionContext.BusinessDate = Some date
+        ObservedAt =
+            System.DateTimeOffset(date.ToDateTime(System.TimeOnly.MinValue), System.TimeSpan.Zero)
+        Principal = principal
+        Access =
+            AccessView.ofActor (
+                Some
+                    {
+                        Actor = actor
+                        Grants =
+                            Role.all
+                            |> List.map (fun role ->
+                                {
+                                    Role = role
+                                    Scope = Scope.Installation
+                                })
+                    }
+            )
+        Maintenance = false
+        Lifetime = DecisionLifetime.Recorded
+    }

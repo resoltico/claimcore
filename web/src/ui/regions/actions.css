@@ -46,7 +46,7 @@
   padding-block-start: var(--space-3);
   border-block-start: var(--border-width) solid var(--border-subtle);
 }
-.region-actions [data-act="ERASE"] {
+.region-actions [data-act="case.erase"] {
   color: var(--danger-text);
   border-color: var(--danger-text);
   background: var(--danger-bg);

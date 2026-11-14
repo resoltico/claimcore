@@ -56,6 +56,8 @@ type InputTarget =
     | DirectorySearch
     | Grants
     | Role
+    | Scope
+    | CaseId
     | Limit
     | Cursor
     | Text

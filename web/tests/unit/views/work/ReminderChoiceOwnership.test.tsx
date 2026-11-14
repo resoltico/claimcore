@@ -18,7 +18,7 @@ vi.mock("../../../../src/protocol/taskCatalog", async (original) => {
       input: Parameters<typeof actual.queryInput>[1],
     ) => {
       const value = actual.queryInput(task, input);
-      return task === "query:reminderList" && input === "input:reminderState"
+      return task === "reminder.list" && input === "input:reminderState"
         ? { ...value, labelId: "label.details", choices: ["CANCELLED", "PENDING"] }
         : value;
     },
@@ -47,7 +47,11 @@ it("uses the core query selection, order, input label and shared wording in the 
               kind: "SUCCEEDED",
               document: {
                 screen: { regions: [] },
-                context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+                subject: { kind: "LIST" },
+                actions: [],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "SNAPSHOT",
                   observation: {

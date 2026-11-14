@@ -3,15 +3,14 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Server/ClaimCore.Server.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
     <Compile Include="CatalogRendering.fs" />
-    <Compile Include="ClientValidation.fs" />
-    <Compile Include="TaskAssemblers.fs" />
+    <Compile Include="TaskMetadata.fs" />
     <Compile Include="TypeScript.fs" />
     <Compile Include="Terms.fs" />
     <Compile Include="MessageRegisters.fs" />

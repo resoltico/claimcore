@@ -60,7 +60,11 @@ let private replay () =
         "Replay precedes current revision checks"
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                laterView.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             laterView.Read
@@ -100,7 +104,11 @@ let private reviewAndTime () =
     let view = locked worker None None
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                view.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read
@@ -154,6 +162,75 @@ let private reviewAndTime () =
         (decide stale (locked worker (Some current) None))
         (Verdict.Refuse(Refusal.revisionConflict (CaseFixtures.revision 1L)))
         "Execution rechecks the current revision"
+
+let private affordanceExecution () =
+    let _, _, current, _ = created 18 "AFFORDANCE-STATE"
+
+    let offered =
+        TaskAffordances.caseAction
+            CaseActKind.Close
+            current.CaseId
+            current.Snapshot.Revision
+            Map.empty
+            []
+            Map.empty
+
+    let command task binding inputs number =
+        OperationSubmission.admit
+            {
+                OperationId = id number
+                Task = task
+                Binding = binding
+                Inputs = inputs
+            }
+        |> Result.defaultWith (fun () -> failtest "Valid submission shape required")
+        |> fun submission ->
+            match submission.Operation with
+            | Ok(SubmittedOperation.Command(OperationInput.Case value)) -> value
+            | other -> failtestf "Case command required: %A" other
+
+    let run request view =
+        let services = services installation calendar owner
+
+        CaseOperations.prepare request
+        |> Result.bind (fun prepared -> CaseOperations.complete services prepared view.Read)
+        |> function
+            | Error refusal -> Verdict.Refuse refusal
+            | Ok parsed ->
+                executeCase
+                    services
+                    parsed
+                    {
+                        Head = view.Head
+                        NewPayloadNonce = fun () -> view.PayloadNonce
+                    }
+                    view.Read
+
+    let close =
+        command (ActKind.Case CaseActKind.Close) offered.Binding offered.Seeds 19
+
+    let later =
+        { current with
+            Snapshot =
+                { current.Snapshot with
+                    Revision = CaseFixtures.revision 2L
+                }
+        }
+
+    let view = locked worker (Some later) None
+
+    Expect.equal
+        (run close view)
+        (Verdict.Refuse(Refusal.revisionConflict (CaseFixtures.revision 2L)))
+        "A previously offered binding cannot authorize against a later revision"
+
+    let reader = actor owner (CaseFixtures.actorId (id 1)) [ Role.CaseReader ] []
+    let direct = command (ActKind.Case CaseActKind.Erase) offered.Binding Map.empty 20
+
+    match run direct (locked reader (Some current) None) with
+    | Verdict.Refuse(Refusal.Access(AccessRefusal.NotAuthorized _)) -> ()
+    | other ->
+        failtestf "Direct execution must independently refuse an unpermitted action: %A" other
 
 let private integrityAndPrivacy () =
     let original, entry, _, _ = created 16 "PURE-IDENTITY"
@@ -221,7 +298,8 @@ let private bounds () =
         "A format-valid record at the bound yields CORE_INTERNAL_ERROR"
 
 let private opening =
-    RequestCodecs.operationInput.Write(
+    (OperationSubmissionCodecs.submission.Write
+     << ClaimCore.TestSupport.Submissions.ofCommand None) (
         ClaimCore.TestSupport.Inputs.caseOperation
             {
                 OperationId = id 10
@@ -251,9 +329,12 @@ let private decodeWire (text: string) =
         Limits.MaximumRequestBytes
         Api.operationExecute.Input
         (Text.Encoding.UTF8.GetBytes text)
-    |> Result.map (function
-        | OperationInput.Case value -> Inputs.referencedCase value
-        | _ -> failtest "Expected a case execution request")
+    |> Result.map (
+        Submissions.command
+        >> function
+            | OperationInput.Case value -> Inputs.referencedCase value
+            | _ -> failtest "Expected a case execution request"
+    )
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 
 let private wireSpelling () =
@@ -262,15 +343,13 @@ let private wireSpelling () =
     let draft, projection, receipt = decide original view |> appended
 
     let current =
-        match projection with
-        | CaseProjection.Insert(id, snapshot, index) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Insert"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     let replayView = locked worker (Some current) (Some draft)
 
@@ -347,8 +426,11 @@ let tests =
                 terminalRevisionBoundary
             testCase "raw JSON spelling preserves the accepted receipt" wireSpelling
             testCase "canonical replay preserves attribution and original identity" replay
-            testCase "current resource authority precedes replay and creation" authorization
+            testCase "current resource access precedes replay and creation" authorization
             testCase "review business date and revision use the supplied view" reviewAndTime
+            testCase
+                "stale offered bindings and direct unpermitted submissions cannot authorize execution"
+                affordanceExecution
             testCase
                 "corruption faults and foreign identity privacy remain distinct"
                 integrityAndPrivacy

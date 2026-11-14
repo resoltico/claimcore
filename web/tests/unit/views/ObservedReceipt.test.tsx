@@ -33,13 +33,11 @@ const document = (caption: string): HumanReceiptDocument => ({
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "AUTHORITY", actorId: activeRequester.context.actorId },
-    caseLink: null,
-    refreshCase: null,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -78,10 +76,10 @@ const Feedback = () => {
     </>
   );
 };
-const workspace = (actorId = activeRequester.context.actorId, credential = "owner-a") => (
+const workspace = (actorId = activeRequester.subject.actorId, credential = "owner-a") => (
   <TestSession credential={credential}>
     <RequesterContext
-      value={{ ...activeRequester, context: { ...activeRequester.context, actorId } }}
+      value={{ ...activeRequester, subject: { ...activeRequester.subject, actorId } }}
     >
       <Feedback />
     </RequesterContext>
@@ -123,7 +121,7 @@ it("does not carry retained receipt identity into another verified actor or cred
   view.rerender(workspace("00000000-0000-4000-8000-000000000888"));
   expect(screen.queryByText("Owner private receipt")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
-  view.rerender(workspace(activeRequester.context.actorId, "owner-b"));
+  view.rerender(workspace(activeRequester.subject.actorId, "owner-b"));
   expect(screen.queryByText("Owner private receipt")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
 });

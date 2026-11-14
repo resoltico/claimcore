@@ -2,7 +2,7 @@ module ClaimCore.TestSupport.HandlerStub
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Web
+open ClaimCore.Server
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -46,17 +46,14 @@ let private request reference =
     }
 
 let commandInput =
-    RequestCodecs.operationInput.Write(
+    (OperationSubmissionCodecs.submission.Write
+     << ClaimCore.TestSupport.Submissions.ofCommand None) (
         ClaimCore.TestSupport.Inputs.caseOperation (request "WEB-001")
     )
     |> ClaimCore.Json.WireWriter.bytes
 
 let view reference : CaseSnapshot =
-    CaseFixtures.decide
-        (DateOnly(2026, 10, 13))
-        CasePaymentContext.NoneRequired
-        (request reference)
-        None
+    CaseFixtures.decide (DateOnly(2026, 10, 13)) Map.empty (request reference) None
     |> Result.map _.After
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
@@ -89,36 +86,34 @@ let receipt id (reference: string) : OperationReceipt =
             }
     }
 
-let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
+let peopleReceipt (request: ClaimCore.Domain.PeopleRequest) =
     let original = receipt request.OperationId "WEB-001"
-    let kind = AuthorityAct.kind request.Act
+    let kind = PeopleAct.kind request.Act
 
     let kinds =
         match request.Act with
-        | AuthorityAct.Register _ -> [ AuthorityKind.Register; AuthorityKind.SetProfile ]
-        | AuthorityAct.ProvisionOwner _ ->
-            [ AuthorityKind.ProvisionOwner; AuthorityKind.SetProfile ]
-        | AuthorityAct.Admit value ->
-            AuthorityKind.Register
-            :: AuthorityKind.SetProfile
-            :: List.replicate value.Grants.Length AuthorityKind.Grant
+        | PeopleAct.Register _ -> [ PeopleActKind.Register; PeopleActKind.SetProfile ]
+        | PeopleAct.ProvisionOwner _ -> [ PeopleActKind.ProvisionOwner; PeopleActKind.SetProfile ]
+        | PeopleAct.Admit value ->
+            PeopleActKind.Register
+            :: PeopleActKind.SetProfile
+            :: List.replicate value.Grants.Length PeopleActKind.Grant
         | _ -> [ kind ]
 
     let effects =
         kinds
         |> List.mapi (fun index kind ->
             {
-                AuthorityReceiptEffect.Act = kind
+                PeopleReceiptEffect.Act = kind
                 Id = EffectId.create original.OperationId index |> Option.get
                 Position = EffectPosition.create original.Position.Sequence index |> Option.get
             })
 
     { original with
         Subject =
-            ReceiptSubject.Authority
+            ReceiptSubject.People
                 {
-                    TargetActor =
-                        AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
+                    TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
                     Act = kind
                     Effects = effects
                 }
@@ -142,7 +137,7 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
         let current = actor |> Option.filter (fun value -> value.Principal = principal)
 
         {
-            GlobalReadFacts.Authority =
+            GlobalReadFacts.People =
                 {
                     Actor = current
                     Installation = if current.IsSome then [ Role.Owner ] else []
@@ -174,11 +169,10 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                 | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
                 | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
                 | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
-                | "Authority" ->
+                | "Access" ->
                     box (
                         Task.FromResult
-                            (facts (unbox<AuthorityQuery>(nonNull arguments[0])).Principal)
-                                .Authority
+                            (facts (unbox<AccessQuery>(nonNull arguments[0])).Principal).People
                     )
                 | "FindOperation" ->
                     box (Task.FromResult<ClaimCore.RecordFormat.RetainedOperation option> None)
@@ -221,9 +215,9 @@ type Stub() =
                 ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
             )) with get, set
 
-    member val ExecuteAuthority: ClaimCore.Domain.AuthorityRequest * CancellationToken
+    member val ExecutePeople: ClaimCore.Domain.PeopleRequest * CancellationToken
         -> Task<ExecuteResult> =
-        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(authorityReceipt request))) with get, set
+        (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(peopleReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set
 
@@ -263,29 +257,28 @@ type Stub() =
             Route.represented
                 Api.operationPreview
                 Api.operationPreviewUnavailable
-                HumanReplies.preview
+                HumanReplies.previewSubmission
                 (fun _ -> None)
                 (fun _ input _ ->
                     let outcome =
-                        match input with
-                        | OperationInput.Case input ->
+                        match input.Operation with
+                        | Ok(SubmittedOperation.Command(OperationInput.Case input)) ->
                             let request = Inputs.referencedCase input
 
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                                 receipt request.OperationId request.CaseReference
                             )
-                        | OperationInput.Authority request ->
+                        | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                authorityReceipt request
+                                peopleReceipt request
                             )
-                        | OperationInput.Note _
-                        | OperationInput.Work _
-                        | OperationInput.Reminder _ -> Outcome.Failed CoreFault.InternalError
+                        | Error refusal -> Outcome.Rejected refusal
+                        | _ -> Outcome.Failed CoreFault.InternalError
 
                     this.Invoke
                         "operation.preview"
                         {
-                            PreviewReply.OperationId = OperationInput.operationId input
+                            PreviewReply.OperationId = input.OperationId
                             Outcome = outcome
                         })
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
@@ -305,31 +298,29 @@ type Stub() =
                             calls.Add "operation.execute"
 
                             let! outcome =
-                                match input with
-                                | OperationInput.Case request ->
+                                match input.Operation with
+                                | Ok(SubmittedOperation.Command(OperationInput.Case request)) ->
                                     this.Execute(Inputs.referencedCase request, token)
-                                | OperationInput.Authority request ->
-                                    this.ExecuteAuthority(request, token)
-                                | OperationInput.Note _
-                                | OperationInput.Work _
-                                | OperationInput.Reminder _ ->
+                                | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
+                                    this.ExecutePeople(request, token)
+                                | Error refusal -> Task.FromResult(ExecuteResult.Rejected refusal)
+                                | _ ->
                                     Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
 
                             return
                                 {
-                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    ExecuteReply.OperationId = input.OperationId
                                     Outcome = outcome
                                 }
 
                     })
-        | ActorEndpoint.Query query ->
+        | (ActorEndpoint.Query _ | ActorEndpoint.Command _) as endpoint ->
             let definition =
                 Api.definitions
-                |> List.find (fun endpoint ->
-                    endpoint.Id = EndpointId.Actor(ActorEndpoint.Query query))
+                |> List.find (fun definition -> definition.Id = EndpointId.Actor endpoint)
 
             definition.Accept
-                { new IEndpointVisitor<ClaimCore.Web.Route> with
+                { new IEndpointVisitor<ClaimCore.Server.Route> with
                     member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
                         {
                             Description = ClaimCore.Wire.Route.describe endpoint

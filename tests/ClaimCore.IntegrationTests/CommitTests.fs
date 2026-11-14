@@ -144,7 +144,7 @@ let private lostLookup drop (database: PostgresFixture.Database) =
             "Final absence and the refused execution append nothing"
     }
 
-let private lostAuthority drop landed (database: PostgresFixture.Database) =
+let private lostPeople drop landed (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let! initial = Verification.verify database.OwnerSource None token
@@ -169,28 +169,28 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
 
         let target =
-            PrincipalKey.human "https://issuer.example/" "authority-commit"
+            PrincipalKey.human "https://issuer.example/" "people-commit"
             |> Result.defaultWith (string >> failtest)
 
         let request =
-            authorityRequest
+            peopleRequest
                 (id database.Fixture 145)
                 target
-                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! unknown =
-            (Service.execute (proxyCore database source) (OperationInput.Authority request) (token))
+            (Service.execute (proxyCore database source) (OperationInput.People request) (token))
 
-        Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "Authority commit loss is unknown"
+        Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "People commit loss is unknown"
 
-        let! repeated = (Service.execute actor (OperationInput.Authority request) (token))
+        let! repeated = (Service.execute actor (OperationInput.People request) (token))
 
         Expect.isTrue
             (match repeated.Outcome, landed with
              | ExecuteResult.AlreadyAccepted _, true
              | ExecuteResult.Accepted _, false -> true
              | _ -> false)
-            "Exact authority replay reconciles both commit outcomes"
+            "Exact people replay reconciles both commit outcomes"
 
         let! head = Verification.verify database.OwnerSource None token
 
@@ -327,7 +327,7 @@ let tests =
                         }))
             for drop, landed in
                 [ CommitProxy.Drop.BeforeCommit, false; CommitProxy.Drop.AfterCommit, true ] do
-                testCaseAsync ($"authority replay after {drop}") (run (lostAuthority drop landed))
+                testCaseAsync ($"people replay after {drop}") (run (lostPeople drop landed))
             for drop in
                 [
                     CommitProxy.Drop.BeforeCommit

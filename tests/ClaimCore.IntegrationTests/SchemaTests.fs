@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.SchemaTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Json
 open ClaimCore.Domain
 

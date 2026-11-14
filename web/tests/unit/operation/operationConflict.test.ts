@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { operationReducer, operationView } from "../../../src/operation/operationState";
-import { rebasedTaskBinding } from "../../../src/operation/operationConflict";
+import { rebasedOperationBinding } from "../../../src/operation/operationConflict";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 import { begin, effect, reviewed, secondId } from "../../support/operation-identity.fixtures";
 import { current } from "../../support/operation-form.fixtures";
@@ -19,11 +19,11 @@ const diagnostic: HumanRejection_CONFLICT = {
     screen: {
       regions: [],
     },
-    context: {
-      kind: "PAGE",
-      tasks: [],
-      nextCursor: null,
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis: current.basis,
     disclosure: "WITHHELD",
   },
@@ -43,40 +43,32 @@ const conflicted = () =>
   });
 it("rebinds the declared revision without putting executable identity or authoring values in the binding", () => {
   const command = prepareRequest("operation.execute", {
-    kind: "CASE",
     operationId: secondId,
-    target: {
-      kind: "REFERENCE",
-      caseReference: "CASE-SERIALIZATION",
-    },
-    expectedRevision: 4,
-    act: {
-      kind: "AMEND_REGISTRATION",
-      values: {
-        claimedAmount: "1234.56",
-        claimedCurrency: "EUR",
+    task: "case.amendRegistration",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: "CASE-SERIALIZATION",
       },
+      expectedRevision: 4,
     },
+    inputs: { "field:claimedAmount": "1234.56", "field:claimedCurrency": "EUR" },
   });
   const { bytes } = command;
-  const binding = rebasedTaskBinding(command.input, 8);
+  const binding = rebasedOperationBinding(command.input, 8);
   expect(binding).toEqual({
     kind: "CASE",
     target: {
       kind: "REFERENCE",
       caseReference: "CASE-SERIALIZATION",
     },
-    revision: 8,
+    expectedRevision: 8,
   });
   expect(command.bytes).toBe(bytes);
   expect(command.input).toMatchObject({
-    expectedRevision: 4,
-    act: {
-      values: {
-        claimedAmount: "1234.56",
-        claimedCurrency: "EUR",
-      },
-    },
+    binding: { expectedRevision: 4 },
+    inputs: { "field:claimedAmount": "1234.56", "field:claimedCurrency": "EUR" },
   });
 });
 it("does not rebase an uncertain request when its exact retry returns a revision conflict", () => {
@@ -128,10 +120,7 @@ it("fences refreshed conflict observations by correlation identity and session",
   const value = {
     current: {
       ...current,
-      context: {
-        ...current.context,
-        revision: 8,
-      },
+      subject: { ...current.subject, revision: 8 },
     },
     revision: 8,
   };
@@ -173,25 +162,23 @@ it("refuses implicit preview and re-preparation for a different case target", ()
     value: {
       current: {
         ...current,
-        context: {
-          ...current.context,
-          revision: 8,
-        },
+        subject: { ...current.subject, revision: 8 },
       },
       revision: 8,
     },
   });
   const prepared = prepareRequest("operation.execute", {
-    kind: "CASE",
     operationId: secondId,
-    target: {
-      kind: "REFERENCE",
-      caseReference: "OTHER-CASE",
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: "OTHER-CASE",
+      },
+      expectedRevision: 8,
     },
-    expectedRevision: 8,
-    act: {
-      kind: "CLOSE",
-    },
+    inputs: {},
   });
   expect(
     operationReducer(observed, {

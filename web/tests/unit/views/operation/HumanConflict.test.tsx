@@ -41,26 +41,28 @@ const document = (
       },
     ],
   },
-  context: {
-    kind: "CONTINUATION",
-    nextCursor: cursor,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: cursor,
   basis: {
     kind: "UNAVAILABLE",
   },
   disclosure,
 });
 const input = {
-  kind: "CASE",
   operationId: "019aa6a0-0000-7000-8000-000000000001",
-  target: {
-    kind: "REFERENCE",
-    caseReference: "Original reference Ω",
+  task: "case.close",
+  binding: {
+    kind: "CASE",
+    target: {
+      kind: "REFERENCE",
+      caseReference: "Original reference Ω",
+    },
+    expectedRevision: 7,
   },
-  expectedRevision: 7,
-  act: {
-    kind: "CLOSE",
-  },
+  inputs: {},
 } as const;
 const snapshot: RevisionConflictSnapshot = {
   minimumRevision: 5,
@@ -120,11 +122,11 @@ it("uses the supplied conflict document and replaces full history with a tighten
       kind: "SUCCEEDED",
       document: {
         ...original,
-        context: {
-          kind: "PAGE",
-          tasks: [],
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: {
           kind: "SNAPSHOT",
           observation: {
@@ -148,7 +150,7 @@ it("uses the supplied conflict document and replaces full history with a tighten
   await screen.findByText("Core replacement summary Ψ");
   expect(screen.queryByText("Core original full history Ω")).not.toBeInTheDocument();
   expect(JSON.parse(requestText(fetch.mock.calls[0]![1]?.body))).toEqual({
-    target: input.target,
+    target: input.binding.target,
     cursor: "issued",
     limit: 50,
   });

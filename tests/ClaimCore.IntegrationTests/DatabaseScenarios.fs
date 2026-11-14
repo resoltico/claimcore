@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.DatabaseScenarios
 
+open ClaimCore.CommandLine
+
 open ClaimCore.TestSupport
 
 open ClaimCore.Wire
@@ -115,7 +117,7 @@ let internal erasureFixture (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         return actor
     }
 

@@ -17,47 +17,6 @@ type StoreFailure =
     | Cancelled
     | CommitOutcomeUnknown
 
-type CaseIndex =
-    {
-        Responsible: ActorId option
-        FollowUp: CalendarDate option
-        Status: CaseStatus option
-        Progress: CaseProgress option
-        ChangedAt: DateTimeOffset
-        SearchText: string option
-        WorkSearchText: string option
-        NotifiedOn: CalendarDate option
-        Claimed: Money option
-        Payable: Money option
-        Paid: Money option
-    }
-
-module CaseIndex =
-    let create changedAt (snapshot: CaseSnapshot) =
-        let fields = CaseState.fields snapshot.State
-
-        {
-            Responsible = None
-            FollowUp = None
-            Status = fields |> Option.map _.Status
-            Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
-            ChangedAt = changedAt
-            SearchText = fields |> Option.map CaseSearch.text
-            WorkSearchText = None
-            NotifiedOn =
-                fields
-                |> Option.map (fun fields ->
-                    Registration.incidentNotificationDate fields.Registration)
-            Claimed = fields |> Option.map (fun fields -> Registration.claimed fields.Registration)
-            Paid =
-                fields
-                |> Option.bind (fun fields ->
-                    FinancialPosition.totals fields.Finance |> Option.map _.Paid)
-            Payable =
-                fields
-                |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)
-        }
-
 type StoredCase =
     {
         CaseId: CaseId
@@ -95,7 +54,7 @@ type NoteEntryMetadata =
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
-    | Authority of targetActorId: ActorId * act: AuthorityKind
+    | People of targetActorId: ActorId * act: PeopleActKind
     | Work of WorkEntryMetadata
     | Reminder of ReminderEntryMetadata
     | Note of NoteEntryMetadata
@@ -139,19 +98,19 @@ type StoredEffect =
         match this.Descriptor with
         | EffectDescriptor.Case(id, revision, act, _, _) ->
             EntryTarget.Case(id, revision, act, businessDate ())
-        | EffectDescriptor.Authority(id, change) ->
+        | EffectDescriptor.People(id, change) ->
             let act =
                 match change with
-                | AuthorityEffectDescriptor.ProvisionOwner _ -> AuthorityKind.ProvisionOwner
-                | AuthorityEffectDescriptor.Register _ -> AuthorityKind.Register
-                | AuthorityEffectDescriptor.SetProfile _ -> AuthorityKind.SetProfile
-                | AuthorityEffectDescriptor.EraseProfile -> AuthorityKind.EraseProfile
-                | AuthorityEffectDescriptor.Grant _ -> AuthorityKind.Grant
-                | AuthorityEffectDescriptor.Revoke _ -> AuthorityKind.Revoke
-                | AuthorityEffectDescriptor.Enable -> AuthorityKind.Enable
-                | AuthorityEffectDescriptor.Disable -> AuthorityKind.Disable
+                | PeopleEffectDescriptor.ProvisionOwner _ -> PeopleActKind.ProvisionOwner
+                | PeopleEffectDescriptor.Register _ -> PeopleActKind.Register
+                | PeopleEffectDescriptor.SetProfile _ -> PeopleActKind.SetProfile
+                | PeopleEffectDescriptor.EraseProfile -> PeopleActKind.EraseProfile
+                | PeopleEffectDescriptor.Grant _ -> PeopleActKind.Grant
+                | PeopleEffectDescriptor.Revoke _ -> PeopleActKind.Revoke
+                | PeopleEffectDescriptor.Enable -> PeopleActKind.Enable
+                | PeopleEffectDescriptor.Disable -> PeopleActKind.Disable
 
-            EntryTarget.Authority(id, act)
+            EntryTarget.People(id, act)
         | EffectDescriptor.Work(parent, revision) ->
             EntryTarget.Work
                 {
@@ -308,27 +267,11 @@ type CasePageItem =
         WorkSummary: CaseWorkSummary option
     }
 
-type WorkProjection =
-    {
-        Snapshot: CaseWorkSnapshot
-        ChangedAt: DateTimeOffset
-        RecordedBy: ActorId
-        SummaryChangedAt: DateTimeOffset option
-        SummaryRecordedBy: ActorId option
-    }
-
-type ReminderProjection =
-    {
-        Effects: ReminderEffects
-        ChangedAt: DateTimeOffset
-        RecordedBy: ActorId
-    }
-
 [<RequireQualifiedAccess>]
 type WorkChangeProjection =
-    | Work of WorkProjection
-    | Reminder of ReminderProjection
-    | Note of Note
+    | Work of WorkSubjectRows
+    | Reminder of ReminderSubjectRows list
+    | Note of NoteSubjectRows
 
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
@@ -339,29 +282,16 @@ type ReceiptCurrent =
         accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
     | Note of parent: StoredCase option * current: Note option
-    | Authority of target: ActorRef option
+    | People of target: ActorRef option
 
-[<RequireQualifiedAccess>]
 type CaseProjection =
-    | Insert of caseId: CaseId * snapshot: CaseSnapshot * index: CaseIndex
-    | Update of
-        caseId: CaseId *
-        snapshot: CaseSnapshot *
-        index: CaseIndex *
-        payment: PaymentDifference option
-    | Erase of caseId: CaseId * revision: Revision * changedAt: DateTimeOffset
+    {
+        Rows: CaseSubjectRows
+        Index: CaseIndex
+        Family: CaseFamilyRows option
+    }
 
-[<RequireQualifiedAccess>]
-type AuthorityProjection =
-    | Register of actorId: ActorId * principal: PrincipalKey
-    | ProvisionOwner of actorId: ActorId * principal: PrincipalKey * grantedAt: EffectPosition
-    | SetProfile of actorId: ActorId * profile: ActorProfile
-    | EraseProfile of actorId: ActorId * erasePosition: EffectPosition
-    | SetEnabled of actorId: ActorId * enabled: bool
-    | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option * grantedAt: EffectPosition
-    | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
-
-type AuthorityQuery =
+type AccessQuery =
     {
         Principal: PrincipalKey
         CaseId: CaseId option
@@ -393,7 +323,7 @@ type AssigneePageQuery =
         Limit: int
     }
 
-type AuthorityHistoryPageQuery =
+type PeopleHistoryPageQuery =
     {
         TargetActorId: ActorId option
         BeforePosition: EffectPosition option
@@ -470,7 +400,7 @@ type TimelinePageQuery =
 /// Independently owned global facts observed together by read consumers that require both.
 type GlobalReadFacts =
     {
-        Authority: AuthorityView
+        People: AccessView
         AssignedRoles: ActorRoleSummary list
         Maintenance: RegisterMaintenance
     }
@@ -480,20 +410,6 @@ type AccessRequestPageQuery =
         After: AccessRequestPosition option
         ObservedAt: DateTimeOffset
         Limit: int
-    }
-
-/// Private payment content becomes unavailable after parent erasure; accepting provenance remains.
-[<RequireQualifiedAccess>]
-type PaymentProjectionContent =
-    | Available of PaymentEntry * removed: bool
-    | Cleared of removed: bool
-
-type PaymentProjectionRow =
-    {
-        CaseId: CaseId
-        PaymentId: OperationId
-        Position: EffectPosition
-        Content: PaymentProjectionContent
     }
 
 type PaymentPageQuery =
@@ -508,17 +424,19 @@ type IReadTx =
     abstract ExpiredBefore: unit -> Task<DateTimeOffset option>
     abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract GlobalReadFacts: PrincipalKey -> Task<GlobalReadFacts>
-    abstract Authority: AuthorityQuery -> Task<AuthorityView>
-    abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
+    abstract Access: AccessQuery -> Task<AccessView>
+    abstract AccessCases: PrincipalKey * CaseId list -> Task<AccessView>
     abstract FindCase: CaseId -> Task<StoredCase option>
+    abstract CaseState: CaseId -> Task<CaseSubjectState option>
+    abstract CaseFamily: CaseId -> Task<CaseFamilyState option>
+    abstract PendingReminderDue: CaseId * ReminderId option -> Task<CalendarDate list>
+
     abstract FindCaseByReference: string -> Task<StoredCase option>
 
     abstract PaymentPage:
         PaymentPageQuery -> Task<Page<PaymentEntry * EffectPosition, EffectPosition>>
 
     abstract LatestPayments: CaseId * int -> Task<PaymentEntry list>
-    abstract ActivePayment: CaseId * Guid -> Task<PaymentEntry option>
-    abstract PaymentBoundsExcluding: CaseId * OperationId -> Task<PaymentDateBounds option>
     abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindNote: NoteId -> Task<StoredNote option>
@@ -537,8 +455,7 @@ type IReadTx =
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract AuthorityHistoryPage:
-        AuthorityHistoryPageQuery -> Task<Page<StoredEffect, EffectPosition>>
+    abstract PeopleHistoryPage: PeopleHistoryPageQuery -> Task<Page<StoredEffect, EffectPosition>>
 
     abstract AccessRequestPage:
         AccessRequestPageQuery -> Task<Page<AccessRequest, AccessRequestPosition>>
@@ -550,6 +467,8 @@ type IReadTx =
     abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
+    abstract ActorPrincipal: ActorId -> Task<PrincipalKey option>
+    abstract PeopleState: PrincipalKey -> Task<PeopleSubjectState option>
     abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
@@ -561,8 +480,9 @@ type IWriteTx =
     abstract AdvanceExpiryFrontier: DateTimeOffset -> Task<DateTimeOffset>
     abstract Append: RetainedOperation -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
+    abstract ProjectCaseIndex: CaseId * CaseIndex -> Task<unit>
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
-    abstract ProjectAuthority: AuthorityProjection -> Task<unit>
+    abstract ProjectPeople: PeopleSubjectRows -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
 
 [<NoEquality; NoComparison>]
@@ -580,7 +500,7 @@ type WriteOperation<'result> =
     }
 
 /// Context cache writes are non-ledger facts. Implementations serialize the principal before
-/// taking the authority snapshot and refresh a request only when that snapshot has no actor.
+/// taking the access snapshot and refresh a request only when that snapshot has no actor.
 [<NoComparison>]
 type ContextQuery =
     {

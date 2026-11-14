@@ -17,7 +17,7 @@ you enter; it does not take a profile name from sign-in claims.
 The CLI performs the same admission in one request:
 
 ```sh
-claimcore authority admit --principal-kind human --issuer https://identity.example/ \
+claimcore people admit --principal-kind human --issuer https://identity.example/ \
   --subject PERSON-SUBJECT --name "Alex Example" --role case-handler
 ```
 
@@ -60,9 +60,10 @@ change requires a fresh review. A visible zero means no matching cases; an omitt
 provide that case visibility. Responsibility never grants access.
 
 Use names or contact details to find people, optionally selecting a role. In the CLI,
-`authority list --text TEXT --role case-handler` combines current saved name/contact search with the
+`people list --text TEXT --role case-handler` combines current saved name/contact search with the
 selected role.
-Use the returned actor ID with `authority grants ACTOR-ID`; do not guess IDs or use a sign-in subject as
+Use the returned actor ID with `people grants ACTOR-ID` and the person-change verbs (grant, revoke,
+set-profile, enable, disable and erase-profile); do not guess IDs or use a sign-in subject as
 an actor ID.
 
 ## Change a profile or roles
@@ -80,12 +81,12 @@ anonymous account name. A later authored profile can give the account a name aga
 the erased profile contents. Confirm this irreversible action by typing the requested change identifier.
 See [erasure limits](operating.md#erasure-limits) for backups and copies outside the live service.
 
-## Review authority changes
+## Review access changes
 
-Open **Authority history**, or run `claimcore authority history`, to see who changed access and what was
+Open **Access history**, or run `claimcore people history`, to see who changed access and what was
 recorded. Actor names reflect current profiles, including profile erasure. Follow each continuation to
-review more history. A case-specific role does not provide authority-history access.
+review more history. A case-specific role does not provide access-history access.
 
-If a change cannot be confirmed, keep its identifier and use [delivery recovery](integrating.md#delivery-recovery).
+If a change cannot be confirmed, keep its identifier and use [delivery recovery](integrating.md#recover-an-uncertain-change).
 Checking a result does not record it again. Retrying an in-memory reviewed change sends its identical
 bytes; starting a different change requires a new identifier and a fresh review.

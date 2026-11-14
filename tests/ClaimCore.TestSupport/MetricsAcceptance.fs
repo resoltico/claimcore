@@ -73,6 +73,7 @@ let private caseFlow (database: PostgresFixture.Database) storage =
                     (AuthoredCaseAct.Open registration)
             )
 
+        let operation = Submissions.ofCommand None operation
         do! call host Api.operationPreview operation antiforgery ReplyKind.Reviewed
         do! call host Api.operationExecute operation antiforgery ReplyKind.Accepted
         do! call host Api.operationExecute operation antiforgery ReplyKind.AlreadyAccepted

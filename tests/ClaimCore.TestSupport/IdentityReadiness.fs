@@ -63,10 +63,10 @@ let wait (client: HttpClient) location validate (ct: CancellationToken) =
         | :? OperationCanceledException -> return refuse ("DEADLINE_" + observed)
     }
 
-/// Host qualification uses the production authority metadata validator after readiness.
+/// Host qualification uses the production people metadata validator after readiness.
 let waitForIssuer client issuer token =
     wait
         client
-        (ClaimCore.Web.OidcAuthority.discoveryLocation issuer)
-        (fun bytes -> ClaimCore.Web.OidcAuthority.validateMetadata issuer bytes |> Result.isOk)
+        (ClaimCore.Server.OidcAuthority.discoveryLocation issuer)
+        (fun bytes -> ClaimCore.Server.OidcAuthority.validateMetadata issuer bytes |> Result.isOk)
         token

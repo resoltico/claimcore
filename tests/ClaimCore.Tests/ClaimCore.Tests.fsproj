@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.CommandLine/ClaimCore.CommandLine.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <!-- The pinned SDK owns the compiler service used for source-level architecture checks. -->
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
@@ -55,7 +56,8 @@
     <Compile Include="Domain/CaseModelTests.fs" />
     <Compile Include="Domain/PaymentEntriesTests.fs" />
     <Compile Include="Domain/FinancialPositionTests.fs" />
-    <Compile Include="Domain/FinancialCaseDecisionTests.fs" />
+    <Compile Include="Domain/CaseSubjectTests.fs" />
+    <Compile Include="Domain/DecisionContextTests.fs" />
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
@@ -98,6 +100,7 @@
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
+    <Compile Include="Contract/AffordanceTests.fs" />
     <Compile Include="Contract/CurrentGroupDocumentTests.fs" />
     <Compile Include="Contract/ReceiptProofDocumentTests.fs" />
     <Compile Include="Contract/NavigationDocumentTests.fs" />
@@ -107,7 +110,7 @@
     <Compile Include="Contract/NoteDocumentTests.fs" />
     <Compile Include="Contract/HistoryControlDocumentTests.fs" />
     <Compile Include="Contract/ReminderControlDocumentTests.fs" />
-    <Compile Include="Contract/AuthorityHistoryDocumentTests.fs" />
+    <Compile Include="Contract/PeopleHistoryDocumentTests.fs" />
     <Compile Include="Contract/CaseChildControlTests.fs" />
     <Compile Include="Contract/RequesterControlDocumentTests.fs" />
     <Compile Include="Contract/ExpiryDiagnosticTests.fs" />
@@ -120,15 +123,16 @@
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Web/RuntimeDrainTests.fs" />
     <Compile Include="Web/RuntimeProcessTests.fs" />
-    <Compile Include="Application/AuthorityPolicyInputs.fs" />
+    <Compile Include="Application/AccessPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
     <Compile Include="Domain/CaseDecisionTests.fs" />
     <Compile Include="Application/ReplayDecisionTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
-    <Compile Include="Application/AuthorityDecisionTests.fs" />
-    <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
+    <Compile Include="Application/SubjectTimelineTests.fs" />
+    <Compile Include="Application/PeopleDecisionTests.fs" />
+    <Compile Include="Application/PeopleRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/TranslationPipelineTests.fs" />
@@ -153,7 +157,7 @@
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
-    <Compile Include="Contract/TaskAssemblyTests.fs" />
+    <Compile Include="Contract/OperationSubmissionTests.fs" />
     <Compile Include="Contract/TaskCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Contract/ResponsibilitySelectionTests.fs" />
@@ -176,7 +180,7 @@
     <Compile Include="Cli/OfflineDraftTests.fs" />
     <Compile Include="Cli/TaskArgumentTests.fs" />
     <Compile Include="Cli/QueryArgumentTests.fs" />
-    <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
+    <Compile Include="Cli/PeopleInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
     <Compile Include="Cli/CliReplyLossTests.fs" />
     <Compile Include="Cli/CliFrameTests.fs" />
@@ -195,6 +199,11 @@
     <Compile Include="Cli/ShellSessionTests.fs" />
     <Compile Include="Cli/ShellReviewIdleTests.fs" />
     <Compile Include="Cli/ShellHomeTests.fs" />
+    <Compile Include="Cli/CliOffline.fs" />
+    <Compile Include="Cli/CliUsageTests.fs" />
+    <Compile Include="Cli/CliOfflineHelpTests.fs" />
+    <Compile Include="Cli/CliOfflineDiscoveryTests.fs" />
+    <Compile Include="Cli/CliOfflineLanguageTests.fs" />
     <Compile Include="Cli/CliHelpTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
     <Compile Include="Cli/CliAdmissionTests.fs" />
@@ -206,8 +215,8 @@
     <Compile Include="Cli/MoneyDisplayTests.fs" />
     <Compile Include="Cli/CliDisplayCultureTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
-    <Compile Include="Cli/AuthorityHistoryTests.fs" />
-    <Compile Include="Cli/CsvEffectProofTests.fs" />
+    <Compile Include="Cli/PeopleHistoryTests.fs" />
+    <Compile Include="Contract/CsvExportTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />
@@ -225,12 +234,11 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Server/ClaimCore.Server.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TngTech.ArchUnitNET" />
-    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <PackageReference Include="Hedgehog" />
     <PackageReference Include="Microsoft.OpenApi" />

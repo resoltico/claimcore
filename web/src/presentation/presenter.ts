@@ -13,7 +13,6 @@ import {
   exactAmount,
   exactInteger,
   exactMoney,
-  caseAge,
   recordedTime,
 } from "./format";
 import { renderCatalogKey, translate } from "./messages";
@@ -48,7 +47,7 @@ const rule = (preferences: Preferences, key: string, inputName: string | null = 
 };
 const metadata = (
   preferences: Preferences,
-  owner: "field" | "act" | "authority",
+  owner: "field" | "act" | "people",
   name: string,
   part: "label" | "hint" | "rule" | "meaning",
   definitions: PresentationDefinitions,
@@ -66,11 +65,11 @@ const metadata = (
           candidate.kind === "OPERATION" && candidate.subject === "CASE" && candidate.act === name,
       );
       break;
-    case "authority":
+    case "people":
       definition = taskDefinitions.find(
         (candidate) =>
           candidate.kind === "OPERATION" &&
-          candidate.subject === "AUTHORITY" &&
+          candidate.subject === "PEOPLE" &&
           candidate.act === name,
       );
       break;
@@ -108,9 +107,8 @@ export const createPresenter = (
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label", definitions),
   fieldHint: (name: string) => metadata(preferences, "field", name, "hint", definitions),
   fieldRule: (name: string) => metadata(preferences, "field", name, "rule", definitions),
-  authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
-  authorityMeaning: (name: string) =>
-    metadata(preferences, "authority", name, "meaning", definitions),
+  peopleLabel: (name: string) => metadata(preferences, "people", name, "label", definitions),
+  peopleMeaning: (name: string) => metadata(preferences, "people", name, "meaning", definitions),
   actMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
   actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   term: <V extends keyof Terms>(vocabulary: V, value: Terms[V]) =>
@@ -123,8 +121,6 @@ export const createPresenter = (
     exactAmount(value, preferences.displayLocale, currency),
   money: (value: string, currency: string) =>
     exactMoney(value, currency, preferences.displayLocale),
-  age: (notified: string | null, businessDate: string) =>
-    caseAge(notified, businessDate, preferences.displayLocale),
   recordedTime: (value: string, zone: string) =>
     recordedTime(value, zone, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),

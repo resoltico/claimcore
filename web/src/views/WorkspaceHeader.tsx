@@ -1,9 +1,12 @@
+import { useRequesterContext } from "../hooks/useRequesterContext";
+import { coreLinkPath } from "../routing/coreLinks";
+import { renderCatalogKey } from "../presentation/messages";
 import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useId, useRef, useState } from "react";
-import type { Screen, TaskId, PresentedValue as Value } from "@contracts/client";
+import type { Screen, TaskId, Link, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -11,7 +14,7 @@ import { followLink } from "../routing/followLink";
 import type { Route } from "../routing/routes";
 import { Icon } from "../ui/icons";
 import { Button } from "../ui/Button";
-import "./shell.css";
+import {} from "./shell.css";
 
 const areas = [
   { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
@@ -19,9 +22,9 @@ const areas = [
   { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
   { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
   {
-    name: "authorityHistory",
-    path: "/authority-history",
-    label: "ui.shell.authorityHistory",
+    name: "peopleHistory",
+    path: "/people-history",
+    label: "endpoint.people.history.label",
     icon: "history",
   },
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
@@ -58,6 +61,10 @@ const ShellLink = ({
   counts: ReadonlyMap<Area["name"], NavigationCount>;
 }) => {
   const p = usePresentation();
+  const requester = useRequesterContext();
+  const coreCaption = requester?.links.find(
+    (named) => named.rel === "VIEW" && coreLinkPath(named.link)?.split("?")[0] === area.path,
+  )?.labelId;
   const count = counts.get(area.name);
   const captionId = useId();
   return (
@@ -74,7 +81,7 @@ const ShellLink = ({
     >
       <Icon name={area.icon} />
       <span id={captionId} className="shell-link-label">
-        {p.text(area.label)}
+        {coreCaption === undefined ? p.text(area.label) : renderCatalogKey(p, coreCaption)}
       </span>
       {count === undefined ? null : (
         <>
@@ -242,7 +249,7 @@ export const WorkspaceHeader = ({
   route: Route;
   presentation: Screen | null;
   active: string;
-  views: ReadonlyArray<string>;
+  views: ReadonlyArray<Link["endpoint"]>;
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
   openCase: () => void;
@@ -251,12 +258,12 @@ export const WorkspaceHeader = ({
   const compact = useCompact();
   const view = presentation;
   const counts = useNavigationCounts();
-  const cases = views.includes("CASES");
+  const cases = views.includes("case.list");
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
   const admin = areas.filter(
     (area) =>
-      (area.name === "people" && views.includes("AUTHORITY")) ||
-      (area.name === "authorityHistory" && tasks.includes("query:authorityHistory")),
+      (area.name === "people" && views.includes("people.list")) ||
+      (area.name === "peopleHistory" && tasks.includes("people.history")),
   );
   const mobile = [
     ...primary,
@@ -329,7 +336,7 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && tasks.includes("CASE:OPEN") ? (
+        {route.screen === "cases" && tasks.includes("case.open") ? (
           <a
             id="open-case"
             className="shell-open-case"
@@ -341,7 +348,7 @@ export const WorkspaceHeader = ({
               });
             }}
           >
-            {p.actLabel("OPEN")}
+            {p.actLabel("case.open")}
           </a>
         ) : null}
       </header>

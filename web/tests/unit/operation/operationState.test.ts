@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 import type { OperationPhase } from "../../../src/operation/operationTypes";
 import { expect, it } from "vitest";
@@ -285,7 +286,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
         query: {
           target: {
             kind: "ID" as const,
-            caseId: initial().disclosed.caseObservation!.context.caseId,
+            caseId: initial().disclosed.caseObservation!.subject.caseId,
           },
         },
       },
@@ -319,7 +320,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
           query: {
             target: {
               kind: "ID" as const,
-              caseId: initial().disclosed.caseObservation!.context.caseId,
+              caseId: initial().disclosed.caseObservation!.subject.caseId,
             },
           },
         },
@@ -412,7 +413,7 @@ it("discarding authored intent cannot restore a refused disclosure without a pos
           query: {
             target: {
               kind: "ID" as const,
-              caseId: initial().disclosed.caseObservation!.context.caseId,
+              caseId: initial().disclosed.caseObservation!.subject.caseId,
             },
           },
         },
@@ -440,11 +441,13 @@ const creationRefresh = (): OperationState => {
       ...state.draft,
       entry: {
         subject: "CASE",
-        kind: "OPEN",
+        kind: "case.open",
       },
       target: prior.target,
       binding: {
-        kind: "NEW_CASE",
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "" },
+        expectedRevision: 0,
       },
       dateEntries: {
         "field:incidentDate": {
@@ -572,7 +575,7 @@ it.each([
         ...state.draft,
         entry: {
           subject: "CASE",
-          kind: "CLOSE",
+          kind: "case.close",
         },
       },
     };
@@ -724,24 +727,24 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
     const identity = creationIdentity(state);
     const source = {
       prepared: prepareRequest("operation.execute", {
-        kind: "CASE",
         operationId: firstId,
-        target: {
-          kind: "REFERENCE",
-          caseReference: "OWN-REF",
-        },
-        expectedRevision: 0,
-        act: {
-          kind: "OPEN",
-          values: {
-            incidentDate: "2026-09-01",
-            incidentNotificationDate: "2026-09-02",
-            incidentCountry: "LV",
-            claimantName: "Synthetic claimant",
-            insurerName: "Synthetic insurer",
-            claimedAmount: "12.34",
-            claimedCurrency: "EUR",
+        task: "case.open",
+        binding: {
+          kind: "CASE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: "OWN-REF",
           },
+          expectedRevision: 0,
+        },
+        inputs: {
+          "field:incidentDate": "2026-09-01",
+          "field:incidentNotificationDate": "2026-09-02",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "Synthetic claimant",
+          "field:insurerName": "Synthetic insurer",
+          "field:claimedAmount": "12.34",
+          "field:claimedCurrency": "EUR",
         },
       }),
       submittedRows: {},
@@ -750,15 +753,14 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       ...closeReview,
       document: {
         ...closeReview.document,
-        context: {
-          ...closeReview.document.context,
-          task: "CASE:OPEN",
-          target: {
-            kind: "CASE",
-            caseId: firstId,
-            beforeRevision: null,
-          },
-        },
+        actions: [
+          operationAffordance(
+            "case.open",
+            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            {},
+            [],
+          ),
+        ],
       },
     };
     let operation: OperationPhase;
@@ -876,7 +878,7 @@ it.each(["read-failed", "reset"] as const)(
                   query: {
                     target: {
                       kind: "ID" as const,
-                      caseId: initial().disclosed.caseObservation!.context.caseId,
+                      caseId: initial().disclosed.caseObservation!.subject.caseId,
                     },
                   },
                 },

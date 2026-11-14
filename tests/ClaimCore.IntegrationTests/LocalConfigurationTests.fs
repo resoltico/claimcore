@@ -1,5 +1,7 @@
 module ClaimCore.IntegrationTests.LocalConfigurationTests
 
+open ClaimCore.CommandLine
+
 open ClaimCore.Domain
 
 open ClaimCore.Wire
@@ -15,7 +17,7 @@ open System.Threading.Tasks
 open Microsoft.VisualBasic.FileIO
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 open ClaimCore.HostSecurity
 
 let private configuration directory =

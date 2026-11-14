@@ -68,7 +68,7 @@ let tests =
                     Expect.equal
                         (observed.Calls - before)
                         1
-                        "Authority, directory and enrichment share one provider transaction"
+                        "People, directory and enrichment share one provider transaction"
             finally
                 database.Fixture.Dispose()
         })

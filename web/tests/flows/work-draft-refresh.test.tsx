@@ -1,8 +1,10 @@
 import {
+  caseSubject,
   caseDocumentInput,
   caseIdentityScreen,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -13,11 +15,25 @@ import { CaseDetail } from "../../src/views/CaseDetail";
 
 const readable = caseDocumentInput(
   {
-    revision: 4,
+    subject: { ...caseSubject, revision: 4 },
+    actions: [
+      operationAffordance(
+        "work.update",
+        {
+          kind: "WORK",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: caseSubject.workRevision,
+        },
+        {},
+        ["field:handlingSummary", "field:responsibleActor"],
+        {},
+      ),
+      operationAffordance("reminder.create", {
+        kind: "REMINDER",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      }),
+    ],
     history: "NONE",
-    tasks: ["WORK:UPDATE_WORK", "REMINDER:REMINDER_CREATE"],
-    editableInputs: ["field:handlingSummary", "field:responsibleActor"],
-    seeds: { ...emptyCaseSeeds, work: { summary: null, responsible: null } },
   },
   {
     regions: [
@@ -64,7 +80,7 @@ const response = () =>
 const detail = (credential: string) => (
   <TestSession credential={credential}>
     <CaseDetail
-      target={{ kind: "ID", caseId: readable.context.caseId }}
+      target={{ kind: "ID", caseId: readable.subject.caseId }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}

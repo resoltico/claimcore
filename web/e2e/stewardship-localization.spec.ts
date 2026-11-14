@@ -1,8 +1,8 @@
+import type { ResponseByEndpoint } from "@contracts/client";
 import { showExactLookup } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { isResponse } from "../src/protocol/client";
 import { openCase } from "./case-workflow";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {
@@ -12,13 +12,11 @@ import {
   expectKeyboardContained,
   ui,
 } from "./localization-support";
-
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   stewardCookies = await authenticateSteward(browser, baseURL);
 });
-
 test("stewardship review preserves exact reason through pseudolocale, Arabic RTL and narrow keyboard interaction @engine", async ({
   page,
   browser,
@@ -38,7 +36,11 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     await lookup.fill(reference);
     await lookup.press("Enter");
     await steward.locator("details.case-actions > summary").click();
-    await steward.getByRole("button", { name: /Vööïïd/u }).click();
+    await steward
+      .getByRole("button", {
+        name: /Vööïïd/u,
+      })
+      .click();
     const reason = "Exact 1.0000 العربية";
     await steward.locator('[name="input:reason"]').fill(reason);
     const preview = steward.getByRole("dialog").locator("button[type=submit]");
@@ -47,12 +49,13 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     );
     await preview.click();
     const response = await previewed;
-    const reviewed: unknown = await response.json();
-    if (!isResponse("operation.preview", reviewed) || reviewed.outcome.kind !== "REVIEWED") {
+    const operationPreviewReply =
+      (await response.json()) as ResponseByEndpoint["operation.preview"];
+    if (operationPreviewReply.outcome.kind !== "REVIEWED") {
       throw new Error("Expected the real reviewed stewardship draft.");
     }
     const authored: unknown = JSON.parse(response.request().postData() ?? "null");
-    expect(authored).toMatchObject({ act: { kind: "VOID", reason } });
+    expect(authored).toMatchObject({ task: "case.void", inputs: { "input:reason": reason } });
     if (
       typeof authored !== "object" ||
       authored === null ||
@@ -64,8 +67,15 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     const { operationId } = authored;
     const dialog = steward.getByRole("dialog");
     await expect(dialog).toContainText(reason);
-    await expect(dialog.getByRole("heading", { name: /Vööïïd/u })).toBeVisible();
-    await steward.setViewportSize({ width: 320, height: 720 });
+    await expect(
+      dialog.getByRole("heading", {
+        name: /Vööïïd/u,
+      }),
+    ).toBeVisible();
+    await steward.setViewportSize({
+      width: 320,
+      height: 720,
+    });
     await noHorizontalOverflow(steward, "narrow");
     await expectKeyboardContained(steward, dialog);
     const requests: string[] = [];
@@ -77,30 +87,46 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
     for (const language of ["ar", "lv", "en"] as const) {
       await selectLanguage(steward, language);
       await expect(dialog).toBeVisible();
-      await expect(dialog).toHaveAccessibleName(ui(language, "act.VOID.label"));
+      await expect(dialog).toHaveAccessibleName(ui(language, "task.case.void.label"));
       await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
       await expect(dialog.locator(".screen-details")).toContainText(operationId);
       await expect(dialog).toContainText(reason);
       await noHorizontalOverflow(steward, "narrow");
     }
-    const lifecycle = dialog
-      .locator(".review-values > div")
-      .filter({ has: steward.getByText("Lifecycle", { exact: true }) });
+    const lifecycle = dialog.locator(".review-values > div").filter({
+      has: steward.getByText("Lifecycle", {
+        exact: true,
+      }),
+    });
     await expect(
-      lifecycle.locator(".review-before").getByText("Active", { exact: true }),
+      lifecycle.locator(".review-before").getByText("Active", {
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      lifecycle.locator(".review-after").getByText("Voided", { exact: true }),
+      lifecycle.locator(".review-after").getByText("Voided", {
+        exact: true,
+      }),
     ).toBeVisible();
     expect(requests).toEqual([]);
     await expectAccessible(steward);
     await steward.keyboard.press("Escape");
     const guard = steward.getByRole("dialog");
     await expect(guard).toContainText("Discard this draft and leave the editor?");
-    await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await guard
+      .getByRole("button", {
+        name: "Keep editing",
+        exact: true,
+      })
+      .click();
     await expect(dialog).toContainText(reason);
     await expect(dialog.locator(".screen-details")).toContainText(operationId);
-    await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
+    await dialog
+      .getByRole("button", {
+        name: "Return to editing",
+        exact: true,
+      })
+      .click();
     await expect(preview).toBeFocused();
     await expect(steward.locator('[name="input:reason"]')).toHaveValue(reason);
     expect(requests).toEqual([]);

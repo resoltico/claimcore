@@ -1,8 +1,11 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { fields } from "../support/service-ui.fixtures";
@@ -15,25 +18,30 @@ import { render, screen, TestSession } from "../support/presentation-test-suppor
 import { current, editor, previewReply } from "../support/presentation-state.fixtures";
 const canary = "PRIOR_ACTOR_PREFILL_CANARY";
 const disclosed = caseDocumentInput({
-  tasks: ["CASE:AMEND_REGISTRATION"],
-  caseId: current.context.caseId,
-  revision: 1,
+  subject: { ...caseSubject, caseId: current.subject.caseId, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      { kind: "CASE", target: { kind: "ID", caseId: current.subject.caseId }, expectedRevision: 1 },
+      { ...prefixedInputs("field:", { ...fields.registration, claimantName: canary }) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs],
-  seeds: { ...emptyCaseSeeds, registration: { ...fields.registration, claimantName: canary } },
 });
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("closes prior actor prefills synchronously on token change without reusing the old observation", () => {
   const view = render(
     <TestSession credential="token">
-      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+      {editor({ current: disclosed, initialAct: "case.amendRegistration" })}
     </TestSession>,
   );
   selectFact("claimantName");
   expect(screen.getByLabelText("Claimant name", { exact: true })).toHaveValue(canary);
   view.rerender(
     <TestSession credential="new-token">
-      {editor({ current: disclosed, initialAct: "AMEND_REGISTRATION" })}
+      {editor({ current: disclosed, initialAct: "case.amendRegistration" })}
     </TestSession>,
   );
   expect(screen.queryByDisplayValue(canary)).toBeNull();

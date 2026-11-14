@@ -9,13 +9,14 @@ it("fetch never follows redirects and dispatched delivery loss remains uncertain
   );
   const result = await service.execute(
     prepareRequest("operation.execute", {
-      kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
-      expectedRevision: 1,
-      act: {
-        kind: "CLOSE",
+      task: "case.close",
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 1,
       },
+      inputs: {},
     } as const),
     "csrf",
     "90000000-0000-4000-8000-000000000001",

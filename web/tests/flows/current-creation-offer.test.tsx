@@ -1,5 +1,11 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { activeRequester } from "../support/human-requester.fixtures";
+
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -43,11 +49,8 @@ const contextReply = (
         },
       ],
     },
-    context: {
-      ...activeRequester.context,
-      views: ["CASES", "OPERATIONS"],
-      tasks: offered ? ["CASE:OPEN"] : [],
-    },
+    actions: installationActions(offered ? ["case.open"] : []),
+    links: requesterLinks(["CASES", "OPERATIONS"], offered ? ["case.open"] : []),
   }),
 });
 beforeEach(() => {
@@ -72,13 +75,19 @@ beforeEach(() => {
     status: 200,
     value: humanReadReply("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        tasks: ["CASE:OPEN"],
-        cases: [],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -88,7 +97,11 @@ beforeEach(() => {
     status: 200,
     value: humanReadReply("case.summary", {
       screen: { regions: [] },
-      context: { kind: "EMPTY" },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

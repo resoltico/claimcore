@@ -1,19 +1,43 @@
+import type { Affordance, HumanReadDocument_people_requests } from "@contracts/client";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
-import {
-  AccessRequests,
-  type AccessRequestControl,
-} from "../../../src/views/authority/AccessRequests";
-import type { HumanReadDocument_authorityRequests } from "@contracts/client";
+import { AccessRequests } from "../../../src/views/people/AccessRequests";
 
-const handles: AccessRequestControl[] = ["first", "second"].map((key) => ({
-  key,
-  principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: key },
-  profileSeed: { displayName: `${key} unverified hint`, contact: null },
+const principals = ["first", "second"].map((subject) => ({
+  kind: "HUMAN" as const,
+  issuer: "https://issuer.example/",
+  subject,
 }));
-const document: HumanReadDocument_authorityRequests = {
+const handles = principals.map((principal) =>
+  operationAffordance(
+    "people.admit",
+    { kind: "PEOPLE" },
+    {
+      "input:principal.kind": principal.kind,
+      "input:principal.issuer": principal.issuer,
+      "input:principal.subject": principal.subject,
+      "input:profile.displayName": `${principal.subject} unverified hint`,
+      "input:profile.contact": null,
+    },
+  ),
+);
+const dismiss = (index: number): Affordance => ({
+  task: "people.requests.dismiss",
+  binding: { kind: "PEOPLE" },
+  seeds: {
+    "input:principal.kind": principals[index]!.kind,
+    "input:principal.issuer": principals[index]!.issuer,
+    "input:principal.subject": principals[index]!.subject,
+  },
+  editable: [],
+  choices: {},
+  primary: false,
+  blocked: null,
+});
+const document: HumanReadDocument_people_requests = {
   screen: {
     regions: [
       {
@@ -24,14 +48,26 @@ const document: HumanReadDocument_authorityRequests = {
             { key: "caption", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
           ],
           rows: [
-            { key: "second", values: [{ kind: "TEXT", value: "Core second caption Ω" }] },
-            { key: "first", values: [{ kind: "TEXT", value: "Core first caption Ψ" }] },
+            {
+              key: "second",
+              actions: [handles[1]!, dismiss(1)],
+              values: [{ kind: "TEXT", value: "Core second caption Ω" }],
+            },
+            {
+              key: "first",
+              actions: [handles[0]!, dismiss(0)],
+              values: [{ kind: "TEXT", value: "Core first caption Ψ" }],
+            },
           ],
         },
       },
     ],
   },
-  context: { kind: "ACCESS_REQUESTS", requests: [...handles].reverse(), nextCursor: null },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -66,7 +102,11 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
     .mockResolvedValueOnce(
       reply({
         screen: { regions: [] },
-        context: { kind: "EMPTY" },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: document.basis,
         disclosure: "CURRENT",
       }),
@@ -75,7 +115,6 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
       reply({
         ...document,
         screen: { regions: [] },
-        context: { ...document.context, requests: [] },
       }),
     );
   vi.stubGlobal("fetch", fetch);
@@ -90,6 +129,6 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
-  expect(fetch.mock.calls[1]![0]).toBe("/api/authority.requests.dismiss");
-  expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(handles[1]!.principal);
+  expect(fetch.mock.calls[1]![0]).toBe("/api/people.requests.dismiss");
+  expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(principals[1]);
 });

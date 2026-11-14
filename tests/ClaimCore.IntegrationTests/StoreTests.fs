@@ -18,15 +18,15 @@ let private serviceCases fixture (admin: ServiceContext) principal =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id fixture 400)
                         principal
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 (CancellationToken.None))
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         for number in 1..2 do
             let reference = $"SERVICE-{number}"
@@ -57,7 +57,7 @@ let private serviceCases fixture (admin: ServiceContext) principal =
                     }
                     true
 
-            acceptedAuthority assigned
+            acceptedPeople assigned
     }
 
 let private serviceScopeCorruption installationRead =
@@ -85,7 +85,7 @@ let private serviceScopeCorruption installationRead =
                         true
                     |> Async.AwaitTask
 
-                acceptedAuthority granted
+                acceptedPeople granted
 
 
             use! connection =

@@ -28,12 +28,12 @@ module CaseCommandSkeleton =
     let compartment (command: CaseCommandSkeleton) =
         if command.Act = CaseActKind.Erase then None else Some 0
 
-type AuthorityCommandSkeleton =
+type PeopleCommandSkeleton =
     {
         TargetActorId: ActorId
         Principal: PrincipalKey
         // Profile values are replaced by a compartment ordinal, not a dummy private profile.
-        Act: AuthorityAct<ActorGrant, int>
+        Act: PeopleAct<ActorGrant, int>
     }
 
 type ReminderCommandSkeleton =
@@ -52,7 +52,7 @@ type NoteCommandSkeleton =
 [<RequireQualifiedAccess>]
 type CommandSkeleton =
     | Case of CaseCommandSkeleton
-    | Authority of AuthorityCommandSkeleton
+    | People of PeopleCommandSkeleton
     | Work of CaseId * Revision
     | Note of NoteCommandSkeleton
     | Reminder of ReminderCommandSkeleton
@@ -63,7 +63,7 @@ type PaymentReference =
     | Removed of OperationId
 
 [<RequireQualifiedAccess>]
-type AuthorityEffectDescriptor =
+type PeopleEffectDescriptor =
     | ProvisionOwner of PrincipalKey
     | Register of PrincipalKey
     | SetProfile of compartmentOrdinal: int
@@ -82,7 +82,7 @@ type EffectDescriptor =
         CaseActKind *
         creationReference: CaseReference option *
         PaymentReference option
-    | Authority of ActorId * AuthorityEffectDescriptor
+    | People of ActorId * PeopleEffectDescriptor
     | Work of CaseId * Revision
     | NoteAdded of CaseId * NoteId
     | NoteRemoved of CaseId * NoteId
@@ -116,7 +116,7 @@ type OperationStructure =
 
 module OperationStructure =
     // ADMIT has register/profile plus the Domain's bounded grant collection.
-    let MaximumEffects = 2 + AuthorityAdmission.MaximumGrants
+    let MaximumEffects = 2 + PeopleAdmission.MaximumGrants
 
     let private successor revision =
         if revision < Revision.zero || Revision.value revision >= Revision.Maximum then
@@ -167,9 +167,9 @@ module OperationStructure =
                     descriptor (CompartmentOwner.Case command.CaseId) CompartmentPurpose.Case [ 0 ]
                     |> Result.map (fun content -> [ effect ], [ content ])
 
-    let private authorityShape header (command: AuthorityCommandSkeleton) =
+    let private peopleShape header (command: PeopleCommandSkeleton) =
         let target = command.TargetActorId
-        let bind = List.map (fun effect -> EffectDescriptor.Authority(target, effect))
+        let bind = List.map (fun effect -> EffectDescriptor.People(target, effect))
 
         let profile index effects =
             descriptor (CompartmentOwner.ActorProfile target) CompartmentPurpose.Profile [ index ]
@@ -177,9 +177,9 @@ module OperationStructure =
 
         let registering =
             match command.Act with
-            | AuthorityAct.Register _
-            | AuthorityAct.Admit _
-            | AuthorityAct.ProvisionOwner _ -> true
+            | PeopleAct.Register _
+            | PeopleAct.Admit _
+            | PeopleAct.ProvisionOwner _ -> true
             | _ -> false
 
         let duplicateGrants grants = List.distinct grants <> grants
@@ -188,48 +188,48 @@ module OperationStructure =
             Error OperationStructureProblem.Command
         else
             match command.Act with
-            | AuthorityAct.Register 0 ->
+            | PeopleAct.Register 0 ->
                 profile
                     1
                     [
-                        AuthorityEffectDescriptor.Register command.Principal
-                        AuthorityEffectDescriptor.SetProfile 0
+                        PeopleEffectDescriptor.Register command.Principal
+                        PeopleEffectDescriptor.SetProfile 0
                     ]
-            | AuthorityAct.Admit value when
+            | PeopleAct.Admit value when
                 value.Profile = 0
                 && not value.Grants.IsEmpty
-                && value.Grants.Length <= AuthorityAdmission.MaximumGrants
+                && value.Grants.Length <= PeopleAdmission.MaximumGrants
                 && not (duplicateGrants value.Grants)
                 ->
                 profile
                     1
-                    (AuthorityEffectDescriptor.Register command.Principal
-                     :: AuthorityEffectDescriptor.SetProfile 0
-                     :: (value.Grants |> List.map AuthorityEffectDescriptor.Grant))
-            | AuthorityAct.ProvisionOwner(0, roles) when
+                    (PeopleEffectDescriptor.Register command.Principal
+                     :: PeopleEffectDescriptor.SetProfile 0
+                     :: (value.Grants |> List.map PeopleEffectDescriptor.Grant))
+            | PeopleAct.ProvisionOwner(0, roles) when
                 header.Sequence = Sequence.first
                 && header.ActorId = target
                 && PrincipalKey.isHuman command.Principal
-                && Result.isOk (Authority.validateInitialOwnerRoles roles)
+                && Result.isOk (People.validateInitialOwnerRoles roles)
                 ->
                 profile
                     1
                     [
-                        yield AuthorityEffectDescriptor.ProvisionOwner command.Principal
-                        yield AuthorityEffectDescriptor.SetProfile 0
+                        yield PeopleEffectDescriptor.ProvisionOwner command.Principal
+                        yield PeopleEffectDescriptor.SetProfile 0
                         for role in roles ->
-                            AuthorityEffectDescriptor.Grant
+                            PeopleEffectDescriptor.Grant
                                 {
                                     Role = role
                                     Scope = Scope.Installation
                                 }
                     ]
-            | AuthorityAct.SetProfile 0 -> profile 0 [ AuthorityEffectDescriptor.SetProfile 0 ]
-            | AuthorityAct.EraseProfile -> Ok(bind [ AuthorityEffectDescriptor.EraseProfile ], [])
-            | AuthorityAct.Grant grant -> Ok(bind [ AuthorityEffectDescriptor.Grant grant ], [])
-            | AuthorityAct.Revoke grant -> Ok(bind [ AuthorityEffectDescriptor.Revoke grant ], [])
-            | AuthorityAct.Enable -> Ok(bind [ AuthorityEffectDescriptor.Enable ], [])
-            | AuthorityAct.Disable -> Ok(bind [ AuthorityEffectDescriptor.Disable ], [])
+            | PeopleAct.SetProfile 0 -> profile 0 [ PeopleEffectDescriptor.SetProfile 0 ]
+            | PeopleAct.EraseProfile -> Ok(bind [ PeopleEffectDescriptor.EraseProfile ], [])
+            | PeopleAct.Grant grant -> Ok(bind [ PeopleEffectDescriptor.Grant grant ], [])
+            | PeopleAct.Revoke grant -> Ok(bind [ PeopleEffectDescriptor.Revoke grant ], [])
+            | PeopleAct.Enable -> Ok(bind [ PeopleEffectDescriptor.Enable ], [])
+            | PeopleAct.Disable -> Ok(bind [ PeopleEffectDescriptor.Disable ], [])
             | _ -> Error OperationStructureProblem.Command
 
     let private reminderShape header (command: ReminderCommandSkeleton) =
@@ -287,7 +287,7 @@ module OperationStructure =
     let expected header command =
         match command with
         | CommandSkeleton.Case value -> caseShape header value
-        | CommandSkeleton.Authority value -> authorityShape header value
+        | CommandSkeleton.People value -> peopleShape header value
         | CommandSkeleton.Reminder value -> reminderShape header value
         | CommandSkeleton.Work(parent, expected) ->
             match successor expected with
@@ -305,16 +305,16 @@ module OperationStructure =
             Ok([ EffectDescriptor.NoteRemoved(parent, note) ], [])
 
     let validateHeader (header: OperationHeader) command =
-        let authority =
+        let people =
             match command with
-            | CommandSkeleton.Authority _ -> true
+            | CommandSkeleton.People _ -> true
             | _ -> false
 
         if
             header.InstallationId = Guid.Empty
             || header.Sequence < Sequence.first
             || not (RecordedInstant.hasMicrosecondPrecision header.RecordedAt)
-            || (authority = header.BusinessDate.IsSome)
+            || (people = header.BusinessDate.IsSome)
         then
             Error OperationStructureProblem.Header
         else

@@ -6,7 +6,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Database
+open ClaimCore.Server.Administration
 
 let private field name value =
     JsonValue.tryMember name value

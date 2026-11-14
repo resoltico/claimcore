@@ -34,15 +34,9 @@ const outcomes = [
 const expectAuthored = (bytes: Buffer, caseId: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
   expect(authored).toMatchObject({
-    target: { kind: "ID", caseId },
-    expectedRevision: revision,
-    act: {
-      kind: "CORRECT",
-      groups: {
-        registration: { kind: modes.registration },
-        decision: { kind: modes.decision },
-      },
-    },
+    task: "case.correct",
+    binding: { target: { kind: "ID", caseId }, expectedRevision: revision },
+    inputs: { "group:registration": modes.registration, "group:decision": modes.decision },
   });
 };
 const expectClaimantWarning = async (field: Locator, language: "en" | "lv" | "ar") => {
@@ -189,7 +183,7 @@ for (const status of ["CLOSED"] as const) {
             representation: "HUMAN",
             outcome: {
               kind: "ACCEPTED",
-              document: { context: { target: { kind: "CASE", caseId: before.caseId } } },
+              document: { subject: { kind: "RECEIPT", operationId: captured.reply.operationId } },
             },
           });
           await expect(page.locator("#case-detail-title")).toBeVisible();
@@ -199,7 +193,9 @@ for (const status of ["CLOSED"] as const) {
           const acceptedHistory = await history(page, reference);
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
-            acceptedHistory.some((entry) => entry.kind === "CASE_FACT" && entry.act === "CORRECT"),
+            acceptedHistory.some(
+              (entry) => entry.kind === "CASE_FACT" && entry.act === "case.correct",
+            ),
           ).toBe(true);
         } else {
           expectCorrectionIssue(captured.reply, refusal);

@@ -13,13 +13,13 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
 
-let private receipt authority current entry =
+let private receipt people current entry =
     LedgerEntries.validateOperation installation entry
     |> Result.bind (
         LedgerEntries.receiptOperation
             (Inputs.workBasis)
             owner
-            authority
+            people
             (Some(Inputs.actorReference entry.ActorId))
             (ReceiptCurrent.Case(Some current))
     )
@@ -64,7 +64,11 @@ let private disclosure () =
     let view = locked registrar (Some superseded) (Some entry)
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                view.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read
@@ -125,7 +129,11 @@ let private foreignScope () =
     let read = (locked both (Some caseA) (Some entry)).Read
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             read
@@ -142,7 +150,11 @@ let private foreignScope () =
         }
 
     match
-        CaseExecution.review
+        CaseOperations.decide
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                narrowed)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             narrowed
@@ -152,16 +164,16 @@ let private foreignScope () =
 
 let private roles role readable full () =
     let _, entry, current, _ = created 204 "ROLE-DISCLOSURE"
-    let authority = actor owner ((CaseFixtures.actorId (id 1))) [ role ] []
+    let people = actor owner ((CaseFixtures.actorId (id 1))) [ role ] []
 
     Expect.equal
-        (LedgerEntries.canObserve owner authority (LedgerEntries.primary entry).Subject)
+        (LedgerEntries.canObserve owner people (LedgerEntries.primary entry).Subject)
         readable
         "Current read authorization"
 
     if readable then
         Expect.isTrue
-            (match (caseReceipt (receipt authority current entry)).Snapshot with
+            (match (caseReceipt (receipt people current entry)).Snapshot with
              | SnapshotDisclosure.Disclosed _ -> true
              | _ -> false)
             "Current snapshot disclosed"
@@ -174,7 +186,7 @@ let private roles role readable full () =
                     }
             }
 
-        let shown = (caseReceipt (receipt authority later entry)).Snapshot
+        let shown = (caseReceipt (receipt people later entry)).Snapshot
 
         Expect.equal
             (match shown with
@@ -200,15 +212,13 @@ let private stewardship () =
         decide request (locked steward (Some current) None) |> appended
 
     let voided =
-        match projection with
-        | CaseProjection.Update(id, snapshot, index, _) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Update"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     let restore =
         actRequest
@@ -221,15 +231,13 @@ let private stewardship () =
         decide restore (locked steward (Some voided) None) |> appended
 
     let restored =
-        match projection with
-        | CaseProjection.Update(id, snapshot, index, _) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Update"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     match decide request (locked steward (Some restored) (Some draft)) with
     | Verdict.Replay replay ->
@@ -266,6 +274,6 @@ let tests =
                 disclosure
             testCase "erased payload remains distinct from withheld data" erased
             testCase
-                "operation identity loads authority for both requested and accepted cases"
+                "operation identity loads people for both requested and accepted cases"
                 foreignScope
         ]

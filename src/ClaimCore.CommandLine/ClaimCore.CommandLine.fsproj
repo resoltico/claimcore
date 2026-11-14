@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <Compile Include="ExitCode.fs" />
+    <Compile Include="UsageError.fs" />
+    <Compile Include="Frames.fs" />
+  </ItemGroup>
+</Project>

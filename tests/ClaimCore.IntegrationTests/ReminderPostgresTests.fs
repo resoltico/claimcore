@@ -681,6 +681,26 @@ let private projectionRepair database =
         let! repairedSearch = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
         Expect.isOk repairedSearch "Independent work search columns are also part of reconstruction"
         let! _ = verified database
+
+        for table in [ "case_work"; "reminders" ] do
+            do!
+                sql
+                    database
+                    ("UPDATE claimcore."
+                     + table
+                     + " SET snapshot=decode('20','hex')||snapshot WHERE snapshot IS NOT NULL")
+                    [||]
+
+            do! finding VerificationFinding.CaseWorkProjection database
+            let! repairedBytes = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+            Expect.isOk
+                repairedBytes
+                "Rebuild restores canonical subject bytes instead of accepting a re-encoded projection"
+
+            let! _ = verified database
+            ()
+
         return ()
     }
 
@@ -820,15 +840,15 @@ let private currentLookup database =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(
-                    authorityRequest
+                (OperationInput.People(
+                    peopleRequest
                         (id database.Fixture 603)
                         reader
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
-        acceptedAuthority registered
+        acceptedPeople registered
 
         let! granted =
             grant
@@ -841,7 +861,7 @@ let private currentLookup database =
                 }
                 true
 
-        acceptedAuthority granted
+        acceptedPeople granted
         let services = core database.Fixture reader
 
         let! result =
@@ -864,7 +884,7 @@ let private currentLookup database =
 
         Expect.isEmpty
             current.Item.Acts
-            "Current read access does not create work-management authority"
+            "Current read access does not create work-management people"
 
         Expect.equal
             current.Basis.TimeZoneId

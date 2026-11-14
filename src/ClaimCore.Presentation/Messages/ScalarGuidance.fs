@@ -147,7 +147,7 @@ module ScalarGuidance =
             message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]
         | TaskInputId.Target InputTarget.ReminderDueDate -> message key []
         | TaskInputId.Target InputTarget.Grants ->
-            message key [ "maximumGrants", GuidanceArgument.Count AuthorityAdmission.MaximumGrants ]
+            message key [ "maximumGrants", GuidanceArgument.Count PeopleAdmission.MaximumGrants ]
         | _ -> message key []
 
     let byInput =

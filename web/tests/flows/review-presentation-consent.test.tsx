@@ -5,9 +5,7 @@ import { render, screen } from "../support/presentation-test-support";
 import { reviewConfirm } from "../support/review-controls";
 import { preparedFor } from "../support/operation-form.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
-import { isResponseFor } from "../../src/protocol/client";
 import { OperationReview } from "../../src/views/operation/OperationReview";
-
 const reviewed = (labelId: string): Review => ({
   ...closeReview,
   presentation: {
@@ -15,8 +13,16 @@ const reviewed = (labelId: string): Review => ({
       {
         key: "status",
         labelId,
-        before: { kind: "CODE", vocabulary: "status", token: "OPENED" },
-        after: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
+        before: {
+          kind: "CODE",
+          vocabulary: "status",
+          token: "OPENED",
+        },
+        after: {
+          kind: "CODE",
+          vocabulary: "status",
+          token: "CLOSED",
+        },
       },
     ],
     unchanged: [],
@@ -29,16 +35,9 @@ it.each([
 ] as const)(
   "requires complete registered presentation before confirming %s",
   async (labelId, complete) => {
-    const prepared = preparedFor("CLOSE");
+    const prepared = preparedFor("case.close");
     const original = prepared.bytes;
     const review = reviewed(labelId);
-    expect(
-      isResponseFor("operation.preview", "HUMAN", {
-        representation: "HUMAN",
-        operationId: prepared.input.operationId,
-        outcome: { kind: "REVIEWED", review },
-      }),
-    ).toBe(true);
     const execute = vi.fn().mockResolvedValue(undefined);
     const confirm = vi.fn();
     const returnToEdit = vi.fn();
@@ -68,7 +67,11 @@ it.each([
       await user.click(reviewConfirm());
       expect(execute).not.toHaveBeenCalled();
       expect(confirm).not.toHaveBeenCalled();
-      await user.click(screen.getByRole("button", { name: "Return to editing" }));
+      await user.click(
+        screen.getByRole("button", {
+          name: "Return to editing",
+        }),
+      );
       expect(returnToEdit).toHaveBeenCalledOnce();
     }
     expect(prepared.bytes).toBe(original);

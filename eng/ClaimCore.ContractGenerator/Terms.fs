@@ -109,9 +109,6 @@ module Terms =
             views ReminderView.vocabulary
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
-            rendered WorkActKind.vocabulary
-            rendered NoteActKind.vocabulary
-            rendered ReminderActKind.vocabulary
             rendered ReminderState.vocabulary
             rendered ReminderDue.vocabulary
             rendered CaseListOrder.vocabulary

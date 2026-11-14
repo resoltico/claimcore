@@ -21,20 +21,18 @@ let private operation = "10000000-0000-7000-8000-000000000002"
 let private parent = "10000000-0000-7000-8000-000000000001"
 let private child = "10000000-0000-7000-8000-000000000003"
 
-let private input family act =
+let private input task family selection values =
     json (
-        "{\"kind\":\""
-        + family
-        + "\",\"operationId\":\""
-        + operation
-        + "\",\"target\":{\"kind\":\"ID\",\"caseId\":\""
-        + parent
-        + "\"},"
-        + (if family = "WORK" then "\"expectedRevision\":0," else "")
-        + "\"act\":"
-        + act
-        + "}"
+        sprintf
+            """{"operationId":"%s","task":"%s","binding":{"kind":"%s","target":{"kind":"ID","caseId":"%s"}%s},"inputs":{%s}}"""
+            operation
+            task
+            family
+            parent
+            selection
+            values
     )
+
 
 [<Tests>]
 let tests =
@@ -45,68 +43,82 @@ let tests =
                 for members, expected in
                     [
                         "", WorkValue.Keep
-                        "\"handlingSummary\":null", WorkValue.Clear
-                        "\"handlingSummary\":\"  first\\nsecond  \"",
+                        "\"field:handlingSummary\":null", WorkValue.Clear
+                        "\"field:handlingSummary\":\"  first\\nsecond  \"",
                         WorkValue.Set "  first\nsecond  "
                     ] do
-                    match
-                        RequestCodecs.operationInput.Read
+                    let submission =
+                        OperationSubmissionCodecs.submission.Read
                             "$"
-                            (input
-                                "WORK"
-                                ("{\"kind\":\"UPDATE_WORK\",\"values\":{" + members + "}}"))
+                            (input "work.update" "WORK" ",\"expectedRevision\":0" members)
                         |> accepted
-                    with
-                    | OperationInput.Work {
-                                              ExpectedRevision = 0L
-                                              Act = WorkAct.UpdateWork value
-                                          } ->
-                        Expect.equal value.Summary expected "Explicit field presence is preserved"
+
+                    match submission.Operation |> accepted with
+                    | SubmittedOperation.Command(OperationInput.Work {
+                                                                         ExpectedRevision = 0L
+                                                                         Act = WorkAct.UpdateWork value
+                                                                     }) ->
+                        Expect.equal value.Summary expected "Presence retains its meaning"
 
                         Expect.equal
                             value.Responsible
                             WorkValue.Keep
                             "Omitted owner stays untouched"
-                    | _ -> failtest "Expected independent work operation"
+                    | other -> failtestf "%A" other
 
                 Expect.isError
-                    (RequestCodecs.operationInput.Read
+                    (OperationSubmissionCodecs.submission.Read
                         "$"
-                        (input "CASE" "{\"kind\":\"UPDATE_WORK\",\"values\":{}}"))
-                    "Retired financial work act refuses")
+                        (input "work.update" "CASE" ",\"expectedRevision\":0" ""))
+                    "Foreign subject binding refuses")
             testCase
-                "reminder command structure excludes caller attribution and enforces the entity revision"
+                "reminder structure excludes caller attribution and requires the entity revision"
                 (fun () ->
-                    let target = "\"reminderId\":\"" + child + "\",\"expectedRevision\":3"
-
-                    for act in
+                    for task, values in
                         [
-                            "{\"kind\":\"CREATE\",\"action\":\"Call insurer\",\"dueDate\":\"2026-11-10\"}"
-                            "{\"kind\":\"UPDATE\","
-                            + target
-                            + ",\"action\":\"Call again\",\"dueDate\":\"2026-11-11\"}"
-                            "{\"kind\":\"COMPLETE\"," + target + "}"
-                            "{\"kind\":\"CANCEL\"," + target + "}"
-                            "{\"kind\":\"REOPEN\"," + target + ",\"dueDate\":\"2026-11-11\"}"
-                            "{\"kind\":\"COMPLETE_AND_PLAN_NEXT\","
-                            + target
-                            + ",\"action\":\"Review reply\",\"dueDate\":\"2026-11-11\"}"
+                            "reminder.create",
+                            "\"input:reminderAction\":\"Call\",\"input:reminderDueDate\":\"2026-11-10\""
+                            "reminder.update",
+                            "\"input:reminderAction\":\"Call\",\"input:reminderDueDate\":\"2026-11-10\""
+                            "reminder.complete", ""
+                            "reminder.cancel", ""
+                            "reminder.reopen", "\"input:reminderDueDate\":\"2026-11-10\""
+                            "reminder.completeAndPlanNext",
+                            "\"input:reminderAction\":\"Call\",\"input:reminderDueDate\":\"2026-11-10\""
                         ] do
-                        Expect.isOk
-                            (RequestCodecs.operationInput.Read "$" (input "REMINDER" act))
-                            "Every declared operation has its distinct typed decoder"
+                        let selection =
+                            if task = "reminder.create" then
+                                ""
+                            else
+                                $",\"reminderId\":\"{child}\",\"expectedRevision\":3"
 
-                    for act in
+                        let value = input task "REMINDER" selection values
+
+                        Expect.isOk
+                            (OperationSubmissionCodecs.submission.Read "$" value)
+                            "Every task admits its declared input map"
+
+                        let forged =
+                            input
+                                task
+                                "REMINDER"
+                                (selection + ",\"recordedAt\":\"2026-11-01\"")
+                                values
+
+                        Expect.isError
+                            (OperationSubmissionCodecs.submission.Read "$" forged)
+                            "Caller attribution cannot enter the binding"
+
+                    for selection in
                         [
-                            "{\"kind\":\"COMPLETE\",\"reminderId\":\"" + child + "\"}"
-                            "{\"kind\":\"COMPLETE\"," + target + ",\"recordedAt\":\"2026-11-01\"}"
-                            "{\"kind\":\"CREATE\",\"action\":\"Call\",\"dueDate\":\"2026-11-10\",\"reminderId\":\""
-                            + child
-                            + "\"}"
+                            $",\"reminderId\":\"{child}\""
+                            $",\"reminderId\":\"{child}\",\"expectedRevision\":0"
                         ] do
                         Expect.isError
-                            (RequestCodecs.operationInput.Read "$" (input "REMINDER" act))
-                            "Incomplete revision and forged creation/attribution refuse")
+                            (OperationSubmissionCodecs.submission.Read
+                                "$"
+                                (input "reminder.complete" "REMINDER" selection ""))
+                            "Missing or zero revision refuses")
             testCase "narrative catalog communicates scalar count LF and null semantics" (fun () ->
                 Expect.equal
                     (FieldPresentation.descriptor BusinessField.IncidentDescription)
@@ -141,7 +153,7 @@ let tests =
 
                 Expect.equal
                     summary.Mode
-                    TaskInputMode.Optional
+                    TaskInputMode.Update
                     "Omission preserves; the wire boundary separately checks null clearing"
 
                 Expect.equal

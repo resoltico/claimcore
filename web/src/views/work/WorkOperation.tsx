@@ -1,8 +1,9 @@
+import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import type { TaskId } from "@contracts/client";
+import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
-import type { TaskBindingSource } from "../../operation/taskForm";
+
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
 import { useOperation } from "../../hooks/operation/useOperation";
@@ -11,6 +12,7 @@ import { useEndpointCache } from "../../hooks/EndpointProvider";
 import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
+  affordance?: OperationAffordance;
   current: CurrentCase;
   disclosureAvailable: boolean;
   subject: "WORK" | "REMINDER" | "NOTE";
@@ -18,7 +20,7 @@ type Props = {
   targetIdentity?: string;
   completionAnchor?: string | undefined;
   prefill?: FormValues;
-  binding?: TaskBindingSource | undefined;
+  binding?: OperationBinding | undefined;
   tasks?: ReadonlyArray<TaskId> | undefined;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt, operationId: string) => void;
@@ -35,7 +37,7 @@ export const WorkOperation = ({
   completionAnchor,
   prefill,
   binding,
-  tasks,
+  affordance,
   onClose,
   onRecorded,
   onLockChange,
@@ -63,18 +65,30 @@ export const WorkOperation = ({
     kind,
     current,
     credential,
-    ...(prefill === undefined ? {} : { prefill }),
-    ...(binding === undefined ? {} : { binding }),
-    ...(targetIdentity === undefined ? {} : { targetIdentity }),
+    affordance,
+    prefill,
+    binding,
+    targetIdentity,
     onLockChange,
     onDisclosureRefused,
   });
   const observed = model.currentCase;
-  const allowed = (tasks ?? observed?.context.tasks ?? []).includes(model.task.id);
+  const allowed = model.affordance?.blocked === null;
+  const authored = model.task.inputs.filter((input) => input.source === "AUTHORED");
+  const acquiredSeeds =
+    model.affordance === undefined ? {} : initialAffordanceSeeds(model.affordance);
+  const autoPreview =
+    authored.length === 0 ||
+    model.affordance?.editable.length === 0 ||
+    authored.every(
+      (input) =>
+        Object.hasOwn(model.values, input.id) &&
+        (Object.hasOwn(acquiredSeeds, input.id) || Object.hasOwn(prefill ?? {}, input.id)),
+    );
   useEffect(() => {
     if (
       allowed &&
-      ["REMINDER_COMPLETE", "ADD_NOTE", "REMOVE_NOTE"].includes(kind) &&
+      autoPreview &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -82,7 +96,7 @@ export const WorkOperation = ({
       previewed.current = true;
       void model.preview();
     }
-  }, [kind, model, allowed]);
+  }, [model, allowed, autoPreview]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -96,7 +110,7 @@ export const WorkOperation = ({
     if (
       model.ownerVerified &&
       model.receipt !== null &&
-      model.receipt.context.target.kind === subject &&
+      model.prepared?.input.binding.kind === subject &&
       model.prepared !== null
     ) {
       navigation.committed();

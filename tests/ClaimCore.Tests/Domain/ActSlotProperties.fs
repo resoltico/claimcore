@@ -57,28 +57,28 @@ let private caseProperty =
                     caseRoundTrip correction kind (inject, project) candidates)
     }
 
-let private authorityProperty =
+let private peopleProperty =
     property {
         let! value = values
 
-        let candidates = Inputs.authorityActs [ value; value + 1 ] |> List.map fst
+        let candidates = Inputs.peopleActs [ value; value + 1 ] |> List.map fst
 
         return
             candidates
             |> List.forall (fun act ->
-                let mapped = AuthorityAct.map ((+) 1) id act
-                let restored = AuthorityAct.map (fun value -> value - 1) id mapped
-                let rejected = AuthorityAct.traverse (fun _ -> Error()) Ok act
+                let mapped = PeopleAct.map ((+) 1) id act
+                let restored = PeopleAct.map (fun value -> value - 1) id mapped
+                let rejected = PeopleAct.traverse (fun _ -> Error()) Ok act
 
                 let hasGrant =
                     match act with
-                    | AuthorityAct.Grant _
-                    | AuthorityAct.Revoke _
-                    | AuthorityAct.Admit _ -> true
+                    | PeopleAct.Grant _
+                    | PeopleAct.Revoke _
+                    | PeopleAct.Admit _ -> true
                     | _ -> false
 
                 restored = act
-                && AuthorityAct.kind mapped = AuthorityAct.kind act
+                && PeopleAct.kind mapped = PeopleAct.kind act
                 && Result.isError rejected = hasGrant)
 
     }
@@ -86,18 +86,18 @@ let private authorityProperty =
 let private descriptions () =
     for token, expectedFamily, expectedPayload in
         [
-            "OPEN", "BUSINESS", "REGISTRATION"
-            "AMEND_REGISTRATION", "BUSINESS", "REGISTRATION_UPDATE"
-            "CORRECT", "BUSINESS", "CORRECTION"
-            "DECIDE", "BUSINESS", "DECISION"
-            "WITHDRAW_DECISION", "BUSINESS", "BARE"
-            "RECORD_PAYMENT", "BUSINESS", "PAYMENT"
-            "REMOVE_PAYMENT", "BUSINESS", "PAYMENT_ID"
-            "CLOSE", "BUSINESS", "BARE"
-            "REOPEN", "BUSINESS", "BARE"
-            "VOID", "STEWARDSHIP", "REASON"
-            "REINSTATE", "STEWARDSHIP", "REASON"
-            "ERASE", "STEWARDSHIP", "BARE"
+            "case.open", "BUSINESS", "REGISTRATION"
+            "case.amendRegistration", "BUSINESS", "REGISTRATION_UPDATE"
+            "case.correct", "BUSINESS", "CORRECTION"
+            "case.decide", "BUSINESS", "DECISION"
+            "case.withdrawDecision", "BUSINESS", "BARE"
+            "case.recordPayment", "BUSINESS", "PAYMENT"
+            "case.removePayment", "BUSINESS", "PAYMENT_ID"
+            "case.close", "BUSINESS", "BARE"
+            "case.reopen", "BUSINESS", "BARE"
+            "case.void", "STEWARDSHIP", "REASON"
+            "case.reinstate", "STEWARDSHIP", "REASON"
+            "case.erase", "STEWARDSHIP", "BARE"
         ] do
         let kind = CaseActKind.parse token |> Option.get
         let description = CaseActKind.describe kind
@@ -124,7 +124,7 @@ let private descriptions () =
 
         Expect.equal
             description.Revision
-            (if token = "OPEN" then
+            (if token = "case.open" then
                  RevisionInput.New
              else
                  RevisionInput.Expected)
@@ -139,6 +139,6 @@ let tests =
             testCase "case act slots round trip and reject other kinds" (fun () ->
                 run "case act slots" caseProperty)
             testCase
-                "authority mapping and traversal preserve kinds and reject grant failures"
-                (fun () -> run "authority act traversal" authorityProperty)
+                "people mapping and traversal preserve kinds and reject grant failures"
+                (fun () -> run "people act traversal" peopleProperty)
         ]

@@ -34,14 +34,14 @@ module Case =
 
     val decide:
         DateOnly ->
-        CasePaymentContext ->
+        Map<OperationId, PaymentProjectionRow> ->
         CaseCommand ->
         CaseRecord option ->
             Result<CaseDecision, CaseDecisionError>
 
     val decideSnapshot:
         DateOnly ->
-        CasePaymentContext ->
+        Map<OperationId, PaymentProjectionRow> ->
         CaseCommand ->
         CaseSnapshot option ->
             Result<CaseDecision, CaseDecisionError>

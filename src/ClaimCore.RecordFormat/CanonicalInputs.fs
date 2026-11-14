@@ -126,7 +126,7 @@ module CanonicalInputs =
             "WorkAct"
             [
                 variant
-                    "UPDATE_WORK"
+                    (WorkActKind.token WorkActKind.UpdateWork)
                     WorkAct.UpdateWork
                     (function
                     | WorkAct.UpdateWork value -> Some value)
@@ -159,35 +159,35 @@ module CanonicalInputs =
             "ReminderAct"
             [
                 variant
-                    "CREATE"
+                    (ReminderActKind.token ReminderActKind.Create)
                     ReminderAct.Create
                     (function
                     | ReminderAct.Create value -> Some value
                     | _ -> None)
                     planFields
                 variant
-                    "UPDATE"
+                    (ReminderActKind.token ReminderActKind.Update)
                     (fun (id, revision, plan) -> ReminderAct.Update(id, revision, plan))
                     (function
                     | ReminderAct.Update(id, revision, plan) -> Some(id, revision, plan)
                     | _ -> None)
                     (reminderPlanFields targetFields)
                 variant
-                    "COMPLETE"
+                    (ReminderActKind.token ReminderActKind.Complete)
                     (fun (id, revision) -> ReminderAct.Complete(id, revision))
                     (function
                     | ReminderAct.Complete(id, revision) -> Some(id, revision)
                     | _ -> None)
                     targetFields
                 variant
-                    "CANCEL"
+                    (ReminderActKind.token ReminderActKind.Cancel)
                     (fun (id, revision) -> ReminderAct.Cancel(id, revision))
                     (function
                     | ReminderAct.Cancel(id, revision) -> Some(id, revision)
                     | _ -> None)
                     targetFields
                 variant
-                    "REOPEN"
+                    (ReminderActKind.token ReminderActKind.Reopen)
                     (fun (id, revision, due) -> ReminderAct.Reopen(id, revision, due))
                     (function
                     | ReminderAct.Reopen(id, revision, due) -> Some(id, revision, due)
@@ -196,7 +196,7 @@ module CanonicalInputs =
                      |> flatten (fun (id, revision, _) -> id, revision) targetFields
                      |> field "dueDate" (fun (_, _, due) -> due) text)
                 variant
-                    "COMPLETE_AND_PLAN_NEXT"
+                    (ReminderActKind.token ReminderActKind.CompleteAndPlanNext)
                     (fun (id, revision, plan) ->
                         ReminderAct.CompleteAndPlanNext(id, revision, plan))
                     (function
@@ -212,14 +212,14 @@ module CanonicalInputs =
             "NoteAct"
             [
                 variant
-                    "ADD_NOTE"
+                    (NoteActKind.token NoteActKind.AddNote)
                     AuthoredNoteAct.AddNote
                     (function
                     | AuthoredNoteAct.AddNote text -> Some text
                     | _ -> None)
                     (record id |> field "text" id text)
                 variant
-                    "REMOVE_NOTE"
+                    (NoteActKind.token NoteActKind.RemoveNote)
                     AuthoredNoteAct.RemoveNote
                     (function
                     | AuthoredNoteAct.RemoveNote id -> Some id
@@ -328,7 +328,7 @@ module CanonicalInputs =
         |> build
         |> named "ActorProfileInput"
 
-    let private authorityVariantsWith role scope =
+    let private peopleVariantsWith role scope =
         let grant =
             (record (fun role scope ->
                 {
@@ -339,62 +339,58 @@ module CanonicalInputs =
             |> field "role" _.Role role
             |> field "scope" _.Scope scope
 
-        let grantRow = grant |> build |> named "AuthorityGrantInput"
+        let grantRow = grant |> build |> named "PeopleGrantInput"
 
         let grants =
-            Codec.boundedList
-                AuthorityAdmission.MinimumGrants
-                AuthorityAdmission.MaximumGrants
-                grantRow
+            Codec.boundedList PeopleAdmission.MinimumGrants PeopleAdmission.MaximumGrants grantRow
 
         [
             variant
-                (AuthorityKind.token AuthorityKind.Admit)
-                AuthorityAct.Admit
+                (PeopleActKind.token PeopleActKind.Admit)
+                PeopleAct.Admit
                 (function
-                | AuthorityAct.Admit value -> Some value
+                | PeopleAct.Admit value -> Some value
                 | _ -> None)
                 ((record (fun profile grants ->
                     {
-                        AuthorityAdmission.Profile = profile
+                        PeopleAdmission.Profile = profile
                         Grants = grants
                     })
-                 : Fields<AuthorityAdmission<AuthoredGrant, ActorProfileInput>, _>)
+                 : Fields<PeopleAdmission<AuthoredGrant, ActorProfileInput>, _>)
                  |> field "profile" _.Profile actorProfileInput
                  |> field "grants" _.Grants grants)
             variant
-                (AuthorityKind.token AuthorityKind.Register)
-                AuthorityAct.Register
+                (PeopleActKind.token PeopleActKind.Register)
+                PeopleAct.Register
                 (function
-                | AuthorityAct.Register profile -> Some profile
+                | PeopleAct.Register profile -> Some profile
                 | _ -> None)
                 (record id |> field "profile" id actorProfileInput)
             variant
-                (AuthorityKind.token AuthorityKind.SetProfile)
-                AuthorityAct.SetProfile
+                (PeopleActKind.token PeopleActKind.SetProfile)
+                PeopleAct.SetProfile
                 (function
-                | AuthorityAct.SetProfile profile -> Some profile
+                | PeopleAct.SetProfile profile -> Some profile
                 | _ -> None)
                 (record id |> field "profile" id actorProfileInput)
-            unitVariant (AuthorityKind.token AuthorityKind.EraseProfile) AuthorityAct.EraseProfile
+            unitVariant (PeopleActKind.token PeopleActKind.EraseProfile) PeopleAct.EraseProfile
             variant
-                (AuthorityKind.token AuthorityKind.Grant)
-                AuthorityAct.Grant
+                (PeopleActKind.token PeopleActKind.Grant)
+                PeopleAct.Grant
                 (function
-                | AuthorityAct.Grant value -> Some value
+                | PeopleAct.Grant value -> Some value
                 | _ -> None)
                 grant
             variant
-                (AuthorityKind.token AuthorityKind.Revoke)
-                AuthorityAct.Revoke
+                (PeopleActKind.token PeopleActKind.Revoke)
+                PeopleAct.Revoke
                 (function
-                | AuthorityAct.Revoke value -> Some value
+                | PeopleAct.Revoke value -> Some value
                 | _ -> None)
                 grant
-            unitVariant (AuthorityKind.token AuthorityKind.Enable) AuthorityAct.Enable
-            unitVariant (AuthorityKind.token AuthorityKind.Disable) AuthorityAct.Disable
+            unitVariant (PeopleActKind.token PeopleActKind.Enable) PeopleAct.Enable
+            unitVariant (PeopleActKind.token PeopleActKind.Disable) PeopleAct.Disable
         ]
 
-    let authorityActWith role scope =
-        authorityVariantsWith role scope
-        |> tagged AuthorityKind.vocabulary "AuthorityAct"
+    let peopleActWith role scope =
+        peopleVariantsWith role scope |> tagged PeopleActKind.vocabulary "PeopleAct"

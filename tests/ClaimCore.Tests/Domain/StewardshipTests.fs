@@ -64,7 +64,7 @@ let private revisionProperty =
         let result =
             CaseFixtures.decide
                 today
-                CasePaymentContext.NoneRequired
+                Map.empty
                 (request revision (AuthoredCaseAct.Bare BareAct.Erase))
                 (Some(current revision state))
 
@@ -80,11 +80,7 @@ let private transitionTest () =
         let before = current 7L state
 
         let result =
-            CaseFixtures.decide
-                today
-                CasePaymentContext.NoneRequired
-                (request 7L action)
-                (Some before)
+            CaseFixtures.decide today Map.empty (request 7L action) (Some before)
             |> Result.map _.After
 
         let state =
@@ -112,11 +108,7 @@ let private reasonTest () =
                 (CaseState.Voided()), AuthoredCaseAct.Reinstate reason
             ] do
             Expect.isError
-                (CaseFixtures.decide
-                    today
-                    CasePaymentContext.NoneRequired
-                    (request 7L action)
-                    (Some(current 7L state)))
+                (CaseFixtures.decide today Map.empty (request 7L action) (Some(current 7L state)))
                 "Malformed or newly nonconforming reason refuses"
 
 let private reasonBounds () =
@@ -124,7 +116,7 @@ let private reasonBounds () =
         Expect.isOk
             (CaseFixtures.decide
                 today
-                CasePaymentContext.NoneRequired
+                Map.empty
                 (request 7L (AuthoredCaseAct.Void reason))
                 (Some(current 7L (CaseState.Active()))))
             "Exactly 200 Unicode scalars accepted"
@@ -132,7 +124,7 @@ let private reasonBounds () =
     Expect.isError
         (CaseFixtures.decide
             today
-            CasePaymentContext.NoneRequired
+            Map.empty
             (request 7L (AuthoredCaseAct.Void(String.replicate 201 "😀")))
             (Some(current 7L (CaseState.Active()))))
         "201 Unicode scalars refuse"
@@ -141,7 +133,7 @@ let private staleRevision () =
     let outcome =
         CaseFixtures.decide
             today
-            CasePaymentContext.NoneRequired
+            Map.empty
             (request 6L (AuthoredCaseAct.Void " leading"))
             (Some(current 7L (CaseState.Voided())))
 

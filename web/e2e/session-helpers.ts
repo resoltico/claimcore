@@ -1,3 +1,4 @@
+import { type ResponseFor, consumerContractIdentity } from "@contracts/client";
 import { showAccountActions } from "./workspace-navigation";
 import {
   loginNavigationTimeout,
@@ -6,7 +7,6 @@ import {
 } from "./admission-window";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
-
 import { AxeBuilder } from "@axe-core/playwright";
 import {
   expect,
@@ -16,25 +16,20 @@ import {
   type Page,
   type Response,
 } from "@playwright/test";
-
-import { consumerContractIdentity } from "@contracts/client";
-import { isHostFailure, isResponseFor } from "../src/protocol/client";
+import { isHostFailure } from "../src/protocol/client";
 import { retainResponseBodies } from "./response-bodies";
 import { observeOidcSubmission, providerFailure } from "./oidc-provider-evidence.mjs";
-
 type BrowserReply = Readonly<{
   status: number;
   cacheControl: string | null;
   payload: unknown;
 }>;
-
 export const progress = async (stage: string): Promise<void> => {
   const file = process.env["CLAIMCORE_WEB_E2E_PROGRESS_FILE"];
   if (file !== undefined) {
     await writeFile(file, stage);
   }
 };
-
 const credentialsPath = (): string => {
   const path = process.env["CLAIMCORE_TEST_OIDC_CREDENTIALS"];
   if (path === undefined) {
@@ -42,10 +37,12 @@ const credentialsPath = (): string => {
   }
   return path;
 };
-
 const syntheticCredentials = async (
   username?: string,
-): Promise<{ username: string; password: string }> => {
+): Promise<{
+  username: string;
+  password: string;
+}> => {
   const source: unknown = JSON.parse(await readFile(credentialsPath(), "utf8"));
   if (typeof source !== "object" || source === null || !("users" in source)) {
     throw new Error("Synthetic OIDC user inventory is invalid.");
@@ -74,10 +71,12 @@ const syntheticCredentials = async (
   ) {
     throw new Error("Synthetic OIDC selected user is invalid.");
   }
-  return { username: owner.username, password: owner.password };
+  return {
+    username: owner.username,
+    password: owner.password,
+  };
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
-
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await retainResponseBodies(page);
   const errors: string[] = [];
@@ -103,18 +102,27 @@ export const openApplication = async (page: Page, heading: string | RegExp): Pro
   page.on("pageerror", scriptError);
   page.on("response", assetError);
   try {
-    await page.goto("/", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: heading, exact: true, level: 1 })).toBeVisible({
+    await page.goto("/", {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByRole("heading", {
+        name: heading,
+        exact: true,
+        level: 1,
+      }),
+    ).toBeVisible({
       timeout: 10_000,
     });
   } catch (error) {
-    throw new Error(`E2E_APPLICATION_LOAD ${errors.slice(0, 16).join("; ")}`, { cause: error });
+    throw new Error(`E2E_APPLICATION_LOAD ${errors.slice(0, 16).join("; ")}`, {
+      cause: error,
+    });
   } finally {
     page.off("pageerror", scriptError);
     page.off("response", assetError);
   }
 };
-
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
@@ -142,7 +150,6 @@ export const openAuthenticated = async (
   await page.context().addCookies(cookies);
   await openApplication(page, casesHeading);
 };
-
 export const expectAccessible = async (page: Page): Promise<void> => {
   const preferenceSelector =
     'input[name$="-language"], input[name$="-mode"], input[name$="-accent"], [role="combobox"][id$="-format"]';
@@ -156,7 +163,9 @@ export const expectAccessible = async (page: Page): Promise<void> => {
       (await page.getByRole("dialog").locator(".settings-panel").count()) > 0;
     expect(settingsPage || signInDialog).toBe(true);
   }
-  const result = await new AxeBuilder({ page }).analyze();
+  const result = await new AxeBuilder({
+    page,
+  }).analyze();
   if (result.violations.length === 0) {
     return;
   }
@@ -172,16 +181,20 @@ export const expectAccessible = async (page: Page): Promise<void> => {
     report,
     `${JSON.stringify(diagnostics, null, 2)}
 `,
-    { mode: 0o600 },
+    {
+      mode: 0o600,
+    },
   );
-  await test.info().attach("axe-violations", { path: report, contentType: "application/json" });
+  await test.info().attach("axe-violations", {
+    path: report,
+    contentType: "application/json",
+  });
   const ruleIds = result.violations
     .map((violation) => violation.id.replace(/[^a-zA-Z0-9]+/gu, "_").toUpperCase())
     .sort()
     .join("__");
   throw new Error(`E2E_AXE_${ruleIds}`);
 };
-
 export const browserRequest = (
   page: Page,
   path: string,
@@ -209,21 +222,21 @@ export const browserRequest = (
         payload,
       };
     },
-    { requestPath: path, requestInit: init, fingerprint: consumerContractIdentity },
+    {
+      requestPath: path,
+      requestInit: init,
+      fingerprint: consumerContractIdentity,
+    },
   );
-
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/session");
-  if (!isResponseFor("session", "DATA", reply.payload)) {
-    const detail = isHostFailure(reply.payload, reply.status)
-      ? reply.payload.hostFailure.code
-      : "INVALID_WIRE";
-    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${detail}`);
+  const sessionReply = reply.payload as ResponseFor<"session", "DATA">;
+  if (sessionReply.outcome.kind !== "SUCCEEDED") {
+    throw new Error(
+      `E2E_SESSION_HTTP_${reply.status}_${sessionReply.outcome.kind === "REJECTED" ? sessionReply.outcome.rejection.code : sessionReply.outcome.fault.code}`,
+    );
   }
-  if (reply.payload.outcome.kind !== "SUCCEEDED") {
-    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${reply.payload.outcome.data.code}`);
-  }
-  const snapshot = reply.payload.outcome.data;
+  const snapshot = sessionReply.outcome.data;
   if (reply.status !== 200) {
     throw new Error(`E2E_SESSION_HTTP_${reply.status}_UNEXPECTED_STATUS`);
   }
@@ -232,7 +245,6 @@ export const sessionToken = async (page: Page): Promise<string> => {
   }
   return snapshot.antiforgeryToken;
 };
-
 export const expectHostFailure = (reply: BrowserReply, status: number, code: string): void => {
   expect(reply.status).toBe(status);
   expect(reply.cacheControl).toContain("no-store");
@@ -243,7 +255,6 @@ export const expectHostFailure = (reply: BrowserReply, status: number, code: str
   }
   expect(reply.payload.hostFailure.code).toBe(code);
 };
-
 const awaitOidcReturn = async (
   page: Page,
   requestedAddress: URL,
@@ -258,7 +269,10 @@ const awaitOidcReturn = async (
       (url) =>
         url.origin === applicationOrigin &&
         (url.pathname === "/" || url.pathname + url.search === requestedPath),
-      { timeout: 10_000, waitUntil: "commit" },
+      {
+        timeout: 10_000,
+        waitUntil: "commit",
+      },
     );
   } catch {
     const current = new URL(page.url());
@@ -268,22 +282,30 @@ const awaitOidcReturn = async (
     } else if (current.origin === issuerOrigin) {
       location = "issuer";
     }
-    const snapshot = { callbackStatus: callbackStatus(), location, submission: submitted() };
+    const snapshot = {
+      callbackStatus: callbackStatus(),
+      location,
+      submission: submitted(),
+    };
     const provider = location === "issuer" ? await providerFailure(page) : "none";
-    const evidence = { ...snapshot, provider };
+    const evidence = {
+      ...snapshot,
+      provider,
+    };
     const safeFile = process.env["CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE"];
     if (safeFile !== undefined) {
       if (!isAbsolute(safeFile)) {
         throw new Error("Safe failure path must be absolute.");
       }
-      await writeFile(safeFile, `${JSON.stringify(evidence)}\n`, { mode: 0o600 });
+      await writeFile(safeFile, `${JSON.stringify(evidence)}\n`, {
+        mode: 0o600,
+      });
     }
     const category = `${snapshot.callbackStatus}_${location}_${provider}_${snapshot.submission.status}_${snapshot.submission.credentialMatch}`;
     await progress(`oidc-return-failed-${category}`);
     throw new Error(`E2E_OIDC_RETURN_${category}`);
   }
 };
-
 const trackOidcCallback = (page: Page, applicationOrigin: string) => {
   let callbackStatus = 0;
   page.on("response", (response) => {
@@ -294,17 +316,18 @@ const trackOidcCallback = (page: Page, applicationOrigin: string) => {
   });
   return () => callbackStatus;
 };
-
 const fillOidcCredentials = async (
   page: Page,
-  owner: Readonly<{ username: string; password: string }>,
+  owner: Readonly<{
+    username: string;
+    password: string;
+  }>,
 ): Promise<void> => {
   await page.locator('input[name="username"]').fill(owner.username);
   await progress("oidc-username-filled");
   await page.locator('input[name="password"]').fill(owner.password);
   await progress("oidc-password-filled");
 };
-
 const loginAttempt = (page: Page, address: URL, signIn: string | null, remaining: number) => {
   const controller = new AbortController();
   const response = page.waitForResponse(
@@ -312,17 +335,35 @@ const loginAttempt = (page: Page, address: URL, signIn: string | null, remaining
       value.url() === address.href &&
       value.request().isNavigationRequest() &&
       value.request().frame() === page.mainFrame(),
-    { timeout: remaining },
+    {
+      timeout: remaining,
+    },
   );
-  const options = { timeout: loginNavigationTimeout, signal: controller.signal };
+  const options = {
+    timeout: loginNavigationTimeout,
+    signal: controller.signal,
+  };
   const navigation =
     signIn === null
-      ? page.goto(address.href, { ...options, waitUntil: "domcontentloaded" })
-      : page.getByRole("link", { name: signIn, exact: true }).click(options);
+      ? page.goto(address.href, {
+          ...options,
+          waitUntil: "domcontentloaded",
+        })
+      : page
+          .getByRole("link", {
+            name: signIn,
+            exact: true,
+          })
+          .click(options);
   return loginAdmissionAttempt(response, navigation, controller, remaining);
 };
 const awaitLoginAdmission = async (page: Page, signIn: string, applicationOrigin: string) => {
-  const href = await page.getByRole("link", { name: signIn, exact: true }).getAttribute("href");
+  const href = await page
+    .getByRole("link", {
+      name: signIn,
+      exact: true,
+    })
+    .getAttribute("href");
   if (href === null) {
     throw new Error("E2E_LOGIN_LINK_MISSING");
   }
@@ -361,9 +402,15 @@ export const login = async (
   const authenticated =
     workspaceHeading === null
       ? page.locator(".workspace-header")
-      : page.getByRole("heading", { name: workspaceHeading, exact: true, level: 1 });
+      : page.getByRole("heading", {
+          name: workspaceHeading,
+          exact: true,
+          level: 1,
+        });
   try {
-    await authenticated.or(page.locator(".login-card h1")).first().waitFor({ timeout: 5_000 });
+    await authenticated.or(page.locator(".login-card h1")).first().waitFor({
+      timeout: 5_000,
+    });
   } catch {
     const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
     const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
@@ -405,23 +452,30 @@ export const authenticateSteward = async (
   if (baseURL === undefined) {
     throw new Error("E2E_STEWARD_SESSION_BASE_URL_REQUIRED");
   }
-  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  const context = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors: true,
+  });
   try {
     const page = await context.newPage();
-    await page.goto("/", { waitUntil: "commit" });
+    await page.goto("/", {
+      waitUntil: "commit",
+    });
     await login(page, "Cases", "Sign in", "synthetic-steward");
     return await context.cookies();
   } finally {
     await context.close();
   }
 };
-
 export const logout = async (page: Page): Promise<void> => {
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/session.logout",
   );
   await showAccountActions(page);
-  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  const signOut = page.getByRole("button", {
+    name: "Sign out",
+    exact: true,
+  });
   if (!(await signOut.isVisible())) {
     await page.locator('a[href="/settings"]').click();
     await expect(page.locator(".settings-panel")).toBeVisible();
@@ -430,42 +484,51 @@ export const logout = async (page: Page): Promise<void> => {
   const response = await responseEvent;
   expect(response.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+    page.getByRole("heading", {
+      name: "Sign in to the case register",
+      exact: true,
+    }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: "Sign in",
+    }),
+  ).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
-  if (!isResponseFor("session", "DATA", reply.payload)) {
-    throw new Error("Invalid logout response.");
-  }
-  if (reply.payload.outcome.kind !== "SUCCEEDED") {
+  const sessionReply = reply.payload as ResponseFor<"session", "DATA">;
+  if (sessionReply.outcome.kind !== "SUCCEEDED") {
     throw new Error("Session refused.");
   }
-  expect(reply.payload.outcome.data.authenticated).toBe(false);
+  expect(sessionReply.outcome.data.authenticated).toBe(false);
 };
-
 const contextFailureCode = (status: number, payload: unknown): string => {
   if (isHostFailure(payload, status)) {
     return payload.hostFailure.code;
   }
-  return isResponseFor("context", "DATA", payload) ? payload.outcome.kind : "MALFORMED";
+  const contextReply = payload as ResponseFor<"context", "DATA">;
+  return contextReply.representation === "DATA" ? contextReply.outcome.kind : "MALFORMED";
 };
 
 /** Raw mutation fixtures bind to the authenticated installation, just like both production clients. */
 export const installationId = async (page: Page, token: string): Promise<string> => {
   const reply = await browserRequest(page, "/api/context", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": token,
+    },
     body: "{}",
   });
+  const contextReply = reply.payload as ResponseFor<"context", "DATA">;
   if (
     reply.status !== 200 ||
-    !isResponseFor("context", "DATA", reply.payload) ||
-    reply.payload.outcome.kind !== "SUCCEEDED" ||
-    reply.payload.outcome.data.requester.kind !== "ACTIVE"
+    contextReply.representation !== "DATA" ||
+    contextReply.outcome.kind !== "SUCCEEDED" ||
+    contextReply.outcome.data.requester.kind !== "ACTIVE"
   ) {
     throw new Error(
-      `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, reply.payload)} (context).`,
+      `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, contextReply)} (context).`,
     );
   }
-  return reply.payload.outcome.data.requester.installationId;
+  return contextReply.outcome.data.requester.installationId;
 };

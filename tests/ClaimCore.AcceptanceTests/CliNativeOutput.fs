@@ -52,9 +52,12 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operation = id ()
     let reference = "NATIVE-OUTPUT-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
-    let values = (input["act"] |> nonNull)["values"] |> nonNull
-    values["claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create reference
+
+    let values = input["inputs"] |> nonNull
+    values["field:claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
     Encoding.UTF8.GetBytes(request.ToJsonString()), operation, reference
 
 let private head (fixture: PublishedFixture.Fixture) =
@@ -266,7 +269,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
             fixture
             owner
             [
-                "authority"
+                "people"
                 "register"
                 "--operation-id"
                 operation
@@ -303,7 +306,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
         "Authored profile owns the readable account name"
 
     let machine =
-        CliCalls.verb fixture owner [ "authority"; "grants"; actorId; "--limit"; "50" ] 0
+        CliCalls.verb fixture owner [ "people"; "grants"; actorId; "--limit"; "50" ] 0
         |> require "SUCCEEDED"
 
     let found = machine.GetProperty "actor"
@@ -324,7 +327,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
         CliCalls.invoke
             fixture
             listEnvironment
-            [ "authority"; "list"; "--limit"; "50"; "--format"; "text" ]
+            [ "people"; "list"; "--limit"; "50"; "--format"; "text" ]
             Array.empty
             0
 
@@ -352,7 +355,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     // Generic rendering consumes the supplied HUMAN screen, not principal facts from DATA.
     fixture.TransformNextReply(
-        "/api/authority.grants",
+        "/api/people.grants",
         fun bytes ->
             let root = JsonNode.Parse(bytes: byte array) |> nonNull
 
@@ -393,7 +396,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
             fixture
             owner
             [
-                "authority"
+                "people"
                 "grants"
                 actorId
                 "--limit"

@@ -11,7 +11,7 @@ open Npgsql
 module internal TransactionPages =
     let grantPageSql =
         let grantedAt = DatabaseSession.instantExpression "p.recorded_at"
-        ($"SELECT g.role,c.case_reference,g.case_id,l.creation_reference,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger_effects l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='OPEN' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
+        ($"SELECT g.role,c.case_reference,g.case_id,l.creation_reference,{grantedAt},p.actor_id FROM claimcore.grants g JOIN claimcore.ledger p ON p.sequence=g.granted_sequence LEFT JOIN claimcore.cases c USING(case_id) LEFT JOIN claimcore.ledger_effects l ON l.subject_kind='CASE' AND l.subject_id=g.case_id AND l.case_revision=1 AND l.act='case.open' WHERE g.actor_id=$1 AND ($2::text IS NULL OR g.role>$2 OR (g.role=$2 AND $3::uuid IS NOT NULL AND (g.case_id>$3 OR g.case_id IS NULL))) ORDER BY g.role ASC,g.case_id ASC NULLS LAST LIMIT $4")
 
     let page limit position rows =
         let visible = List.truncate limit rows
@@ -141,12 +141,12 @@ module internal TransactionPages =
                 }
         }
 
-    let authorityHistory connection installation (query: AuthorityHistoryPageQuery) token =
+    let peopleHistory connection installation (query: PeopleHistoryPageQuery) token =
         task {
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='AUTHORITY' AND ($1::uuid IS NULL OR e.subject_id=$1) AND ($2::bigint IS NULL OR (e.operation_sequence,e.effect_index)<($2::bigint,$3::integer)) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT $4"
+                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='PEOPLE' AND ($1::uuid IS NULL OR e.subject_id=$1) AND ($2::bigint IS NULL OR (e.operation_sequence,e.effect_index)<($2::bigint,$3::integer)) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT $4"
                     [|
                         DatabaseSession.parameter (query.TargetActorId |> Option.map ActorId.value)
                         DatabaseSession.parameter (
@@ -233,9 +233,9 @@ type private ReadTx
             Projections.globalReadFacts connection principal token
 
 
-        member _.Authority
+        member _.Access
             ({
-                 AuthorityQuery.Principal = principal
+                 AccessQuery.Principal = principal
                  CaseId = caseId
              })
             =
@@ -243,11 +243,53 @@ type private ReadTx
             | Some id -> Projections.actor connection principal [ id ] token
             | None -> Projections.actorWithVisibility connection principal token
 
-        member _.AuthorityCases(principal, ids) =
+        member _.AccessCases(principal, ids) =
             Projections.actor connection principal (List.distinct ids) token
 
         member _.FindCase id =
             Projections.caseById connection installation id token
+
+        member _.CaseState id =
+            task {
+                let! record = Projections.caseById connection installation id token
+
+                match record with
+                | None -> return None
+                | Some record ->
+                    let! payments = PaymentStorage.owned connection id token
+
+                    return
+                        CaseSubject.restore
+                            record.Index.ChangedAt
+                            record.Snapshot
+                            (payments |> List.map (fun row -> row.PaymentId, row) |> Map.ofList)
+                        |> Result.map Some
+                        |> Result.defaultWith (fun _ ->
+                            raise (
+                                RecordCorruptException
+                                    "Case payment state does not match its aggregate."
+                            ))
+            }
+
+        member _.CaseFamily id =
+            CaseFamilyStorage.load connection id token
+
+        member _.PendingReminderDue(parent, excluded) =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ("SELECT "
+                         + DatabaseSession.dateExpression "due"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state='PENDING' AND ($2::uuid IS NULL OR reminder_id<>$2)")
+                        [|
+                            box (CaseId.value parent)
+                            DatabaseSession.parameter (excluded |> Option.map ReminderId.value)
+                        |]
+                        token
+
+                return rows |> List.map (DatabaseSession.calendarDate 0 >> CalendarDate.ofDate)
+            }
 
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
@@ -255,14 +297,10 @@ type private ReadTx
         member _.PaymentPage query =
             PaymentStorage.page connection query token
 
-        member _.ActivePayment(parent, identity) =
-            PaymentStorage.active connection (parent, identity) token
 
         member _.LatestPayments(parent, limit) =
             PaymentStorage.latest connection (parent, limit) token
 
-        member _.PaymentBoundsExcluding(parent, selected) =
-            PaymentStorage.remainingDates connection (parent, selected) token
 
         member _.FindWork id =
             WorkStorage.findWork connection id token
@@ -309,8 +347,8 @@ type private ReadTx
         member _.CaseSummary query =
             CaseSummaryQuery.read connection query token
 
-        member _.AuthorityHistoryPage query =
-            TransactionPages.authorityHistory connection installation query token
+        member _.PeopleHistoryPage query =
+            TransactionPages.peopleHistory connection installation query token
 
         member _.AccessRequestPage query =
             AccessRequests.page connection query token
@@ -382,6 +420,36 @@ type private ReadTx
                         |> Map.ofList
             }
 
+        member _.ActorPrincipal id =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT principal_kind,issuer,subject FROM claimcore.actors WHERE actor_id=$1"
+                        [| box (ActorId.value id) |]
+                        token
+
+                match rows with
+                | [] -> return None
+                | [ row ] ->
+                    let kind =
+                        DatabaseSession.value<string> 0 row
+                        |> DatabaseSession.admitted (Vocabulary.tryParse PrincipalKind.vocabulary)
+
+                    return
+                        PrincipalKey.ofKind
+                            kind
+                            (DatabaseSession.value<string> 1 row)
+                            (DatabaseSession.value<string> 2 row)
+                        |> Result.map Some
+                        |> Result.defaultWith (fun _ ->
+                            raise (RecordCorruptException "Invalid actor selection principal."))
+                | _ -> return raise (RecordCorruptException "Duplicate actor selection rows.")
+            }
+
+        member _.PeopleState principal =
+            PeopleStateStorage.load connection principal token
+
         member _.FindActor id =
             task {
                 let! rows =
@@ -447,6 +515,10 @@ type private WriteTx(connection, installation, head, observedAt, token) =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.case connection projection token
 
+        member _.ProjectCaseIndex(id, index) =
+            FailureDiagnostics.phase FailurePhase.Projection
+            Persistence.caseIndex connection id index token
+
         member _.ProjectWorkChange projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.workChange connection projection token
@@ -458,9 +530,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
                 return ()
             }
 
-        member _.ProjectAuthority projection =
+        member _.ProjectPeople projection =
             FailureDiagnostics.phase FailurePhase.Projection
-            Persistence.authority connection projection token
+            Persistence.people connection projection token
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     static member InTransaction(connection, installationId, head, observedAt, token) =
@@ -471,7 +543,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             Transactions.write source settings query.CancellationToken (fun connection ->
                 task {
                     // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
-                    // The following single authority query must acquire a fresh snapshot after that wait.
+                    // The following single access query must acquire a fresh snapshot after that wait.
                     let! _ =
                         AccessRequests.lockPrincipal
                             connection
@@ -493,7 +565,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
                             query.Principal
                             query.CancellationToken
 
-                    if facts.Authority.Actor.IsNone then
+                    if facts.People.Actor.IsNone then
                         do!
                             AccessRequests.refresh
                                 connection

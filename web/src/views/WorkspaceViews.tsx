@@ -1,13 +1,15 @@
+import type {
+  taskChoices,
+  Link,
+  HumanReadDocument_work_views,
+  PresentedValue,
+  WorkDateBasis,
+} from "@contracts/client";
 import { useEndpointCache } from "../hooks/EndpointProvider";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type {
-  HumanReadDocument_workViews,
-  PresentedValue,
-  Screen,
-  WorkDateBasis,
-} from "@contracts/client";
+
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
@@ -17,65 +19,57 @@ type ViewCounts<V> = {
   navigation: PresentedValue | null;
   items: ReadonlyArray<{ view: V; label: PresentedValue; count: PresentedValue }>;
 };
-export type CaseCounts = ViewCounts<
-  HumanReadDocument_workViews["context"]["cases"][number]["view"]
->;
-export type ReminderCounts = ViewCounts<
-  HumanReadDocument_workViews["context"]["reminders"][number]["view"]
->;
-const viewChoices = <V extends string>(
-  screen: Screen,
-  controls: ReadonlyArray<{ key: string; view: V }>,
-): ViewCounts<V>["items"] | null => {
-  const tables = screen.regions.flatMap((region) =>
-    region.role === "RESULTS" && region.content.kind === "TABLE" ? [region.content] : [],
-  );
-  const items: { view: V; label: PresentedValue; count: PresentedValue }[] = [];
-  for (const control of controls) {
-    const table = tables.find((candidate) =>
-      candidate.rows.some((item) => item.key === control.key),
-    );
-    const row = table?.rows.find((candidate) => candidate.key === control.key);
-    const label = row?.values[table?.columns.findIndex((column) => column.key === "view") ?? -1];
-    const count = row?.values[table?.columns.findIndex((column) => column.key === "count") ?? -1];
-    if (label === undefined || count === undefined) {
-      return null;
-    }
-    items.push({ view: control.view, label, count });
-  }
-  return items;
-};
-const countData = <V extends string>(
-  document: HumanReadDocument_workViews | null,
-  controls: ReadonlyArray<{ key: string; view: V }>,
+export type CaseCounts = ViewCounts<(typeof taskChoices.caseView)[number]>;
+export type ReminderCounts = ViewCounts<(typeof taskChoices.reminderView)[number]>;
+const countData = <V,>(
+  document: HumanReadDocument_work_views | null,
   area: "cases" | "reminders",
+  selection: (link: Link) => V | undefined,
 ): ViewCounts<V> | null => {
   if (document === null || document.basis.kind !== "SNAPSHOT") {
     return null;
   }
-  const items = viewChoices(document.screen, controls);
-  if (items === null) {
-    return null;
-  }
-  const navigation = document.screen.regions.flatMap((region) =>
+  const items = document.screen.regions.flatMap((region) => {
+    const { content } = region;
+    if (content.kind !== "TABLE") {
+      return [];
+    }
+    const labelIndex = content.columns.findIndex((column) => column.key === "view");
+    const countIndex = content.columns.findIndex((column) => column.key === "count");
+    return content.rows.flatMap((row) => {
+      const view = row.link === undefined ? undefined : selection(row.link);
+      const label = row.values[labelIndex];
+      const count = row.values[countIndex];
+      return view === undefined || label === undefined || count === undefined
+        ? []
+        : [{ view, label, count }];
+    });
+  });
+  const totals = document.screen.regions.flatMap((region) =>
     region.role === "TOTALS" && region.content.kind === "ENTRIES" ? region.content.entries : [],
   );
   return {
     basis: document.basis.observation,
     items,
-    navigation: navigation.find((entry) => entry.key === area)?.value ?? null,
+    navigation: totals.find((entry) => entry.key === area)?.value ?? null,
   };
 };
+const caseView = (link: Link) => (link.endpoint === "case.list" ? link.input.view : undefined);
+const reminderView = (link: Link) =>
+  link.endpoint === "reminder.list" ? link.input.view : undefined;
 export type WorkspaceViews = { cases: Views<CaseCounts>; reminders: Views<ReminderCounts> };
 export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */
 export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) => {
   const requester = useRequesterContext();
-  const available = requester?.context.views.includes("CASES") === true;
+  const available =
+    requester?.links.some(
+      (named) => named.rel === "VIEW" && named.link.endpoint === "case.list",
+    ) === true;
   const scope =
     requester === null
       ? "unverified"
-      : JSON.stringify([requester.context.installationId, requester.context.actorId]);
+      : JSON.stringify([requester.subject.installationId, requester.subject.actorId]);
   const query = useEndpoint("work.views", {}, available, scope);
   const observed = query.value;
   const value = useMemo<WorkspaceViews>(() => {
@@ -83,12 +77,12 @@ export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) =>
       available && observed?.outcome.kind === "SUCCEEDED" ? observed.outcome.document : null;
     return {
       cases: {
-        data: countData(document, document?.context.cases ?? [], "cases"),
+        data: countData(document, "cases", caseView),
         loading: query.loading,
         message: query.message,
       },
       reminders: {
-        data: countData(document, document?.context.reminders ?? [], "reminders"),
+        data: countData(document, "reminders", reminderView),
         loading: query.loading,
         message: query.message,
       },

@@ -100,16 +100,16 @@ let tests =
         let registered =
             Service.execute
                 admin
-                (OperationInput.Authority(
-                    StoreFixtures.authorityRequest
+                (OperationInput.People(
+                    StoreFixtures.peopleRequest
                         serviceId
                         servicePrincipal
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 CancellationToken.None
             |> fun pending -> pending.GetAwaiter().GetResult()
 
-        StoreFixtures.acceptedAuthority registered
+        StoreFixtures.acceptedPeople registered
 
         let granted =
             StoreFixtures.grant
@@ -123,7 +123,7 @@ let tests =
                 true
             |> fun pending -> pending.GetAwaiter().GetResult()
 
-        StoreFixtures.acceptedAuthority granted
+        StoreFixtures.acceptedPeople granted
 
         let changed =
             task {
@@ -150,7 +150,7 @@ let tests =
                 {
                     Work =
                         (fun tx ->
-                            tx.Authority
+                            tx.Access
                                 {
                                     Principal = servicePrincipal
                                     CaseId = Some corruptedCase
@@ -164,7 +164,7 @@ let tests =
         Expect.contains
             (Map.find corruptedCase persisted.Cases)
             Role.DataSteward
-            "The forbidden scope is committed and visible to the actual authority loader"
+            "The forbidden scope is committed and visible to the actual people loader"
 
 
         let combined =
@@ -203,19 +203,19 @@ let tests =
         let registered =
             Service.execute
                 admin
-                (OperationInput.Authority(
-                    StoreFixtures.authorityRequest
+                (OperationInput.People(
+                    StoreFixtures.peopleRequest
                         (id 6)
                         denied
-                        (AuthorityAct.Register Inputs.actorProfile)
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 CancellationToken.None
             |> get
 
-        StoreFixtures.acceptedAuthority registered
+        StoreFixtures.acceptedPeople registered
 
         for deniedPrincipal in [ denied; principal "unknown" PrincipalKey.human ] do
             Expect.equal
                 (Service.workViews (core deniedPrincipal) () CancellationToken.None |> get)
                 (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "No count leaks to a caller without current read authority")
+                "No count leaks to a caller without current read people")

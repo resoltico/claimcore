@@ -59,7 +59,7 @@ let private decisionStore =
 let services installation calendar principal =
     Service.create "decision-tests" installation decisionStore calendar principal
 
-let actor principal actorId roles cases : AuthorityView =
+let actor principal actorId roles cases : AccessView =
     {
         Actor =
             Some
@@ -100,37 +100,63 @@ type LockedFacts<'Facts> =
         Read: 'Facts
     }
 
-let locked authority current existing : LockedFacts<CaseFacts> =
+let locked (people: AccessView) (current: StoredCase option) existing : LockedFacts<CaseFacts> =
     {
         Head = head
         PayloadNonce = nonce
         Read =
             {
-                PaymentContext = CasePaymentContext.NoneRequired
+                State =
+                    current
+                    |> Option.map (fun record ->
+                        CaseSubject.restore record.Index.ChangedAt record.Snapshot Map.empty
+                        |> Result.defaultWith (fun _ ->
+                            invalidOp "Invalid synthetic owned case state."))
+                Family =
+                    current |> Option.map (fun record -> CaseFamily.onCaseCreated record.CaseId)
+                Work =
+                    current
+                    |> Option.map (fun record ->
+                        let root = WorkSubject.initial record.CaseId
+
+                        {
+                            StoredWork.CaseId = record.CaseId
+                            Revision = root.Revision
+                            Snapshot = root.Snapshot
+                            SnapshotBytes =
+                                root.Snapshot
+                                |> Option.map WorkRecord.encodeSnapshot
+                                |> Option.defaultValue [||]
+                            ChangedAt = None
+                            RecordedBy = None
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
+                        })
+                PendingReminderDue = []
                 Assignee = None
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 ExpiredBefore = None
-                Actor = authority
+                Actor = people
                 ExistingOperation = existing
                 Case = current
             }
     }
 
 let decide request view =
-    CaseExecution.execute
+    ClaimCore.TestSupport.StoreFixtures.executeCase
         (services installation calendar owner)
         (ClaimCore.TestSupport.CaseFixtures.command request)
         {
             Head = view.Head
-            Nonce = view.PayloadNonce
+            NewPayloadNonce = fun () -> view.PayloadNonce
         }
         view.Read
 
-let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
+let executePeople installation principal request (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    AuthorityExecution.execute
+    ClaimCore.TestSupport.StoreFixtures.executePeople
         (services installation calendar principal)
         request
         {
@@ -142,21 +168,25 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
         }
         view.Read
 
-let reviewAuthority installation principal (request: ClaimCore.Domain.AuthorityRequest) view =
-    match Authority.parse request with
+let reviewPeople installation principal (request: ClaimCore.Domain.PeopleRequest) view =
+    match People.parse request with
     | Ok command ->
-        AuthorityExecution.review (services installation calendar principal) command view
+        PeopleOperations.decide
+            SubjectExecutionMode.Preview
+            (peopleContext
+                (services installation calendar principal)
+                SubjectExecutionMode.Preview
+                view)
+            (services installation calendar principal)
+            command
+            view
+        |> Verdict.map snd
     | Error refusal -> Verdict.Refuse refusal
 
-let provisionAuthority
-    installation
-    operation
-    principal
-    (view: LockedFacts<AuthorityExecutionFacts>)
-    =
+let provisionPeople installation operation principal (view: LockedFacts<PeopleExecutionFacts>) =
     let mutable counter = 0uy
 
-    AuthorityExecution.provision
+    ClaimCore.TestSupport.StoreFixtures.provisionPeople
         (services installation calendar principal)
         operation
         Inputs.ownerProfile
@@ -182,23 +212,21 @@ let created n reference =
         decide request (locked worker None None) |> appended
 
     let current =
-        match projection with
-        | CaseProjection.Insert(id, snapshot, index) ->
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = index
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-        | _ -> failtest "Opening inserts a case"
+        {
+            StoredCase.CaseId = projection.Rows.Snapshot.CaseId
+            Snapshot = projection.Rows.Snapshot
+            Index = projection.Index
+            SnapshotBytes =
+                ClaimCore.RecordFormat.CaseRecord.encodeSnapshot projection.Rows.Snapshot
+        }
 
     request, entry, current, receipt
 
-let authorityView
-    (caller: AuthorityView)
-    (target: AuthorityView)
+let peopleView
+    (caller: AccessView)
+    (target: AccessView)
     existing
-    : LockedFacts<AuthorityExecutionFacts> =
+    : LockedFacts<PeopleExecutionFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -236,17 +264,49 @@ let authorityView
                     |> Option.toList
                     |> Map.ofList
                 Target = target
+                State =
+                    target.Actor
+                    |> Option.map (fun actor ->
+                        let grants =
+                            [
+                                for role in target.Installation do
+                                    yield
+                                        {
+                                            ActorGrant.Role = role
+                                            Scope = Scope.Installation
+                                        }
+                                for KeyValue(id, roles) in target.Cases do
+                                    for role in roles do
+                                        yield
+                                            {
+                                                ActorGrant.Role = role
+                                                Scope = Scope.Case id
+                                            }
+                            ]
+                            |> List.mapi (fun index grant ->
+                                grant, EffectPosition.create Sequence.first index |> Option.get)
+                            |> Map.ofList
+
+                        {
+                            PeopleSubjectState.Actor = actor
+                            Grants = grants
+                            ProfileErasure =
+                                if actor.Profile.IsNone then
+                                    Some(EffectPosition.create Sequence.first 0 |> Option.get)
+                                else
+                                    None
+                        })
                 TargetCases = Map.empty
                 EnabledHumanOwners = Some 2
                 ActorCount = Some 2
             }
     }
 
-let admitted n target act : AuthorityCommand =
-    Authority.parse
+let admitted n target act : PeopleCommand =
+    People.parse
         {
             OperationId = id n
             Target = PrincipalKey.toInput target
             Act = act
         }
-    |> Result.defaultWith (fun refusal -> failtestf "Invalid authority test command: %A" refusal)
+    |> Result.defaultWith (fun refusal -> failtestf "Invalid people test command: %A" refusal)

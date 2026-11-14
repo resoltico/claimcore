@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { caseDocumentInput, caseIdentityScreen } from "../support/case-document.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { expect, it, vi } from "vitest";
@@ -32,15 +33,27 @@ const mount = (value: CurrentCase, act: string) => {
 };
 it("keeps the workspace and withholds an unoffered action without reconstructing state policy", async () => {
   const closed = caseDocumentInput(
-    { tasks: ["CASE:REOPEN"], history: "NONE" },
     {
-      regions: [
-        ...caseIdentityScreen.regions,
-        { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "REOPEN", groups: [] } },
+      actions: [
+        operationAffordance(
+          "case.reopen",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 1,
+          },
+          {},
+          undefined,
+          {},
+        ),
       ],
+      history: "NONE",
+    },
+    {
+      regions: [...caseIdentityScreen.regions, ...[]],
     },
   );
-  const { view, get, preview, execute } = mount(closed, "CLOSE");
+  const { view, get, preview, execute } = mount(closed, "case.close");
   expect(
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
@@ -58,8 +71,8 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
   expect(execute).not.toHaveBeenCalled();
 });
 it("does not manufacture authorization advice when the supplied HUMAN document offers no task", async () => {
-  const value = caseDocumentInput({ tasks: [], history: "NONE" });
-  const { view, preview, execute } = mount(value, "DECIDE");
+  const value = caseDocumentInput({ actions: [], history: "NONE" });
+  const { view, preview, execute } = mount(value, "case.decide");
   await screen.findByRole("heading", {
     level: 1,
     name: (_name, element) => element.id === "case-detail-title",

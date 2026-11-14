@@ -1,0 +1,399 @@
+namespace ClaimCore.Presentation
+
+open System
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ScreenEntries
+
+module CaseScreen =
+    let private scalarGroups = [ RecordGroup.Registration; RecordGroup.Decision ]
+
+    let caseFacts (snapshot: CaseSnapshot) =
+        match CaseState.fields snapshot.State with
+        | None -> []
+        | Some facts ->
+            let values =
+                FieldPresentation.declarations
+                |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
+                |> Map.ofList
+
+            scalarGroups
+            |> List.map (fun group ->
+                let declarations =
+                    FieldPresentation.declarations
+                    |> List.filter (fun field -> field.Group = Some group)
+
+                {
+                    TitleId = Vocabulary.messageKey RecordGroup.vocabulary group "label"
+                    Entries = entries (fields declarations (fun () -> Some values)) ()
+                })
+
+    let caseWork (work: CaseWorkView) =
+        {
+            TitleId = "section.work.label"
+            Entries =
+                [
+                    value
+                        "responsible"
+                        "field.responsibleActor.label"
+                        Prominence.Primary
+                        (work.Responsible
+                         |> Option.map PresentedValue.Actor
+                         |> Option.defaultValue (PresentedValue.Absent "view.UNASSIGNED.label"))
+                    value
+                        "handlingSummary"
+                        "field.handlingSummary.label"
+                        Prominence.Secondary
+                        (optional (HandlingSummary.format >> PresentedValue.Narrative) work.Summary)
+                    value
+                        "nextAction"
+                        "field.reminderAction.label"
+                        Prominence.Primary
+                        (optional (ReminderAction.format >> PresentedValue.Text) work.NextAction)
+                    value
+                        "followUp"
+                        "label.nextFollowUp"
+                        Prominence.Secondary
+                        (optional PresentedValue.Date work.FollowUp)
+                    value
+                        "pendingReminders"
+                        "label.pendingReminders"
+                        Prominence.Secondary
+                        (PresentedValue.Count work.PendingReminders)
+                    value
+                        "overdueReminders"
+                        "label.overdueReminders"
+                        Prominence.Secondary
+                        (PresentedValue.Count work.OverdueReminders)
+                    value
+                        "summaryChangedAt"
+                        "label.summaryChangedAt"
+                        Prominence.Secondary
+                        (optional PresentedValue.Instant work.SummaryChangedAt)
+                    value
+                        "summaryRecordedBy"
+                        "label.summaryRecordedBy"
+                        Prominence.Secondary
+                        (optional PresentedValue.Actor work.SummaryRecordedBy)
+                    value
+                        "workRevision"
+                        "label.workRevision"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format work.Revision))
+                    value
+                        "workChangedAt"
+                        "label.workChangedAt"
+                        Prominence.Detail
+                        (optional PresentedValue.Instant work.ChangedAt)
+                    value
+                        "workRecordedBy"
+                        "label.workRecordedBy"
+                        Prominence.Detail
+                        (optional PresentedValue.Actor work.RecordedBy)
+                ]
+        }
+
+
+    let identityFacts (snapshot: CaseSnapshot) =
+        CaseState.fields snapshot.State
+        |> Option.map (fun facts ->
+            let selected =
+                FieldPresentation.declarations
+                |> List.filter (fun field ->
+                    List.contains
+                        field.Field
+                        [
+                            BusinessField.ClaimantName
+                            BusinessField.InsurerName
+                            BusinessField.ClaimedAmount
+                        ])
+
+            let values =
+                FieldPresentation.declarations
+                |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
+                |> Map.ofList
+
+            entries (fields selected (fun () -> Some values)) ())
+        |> Option.defaultValue []
+
+
+    let view (reply: CaseReadModel) =
+        let live = CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased
+        let groups = caseFacts reply.Snapshot
+
+        let headlines = identityFacts reply.Snapshot
+
+        let identity =
+            [
+                value
+                    "caseReference"
+                    "field.caseReference.label"
+                    Prominence.Primary
+                    (PresentedValue.Reference reply.Snapshot.Reference)
+                match CaseState.fields reply.Snapshot.State with
+                | Some facts ->
+                    if CaseState.lifecycle reply.Snapshot.State = Lifecycle.Voided then
+                        value
+                            "lifecycle"
+                            "input.lifecycle.label"
+                            Prominence.Primary
+                            (code Lifecycle.vocabulary Lifecycle.Voided)
+                    else
+                        value
+                            "status"
+                            "field.status.label"
+                            Prominence.Primary
+                            (code CaseStatus.vocabulary facts.Status)
+
+                    value
+                        "progress"
+                        "input.progress.label"
+                        Prominence.Primary
+                        (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
+
+                    if reply.Mine then
+                        value
+                            "assignment"
+                            "input.assignment.label"
+                            Prominence.Secondary
+                            (code CaseAssignment.vocabulary CaseAssignment.Mine)
+                | None -> ()
+                yield! headlines
+            ]
+
+        let notice =
+            match reply.Snapshot.State, reply.Disposition with
+            | CaseState.Erased, _ ->
+                Some
+                    {
+                        MessageId = "lifecycle.ERASED.meaning"
+                        Reason = None
+                        Tone = NoticeTone.Final
+                    }
+            | _, Some(CaseDisposition.Voided reason) ->
+                Some
+                    {
+                        MessageId = "lifecycle.VOIDED.meaning"
+                        Reason = Some(PresentedValue.Text(Reason.format reason))
+                        Tone = NoticeTone.Warning
+                    }
+            | _, Some(CaseDisposition.Reinstated reason) ->
+                Some
+                    {
+                        MessageId = "label.stageReinstated"
+                        Reason = Some(PresentedValue.Text(Reason.format reason))
+                        Tone = NoticeTone.Info
+                    }
+            | _ -> None
+
+        let progress =
+            match reply.Stages with
+            | CaseStageDisplay.Erased -> None
+            | CaseStageDisplay.Tracker(current, steps) ->
+                Some
+                    {
+                        RegionStages.Current = current
+                        Steps =
+                            steps
+                            |> List.map (fun step ->
+                                {
+                                    RegionStage.Stage = step.Stage
+                                    Link = None
+                                    Actions = []
+                                    Reached = step.Completed
+                                    Date = step.Date
+                                    Meter =
+                                        if step.Stage = CaseStageKind.Paid then
+                                            CaseState.fields reply.Snapshot.State
+                                            |> Option.bind (fun fields ->
+                                                PaymentsScreen.meter fields.Finance)
+                                        else
+                                            None
+                                    Amount =
+                                        step.Amount
+                                        |> Option.map (fun money ->
+                                            {
+                                                PresentedMoney.Value = money
+                                                DisplayScale = Money.displayScale money
+                                            })
+                                })
+                    }
+
+        let work =
+            (caseWork reply.Work).Entries
+            |> List.filter (fun entry ->
+                List.contains
+                    entry.Key
+                    [ "responsible"; "handlingSummary"; "summaryChangedAt"; "summaryRecordedBy" ])
+
+        let nextColumns =
+            ReminderListScreen.reminderColumns
+            |> List.filter (fun column -> List.contains column.Key [ "action"; "due"; "timing" ])
+
+        let next =
+            tableWithControls
+                (fun (row: ReminderReadModel) -> ReminderId.format (Reminder.id row.Reminder))
+                (fun _ -> None)
+                nextColumns
+                (fun row ->
+                    Some(
+                        Link.ReminderGet
+                            {
+                                Target = CaseSelector.Id(Reminder.caseId row.Reminder)
+                                ReminderId = ReminderId.value (Reminder.id row.Reminder)
+                            }
+                    ),
+                    TaskAffordances.reminder row)
+                reply.NextActions
+
+        let next =
+            { next with
+                Sections =
+                    [
+                        section
+                            "label.reminder"
+                            [
+                                value
+                                    "pending"
+                                    "label.pendingReminders"
+                                    Prominence.Secondary
+                                    (PresentedValue.Count reply.Work.PendingReminders)
+                            ]
+                    ]
+            }
+
+        let details =
+            [
+                value
+                    "caseReference"
+                    "field.caseReference.label"
+                    Prominence.Detail
+                    (PresentedValue.Reference reply.Snapshot.Reference)
+                value
+                    "caseId"
+                    "input.caseId.label"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(CaseId.format reply.Snapshot.CaseId))
+                value
+                    "revision"
+                    "label.revisionLabel"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(Revision.format reply.Snapshot.Revision))
+                value
+                    "workRevision"
+                    "label.workRevision"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(Revision.format reply.Work.Revision))
+                value
+                    "changedAt"
+                    "label.changedAt"
+                    Prominence.Detail
+                    (PresentedValue.Instant reply.ChangedAt)
+                value
+                    "recordedBy"
+                    "label.recordedBy"
+                    Prominence.Detail
+                    (PresentedValue.Actor reply.RecordedBy)
+            ]
+
+        Screen.create
+            [
+                yield entryRegion RegionRole.Identity None identity
+                yield!
+                    notice
+                    |> Option.map (fun notice ->
+                        region RegionRole.Notice None (RegionContent.Notice notice))
+                    |> Option.toList
+                if live then
+                    yield
+                        region
+                            RegionRole.Attention
+                            (Some "label.attention")
+                            (RegionContent.Codes(
+                                Vocabulary.name CaseAttention.vocabulary,
+                                reply.Attention
+                                |> List.map (Vocabulary.token CaseAttention.vocabulary)
+                            ))
+
+                    yield!
+                        progress
+                        |> Option.map (fun progress ->
+                            region
+                                RegionRole.Progress
+                                (Some "label.stages")
+                                (RegionContent.Stages progress))
+                        |> Option.toList
+
+
+                    for group, facts in List.zip scalarGroups groups do
+                        if group = RecordGroup.Registration then
+                            yield entryRegion RegionRole.Facts (Some facts.TitleId) facts.Entries
+
+                    match CaseState.fields reply.Snapshot.State with
+                    | Some fields ->
+                        yield
+                            region
+                                RegionRole.Payments
+                                (Some "label.paymentDecisionAndPayments")
+                                (RegionContent.Table(
+                                    PaymentsScreen.tableWithControls
+                                        id
+                                        (fun entry ->
+                                            None,
+                                            (if
+                                                 List.contains
+                                                     CaseActKind.RemovePayment
+                                                     reply.Advice.Acts
+                                             then
+                                                 [
+                                                     TaskAffordances.paymentRemoveEntry
+                                                         reply.Snapshot.CaseId
+                                                         reply.Snapshot.Revision
+                                                         entry
+                                                 ]
+                                             else
+                                                 []))
+                                        fields.Finance
+                                        reply.LatestPayments
+                                ))
+                    | None -> ()
+
+                    yield entryRegion RegionRole.Work (Some "section.work.label") work
+
+                    yield
+                        region
+                            RegionRole.NextActions
+                            (Some "label.nextActions")
+                            (RegionContent.Table next)
+
+                    yield
+                        region
+                            RegionRole.Notes
+                            (Some "section.notes.label")
+                            (RegionContent.Table(
+                                NotesScreen.table reply.Snapshot.CaseId reply.Notes
+                            ))
+                yield entryRegion RegionRole.Details (Some "label.recordDetails") details
+            ]
+
+        |> Screen.withCurrentGroups (
+            match reply.Advice.Correction with
+            | None -> []
+            | Some choices ->
+                List.zip scalarGroups groups
+                |> List.choose (fun (group, section) ->
+                    let offered =
+                        match group with
+                        | RecordGroup.Registration -> choices.Registration
+                        | RecordGroup.Decision -> choices.Decision
+                        | RecordGroup.Payment -> []
+
+                    if live && List.contains CorrectionGroupAction.Update offered then
+                        Some
+                            {
+                                CurrentInputGroup.Group = group
+                                Section = section
+                            }
+                    else
+                        None)
+        )

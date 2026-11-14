@@ -22,15 +22,15 @@ let private acts =
         ActKind.Case CaseActKind.Void, Consequence.Stewardship
         ActKind.Case CaseActKind.Reinstate, Consequence.Stewardship
         ActKind.Case CaseActKind.Erase, Consequence.Irreversible
-        ActKind.Authority AuthorityKind.ProvisionOwner, Consequence.Routine
-        ActKind.Authority AuthorityKind.Register, Consequence.Routine
-        ActKind.Authority AuthorityKind.Admit, Consequence.Routine
-        ActKind.Authority AuthorityKind.Grant, Consequence.Routine
-        ActKind.Authority AuthorityKind.Revoke, Consequence.Routine
-        ActKind.Authority AuthorityKind.Enable, Consequence.Routine
-        ActKind.Authority AuthorityKind.Disable, Consequence.Stewardship
-        ActKind.Authority AuthorityKind.SetProfile, Consequence.Routine
-        ActKind.Authority AuthorityKind.EraseProfile, Consequence.Irreversible
+        ActKind.People PeopleActKind.ProvisionOwner, Consequence.Routine
+        ActKind.People PeopleActKind.Register, Consequence.Routine
+        ActKind.People PeopleActKind.Admit, Consequence.Routine
+        ActKind.People PeopleActKind.Grant, Consequence.Routine
+        ActKind.People PeopleActKind.Revoke, Consequence.Routine
+        ActKind.People PeopleActKind.Enable, Consequence.Routine
+        ActKind.People PeopleActKind.Disable, Consequence.Stewardship
+        ActKind.People PeopleActKind.SetProfile, Consequence.Routine
+        ActKind.People PeopleActKind.EraseProfile, Consequence.Irreversible
         ActKind.Note NoteActKind.AddNote, Consequence.Routine
         ActKind.Note NoteActKind.RemoveNote, Consequence.Routine
         ActKind.Work WorkActKind.UpdateWork, Consequence.Routine
@@ -55,11 +55,10 @@ let private queries =
         QueryTaskId.ReminderGet, Consequence.Routine
         QueryTaskId.WorkViews, Consequence.Routine
         QueryTaskId.OperationGet, Consequence.Routine
-        QueryTaskId.AuthorityList, Consequence.Routine
-        QueryTaskId.AuthorityGrants, Consequence.Routine
-        QueryTaskId.AuthorityHistory, Consequence.Routine
-        QueryTaskId.AuthorityRequests, Consequence.Routine
-        QueryTaskId.AuthorityRequestsDismiss, Consequence.Routine
+        QueryTaskId.PeopleList, Consequence.Routine
+        QueryTaskId.PeopleGrants, Consequence.Routine
+        QueryTaskId.PeopleHistory, Consequence.Routine
+        QueryTaskId.PeopleRequests, Consequence.Routine
         QueryTaskId.Context, Consequence.Routine
     ]
 
@@ -89,7 +88,8 @@ let tests =
                     ActorEndpoint.all
                     |> List.choose (function
                         | ActorEndpoint.Query query -> Some query
-                        | ActorEndpoint.Operation _ -> None)
+                        | ActorEndpoint.Operation _
+                        | ActorEndpoint.Command _ -> None)
                     |> Set.ofList
 
                 Expect.equal
@@ -104,7 +104,7 @@ let tests =
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "the actual CLI consumes Core operation consequences for every task" (fun () ->
                 for act, expected in acts do
-                    if act <> ActKind.Authority AuthorityKind.ProvisionOwner then
+                    if act <> ActKind.People PeopleActKind.ProvisionOwner then
                         Expect.equal
                             (TaskRouting.consequence (TaskId.Operation act))
                             expected

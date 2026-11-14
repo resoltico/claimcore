@@ -1,205 +1,205 @@
 {
-  "act.AMEND_REGISTRATION.label": {
+  "task.case.amendRegistration.label": {
     "text": "청구 내역 수정",
     "source": "5ae6604c4520"
   },
-  "act.AMEND_REGISTRATION.meaning": {
+  "task.case.amendRegistration.meaning": {
     "text": "선택한 청구 정보를 변경합니다. 지정하지 않은 정보와 청구 건 참조는 그대로 유지됩니다.",
     "source": "2c651083c926"
   },
-  "act.CLOSE.label": {
+  "task.case.close.label": {
     "text": "청구 건 종결",
     "source": "5cad104f0e26"
   },
-  "act.CLOSE.meaning": {
+  "task.case.close.meaning": {
     "text": "더 이상 필요한 업무가 없으면 청구 건을 종료합니다. 종료가 보험금 지급을 의미하지는 않습니다.",
     "source": "6059fdf3ac25"
   },
-  "act.CORRECT.label": {
+  "task.case.correct.label": {
     "text": "청구 건 정보 정정",
     "source": "e3eeb9561f2e"
   },
-  "act.CORRECT.meaning": {
+  "task.case.correct.meaning": {
     "text": "등록된 청구 또는 지급 결정 사실을 정정합니다. 지급 내역은 변경되지 않으며 지급 결정액은 지급 합계보다 적을 수 없습니다.",
     "source": "c115bf28430f"
   },
-  "act.DECIDE.label": {
+  "task.case.decide.label": {
     "text": "지급 결정 기록",
     "source": "17b6161410d5"
   },
-  "act.DECIDE.meaning": {
+  "task.case.decide.meaning": {
     "text": "결정된 금액과 통화를 기록하거나 교체합니다. 이 작업으로 송금되지는 않습니다.",
     "source": "17d0f005a684"
   },
-  "act.DISABLE.label": {
+  "task.people.disable.label": {
     "text": "계정 비활성화",
     "source": "9f024ada2282"
   },
-  "act.DISABLE.meaning": {
+  "task.people.disable.meaning": {
     "text": "이 계정의 ClaimCore 사용을 중지합니다. 기록된 변경은 유지됩니다.",
     "source": "a43350b66b04"
   },
-  "act.ENABLE.label": {
+  "task.people.enable.label": {
     "text": "계정 활성화",
     "source": "1965185f3488"
   },
-  "act.ENABLE.meaning": {
+  "task.people.enable.meaning": {
     "text": "이 계정이 기존 역할로 ClaimCore를 다시 사용하도록 허용합니다.",
     "source": "94ba3463b2e3"
   },
-  "act.ERASE.label": {
+  "task.case.erase.label": {
     "text": "청구 건 영구 삭제",
     "source": "29b338cac964"
   },
-  "act.ERASE.meaning": {
+  "task.case.erase.meaning": {
     "text": "이 청구 건의 정보, 업무 및 후속 조치를 ClaimCore에서 영구 삭제합니다. 청구 건 참조와 변경 목록은 남습니다. 다른 곳의 사본에는 영향을 주지 않습니다.",
     "source": "8705b2ea28a6"
   },
-  "act.ERASE_PROFILE.label": {
+  "task.people.eraseProfile.label": {
     "text": "프로필 영구 삭제",
     "source": "55056e69d504"
   },
-  "act.ERASE_PROFILE.meaning": {
+  "task.people.eraseProfile.meaning": {
     "text": "이 계정의 저장된 이름과 연락처를 영구 삭제합니다. 로그인 신원, 역할 및 기록된 업무는 유지됩니다. 이전 변경에는 ‘이전 계정’으로 표시됩니다.",
     "source": "871f791ea524"
   },
-  "act.GRANT.label": {
+  "task.people.grant.label": {
     "text": "역할 부여",
     "source": "4549a77f3b6c"
   },
-  "act.GRANT.meaning": {
+  "task.people.grant.meaning": {
     "text": "이 계정에 선택한 역할을 부여합니다.",
     "source": "c0ad11901493"
   },
-  "act.OPEN.label": {
+  "task.case.open.label": {
     "text": "청구 건 등록",
     "source": "100d2c104336"
   },
-  "act.OPEN.meaning": {
+  "task.case.open.meaning": {
     "text": "사고, 청구인, 보험사 및 청구 금액을 등록합니다.",
     "source": "bd4ea9e91f3a"
   },
-  "act.PROVISION_OWNER.label": {
+  "task.people.provisionOwner.label": {
     "text": "첫 소유자 설정",
     "source": "2a7018cea51b"
   },
-  "act.RECORD_PAYMENT.label": {
+  "task.case.recordPayment.label": {
     "text": "실제 지급 기록",
     "source": "0d13e856322a"
   },
-  "act.RECORD_PAYMENT.meaning": {
+  "task.case.recordPayment.meaning": {
     "text": "실제로 지급한 날짜와 금액을 결정 통화로 기록합니다. 이 작업은 송금을 실행하거나 확인하지 않습니다.",
     "source": "572c7a975cf2"
   },
-  "act.REGISTER.label": {
+  "task.people.register.label": {
     "text": "계정 등록",
     "source": "2ce51f0219a2"
   },
-  "act.REGISTER.meaning": {
+  "task.people.register.meaning": {
     "text": "이름과 선택적 연락처가 있는 계정을 추가합니다. 역할은 별도로 지정합니다.",
     "source": "b056b3b46015"
   },
-  "act.REINSTATE.label": {
+  "task.case.reinstate.label": {
     "text": "무효 처리된 청구 건 복원",
     "source": "d28eb327714f"
   },
-  "act.REINSTATE.meaning": {
+  "task.case.reinstate.meaning": {
     "text": "무효 처리된 청구 건의 업무를 다시 허용합니다. 진행 중 또는 종료 상태는 바뀌지 않습니다.",
     "source": "c48d44c1b7c1"
   },
-  "act.REMINDER_CANCEL.label": {
+  "task.reminder.cancel.label": {
     "text": "후속 조치 취소",
     "source": "948e115bd6a0"
   },
-  "act.REMINDER_CANCEL.meaning": {
+  "task.reminder.cancel.meaning": {
     "text": "이 조치를 완료로 표시하지 않고 취소합니다. 이력은 유지됩니다.",
     "source": "0d349a8b5a58"
   },
-  "act.REMINDER_COMPLETE.label": {
+  "task.reminder.complete.label": {
     "text": "후속 조치 완료",
     "source": "80f73f9e9a9b"
   },
-  "act.REMINDER_COMPLETE.meaning": {
+  "task.reminder.complete.meaning": {
     "text": "이 조치를 완료로 표시합니다. 마지막 조치였다면 청구 건에 다음 조치가 필요합니다.",
     "source": "47465ff6d73b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+  "task.reminder.completeAndPlanNext.label": {
     "text": "완료 후 다음 조치 계획",
     "source": "329a45fe88c6"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+  "task.reminder.completeAndPlanNext.meaning": {
     "text": "이 후속 조치를 완료하고 다음 조치를 함께 계획합니다.",
     "source": "6da6febc07ca"
   },
-  "act.REMINDER_CREATE.label": {
+  "task.reminder.create.label": {
     "text": "후속 조치 추가",
     "source": "cd566803bf39"
   },
-  "act.REMINDER_CREATE.meaning": {
+  "task.reminder.create.meaning": {
     "text": "이 청구 건의 다음 조치를 계획합니다.",
     "source": "c072c5b2420d"
   },
-  "act.REMINDER_REOPEN.label": {
+  "task.reminder.reopen.label": {
     "text": "후속 조치 다시 열기",
     "source": "a1dceb5971c8"
   },
-  "act.REMINDER_REOPEN.meaning": {
+  "task.reminder.reopen.meaning": {
     "text": "새 기한을 지정하여 이 조치를 다시 대기 상태로 만듭니다.",
     "source": "00cf210f8d8f"
   },
-  "act.REMINDER_UPDATE.label": {
+  "task.reminder.update.label": {
     "text": "후속 조치 수정",
     "source": "5a4f907e9a23"
   },
-  "act.REMINDER_UPDATE.meaning": {
+  "task.reminder.update.meaning": {
     "text": "이 미완료 후속 조치의 작업이나 날짜를 변경합니다. 이전 버전은 이력에 남습니다.",
     "source": "d87307f6a6cd"
   },
-  "act.REOPEN.label": {
+  "task.case.reopen.label": {
     "text": "청구 건 다시 열기",
     "source": "e1469dc1ace7"
   },
-  "act.REOPEN.meaning": {
+  "task.case.reopen.meaning": {
     "text": "청구 건을 다시 엽니다. 정보와 이력은 유지됩니다.",
     "source": "9afd35e2c444"
   },
-  "act.REVOKE.label": {
+  "task.people.revoke.label": {
     "text": "역할 회수",
     "source": "13287c1eda24"
   },
-  "act.REVOKE.meaning": {
+  "task.people.revoke.meaning": {
     "text": "선택한 역할 부여를 해제합니다.",
     "source": "4bd25ffa16ef"
   },
-  "act.SET_PROFILE.label": {
+  "task.people.setProfile.label": {
     "text": "프로필 수정",
     "source": "34540d1107b7"
   },
-  "act.SET_PROFILE.meaning": {
+  "task.people.setProfile.meaning": {
     "text": "계정의 표시 이름과 선택 사항인 연락처를 기록합니다. 계정 식별 정보나 접근 권한은 변경되지 않습니다.",
     "source": "eee65a67f467"
   },
-  "act.UPDATE_WORK.label": {
+  "task.work.update.label": {
     "text": "청구 건 업무 수정",
     "source": "a55a9d3a672f"
   },
-  "act.UPDATE_WORK.meaning": {
+  "task.work.update.meaning": {
     "text": "담당자를 변경하거나 처리 요약을 수정합니다.",
     "source": "3d22d9afd8ec"
   },
-  "act.VOID.label": {
+  "task.case.void.label": {
     "text": "청구 건 무효 처리",
     "source": "dcb1ab478602"
   },
-  "act.VOID.meaning": {
+  "task.case.void.meaning": {
     "text": "잘못 입력된 경우 등에서 이 청구 건의 모든 업무를 중지합니다. 청구 건과 이력은 유지됩니다.",
     "source": "692f8455f851"
   },
-  "act.WITHDRAW_DECISION.label": {
+  "task.case.withdrawDecision.label": {
     "text": "지급 결정 철회",
     "source": "5094d2f8f699"
   },
-  "act.WITHDRAW_DECISION.meaning": {
+  "task.case.withdrawDecision.meaning": {
     "text": "지급 전에 지급 결정을 제거합니다. 이력은 유지됩니다.",
     "source": "4579673a4146"
   },
@@ -279,7 +279,7 @@
     "text": "지급 결정 기록",
     "source": "2ff9882dcfbc"
   },
-  "capability.MANAGE_AUTHORITY.label": {
+  "capability.MANAGE_ACCESS.label": {
     "text": "사람 및 접근 권한 관리",
     "source": "da7fc871fa3c"
   },
@@ -287,7 +287,7 @@
     "text": "청구 건 업무 관리",
     "source": "df43d3bc49f6"
   },
-  "capability.READ_AUTHORITY.label": {
+  "capability.READ_ACCESS.label": {
     "text": "접근 권한 보기",
     "source": "f5462009cf42"
   },
@@ -515,27 +515,27 @@
     "text": "예정",
     "source": "5f1a2542e4e4"
   },
-  "endpoint.authority.grants.label": {
+  "endpoint.people.grants.label": {
     "text": "역할 보기",
     "source": "baa2809b34eb"
   },
-  "endpoint.authority.grants.meaning": {
+  "endpoint.people.grants.meaning": {
     "text": "계정에 지정된 역할을 나열합니다.",
     "source": "a0171895698a"
   },
-  "endpoint.authority.history.label": {
+  "endpoint.people.history.label": {
     "text": "접근 권한 이력",
     "source": "29e9d0964e33"
   },
-  "endpoint.authority.history.meaning": {
+  "endpoint.people.history.meaning": {
     "text": "접근 권한 변경을 최근 순으로 표시합니다.",
     "source": "5f18e1d68412"
   },
-  "endpoint.authority.list.label": {
+  "endpoint.people.list.label": {
     "text": "사람 목록",
     "source": "59c1126b3c3c"
   },
-  "endpoint.authority.list.meaning": {
+  "endpoint.people.list.meaning": {
     "text": "계정과 가능한 접근 권한 변경을 나열합니다.",
     "source": "b16e0b16d7eb"
   },
@@ -895,10 +895,6 @@
     "text": "후속 조치 보기",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "담당 변경",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "역할 적용 범위",
     "source": "d6417785a41b"
@@ -1203,7 +1199,7 @@
     "text": "진행 중",
     "source": "ed077f3d8125"
   },
-  "subject.AUTHORITY.label": {
+  "subject.PEOPLE.label": {
     "text": "접근 권한",
     "source": "ec5ba0abb717"
   },
@@ -1343,19 +1339,19 @@
     "text": "ClaimCore에 접근하려면 소유자가 이 계정을 승인하여 추가해야 합니다.",
     "source": "9f93027815d5"
   },
-  "endpoint.authority.requests.label": {
+  "endpoint.people.requests.label": {
     "text": "접근 요청",
     "source": "34185554f83d"
   },
-  "endpoint.authority.requests.meaning": {
+  "endpoint.people.requests.meaning": {
     "text": "접근 허용을 기다리는 로그인 요청을 나열합니다.",
     "source": "cf0e3a6ea687"
   },
-  "endpoint.authority.requests.dismiss.label": {
+  "endpoint.people.requests.dismiss.label": {
     "text": "접근 요청 닫기",
     "source": "83aeff49e156"
   },
-  "endpoint.authority.requests.dismiss.meaning": {
+  "endpoint.people.requests.dismiss.meaning": {
     "text": "접근 권한을 부여하지 않고 이 요청을 삭제합니다.",
     "source": "0201b260d157"
   },
@@ -1387,11 +1383,11 @@
     "text": "이 작업을 수행할 수 없습니다. 후속 조치 상태: {state}. 최신 후속 조치를 검토하세요.",
     "source": "1ae8310d09d9"
   },
-  "act.ADMIT.label": {
+  "task.people.admit.label": {
     "text": "사람 추가",
     "source": "66848b5361f4"
   },
-  "act.ADMIT.meaning": {
+  "task.people.admit.meaning": {
     "text": "이름과 첫 역할을 지정하여 사람 또는 서비스 계정을 추가합니다.",
     "source": "57a856554f42"
   },
@@ -1429,7 +1425,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "계정이 비활성화되어 있습니다. 권한 검토를 위해 부여된 역할은 계속 표시됩니다.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "주의",
@@ -1713,7 +1709,7 @@
   },
   "input.actorId.rule": {
     "text": "역할 부여 내역이나 권한 이력을 검토할 등록 계정입니다.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "접근 권한을 검토할 대상을 선택하세요.",
@@ -1791,14 +1787,6 @@
     "text": "종결되었거나 무효 처리된 청구 건의 업무를 명시적으로 포함합니다. 미완료 후속 조치의 날짜와 상태는 유지됩니다.",
     "source": "c8addb209dac"
   },
-  "input.responsibleActorAction.rule": {
-    "text": "set 또는 clear를 선택하세요. 생략하면 현재 담당 계정을 유지합니다.",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "이 청구 건의 담당자를 지정하거나 해제합니다.",
-    "source": "d788923ffdfd"
-  },
   "group.registration.rule": {
     "text": "등록 정보를 유지하거나 선택한 정보를 수정합니다. 생략한 정보는 변경되지 않으며 금액과 통화는 함께 입력해야 합니다.",
     "source": "b1e2f43d3bf8"
@@ -1851,143 +1839,143 @@
     "text": "각 역할과 적용 범위는 한 번씩만 선택하세요.",
     "source": "7a0f01238fda"
   },
-  "act.OPEN.done": {
+  "task.case.open.done": {
     "text": "청구 건이 등록되었습니다.",
     "source": "87e4c2288a79"
   },
-  "act.AMEND_REGISTRATION.done": {
+  "task.case.amendRegistration.done": {
     "text": "등록 정보가 수정되었습니다.",
     "source": "bf64cd9ad6ac"
   },
-  "act.CORRECT.done": {
+  "task.case.correct.done": {
     "text": "청구 건 정보가 정정되었습니다.",
     "source": "a36e2011a7df"
   },
-  "act.DECIDE.done": {
+  "task.case.decide.done": {
     "text": "지급 결정이 기록되었습니다.",
     "source": "5c37a8e391bc"
   },
-  "act.WITHDRAW_DECISION.done": {
+  "task.case.withdrawDecision.done": {
     "text": "지급 결정이 철회되었습니다.",
     "source": "264b3e2b75e7"
   },
-  "act.RECORD_PAYMENT.done": {
+  "task.case.recordPayment.done": {
     "text": "지급이 기록되었습니다.",
     "source": "08d843e2c987"
   },
-  "act.CLOSE.done": {
+  "task.case.close.done": {
     "text": "청구 건이 종결되었습니다.",
     "source": "e474c5de64f5"
   },
-  "act.REOPEN.done": {
+  "task.case.reopen.done": {
     "text": "청구 건이 다시 열렸습니다.",
     "source": "2f0851679340"
   },
-  "act.VOID.done": {
+  "task.case.void.done": {
     "text": "청구 건이 무효 처리되었습니다.",
     "source": "3879f4c74f67"
   },
-  "act.VOID.consequence": {
+  "task.case.void.consequence": {
     "text": "청구 건의 기록은 유지되며 복원될 때까지 일상 업무에서 제외됩니다.",
     "source": "b10ae3c17e24"
   },
-  "act.REINSTATE.done": {
+  "task.case.reinstate.done": {
     "text": "청구 건이 복원되었습니다.",
     "source": "e8b79ac26253"
   },
-  "act.REINSTATE.consequence": {
+  "task.case.reinstate.consequence": {
     "text": "청구 건이 다시 활성화됩니다. 진행 중 또는 종결 상태는 그대로 유지됩니다.",
     "source": "d174ff361378"
   },
-  "act.ERASE.done": {
+  "task.case.erase.done": {
     "text": "청구 건이 영구 삭제되었습니다.",
     "source": "c808ff2c3abd"
   },
-  "act.ERASE.consequence": {
+  "task.case.erase.consequence": {
     "text": "ClaimCore에서 청구 건 상세 정보, 업무 및 후속 조치를 영구 삭제합니다. 참조번호와 변경 이력은 유지됩니다.",
     "source": "e774df6acd21"
   },
-  "act.REGISTER.done": {
+  "task.people.register.done": {
     "text": "계정이 등록되었습니다.",
     "source": "8beb0718d0ce"
   },
-  "act.ADMIT.done": {
+  "task.people.admit.done": {
     "text": "역할과 함께 계정이 추가되었습니다.",
     "source": "34e9d9f27a5d"
   },
-  "act.ADMIT.consequence": {
+  "task.people.admit.consequence": {
     "text": "계정을 추가하고 프로필을 저장하며 선택한 모든 역할을 함께 기록합니다.",
     "source": "9f450fe5937d"
   },
-  "act.SET_PROFILE.done": {
+  "task.people.setProfile.done": {
     "text": "프로필이 수정되었습니다.",
     "source": "3a06720a52cb"
   },
-  "act.ERASE_PROFILE.done": {
+  "task.people.eraseProfile.done": {
     "text": "프로필이 영구 삭제되었습니다.",
     "source": "3f92d421b5a7"
   },
-  "act.ERASE_PROFILE.consequence": {
+  "task.people.eraseProfile.consequence": {
     "text": "저장된 이름과 연락처를 영구 삭제합니다. 이전 변경 내역에는 익명 계정 이름이 표시됩니다.",
     "source": "59d90d4c6095"
   },
-  "act.GRANT.done": {
+  "task.people.grant.done": {
     "text": "역할이 부여되었습니다.",
     "source": "58d5cb320b79"
   },
-  "act.GRANT.consequence": {
+  "task.people.grant.consequence": {
     "text": "이 계정에 선택한 역할 부여를 기록합니다.",
     "source": "2516ad2235ce"
   },
-  "act.REVOKE.done": {
+  "task.people.revoke.done": {
     "text": "역할이 회수되었습니다.",
     "source": "8cb5dd549927"
   },
-  "act.REVOKE.consequence": {
+  "task.people.revoke.consequence": {
     "text": "선택한 역할 부여를 해제합니다.",
     "source": "04f9c1d1eb16"
   },
-  "act.ENABLE.done": {
+  "task.people.enable.done": {
     "text": "계정이 활성화되었습니다.",
     "source": "bc5cec779f5e"
   },
-  "act.DISABLE.done": {
+  "task.people.disable.done": {
     "text": "계정이 비활성화되었습니다.",
     "source": "baa0517c0ffc"
   },
-  "act.DISABLE.consequence": {
+  "task.people.disable.consequence": {
     "text": "이 계정은 ClaimCore에 접근할 수 없게 됩니다. 기록된 변경 내역은 유지됩니다.",
     "source": "ecd5b17ec840"
   },
-  "act.UPDATE_WORK.done": {
+  "task.work.update.done": {
     "text": "청구 건 업무가 수정되었습니다.",
     "source": "fbdedb4562e0"
   },
-  "act.REMINDER_CREATE.done": {
+  "task.reminder.create.done": {
     "text": "후속 조치가 추가되었습니다.",
     "source": "5e9e2dcc0b92"
   },
-  "act.REMINDER_UPDATE.done": {
+  "task.reminder.update.done": {
     "text": "후속 조치가 수정되었습니다.",
     "source": "b744baec4246"
   },
-  "act.REMINDER_COMPLETE.done": {
+  "task.reminder.complete.done": {
     "text": "후속 조치가 완료되었습니다.",
     "source": "7b359664f423"
   },
-  "act.REMINDER_CANCEL.done": {
+  "task.reminder.cancel.done": {
     "text": "후속 조치가 취소되었습니다.",
     "source": "d4f1d5514d81"
   },
-  "act.REMINDER_REOPEN.done": {
+  "task.reminder.reopen.done": {
     "text": "후속 조치가 다시 열렸습니다.",
     "source": "8b94105daf2b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+  "task.reminder.completeAndPlanNext.done": {
     "text": "후속 조치가 완료되고 다음 조치가 계획되었습니다.",
     "source": "99dc5d907128"
   },
-  "endpoint.authority.requests.dismiss.done": {
+  "endpoint.people.requests.dismiss.done": {
     "text": "접근 요청이 닫혔습니다.",
     "source": "5dcca45467bc"
   },
@@ -2011,7 +1999,7 @@
     "text": "기록 번호",
     "source": "262fca96392a"
   },
-  "label.authorityHistory": {
+  "label.peopleHistory": {
     "text": "접근 권한 이력",
     "source": "29e9d0964e33"
   },
@@ -2091,7 +2079,7 @@
     "text": "청구 건 목록",
     "source": "2249bd503ec4"
   },
-  "view.AUTHORITY.label": {
+  "view.PEOPLE.label": {
     "text": "사람 및 접근 권한",
     "source": "1e133caaec46"
   },
@@ -2467,15 +2455,15 @@
     "text": "부여자",
     "source": "b6f1129ef877"
   },
-  "act.REMOVE_PAYMENT.label": {
+  "task.case.removePayment.label": {
     "text": "지급 내역 제거",
     "source": "3765d89e8401"
   },
-  "act.REMOVE_PAYMENT.meaning": {
+  "task.case.removePayment.meaning": {
     "text": "잘못 기록한 지급 내역을 제거합니다. 송금을 환불하거나 취소하지 않으며 이전 이력은 유지됩니다.",
     "source": "839063316dd5"
   },
-  "act.REMOVE_PAYMENT.done": {
+  "task.case.removePayment.done": {
     "text": "지급 내역이 제거되었습니다.",
     "source": "0aa96c610f64"
   },
@@ -2579,27 +2567,27 @@
     "text": "이 지급 내역은 더 이상 존재하지 않습니다. 계속하기 전에 현재 청구 건을 조회하세요.",
     "source": "ffdd2d61ba68"
   },
-  "act.ADD_NOTE.done": {
+  "task.note.add.done": {
     "text": "메모가 추가되었습니다.",
     "source": "26e0eaebce58"
   },
-  "act.ADD_NOTE.label": {
+  "task.note.add.label": {
     "text": "메모 추가",
     "source": "63565c0485fe"
   },
-  "act.ADD_NOTE.meaning": {
+  "task.note.add.meaning": {
     "text": "이 청구 건에 메모를 추가합니다. 청구 또는 지급 사실은 변경되지 않습니다.",
     "source": "41497abc12f4"
   },
-  "act.REMOVE_NOTE.done": {
+  "task.note.remove.done": {
     "text": "메모가 제거되었습니다.",
     "source": "bb424a5bfe68"
   },
-  "act.REMOVE_NOTE.label": {
+  "task.note.remove.label": {
     "text": "메모 제거",
     "source": "c06bd11ad0f6"
   },
-  "act.REMOVE_NOTE.meaning": {
+  "task.note.remove.meaning": {
     "text": "이 메모를 현재 메모 목록에서 숨깁니다. 청구 건을 영구 삭제할 때까지 본문은 전체 이력에 남습니다.",
     "source": "cf678694f353"
   },
@@ -2651,11 +2639,11 @@
     "text": "메모",
     "source": "d8da2c49df39"
   },
-  "timeline.event.ADD_NOTE": {
+  "timeline.event.note.add": {
     "text": "메모 추가됨",
     "source": "a7886ebc4ffd"
   },
-  "timeline.event.REMOVE_NOTE": {
+  "timeline.event.note.remove": {
     "text": "메모 제거됨",
     "source": "b9096ff4a83e"
   },

@@ -1,15 +1,17 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 6,
-    "act": {
-      "kind": "VOID",
-      "reason": "Synthetic entry error"
+    "task": "case.void",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 6
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
+    "inputs": {
+      "input:reason": "Synthetic entry error"
     }
   }
 }

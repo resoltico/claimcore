@@ -23,10 +23,10 @@ export const projectTaskIssues = (
         ? issue.input
         : task.collections.find((collection) => collection.input === issue.input)?.id;
     } else {
-      const collection = task.collections.find(
-        (candidate) => candidate.id === issue.row?.collection,
+      const collection = task.collections.find((candidate) =>
+        candidate.inputs.some((input) => input.id === issue.input),
       );
-      const row = submittedRows[issue.row.collection]?.[issue.row.submittedOrdinal];
+      const row = collection === undefined ? undefined : submittedRows[collection.id]?.[issue.row];
       if (
         collection !== undefined &&
         row !== undefined &&

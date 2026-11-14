@@ -198,19 +198,25 @@ let tests =
                 (fun () ->
                     let raw =
                         bytes
-                            """{"kind":"AUTHORITY","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example:bad/","subject":"person"},"act":{"kind":"ENABLE"}}"""
+                            """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example:bad/","input:principal.subject":"person","input:profile.displayName":"Person"}}"""
 
                     Expect.isOk
-                        (Codec.validate 8192 RequestCodecs.operationInput raw)
+                        (Codec.validate 8192 OperationSubmissionCodecs.submission raw)
                         "Raw authored input is structurally admissible"
 
-                    match Codec.decode 8192 RequestCodecs.operationInput raw with
-                    | Ok(ClaimCore.Application.Contracts.OperationInput.Authority request) ->
+                    match Codec.decode 8192 OperationSubmissionCodecs.submission raw with
+                    | Ok submission ->
+                        let request =
+                            match ClaimCore.TestSupport.Submissions.command submission with
+                            | ClaimCore.Application.Contracts.OperationInput.People request ->
+                                request
+                            | _ -> failtest "People required"
+
                         Expect.isError
-                            (Authority.parse request)
+                            (People.parse request)
                             "Canonical principal admission remains at the core"
                     | other ->
-                        failtestf "Expected structurally admitted authority input, got %A" other
+                        failtestf "Expected structurally admitted people input, got %A" other
 
                     let page =
                         bytes

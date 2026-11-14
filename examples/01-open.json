@@ -1,23 +1,23 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 0,
-    "act": {
-      "kind": "OPEN",
-      "values": {
-        "incidentDate": "2026-08-01",
-        "incidentNotificationDate": "2026-08-03",
-        "incidentCountry": "LT",
-        "claimantName": "Example Translation Services Ltd",
-        "insurerName": "Example Responsible Insurer",
-        "claimedAmount": "1000.00",
-        "claimedCurrency": "EUR"
-      }
+    "task": "case.open",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 0
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
+    "inputs": {
+      "field:incidentDate": "2026-08-01",
+      "field:incidentNotificationDate": "2026-08-03",
+      "field:incidentCountry": "LT",
+      "field:claimantName": "Example Translation Services Ltd",
+      "field:insurerName": "Example Responsible Insurer",
+      "field:claimedAmount": "1000.00",
+      "field:claimedCurrency": "EUR"
     }
   }
 }

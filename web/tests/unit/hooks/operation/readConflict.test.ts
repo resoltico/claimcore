@@ -1,10 +1,11 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { testWorkspaceIdentity } from "../../../support/presentation-test-support";
 import { expect, it } from "vitest";
 import { readConflict } from "../../../../src/hooks/operation/readConflict";
 import { mockEndpoint } from "../../../support/endpoint-mocks";
 import { current } from "../../../support/operation-form.fixtures";
 import { prepareRequest } from "../../../../src/protocol/preparedRequest";
-import type { OperationInput } from "@contracts/client";
+import type { OperationSubmission } from "@contracts/client";
 import type {
   ConflictSource,
   LocalSource,
@@ -20,25 +21,17 @@ const succeeded = <const T>(data: T) => ({
 });
 const caseValue = () => ({
   ...current,
-  context: {
-    ...current.context,
-    revision: 100,
-    workRevision: 7,
-    history: "NONE" as const,
-    tasks: ["WORK:UPDATE_WORK"] as const,
-    editableInputs: ["field:handlingSummary"] as const,
-    correction: null,
-    seeds: {
-      registration: null,
-      decision: null,
-      work: { summary: null, responsible: null },
-      paymentCurrency: null,
-    },
-  },
+  subject: { ...current.subject, revision: 100, workRevision: 7 },
+  history: "NONE" as const,
+  actions: current.actions.filter((action) =>
+    new Set<string>(["work.update"] as const).has(action.task),
+  ),
 });
 const scoped = (source: LocalSource): source is ConflictSource =>
-  source.prepared.input.kind !== "AUTHORITY";
-const effectFor = (input: OperationInput): Extract<OperationEffect, { kind: "READ_CONFLICT" }> => {
+  source.prepared.input.binding.kind !== "PEOPLE";
+const effectFor = (
+  input: OperationSubmission,
+): Extract<OperationEffect, { kind: "READ_CONFLICT" }> => {
   const source = { prepared: prepareRequest("operation.execute", input), submittedRows: {} };
   if (!scoped(source)) {
     throw new Error("Expected a case-bound operation.");
@@ -73,10 +66,10 @@ it("uses the current work revision separately from the case fact revision", asyn
   const reads = new Map<string, AbortController>();
   const result = await readConflict(
     effectFor({
-      kind: "WORK",
       ...root,
-      expectedRevision: 1,
-      act: { kind: "UPDATE_WORK", values: { handlingSummary: "Retained summary" } },
+      task: "work.update",
+      binding: { kind: "WORK", target: root.target, expectedRevision: 1 },
+      inputs: { "field:handlingSummary": "Retained summary" },
     }),
     reads,
   );
@@ -85,7 +78,7 @@ it("uses the current work revision separately from the case fact revision", asyn
     throw new Error("Expected refreshed work.");
   }
   expect(result.value.revision).toBe(7);
-  expect(result.value.current.context.revision).toBe(100);
+  expect(result.value.current.subject.revision).toBe(100);
   expect(reminder).not.toHaveBeenCalled();
   expect(reads.size).toBe(0);
 });
@@ -97,28 +90,37 @@ it("reads the selected reminder revision rather than either case or work revisio
       screen: { regions: [] },
       basis: current.basis,
       disclosure: "CURRENT",
-      context: {
-        kind: "REMINDER",
-        caseId: current.context.caseId,
-        reminderId,
-        revision: 9,
-        tasks: ["REMINDER:REMINDER_UPDATE"],
-        actionSeed: "Current action",
-        dueDateSeed: "2026-11-05",
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "reminder.update",
+          {
+            kind: "REMINDER",
+            target: { kind: "ID", caseId: current.subject.caseId },
+            reminderId,
+            expectedRevision: 9,
+          },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
     }),
   );
   const result = await readConflict(
     effectFor({
-      kind: "REMINDER",
       ...root,
-      act: {
-        kind: "UPDATE",
+      task: "reminder.update",
+      binding: {
+        kind: "REMINDER",
+        target: root.target,
         reminderId,
         expectedRevision: 1,
-        action: "Retained action",
-        dueDate: "2026-11-06",
       },
+      inputs: { "input:reminderAction": "Retained action", "input:reminderDueDate": "2026-11-06" },
     }),
     new Map(),
   );
@@ -138,26 +140,22 @@ it("retains an erased current-case status without inventing editable facts or a 
       ...caseValue(),
       disclosure: "ERASED",
       screen: { regions: [] },
-      context: {
-        ...caseValue().context,
-        revision: 101,
-        workRevision: 0,
-        tasks: [],
-        editableInputs: [],
-        seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
-      },
+      subject: { ...caseValue().subject, revision: 101, workRevision: 0 },
+      actions: caseValue().actions.filter((action) => new Set<string>([]).has(action.task)),
     }),
   );
   const get = mockEndpoint("reminder.get");
   const result = await readConflict(
     effectFor({
-      kind: "REMINDER",
       ...root,
-      act: {
-        kind: "CANCEL",
+      task: "reminder.cancel",
+      binding: {
+        kind: "REMINDER",
+        target: root.target,
         reminderId: "30000000-0000-4000-8000-000000000003",
         expectedRevision: 1,
       },
+      inputs: {},
     }),
     new Map(),
   );

@@ -1,3 +1,5 @@
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { useState } from "react";
 import { within } from "@testing-library/react";
 import { initialOperationValues } from "../../../src/operation/operationForm";
@@ -14,25 +16,24 @@ import type { OperationTaskId, TaskInputId } from "@contracts/client";
 const target = { kind: "ID", caseId: "00000000-0000-4000-8000-000000000002" } as const;
 const current: CurrentCase = {
   screen: { regions: [] },
-  context: {
-    kind: "CASE",
-    caseId: target.caseId,
-    revision: 7,
-    workRevision: 2,
-    history: "NONE",
-    tasks: ["WORK:UPDATE_WORK"],
-    editableInputs: ["field:handlingSummary"],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: { summary: "Permitted input seed", responsible: null },
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId: target.caseId, revision: 7, workRevision: 2 },
+  actions: [
+    operationAffordance(
+      "work.update",
+      { kind: "WORK", target: { kind: "ID", caseId: target.caseId }, expectedRevision: 2 },
+      {
+        ...prefixedInputs("field:", {
+          handlingSummary: "Permitted input seed",
+          responsibleActor: null,
+        }),
+      },
+      ["field:handlingSummary"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -48,8 +49,9 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
   const fields = vi.fn();
   const change = vi.fn();
   const props = {
-    task: operationTask("WORK:UPDATE_WORK"),
-    binding: { kind: "WORK", target, workRevision: 2 } as const,
+    affordance: current.actions.find((action) => action.task === "work.update")!,
+    task: operationTask("work.update"),
+    binding: { kind: "WORK", target, expectedRevision: 2 } as const,
     current,
     disabled: false,
     errors: {},
@@ -74,17 +76,20 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
 it("consumes the current correction choices instead of offering the declaration's full static set", () => {
   const correction: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      tasks: ["CASE:CORRECT"],
-      editableInputs: [],
-      correction: { registration: ["KEEP"], decision: ["KEEP"] },
-      seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
-    },
+    actions: [
+      operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP"], "group:decision": ["KEEP"] },
+      ),
+    ],
   };
   const props = {
-    task: operationTask("CASE:CORRECT"),
-    binding: { kind: "CASE", target, revision: 7 } as const,
+    affordance: correction.actions.find((action) => action.task === "case.correct")!,
+    task: operationTask("case.correct"),
+    binding: { kind: "CASE", target, expectedRevision: 7 } as const,
     current: correction,
     values: {},
     disabled: false,
@@ -97,12 +102,24 @@ it("consumes the current correction choices instead of offering the declaration'
   view.rerender(
     <TaskInputs
       {...props}
+      affordance={operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP"] },
+      )}
       current={{
         ...correction,
-        context: {
-          ...correction.context,
-          correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP"] },
-        },
+        actions: [
+          operationAffordance(
+            "case.correct",
+            { kind: "CASE", target, expectedRevision: 7 },
+            {},
+            undefined,
+            { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP"] },
+          ),
+        ],
       }}
     />,
   );
@@ -110,9 +127,9 @@ it("consumes the current correction choices instead of offering the declaration'
 });
 
 it("binds collection controls and errors to row keys and consumes Domain role admission metadata", () => {
-  const task = operationTask("AUTHORITY:ADMIT");
+  const task = operationTask("people.admit");
   const errors = {
-    [taskRowInputKey("authorityGrants", "row-a", "input:role")]: {
+    [taskRowInputKey("peopleGrants", "row-a", "input:role")]: {
       kind: "local",
       reason: "invalidInput",
     } as const,
@@ -120,11 +137,11 @@ it("binds collection controls and errors to row keys and consumes Domain role ad
   render(
     <TaskInputs
       task={task}
-      binding={{ kind: "AUTHORITY" }}
+      binding={{ kind: "PEOPLE" }}
       current={null}
       values={{
         "input:principal.kind": "SERVICE",
-        authorityGrants: {
+        peopleGrants: {
           kind: "COLLECTION",
           rows: [{ key: "row-a", values: { "input:scope": "INSTALLATION" } }],
         },
@@ -146,11 +163,11 @@ const representativeBinding = (
   task: ReturnType<typeof operationTask>,
   id: OperationTaskId,
 ): Parameters<typeof TaskInputs>[0]["binding"] => {
-  if (task.subject === "AUTHORITY") {
-    return { kind: "AUTHORITY" as const };
+  if (task.subject === "PEOPLE") {
+    return { kind: "PEOPLE" as const };
   }
-  if (id === "CASE:OPEN") {
-    return { kind: "NEW_CASE" as const };
+  if (id === "case.open") {
+    return { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 };
   }
   if (task.subject === "NOTE") {
     return { kind: "NOTE" as const, target };
@@ -158,16 +175,16 @@ const representativeBinding = (
   if (task.subject === "REMINDER") {
     return { kind: "REMINDER" as const, target };
   }
-  return { kind: "CASE" as const, target, revision: 7 };
+  return { kind: "CASE" as const, target, expectedRevision: 7 };
 };
 it("renders representative control shapes across the declared subjects", () => {
   const operations: ReadonlyArray<OperationTaskId> = [
-    "CASE:OPEN",
-    "CASE:DECIDE",
-    "CASE:RECORD_PAYMENT",
-    "NOTE:ADD_NOTE",
-    "REMINDER:REMINDER_CREATE",
-    "AUTHORITY:SET_PROFILE",
+    "case.open",
+    "case.decide",
+    "case.recordPayment",
+    "note.add",
+    "reminder.create",
+    "people.setProfile",
   ];
   for (const id of operations) {
     const task = operationTask(id);
@@ -193,14 +210,26 @@ it("preserves a selected correction choice when current Core choices stop offeri
   const change = vi.fn();
   render(
     <TaskInputs
-      task={operationTask("CASE:CORRECT")}
-      binding={{ kind: "CASE", target, revision: 7 }}
+      affordance={operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP", "UPDATE"] },
+      )}
+      task={operationTask("case.correct")}
+      binding={{ kind: "CASE", target, expectedRevision: 7 }}
       current={{
         ...current,
-        context: {
-          ...current.context,
-          correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE"] },
-        },
+        actions: [
+          operationAffordance(
+            "case.correct",
+            { kind: "CASE", target, expectedRevision: 7 },
+            {},
+            undefined,
+            { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP", "UPDATE"] },
+          ),
+        ],
       }}
       values={{ "group:registration": "KEEP", "group:decision": "CLEAR" }}
       disabled={false}
@@ -220,12 +249,12 @@ it("keeps reminder identity and revision bound while editing only authored actio
   const change = vi.fn();
   const view = render(
     <TaskInputs
-      task={operationTask("REMINDER:REMINDER_UPDATE")}
+      task={operationTask("reminder.update")}
       binding={{
         kind: "REMINDER",
-
         target,
-        reminder: { reminderId: "30000000-0000-4000-8000-000000000003", revision: 1 },
+        reminderId: "30000000-0000-4000-8000-000000000003",
+        expectedRevision: 1,
       }}
       current={current}
       values={{ "input:reminderAction": "Retained action", "input:reminderDueDate": "2026-11-05" }}
@@ -241,19 +270,29 @@ it("keeps reminder identity and revision bound while editing only authored actio
   expect(change).not.toHaveBeenCalled();
 });
 
-const AuthoredInputs = ({ id }: { id: "CASE:OPEN" | "AUTHORITY:ADMIT" }) => {
+const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
   const [values, setValues] = useState<FormValues>(() =>
     initialOperationValues(
-      id === "CASE:OPEN" ? "CASE" : "AUTHORITY",
-      id === "CASE:OPEN" ? "OPEN" : "ADMIT",
-      null,
+      operationAffordance(
+        id === "case.open" ? "case.open" : "people.admit",
+        id === "case.open" ? { kind: "CASE", target, expectedRevision: 0 } : { kind: "PEOPLE" },
+        id === "people.admit" ? { "input:principal.kind": "HUMAN" } : {},
+      ),
     ),
   );
   return (
     <>
       <TaskInputs
         task={operationTask(id)}
-        binding={id === "CASE:OPEN" ? { kind: "NEW_CASE" } : { kind: "AUTHORITY" }}
+        binding={
+          id === "case.open"
+            ? {
+                kind: "CASE",
+                target: { kind: "REFERENCE", caseReference: "" },
+                expectedRevision: 0,
+              }
+            : { kind: "PEOPLE" }
+        }
         current={null}
         values={values}
         disabled={false}
@@ -276,7 +315,7 @@ const AuthoredInputs = ({ id }: { id: "CASE:OPEN" | "AUTHORITY:ADMIT" }) => {
 
 it("edits admission rows independently while principal and scope restrict role choices", async () => {
   const user = userEvent.setup();
-  render(<AuthoredInputs id="AUTHORITY:ADMIT" />);
+  render(<AuthoredInputs id="people.admit" />);
   expect(screen.getByRole("button", { name: "Remove role" })).toBeDisabled();
   await user.click(screen.getByRole("radio", { name: "Owner" }));
   await user.click(screen.getByRole("button", { name: "Add role" }));
@@ -289,6 +328,14 @@ it("edits admission rows independently while principal and scope restrict role c
   await user.click(within(row).getByRole("radio", { name: "One case" }));
   expect(within(row).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(row).getByRole("textbox", { name: /Case reference/u })).toBeVisible();
+  await user.type(within(row).getByRole("textbox", { name: /Case reference/u }), "SCOPED-CASE");
+  await user.click(within(row).getByRole("radio", { name: "All cases" }));
+  const authored = JSON.parse(screen.getByTestId("authored-inputs").textContent ?? "null") as {
+    peopleGrants: { rows: { values: Record<string, unknown> }[] };
+  };
+  expect(authored.peopleGrants.rows[1]!.values).not.toHaveProperty("field:caseReference");
+  expect(within(row).queryByRole("textbox", { name: /Case reference/u })).toBeNull();
+
   await user.click(screen.getByRole("radio", { name: "Service account" }));
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
@@ -299,7 +346,7 @@ it("edits admission rows independently while principal and scope restrict role c
 
 it("edits plain optional open-case fields and omits a cleared blank input", async () => {
   const user = userEvent.setup();
-  render(<AuthoredInputs id="CASE:OPEN" />);
+  render(<AuthoredInputs id="case.open" />);
   expect(screen.queryByRole("checkbox", { name: /Record Policy number/u })).toBeNull();
   await user.type(screen.getByRole("textbox", { name: "Policy number" }), "Policy / 42");
   await user.type(screen.getByRole("textbox", { name: "Insurer claim reference" }), "Insurer / 17");
@@ -315,7 +362,7 @@ it("edits plain optional open-case fields and omits a cleared blank input", asyn
 
 it.each([
   {
-    task: "CASE:AMEND_REGISTRATION",
+    task: "case.amendRegistration",
     currency: "claimedCurrency",
     inputs: ["field:claimedAmount", "field:claimedCurrency"],
     values: {},
@@ -323,7 +370,7 @@ it.each([
     expected: { "field:claimedAmount": "", "field:claimedCurrency": "" },
   },
   {
-    task: "CASE:CORRECT",
+    task: "case.correct",
     currency: "payableCurrency",
     inputs: ["field:payableAmount", "field:payableCurrency"],
     values: { "group:registration": "KEEP", "group:decision": "UPDATE" },
@@ -335,7 +382,7 @@ it.each([
   currency: string;
   inputs: TaskInputId[];
   values: FormValues;
-  correction: CurrentCase["context"]["correction"];
+  correction: { registration: ReadonlyArray<string>; decision: ReadonlyArray<string> } | null;
   expected: FormValues;
 }>)(
   "selects $currency only through its one atomic money pair",
@@ -343,11 +390,23 @@ it.each([
     const fields = vi.fn();
     const view = render(
       <TaskInputs
+        affordance={operationAffordance(
+          task,
+          { kind: "CASE", target, expectedRevision: 7 },
+          {},
+          inputs,
+          correction === null
+            ? {}
+            : {
+                "group:registration": correction.registration,
+                "group:decision": correction.decision,
+              },
+        )}
         task={operationTask(task)}
-        binding={{ kind: "CASE", target, revision: 7 }}
+        binding={{ kind: "CASE", target, expectedRevision: 7 }}
         current={{
           ...current,
-          context: { ...current.context, tasks: [task], editableInputs: inputs, correction },
+          actions: current.actions.filter((action) => new Set<string>([task]).has(action.task)),
         }}
         values={values}
         disabled={false}

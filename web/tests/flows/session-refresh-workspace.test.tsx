@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
@@ -31,13 +32,19 @@ it("the persistent App masks a replaced session's authored registration and perm
     status: 200,
     value: humanReadReply("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -90,13 +97,19 @@ it("masks a prior session’s private uncertain request and recovers only its id
     status: 200,
     value: humanReadReply("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["CASE:OPEN"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

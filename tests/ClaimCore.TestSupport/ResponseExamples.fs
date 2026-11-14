@@ -55,17 +55,17 @@ let receipt: OperationReceipt =
                 }
     }
 
-let authorityReceipt =
+let peopleReceipt =
     { receipt with
         Subject =
-            ReceiptSubject.Authority
+            ReceiptSubject.People
                 {
-                    TargetActor = AuthorityTargetDisclosure.Disclosed actor
-                    Act = AuthorityKind.ProvisionOwner
+                    TargetActor = PeopleTargetDisclosure.Disclosed actor
+                    Act = PeopleActKind.ProvisionOwner
                     Effects =
                         [
                             {
-                                Act = AuthorityKind.ProvisionOwner
+                                Act = PeopleActKind.ProvisionOwner
                                 Id = EffectId.create receipt.OperationId 0 |> Option.get
                                 Position = EffectPosition.create position.Sequence 0 |> Option.get
                             }
@@ -243,13 +243,13 @@ let private replies () : IEndpointOutput list =
                                         [
                                             Capability.ReadCase
                                             Capability.Register
-                                            Capability.ManageAuthority
-                                            Capability.ReadAuthority
+                                            Capability.ManageAccess
+                                            Capability.ReadAccess
                                         ]
                                     View =
                                         [
                                             ClaimCore.Application.Contracts.View.Cases
-                                            ClaimCore.Application.Contracts.View.Authority
+                                            ClaimCore.Application.Contracts.View.People
                                             ClaimCore.Application.Contracts.View.Operations
                                         ]
                                     Offers = [ InstallationOffer.Open ]
@@ -266,6 +266,7 @@ let private replies () : IEndpointOutput list =
                         CaseId = snapshot.CaseId
                         Reference = snapshot.Reference
                         Revision = snapshot.Revision
+                        WorkRevision = Revision.zero
                         State = CaseState.map _.Finance snapshot.State
                         Items = []
                         NextCursor = None
@@ -325,6 +326,8 @@ let private replies () : IEndpointOutput list =
                 HumanReadDocuments.assignees
                 (Outcome.Succeeded
                     {
+                        CaseId = snapshot.CaseId
+                        WorkRevision = Revision.zero
                         Basis = basis
                         Items = []
                         NextCursor = None
@@ -400,7 +403,7 @@ let private replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
-                Api.authorityList
+                Api.peopleList
                 HumanReadDocuments.actors
                 (Outcome.Succeeded
                     {
@@ -410,7 +413,7 @@ let private replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
-                Api.authorityGrants
+                Api.peopleGrants
                 HumanReadDocuments.grants
                 (Outcome.Succeeded
                     {
@@ -423,7 +426,7 @@ let private replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
-                Api.authorityHistory
+                Api.peopleHistory
                 HumanReadDocuments.history
                 (Outcome.Succeeded
                     {
@@ -433,7 +436,7 @@ let private replies () : IEndpointOutput list =
                     })
         yield!
             actorRead
-                Api.authorityRequests
+                Api.peopleRequests
                 HumanReadDocuments.requests
                 (Outcome.Succeeded
                     {
@@ -442,10 +445,7 @@ let private replies () : IEndpointOutput list =
                         NextCursor = None
                     })
         yield!
-            actorRead
-                Api.authorityRequestsDismiss
-                HumanReadDocuments.dismissed
-                (Outcome.Succeeded())
+            actorRead Api.peopleRequestsDismiss HumanReadDocuments.dismissed (Outcome.Succeeded())
         for outcome in
             [
                 preview.Outcome
@@ -570,11 +570,11 @@ let samples endpoint =
                         None
             })
 
-let authorityReplyBytes () =
+let peopleReplyBytes () =
     Codec.encode
         Api.operationExecute.Output
         (RepresentationReply.Data
             {
-                ExecuteReply.OperationId = OperationId.value authorityReceipt.OperationId
-                Outcome = ExecuteResult.Accepted authorityReceipt
+                ExecuteReply.OperationId = OperationId.value peopleReceipt.OperationId
+                Outcome = ExecuteResult.Accepted peopleReceipt
             })

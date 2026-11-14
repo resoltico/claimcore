@@ -35,9 +35,12 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operationId = id ()
     let reference = "CLI-DELIVERY-" + id ()
     input["operationId"] <- JsonValue.Create operationId
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
-    let values = (input["act"] |> nonNull)["values"] |> nonNull
-    values["claimedAmount"] <- JsonValue.Create "1.0000"
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create reference
+
+    let values = input["inputs"] |> nonNull
+    values["field:claimedAmount"] <- JsonValue.Create "1.0000"
     Encoding.UTF8.GetBytes(source.ToJsonString()), operationId, reference
 
 let private field name (reply: JsonElement) =
@@ -176,10 +179,9 @@ let private exactResolution fixture source operationId =
 let private differentContent fixture source =
     let changed = JsonNode.Parse(source: byte array) |> nonNull
 
-    let values =
-        (((changed["input"] |> nonNull)["act"] |> nonNull)["values"] |> nonNull)
+    let values = ((changed["input"] |> nonNull)["inputs"] |> nonNull)
 
-    values["claimedAmount"] <- JsonValue.Create "2.0000"
+    values["field:claimedAmount"] <- JsonValue.Create "2.0000"
     let different = Encoding.UTF8.GetBytes(changed.ToJsonString())
     arm fixture RedirectControl.lostResponse
     let _, pending = lostFrame fixture different
@@ -199,11 +201,7 @@ let private coreUnknown (fixture: PublishedFixture.Fixture) =
     let source, operationId, reference = authored fixture
     let intercepted = fixture.ArmCommitReplyLoss()
 
-    verb
-        fixture
-        (interactiveEnvironment fixture "synthetic-owner" "valid")
-        [ "authority"; "list" ]
-        0
+    verb fixture (interactiveEnvironment fixture "synthetic-owner" "valid") [ "people"; "list" ] 0
     |> require "SUCCEEDED"
     |> ignore
 

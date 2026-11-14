@@ -63,9 +63,9 @@ let private producerMutations () =
 
     for key in
         [
-            "act.OPEN.label"
-            "act.OPEN.meaning"
-            "act.VOID.consequence"
+            "task.case.open.label"
+            "task.case.open.meaning"
+            "task.case.void.consequence"
             "field.principal.kind.label"
             "group.registration.hint"
         ] do

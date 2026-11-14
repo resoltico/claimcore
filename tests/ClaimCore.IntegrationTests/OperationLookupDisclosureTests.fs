@@ -48,7 +48,7 @@ let private revokeReadRoles fixture (actor: ServiceContext) principal =
                     }
                     false
 
-            acceptedAuthority reply
+            acceptedPeople reply
     }
 
 let private receipts (database: PostgresFixture.Database) =
@@ -99,7 +99,7 @@ let private receipts (database: PostgresFixture.Database) =
                 }
                 true
 
-        acceptedAuthority steward
+        acceptedPeople steward
 
         let! erased =
             (Service.execute

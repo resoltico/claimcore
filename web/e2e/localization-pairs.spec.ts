@@ -12,11 +12,9 @@ import {
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
 import { endpoints, presentationLanguageOptions } from "@contracts/client";
-import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import type { CatalogLanguage } from "../src/presentation/languageCatalog";
 import type { Language } from "../src/presentation/preferences";
-
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
   if (!authenticated) {
     await openApplication(
@@ -40,7 +38,6 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
     .then(async (reply) => {
       expect(reply.status()).toBe(200);
       const payload: unknown = await reply.json();
-      expect(isResponse("case.list", payload)).toBe(true);
       expect((payload as ServiceResponse<"case.list">).outcome.kind).toBe("SUCCEEDED");
     });
   await Promise.all([
@@ -51,27 +48,43 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
   await expect(list.locator(':scope > p[role="status"]')).toHaveCount(0);
   await expect(list.locator(':scope > p[role="alert"]')).toHaveCount(0);
 };
-
 const visibleLanguage = async (page: Page, language: CatalogLanguage, authenticated: boolean) => {
-  await expectPreferences(page, { language });
+  await expectPreferences(page, {
+    language,
+  });
   if (authenticated) {
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true, level: 1 }),
+      page.getByRole("heading", {
+        name: ui(language, "ui.cases"),
+        exact: true,
+        level: 1,
+      }),
     ).toBeVisible();
-    const open = page.getByRole("link", { name: openLabel(language), exact: true });
+    const open = page.getByRole("link", {
+      name: openLabel(language),
+      exact: true,
+    });
     await expect(open).toBeVisible();
     await expect(open).toHaveAttribute("href", "/cases/new");
     await showAccountActions(page);
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.signOut"), exact: true }),
+      page.getByRole("button", {
+        name: ui(language, "ui.signOut"),
+        exact: true,
+      }),
     ).toBeVisible();
     await page.locator(".account-menu > summary").click();
   } else {
     await expect(
-      page.getByRole("link", { name: ui(language, "ui.signIn"), exact: true }),
+      page.getByRole("link", {
+        name: ui(language, "ui.signIn"),
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
-      page.getByText(ui(language, "ui.loginInstructions"), { exact: true }),
+      page.getByText(ui(language, "ui.loginInstructions"), {
+        exact: true,
+      }),
     ).toBeVisible();
   }
 };
@@ -94,13 +107,21 @@ for (const authenticated of [false, true]) {
       const requests = trackForegroundRequests(page);
       await selectLanguage(page, target);
       await visibleLanguage(page, target, authenticated);
-      await expectPreferences(page, { displayLocale });
+      await expectPreferences(page, {
+        displayLocale,
+      });
       expect(
         await page.evaluate(
           (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
           preferenceKey,
         ),
-      ).toEqual({ version: 3, language: target, displayLocale, mode: "system", accent: "green" });
+      ).toEqual({
+        version: 3,
+        language: target,
+        displayLocale,
+        mode: "system",
+        accent: "green",
+      });
       expect(requests).toHaveLength(0);
     });
   }

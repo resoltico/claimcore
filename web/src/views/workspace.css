@@ -79,7 +79,7 @@
   align-items: center;
   min-block-size: var(--target-minimum);
 }
-.authority-workspace {
+.people-workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
@@ -94,17 +94,17 @@
   accent-color: var(--accent-text);
 }
 
-.authority-tabs {
+.people-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   border-block-end: var(--border-width) solid var(--border-control);
   margin-block-end: var(--space-3);
 }
-.authority-tabs a {
+.people-tabs a {
   padding: var(--space-2);
 }
-.authority-tabs a[aria-current="page"] {
+.people-tabs a[aria-current="page"] {
   border-block-end: var(--focus-width) solid var(--accent-text);
 }
 .account-menu {

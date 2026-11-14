@@ -28,33 +28,33 @@ type CaseReceipt =
         Snapshot: SnapshotDisclosure
     }
 
-type AuthorityReceiptEffect =
+type PeopleReceiptEffect =
     {
-        Act: AuthorityKind
+        Act: PeopleActKind
         Id: EffectId
         Position: EffectPosition
     }
 
 [<RequireQualifiedAccess>]
-type AuthorityTargetDisclosure =
+type PeopleTargetDisclosure =
     | Disclosed of ActorRef
     | Withheld of ActorId
 
-module AuthorityTargetDisclosure =
+module PeopleTargetDisclosure =
     let actorId =
         function
-        | AuthorityTargetDisclosure.Disclosed actor -> actor.ActorId
-        | AuthorityTargetDisclosure.Withheld actor -> actor
+        | PeopleTargetDisclosure.Disclosed actor -> actor.ActorId
+        | PeopleTargetDisclosure.Withheld actor -> actor
 
-type AuthorityReceipt =
+type PeopleReceipt =
     {
-        Effects: AuthorityReceiptEffect list
-        TargetActor: AuthorityTargetDisclosure
-        Act: AuthorityKind
+        Effects: PeopleReceiptEffect list
+        TargetActor: PeopleTargetDisclosure
+        Act: PeopleActKind
     }
 
 /// Historical receipt bounds follow the retained operation format, not current authoring admission.
-module AuthorityReceipt =
+module PeopleReceipt =
     [<Literal>]
     let MaximumEffects = 50
 
@@ -117,7 +117,7 @@ type NoteReceipt =
 [<RequireQualifiedAccess>]
 type ReceiptSubject =
     | Case of CaseReceipt
-    | Authority of AuthorityReceipt
+    | People of PeopleReceipt
     | Work of WorkReceipt
     | Reminder of ReminderReceipt
     | Note of NoteReceipt

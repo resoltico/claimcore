@@ -1,205 +1,205 @@
 {
-  "act.AMEND_REGISTRATION.label": {
+  "task.case.amendRegistration.label": {
     "text": "Actualizar los datos de la reclamación",
     "source": "5ae6604c4520"
   },
-  "act.AMEND_REGISTRATION.meaning": {
+  "task.case.amendRegistration.meaning": {
     "text": "Cambiar los datos seleccionados de la reclamación. Los datos que omitas y la referencia del expediente se conservan.",
     "source": "2c651083c926"
   },
-  "act.CLOSE.label": {
+  "task.case.close.label": {
     "text": "Cerrar el expediente",
     "source": "5cad104f0e26"
   },
-  "act.CLOSE.meaning": {
+  "task.case.close.meaning": {
     "text": "Cerrar el expediente cuando no quede trabajo pendiente. Cerrarlo no significa que se haya pagado la reclamación.",
     "source": "6059fdf3ac25"
   },
-  "act.CORRECT.label": {
+  "task.case.correct.label": {
     "text": "Corregir los datos del expediente",
     "source": "e3eeb9561f2e"
   },
-  "act.CORRECT.meaning": {
+  "task.case.correct.meaning": {
     "text": "Corregir datos registrados de la reclamación o de la decisión de pago. Los asientos de pago no cambian y el importe pagadero no puede ser inferior al total pagado.",
     "source": "c115bf28430f"
   },
-  "act.DECIDE.label": {
+  "task.case.decide.label": {
     "text": "Registrar la decisión de pago",
     "source": "17b6161410d5"
   },
-  "act.DECIDE.meaning": {
+  "task.case.decide.meaning": {
     "text": "Registrar o sustituir el importe y la moneda de la decisión. Esto no envía dinero.",
     "source": "17d0f005a684"
   },
-  "act.DISABLE.label": {
+  "task.people.disable.label": {
     "text": "Desactivar la cuenta",
     "source": "9f024ada2282"
   },
-  "act.DISABLE.meaning": {
+  "task.people.disable.meaning": {
     "text": "Impedir que esta cuenta use ClaimCore. Sus cambios registrados se conservan.",
     "source": "a43350b66b04"
   },
-  "act.ENABLE.label": {
+  "task.people.enable.label": {
     "text": "Activar la cuenta",
     "source": "1965185f3488"
   },
-  "act.ENABLE.meaning": {
+  "task.people.enable.meaning": {
     "text": "Permitir que esta cuenta vuelva a usar ClaimCore con sus roles actuales.",
     "source": "94ba3463b2e3"
   },
-  "act.ERASE.label": {
+  "task.case.erase.label": {
     "text": "Suprimir",
     "source": "29b338cac964"
   },
-  "act.ERASE.meaning": {
+  "task.case.erase.meaning": {
     "text": "Suprimir permanentemente de ClaimCore los datos, el trabajo y los recordatorios de este expediente. Se conservan la referencia y la lista de cambios. Las copias externas no se ven afectadas.",
     "source": "8705b2ea28a6"
   },
-  "act.ERASE_PROFILE.label": {
+  "task.people.eraseProfile.label": {
     "text": "Suprimir perfil",
     "source": "55056e69d504"
   },
-  "act.ERASE_PROFILE.meaning": {
+  "task.people.eraseProfile.meaning": {
     "text": "Suprimir permanentemente el nombre y los datos de contacto guardados de esta cuenta. Se conservan su identidad de acceso, roles y trabajo registrado. Los cambios anteriores mostrarán «Cuenta anterior».",
     "source": "871f791ea524"
   },
-  "act.GRANT.label": {
+  "task.people.grant.label": {
     "text": "Asignar un rol",
     "source": "4549a77f3b6c"
   },
-  "act.GRANT.meaning": {
+  "task.people.grant.meaning": {
     "text": "Asignar el rol seleccionado a esta cuenta.",
     "source": "c0ad11901493"
   },
-  "act.OPEN.label": {
+  "task.case.open.label": {
     "text": "Abrir un expediente",
     "source": "100d2c104336"
   },
-  "act.OPEN.meaning": {
+  "task.case.open.meaning": {
     "text": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
     "source": "bd4ea9e91f3a"
   },
-  "act.PROVISION_OWNER.label": {
+  "task.people.provisionOwner.label": {
     "text": "Configurar el primer propietario",
     "source": "2a7018cea51b"
   },
-  "act.RECORD_PAYMENT.label": {
+  "task.case.recordPayment.label": {
     "text": "Registrar el pago realizado",
     "source": "0d13e856322a"
   },
-  "act.RECORD_PAYMENT.meaning": {
+  "task.case.recordPayment.meaning": {
     "text": "Registrar la fecha y el importe de un pago realizado, en la moneda de la decisión. Esto no ejecuta ni verifica una transferencia.",
     "source": "572c7a975cf2"
   },
-  "act.REGISTER.label": {
+  "task.people.register.label": {
     "text": "Registrar una cuenta",
     "source": "2ce51f0219a2"
   },
-  "act.REGISTER.meaning": {
+  "task.people.register.meaning": {
     "text": "Añadir una cuenta con nombre y datos de contacto opcionales. Los roles se asignan por separado.",
     "source": "b056b3b46015"
   },
-  "act.REINSTATE.label": {
+  "task.case.reinstate.label": {
     "text": "Restablecer el expediente",
     "source": "d28eb327714f"
   },
-  "act.REINSTATE.meaning": {
+  "task.case.reinstate.meaning": {
     "text": "Permitir de nuevo el trabajo en este expediente anulado. Su estado abierto o cerrado no cambia.",
     "source": "c48d44c1b7c1"
   },
-  "act.REMINDER_CANCEL.label": {
+  "task.reminder.cancel.label": {
     "text": "Cancelar el recordatorio",
     "source": "948e115bd6a0"
   },
-  "act.REMINDER_CANCEL.meaning": {
+  "task.reminder.cancel.meaning": {
     "text": "Cancelar esta acción sin marcarla como completada. Se conserva su historial.",
     "source": "0d349a8b5a58"
   },
-  "act.REMINDER_COMPLETE.label": {
+  "task.reminder.complete.label": {
     "text": "Completar el recordatorio",
     "source": "80f73f9e9a9b"
   },
-  "act.REMINDER_COMPLETE.meaning": {
+  "task.reminder.complete.meaning": {
     "text": "Marcar esta acción como completada. Si era la última, el expediente necesitará una próxima acción.",
     "source": "47465ff6d73b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+  "task.reminder.completeAndPlanNext.label": {
     "text": "Completar y planificar la próxima acción",
     "source": "329a45fe88c6"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+  "task.reminder.completeAndPlanNext.meaning": {
     "text": "Completar este recordatorio y planificar la próxima acción a la vez.",
     "source": "6da6febc07ca"
   },
-  "act.REMINDER_CREATE.label": {
+  "task.reminder.create.label": {
     "text": "Añadir un recordatorio",
     "source": "cd566803bf39"
   },
-  "act.REMINDER_CREATE.meaning": {
+  "task.reminder.create.meaning": {
     "text": "Planificar la próxima acción de este expediente.",
     "source": "c072c5b2420d"
   },
-  "act.REMINDER_REOPEN.label": {
+  "task.reminder.reopen.label": {
     "text": "Reabrir el recordatorio",
     "source": "a1dceb5971c8"
   },
-  "act.REMINDER_REOPEN.meaning": {
+  "task.reminder.reopen.meaning": {
     "text": "Volver a dejar esta acción pendiente con una nueva fecha de vencimiento.",
     "source": "00cf210f8d8f"
   },
-  "act.REMINDER_UPDATE.label": {
+  "task.reminder.update.label": {
     "text": "Actualizar el recordatorio",
     "source": "5a4f907e9a23"
   },
-  "act.REMINDER_UPDATE.meaning": {
+  "task.reminder.update.meaning": {
     "text": "Cambiar la acción o la fecha de este recordatorio pendiente. Las versiones anteriores se conservan en el historial.",
     "source": "d87307f6a6cd"
   },
-  "act.REOPEN.label": {
+  "task.case.reopen.label": {
     "text": "Reabrir el expediente",
     "source": "e1469dc1ace7"
   },
-  "act.REOPEN.meaning": {
+  "task.case.reopen.meaning": {
     "text": "Reabrir el expediente. Se conservan sus datos e historial.",
     "source": "9afd35e2c444"
   },
-  "act.REVOKE.label": {
+  "task.people.revoke.label": {
     "text": "Revocar un rol",
     "source": "13287c1eda24"
   },
-  "act.REVOKE.meaning": {
+  "task.people.revoke.meaning": {
     "text": "Eliminar la asignación del rol seleccionado.",
     "source": "4bd25ffa16ef"
   },
-  "act.SET_PROFILE.label": {
+  "task.people.setProfile.label": {
     "text": "Actualizar el perfil",
     "source": "34540d1107b7"
   },
-  "act.SET_PROFILE.meaning": {
+  "task.people.setProfile.meaning": {
     "text": "Registrar un nombre visible y datos de contacto opcionales para una cuenta. Esto no cambia su identidad ni sus permisos de acceso.",
     "source": "eee65a67f467"
   },
-  "act.UPDATE_WORK.label": {
+  "task.work.update.label": {
     "text": "Actualizar la tramitación",
     "source": "a55a9d3a672f"
   },
-  "act.UPDATE_WORK.meaning": {
+  "task.work.update.meaning": {
     "text": "Cambiar la persona responsable o actualizar el resumen de tramitación.",
     "source": "3d22d9afd8ec"
   },
-  "act.VOID.label": {
+  "task.case.void.label": {
     "text": "Anular el expediente",
     "source": "dcb1ab478602"
   },
-  "act.VOID.meaning": {
+  "task.case.void.meaning": {
     "text": "Detener todo el trabajo en este expediente, por ejemplo si se introdujo por error. Se conservan el expediente y su historial.",
     "source": "692f8455f851"
   },
-  "act.WITHDRAW_DECISION.label": {
+  "task.case.withdrawDecision.label": {
     "text": "Retirar la decisión de pago",
     "source": "5094d2f8f699"
   },
-  "act.WITHDRAW_DECISION.meaning": {
+  "task.case.withdrawDecision.meaning": {
     "text": "Quitar la decisión de pago antes de que se haya pagado algo. Se conserva su historial.",
     "source": "4579673a4146"
   },
@@ -279,7 +279,7 @@
     "text": "Registrar decisiones de pago",
     "source": "2ff9882dcfbc"
   },
-  "capability.MANAGE_AUTHORITY.label": {
+  "capability.MANAGE_ACCESS.label": {
     "text": "Gestionar personas y acceso",
     "source": "da7fc871fa3c"
   },
@@ -287,7 +287,7 @@
     "text": "Gestionar la tramitación",
     "source": "df43d3bc49f6"
   },
-  "capability.READ_AUTHORITY.label": {
+  "capability.READ_ACCESS.label": {
     "text": "Ver acceso",
     "source": "f5462009cf42"
   },
@@ -515,27 +515,27 @@
     "text": "Próximos vencimientos",
     "source": "5f1a2542e4e4"
   },
-  "endpoint.authority.grants.label": {
+  "endpoint.people.grants.label": {
     "text": "Ver roles",
     "source": "baa2809b34eb"
   },
-  "endpoint.authority.grants.meaning": {
+  "endpoint.people.grants.meaning": {
     "text": "Mostrar los roles asignados a una cuenta.",
     "source": "a0171895698a"
   },
-  "endpoint.authority.history.label": {
+  "endpoint.people.history.label": {
     "text": "Historial de acceso",
     "source": "29e9d0964e33"
   },
-  "endpoint.authority.history.meaning": {
+  "endpoint.people.history.meaning": {
     "text": "Ver los cambios de acceso, empezando por los más recientes.",
     "source": "5f18e1d68412"
   },
-  "endpoint.authority.list.label": {
+  "endpoint.people.list.label": {
     "text": "Listar personas",
     "source": "59c1126b3c3c"
   },
-  "endpoint.authority.list.meaning": {
+  "endpoint.people.list.meaning": {
     "text": "Mostrar las cuentas y los cambios de acceso disponibles.",
     "source": "b16e0b16d7eb"
   },
@@ -895,10 +895,6 @@
     "text": "Vista de recordatorios",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "Cambio de responsabilidad",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "Ámbito de la asignación",
     "source": "d6417785a41b"
@@ -1203,7 +1199,7 @@
     "text": "Abierto",
     "source": "ed077f3d8125"
   },
-  "subject.AUTHORITY.label": {
+  "subject.PEOPLE.label": {
     "text": "Acceso",
     "source": "ec5ba0abb717"
   },
@@ -1343,19 +1339,19 @@
     "text": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
     "source": "9f93027815d5"
   },
-  "endpoint.authority.requests.label": {
+  "endpoint.people.requests.label": {
     "text": "Solicitudes de acceso",
     "source": "34185554f83d"
   },
-  "endpoint.authority.requests.meaning": {
+  "endpoint.people.requests.meaning": {
     "text": "Mostrar las solicitudes de inicio de sesión que esperan acceso.",
     "source": "cf0e3a6ea687"
   },
-  "endpoint.authority.requests.dismiss.label": {
+  "endpoint.people.requests.dismiss.label": {
     "text": "Descartar la solicitud de acceso",
     "source": "83aeff49e156"
   },
-  "endpoint.authority.requests.dismiss.meaning": {
+  "endpoint.people.requests.dismiss.meaning": {
     "text": "Eliminar esta solicitud sin conceder acceso.",
     "source": "0201b260d157"
   },
@@ -1387,11 +1383,11 @@
     "text": "Esta acción no está disponible. Estado del recordatorio: {state}. Revisa la última versión del recordatorio.",
     "source": "1ae8310d09d9"
   },
-  "act.ADMIT.label": {
+  "task.people.admit.label": {
     "text": "Añadir una persona",
     "source": "66848b5361f4"
   },
-  "act.ADMIT.meaning": {
+  "task.people.admit.meaning": {
     "text": "Añadir una persona o una cuenta de servicio con nombre y sus primeros roles.",
     "source": "57a856554f42"
   },
@@ -1429,7 +1425,7 @@
   },
   "accountState.DISABLED.meaning": {
     "text": "La cuenta está desactivada. Los roles asignados siguen visibles para revisar el acceso.",
-    "source": "0da44badae93"
+    "source": "eb438244f3bd"
   },
   "label.attention": {
     "text": "Atención",
@@ -1713,7 +1709,7 @@
   },
   "input.actorId.rule": {
     "text": "El actor registrado seleccionado para revisar las asignaciones o el historial de acceso.",
-    "source": "7011d79dbcce"
+    "source": "97dd1b90af90"
   },
   "input.actorId.hint": {
     "text": "Elige de quién quieres revisar el acceso.",
@@ -1791,14 +1787,6 @@
     "text": "Incluir explícitamente la tramitación de expedientes cerrados o anulados. Los recordatorios pendientes conservan sus fechas y su estado.",
     "source": "c8addb209dac"
   },
-  "input.responsibleActorAction.rule": {
-    "text": "Elige establecer o eliminar; omítelo para conservar la cuenta responsable actual.",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "Establecer o eliminar la persona responsable de este expediente.",
-    "source": "d788923ffdfd"
-  },
   "group.registration.rule": {
     "text": "Conservar los datos de registro o actualizar los seleccionados. Los datos omitidos no cambian; el importe y la moneda se indican juntos.",
     "source": "b1e2f43d3bf8"
@@ -1851,143 +1839,143 @@
     "text": "Elige cada rol y su ámbito una sola vez.",
     "source": "7a0f01238fda"
   },
-  "act.OPEN.done": {
+  "task.case.open.done": {
     "text": "Expediente abierto.",
     "source": "87e4c2288a79"
   },
-  "act.AMEND_REGISTRATION.done": {
+  "task.case.amendRegistration.done": {
     "text": "Registro actualizado.",
     "source": "bf64cd9ad6ac"
   },
-  "act.CORRECT.done": {
+  "task.case.correct.done": {
     "text": "Datos del expediente corregidos.",
     "source": "a36e2011a7df"
   },
-  "act.DECIDE.done": {
+  "task.case.decide.done": {
     "text": "Decisión de pago registrada.",
     "source": "5c37a8e391bc"
   },
-  "act.WITHDRAW_DECISION.done": {
+  "task.case.withdrawDecision.done": {
     "text": "Decisión de pago retirada.",
     "source": "264b3e2b75e7"
   },
-  "act.RECORD_PAYMENT.done": {
+  "task.case.recordPayment.done": {
     "text": "Pago registrado.",
     "source": "08d843e2c987"
   },
-  "act.CLOSE.done": {
+  "task.case.close.done": {
     "text": "Expediente cerrado.",
     "source": "e474c5de64f5"
   },
-  "act.REOPEN.done": {
+  "task.case.reopen.done": {
     "text": "Expediente reabierto.",
     "source": "2f0851679340"
   },
-  "act.VOID.done": {
+  "task.case.void.done": {
     "text": "Expediente anulado.",
     "source": "3879f4c74f67"
   },
-  "act.VOID.consequence": {
+  "task.case.void.consequence": {
     "text": "El expediente sigue registrado y queda fuera del trabajo cotidiano hasta que se restablezca.",
     "source": "b10ae3c17e24"
   },
-  "act.REINSTATE.done": {
+  "task.case.reinstate.done": {
     "text": "Expediente restablecido.",
     "source": "e8b79ac26253"
   },
-  "act.REINSTATE.consequence": {
+  "task.case.reinstate.consequence": {
     "text": "El expediente vuelve a estar activo. Su estado abierto o cerrado no cambia.",
     "source": "d174ff361378"
   },
-  "act.ERASE.done": {
+  "task.case.erase.done": {
     "text": "Expediente suprimido.",
     "source": "c808ff2c3abd"
   },
-  "act.ERASE.consequence": {
+  "task.case.erase.consequence": {
     "text": "Esto suprime permanentemente de ClaimCore los datos del expediente, su tramitación y sus recordatorios. Se conservan la referencia y el registro de cambios.",
     "source": "e774df6acd21"
   },
-  "act.REGISTER.done": {
+  "task.people.register.done": {
     "text": "Cuenta registrada.",
     "source": "8beb0718d0ce"
   },
-  "act.ADMIT.done": {
+  "task.people.admit.done": {
     "text": "Cuenta añadida con sus roles.",
     "source": "34e9d9f27a5d"
   },
-  "act.ADMIT.consequence": {
+  "task.people.admit.consequence": {
     "text": "Esto añade la cuenta, guarda su perfil y registra todos los roles seleccionados a la vez.",
     "source": "9f450fe5937d"
   },
-  "act.SET_PROFILE.done": {
+  "task.people.setProfile.done": {
     "text": "Perfil actualizado.",
     "source": "3a06720a52cb"
   },
-  "act.ERASE_PROFILE.done": {
+  "task.people.eraseProfile.done": {
     "text": "Perfil suprimido.",
     "source": "3f92d421b5a7"
   },
-  "act.ERASE_PROFILE.consequence": {
+  "task.people.eraseProfile.consequence": {
     "text": "Esto suprime permanentemente el nombre y los datos de contacto guardados. Los cambios anteriores muestran un nombre de cuenta anónimo.",
     "source": "59d90d4c6095"
   },
-  "act.GRANT.done": {
+  "task.people.grant.done": {
     "text": "Rol asignado.",
     "source": "58d5cb320b79"
   },
-  "act.GRANT.consequence": {
+  "task.people.grant.consequence": {
     "text": "Esto registra la asignación del rol seleccionado para esta cuenta.",
     "source": "2516ad2235ce"
   },
-  "act.REVOKE.done": {
+  "task.people.revoke.done": {
     "text": "Rol revocado.",
     "source": "8cb5dd549927"
   },
-  "act.REVOKE.consequence": {
+  "task.people.revoke.consequence": {
     "text": "Esto elimina la asignación del rol seleccionado.",
     "source": "04f9c1d1eb16"
   },
-  "act.ENABLE.done": {
+  "task.people.enable.done": {
     "text": "Cuenta activada.",
     "source": "bc5cec779f5e"
   },
-  "act.DISABLE.done": {
+  "task.people.disable.done": {
     "text": "Cuenta desactivada.",
     "source": "baa0517c0ffc"
   },
-  "act.DISABLE.consequence": {
+  "task.people.disable.consequence": {
     "text": "Esta cuenta pierde el acceso a ClaimCore. Los cambios que registró se conservan.",
     "source": "ecd5b17ec840"
   },
-  "act.UPDATE_WORK.done": {
+  "task.work.update.done": {
     "text": "Tramitación actualizada.",
     "source": "fbdedb4562e0"
   },
-  "act.REMINDER_CREATE.done": {
+  "task.reminder.create.done": {
     "text": "Recordatorio añadido.",
     "source": "5e9e2dcc0b92"
   },
-  "act.REMINDER_UPDATE.done": {
+  "task.reminder.update.done": {
     "text": "Recordatorio actualizado.",
     "source": "b744baec4246"
   },
-  "act.REMINDER_COMPLETE.done": {
+  "task.reminder.complete.done": {
     "text": "Recordatorio completado.",
     "source": "7b359664f423"
   },
-  "act.REMINDER_CANCEL.done": {
+  "task.reminder.cancel.done": {
     "text": "Recordatorio cancelado.",
     "source": "d4f1d5514d81"
   },
-  "act.REMINDER_REOPEN.done": {
+  "task.reminder.reopen.done": {
     "text": "Recordatorio reabierto.",
     "source": "8b94105daf2b"
   },
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+  "task.reminder.completeAndPlanNext.done": {
     "text": "Recordatorio completado y próxima acción planificada.",
     "source": "99dc5d907128"
   },
-  "endpoint.authority.requests.dismiss.done": {
+  "endpoint.people.requests.dismiss.done": {
     "text": "Solicitud de acceso descartada.",
     "source": "5dcca45467bc"
   },
@@ -2011,7 +1999,7 @@
     "text": "Número de registro",
     "source": "262fca96392a"
   },
-  "label.authorityHistory": {
+  "label.peopleHistory": {
     "text": "Historial de acceso",
     "source": "29e9d0964e33"
   },
@@ -2091,7 +2079,7 @@
     "text": "Expedientes",
     "source": "2249bd503ec4"
   },
-  "view.AUTHORITY.label": {
+  "view.PEOPLE.label": {
     "text": "Personas y acceso",
     "source": "1e133caaec46"
   },
@@ -2467,15 +2455,15 @@
     "text": "Concedido por",
     "source": "b6f1129ef877"
   },
-  "act.REMOVE_PAYMENT.label": {
+  "task.case.removePayment.label": {
     "text": "Eliminar asiento de pago",
     "source": "3765d89e8401"
   },
-  "act.REMOVE_PAYMENT.meaning": {
+  "task.case.removePayment.meaning": {
     "text": "Eliminar un asiento de pago registrado por error. Esto no reembolsa ni revierte una transferencia. El historial anterior se conserva.",
     "source": "839063316dd5"
   },
-  "act.REMOVE_PAYMENT.done": {
+  "task.case.removePayment.done": {
     "text": "Asiento de pago eliminado.",
     "source": "0aa96c610f64"
   },
@@ -2579,27 +2567,27 @@
     "text": "Este asiento de pago ya no está presente. Consulte el expediente actual antes de continuar.",
     "source": "ffdd2d61ba68"
   },
-  "act.ADD_NOTE.done": {
+  "task.note.add.done": {
     "text": "Nota añadida.",
     "source": "26e0eaebce58"
   },
-  "act.ADD_NOTE.label": {
+  "task.note.add.label": {
     "text": "Añadir nota",
     "source": "63565c0485fe"
   },
-  "act.ADD_NOTE.meaning": {
+  "task.note.add.meaning": {
     "text": "Añadir una nota a este expediente. No cambia los datos de la reclamación ni de los pagos.",
     "source": "41497abc12f4"
   },
-  "act.REMOVE_NOTE.done": {
+  "task.note.remove.done": {
     "text": "Nota eliminada.",
     "source": "bb424a5bfe68"
   },
-  "act.REMOVE_NOTE.label": {
+  "task.note.remove.label": {
     "text": "Eliminar nota",
     "source": "c06bd11ad0f6"
   },
-  "act.REMOVE_NOTE.meaning": {
+  "task.note.remove.meaning": {
     "text": "Ocultar esta nota de las notas actuales. Su texto permanece en el historial completo hasta la supresión del expediente.",
     "source": "cf678694f353"
   },
@@ -2651,11 +2639,11 @@
     "text": "Nota",
     "source": "d8da2c49df39"
   },
-  "timeline.event.ADD_NOTE": {
+  "timeline.event.note.add": {
     "text": "Nota añadida",
     "source": "a7886ebc4ffd"
   },
-  "timeline.event.REMOVE_NOTE": {
+  "timeline.event.note.remove": {
     "text": "Nota eliminada",
     "source": "b9096ff4a83e"
   },
