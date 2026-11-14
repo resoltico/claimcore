@@ -3,7 +3,6 @@ import {
   caseDocumentInput,
   caseIdentityScreen,
 } from "../support/case-document.fixtures";
-import { prefixedInputs } from "../support/submission-inputs";
 import { operationAffordance } from "../support/affordances.fixtures";
 
 import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
@@ -23,22 +22,16 @@ const readable = caseDocumentInput(
         {
           kind: "WORK",
           target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-          expectedRevision: 4,
+          expectedRevision: caseSubject.workRevision,
         },
-        { ...prefixedInputs("field:", { handlingSummary: null, responsibleActor: null }) },
+        {},
         ["field:handlingSummary", "field:responsibleActor"],
         {},
       ),
-      operationAffordance(
-        "reminder.create",
-        {
-          kind: "REMINDER",
-          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-        },
-        { ...prefixedInputs("field:", { handlingSummary: null, responsibleActor: null }) },
-        ["field:handlingSummary", "field:responsibleActor"],
-        {},
-      ),
+      operationAffordance("reminder.create", {
+        kind: "REMINDER",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      }),
     ],
     history: "NONE",
   },

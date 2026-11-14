@@ -802,7 +802,7 @@ module Replay =
                 )
             | None, PeopleAct.ProvisionOwner _ ->
                 Ok(ReplayContext.recorded operation.Root.Header scope.Principal AccessView.empty)
-            | _ -> Error(divergence at VerificationFinding.ActorNotEnabled)
+            | _ -> Error(divergence at VerificationFinding.PeopleFold)
 
         let provenance = SubjectProvenance.people operation
 
