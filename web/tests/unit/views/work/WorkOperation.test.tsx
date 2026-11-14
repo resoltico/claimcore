@@ -6,10 +6,11 @@ import { operationTask } from "../../../../src/protocol/taskCatalog";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { current } from "../../../support/presentation-state.fixtures";
 import type { FormValues } from "../../../../src/protocol/forms";
+import { initialAffordanceValues } from "../../../../src/operation/affordances";
 import type { OperationAffordance } from "../../../../src/operation/affordances";
 const state = vi.hoisted(() => ({
   preview: vi.fn(),
-  options: vi.fn<(options: { prefill: FormValues }) => void>(),
+  options: vi.fn<(options: { prefill?: FormValues }) => void>(),
   ownerVerified: true,
   disclosureCurrent: true,
 }));
@@ -18,6 +19,7 @@ vi.mock("../../../../src/hooks/operation/useOperation", () => ({
     state.options(options);
     return {
       currentCase: null,
+      values: { ...initialAffordanceValues(options.affordance), ...options.prefill },
       task: operationTask("reminder.update"),
       affordance: options.affordance,
       ownerVerified: state.ownerVerified,
@@ -85,10 +87,7 @@ it("previews once when editable authored inputs are supplied by Core seeds", () 
     "input:reminderDueDate": "2026-11-20",
   });
   expect(state.preview).toHaveBeenCalledOnce();
-  expect(state.options.mock.calls[0]![0].prefill).toEqual({
-    "input:reminderAction": "Call claimant",
-    "input:reminderDueDate": "2026-11-20",
-  });
+  expect(state.options.mock.calls[0]![0].prefill).toBeUndefined();
   view.renderAgain();
   expect(state.preview).toHaveBeenCalledOnce();
 });

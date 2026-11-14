@@ -51,10 +51,6 @@ const seedValues = (
   }
   return values;
 };
-/** Core prefill, including editable values; collection identities stay local. */
-export const seededAffordanceValues = (action: OperationAffordance): FormValues =>
-  seedValues(action, operationTask(action.task));
-
 /** Newly added rows reuse the Core prefill, never the user's already edited rows. */
 export const initialCollectionRow = (
   action: OperationAffordance | undefined,
@@ -71,20 +67,14 @@ export const initialCollectionRow = (
     ? (value.rows[0]?.values ?? {})
     : {};
 };
-export const initialAffordanceValues = (action: OperationAffordance): FormValues => {
+/** Acquire seeds without activating editable UPDATE inputs; those seeds are display hints. */
+export const initialAffordanceSeeds = (action: OperationAffordance): FormValues => {
   const declaration = operationTask(action.task);
   const seeds = seedValues(action, declaration);
   const values: Record<string, FormValue> = {};
   for (const input of declaration.inputs) {
     if (input.mode !== "UPDATE" || !new Set<string>(action.editable).has(input.id)) {
-      const value =
-        seeds[input.id] === undefined &&
-        input.source === "AUTHORED" &&
-        input.mode === "REQUIRED" &&
-        input.atom === "TEXT" &&
-        input.choices.length === 0
-          ? ""
-          : seeds[input.id];
+      const value = seeds[input.id];
       if (value !== undefined) {
         values[input.id] = value;
       }
@@ -92,6 +82,21 @@ export const initialAffordanceValues = (action: OperationAffordance): FormValues
   }
   for (const collection of declaration.collections) {
     values[collection.id] = seeds[collection.id]!;
+  }
+  return values;
+};
+export const initialAffordanceValues = (action: OperationAffordance): FormValues => {
+  const values = { ...initialAffordanceSeeds(action) };
+  for (const input of operationTask(action.task).inputs) {
+    if (
+      values[input.id] === undefined &&
+      input.source === "AUTHORED" &&
+      input.mode === "REQUIRED" &&
+      input.atom === "TEXT" &&
+      input.choices.length === 0
+    ) {
+      values[input.id] = "";
+    }
   }
   return values;
 };

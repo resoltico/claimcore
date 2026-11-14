@@ -231,6 +231,68 @@ let tests =
                             (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
                             "Unreadable resources stay opaque")
             testCase
+                "summary-only work updates keep an assignee who is no longer eligible"
+                (fun () ->
+                    let parent = parent ()
+
+                    let assignee =
+                        CaseFixtures.actorId (Guid.Parse "30000000-0000-4000-8000-000000000003")
+
+                    let initial = WorkSubject.initial parent.CaseId
+
+                    let before =
+                        { initial with
+                            Revision = Revision.first
+                            Snapshot =
+                                Some
+                                    {
+                                        CaseId = parent.CaseId
+                                        Revision = Revision.first
+                                        Work =
+                                            {
+                                                Responsible = Some assignee
+                                                Summary =
+                                                    Some(
+                                                        HandlingSummary.parse "Existing summary"
+                                                        |> accepted
+                                                    )
+                                            }
+                                    }
+                        }
+
+                    let dependencies =
+                        {
+                            WorkSubjectDependencies.Parent = parent
+                            AssigneeEligible = fun _ -> false
+                        }
+
+                    let decide responsible =
+                        WorkSubject.decide
+                            context
+                            (operation 2)
+                            dependencies
+                            (Some before)
+                            {
+                                ExpectedRevision = Revision.first
+                                Update =
+                                    {
+                                        Responsible = responsible
+                                        Summary =
+                                            WorkValue.Set(
+                                                HandlingSummary.parse "Edited summary" |> accepted
+                                            )
+                                    }
+                            }
+
+                    Expect.isOk
+                        (decide WorkValue.Keep)
+                        "Omission preserves the existing assignment"
+
+                    Expect.equal
+                        (decide (WorkValue.Set assignee))
+                        (Error(Refusal.Case CaseRefusal.AssigneeUnavailable))
+                        "Explicit assignment still checks current eligibility")
+            testCase
                 "people decisions take requester access and lifetime from the same context"
                 (fun () ->
                     let principal =

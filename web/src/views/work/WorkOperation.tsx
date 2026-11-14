@@ -1,6 +1,6 @@
-import { seededAffordanceValues, type OperationAffordance } from "../../operation/affordances";
+import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
-import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent, useMemo } from "react";
+import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
 import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 
@@ -60,20 +60,13 @@ export const WorkOperation = ({
     },
     [cache, onRecorded],
   );
-  const filled = useMemo(
-    () => ({
-      ...(affordance === undefined ? {} : seededAffordanceValues(affordance)),
-      ...prefill,
-    }),
-    [affordance, prefill],
-  );
   const model = useOperation({
     subject,
     kind,
     current,
     credential,
     affordance,
-    prefill: filled,
+    prefill,
     binding,
     targetIdentity,
     onLockChange,
@@ -82,13 +75,15 @@ export const WorkOperation = ({
   const observed = model.currentCase;
   const allowed = model.affordance?.blocked === null;
   const authored = model.task.inputs.filter((input) => input.source === "AUTHORED");
+  const acquiredSeeds =
+    model.affordance === undefined ? {} : initialAffordanceSeeds(model.affordance);
   const autoPreview =
     authored.length === 0 ||
     model.affordance?.editable.length === 0 ||
     authored.every(
       (input) =>
-        Object.hasOwn(model.affordance?.seeds ?? {}, input.id) ||
-        Object.hasOwn(prefill ?? {}, input.id),
+        Object.hasOwn(model.values, input.id) &&
+        (Object.hasOwn(acquiredSeeds, input.id) || Object.hasOwn(prefill ?? {}, input.id)),
     );
   useEffect(() => {
     if (
