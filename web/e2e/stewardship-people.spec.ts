@@ -206,21 +206,33 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   const operationExecuteReply = (await reply.json()) as ResponseFor<"operation.execute", "HUMAN">;
   if (
     operationExecuteReply.representation !== "HUMAN" ||
-    operationExecuteReply.outcome.kind !== "ACCEPTED" ||
+    operationExecuteReply.outcome.kind !== "ACCEPTED"
+  ) {
+    throw new Error("Missing accepted people response.");
+  }
+  const receipt = page.locator("section.receipt");
+  const busy = receipt
+    .getByRole("alert")
+    .filter({ hasText: "ClaimCore is busy. Try again in a moment." });
+  let readRetries = 0;
+  await expect(async () => {
+    if ((await busy.isVisible()) && readRetries < 3) {
+      readRetries += 1;
+      await busy.getByRole("button", { name: "Try again", exact: true }).click();
+    }
+    await expect(receipt.locator('[data-entry="operationId"]')).toContainText(
+      operationExecuteReply.operationId,
+    );
+  }).toPass({ timeout: 15000 });
+  expect(
     (
       await acceptedSubject(
         page,
         operationExecuteReply.operationId,
         observedAccess(reply.request()),
       )
-    ).kind !== "PEOPLE"
-  ) {
-    throw new Error("Missing accepted people response.");
-  }
-  const receipt = page.locator("section.receipt");
-  await expect(receipt.locator('[data-entry="operationId"]')).toContainText(
-    operationExecuteReply.operationId,
-  );
+    ).kind,
+  ).toBe("PEOPLE");
   const technical = receipt.locator('details[data-region="DETAILS"]');
   await technical.locator(":scope > summary").click();
   await expect(technical.locator('[data-entry="operationId"] .identifier-value')).toHaveText(

@@ -338,9 +338,18 @@ const PeopleReceipt = ({ operationId }: { operationId: string }) => {
       )}
       {observation.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {observation.message === null ? null : (
-        <p role="alert">
+        <div role="alert">
           <NoticeView value={observation.message} />
-        </p>
+          <button
+            type="button"
+            disabled={observation.loading}
+            onClick={() => {
+              void observation.observe();
+            }}
+          >
+            {p.text("ui.tryAgain")}
+          </button>
+        </div>
       )}
     </section>
   );

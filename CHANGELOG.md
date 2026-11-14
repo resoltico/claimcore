@@ -7,6 +7,7 @@
 - Regenerate HUMAN clients: documents carry subject, actions, links and paging; each row carries its own controls instead of separate handle arrays.
 - Assignee reads include caseId and workRevision; payment reads include workRevision to bind controls to their observed case/work versions.
 - Core supplies People primary actions and editable seeds; preview eligibility follows declared inputs and supplied controls.
+- People receipt reads offer explicit retry after a read failure without resending the accepted change.
 - Existing-person operations select ActorId in bindings; CLI person changes take an actor-ID operand instead of principal flags.
 - Replace claimcore-database with claimcore-server subcommands; start hosting with claimcore-server serve. Missing-command usage exits 64.
 - Use people.* endpoints and MANAGE_ACCESS/READ_ACCESS capabilities. CLI verbs follow dotted IDs, including case notes and case payments.

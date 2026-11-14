@@ -11,7 +11,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { peopleAcceptance, peoplePreview } from "../support/people-operation.fixtures";
-import { act, fireEvent, waitFor } from "@testing-library/react";
+import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { PeoplePanel } from "../../src/views/PeoplePanel";
@@ -310,10 +310,18 @@ it.each(["transport", "host", "core"] as const)(
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
     await waitForReviewConfirm();
     fireEvent.click(reviewConfirm());
-    expect(await screen.findByRole("alert")).toBeVisible();
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole("alert").some((node) => node.closest("section.receipt") === null),
+      ).toBe(true);
+    });
     expect(screen.queryByRole("combobox", { name: "People action" })).toBeNull();
     expect(reads).toHaveBeenCalledTimes(2);
-    fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
+    const contextRetries = screen
+      .getAllByRole("button", { name: /^Try again$/u })
+      .filter((node) => node.closest("section.receipt") === null);
+    expect(contextRetries).toHaveLength(1);
+    fireEvent.click(contextRetries[0]!);
     await openPersonEditor();
     expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
     expect(document.querySelector('[name="input:principal.subject"]')).toHaveValue("");
@@ -361,4 +369,36 @@ it("context reload preserves an uncertain prepared people request and exact retr
   });
   expect(execute.mock.calls[1]![0]).toBe(prepared);
   expect(execute.mock.calls[1]![0].bytes).toBe(prepared.bytes);
+});
+
+it("retries only the accepted receipt read after admission pressure", async () => {
+  mockEndpoint("context").mockResolvedValue(context());
+  mockEndpoint("people.list").mockResolvedValue(listing());
+  const reads = mockEndpoint("operation.get").mockResolvedValue({
+    kind: "hostFailure",
+    status: 429,
+    failure: { code: "RATE_LIMITED", phase: "NOT_STARTED" },
+  });
+  const execute = vi
+    .spyOn(service, "execute")
+    .mockImplementation((prepared) => Promise.resolve(acceptance(prepared)));
+  render(<PeoplePanel onLockChange={vi.fn()} />);
+  await author("receipt-pressure");
+  fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitForReviewConfirm();
+  fireEvent.click(reviewConfirm());
+  const heading = await screen.findByRole("heading", { name: "Recorded change" });
+  const receipt = heading.closest("section")!;
+  await within(receipt).findByRole("alert");
+  const before = reads.mock.calls.length;
+  reads.mockResolvedValue({ kind: "outcome", status: 200, value: wireReply("operation.get") });
+  fireEvent.click(within(receipt).getByRole("button", { name: /^Try again$/u }));
+  await waitFor(() => {
+    expect(within(receipt).queryByRole("alert")).toBeNull();
+  });
+  expect(reads).toHaveBeenCalledTimes(before + 1);
+  expect(reads.mock.calls.at(-1)![1]).toEqual({
+    operationId: execute.mock.calls[0]![0].input.operationId,
+  });
+  expect(execute).toHaveBeenCalledOnce();
 });
