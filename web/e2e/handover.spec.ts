@@ -221,14 +221,14 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     "claimcore-installation",
     context.outcome.data.requester.installationId,
   );
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectWorklistReady(page, references[0], references[1]);
   expect(
     await acceptedSubject(page, operationPreviewRequest.operationId, {
       installationId: context.outcome.data.requester.installationId,
       token: observedHeaders["x-claimcore-antiforgery"]!,
     }),
   ).toMatchObject({ kind: "WORK", revision: 2 });
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expectWorklistReady(page, references[0], references[1]);
   await expect(first).toHaveCount(0);
   expect(writes).toBe(1);
   expect(page.url()).toContain(`responsibleActor=${owner}`);
