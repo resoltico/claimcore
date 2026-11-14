@@ -472,11 +472,94 @@ let private accessExplanation () =
         [ PrincipalKind.Human ]
         "Published owner admission remains human-only"
 
+let private reaffirmedGrant () =
+    let target = actor other (CaseFixtures.actorId (id 2)) [ Role.CaseReader ] []
+    let state = (peopleView worker target None).Read.State |> Option.get
+
+    let grant =
+        {
+            ActorGrant.Role = Role.CaseReader
+            Scope = Scope.Installation
+        }
+
+    let position = EffectPosition.create (CaseFixtures.sequence 2L) 0 |> Option.get
+
+    let provenance =
+        {
+            PeopleSubjectProvenance.Granted = Map.ofList [ grant, position ]
+            ProfileErasure = None
+        }
+
+    let effect =
+        {
+            PeopleSubjectEffect.Change = PeopleChange.Granted(grant.Role, grant.Scope)
+            After = PeopleSubject.access state
+        }
+
+    let updated =
+        PeopleSubject.apply provenance (Some state) effect
+        |> Result.defaultWith (string >> failtest)
+        |> Option.get
+
+    Expect.equal
+        updated.Grants[grant]
+        position
+        "Reaffirmation records the latest accepting position"
+
+    let view = (peopleView worker target None).Read
+
+    let dependencies =
+        {
+            PeopleSubjectDependencies.Requester = view.Actor
+            TargetCases = view.TargetCases |> Map.map (fun _ value -> value.CaseId)
+            EnabledHumanOwners = view.EnabledHumanOwners
+            ActorCount = view.ActorCount
+        }
+
+    let retained =
+        PeopleSubject.applyErased
+            dependencies
+            provenance
+            (Some state)
+            state.Actor.ActorId
+            (CaseFixtures.operationId (id 104))
+            state.Actor.Principal
+            (PeopleAct.Grant
+                {
+                    AuthoredGrant.Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                })
+
+    Expect.equal
+        retained
+        (Ok(Some updated))
+        "Erased-content replay retains the same reaffirmed grant provenance"
+
+    let unrelated =
+        {
+            ActorGrant.Role = Role.CaseHandler
+            Scope = Scope.Installation
+        }
+
+    Expect.isError
+        (PeopleSubject.apply
+            { provenance with
+                Granted = Map.ofList [ unrelated, position ]
+            }
+            (Some state)
+            effect)
+        "An unrelated grant cannot supply reaffirmation provenance"
+
+    Expect.isError
+        (PeopleSubject.apply { provenance with Granted = Map.empty } (Some state) effect)
+        "A reaffirmed grant must retain its accepting position"
+
 [<Tests>]
 let tests =
     testList
         "pure people decisions"
         [
+            testCase "grant reaffirmation retains exact provenance" reaffirmedGrant
             testCase
                 "access review explains scoped overlapping and dormant rights and permits obsolete grant cleanup"
                 accessExplanation

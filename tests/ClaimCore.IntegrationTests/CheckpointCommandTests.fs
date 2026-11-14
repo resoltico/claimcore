@@ -147,7 +147,13 @@ let private commandPath () =
                     [ "rebuild"; "--expect"; "0:old" ], "USAGE_ERROR", None
                     [ "invalidate-restored-sessions" ], "OPERATOR_FAULT", Some "INVOCATION_INVALID"
                 ] do
-                let! refused = invoke arguments ExitCode.Rejected
+                let expectedExit =
+                    if expectedKind = "USAGE_ERROR" then
+                        ExitCode.Usage
+                    else
+                        ExitCode.Rejected
+
+                let! refused = invoke arguments expectedExit
                 Expect.equal (kind refused) expectedKind "Exact retired-syntax refusal"
 
                 match expectedFault with

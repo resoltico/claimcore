@@ -12,6 +12,7 @@ let private stages =
             "readiness-negative"
             "build-and-start"
             "owner-login"
+            "owner-context"
             "restart"
             "logout"
             "qualified"
@@ -146,6 +147,7 @@ let private stageControls () =
                 "owner-login\nPRIVATE_MARKER"
                 "owner-login\n\n"
                 "owner-login"
+                "owner-context"
                 System.String('x', 33)
             ] do
             FixtureFiles.text owned "deployment.progress" value |> ignore

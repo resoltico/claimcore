@@ -231,8 +231,6 @@ let qualify (fixture: PublishedFixture.Fixture) =
     work
         0
         [
-            "--responsible-actor-action"
-            "set"
             "--responsible-actor"
             actor
             "--handling-summary"

@@ -157,7 +157,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
             "REJECTED"
             "Changed assertion refused"
 
-        let diagnostic = refusal.GetProperty("data")
+        let diagnostic = refusal.GetProperty("rejection")
 
         Expect.equal
             (diagnostic.GetProperty("code").GetString())
@@ -168,8 +168,8 @@ let private retainedHistory (database: PostgresFixture.Database) =
         Expect.hasLength issues 1 "Only the changed assertion is invalid"
 
         Expect.equal
-            (issues[0].GetProperty("field").GetString())
-            "claimantName"
+            (issues[0].GetProperty("input").GetString())
+            "field:claimantName"
             "Changed assertion is identified"
 
         Expect.equal
@@ -181,44 +181,14 @@ let private retainedHistory (database: PostgresFixture.Database) =
         return ()
     }
 
-let private zeroRevisionReply fixture endpoint status response =
-    Expect.equal status 200 "An absent-case revision conflict is a typed rejection"
-
-    Expect.isOk
-        (StrictJson.read 100000 response |> Result.bind (Api.admitOutput endpoint))
-        "The published reply codec admits revision zero"
-
+let private invalidCreationRevisionReply status response =
+    Expect.equal status 400 "Creation only admits revision zero at the binding boundary"
     use document = JsonDocument.Parse(response: byte array)
 
     Expect.equal
-        (document.RootElement.GetProperty("operationId").GetGuid())
-        (id fixture 31)
-        "Original operation identity"
-
-    let outcome = document.RootElement.GetProperty("outcome")
-    Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "No response encoding failure"
-    let diagnostic = outcome.GetProperty("data")
-
-    let mutable target = Unchecked.defaultof<JsonElement>
-
-    Expect.isFalse
-        (diagnostic.TryGetProperty("target", &target))
-        "A revision conflict has no input target"
-
-    Expect.equal
-        (diagnostic.GetProperty("code").GetString())
-        "REVISION_CONFLICT"
-        "Domain refusal preserved"
-
-    Expect.equal
-        (diagnostic.GetProperty("action").GetString())
-        "REVIEW_LATEST"
-        "Conflict asks for review against the latest authorized case"
-
-    Expect.equal
-        (diagnostic.GetProperty("actualRevision").GetInt64())
-        0L
-        "Absence has revision zero"
+        (document.RootElement.GetProperty("hostFailure").GetProperty("code").GetString())
+        "INPUT_INVALID"
+        "A nonzero creation binding is invalid before domain execution"
 
 let private absentRevision (database: PostgresFixture.Database) =
     task {
@@ -236,12 +206,20 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! before = verified database
 
         let pending =
-            request database.Fixture 31 "ABSENT-REVISION" 1L (AuthoredCaseAct.Open registration)
+            request database.Fixture 31 "ABSENT-REVISION" 0L (AuthoredCaseAct.Open registration)
 
         let responses = ResizeArray<_>()
 
         for name in [ Api.operationPreview.Token; Api.operationExecute.Token ] do
-            let! status, response = host.Call(name, httpRequest pending, csrf)
+            let! status, response =
+                host.Call(
+                    name,
+                    httpRequest pending
+                    |> Encoding.UTF8.GetString
+                    |> fun json -> json.Replace("\"expectedRevision\":0", "\"expectedRevision\":1")
+                    |> Encoding.UTF8.GetBytes,
+                    csrf
+                )
 
             responses.Add(
                 Api.tryFind name |> Option.defaultWith (fun () -> failtest "Endpoint"),
@@ -266,8 +244,8 @@ let private absentRevision (database: PostgresFixture.Database) =
             Expect.isNone view.ExistingOperation "A rejected operation ID remains unused"
         | Error _ -> failtest "Expected authoritative refusal evidence"
 
-        for endpoint, status, response in responses do
-            zeroRevisionReply database.Fixture endpoint status response
+        for _, status, response in responses do
+            invalidCreationRevisionReply status response
     }
 
 [<Tests>]
@@ -279,6 +257,6 @@ let tests =
                 "reads retained text and refuses changed policy violations"
                 (run retainedHistory)
             testCaseAsync
-                "absent case revision conflicts remain typed in preview and execution"
+                "nonzero creation revision is refused before preview and execution"
                 (run absentRevision)
         ]

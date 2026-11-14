@@ -506,7 +506,7 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     const reference = references[state];
     await caseAct(page, reference, 0, {
       task: "case.open",
-      inputs: { ...prefixedInputs("field:", registration) },
+      inputs: { ...prefixedInputs("field:", registration, true) },
     });
     const acceptedId = await advanceCase(page, reference, state, date);
     if (acceptedId !== null) {

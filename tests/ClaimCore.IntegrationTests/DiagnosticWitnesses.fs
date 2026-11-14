@@ -100,7 +100,7 @@ let internal diagnostic reason =
     let token =
         document.RootElement
             .GetProperty("outcome")
-            .GetProperty("data")
+            .GetProperty("rejection")
             .GetProperty("code")
             .GetString()
 

@@ -1,3 +1,4 @@
+/* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The named overflow region must support keyboard scrolling when every action is disabled. */
 import type { ActionPresentation } from "./interaction";
 import { useId } from "react";
 import { type Affordance, taskDefinitions } from "@contracts/client";
@@ -73,7 +74,12 @@ export const Actions = ({
   ) : (
     <details className="case-actions">
       <summary>{p.text("ui.moreCaseActions")}</summary>
-      <div className="case-actions-popup">
+      <div
+        className="case-actions-popup"
+        tabIndex={0}
+        role="region"
+        aria-label={p.text("label.availableActs")}
+      >
         <div className="actions">{other.map(button)}</div>
       </div>
     </details>
@@ -86,3 +92,5 @@ export const Actions = ({
     </div>
   );
 };
+
+/* oxlint-enable jsx-a11y/no-noninteractive-tabindex */

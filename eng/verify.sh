@@ -183,6 +183,8 @@ integration() {
 }
 
 postgres() {
+  # Owner process tests publish the unified server, including its browser assets.
+  build_frontend
   local stage=postgres project
   for project in "${postgres_projects[@]}"; do
     build_native "${project}"

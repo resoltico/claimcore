@@ -1,3 +1,5 @@
+import { initialAffordanceValues } from "../../../src/operation/affordances";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import { assembleTask } from "../../../src/operation/taskForm";
 import { taskForCommand, taskInput } from "../../../src/protocol/taskCatalog";
@@ -111,5 +113,25 @@ it("keeps a UUID-shaped authored case reference as a reference", () => {
     kind: "CASE",
     target: { kind: "REFERENCE", caseReference: operationId },
     expectedRevision: 0,
+  });
+});
+
+it("submits untouched required text controls as empty text for Core field advice", () => {
+  const action = operationAffordance(
+    "people.register",
+    { kind: "PEOPLE" },
+    {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": "https://issuer.example/",
+    },
+  );
+  const values = initialAffordanceValues(action);
+  expect(values["input:principal.subject"]).toBe("");
+  expect(values["input:profile.displayName"]).toBe("");
+  expect(values).not.toHaveProperty("input:profile.contact");
+  const submitted = assembleTask("people.register", values, action.binding, operationId);
+  expect(submitted.command.inputs).toMatchObject({
+    "input:principal.subject": "",
+    "input:profile.displayName": "",
   });
 });

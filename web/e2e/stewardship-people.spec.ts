@@ -1,5 +1,5 @@
-import { acceptedSubject } from "./work-workflow";
-import { selectedActor, syntheticPrincipals } from "./people-setup";
+import { observedAccess, acceptedSubject } from "./work-workflow";
+import { syntheticPrincipals } from "./people-setup";
 import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
@@ -90,7 +90,15 @@ const stewardAct = async (
   }
   expect(operationExecuteReply.outcome.kind).toBe("ACCEPTED");
   if (operationExecuteReply.outcome.kind === "ACCEPTED") {
-    expect((await acceptedSubject(page, operationExecuteReply.operationId)).kind).toBe("CASE");
+    expect(
+      (
+        await acceptedSubject(
+          page,
+          operationExecuteReply.operationId,
+          observedAccess(reply.request()),
+        )
+      ).kind,
+    ).toBe("CASE");
     const references = operationExecuteReply.outcome.document.screen.regions.flatMap((region) =>
       region.role === "IDENTITY" && region.content.kind === "ENTRIES"
         ? region.content.entries.map((entry) => entry.value)
@@ -199,7 +207,13 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   if (
     operationExecuteReply.representation !== "HUMAN" ||
     operationExecuteReply.outcome.kind !== "ACCEPTED" ||
-    (await acceptedSubject(page, operationExecuteReply.operationId)).kind !== "PEOPLE"
+    (
+      await acceptedSubject(
+        page,
+        operationExecuteReply.operationId,
+        observedAccess(reply.request()),
+      )
+    ).kind !== "PEOPLE"
   ) {
     throw new Error("Missing accepted people response.");
   }
@@ -315,7 +329,7 @@ const beginActorAct = async (
     }),
   ).toBeVisible();
 };
-const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: string) => {
+const assertHumanOnlyBoundary = async (page: Page, actorId: string) => {
   const response = await browserRequest(page, "/api/operation.preview", {
     method: "POST",
     headers: {
@@ -327,11 +341,7 @@ const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: stri
       task: "people.grant",
       binding: {
         kind: "PEOPLE",
-        actorId: await selectedActor(page, {
-          kind: "SERVICE",
-          issuer,
-          subject,
-        }),
+        actorId,
       },
       inputs: { "input:role": "OWNER", "input:scope": "INSTALLATION" },
     }),
@@ -392,11 +402,9 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   await openActor(page, actorId, name);
   await beginActorAct(page, name, "people.grant", "en");
   const owner = page.locator('input[name="input:role"][value="OWNER"]');
-  await expect(owner).toBeDisabled();
-  await expect(owner).toHaveAccessibleDescription(/Not available for service accounts/u);
-  await assertHumanOnlyBoundary(page, source.issuer, subject);
-  // The active people manager retains the existing missing-target diagnostic.
-  // Unavailable callers remain non-disclosing at the service boundary.
+  await expect(owner).toHaveCount(0);
+  await assertHumanOnlyBoundary(page, actorId);
+  // ActorId resolution keeps absent and inaccessible subjects non-disclosing.
   const missing = await browserRequest(page, "/api/operation.preview", {
     method: "POST",
     headers: {
@@ -408,11 +416,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
       task: "people.grant",
       binding: {
         kind: "PEOPLE",
-        actorId: await selectedActor(page, {
-          kind: "SERVICE",
-          issuer: source.issuer,
-          subject: `unregistered-${randomUUID()}`,
-        }),
+        actorId: randomUUID(),
       },
       inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
     }),
@@ -422,7 +426,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
     outcome: {
       kind: "REJECTED",
       rejection: {
-        code: "ACTOR_UNKNOWN",
+        code: "RESOURCE_UNAVAILABLE",
       },
     },
   });

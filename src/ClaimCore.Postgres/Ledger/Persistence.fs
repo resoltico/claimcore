@@ -30,7 +30,7 @@ module internal Persistence =
             DatabaseSession.parameter (index.Payable |> Option.map Money.currency)
             DatabaseSession.parameter (index.Paid |> Option.map Money.value)
             DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
-            DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
+            DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.format)
             DatabaseSession.parameter index.WorkSearchText
         |]
 
@@ -39,18 +39,18 @@ module internal Persistence =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "UPDATE claimcore.cases SET responsible_actor=$2,follow_up=$3,work_search_text=$4,status=$5,progress=$6,changed_at=$7,search_text=$8,notified_on=$9::date,claimed_amount=$10,claimed_currency=$11,payable_amount=$12,payable_currency=$13,paid_amount=$14 WHERE case_id=$1"
+                    "UPDATE claimcore.cases SET responsible_actor=$2,follow_up=$3::date,work_search_text=$4,status=$5,progress=$6,changed_at=$7,search_text=$8,notified_on=$9::date,claimed_amount=$10,claimed_currency=$11,payable_amount=$12,payable_currency=$13,paid_amount=$14 WHERE case_id=$1"
                     [|
                         box (CaseId.value id)
                         DatabaseSession.parameter (index.Responsible |> Option.map ActorId.value)
-                        DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.value)
+                        DatabaseSession.parameter (index.FollowUp |> Option.map CalendarDate.format)
                         DatabaseSession.parameter index.WorkSearchText
                         DatabaseSession.parameter (index.Status |> Option.map CaseStatus.token)
                         DatabaseSession.parameter (index.Progress |> Option.map CaseProgress.token)
                         box index.ChangedAt
                         DatabaseSession.parameter index.SearchText
                         DatabaseSession.parameter (
-                            index.NotifiedOn |> Option.map CalendarDate.value
+                            index.NotifiedOn |> Option.map CalendarDate.format
                         )
                         DatabaseSession.parameter (index.Claimed |> Option.map Money.value)
                         DatabaseSession.parameter (index.Claimed |> Option.map Money.currency)
@@ -252,7 +252,9 @@ module internal Persistence =
                                 DatabaseSession.parameter (
                                     row.Action |> Option.map ReminderAction.format
                                 )
-                                DatabaseSession.parameter (row.Due |> Option.map CalendarDate.value)
+                                DatabaseSession.parameter (
+                                    row.Due |> Option.map CalendarDate.format
+                                )
                                 DatabaseSession.parameter row.SearchText
                                 box state.RecordedAt
                                 box (ActorId.value state.RecordedBy)
@@ -272,7 +274,7 @@ module internal Persistence =
             let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,notified_on=EXCLUDED.notified_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,paid_amount=EXCLUDED.paid_amount,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
+                    "INSERT INTO claimcore.cases(case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency,paid_amount,responsible_actor,follow_up,work_search_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::date,$11,$12,$13,$14,$15,$16,$17::date,$18) ON CONFLICT(case_id) DO UPDATE SET revision=EXCLUDED.revision,state=EXCLUDED.state,snapshot=EXCLUDED.snapshot,status=EXCLUDED.status,progress=EXCLUDED.progress,changed_at=EXCLUDED.changed_at,search_text=EXCLUDED.search_text,notified_on=EXCLUDED.notified_on,claimed_amount=EXCLUDED.claimed_amount,claimed_currency=EXCLUDED.claimed_currency,payable_amount=EXCLUDED.payable_amount,payable_currency=EXCLUDED.payable_currency,paid_amount=EXCLUDED.paid_amount,responsible_actor=EXCLUDED.responsible_actor,follow_up=EXCLUDED.follow_up,work_search_text=EXCLUDED.work_search_text WHERE claimcore.cases.case_reference=EXCLUDED.case_reference"
                     (caseParameters id snapshot projection.Index)
                     token
 

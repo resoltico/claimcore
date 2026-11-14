@@ -322,8 +322,8 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.contains
             offers
-            (InstallationOffer.PeopleAct PeopleActKind.Grant)
-            "People act advice is owned by core"
+            (InstallationOffer.PeopleAct PeopleActKind.Register)
+            "Installation advice offers registration without a selected actor"
     }
 
 let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =

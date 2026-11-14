@@ -81,27 +81,15 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: {
-        kind: "HUMAN",
-        issuer,
-        subject,
-      },
-      act: {
-        kind: "people.admit",
-        profile: {
-          displayName: "Authored accessibility candidate",
-          contact: null,
-        },
-        grants: [
-          {
-            role: "CASE_READER",
-            scope: {
-              kind: "INSTALLATION",
-            },
-          },
-        ],
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      inputs: {
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": issuer,
+        "input:principal.subject": subject,
+        "input:profile.displayName": "Authored accessibility candidate",
+        "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
       },
     }),
   });

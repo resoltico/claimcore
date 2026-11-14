@@ -78,7 +78,7 @@ let private claimsReachContext () =
         Expect.equal
             (failure.RootElement
                 .GetProperty("outcome")
-                .GetProperty("data")
+                .GetProperty("rejection")
                 .GetProperty("code")
                 .GetString())
             "RESOURCE_UNAVAILABLE"

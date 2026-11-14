@@ -12,8 +12,8 @@ import {
 import { pauseJsonReply, confirmReview, ui } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 const loseAcceptedClose = async (page: Page) => {
-  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   await openCase(page, `UNCONFIRMED-${randomUUID()}`);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
   await startAct(page, "case.close", "en");
   await reviewDraft(page);
   await confirmReview(page);

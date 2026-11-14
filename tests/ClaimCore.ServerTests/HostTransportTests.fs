@@ -506,7 +506,7 @@ let private closedRuntime () =
                     "Definite refusal to start"
 
                 Expect.equal
-                    (outcome.GetProperty("data").GetProperty("code").GetString())
+                    (outcome.GetProperty("fault").GetProperty("code").GetString())
                     "CORE_STORE_UNAVAILABLE"
                     "Preserved public fault"
 

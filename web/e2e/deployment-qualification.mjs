@@ -221,21 +221,21 @@ const qualify = async (origin, ca) => {
     const csrf = await session(context, origin, fingerprint);
     const requester = await owner(context, origin, fingerprint, csrf);
     const input = {
-      kind: "CASE",
       operationId: operationId(),
-      target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
-      expectedRevision: 0,
-      act: {
-        kind: "OPEN",
-        values: {
-          incidentDate: requester.businessDate,
-          incidentNotificationDate: requester.businessDate,
-          incidentCountry: "LV",
-          claimantName: "Synthetic deployment claimant",
-          insurerName: "Synthetic deployment insurer",
-          claimedAmount: "100",
-          claimedCurrency: "EUR",
-        },
+      task: "case.open",
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
+        expectedRevision: 0,
+      },
+      inputs: {
+        "field:incidentDate": requester.businessDate,
+        "field:incidentNotificationDate": requester.businessDate,
+        "field:incidentCountry": "LV",
+        "field:claimantName": "Synthetic deployment claimant",
+        "field:insurerName": "Synthetic deployment insurer",
+        "field:claimedAmount": "100",
+        "field:claimedCurrency": "EUR",
       },
     };
     const write = async (endpoint) =>

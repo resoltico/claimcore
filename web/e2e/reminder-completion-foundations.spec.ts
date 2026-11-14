@@ -95,8 +95,8 @@ const reminderRegion: Region = {
               expectedRevision: 3,
             },
             {
-              "field:reminderAction": reminders[0]!.actionSeed,
-              "field:reminderDueDate": reminders[0]!.dueDateSeed,
+              "input:reminderAction": reminders[0]!.actionSeed,
+              "input:reminderDueDate": reminders[0]!.dueDateSeed,
             },
           ),
         ),
@@ -128,8 +128,8 @@ const reminderRegion: Region = {
               expectedRevision: 1,
             },
             {
-              "field:reminderAction": reminders[1]!.actionSeed,
-              "field:reminderDueDate": reminders[1]!.dueDateSeed,
+              "input:reminderAction": reminders[1]!.actionSeed,
+              "input:reminderDueDate": reminders[1]!.dueDateSeed,
             },
           ),
         ),

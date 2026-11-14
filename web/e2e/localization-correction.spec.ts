@@ -183,7 +183,7 @@ for (const status of ["CLOSED"] as const) {
             representation: "HUMAN",
             outcome: {
               kind: "ACCEPTED",
-              document: { context: { target: { kind: "CASE", caseId: before.caseId } } },
+              document: { subject: { kind: "RECEIPT", operationId: captured.reply.operationId } },
             },
           });
           await expect(page.locator("#case-detail-title")).toBeVisible();

@@ -184,7 +184,7 @@ let private dispatch () =
         Expect.equal
             (conflict.Wire
              |> memberValue "outcome"
-             |> memberValue "data"
+             |> memberValue "rejection"
              |> memberValue "code")
             (JsonValue.String "IDEMPOTENCY_CONFLICT")
             "Conflict is semantic, not duplicate append refusal"

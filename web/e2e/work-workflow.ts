@@ -1,5 +1,5 @@
 import { type ResponseFor, endpoints, type RequestByEndpoint } from "@contracts/client";
-import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
+import { chooseOption } from "./workspace-navigation";
 import { ui } from "./localization-support";
 import type { ReviewIdentity } from "./case-workflow";
 import { expect, type Page, type Locator, type Request } from "@playwright/test";
@@ -87,36 +87,25 @@ export const reviewReminderCompletion = async (
   }
 };
 
-/** Select only the supplied overflow action; review and confirmation remain separate steps. */
+/** Select the supplied row control; review and confirmation remain separate steps. */
 export const selectReminderAction = async (
-  page: Page,
   row: Locator,
   kind: "reminder.update" | "reminder.cancel" | "reminder.reopen" | "reminder.completeAndPlanNext",
 ) => {
-  const language = await languageOf(page);
-  if (kind === "reminder.update") {
-    await row.locator('button[id$="-reminder.update"]').click();
-    return;
-  }
-  const trigger = row.getByRole("button", {
-    name: ui(language, "label.availableActs"),
-    exact: false,
-  });
-  await settlePopupTriggerScroll(trigger);
-  await trigger.click();
-  const menu = page.getByRole("menu", {
-    name: ui(language, "label.availableActs"),
-    exact: false,
-  });
-  await expect(menu).toHaveCount(1);
-  await expect(menu).toBeVisible();
-  await menu
-    .getByRole("menuitem", {
-      name: ui(language, `task.${kind}.label`),
-      exact: true,
-    })
-    .click();
+  await row.locator(`button[data-act="${kind}"]`).click();
 };
+
+/** Reuse the authenticated action's observed binding for its independent DATA readback. */
+export const observedAccess = (request: Request) => {
+  const headers = request.headers();
+  const installation = headers["claimcore-installation"];
+  const token = headers["x-claimcore-antiforgery"];
+  if (installation === undefined || token === undefined) {
+    throw new Error("Accepted action is missing its authenticated installation binding.");
+  }
+  return { installationId: installation, token };
+};
+
 const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, payload: unknown) => {
   const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
   if (
@@ -231,7 +220,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expectCaseReadsSettled(page);
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
-  const target = await acceptedSubject(page, receipt.subject.operationId);
+  const access = observedAccess(delivered.request());
+  const target = await acceptedSubject(page, receipt.subject.operationId, access);
   if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {
       target: {

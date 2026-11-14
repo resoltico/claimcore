@@ -6,7 +6,7 @@ import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
-import type { ReminderActHandler } from "./reminderActions";
+import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 import { ReminderList } from "./ReminderList";
 const stateChoice = queryInput("reminder.list", "input:reminderState");
 type State = (typeof taskChoices.reminderState)[number];
@@ -64,6 +64,7 @@ export const CaseNextActions = ({
       {browsing ? null : (
         <Table
           view={nextRegion.content}
+          actionPresentation={reminderActionPresentation}
           timeZone={current.basis.observation.timeZone}
           onAction={(action, _row, originId) => {
             if (action.task !== "people.requests.dismiss") {

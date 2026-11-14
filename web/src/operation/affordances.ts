@@ -73,7 +73,14 @@ export const initialAffordanceValues = (action: OperationAffordance): FormValues
   const values: Record<string, FormValue> = {};
   for (const input of declaration.inputs) {
     if (input.mode !== "UPDATE" || !new Set<string>(action.editable).has(input.id)) {
-      const value = seeds[input.id];
+      const value =
+        seeds[input.id] === undefined &&
+        input.source === "AUTHORED" &&
+        input.mode === "REQUIRED" &&
+        input.atom === "TEXT" &&
+        input.choices.length === 0
+          ? ""
+          : seeds[input.id];
       if (value !== undefined) {
         values[input.id] = value;
       }

@@ -5,7 +5,10 @@ type PrefixedInputs<P extends string, T extends object> = {
 export const prefixedInputs = <P extends string, T extends object>(
   prefix: P,
   values: T,
+  omitAbsent = false,
 ): PrefixedInputs<P, T> =>
   Object.fromEntries(
-    Object.entries(values).map(([key, value]) => [prefix + key, value]),
+    Object.entries(values)
+      .filter(([, value]) => !omitAbsent || value !== null)
+      .map(([key, value]) => [prefix + key, value]),
   ) as PrefixedInputs<P, T>;

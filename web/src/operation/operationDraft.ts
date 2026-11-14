@@ -10,6 +10,9 @@ import type { OperationBinding } from "@contracts/client";
 /** Selecting installation scope removes the case selection from the authored grant. */
 export const editGrantInput = (values: FormValues, input: string, value: FormValue): FormValues => {
   const edited = { ...values, [input]: value };
+  if (input === "input:scope" && value === "CASE") {
+    edited["field:caseReference"] ??= "";
+  }
   if (input === "input:scope" && value !== "CASE") {
     delete edited["field:caseReference"];
     delete edited["input:caseId"];

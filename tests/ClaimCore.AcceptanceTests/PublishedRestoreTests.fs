@@ -243,11 +243,11 @@ let private qualify () =
             "An unseen expired command cannot execute after restore"
 
         Expect.equal
-            (rejected.GetProperty("data").GetProperty("code").GetString())
+            (rejected.GetProperty("rejection").GetProperty("code").GetString())
             "OPERATION_CLOCK_UNAVAILABLE"
             "Durable expiry protects bearer execution"
 
-        let refusal = rejected.GetProperty("data")
+        let refusal = rejected.GetProperty("rejection")
 
         Expect.equal
             (refusal.GetProperty("phase").GetString())

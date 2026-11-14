@@ -4,7 +4,7 @@ import type {
   ReminderListRequest,
   HumanResponseByEndpoint,
 } from "@contracts/client";
-import type { ReminderActHandler } from "./reminderActions";
+import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 
 import { PageTables } from "../../ui/PageTables";
 import {} from "./reminder-list.css";
@@ -74,6 +74,7 @@ export const ReminderList = ({
       ) : null}
       <PageTables
         views={result.views}
+        actionPresentation={reminderActionPresentation}
         {...(onAct === undefined
           ? {}
           : {

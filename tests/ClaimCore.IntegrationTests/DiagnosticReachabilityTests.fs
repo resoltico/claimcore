@@ -96,7 +96,11 @@ let private completeVocabulary () =
              |> List.filter (fun (target, _) ->
                  match target with
                  | InputTarget.Role
-                 | InputTarget.PrincipalKind -> false
+                 | InputTarget.PrincipalKind
+                 | InputTarget.Scope
+                 | InputTarget.CaseId
+                 | InputTarget.Group RecordGroup.Registration
+                 | InputTarget.Group RecordGroup.Decision -> false
                  | _ -> true)
              |> List.map snd)
             @ [ "limit"; "cursor" ]
@@ -105,7 +109,10 @@ let private completeVocabulary () =
         Expect.equal
             fields
             expectedFields
-            "Every business-refusable field has an actual core request witness"
+            (sprintf
+                "Missing field witnesses: %A; unexpected: %A"
+                (Set.difference expectedFields fields |> Set.toList)
+                (Set.difference fields expectedFields |> Set.toList))
     }
 
 let private missingCasePrivacy () =

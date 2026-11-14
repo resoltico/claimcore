@@ -222,7 +222,7 @@ module People =
             }
             actor.Grants
 
-    let private grantScope (facts: PeopleFacts) target =
+    let internal grantScope (facts: PeopleFacts) target =
         match target with
         | GrantTarget.Installation -> Ok Scope.Installation
         | _ ->

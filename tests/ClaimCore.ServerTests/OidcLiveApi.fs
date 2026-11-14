@@ -156,7 +156,7 @@ let private servicePeople (scenario: ServicePeopleScenario) =
 
         let refusal value =
             value
-            |> Option.map (fun (value: JsonElement) -> value.GetProperty("data").GetRawText())
+            |> Option.map (fun (value: JsonElement) -> value.GetProperty("rejection").GetRawText())
 
         if refusal denied <> refusal absent then
             invalidOp "Absent and inaccessible resources must share the same public refusal."

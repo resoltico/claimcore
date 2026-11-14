@@ -53,12 +53,14 @@ const prepareAdmission = async (page: Page, issuer: string, subject: string) => 
     const identity = reviewFrom(captured.reply, captured.bytes);
     expect(JSON.parse(captured.bytes.toString("utf8"))).toEqual({
       operationId: identity.operationId,
-      kind: "PEOPLE",
-      target: { kind: "SERVICE", issuer, subject },
-      act: {
-        kind: "people.admit",
-        profile: { displayName: "Authored uncertain service" },
-        grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      inputs: {
+        "input:principal.kind": "SERVICE",
+        "input:principal.issuer": issuer,
+        "input:principal.subject": subject,
+        "input:profile.displayName": "Authored uncertain service",
+        "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
       },
     });
     return { bytes: captured.bytes, operationId: identity.operationId };

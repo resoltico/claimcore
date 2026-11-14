@@ -150,7 +150,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
         with:
-          node: "false"
+          node: "true"
       - run: bash eng/verify.sh postgres
 
       - name: Retain verification evidence

@@ -86,7 +86,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
       page.getByRole("button").and(page.locator('button[data-act="case.close"]')).filter({
         visible: true,
       }),
-    ).toHaveCount(0);
+    ).toBeDisabled();
   }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);

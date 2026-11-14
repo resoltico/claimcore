@@ -109,27 +109,15 @@ test("people refusal preserves authored input through Settings and needs a fresh
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: {
-        kind: "HUMAN",
-        issuer: "",
-        subject: subjectValue,
-      },
-      act: {
-        kind: "people.admit",
-        profile: {
-          displayName: profileName,
-          contact: null,
-        },
-        grants: [
-          {
-            role: "CASE_READER",
-            scope: {
-              kind: "INSTALLATION",
-            },
-          },
-        ],
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      inputs: {
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "",
+        "input:principal.subject": subjectValue,
+        "input:profile.displayName": profileName,
+        "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
       },
     }),
   });
@@ -226,26 +214,15 @@ test("people refusal preserves authored input through Settings and needs a fresh
   await expect(editor.locator("button[data-confirm-operation]")).toHaveCount(0);
   const refused: unknown = response.request().postDataJSON();
   expect(refused).toEqual({
-    kind: "PEOPLE",
     operationId: operationId(refused),
-    target: {
-      kind: "HUMAN",
-      issuer: source.issuer,
-      subject: "",
-    },
-    act: {
-      kind: "people.admit",
-      profile: {
-        displayName: profileName,
-      },
-      grants: [
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "INSTALLATION",
-          },
-        },
-      ],
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": source.issuer,
+      "input:principal.subject": "",
+      "input:profile.displayName": profileName,
+      "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
     },
   });
   await subject.fill(subjectValue);
@@ -279,26 +256,15 @@ test("people refusal preserves authored input through Settings and needs a fresh
   }
   const corrected: unknown = reviewedResponse.request().postDataJSON();
   expect(corrected).toEqual({
-    kind: "PEOPLE",
     operationId: operationId(corrected),
-    target: {
-      kind: "HUMAN",
-      issuer: source.issuer,
-      subject: subjectValue,
-    },
-    act: {
-      kind: "people.admit",
-      profile: {
-        displayName: profileName,
-      },
-      grants: [
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "INSTALLATION",
-          },
-        },
-      ],
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": source.issuer,
+      "input:principal.subject": subjectValue,
+      "input:profile.displayName": profileName,
+      "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
     },
   });
   const correctedId = operationId(corrected);

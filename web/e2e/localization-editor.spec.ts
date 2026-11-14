@@ -95,6 +95,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
             registration({
               incidentDate,
             }),
+            true,
           ),
         },
       }),

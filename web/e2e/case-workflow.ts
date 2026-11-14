@@ -1,4 +1,4 @@
-import { acceptedSubject, workRequest } from "./work-workflow";
+import { observedAccess, acceptedSubject, workRequest } from "./work-workflow";
 import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
 
 import { type Language, defaults } from "../src/presentation/preferences";
@@ -83,7 +83,11 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseReadsSettled(page);
   const receipt = outcome.document;
-  const subject = await acceptedSubject(page, receipt.subject.operationId);
+  const subject = await acceptedSubject(
+    page,
+    receipt.subject.operationId,
+    observedAccess(response.request()),
+  );
   if (subject.kind !== "CASE") {
     throw new Error("Expected a case receipt.");
   }

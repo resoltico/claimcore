@@ -123,6 +123,7 @@ module PeopleSubject =
         | PeopleAct.EraseProfile -> PeopleChange.ProfileErased
 
     let private applyAccess
+        expectedGrants
         (provenance: PeopleSubjectProvenance)
         (state: PeopleSubjectState option)
         (after: ActorAccess)
@@ -137,7 +138,12 @@ module PeopleSubject =
                 state.Actor.ActorId = after.Actor.ActorId
                 && state.Actor.Principal = after.Actor.Principal)
 
-        if not identity || added <> (provenance.Granted |> Map.keys |> Set.ofSeq) then
+        if
+            not identity
+            || expectedGrants <> (provenance.Granted |> Map.keys |> Set.ofSeq)
+            || not (Set.isSubset added expectedGrants)
+            || not (Set.isSubset expectedGrants afterGrants)
+        then
             Error RecordViolation.InvalidSubjectState
         else
             let retained = before |> Map.filter (fun grant _ -> Set.contains grant afterGrants)
@@ -160,14 +166,67 @@ module PeopleSubject =
                     }
             )
 
+    let private grantedBy facts act =
+        let grants =
+            match act with
+            | PeopleAct.Grant grant -> [ grant ]
+            | PeopleAct.Admit admission -> admission.Grants
+            | PeopleAct.ProvisionOwner(_, roles) ->
+                (Role.Owner :: roles)
+                |> List.map (fun role ->
+                    {
+                        AuthoredGrant.Role = role
+                        Scope = GrantTarget.Installation
+                    })
+            | _ -> []
+
+        grants
+        |> List.fold
+            (fun result grant ->
+                result
+                |> Result.bind (fun current ->
+                    People.grantScope facts grant.Scope
+                    |> Result.mapError Refusal.Access
+                    |> Result.map (fun scope ->
+                        Set.add
+                            {
+                                ActorGrant.Role = grant.Role
+                                Scope = scope
+                            }
+                            current)))
+            (Ok Set.empty)
+
     let apply provenance state (effect: PeopleSubjectEffect) =
-        applyAccess provenance state effect.After
+        let expected =
+            match effect.Change with
+            | PeopleChange.Granted(role, scope) ->
+                Set.singleton
+                    {
+                        ActorGrant.Role = role
+                        Scope = scope
+                    }
+            | PeopleChange.Admitted(_, grants) -> Set.ofList grants
+            | PeopleChange.OwnerProvisioned(_, roles) ->
+                (Role.Owner :: roles)
+                |> List.map (fun role ->
+                    {
+                        ActorGrant.Role = role
+                        Scope = Scope.Installation
+                    })
+                |> Set.ofList
+            | _ -> Set.empty
+
+        applyAccess expected provenance state effect.After
 
     /// Missing profile bytes retain structural registration/rights semantics; later erasure is proved by the ledger fold.
     let applyErased dependencies provenance state target operation principal act =
-        People.replayRetained (facts dependencies state) target operation principal act
+        let currentFacts = facts dependencies state
+
+        People.replayRetained currentFacts target operation principal act
+        |> Result.bind (fun after ->
+            grantedBy currentFacts act |> Result.map (fun grants -> grants, after))
         |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
-        |> Result.bind (applyAccess provenance state)
+        |> Result.bind (fun (grants, after) -> applyAccess grants provenance state after)
 
     let columns (actor: Actor) =
         actor.Profile

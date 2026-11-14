@@ -169,7 +169,7 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                 | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
                 | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
                 | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
-                | "People" ->
+                | "Access" ->
                     box (
                         Task.FromResult
                             (facts (unbox<AccessQuery>(nonNull arguments[0])).Principal).People

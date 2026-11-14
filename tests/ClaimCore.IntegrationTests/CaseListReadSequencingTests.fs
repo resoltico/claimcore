@@ -239,7 +239,7 @@ let tests =
                             "No later reference lookup"
 
                         Expect.isFalse
-                            (traced.Calls.Contains "People")
+                            (traced.Calls.Contains "Access")
                             "No later target people read"))
 
             testCase "validated visible exact hit reuses disclosure without later reads" (fun () ->
@@ -259,7 +259,7 @@ let tests =
                         "Visible validated identity needs no second lookup"
 
                     Expect.isFalse
-                        (traced.Calls.Contains "People")
+                        (traced.Calls.Contains "Access")
                         "Visible row already passed snapshot disclosure"))
             testCase
                 "readable exact reference outside a page still needs lookup and authorization"
@@ -280,7 +280,7 @@ let tests =
                             "One fallback lookup"
 
                         Expect.equal
-                            (traced.Calls |> Seq.filter ((=) "People") |> Seq.length)
+                            (traced.Calls |> Seq.filter ((=) "Access") |> Seq.length)
                             1
                             "Independent target authorization"))
             testCase "readable exact reference survives an empty filtered page" (fun () ->
@@ -294,7 +294,7 @@ let tests =
                         "Empty page does not suppress lookup"
 
                     Expect.isTrue
-                        (traced.Calls.Contains "People")
+                        (traced.Calls.Contains "Access")
                         "Outside-filter target is authorized"))
             testCase
                 "partial and absent reference searches retain fallback and nonmatches"
@@ -317,7 +317,7 @@ let tests =
                                 "Valid reference syntax still probes absence"
 
                             Expect.isFalse
-                                (traced.Calls.Contains "People")
+                                (traced.Calls.Contains "Access")
                                 "No target to authorize"))
             testCase
                 "unreadable exact target remains undisclosed beside a visible partial match"
@@ -334,7 +334,7 @@ let tests =
                         Expect.isNone result.ExactReference "Other exact target is not disclosed"
 
                         Expect.isTrue
-                            (traced.Calls.Contains "People")
+                            (traced.Calls.Contains "Access")
                             "Fallback still checks target scope"))
             testCase
                 "scoped visible match avoids rereads and malformed reference syntax does not probe"

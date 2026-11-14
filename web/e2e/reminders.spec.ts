@@ -11,7 +11,7 @@ import { prefixedInputs } from "../tests/support/submission-inputs";
 import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { chooseChoice, settlePopupTriggerScroll } from "./workspace-navigation";
+import { chooseChoice } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
@@ -111,6 +111,8 @@ test("stores exact optional LF incident text and clears it without a financial a
 test("supports multiple independently revised reminders, terminal records, reopen and last-completion attention", async ({
   page,
 }) => {
+  // This complete lifecycle includes multiple writes, independent DATA reads and an accessibility scan.
+  test.slow();
   await openAuthenticated(page);
   const reference = `REMINDERS-${randomUUID()}`;
   await openCase(page, reference);
@@ -146,7 +148,6 @@ test("supports multiple independently revised reminders, terminal records, reope
   );
   await recordWorkReview(page, "REMINDER");
   await selectReminderAction(
-    page,
     page
       .locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)")
       .filter({
@@ -154,7 +155,7 @@ test("supports multiple independently revised reminders, terminal records, reope
       }),
     "reminder.cancel",
   );
-  await reviewDraft(page);
+  // Cancellation has no editable inputs and Core declares automatic preview.
   await recordWorkReview(page, "REMINDER");
   await expect(page.locator('[data-region="ATTENTION"]')).toBeVisible();
   await selectCaseReminderState(page, "COMPLETED");
@@ -163,7 +164,6 @@ test("supports multiple independently revised reminders, terminal records, reope
   ).toHaveCount(1);
   await expect(page.locator(".reminder-list")).not.toContainText("Overdue");
   await selectReminderAction(
-    page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.reopen",
   );
@@ -197,7 +197,6 @@ test("a compound action has one correlated accepting operation and a new reminde
   await openCase(page, reference);
   await plan(page, "First action", "2026-01-01");
   await selectReminderAction(
-    page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.completeAndPlanNext",
   );
@@ -279,7 +278,6 @@ test("a lost compound acknowledgement retries the identical pair without another
   await openCase(page, reference);
   await plan(page, "Current action", "2026-01-01");
   await selectReminderAction(
-    page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.completeAndPlanNext",
   );
@@ -514,7 +512,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   expect(requested).toMatchObject({
     task: "case.correct",
     inputs: {
-      "group:registration": "reminder.update",
+      "group:registration": "UPDATE",
       "field:incidentDescription": description,
       "group:decision": "KEEP",
     },
@@ -567,26 +565,8 @@ test("paid description correction preserves payment, then a closed case accepts 
   await expect(pending.locator("[data-column='timing']")).toHaveText(
     ui("en", "due.INACTIVE.label"),
   );
-  const overflow = pending.getByRole("button", {
-    name: "Available actions",
-    exact: false,
-  });
-  await settlePopupTriggerScroll(overflow);
-  await overflow.click();
-  const menu = page.getByRole("menu");
-  await expect(
-    menu.getByRole("menuitem", {
-      name: "Cancel reminder",
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    menu.getByRole("menuitem", {
-      name: "Update reminder",
-      exact: true,
-    }),
-  ).toHaveCount(0);
-  await page.keyboard.press("Escape");
+  await expect(pending.locator('button[data-act="reminder.cancel"]')).toBeVisible();
+  await expect(pending.locator('button[data-act="reminder.update"]')).toHaveCount(0);
   await reviewReminderCompletion(page, pending);
   await recordWorkReview(page, "REMINDER");
   const current = await workRequest(page, "case.get", {
@@ -697,7 +677,6 @@ test("a reminder revision change after compound preview refuses both effects wit
   await openCase(page, reference);
   const initial = await plan(page, "Original action", "2026-01-01");
   await selectReminderAction(
-    page,
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.completeAndPlanNext",
   );

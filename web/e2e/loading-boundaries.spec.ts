@@ -146,7 +146,7 @@ test("offline Settings navigation guard preserves raw entry, review identity and
   const identity = await reviewDraft(page);
   expect((await event).postDataJSON()).toMatchObject({
     operationId: identity.operationId,
-    act: { values: { claimedAmount: "1234", claimedCurrency: "EUR" } },
+    inputs: { "field:claimedAmount": "1234", "field:claimedCurrency": "EUR" },
   });
   const review = page
     .getByRole("dialog")
