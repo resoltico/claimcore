@@ -1,4 +1,4 @@
-import { type RequestByEndpoint } from "@contracts/client";
+import type { RequestByEndpoint } from "@contracts/client";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { reviewConfirm } from "../support/review-controls";
 import * as catalogs from "../../src/presentation/languageCatalog";
@@ -126,10 +126,7 @@ it("keeps the authored revision on a fresh preview after language switching and 
     editor({
       current: {
         ...current,
-        context: {
-          ...current.context,
-          revision: 99,
-        },
+        subject: { ...current.subject, revision: 99 },
       },
     }),
   );

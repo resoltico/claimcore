@@ -1,4 +1,10 @@
-import { activeRequester } from "../support/human-requester.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
+
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -28,10 +34,8 @@ const setup = (manage: boolean) => {
       ...humanReadReply("context", {
         ...activeRequester,
         basis: { kind: "SNAPSHOT", observation: workBasis },
-        context: {
-          ...activeRequester.context,
-          views: ["PEOPLE"],
-          tasks: manage
+        actions: installationActions(
+          manage
             ? [
                 "people.admit",
                 "people.list",
@@ -41,8 +45,20 @@ const setup = (manage: boolean) => {
                 "people.requests.dismiss",
               ]
             : ["people.list", "people.grants", "people.history"],
-          peopleIssuerSeed: manage ? "https://issuer.example/" : null,
-        },
+        ),
+        links: requesterLinks(
+          ["PEOPLE"],
+          manage
+            ? [
+                "people.admit",
+                "people.list",
+                "people.grants",
+                "people.history",
+                "people.requests",
+                "people.requests.dismiss",
+              ]
+            : ["people.list", "people.grants", "people.history"],
+        ),
       }),
     },
   });
@@ -52,7 +68,11 @@ const setup = (manage: boolean) => {
     value: {
       ...humanReadReply("people.list", {
         screen: { regions: [] },
-        context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -104,6 +124,21 @@ const setup = (manage: boolean) => {
                 rows: [
                   {
                     key: "request",
+                    actions: [
+                      operationAffordance(
+                        "people.admit",
+                        { kind: "PEOPLE" },
+                        {
+                          "input:principal.kind": request.principal.kind,
+                          "input:principal.issuer": request.principal.issuer,
+                          "input:principal.subject": request.principal.subject,
+                          "input:profile.displayName": request.claims.name,
+                          "input:profile.contact": request.claims.email,
+                          "input:grants": [{ "input:scope": "INSTALLATION" }],
+                        },
+                        ["input:profile.displayName", "input:profile.contact", "input:grants"],
+                      ),
+                    ],
                     values: [
                       { kind: "TEXT", value: "Unverified name" },
                       { kind: "TEXT", value: "unverified@example.test" },
@@ -117,17 +152,11 @@ const setup = (manage: boolean) => {
             },
           ],
         },
-        context: {
-          kind: "ACCESS_REQUESTS",
-          requests: [
-            {
-              key: "request",
-              principal: request.principal,
-              profileSeed: { displayName: "Unverified name", contact: "unverified@example.test" },
-            },
-          ],
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -171,10 +200,14 @@ it("binds request admission identity while profile hints stay editable through r
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    target: request.principal,
-    act: {
-      kind: "people.admit",
-      profile: { displayName: "Authored service name", contact: request.claims.email },
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": request.principal.kind,
+      "input:principal.issuer": request.principal.issuer,
+      "input:principal.subject": request.principal.subject,
+      "input:profile.displayName": "Authored service name",
+      "input:profile.contact": request.claims.email,
     },
   });
   await user.click(screen.getByRole("button", { name: "Return to editing" }));
@@ -189,5 +222,12 @@ it("binds request admission identity while profile hints stay editable through r
     expect(execute).toHaveBeenCalledTimes(2);
   });
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
-  expect(execute.mock.calls[1]![0].input).toMatchObject({ target: request.principal });
+  expect(execute.mock.calls[1]![0].input).toMatchObject({
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": request.principal.kind,
+      "input:principal.issuer": request.principal.issuer,
+      "input:principal.subject": request.principal.subject,
+    },
+  });
 });

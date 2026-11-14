@@ -1,9 +1,12 @@
+import { useRequesterContext } from "../hooks/useRequesterContext";
+import { coreLinkPath } from "../routing/coreLinks";
+import { renderCatalogKey } from "../presentation/messages";
 import { useRecovery } from "../recovery/RecoveryContext";
 import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useId, useRef, useState } from "react";
-import type { Screen, TaskId, PresentedValue as Value } from "@contracts/client";
+import type { Screen, TaskId, Link, PresentedValue as Value } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -11,7 +14,7 @@ import { followLink } from "../routing/followLink";
 import type { Route } from "../routing/routes";
 import { Icon } from "../ui/icons";
 import { Button } from "../ui/Button";
-import "./shell.css";
+import {} from "./shell.css";
 
 const areas = [
   { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
@@ -58,6 +61,10 @@ const ShellLink = ({
   counts: ReadonlyMap<Area["name"], NavigationCount>;
 }) => {
   const p = usePresentation();
+  const requester = useRequesterContext();
+  const coreCaption = requester?.links.find(
+    (named) => named.rel === "VIEW" && coreLinkPath(named.link)?.split("?")[0] === area.path,
+  )?.labelId;
   const count = counts.get(area.name);
   const captionId = useId();
   return (
@@ -74,7 +81,7 @@ const ShellLink = ({
     >
       <Icon name={area.icon} />
       <span id={captionId} className="shell-link-label">
-        {p.text(area.label)}
+        {coreCaption === undefined ? p.text(area.label) : renderCatalogKey(p, coreCaption)}
       </span>
       {count === undefined ? null : (
         <>
@@ -242,7 +249,7 @@ export const WorkspaceHeader = ({
   route: Route;
   presentation: Screen | null;
   active: string;
-  views: ReadonlyArray<string>;
+  views: ReadonlyArray<Link["endpoint"]>;
   tasks: ReadonlyArray<TaskId>;
   locked: boolean;
   openCase: () => void;
@@ -251,11 +258,11 @@ export const WorkspaceHeader = ({
   const compact = useCompact();
   const view = presentation;
   const counts = useNavigationCounts();
-  const cases = views.includes("CASES");
+  const cases = views.includes("case.list");
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
   const admin = areas.filter(
     (area) =>
-      (area.name === "people" && views.includes("PEOPLE")) ||
+      (area.name === "people" && views.includes("people.list")) ||
       (area.name === "peopleHistory" && tasks.includes("people.history")),
   );
   const mobile = [

@@ -39,7 +39,6 @@
     <Compile Include="Codecs/ReadRowCodecs.fs" />
     <Compile Include="Codecs/ResponseCodecs.fs" />
     <Compile Include="Codecs/PaymentPageCodecs.fs" />
-    <Compile Include="Codecs/HumanDocumentStructure.fs" />
     <Compile Include="Codecs/HumanDocumentCodecs.fs" />
     <Compile Include="Codecs/HumanReplies.fs" />
     <Compile Include="Codecs/PeopleHistoryCodecs.fs" />

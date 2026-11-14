@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 import type { OperationPhase } from "../../../src/operation/operationTypes";
 import { expect, it } from "vitest";
@@ -285,7 +286,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
         query: {
           target: {
             kind: "ID" as const,
-            caseId: initial().disclosed.caseObservation!.context.caseId,
+            caseId: initial().disclosed.caseObservation!.subject.caseId,
           },
         },
       },
@@ -319,7 +320,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
           query: {
             target: {
               kind: "ID" as const,
-              caseId: initial().disclosed.caseObservation!.context.caseId,
+              caseId: initial().disclosed.caseObservation!.subject.caseId,
             },
           },
         },
@@ -412,7 +413,7 @@ it("discarding authored intent cannot restore a refused disclosure without a pos
           query: {
             target: {
               kind: "ID" as const,
-              caseId: initial().disclosed.caseObservation!.context.caseId,
+              caseId: initial().disclosed.caseObservation!.subject.caseId,
             },
           },
         },
@@ -752,15 +753,14 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       ...closeReview,
       document: {
         ...closeReview.document,
-        context: {
-          ...closeReview.document.context,
-          task: "case.open",
-          target: {
-            kind: "CASE",
-            caseId: firstId,
-            beforeRevision: null,
-          },
-        },
+        actions: [
+          operationAffordance(
+            "case.open",
+            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            {},
+            [],
+          ),
+        ],
       },
     };
     let operation: OperationPhase;
@@ -878,7 +878,7 @@ it.each(["read-failed", "reset"] as const)(
                   query: {
                     target: {
                       kind: "ID" as const,
-                      caseId: initial().disclosed.caseObservation!.context.caseId,
+                      caseId: initial().disclosed.caseObservation!.subject.caseId,
                     },
                   },
                 },

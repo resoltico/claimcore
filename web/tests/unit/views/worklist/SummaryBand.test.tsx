@@ -43,7 +43,11 @@ const summary: HumanReadDocument_case_summary = {
       },
     ],
   },
-  context: { kind: "EMPTY" },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };

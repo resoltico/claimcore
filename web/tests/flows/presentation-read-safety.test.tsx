@@ -69,7 +69,14 @@ const referenceRows = (value: string): Screen => ({
           },
         ],
         rows: [
-          { key: "20000000-0000-4000-8000-000000000001", values: [{ kind: "REFERENCE", value }] },
+          {
+            key: "20000000-0000-4000-8000-000000000001",
+            link: {
+              endpoint: "case.get",
+              input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+            },
+            values: [{ kind: "REFERENCE", value }],
+          },
         ],
       },
     },
@@ -82,13 +89,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/case.list")) {
     return humanReadHttpReply("case.list", {
       screen: referenceRows(value),
-      context: {
-        kind: "CASES",
-        cases: [{ caseId: "20000000-0000-4000-8000-000000000001", assignment: null }],
-        tasks: [],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     });
@@ -112,7 +117,11 @@ const readReply = (url: string, value: string, missing: boolean) => {
   if (timeline) {
     return humanReadHttpReply("case.timeline", {
       screen: referenceRows(value),
-      context: { kind: "PAGE", tasks: [], nextCursor: "next" },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: "next",
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "FULL",
     });

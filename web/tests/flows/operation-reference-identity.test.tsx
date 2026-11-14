@@ -1,4 +1,6 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { previewReply } from "../support/presentation-state.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 
@@ -10,9 +12,20 @@ import { OperationEditor } from "../../src/views/OperationEditor";
 import { wireResponse } from "../support/reply.fixtures";
 import { definition, fields } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 const prepared = () => previewReply();
@@ -62,6 +75,6 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
-  expect(draft.binding.target).toEqual({ kind: "ID", caseId: current.context.caseId });
+  expect(draft.binding.target).toEqual({ kind: "ID", caseId: current.subject.caseId });
   expect({ task: draft.task, inputs: draft.inputs }).toEqual({ task: "case.close", inputs: {} });
 });

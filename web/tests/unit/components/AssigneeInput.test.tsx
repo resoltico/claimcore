@@ -1,6 +1,8 @@
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { type HumanResponseByEndpoint } from "@contracts/client";
+import type { HumanResponseByEndpoint } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { AssigneeInput } from "../../../src/components/AssigneeInput";
 import { productMetadata } from "../../../src/protocol/productMetadata";
@@ -29,28 +31,33 @@ const current: CurrentCase = {
       },
     ],
   },
-  context: {
+  subject: {
     kind: "CASE",
-    history: "NONE",
     caseId: "00000000-0000-4000-8000-000000000003",
     revision: 7,
     workRevision: 2,
-    tasks: ["work.update"],
-    editableInputs: ["field:responsibleActor"],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: {
-        summary: null,
-        responsible: saved,
-      },
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
   },
+  actions: [
+    operationAffordance(
+      "work.update",
+      {
+        kind: "WORK",
+        target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000003" },
+        expectedRevision: 2,
+      },
+      {
+        ...prefixedInputs("field:", {
+          handlingSummary: null,
+          responsibleActor: saved,
+        }),
+      },
+      ["field:responsibleActor"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -83,6 +90,17 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
               rows: [
                 {
                   key: choice,
+                  actions: [
+                    operationAffordance(
+                      "work.update",
+                      {
+                        kind: "WORK",
+                        target: { kind: "ID", caseId: current.subject.caseId },
+                        expectedRevision: 2,
+                      },
+                      { "field:responsibleActor": choice },
+                    ),
+                  ],
                   values: [
                     {
                       kind: "TEXT",
@@ -95,11 +113,11 @@ const page: HumanResponseByEndpoint["case.assignees"] = {
           },
         ],
       },
-      context: {
-        kind: "ASSIGNEES",
-        actorIds: [choice],
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: current.basis,
       disclosure: "CURRENT",
     },
@@ -148,14 +166,18 @@ it("does not infer the selected caption when its permitted input identity is abs
   supply();
   const withoutSeed: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      seeds: {
-        ...current.context.seeds,
-        work: null,
-      },
-      editableInputs: [],
-    },
+    actions: [
+      operationAffordance(
+        "work.update",
+        {
+          kind: "WORK",
+          target: { kind: "ID", caseId: current.subject.caseId },
+          expectedRevision: current.subject.workRevision,
+        },
+        {},
+        [],
+      ),
+    ],
   };
   render(
     <AssigneeInput

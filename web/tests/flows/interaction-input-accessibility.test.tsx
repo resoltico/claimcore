@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
@@ -36,7 +37,9 @@ it.each(["en", "lv", "ar"] as const)(
   async (language) => {
     preferences(language);
     const user = userEvent.setup();
-    const values = initialOperationValues("PEOPLE", "people.register", null);
+    const values = initialOperationValues(
+      operationAffordance("people.register", { kind: "PEOPLE" }),
+    );
     const props = {
       binding: { kind: "PEOPLE" as const },
       task: operationEntry({ subject: "PEOPLE", kind: "people.register" }),
@@ -82,7 +85,13 @@ it.each(["en", "lv", "ar"] as const)(
           expectedRevision: 1,
         }}
         task={operationEntry({ subject: "CASE", kind: "case.correct" })}
-        values={initialOperationValues("CASE", "case.correct", null)}
+        values={initialOperationValues(
+          operationAffordance("case.correct", {
+            kind: "CASE",
+            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            expectedRevision: 0,
+          }),
+        )}
         current={null}
         disabled={false}
         errors={{}}

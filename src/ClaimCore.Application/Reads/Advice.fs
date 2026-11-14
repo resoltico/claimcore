@@ -155,20 +155,18 @@ module internal Advice =
             if can principal actor Capability.Register Scope.Installation then
                 yield InstallationOffer.Open
             if can principal actor Capability.ManageAccess Scope.Installation then
-                for kind in PeopleActKind.all do
-                    if kind <> PeopleActKind.ProvisionOwner then
-                        yield InstallationOffer.PeopleAct kind
+                yield InstallationOffer.PeopleAct PeopleActKind.Register
+                yield InstallationOffer.PeopleAct PeopleActKind.Admit
         ]
 
     let actorOffers principal actor (maintenance: RegisterMaintenance) =
-        if maintenance.Active then
+        if
+            maintenance.Active
+            || not (can principal actor Capability.ManageAccess Scope.Installation)
+        then
             []
         else
-            installationOffers principal actor
-            |> List.choose (function
-                | InstallationOffer.PeopleAct kind when PeopleActKind.targetsExistingActor kind ->
-                    Some kind
-                | _ -> None)
+            PeopleActKind.all |> List.filter PeopleActKind.targetsExistingActor
 
     let views principal actor =
         let cases = Access.visibility principal actor |> Option.isSome

@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { testWorkspaceIdentity } from "../../../support/presentation-test-support";
 import { expect, it } from "vitest";
 import { readConflict } from "../../../../src/hooks/operation/readConflict";
@@ -20,21 +21,11 @@ const succeeded = <const T>(data: T) => ({
 });
 const caseValue = () => ({
   ...current,
-  context: {
-    ...current.context,
-    revision: 100,
-    workRevision: 7,
-    history: "NONE" as const,
-    tasks: ["work.update"] as const,
-    editableInputs: ["field:handlingSummary"] as const,
-    correction: null,
-    seeds: {
-      registration: null,
-      decision: null,
-      work: { summary: null, responsible: null },
-      paymentCurrency: null,
-    },
-  },
+  subject: { ...current.subject, revision: 100, workRevision: 7 },
+  history: "NONE" as const,
+  actions: current.actions.filter((action) =>
+    new Set<string>(["work.update"] as const).has(action.task),
+  ),
 });
 const scoped = (source: LocalSource): source is ConflictSource =>
   source.prepared.input.binding.kind !== "PEOPLE";
@@ -87,7 +78,7 @@ it("uses the current work revision separately from the case fact revision", asyn
     throw new Error("Expected refreshed work.");
   }
   expect(result.value.revision).toBe(7);
-  expect(result.value.current.context.revision).toBe(100);
+  expect(result.value.current.subject.revision).toBe(100);
   expect(reminder).not.toHaveBeenCalled();
   expect(reads.size).toBe(0);
 });
@@ -99,15 +90,24 @@ it("reads the selected reminder revision rather than either case or work revisio
       screen: { regions: [] },
       basis: current.basis,
       disclosure: "CURRENT",
-      context: {
-        kind: "REMINDER",
-        caseId: current.context.caseId,
-        reminderId,
-        revision: 9,
-        tasks: ["reminder.update"],
-        actionSeed: "Current action",
-        dueDateSeed: "2026-11-05",
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "reminder.update",
+          {
+            kind: "REMINDER",
+            target: { kind: "ID", caseId: current.subject.caseId },
+            reminderId,
+            expectedRevision: 9,
+          },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
     }),
   );
   const result = await readConflict(
@@ -140,14 +140,8 @@ it("retains an erased current-case status without inventing editable facts or a 
       ...caseValue(),
       disclosure: "ERASED",
       screen: { regions: [] },
-      context: {
-        ...caseValue().context,
-        revision: 101,
-        workRevision: 0,
-        tasks: [],
-        editableInputs: [],
-        seeds: { registration: null, decision: null, work: null, paymentCurrency: null },
-      },
+      subject: { ...caseValue().subject, revision: 101, workRevision: 0 },
+      actions: caseValue().actions.filter((action) => new Set<string>([]).has(action.task)),
     }),
   );
   const get = mockEndpoint("reminder.get");

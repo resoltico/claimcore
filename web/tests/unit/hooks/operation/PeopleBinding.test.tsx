@@ -1,4 +1,5 @@
-import { type RequestByEndpoint, type HumanReview } from "@contracts/client";
+import { operationAffordance } from "../../../support/affordances.fixtures";
+import type { RequestByEndpoint, HumanReview } from "@contracts/client";
 import { operationRequest, requestText } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
@@ -23,28 +24,25 @@ const fixture = () => {
           screen: {
             regions: [],
           },
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: "people.enable",
-            target: {
-              kind: "PEOPLE",
-              actorId: null,
-              scope: {
-                kind: "INSTALLATION",
-              },
-            },
-            inputs: [
-              "input:operationId",
-              "input:principal.kind",
-              "input:principal.issuer",
-              "input:principal.subject",
-            ],
-            consequence: "ROUTINE",
             confirmation: {
               kind: "OPERATION",
               operationId: operationExecuteRequest.operationId,
             },
+            consequence: "ROUTINE",
           },
+          actions: [
+            operationAffordance(
+              operationExecuteRequest.task,
+              operationExecuteRequest.binding,
+              {},
+              [],
+            ),
+          ],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: {
@@ -81,6 +79,10 @@ const fixture = () => {
       subject: "PEOPLE",
       kind: "people.enable",
       current: null,
+      affordances: [
+        operationAffordance("people.enable", { kind: "PEOPLE", actorId: first }),
+        operationAffordance("people.disable", { kind: "PEOPLE", actorId: first }),
+      ],
       credential: "token",
       onLockChange: vi.fn(),
     });

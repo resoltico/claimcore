@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import type { HumanReadDocument_people_grants } from "@contracts/client";
 import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
@@ -30,7 +31,7 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.document.context.state !== "ACTIVE") {
+  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.document.subject.state !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -42,18 +43,18 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
         ...value.outcome,
         document: {
           ...value.outcome.document,
-          context: {
-            ...value.outcome.document.context,
-            tasks: [
+          actions: value.outcome.document.actions.filter((action) =>
+            [
               "people.admit",
               "people.grant",
               "people.disable",
               "people.list",
               "people.grants",
-            ],
-            peopleIssuerSeed: "https://issuer.example/",
-            views: ["PEOPLE", "OPERATIONS"],
-          },
+            ].includes(action.task),
+          ),
+          links: value.outcome.document.links.filter((link) =>
+            new Set<string>(["PEOPLE", "OPERATIONS"]).has(link.labelId),
+          ),
         },
       },
     },
@@ -86,16 +87,20 @@ const existing: HumanReadDocument_people_grants = {
       },
     ],
   },
-  context: {
-    kind: "PERSON",
-    actorId: "10000000-0000-4000-8000-000000000001",
-    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
-    tasks: ["people.disable"],
-    profileSeed: null,
-    revocations: [],
-    responsibleCases: null,
-    nextCursor: null,
-  },
+  subject: { kind: "PERSON", actorId: "10000000-0000-4000-8000-000000000001" },
+  actions: [
+    operationAffordance(
+      "people.disable",
+      { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      {},
+      undefined,
+      {},
+      true,
+    ),
+  ],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };
@@ -120,6 +125,18 @@ const listing = (): ApiResult<ServiceResponse<"people.list">> => ({
             rows: [
               {
                 key: "10000000-0000-4000-8000-000000000001",
+                link: {
+                  endpoint: "people.grants",
+                  input: {
+                    actorId: {
+                      actorId: "10000000-0000-4000-8000-000000000001",
+                      displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                      principalKind: "HUMAN",
+                      availability: "AVAILABLE",
+                    }.actorId,
+                    limit: 20,
+                  },
+                },
                 values: [
                   {
                     kind: "ACTOR",
@@ -137,11 +154,11 @@ const listing = (): ApiResult<ServiceResponse<"people.list">> => ({
         },
       ],
     },
-    context: {
-      kind: "PEOPLE",
-      actorIds: ["10000000-0000-4000-8000-000000000001"],
-      nextCursor: null,
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis: { kind: "SNAPSHOT", observation: workBasis },
     disclosure: "CURRENT",
   }),

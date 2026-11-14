@@ -1,24 +1,25 @@
 import {
-  type RequestByEndpoint,
-  type HumanReadDocument_people_grants,
-  type HumanReview,
-  type HumanReceiptDocument,
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReadDocument_people_grants,
+  HumanReview,
+  HumanReceiptDocument,
 } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor, TestSession } from "../../support/presentation-test-support";
 import { RequesterContext, type ActiveRequester } from "../../../src/hooks/useRequesterContext";
-import { activeRequester } from "../../support/human-requester.fixtures";
+
 import { PeoplePanel } from "../../../src/views/PeoplePanel";
 import { useEndpointCache } from "../../../src/hooks/EndpointProvider";
 import { navigate } from "../../../src/routing/navigation";
 const actorId = "00000000-0000-4000-8000-000000000001";
-const principal = {
-  kind: "HUMAN",
-  issuer: "https://issuer.example/",
-  subject: "selected-person",
-} as const;
 const basis = {
   kind: "SNAPSHOT",
   observation: {
@@ -29,11 +30,11 @@ const basis = {
 } as const;
 const owner: ActiveRequester = {
   ...activeRequester,
-  context: {
-    ...activeRequester.context,
-    views: ["PEOPLE", "OPERATIONS"],
-    tasks: ["people.enable", "people.list", "people.grants", "people.history"],
-  },
+  actions: installationActions(["people.enable", "people.list", "people.grants", "people.history"]),
+  links: requesterLinks(
+    ["PEOPLE", "OPERATIONS"],
+    ["people.enable", "people.list", "people.grants", "people.history"],
+  ),
 };
 const person: HumanReadDocument_people_grants = {
   screen: {
@@ -57,16 +58,13 @@ const person: HumanReadDocument_people_grants = {
       },
     ],
   },
-  context: {
-    kind: "PERSON",
-    actorId,
-    principal,
-    tasks: ["people.enable"],
-    profileSeed: null,
-    revocations: [],
-    responsibleCases: null,
-    nextCursor: null,
-  },
+  subject: { kind: "PERSON", actorId },
+  actions: [
+    operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
+  ],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -92,16 +90,11 @@ const receipt = (caption: string): HumanReceiptDocument => ({
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "PEOPLE",
-      actorId,
-    },
-    caseLink: null,
-    refreshCase: null,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 });
@@ -187,11 +180,11 @@ it("uses a bound person task and renders the current Core people outcome after a
                 },
               ],
             },
-            context: {
-              kind: "PEOPLE",
-              actorIds: [actorId],
-              nextCursor: null,
-            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           },
@@ -235,28 +228,18 @@ it("uses a bound person task and renders the current Core people outcome after a
             screen: {
               regions: [],
             },
-            context: {
+            subject: {
               kind: "REVIEW",
-              task: "people.enable",
-              target: {
-                kind: "PEOPLE",
-                actorId,
-                scope: {
-                  kind: "INSTALLATION",
-                },
-              },
-              inputs: [
-                "input:operationId",
-                "input:principal.kind",
-                "input:principal.issuer",
-                "input:principal.subject",
-              ],
-              consequence: "ROUTINE",
               confirmation: {
                 kind: "OPERATION",
                 operationId: operationExecuteRequest.operationId,
               },
+              consequence: "ROUTINE",
             },
+            actions: [operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, [])],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           },
@@ -307,11 +290,8 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(previews).toHaveLength(1);
   expect(executions).toEqual(previews);
   expect(JSON.parse(executions[0]!)).toMatchObject({
-    kind: "PEOPLE",
-    target: principal,
-    act: {
-      kind: "people.enable",
-    },
+    task: "people.enable",
+    binding: { kind: "PEOPLE" },
   });
   expect(lookups).toEqual([acceptedId]);
   expect(
@@ -340,10 +320,7 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(executions).toHaveLength(1);
   currentOwner = {
     ...owner,
-    context: {
-      ...owner.context,
-      actorId: "00000000-0000-4000-8000-000000000099",
-    },
+    subject: { ...owner.subject, actorId: "00000000-0000-4000-8000-000000000099" },
   };
   view.rerender(workspace("owner-b", currentOwner));
   expect(screen.queryByText("Core current people outcome Χ")).not.toBeInTheDocument();
@@ -361,11 +338,7 @@ it("binds a selected revocation to the Core case identity without editable role/
   } as const;
   const document: HumanReadDocument_people_grants = {
     ...person,
-    context: {
-      ...person.context,
-      tasks: ["people.revoke"],
-      revocations: [grant],
-    },
+    actions: person.actions.filter((action) => new Set<string>(["people.revoke"]).has(action.task)),
     screen: {
       regions: [
         ...person.screen.regions,
@@ -384,6 +357,14 @@ it("binds a selected revocation to the Core case identity without editable role/
             rows: [
               {
                 key: grant.key,
+                actions: [
+                  operationAffordance(
+                    "people.revoke",
+                    { kind: "PEOPLE", actorId },
+                    { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": caseId },
+                    [],
+                  ),
+                ],
                 values: [
                   {
                     kind: "TEXT",
@@ -407,10 +388,9 @@ it("binds a selected revocation to the Core case identity without editable role/
             kind: "SUCCEEDED",
             document: {
               ...owner,
-              context: {
-                ...owner.context,
-                tasks: ["people.revoke", "people.list", "people.grants"],
-              },
+              actions: owner.actions.filter((action) =>
+                new Set<string>(["people.revoke", "people.list", "people.grants"]).has(action.task),
+              ),
             },
           });
         }
@@ -421,11 +401,11 @@ it("binds a selected revocation to the Core case identity without editable role/
               screen: {
                 regions: [],
               },
-              context: {
-                kind: "PEOPLE",
-                actorIds: [],
-                nextCursor: null,
-              },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis,
               disclosure: "CURRENT",
             },
@@ -493,35 +473,19 @@ it("binds a selected revocation to the Core case identity without editable role/
     expect(previews).toHaveLength(1);
   });
   expect(previews[0]).toMatchObject({
-    kind: "PEOPLE",
-    target: principal,
-    act: {
-      kind: "people.revoke",
-      role: "CASE_READER",
-      scope: {
-        kind: "CASE",
-        target: {
-          kind: "ID",
-          caseId,
-        },
-      },
-    },
+    task: "people.revoke",
+    binding: { kind: "PEOPLE", actorId },
+    inputs: { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": caseId },
   });
 });
 it("acquires admission inputs and ordered role rows through the actual semantic form", async () => {
   const admitting: ActiveRequester = {
     ...owner,
-    context: {
-      ...owner.context,
-      tasks: [
-        "people.admit",
-        "people.list",
-        "people.grants",
-        "people.requests",
-        "people.requests.dismiss",
-      ],
-      peopleIssuerSeed: "https://issuer.example/",
-    },
+    actions: installationActions(["people.admit"], "https://issuer.example/"),
+    links: requesterLinks(
+      ["PEOPLE", "OPERATIONS"],
+      ["people.list", "people.grants", "people.requests"],
+    ),
   };
   const previews: unknown[] = [];
   vi.stubGlobal(
@@ -542,11 +506,11 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
               screen: {
                 regions: [],
               },
-              context: {
-                kind: "PEOPLE",
-                actorIds: [],
-                nextCursor: null,
-              },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis,
               disclosure: "CURRENT",
             },
@@ -559,11 +523,11 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
               screen: {
                 regions: [],
               },
-              context: {
-                kind: "ACCESS_REQUESTS",
-                requests: [],
-                nextCursor: null,
-              },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis,
               disclosure: "CURRENT",
             },
@@ -633,25 +597,14 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
     expect(previews).toHaveLength(1);
   });
   expect(previews[0]).toMatchObject({
-    kind: "PEOPLE",
-    target: {
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject: "new-principal",
-    },
-    act: {
-      kind: "people.admit",
-      profile: {
-        displayName: "Core-authored person",
-      },
-      grants: [
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "INSTALLATION",
-          },
-        },
-      ],
+    task: "people.admit",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": "https://issuer.example/",
+      "input:principal.subject": "new-principal",
+      "input:profile.displayName": "Core-authored person",
+      "input:grants": [{ "input:role": "CASE_READER", "input:scope": "INSTALLATION" }],
     },
   });
 });

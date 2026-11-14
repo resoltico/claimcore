@@ -1,5 +1,11 @@
-import { type RequestByEndpoint } from "@contracts/client";
-import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+import {
+  caseSubject,
+  caseDocumentInput,
+  caseIdentityScreen,
+} from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+import type { RequestByEndpoint } from "@contracts/client";
+
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { preview as reviewed } from "../support/operation-hook.fixtures";
@@ -24,12 +30,23 @@ import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
 const current: CurrentCase = caseDocumentInput(
   {
-    tasks: ["case.close"],
-    caseId: "20000000-0000-4000-8000-000000000001",
-    revision: 1,
+    subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+    actions: [
+      operationAffordance(
+        "case.close",
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          expectedRevision: 1,
+        },
+        {},
+        undefined,
+        {},
+      ),
+    ],
     history: "FULL",
   },
-  closeCaseScreen,
+  caseIdentityScreen,
 );
 import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");
@@ -63,6 +80,12 @@ const queueDefinitionAndList = () => {
               rows: [
                 {
                   key: "20000000-0000-4000-8000-000000000001",
+                  link: {
+                    endpoint: "case.get",
+                    input: {
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                    },
+                  },
                   values: [
                     {
                       kind: "REFERENCE",
@@ -75,18 +98,19 @@ const queueDefinitionAndList = () => {
           },
         ],
       },
-      context: {
-        kind: "CASES",
-        cases: [
-          {
-            caseId: "20000000-0000-4000-8000-000000000001",
-            assignment: null,
-          },
-        ],
-        tasks: ["case.open"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: {
         kind: "SNAPSHOT",
         observation: workBasis,
@@ -215,13 +239,23 @@ it("returns an accepted open operation to Dashboard through its committed transi
                 },
               ],
             },
-            context: {
-              kind: "CASES",
-              cases: [],
-              tasks: ["case.open"],
-              exactCaseId: null,
-              nextCursor: null,
-            },
+            subject: { kind: "LIST" },
+            actions: [
+              operationAffordance(
+                "case.open",
+                {
+                  kind: "CASE",
+                  target: { kind: "REFERENCE", caseReference: "" },
+                  expectedRevision: 0,
+                },
+                {},
+                undefined,
+                {},
+              ),
+            ],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis: {
               kind: "SNAPSHOT",
               observation: workBasis,
@@ -264,17 +298,28 @@ it("returns an accepted open operation to Dashboard through its committed transi
               kind: "ACCEPTED",
               document: {
                 ...receipt,
-                context: {
-                  kind: "RECEIPT",
-                  recordedFields: [],
-                  target: {
-                    kind: "CASE",
-                    caseId: creation,
-                    revision: 1,
+                subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+                actions: [],
+                links: [
+                  {
+                    rel: "OPEN_CASE",
+                    labelId: "field.caseReference.label",
+                    link: {
+                      endpoint: "case.get",
+                      input: { target: { kind: "ID", caseId: creation } },
+                    },
                   },
-                  caseLink: creation,
-                  refreshCase: creation,
-                },
+                  {
+                    rel: "FOLLOW_UP",
+                    labelId: "field.caseReference.label",
+                    link: {
+                      endpoint: "case.get",
+                      input: { target: { kind: "ID", caseId: creation } },
+                    },
+                  },
+                ],
+                history: null,
+                nextCursor: null,
               },
             },
           }),
@@ -288,17 +333,28 @@ it("returns an accepted open operation to Dashboard through its committed transi
               byRequester: true,
               document: {
                 ...receipt,
-                context: {
-                  kind: "RECEIPT",
-                  recordedFields: [],
-                  target: {
-                    kind: "CASE",
-                    caseId: creation,
-                    revision: 1,
+                subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+                actions: [],
+                links: [
+                  {
+                    rel: "OPEN_CASE",
+                    labelId: "field.caseReference.label",
+                    link: {
+                      endpoint: "case.get",
+                      input: { target: { kind: "ID", caseId: creation } },
+                    },
                   },
-                  caseLink: creation,
-                  refreshCase: creation,
-                },
+                  {
+                    rel: "FOLLOW_UP",
+                    labelId: "field.caseReference.label",
+                    link: {
+                      endpoint: "case.get",
+                      input: { target: { kind: "ID", caseId: creation } },
+                    },
+                  },
+                ],
+                history: null,
+                nextCursor: null,
               },
             },
           }),
@@ -311,10 +367,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
               kind: "SUCCEEDED",
               document: {
                 ...current,
-                context: {
-                  ...current.context,
-                  caseId: creation,
-                },
+                subject: { ...current.subject, caseId: creation },
               },
             },
           }),

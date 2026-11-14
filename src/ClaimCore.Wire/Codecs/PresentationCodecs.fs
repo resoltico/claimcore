@@ -329,50 +329,6 @@ module PresentationCodecs =
         |> build
         |> named "ReviewPresentation"
 
-    let entry =
-        (record (fun key label prominence value ->
-            {
-                Entry.Key = key
-                LabelId = label
-                Prominence = prominence
-                Value = value
-            })
-        : Fields<Entry, _>)
-        |> field "key" _.Key key
-        |> field "labelId" _.LabelId messageId
-        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
-        |> field "value" _.Value value
-        |> build
-        |> named "PresentedEntry"
-
-    let private section =
-        (record (fun title entries ->
-            {
-                Section.TitleId = title
-                Entries = entries
-            })
-        : Fields<Section, _>)
-        |> field "titleId" _.TitleId messageId
-        |> field "entries" _.Entries (list MaximumEntries entry)
-        |> build
-        |> named "PresentedSection"
-
-    let private column =
-        (record (fun key label prominence money ->
-            {
-                Column.Key = key
-                LabelId = label
-                Prominence = prominence
-                IsMoney = money
-            })
-        : Fields<Column, _>)
-        |> field "key" _.Key key
-        |> field "labelId" _.LabelId messageId
-        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
-        |> field "isMoney" _.IsMoney boolean
-        |> build
-        |> named "PresentedColumn"
-
     let private messageArguments =
         record (fun key value -> key, value)
         |> field "key" fst key
@@ -394,6 +350,288 @@ module PresentationCodecs =
         |> field "arguments" _.Arguments messageArguments
         |> build
         |> named "PresentedMessage"
+
+    let advice =
+        record (fun message action ->
+            {
+                HumanAdvice.Message = message
+                Action = action
+            })
+        |> field "message" _.Message message
+        |> field "action" _.Action (VocabularyCodec.create RecommendedAction.vocabulary)
+        |> build
+        |> named "HumanAdvice"
+
+    let link =
+        let query task inject extract codec =
+            variant (QueryTaskId.key task) inject extract (record id |> field "input" id codec)
+
+        taggedOn
+            "endpoint"
+            "Link"
+            [
+                query
+                    QueryTaskId.Context
+                    (fun () -> Link.Context)
+                    (function
+                    | Link.Context -> Some()
+                    | _ -> None)
+                    RequestCodecs.empty
+                query
+                    QueryTaskId.CaseGet
+                    Link.CaseGet
+                    (function
+                    | Link.CaseGet value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseGetRequest
+                query
+                    QueryTaskId.CaseAssignees
+                    Link.CaseAssignees
+                    (function
+                    | Link.CaseAssignees value -> Some value
+                    | _ -> None)
+                    RequestCodecs.assigneeRequest
+                query
+                    QueryTaskId.CaseList
+                    Link.CaseList
+                    (function
+                    | Link.CaseList value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseListRequest
+                query
+                    QueryTaskId.CaseSummary
+                    Link.CaseSummary
+                    (function
+                    | Link.CaseSummary value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseSummaryRequest
+                query
+                    QueryTaskId.CaseTimeline
+                    Link.CaseTimeline
+                    (function
+                    | Link.CaseTimeline value -> Some value
+                    | _ -> None)
+                    RequestCodecs.timelineRequest
+                query
+                    QueryTaskId.CaseNotes
+                    Link.CaseNotes
+                    (function
+                    | Link.CaseNotes value -> Some value
+                    | _ -> None)
+                    RequestCodecs.caseNotesRequest
+                query
+                    QueryTaskId.CasePayments
+                    Link.CasePayments
+                    (function
+                    | Link.CasePayments value -> Some value
+                    | _ -> None)
+                    RequestCodecs.casePaymentsRequest
+                query
+                    QueryTaskId.ReminderList
+                    Link.ReminderList
+                    (function
+                    | Link.ReminderList value -> Some value
+                    | _ -> None)
+                    RequestCodecs.reminderListRequest
+                query
+                    QueryTaskId.ReminderGet
+                    Link.ReminderGet
+                    (function
+                    | Link.ReminderGet value -> Some value
+                    | _ -> None)
+                    RequestCodecs.reminderGetRequest
+                query
+                    QueryTaskId.WorkViews
+                    (fun () -> Link.WorkViews)
+                    (function
+                    | Link.WorkViews -> Some()
+                    | _ -> None)
+                    RequestCodecs.empty
+                query
+                    QueryTaskId.OperationGet
+                    (function
+                    | Some id -> Link.OperationGet { OperationId = id }
+                    | None -> Link.OperationLookupForm)
+                    (function
+                    | Link.OperationGet value -> Some(Some value.OperationId)
+                    | Link.OperationLookupForm -> Some None
+                    | _ -> None)
+                    (record id |> optionalField "operationId" id uuid |> build)
+                query
+                    QueryTaskId.PeopleList
+                    Link.PeopleList
+                    (function
+                    | Link.PeopleList value -> Some value
+                    | _ -> None)
+                    RequestCodecs.actorListRequest
+                query
+                    QueryTaskId.PeopleGrants
+                    Link.PeopleGrants
+                    (function
+                    | Link.PeopleGrants value -> Some value
+                    | _ -> None)
+                    RequestCodecs.grantsRequest
+                query
+                    QueryTaskId.PeopleHistory
+                    Link.PeopleHistory
+                    (function
+                    | Link.PeopleHistory value -> Some value
+                    | _ -> None)
+                    RequestCodecs.peopleHistoryRequest
+                query
+                    QueryTaskId.PeopleRequests
+                    Link.PeopleRequests
+                    (function
+                    | Link.PeopleRequests value -> Some value
+                    | _ -> None)
+                    RequestCodecs.accessRequestsRequest
+            ]
+
+    let namedLink =
+        record (fun relation label link ->
+            {
+                NamedLink.Relation = relation
+                LabelId = label
+                Link = link
+            })
+        |> field "rel" _.Relation (VocabularyCodec.create LinkRelation.vocabulary)
+        |> field "labelId" _.LabelId messageId
+        |> field "link" _.Link link
+        |> build
+        |> named "NamedLink"
+
+    let affordance =
+        let variants =
+            TaskDeclarations.all
+            |> List.choose (fun declaration ->
+                let binding =
+                    match declaration.Task with
+                    | TaskId.Operation task -> Some(OperationSubmissionCodecs.binding task)
+                    | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
+                        Some(
+                            record (OperationBinding.People None)
+                            |> fixedField "kind" "PEOPLE"
+                            |> build
+                        )
+                    | TaskId.Query _ -> None
+
+                binding
+                |> Option.map (fun binding ->
+                    let allowed = declaration.Inputs |> List.map _.Input
+
+                    let identifiers =
+                        allowed
+                        @ (declaration.Collections
+                           |> List.map (fun collection ->
+                               TaskCollectionId.input collection.Collection))
+
+                    let input =
+                        Vocabulary.define
+                            TaskInputId.vocabularyName
+                            TaskInputId.all
+                            TaskInputId.token
+                        |> VocabularyCodec.select (fun input -> List.contains input identifiers)
+
+                    let choices =
+                        allowed
+                        |> List.choose (fun input ->
+                            TaskChoiceId.ofInput input
+                            |> Option.map (fun choice ->
+                                let tokens = TaskChoiceId.tokens choice
+
+                                input,
+                                TaskInputId.token input,
+                                true,
+                                list
+                                    tokens.Length
+                                    (Vocabulary.define
+                                        (Vocabulary.token TaskChoiceId.vocabulary choice)
+                                        tokens
+                                        id
+                                     |> VocabularyCodec.create)))
+                        |> fieldMapWithPresence
+
+                    variant
+                        (TaskId.key declaration.Task)
+                        id
+                        (fun value -> if value.Task = declaration.Task then Some value else None)
+                        (record (fun binding seeds editable choices primary blocked ->
+                            {
+                                Affordance.Task = declaration.Task
+                                Binding = binding
+                                Seeds = seeds
+                                Editable = editable
+                                Choices = choices
+                                Primary = primary
+                                Blocked = blocked
+                            })
+                         |> field "binding" _.Binding binding
+                         |> field
+                             "seeds"
+                             _.Seeds
+                             (OperationSubmissionCodecs.seedInputs declaration)
+                         |> field "editable" _.Editable (list identifiers.Length input)
+                         |> field "choices" _.Choices choices
+                         |> field "primary" _.Primary boolean
+                         |> field "blocked" _.Blocked (nullable advice))))
+
+        taggedOn "task" "Affordance" variants
+
+    let private actions = list TaskId.all.Length affordance
+
+    let entry =
+        (record (fun key label prominence value recorded ->
+            {
+                Entry.Key = key
+                Recorded = defaultArg recorded false
+                LabelId = label
+                Prominence = prominence
+                Value = value
+            })
+        : Fields<Entry, _>)
+        |> field "key" _.Key key
+        |> field "labelId" _.LabelId messageId
+        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
+        |> field "value" _.Value value
+        |> optionalField
+            "recorded"
+            (fun value -> if value.Recorded then Some true else None)
+            boolean
+        |> build
+        |> named "PresentedEntry"
+
+    let private section =
+        (record (fun title entries ->
+            {
+                Section.TitleId = title
+                Entries = entries
+            })
+        : Fields<Section, _>)
+        |> field "titleId" _.TitleId messageId
+        |> field "entries" _.Entries (list MaximumEntries entry)
+        |> build
+        |> named "PresentedSection"
+
+    let private column =
+        (record (fun key label prominence money recorded ->
+            {
+                Column.Key = key
+                Recorded = defaultArg recorded false
+                LabelId = label
+                Prominence = prominence
+                IsMoney = money
+            })
+        : Fields<Column, _>)
+        |> field "key" _.Key key
+        |> field "labelId" _.LabelId messageId
+        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
+        |> field "isMoney" _.IsMoney boolean
+        |> optionalField
+            "recorded"
+            (fun value -> if value.Recorded then Some true else None)
+            boolean
+        |> build
+        |> named "PresentedColumn"
 
     let private moneyMeter =
         (record (fun current target complete description ->
@@ -426,9 +664,11 @@ module PresentationCodecs =
         |> named "PresentedRowDetail"
 
     let private stage =
-        (record (fun stage reached date amount meter ->
+        (record (fun stage reached date amount meter link actions ->
             {
                 RegionStage.Stage = stage
+                Link = link
+                Actions = defaultArg actions []
                 Meter = meter
                 Reached = reached
                 Date = date
@@ -440,6 +680,11 @@ module PresentationCodecs =
         |> field "date" _.Date (nullable calendarDate)
         |> field "amount" _.Amount (nullable (moneyFields |> build))
         |> optionalField "meter" _.Meter moneyMeter
+        |> optionalField "link" _.Link link
+        |> optionalField
+            "actions"
+            (fun value -> if value.Actions.IsEmpty then None else Some value.Actions)
+            actions
         |> build
         |> named "RegionStage"
 
@@ -454,16 +699,23 @@ module PresentationCodecs =
         |> field "steps" _.Steps (list CaseStageKind.all.Length stage)
 
     let private row =
-        (record (fun key values detail ->
+        (record (fun key values detail link actions ->
             {
                 RegionRow.Key = key
                 Values = values
                 Detail = detail
+                Link = link
+                Actions = defaultArg actions []
             })
         : Fields<RegionRow, _>)
         |> field "key" _.Key key
         |> field "values" _.Values (list MaximumEntries value)
         |> optionalField "detail" _.Detail rowDetail
+        |> optionalField "link" _.Link link
+        |> optionalField
+            "actions"
+            (fun value -> if value.Actions.IsEmpty then None else Some value.Actions)
+            actions
         |> build
         |> named "RegionRow"
 
@@ -502,31 +754,6 @@ module PresentationCodecs =
         |> optionalField "sections" (_.Sections >> supplied) (list MaximumEntries section)
         |> optionalField "meter" _.Meter moneyMeter
 
-    let private actionGroup =
-        (record (fun family acts ->
-            {
-                RegionActionGroup.Family = family
-                Acts = acts
-            })
-        : Fields<RegionActionGroup, _>)
-        |> field "family" _.Family (VocabularyCodec.create ActFamily.vocabulary)
-        |> field "acts" _.Acts (list MaximumCodes (VocabularyCodec.create ActKind.vocabulary))
-        |> build
-        |> named "RegionActionGroup"
-
-    let private actionsFields =
-        (record (fun recommended groups ->
-            {
-                RegionActions.Recommended = recommended
-                Groups = groups
-            })
-        : Fields<RegionActions, _>)
-        |> field "recommended" _.Recommended (nullable (VocabularyCodec.create ActKind.vocabulary))
-        |> field
-            "groups"
-            _.Groups
-            (list (Vocabulary.all ActFamily.vocabulary |> List.length) actionGroup)
-
     let private noticeFields =
         (record (fun message reason tone ->
             {
@@ -540,9 +767,11 @@ module PresentationCodecs =
         |> field "tone" _.Tone (VocabularyCodec.create NoticeTone.vocabulary)
 
     let private timelineEntry =
-        (record (fun key whenAt who summary highlights details ->
+        (record (fun key whenAt who summary highlights details link actions ->
             {
                 RegionTimelineEntry.Key = key
+                Link = link
+                Actions = defaultArg actions []
                 When = whenAt
                 Who = who
                 Summary = summary
@@ -556,6 +785,11 @@ module PresentationCodecs =
         |> field "summary" _.Summary message
         |> field "highlights" _.Highlights (list MaximumEntries section)
         |> field "details" _.Details (list MaximumEntries section)
+        |> optionalField "link" _.Link link
+        |> optionalField
+            "actions"
+            (fun value -> if value.Actions.IsEmpty then None else Some value.Actions)
+            actions
         |> build
         |> named "RegionTimelineEntry"
 
@@ -586,13 +820,6 @@ module PresentationCodecs =
                     | RegionContent.Stages stages -> Some stages
                     | _ -> None)
                     stagesFields
-                variant
-                    (tag RegionContentKind.Actions)
-                    RegionContent.Actions
-                    (function
-                    | RegionContent.Actions actions -> Some actions
-                    | _ -> None)
-                    actionsFields
                 variant
                     (tag RegionContentKind.Notice)
                     RegionContent.Notice
@@ -640,9 +867,11 @@ module PresentationCodecs =
         |> fun codec -> restrict codec.Schema PresentationStructure.content codec
 
     let private region =
-        (record (fun role title content ->
+        (record (fun role title content link actions ->
             {
                 Region.Role = role
+                Link = link
+                Actions = defaultArg actions []
                 TitleId = title
                 Content = content
             })
@@ -650,6 +879,11 @@ module PresentationCodecs =
         |> field "role" _.Role (VocabularyCodec.create RegionRole.vocabulary)
         |> optionalField "titleId" _.TitleId messageId
         |> field "content" _.Content content
+        |> optionalField "link" _.Link link
+        |> optionalField
+            "actions"
+            (fun value -> if value.Actions.IsEmpty then None else Some value.Actions)
+            actions
         |> build
         |> named "Region"
 

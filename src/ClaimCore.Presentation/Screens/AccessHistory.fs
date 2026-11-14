@@ -148,6 +148,13 @@ module AccessHistoryScreen =
 
                 {
                     RegionTimelineEntry.Key = EffectPosition.format item.Position
+                    Link =
+                        (match item.Facts with
+                         | PeopleHistoryFacts.Granted { Scope = GrantScope.Case(id, _) }
+                         | PeopleHistoryFacts.Revoked { Scope = GrantScope.Case(id, _) } ->
+                             Some(Link.caseById id)
+                         | _ -> None)
+                    Actions = []
                     When = item.RecordedAt
                     Who = item.RecordedBy
                     Summary =

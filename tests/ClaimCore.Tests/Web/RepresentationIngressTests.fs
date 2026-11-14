@@ -132,7 +132,7 @@ let tests =
 
                 let body =
                     Encoding.UTF8.GetBytes
-                        """{"kind":"CASE","operationId":"019aa6a0-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1,"act":{"kind":"case.close"}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.close","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1},"inputs":{}}"""
 
                 let withActor principal work =
                     task {

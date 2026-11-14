@@ -60,7 +60,33 @@ let private caseReply =
         Snapshot = current
         Headline = CaseHeadline.Undecided
         Attention = []
-        Advice = Inputs.caseAdvice current.State
+        Advice =
+            let offers = [ CaseActKind.Close; CaseActKind.Erase; CaseActKind.Correct ]
+
+            let blocked =
+                CaseActKind.all
+                |> List.filter (fun kind -> not (List.contains kind offers))
+                |> List.map (fun kind ->
+                    {
+                        CaseActRefusal.Act = kind
+                        Reason = Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)
+                    })
+
+            CaseAdvice.create
+                offers
+                (Some
+                    {
+                        Registration = [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
+                        Decision =
+                            [
+                                CorrectionGroupAction.Keep
+                                CorrectionGroupAction.Update
+                                CorrectionGroupAction.Clear
+                            ]
+                    })
+                HistoryAccess.None
+                blocked
+            |> Result.defaultWith invalidOp
     }
 
 let private review =

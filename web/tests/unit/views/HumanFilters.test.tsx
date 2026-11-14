@@ -28,7 +28,11 @@ it("takes role choices from the semantic people query and sends only authored fi
             kind: "SUCCEEDED",
             document: {
               screen: { regions: [] },
-              context: { kind: "PEOPLE", actorIds: [], nextCursor: null },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis: {
                 kind: "SNAPSHOT",
                 observation: {
@@ -48,7 +52,6 @@ it("takes role choices from the semantic people query and sends only authored fi
   vi.stubGlobal("fetch", fetch);
   render(
     <PeopleListing
-      mayReadGrants={false}
       onSelect={vi.fn()}
       onDisclosureRefused={vi.fn()}
       onDisclosureRestored={vi.fn()}

@@ -37,11 +37,11 @@ const historyResponse = (
     JSON.stringify(
       humanReadReply("people.history", {
         screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
-        context: {
-          kind: "PEOPLE_HISTORY",
-          entries: entries.map((entry) => ({ key: entry.key, caseId: null })),
-          nextCursor,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor,
         basis: { kind: "SNAPSHOT", observation: { ...workBasis, timeZone: "Europe/Riga" } },
         disclosure: "CURRENT",
       }),

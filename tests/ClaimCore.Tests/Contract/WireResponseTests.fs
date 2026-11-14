@@ -243,7 +243,12 @@ let private checkDiscriminators (root: JsonElement) =
         [
             "ReceiptSubject", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
             "OperationReview", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
-            "OperationInput", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
+            "OperationSubmission",
+            "task",
+            (TaskId.all
+             |> List.choose (function
+                 | TaskId.Operation act -> Some(ActKind.token act)
+                 | _ -> None))
         ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"

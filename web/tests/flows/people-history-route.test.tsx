@@ -1,5 +1,10 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { activeRequester } from "../support/human-requester.fixtures";
+
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -21,9 +26,8 @@ const author: ActorRef = {
   principalKind: "HUMAN",
   availability: "AVAILABLE",
 };
-type HistoryRow = { content: RegionTimelineEntry; caseId: string | null };
+type HistoryRow = { content: RegionTimelineEntry };
 const entry = (actorId = first, sequence = 31): HistoryRow => ({
-  caseId: null,
   content: {
     key: `${sequence}:0`,
     when: "2026-09-01T10:30:00.000000Z",
@@ -64,15 +68,18 @@ const page = (rows: ReadonlyArray<HistoryRow>, nextCursor: string | null = null)
           regions: [
             {
               role: "ACTIVITY",
-              content: { kind: "TIMELINE", entries: rows.map((row) => row.content) },
+              content: {
+                kind: "TIMELINE",
+                entries: rows.map((row) => row.content),
+              },
             },
           ],
         },
-        context: {
-          kind: "PEOPLE_HISTORY",
-          entries: rows.map((row) => ({ key: row.content.key, caseId: row.caseId })),
-          nextCursor,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -131,11 +138,8 @@ beforeEach(() => {
       ...humanReadReply("context", {
         ...activeRequester,
         basis: { kind: "SNAPSHOT", observation: workBasis },
-        context: {
-          ...activeRequester.context,
-          views: ["OPERATIONS"],
-          tasks: ["people.list", "people.grants", "people.history"],
-        },
+        actions: installationActions(["people.list", "people.grants", "people.history"]),
+        links: requesterLinks(["OPERATIONS"], ["people.list", "people.grants", "people.history"]),
       }),
     },
   });
@@ -282,9 +286,12 @@ it("retains only the same history page on transient delivery failure and retries
 
 it("renders the provided case scope link and actor refs without revealing a bootstrap principal as a name", async () => {
   const scoped: HistoryRow = {
-    caseId: "20000000-0000-4000-8000-000000000001",
     content: {
       ...entry().content,
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
+      },
       summary: { messageId: "task.people.grant.label", arguments: [] },
       highlights: [
         {

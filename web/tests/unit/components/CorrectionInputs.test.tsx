@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
@@ -45,28 +46,37 @@ const current: CurrentCase = {
       },
     ],
   },
-  context: {
+  subject: {
     kind: "CASE",
     caseId: "00000000-0000-4000-8000-000000000001",
     revision: 7,
     workRevision: 0,
-    history: "NONE",
-    tasks: ["case.correct"],
-    editableInputs: [],
-    correction: {
-      registration: ["KEEP", "UPDATE"],
-      decision: ["KEEP"],
-    },
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
   },
+  actions: [
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000001" },
+        expectedRevision: 7,
+      },
+      { "group:registration": "KEEP", "group:decision": "KEEP" },
+      [],
+      {
+        "group:registration": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP"],
+        }.registration,
+        "group:decision": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP"],
+        }.decision,
+      },
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {

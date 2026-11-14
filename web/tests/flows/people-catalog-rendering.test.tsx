@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import {
   taskDefinitions,
   type HumanReceiptDocument,
@@ -43,6 +44,23 @@ const PeopleBinding = ({
   const model = useOperation({
     subject: "PEOPLE",
     kind: initialKind,
+    affordances: peopleActs.map(({ kind }) =>
+      operationAffordance(
+        kind,
+        ["people.register", "people.admit"].includes(kind)
+          ? { kind: "PEOPLE" }
+          : { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+        {
+          "input:principal.kind": "HUMAN",
+          ...(kind === "people.admit"
+            ? { "input:grants": [{ "input:scope": "INSTALLATION" }] }
+            : {}),
+          ...(["people.grant", "people.revoke"].includes(kind)
+            ? { "input:scope": "INSTALLATION" }
+            : {}),
+        },
+      ),
+    ),
     binding: ["people.register", "people.admit"].includes(initialKind)
       ? { kind: "PEOPLE" }
       : { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },

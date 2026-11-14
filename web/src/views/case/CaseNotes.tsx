@@ -1,9 +1,8 @@
+import type { OperationAffordance } from "../../operation/affordances";
+import type { RegionRow, HumanResponseByEndpoint, Screen } from "@contracts/client";
+import { Actions } from "../../ui/regions/Actions";
 import { useCallback, useId, useLayoutEffect, useState } from "react";
-import type {
-  HumanReadDocument_case_notes,
-  HumanResponseByEndpoint,
-  Screen,
-} from "@contracts/client";
+
 import type { CurrentCase } from "../../protocol/types";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
@@ -11,9 +10,9 @@ import { renderCatalogKey } from "../../presentation/messages";
 import { PresentedValue } from "../../components/PresentedValue";
 import { NoticeView } from "../../presentation/Message";
 import { Button } from "../../ui/Button";
-import "./notes.css";
+import {} from "./notes.css";
 
-type NoteHandle = HumanReadDocument_case_notes["context"]["notes"][number];
+type NoteRow = RegionRow;
 const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -23,9 +22,18 @@ const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
     return null;
   }
   return {
-    items: doc.context.notes,
-    caseId: doc.context.caseId,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    caseId:
+      doc.links.flatMap((named) =>
+        named.rel === "OPEN_CASE" &&
+        named.link.endpoint === "case.get" &&
+        named.link.input.target.kind === "ID"
+          ? [named.link.input.target.caseId]
+          : [],
+      )[0] ?? null,
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
@@ -59,16 +67,13 @@ const pageKey = (view: Screen): string => {
 };
 const NoteRows = ({
   view,
-  items,
   zone,
   onRemove,
 }: {
   view: Screen;
-  items: ReadonlyArray<NoteHandle>;
   zone: string;
-  onRemove?: (id: string) => void;
+  onRemove?: (action: OperationAffordance) => void;
 }) => {
-  const p = usePresentation();
   const id = useId();
   const content = view.regions.find((region) => region.role === "NOTES")?.content;
   if (content?.kind !== "TABLE") {
@@ -94,19 +99,21 @@ const NoteRows = ({
               </div>
             ) : null,
           )}
-          {onRemove !== undefined &&
-          items.some((item) => item.noteId === row.key && item.canRemove) ? (
-            <div role="group" aria-labelledby={`${id}-${row.key}`}>
-              <Button
-                variant="secondary"
-                onPress={() => {
-                  onRemove(row.key);
-                }}
-              >
-                {p.text("task.note.remove.label")}
-              </Button>
-            </div>
-          ) : null}
+          {onRemove === undefined ? null : (
+            <Actions
+              actions={row.actions ?? []}
+              compact
+              onAction={(action) => {
+                if (
+                  action.task === "note.remove" &&
+                  action.binding.kind === "NOTE" &&
+                  "noteId" in action.binding
+                ) {
+                  onRemove(action);
+                }
+              }}
+            />
+          )}
         </li>
       ))}
     </ul>
@@ -118,19 +125,19 @@ const AllNotes = ({
   onDisclosureRefused,
 }: {
   current: CurrentCase;
-  onRemove?: (id: string) => void;
+  onRemove?: (action: OperationAffordance) => void;
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
   const input = useCallback(
     (cursor: string | null) => ({
-      target: { kind: "ID" as const, caseId: current.context.caseId },
+      target: { kind: "ID" as const, caseId: current.subject.caseId },
       limit: 20,
       ...(cursor === null ? {} : { cursor }),
     }),
-    [current.context.caseId],
+    [current.subject.caseId],
   );
-  const result = useEndpointPage<"case.notes", NoteHandle, Page>(
+  const result = useEndpointPage<"case.notes", NoteRow, Page>(
     "case.notes",
     input,
     select,
@@ -139,7 +146,7 @@ const AllNotes = ({
   const { page: latestPage } = result;
   const matches =
     latestPage === null ||
-    (latestPage.caseId === current.context.caseId && latestPage.disclosure === current.disclosure);
+    (latestPage.caseId === current.subject.caseId && latestPage.disclosure === current.disclosure);
   useLayoutEffect(() => {
     if (!matches) {
       onDisclosureRefused();
@@ -154,7 +161,6 @@ const AllNotes = ({
         <NoteRows
           key={pageKey(page.view)}
           view={page.view}
-          items={result.items}
           zone={page.basis.timeZone}
           {...(onRemove === undefined ? {} : { onRemove })}
         />
@@ -193,7 +199,7 @@ export const CaseNotes = ({
   current: CurrentCase;
   editing: boolean;
   onAdd: (text: string) => void;
-  onRemove: (id: string) => void;
+  onRemove: (action: OperationAffordance) => void;
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
@@ -211,7 +217,7 @@ export const CaseNotes = ({
       aria-labelledby={`${id}-title`}
     >
       <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
-      {current.context.tasks.includes("note.add") ? (
+      {current.actions.some((action) => action.task === "note.add" && action.blocked === null) ? (
         <div className="note-composer">
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
@@ -244,12 +250,11 @@ export const CaseNotes = ({
         <>
           <NoteRows
             view={current.screen}
-            items={current.context.notes}
             zone={current.basis.observation.timeZone}
             {...(editing ? {} : { onRemove })}
           />
           <NotesShown view={current.screen} shown={noteCounts(current.screen).shown} />
-          {(noteCounts(current.screen).total ?? 0) > current.context.notes.length ? (
+          {(noteCounts(current.screen).total ?? 0) > noteCounts(current.screen).shown ? (
             <Button
               variant="secondary"
               onPress={() => {

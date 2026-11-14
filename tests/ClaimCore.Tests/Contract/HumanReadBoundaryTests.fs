@@ -77,8 +77,8 @@ let tests =
                         "The core document is supplied"
 
                     Expect.isSome
-                        (JsonValue.tryMember "context" document)
-                        "Interaction context is separate from display"
+                        (JsonValue.tryMember "subject" document)
+                        "Document identity is separate from display"
 
                     let! data =
                         prepared.Invoke
@@ -139,15 +139,14 @@ let tests =
 
                     let document = HumanCaseDocument.ofCore erased
 
-                    match document.Context with
-                    | InteractionContext.Case context ->
-                        Expect.isNone context.Seeds.Registration "No registration prefill"
-                        Expect.isNone context.Seeds.Decision "No financial prefill"
-                        Expect.isNone context.Seeds.Work "No work prefill"
-                        Expect.isEmpty context.EditableInputs "No stale edit controls"
-                        Expect.isEmpty context.Tasks "No stale write handles"
-                        Expect.isNone context.Correction "No hidden correction choices"
-                    | _ -> failtest "Case identity remains explicitly scoped"
+                    Expect.isEmpty
+                        document.Actions
+                        "Erased resources have no stale controls or private seeds"
+
+                    Expect.equal
+                        document.Disclosure
+                        HumanDisclosure.Erased
+                        "Erasure remains explicit"
 
                     let payload =
                         RepresentationReply.Human
@@ -175,28 +174,16 @@ let tests =
                             Inputs.registration
                         |> required
 
-                    let context =
-                        match original.Context with
-                        | InteractionContext.Case context ->
-                            InteractionContext.Case(
-                                { context with
-                                    Tasks =
-                                        TaskId.Operation(
-                                            ActKind.Case CaseActKind.AmendRegistration
-                                        )
-                                        :: context.Tasks
-                                    EditableInputs =
-                                        BusinessField.ofGroup RecordGroup.Registration
-                                        |> List.map (InputTarget.Field >> TaskInputId.Target)
-                                    Seeds =
-                                        { context.Seeds with
-                                            Registration = Some bait
-                                            Decision = None
-                                            Work = None
-                                        }
-                                }
-                            )
-                        | _ -> failtest "Case context"
+                    let action =
+                        TaskAffordances.caseAction
+                            CaseActKind.AmendRegistration
+                            ResponseExamples.snapshot.CaseId
+                            ResponseExamples.snapshot.Revision
+                            (RegistrationInput.values bait |> TaskAffordances.fields)
+                            (TaskAffordances.authored (
+                                TaskId.Operation(ActKind.Case CaseActKind.AmendRegistration)
+                            ))
+                            Map.empty
 
                     let screen =
                         Screen.create
@@ -219,7 +206,7 @@ let tests =
                                 HumanReadOutcome.Succeeded
                                     { original with
                                         Screen = screen
-                                        Context = context
+                                        Actions = [ action ]
                                     }
                         }
 
@@ -244,97 +231,45 @@ let tests =
                         (text.Contains "Input bait must not display")
                         "Editable input cannot override a saved fact")
             testCase
-                "human seed disclosure and action references are independent structural safeguards"
+                "authoring seeds cannot survive erased disclosure or acquire a foreign binding"
                 (fun () ->
                     let document = HumanCaseDocument.ofCore ResponseExamples.caseRead
 
-                    let context =
-                        match document.Context with
-                        | InteractionContext.Case value -> value
-                        | _ -> failtest "Case context"
-
-                    let seed =
-                        { context.Seeds with
-                            Registration = Some Inputs.registration
-                        }
-
-                    let context =
-                        { context with
-                            Tasks =
-                                TaskId.Operation(ActKind.Case CaseActKind.AmendRegistration)
-                                :: context.Tasks
-                            EditableInputs =
-                                BusinessField.ofGroup RecordGroup.Registration
-                                |> List.map (InputTarget.Field >> TaskInputId.Target)
-                            Seeds = seed
-                        }
-
-                    let exposed =
-                        { document with
-                            Disclosure = HumanDisclosure.Erased
-                            Context = InteractionContext.Case { context with Seeds = seed }
-                        }
-
-                    Expect.isError
-                        (HumanDocumentCodecs.document.Validate
-                            "$"
-                            (HumanDocumentCodecs.document.Write
-                                { document with
-                                    Context = InteractionContext.Case { context with Seeds = seed }
-                                }
-                             |> function
-                                 | JsonValue.Object fields ->
-                                     JsonValue.Object(
-                                         fields
-                                         |> List.map (fun (name, value) ->
-                                             name,
-                                             if name = "disclosure" then
-                                                 JsonValue.String "ERASED"
-                                             else
-                                                 value)
-                                     )
-                                 | _ -> failtest "Document object"))
-                        "Erased seed injection refuses independently of the presenter"
+                    let action =
+                        TaskAffordances.caseAction
+                            CaseActKind.AmendRegistration
+                            ResponseExamples.snapshot.CaseId
+                            ResponseExamples.snapshot.Revision
+                            (RegistrationInput.values Inputs.registration |> TaskAffordances.fields)
+                            []
+                            Map.empty
 
                     Expect.throws
-                        (fun () -> Codec.encode HumanDocumentCodecs.document exposed |> ignore)
-                        "Producer output cannot bypass disclosure structure"
-
-                    let actions =
-                        {
-                            RegionActions.Recommended = Some(ActKind.Case CaseActKind.Erase)
-                            Groups = []
-                        }
-
-                    let unbound =
-                        { document with
-                            Screen =
-                                Screen.create
-                                    [
-                                        ScreenEntries.region
-                                            RegionRole.Recommendation
-                                            None
-                                            (RegionContent.Actions actions)
-                                    ]
-                            Context =
-                                InteractionContext.Case
-                                    { context with
-                                        Tasks = []
-                                        Correction = None
-                                        EditableInputs = []
-                                        Seeds =
-                                            {
-                                                Registration = None
-                                                Decision = None
-                                                Work = None
-                                                PaymentCurrency = None
-                                            }
-                                    }
-                        }
+                        (fun () ->
+                            HumanDocument.create
+                                document.Subject
+                                document.Screen
+                                [ action ]
+                                []
+                                None
+                                document.Basis
+                                HumanDisclosure.Erased
+                                document.History
+                            |> ignore)
+                        "The producer rejects erased seed injection"
 
                     Expect.throws
-                        (fun () -> Codec.encode HumanDocumentCodecs.document unbound |> ignore)
-                        "A screen cannot invent an undeclared operation handle")
+                        (fun () ->
+                            Affordance.create
+                                action.Task
+                                (OperationBinding.People None)
+                                action.Seeds
+                                []
+                                Map.empty
+                                false
+                                None
+                            |> ignore)
+                        "An operation cannot acquire another subject's binding")
             testCase
                 "native selection is correlated without entering frozen business bytes"
                 (fun () ->

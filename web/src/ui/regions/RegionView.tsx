@@ -10,7 +10,7 @@ import { Actions } from "./Actions";
 import { Notice } from "./Notice";
 import { Timeline } from "./Timeline";
 import type { RegionInteraction } from "./interaction";
-import "./region.css";
+import {} from "./region.css";
 const Content = ({
   content,
   timeZone,
@@ -41,13 +41,6 @@ const Content = ({
       return <Stages content={content} timeZone={timeZone} />;
     case "CODES":
       return <Codes content={content} />;
-    case "ACTIONS":
-      return (
-        <Actions
-          content={content}
-          {...(interaction.onAct === undefined ? {} : { onAct: interaction.onAct })}
-        />
-      );
     case "NOTICE":
       return <Notice content={content} timeZone={timeZone} />;
     case "TIMELINE":
@@ -55,11 +48,33 @@ const Content = ({
         <Timeline
           content={content}
           timeZone={timeZone}
-          {...(interaction.rowLink === undefined ? {} : { rowLink: interaction.rowLink })}
+          {...(interaction.onAction === undefined
+            ? {}
+            : {
+                onAction: (action, originId) => interaction.onAction?.(action, undefined, originId),
+              })}
         />
       );
   }
 };
+const RegionActions = ({
+  region,
+  onAction,
+  actionsDisabled,
+}: Pick<RegionInteraction, "onAction" | "actionsDisabled"> & { region: Region }) => (
+  <Actions
+    disabled={actionsDisabled ?? false}
+    actions={region.actions ?? []}
+    {...(onAction === undefined
+      ? {}
+      : {
+          onAction: (action, originId) => {
+            onAction(action, undefined, originId);
+          },
+        })}
+    compact
+  />
+);
 export const RegionView = ({
   region,
   timeZone = "UTC",
@@ -70,13 +85,16 @@ export const RegionView = ({
   const p = usePresentation();
   const heading = useId();
   const body = (
-    <Content
-      content={region.content}
-      timeZone={timeZone}
-      copy={region.role === "DETAILS"}
-      avatars={region.role === "WORK" || region.role === "ACCOUNT"}
-      {...interaction}
-    />
+    <>
+      <Content
+        content={region.content}
+        timeZone={timeZone}
+        copy={region.role === "DETAILS"}
+        avatars={region.role === "WORK" || region.role === "ACCOUNT"}
+        {...interaction}
+      />
+      <RegionActions region={region} {...interaction} />
+    </>
   );
   return region.role === "DETAILS" ? (
     <details className="screen-details" data-region={region.role}>

@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { workBasis } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -16,13 +17,19 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     value: {
       ...humanReadReply("case.list", {
         screen: { regions: [] },
-        context: {
-          kind: "CASES",
-          cases: [],
-          tasks: ["case.open"],
-          exactCaseId: null,
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [
+          operationAffordance(
+            "case.open",
+            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            {},
+            undefined,
+            {},
+          ),
+        ],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -45,7 +52,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
   await user.click(screen.getByRole("button", { name: "Settings" }));
   await screen.findByRole("heading", { name: "Settings", level: 1 });
   expect(screen.queryByRole("dialog")).toBeNull();
-  await user.click(screen.getByRole("link", { name: "People & access" }));
+  await user.click(screen.getByRole("link", { name: "People and access" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Keep editing" }));

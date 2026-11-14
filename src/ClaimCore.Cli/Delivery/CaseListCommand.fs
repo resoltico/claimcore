@@ -125,7 +125,7 @@ module internal CaseListCommand =
                                                          Outcome = HumanReadOutcome.Succeeded document
                                                      }) ->
                         documentRows includeHeader options io prepared document
-                        Some(HumanDocument.nextCursor document)
+                        Some(document.NextCursor)
                     | _ -> None
 
                 match next with

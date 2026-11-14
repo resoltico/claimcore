@@ -1,10 +1,18 @@
+import type { Affordance, Principal, RegionRow } from "@contracts/client";
+import type { OperationAffordance } from "../../operation/affordances";
 import { ScreenView } from "../../ui/ScreenView";
 import type { PresentedPage } from "../../protocol/types";
 import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { HumanReadDocument_people_requests } from "@contracts/client";
-export type AccessRequestControl = HumanReadDocument_people_requests["context"]["requests"][number];
+
+export type AccessRequestControl = Extract<OperationAffordance, { task: "people.admit" }>;
+type DismissControl = Extract<Affordance, { task: "people.requests.dismiss" }>;
+const requestPrincipal = (action: AccessRequestControl | DismissControl): Principal => ({
+  kind: action.seeds["input:principal.kind"]!,
+  issuer: action.seeds["input:principal.issuer"]!,
+  subject: action.seeds["input:principal.subject"]!,
+});
 import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
@@ -14,7 +22,7 @@ import { NoticeView } from "../../presentation/Message";
 import type { Notice } from "../../protocol/notices";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
-import "./access-requests.css";
+import {} from "./access-requests.css";
 
 type Props = {
   available: boolean;
@@ -33,8 +41,10 @@ const select = (reply: ServiceResponse<"people.requests">) => {
     return null;
   }
   return {
-    items: doc.context.requests,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
@@ -82,7 +92,8 @@ const AvailableRequests = ({
   const p = usePresentation();
   const credential = useCredential();
   const [selected, setSelected] = useState<{
-    control: AccessRequestControl;
+    control: DismissControl;
+    row: RegionRow;
     view: PresentedPage;
   } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -101,7 +112,7 @@ const AvailableRequests = ({
     },
     [onDisclosureRefused],
   );
-  const page = useEndpointPage<"people.requests", AccessRequestControl, RequestPage>(
+  const page = useEndpointPage<"people.requests", RegionRow, RequestPage>(
     "people.requests",
     input,
     select,
@@ -119,7 +130,7 @@ const AvailableRequests = ({
     const result = await requestEndpoint(
       "people.requests.dismiss",
       credential,
-      selected.control.principal,
+      requestPrincipal(selected.control),
       current.signal,
     );
     if (current.signal.aborted) {
@@ -157,34 +168,23 @@ const AvailableRequests = ({
         <ScreenView
           key={observed.nextCursor === null ? "END" : `NEXT:${observed.nextCursor}`}
           view={observed.screen}
+          actionsDisabled={disabled}
           timeZone={observed.basis.timeZone}
-          renderActions={(key) => {
-            const request = observed.items.find((candidate) => candidate.key === key);
-            return request === undefined ? null : (
-              <div className="access-request-actions">
-                <Button
-                  isDisabled={disabled || !mayAdmit}
-                  onPress={() => {
-                    onAdmit(request);
-                  }}
-                >
-                  {p.text("task.people.admit.label")}
-                </Button>
-                <Button
-                  variant="secondary"
-                  isDisabled={disabled}
-                  onPress={() => {
-                    setDismissed(false);
-                    setSelected({
-                      control: request,
-                      view: { view: observed.screen, basis: observed.basis },
-                    });
-                  }}
-                >
-                  {p.text("endpoint.people.requests.dismiss.label")}
-                </Button>
-              </div>
-            );
+          onAction={(action, row) => {
+            if (disabled) {
+              return;
+            }
+            if (action.task === "people.admit" && mayAdmit) {
+              onAdmit(action);
+            }
+            if (action.task === "people.requests.dismiss" && row !== undefined) {
+              setDismissed(false);
+              setSelected({
+                control: action,
+                row,
+                view: { view: observed.screen, basis: observed.basis },
+              });
+            }
           }}
         />
       ))}
@@ -253,7 +253,7 @@ const AvailableRequests = ({
         {selected === null ? null : (
           <PageRow
             views={[selected.view]}
-            index={pageItemIndex([selected.view], selected.control.key)}
+            index={pageItemIndex([selected.view], selected.row.key)}
             titleId="label.accessRequest"
           />
         )}

@@ -1,8 +1,5 @@
-import {
-  type RequestByEndpoint,
-  type HumanReview,
-  type HumanReceiptDocument,
-} from "@contracts/client";
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type { RequestByEndpoint, HumanReview, HumanReceiptDocument } from "@contracts/client";
 import {
   operationRequest,
   requestText,
@@ -54,30 +51,19 @@ const current: CurrentCase = {
       },
     ],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 7,
-    workRevision: 4,
-    history: "NONE",
-    tasks: ["case.removePayment"],
-    editableInputs: [],
-    correction: null,
-    seeds: {
-      registration: null,
-      decision: null,
-      work: null,
-      paymentCurrency: null,
-    },
-    notes: [],
-    payments: [
-      {
-        paymentId,
-        canRemove: true,
-      },
-    ],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId, revision: 7, workRevision: 4 },
+  actions: [
+    operationAffordance(
+      "case.removePayment",
+      { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7, paymentId },
+      {},
+      [],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -90,26 +76,25 @@ const review: HumanReview = {
     screen: {
       regions: [],
     },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "case.removePayment",
-      target: {
-        kind: "CASE",
-        caseId,
-        beforeRevision: 7,
-      },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:expectedRevision",
-        "input:paymentId",
-      ],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "ORIGINAL-CASE",
       },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "case.removePayment",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7, paymentId },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -136,17 +121,22 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "CASE",
-      caseId,
-      revision: 8,
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
     },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -214,7 +204,7 @@ it("previews the typed selected payment and preserves selector spelling through 
   );
   await screen.findByText("Core full accepted case Ψ");
   expect(committed).toHaveBeenCalledExactlyOnceWith(
-    receipt,
+    { document: receipt, caseId },
     operationRequest(bodies[0]).operationId,
   );
   expect(bodies).toHaveLength(2);
@@ -236,20 +226,13 @@ it("previews the typed selected payment and preserves selector spelling through 
 it("takes the payment currency default only from an offered Core input seed", () => {
   const payment: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      tasks: ["case.recordPayment"],
-      payments: [
-        {
-          paymentId,
-          canRemove: false,
-        },
-      ],
-      seeds: {
-        ...current.context.seeds,
-        paymentCurrency: "EUR",
-      },
-    },
+    actions: [
+      operationAffordance(
+        "case.recordPayment",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        { "field:paidCurrency": "EUR" },
+      ),
+    ],
   };
   render(
     <OperationEditor

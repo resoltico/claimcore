@@ -1,4 +1,4 @@
-import { type ResponseFor } from "@contracts/client";
+import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
@@ -143,8 +143,10 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   if (caseGetReply.representation !== "HUMAN" || caseGetReply.outcome.kind !== "SUCCEEDED") {
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
   }
-  expect(caseGetReply.outcome.document.context.revision).toBe(1);
-  expect(caseGetReply.outcome.document.context.tasks).toContain("case.amendRegistration");
+  expect(caseGetReply.outcome.document.subject.revision).toBe(1);
+  expect(caseGetReply.outcome.document.actions.map((action) => action.task)).toContain(
+    "case.amendRegistration",
+  );
   await expect(page.locator('[data-entry="caseReference"]').first()).toContainText(reference);
   const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();

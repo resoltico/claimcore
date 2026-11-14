@@ -38,13 +38,11 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: { kind: "PEOPLE", actorId: "00000000-0000-4000-8000-000000000002" },
-    caseLink: null,
-    refreshCase: null,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -106,7 +104,14 @@ const setup = (
               : {
                   kind,
                   ...(kind === "PENDING" ? { finalAt: "2026-11-09T12:15:00.000000Z" } : {}),
-                  document: { ...receipt, context: { kind: "EMPTY" } },
+                  document: {
+                    ...receipt,
+                    subject: { kind: "LIST" },
+                    actions: [],
+                    links: [],
+                    history: null,
+                    nextCursor: null,
+                  },
                 },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -169,13 +174,20 @@ it.each(["ACCEPTED", "NOT_ACCEPTED"] as const)(
 it("keeps the explicit Core case link independently of the refresh hint", async () => {
   setup("ACCEPTED", {
     ...receipt,
-    context: {
-      kind: "RECEIPT",
-      recordedFields: [],
-      target: { kind: "CASE", caseId: "00000000-0000-4000-8000-000000000003", revision: 2 },
-      caseLink: "00000000-0000-4000-8000-000000000003",
-      refreshCase: null,
-    },
+    subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+    actions: [],
+    links: [
+      {
+        rel: "OPEN_CASE",
+        labelId: "field.caseReference.label",
+        link: {
+          endpoint: "case.get",
+          input: { target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000003" } },
+        },
+      },
+    ],
+    history: null,
+    nextCursor: null,
   });
   await screen.findByText("Core people outcome Ω");
   const answer: unknown = JSON.parse(screen.getByTestId("answer").textContent ?? "null");
@@ -245,7 +257,15 @@ it("keeps an in-flight identity lookup through an unverified same-session reques
           operationId: record.operationId,
           outcome: {
             kind: "NOT_ACCEPTED",
-            document: { ...receipt, screen: { regions: [] }, context: { kind: "EMPTY" } },
+            document: {
+              ...receipt,
+              screen: { regions: [] },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
+            },
           },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },

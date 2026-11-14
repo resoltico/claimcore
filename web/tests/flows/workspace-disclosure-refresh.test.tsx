@@ -1,6 +1,12 @@
+import { installationActions, activeRequester } from "../support/human-requester.fixtures";
+import {
+  caseSubject,
+  caseDocumentInput,
+  caseIdentityScreen,
+} from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { activeRequester } from "../support/human-requester.fixtures";
-import { caseDocumentInput, closeCaseScreen } from "../support/case-document.fixtures";
+
 import type { HumanReadDocument_context, TaskId } from "@contracts/client";
 import {
   openPersonEditor,
@@ -54,12 +60,10 @@ const requesterFor = (
   issuer: string | null,
 ): HumanReadDocument_context => ({
   ...activeRequester,
-  context: {
-    ...activeRequester.context,
-    views,
-    tasks,
-    peopleIssuerSeed: issuer,
-  },
+  actions: installationActions(tasks, issuer),
+  links: activeRequester.links.filter((link) =>
+    views.some((view) => link.labelId === `view.${view}.label`),
+  ),
   basis: { kind: "SNAPSHOT", observation: workBasis },
 });
 const contextFor = (
@@ -76,7 +80,7 @@ const deferred = <T,>() => {
   return { promise, finish };
 };
 const beginUnknownPeople = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(await screen.findByRole("link", { name: "People & access" }));
+  await user.click(await screen.findByRole("link", { name: "People and access" }));
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await openPersonEditor();
   await waitFor(() => {
@@ -99,7 +103,11 @@ const peopleReads = () => {
     outcome({
       ...humanReadReply("case.list", {
         screen: { regions: [] },
-        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -126,6 +134,18 @@ const peopleReads = () => {
                   rows: [
                     {
                       key: "00000000-0000-4000-8000-000000000001",
+                      link: {
+                        endpoint: "people.grants",
+                        input: {
+                          actorId: {
+                            actorId: "00000000-0000-4000-8000-000000000001",
+                            displayName: { kind: "NAMED", value: "PREVIOUS_ACTOR_CANARY" },
+                            principalKind: "HUMAN",
+                            availability: "AVAILABLE",
+                          }.actorId,
+                          limit: 20,
+                        },
+                      },
                       values: [
                         {
                           kind: "ACTOR",
@@ -143,11 +163,11 @@ const peopleReads = () => {
               },
             ],
           },
-          context: {
-            kind: "PEOPLE",
-            actorIds: ["00000000-0000-4000-8000-000000000001"],
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: workBasis },
           disclosure: "CURRENT",
         }),
@@ -193,7 +213,7 @@ it("retains the exact uncertain people request when delayed context removes its 
     await delayed.promise;
   });
   expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
-  expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "People and access" })).toBeNull();
   expect(document.body).not.toHaveTextContent("PREVIOUS_ACTOR_CANARY");
   await user.click(screen.getByRole("button", { name: "Continue current request" }));
   await user.click(await screen.findByRole("button", { name: "Send again" }));
@@ -226,10 +246,26 @@ it("keeps the requested case route while an actual read refusal removes every cu
       contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
     );
   const visible = caseDocumentInput(
-    { caseId: current.context.caseId, tasks: ["case.close"], history: "FULL" },
+    {
+      subject: { ...caseSubject, caseId: current.subject.caseId },
+      actions: [
+        operationAffordance(
+          "case.close",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: current.subject.caseId },
+            expectedRevision: 1,
+          },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      history: "FULL",
+    },
     {
       regions: [
-        ...closeCaseScreen.regions,
+        ...caseIdentityScreen.regions,
         {
           role: "FACTS",
           content: {
@@ -303,22 +339,23 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.document.context.state !== "ACTIVE"
+      active.value.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const self = active.value.outcome.document.context;
+    const self = active.value.outcome.document.subject;
     const inactive: HumanReadDocument_context = {
       screen: { regions: [] },
-      context: {
+      subject: {
         kind: "REQUESTER",
         state: kind,
-        actorId: self.actorId,
         installationId: kind === "NO_ROLES" ? self.installationId : null,
-        tasks: [],
-        views: [],
-        peopleIssuerSeed: null,
+        actorId: self.actorId,
       },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "UNAVAILABLE" },
       disclosure: "CURRENT",
     };
@@ -382,25 +419,26 @@ it.each(["actor", "installation"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
-      active.value.outcome.document.context.state !== "ACTIVE"
+      active.value.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
-    const source = active.value.outcome.document.context;
+    const source = active.value.outcome.document.subject;
     const requester: HumanReadDocument_context = {
       screen: { regions: [] },
-      context: {
+      subject: {
         kind: "REQUESTER",
         state: "NO_ROLES",
-        actorId: difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.actorId,
         installationId:
           difference === "installation"
             ? "90000000-0000-4000-8000-000000000099"
             : source.installationId,
-        tasks: [],
-        views: [],
-        peopleIssuerSeed: null,
+        actorId: difference === "actor" ? "10000000-0000-4000-8000-000000000099" : source.actorId,
       },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "UNAVAILABLE" },
       disclosure: "CURRENT",
     };

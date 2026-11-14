@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { Region, ResponseFor } from "@contracts/client";
@@ -44,6 +45,13 @@ const supplied: Region = {
     rows: [
       {
         key: id,
+        actions: [
+          operationAffordance("note.remove", {
+            kind: "NOTE",
+            target: { kind: "ID", caseId: bindingDocument.subject.caseId },
+            noteId: id,
+          }),
+        ],
         values: [
           {
             kind: "NARRATIVE",
@@ -63,17 +71,22 @@ const view: CurrentCase = {
   screen: {
     regions: [supplied],
   },
-  context: {
-    ...bindingDocument.context,
-    tasks: ["note.add", "note.remove"],
-    correction: null,
-    notes: [
-      {
-        noteId: id,
-        canRemove: true,
-      },
-    ],
-  },
+  actions: [
+    operationAffordance("note.add", {
+      kind: "NOTE",
+      target: { kind: "ID", caseId: bindingDocument.subject.caseId },
+    }),
+  ],
+};
+const withoutRowActions = (): Region => {
+  const { content } = supplied;
+  if (content.kind !== "TABLE") {
+    throw new Error("Table fixture required");
+  }
+  return {
+    ...supplied,
+    content: { ...content, rows: content.rows.map(({ key, values }) => ({ key, values })) },
+  };
 };
 it("renders Core note text without history access and binds removal to the supplied row key", async () => {
   const remove = vi.fn();
@@ -94,7 +107,16 @@ it("renders Core note text without history access and binds removal to the suppl
       name: "Remove note",
     }),
   );
-  expect(remove).toHaveBeenCalledWith(id);
+  expect(remove).toHaveBeenCalledWith(
+    expect.objectContaining({
+      task: "note.remove",
+      binding: {
+        kind: "NOTE",
+        target: { kind: "ID", caseId: bindingDocument.subject.caseId },
+        noteId: id,
+      },
+    }),
+  );
 });
 it("keeps the composed text exact for shared review and obeys current permission flags", async () => {
   const add = vi.fn();
@@ -124,16 +146,8 @@ it("keeps the composed text exact for shared review and obeys current permission
     <CaseNotes
       current={{
         ...view,
-        context: {
-          ...view.context,
-          tasks: [],
-          notes: [
-            {
-              noteId: id,
-              canRemove: false,
-            },
-          ],
-        },
+        actions: [],
+        screen: { regions: [withoutRowActions()] },
       }}
       editing={false}
       onAdd={add}
@@ -160,13 +174,11 @@ it("refreshes the case when the first expanded notes page reports erasure", asyn
         screen: {
           regions: [],
         },
-        context: {
-          kind: "NOTE_PAGE",
-          caseId: view.context.caseId,
-          nextCursor: null,
-          tasks: [],
-          notes: [],
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: view.basis,
         disclosure: "ERASED",
       },

@@ -1,7 +1,8 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { describe, expect, it } from "vitest";
 import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
 import { operationEntry } from "../../../src/protocol/operationCatalog";
-import { current, firstId, bindingFor } from "../../support/operation-form.fixtures";
+import { firstId, bindingFor } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
 import { expectCorrection } from "../../support/correction-serialization-checks";
 
@@ -15,7 +16,13 @@ const authored = {
 };
 const correction = (registrationChoice: string, decisionChoice: string) => {
   const values = {
-    ...initialOperationValues("CASE", "case.correct", current),
+    ...initialOperationValues(
+      operationAffordance("case.correct", {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    ),
     "group:registration": registrationChoice,
     "field:claimantName": authored.registration.claimantName,
     "field:claimedAmount": authored.registration.claimedAmount,
@@ -76,7 +83,13 @@ it("correction checks detect changed payloads and retain independent literal exp
 it("takes the selected entry from identity while request constants derive from that entry", () => {
   const entry = operationEntry({ subject: "CASE", kind: "case.close" });
   const values = {
-    ...initialOperationValues("CASE", "case.close", current),
+    ...initialOperationValues(
+      operationAffordance("case.close", {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    ),
     kind: "PEOPLE",
     "act.kind": "people.disable",
   };

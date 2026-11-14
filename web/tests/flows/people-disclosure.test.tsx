@@ -1,6 +1,11 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
 import { wireReply } from "../support/reply.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import { activeRequester } from "../support/human-requester.fixtures";
+
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -29,9 +34,8 @@ afterEach(() => vi.restoreAllMocks());
 const requester = (admit: boolean): ServiceResponse<"context"> =>
   humanReadReply("context", {
     ...activeRequester,
-    context: {
-      ...activeRequester.context,
-      tasks: admit
+    actions: installationActions(
+      admit
         ? [
             "people.admit",
             "people.list",
@@ -47,8 +51,26 @@ const requester = (admit: boolean): ServiceResponse<"context"> =>
             "people.requests",
             "people.requests.dismiss",
           ],
-      peopleIssuerSeed: admit ? "https://issuer.example/" : null,
-    },
+    ),
+    links: requesterLinks(
+      ["CASES", "PEOPLE", "OPERATIONS"],
+      admit
+        ? [
+            "people.admit",
+            "people.list",
+            "people.grants",
+            "people.history",
+            "people.requests",
+            "people.requests.dismiss",
+          ]
+        : [
+            "people.list",
+            "people.grants",
+            "people.history",
+            "people.requests",
+            "people.requests.dismiss",
+          ],
+    ),
     basis: { kind: "SNAPSHOT", observation: workBasis },
   });
 const disclosedListing = humanReadReply("people.list", {
@@ -69,6 +91,18 @@ const disclosedListing = humanReadReply("people.list", {
           rows: [
             {
               key: "10000000-0000-4000-8000-000000000001",
+              link: {
+                endpoint: "people.grants",
+                input: {
+                  actorId: {
+                    actorId: "10000000-0000-4000-8000-000000000001",
+                    displayName: { kind: "NAMED", value: "synthetic-disclosed" },
+                    principalKind: "SERVICE",
+                    availability: "AVAILABLE",
+                  }.actorId,
+                  limit: 20,
+                },
+              },
               values: [
                 {
                   kind: "ACTOR",
@@ -86,7 +120,11 @@ const disclosedListing = humanReadReply("people.list", {
       },
     ],
   },
-  context: { kind: "PEOPLE", actorIds: ["10000000-0000-4000-8000-000000000001"], nextCursor: null },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 });
@@ -363,7 +401,7 @@ it.each([
         <Dashboard />
       </TestSession>,
     );
-    await user.click(await screen.findByRole("link", { name: "People & access" }));
+    await user.click(await screen.findByRole("link", { name: "People and access" }));
     await loseManagement(user, reviewed, returned, context, listing, () => {
       refresh();
     });
@@ -468,13 +506,11 @@ it.each(["lost", "unknown"] as const)(
                   },
                 ],
               },
-              context: {
-                kind: "RECEIPT",
-                recordedFields: [],
-                target: { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
-                caseLink: null,
-                refreshCase: null,
-              },
+              subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis: { kind: "SNAPSHOT", observation: workBasis },
               disclosure: "CURRENT",
             },

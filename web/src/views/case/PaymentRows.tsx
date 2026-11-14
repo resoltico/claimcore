@@ -1,46 +1,40 @@
+import type { Affordance, RegionContent } from "@contracts/client";
 import { useId } from "react";
 import { useCompact } from "../../hooks/useCompact";
 import { PresentedValue } from "../../components/PresentedValue";
 import { renderCatalogKey } from "../../presentation/messages";
 import { RowDetails } from "../../ui/regions/RowDetails";
-import type { HumanReadDocument_case_payments, RegionContent } from "@contracts/client";
+
 import { usePresentation } from "../../presentation/context";
 import { Table } from "../../ui/regions/Table";
-import { Button } from "../../ui/Button";
+import { Actions } from "../../ui/regions/Actions";
 
-type Handle = HumanReadDocument_case_payments["context"]["payments"][number];
 export const PaymentRows = ({
   content,
-  handles,
   zone,
   onRemove,
 }: {
   content: Extract<RegionContent, { kind: "TABLE" }>;
-  handles: ReadonlyArray<Handle>;
   zone: string;
   onRemove: (paymentId: string) => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
   const id = useId();
-  const remove = (key: string) => {
-    const handle = handles.find((candidate) => candidate.paymentId === key);
-    return handle === undefined || !handle.canRemove ? null : (
-      <Button
-        variant="secondary"
-        onPress={() => {
-          onRemove(handle.paymentId);
-        }}
-      >
-        {p.text("task.case.removePayment.label")}
-      </Button>
-    );
+  const remove = (action: Affordance) => {
+    if (
+      action.task === "case.removePayment" &&
+      action.binding.kind === "CASE" &&
+      "paymentId" in action.binding
+    ) {
+      onRemove(action.binding.paymentId);
+    }
   };
   if (compact) {
     return (
       <ul className="payment-cards">
         {content.rows.map((row) => {
-          const action = remove(row.key);
+          const action = <Actions actions={row.actions ?? []} compact onAction={remove} />;
           return (
             <li key={row.key}>
               <dl id={`${id}-${row.key}`}>
@@ -76,7 +70,7 @@ export const PaymentRows = ({
     <Table
       view={{ kind: "TABLE", columns: content.columns, rows: content.rows }}
       timeZone={zone}
-      {...(handles.some((handle) => handle.canRemove) ? { renderActions: remove } : {})}
+      onAction={remove}
     />
   );
 };

@@ -19,9 +19,11 @@ module internal WorkRefresh =
                 | RepresentationReply.Human {
                                                 Outcome = HumanExecuteResult.Accepted document | HumanExecuteResult.AlreadyAccepted document
                                             } ->
-                    match document.Context with
-                    | InteractionContext.Receipt value -> value.RefreshCase
-                    | _ -> None
+                    document.Links
+                    |> List.tryPick (fun named ->
+                        match named.Relation, named.Link with
+                        | LinkRelation.FollowUp, Link.CaseGet request -> Some request
+                        | _ -> None)
                 | _ -> None)
         | _ -> None
 
@@ -31,11 +33,7 @@ module internal WorkRefresh =
             | None -> ()
             | Some parent ->
                 let frame =
-                    Frames.create
-                        Api.caseGet
-                        {
-                            CaseGetRequest.Target = CaseSelector.Id parent
-                        }
+                    Frames.create Api.caseGet parent
                     |> Result.defaultWith (fun _ ->
                         invalidOp "A retained case identity is a valid work-refresh target.")
 

@@ -15,6 +15,18 @@ const displayName = "Authored account name";
 type Row = Extract<RegionContent, { kind: "TABLE" }>["rows"][number];
 const owner: Row = {
   key: actorId,
+  link: {
+    endpoint: "people.grants",
+    input: {
+      actorId: {
+        actorId,
+        displayName: { kind: "NAMED", value: displayName },
+        principalKind: "HUMAN",
+        availability: "NOT_ELIGIBLE",
+      }.actorId,
+      limit: 20,
+    },
+  },
   values: [
     {
       kind: "ACTOR",
@@ -69,7 +81,11 @@ const people = (rows: ReadonlyArray<Row>, cursor: string | null = null) =>
         },
       ],
     },
-    context: { kind: "PEOPLE", actorIds: rows.map((row) => row.key), nextCursor: cursor },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: cursor,
     basis: { kind: "SNAPSHOT", observation: workBasis },
     disclosure: "CURRENT",
   });
@@ -77,12 +93,11 @@ const setup = (mayReadGrants: boolean, row = owner, cursor: string | null = null
   mockEndpoint("people.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: people([row], cursor),
+    value: people([mayReadGrants ? row : { key: row.key, values: row.values }], cursor),
   });
   const select = vi.fn();
   render(
     <PeopleListing
-      mayReadGrants={mayReadGrants}
       onSelect={select}
       onDisclosureRefused={vi.fn()}
       onDisclosureRestored={vi.fn()}
@@ -127,7 +142,7 @@ it("shows core account state and raw roles with one native person link and no ro
   fireEvent.click(link, { ctrlKey: true });
   expect(select).not.toHaveBeenCalled();
 });
-it("keeps disclosed table facts without offering a person link when grants are not readable", async () => {
+it("keeps disclosed table facts when Core omits its person link", async () => {
   setup(false, {
     ...owner,
     values: [
@@ -153,6 +168,18 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
   listing.mockReturnValueOnce(pending.promise);
   const selected: Row = {
     key: "10000000-0000-4000-8000-000000000002",
+    link: {
+      endpoint: "people.grants",
+      input: {
+        actorId: {
+          actorId: "10000000-0000-4000-8000-000000000002",
+          displayName: { kind: "NAMED", value: "Server selected result" },
+          principalKind: "HUMAN",
+          availability: "AVAILABLE",
+        }.actorId,
+        limit: 20,
+      },
+    },
     values: [
       {
         kind: "ACTOR",

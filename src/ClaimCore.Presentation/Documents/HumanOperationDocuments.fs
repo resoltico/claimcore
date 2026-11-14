@@ -1,81 +1,43 @@
 namespace ClaimCore.Presentation
 
 open ClaimCore.CommandLine
-
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-/// A review exposes authored presentation and the control bindings for that exact command.
-/// These handles are advisory; execute still performs current-state admission.
 module HumanReviewDocument =
-    let private binding =
-        function
-        | OperationReview.Case value ->
-            ReviewTarget.Case(value.Proposed.CaseId, value.Before |> Option.map _.Revision),
-            value.Context.Basis,
-            Some value.Proposed.Reference
-        | OperationReview.Work value ->
-            ReviewTarget.Work(value.Parent.CaseId, value.Before.Revision),
-            value.Context.Basis,
-            Some value.Reference
-        | OperationReview.Note value ->
-            ReviewTarget.Note(value.Parent.CaseId, value.Before |> Option.map Note.id),
-            value.Context.Basis,
-            Some value.Reference
-        | OperationReview.Reminder value ->
-            let existing =
-                value.Before
-                |> Option.map (fun reminder ->
-                    {
-                        ReminderIdentity.ReminderId = Reminder.id reminder
-                        Revision = Reminder.revision reminder
-                    })
+    let private describe act operationId binding seeds authored review =
+        let basis, reference =
+            match review with
+            | OperationReview.Case value -> value.Context.Basis, Some value.Proposed.Reference
+            | OperationReview.Work value -> value.Context.Basis, Some value.Reference
+            | OperationReview.Note value -> value.Context.Basis, Some value.Reference
+            | OperationReview.Reminder value -> value.Context.Basis, Some value.Reference
+            | OperationReview.People value -> value.Basis, None
 
-            ReviewTarget.Reminder(value.CaseId, existing), value.Context.Basis, Some value.Reference
-        | OperationReview.People value ->
-            ReviewTarget.People(
-                value.Target |> Option.map (fun item -> item.Actor.ActorId),
-                value.AccessScope
-            ),
-            value.Basis,
-            None
-
-    let private describe act operationId input review =
-        let target, basis, reference = binding review
-        let task = TaskId.Operation act
-        let declaration = TaskDeclarations.describe task
+        let confirmation =
+            reference
+            |> Option.map ConfirmationTarget.CaseReference
+            |> Option.defaultValue (ConfirmationTarget.Operation operationId)
 
         let screen, presentation =
-            ReviewDocumentParts.describe (Some(act, operationId)) input review
+            ReviewDocumentParts.describe (Some(act, operationId)) authored review
 
-        let context =
-            {
-                ReviewInteraction.Task = task
-                Target = target
-                Inputs =
-                    (declaration.Inputs @ (declaration.Collections |> List.collect _.Inputs))
-                    |> List.map _.Input
-                    |> List.distinct
-                Consequence = Consequence.ofAct act
-                Confirmation =
-                    match reference with
-                    | Some value -> ConfirmationTarget.CaseReference value
-                    | None -> ConfirmationTarget.Operation operationId
-            }
+        let action =
+            TaskAffordances.offered (TaskId.Operation act) binding seeds [] Map.empty
 
         {
             HumanReview.Document =
-                {
-                    Screen = screen
-                    Context = InteractionContext.Review context
-                    Basis = ObservationBasis.Snapshot basis
-                    Disclosure = HumanDisclosure.Current
-                }
+                HumanDocument.create
+                    (DocumentSubject.Review(confirmation, Consequence.ofAct act))
+                    screen
+                    [ { action with Primary = true } ]
+                    []
+                    None
+                    (ObservationBasis.Snapshot basis)
+                    HumanDisclosure.Current
+                    None
             Presentation = presentation
         }
-
-    let ofCore input review =
-        describe (ActKind.ofInput input) (OperationInput.operationId input) (Some input) review
 
     let ofSubmission (submission: OperationSubmission) review =
         let authored =
@@ -83,97 +45,148 @@ module HumanReviewDocument =
             | Ok(SubmittedOperation.Command input) -> Some input
             | _ -> None
 
-        describe submission.Task submission.OperationId authored review
+        describe
+            submission.Task
+            submission.OperationId
+            submission.Binding
+            submission.Inputs
+            authored
+            review
 
-/// Receipt handles retain identities and versions, never the disclosed snapshots they identify.
+    /// Typed Core callers retain their command structure without serializing a protocol request.
+    let ofCore input review =
+        let binding =
+            match input with
+            | OperationInput.Case value ->
+                let payment =
+                    match value.Act with
+                    | CaseAct.RemovePayment id -> Some id
+                    | _ -> None
+
+                OperationBinding.Case(value.Target, value.ExpectedRevision, payment)
+            | OperationInput.Work value ->
+                OperationBinding.Work(value.Target, value.ExpectedRevision)
+            | OperationInput.Note value ->
+                let selected =
+                    match value.Act with
+                    | AuthoredNoteAct.RemoveNote id -> Some id
+                    | _ -> None
+
+                OperationBinding.Note(value.Target, selected)
+            | OperationInput.Reminder value ->
+                let current =
+                    match value.Act with
+                    | ReminderAct.Create _ -> None
+                    | ReminderAct.Update(id, revision, _)
+                    | ReminderAct.CompleteAndPlanNext(id, revision, _)
+                    | ReminderAct.Complete(id, revision)
+                    | ReminderAct.Cancel(id, revision)
+                    | ReminderAct.Reopen(id, revision, _) -> Some(id, revision)
+
+                OperationBinding.Reminder(value.Target, current)
+            | OperationInput.People _ ->
+                let actor =
+                    match review with
+                    | OperationReview.People value ->
+                        value.Target |> Option.map (fun value -> ActorId.value value.Actor.ActorId)
+                    | _ -> None
+
+                OperationBinding.People actor
+
+        describe
+            (ActKind.ofInput input)
+            (OperationInput.operationId input)
+            binding
+            Map.empty
+            (Some input)
+            review
+
 module HumanReceiptDocument =
-    let private reminderIdentity (version: ReminderVersion) =
-        {
-            ReminderIdentity.ReminderId = version.ReminderId
-            Revision = version.Revision
-        }
-
-    let private reminderDisclosure =
-        function
-        | ReminderDisclosure.Disclosed _ -> HumanDisclosure.Current
-        | ReminderDisclosure.Withheld -> HumanDisclosure.Withheld
-        | ReminderDisclosure.Erased -> HumanDisclosure.Erased
-
-    let private targetAndDisclosure =
-        function
-        | ReceiptSubject.Case value ->
-            ReceiptTarget.Case(value.CaseId, value.Revision),
-            (match value.Snapshot with
-             | SnapshotDisclosure.Disclosed _ -> HumanDisclosure.Current
-             | SnapshotDisclosure.Withheld -> HumanDisclosure.Withheld
-             | SnapshotDisclosure.Erased -> HumanDisclosure.Erased)
-        | ReceiptSubject.Work value ->
-            ReceiptTarget.Work(value.CaseId, value.Revision),
-            (match value.Snapshot with
-             | WorkDisclosure.Disclosed _ -> HumanDisclosure.Current
-             | WorkDisclosure.Withheld -> HumanDisclosure.Withheld
-             | WorkDisclosure.Erased -> HumanDisclosure.Erased)
-        | ReceiptSubject.Note value ->
-            ReceiptTarget.Note(value.CaseId, value.NoteId),
-            (match value.Snapshot with
-             | NoteDisclosure.Disclosed _ -> HumanDisclosure.Current
-             | NoteDisclosure.Withheld -> HumanDisclosure.Withheld
-             | NoteDisclosure.Erased -> HumanDisclosure.Erased)
-        | ReceiptSubject.Reminder value ->
-            let versions =
-                match value.Effects with
-                | ReminderReceiptEffects.Single version -> [ version ]
-                | ReminderReceiptEffects.CompletedAndPlanned(completed, next) -> [ completed; next ]
-
-            let disclosure =
-                match versions |> List.map (_.Snapshot >> reminderDisclosure) |> List.distinct with
-                | [ disclosure ] -> disclosure
-                | _ -> HumanDisclosure.Partial
-
-            ReceiptTarget.Reminder(value.CaseId, versions |> List.map reminderIdentity), disclosure
-        | ReceiptSubject.People value ->
-            ReceiptTarget.People(PeopleTargetDisclosure.actorId value.TargetActor),
-            (match value.TargetActor with
-             | PeopleTargetDisclosure.Disclosed _ -> HumanDisclosure.Current
-             | PeopleTargetDisclosure.Withheld _ -> HumanDisclosure.Withheld)
-
     let ofCore (receipt: OperationReceipt) =
-        let target, disclosure = targetAndDisclosure receipt.Subject
+        let parent, disclosure, follow =
+            match receipt.Subject with
+            | ReceiptSubject.Case value ->
+                let disclosure =
+                    match value.Snapshot with
+                    | SnapshotDisclosure.Disclosed _ -> HumanDisclosure.Current
+                    | SnapshotDisclosure.Withheld -> HumanDisclosure.Withheld
+                    | SnapshotDisclosure.Erased -> HumanDisclosure.Erased
 
-        {
-            HumanDocument.Screen = ReceiptScreen.view receipt
-            Context =
-                InteractionContext.Receipt
+                Some value.CaseId,
+                disclosure,
+                List.contains
+                    value.Act
+                    [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
+            | ReceiptSubject.Work value ->
+                let disclosure =
+                    match value.Snapshot with
+                    | WorkDisclosure.Disclosed _ -> HumanDisclosure.Current
+                    | WorkDisclosure.Withheld -> HumanDisclosure.Withheld
+                    | WorkDisclosure.Erased -> HumanDisclosure.Erased
+
+                Some value.CaseId, disclosure, true
+            | ReceiptSubject.Note value ->
+                let disclosure =
+                    match value.Snapshot with
+                    | NoteDisclosure.Disclosed _ -> HumanDisclosure.Current
+                    | NoteDisclosure.Withheld -> HumanDisclosure.Withheld
+                    | NoteDisclosure.Erased -> HumanDisclosure.Erased
+
+                Some value.CaseId, disclosure, false
+            | ReceiptSubject.Reminder value ->
+                let versions =
+                    match value.Effects with
+                    | ReminderReceiptEffects.Single value -> [ value ]
+                    | ReminderReceiptEffects.CompletedAndPlanned(a, b) -> [ a; b ]
+
+                let disclosures =
+                    versions
+                    |> List.map (fun value ->
+                        match value.Snapshot with
+                        | ReminderDisclosure.Disclosed _ -> HumanDisclosure.Current
+                        | ReminderDisclosure.Withheld -> HumanDisclosure.Withheld
+                        | ReminderDisclosure.Erased -> HumanDisclosure.Erased)
+                    |> List.distinct
+
+                Some value.CaseId,
+                (match disclosures with
+                 | [ value ] -> value
+                 | _ -> HumanDisclosure.Partial),
+                true
+            | ReceiptSubject.People value ->
+                None,
+                (match value.TargetActor with
+                 | PeopleTargetDisclosure.Disclosed _ -> HumanDisclosure.Current
+                 | PeopleTargetDisclosure.Withheld _ -> HumanDisclosure.Withheld),
+                false
+
+        let links =
+            parent
+            |> Option.map (fun id ->
+                [
                     {
-                        Target = target
-                        RecordedFields =
-                            match receipt.Subject with
-                            | ReceiptSubject.Case {
-                                                      Snapshot = SnapshotDisclosure.Disclosed shown
-                                                  } -> shown.RecordedFields
-                            | _ -> []
-                        CaseLink =
-                            match target with
-                            | ReceiptTarget.Case(id, _)
-                            | ReceiptTarget.Work(id, _)
-                            | ReceiptTarget.Note(id, _)
-                            | ReceiptTarget.Reminder(id, _) -> Some id
-                            | ReceiptTarget.People _ -> None
-                        RefreshCase =
-                            match receipt.Subject with
-                            | ReceiptSubject.Work value -> Some value.CaseId
-                            | ReceiptSubject.Reminder value -> Some value.CaseId
-                            | ReceiptSubject.Case value when
-                                List.contains
-                                    value.Act
-                                    [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
-                                ->
-                                Some value.CaseId
-                            | _ -> None
+                        NamedLink.Relation = LinkRelation.OpenCase
+                        LabelId = "field.caseReference.label"
+                        Link = Link.caseById id
                     }
-            Basis = ObservationBasis.Snapshot receipt.Basis
-            Disclosure = disclosure
-        }
+                    if follow then
+                        {
+                            NamedLink.Relation = LinkRelation.FollowUp
+                            LabelId = "field.caseReference.label"
+                            Link = Link.caseById id
+                        }
+                ])
+            |> Option.defaultValue []
+
+        HumanDocument.create
+            (DocumentSubject.Receipt receipt.OperationId)
+            (ReceiptScreen.view receipt)
+            []
+            links
+            None
+            (ObservationBasis.Snapshot receipt.Basis)
+            disclosure
+            None
 
 module HumanOperationReply =
     let private classification kind exitCode = { Kind = kind; ExitCode = exitCode }

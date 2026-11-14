@@ -1,10 +1,15 @@
+import {
+  initialCollectionRow,
+  affordanceSeed,
+  type OperationAffordance,
+} from "../operation/affordances";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import { CatalogField } from "./CatalogField";
 import { AssigneeInput } from "./AssigneeInput";
 import { editGrantInput } from "../operation/operationDraft";
-import { roleAdmitted } from "../operation/roleAvailability";
+import { roleAdmitted, roleScopeAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
@@ -17,14 +22,11 @@ import {
 } from "../protocol/forms";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
-import {
-  type OperationTaskDefinition,
-  type TaskInputId,
-  type OperationBinding,
-} from "@contracts/client";
+import type { OperationTaskDefinition, TaskInputId, OperationBinding } from "@contracts/client";
 
 type Input = OperationTaskDefinition["inputs"][number];
 type Props = {
+  affordance?: OperationAffordance | undefined;
   task: OperationTaskDefinition;
   binding: OperationBinding;
   current: CurrentCase | null;
@@ -49,45 +51,15 @@ const caption = (p: ReturnType<typeof usePresentation>, id: TaskInputId, value: 
   }
   return p.term(vocabulary, value);
 };
-const choicesFor = (input: Input, current: CurrentCase | null): ReadonlyArray<string> => {
-  if (input.id === "group:registration") {
-    return current?.context.correction?.registration ?? input.choices;
-  }
-  if (input.id === "group:decision") {
-    return current?.context.correction?.decision ?? input.choices;
-  }
-  return input.choices;
+const choicesFor = (
+  input: Input,
+  affordance: OperationAffordance | undefined,
+): ReadonlyArray<string> => {
+  const narrowed: Readonly<Record<string, ReadonlyArray<string>>> | undefined = affordance?.choices;
+  return narrowed?.[input.id] ?? input.choices;
 };
-const groupSeed = (current: CurrentCase, group: ReturnType<typeof taskInput>["group"]) => {
-  switch (group) {
-    case "registration":
-      return current.context.seeds.registration;
-    case "decision":
-      return current.context.seeds.decision;
-    default:
-      return null;
-  }
-};
-const seed = (current: CurrentCase | null, id: TaskInputId): string => {
-  if (current === null) {
-    return "";
-  }
-  switch (id) {
-    case "field:responsibleActor":
-      return current.context.seeds.work?.responsible ?? "";
-    case "field:handlingSummary":
-      return current.context.seeds.work?.summary ?? "";
-    default: {
-      const metadata = taskInput(id);
-      const source = groupSeed(current, metadata.group);
-      if (source === null) {
-        return "";
-      }
-      // A flat typed input seed, never saved display or a nested transport path.
-      return Object.entries(source).find(([key]) => key === metadata.key)?.[1] ?? "";
-    }
-  }
-};
+const seed = (affordance: OperationAffordance | undefined, id: TaskInputId): string =>
+  formValueText(affordanceSeed(affordance, id));
 const ErrorText = ({ value, id }: { value: Notice | undefined; id?: string }) =>
   value === undefined ? null : (
     <p role="alert" id={id}>
@@ -130,11 +102,13 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
   }
-  if (
-    input.id !== "input:role" ||
-    (props.task.act !== "people.grant" && props.task.act !== "people.admit")
-  ) {
+  if (input.id !== "input:role" || !["people.grant", "people.admit"].includes(props.task.act)) {
     return null;
+  }
+  if (props.binding.kind === "PEOPLE" && "actorId" in props.binding) {
+    return roleScopeAdmitted(value, formValueText(props.values["input:scope"]) || "INSTALLATION")
+      ? null
+      : "ui.roleNotAvailableAtScope";
   }
   const principalKind = props.principalKind ?? formValueText(props.values["input:principal.kind"]);
   const scope = formValueText(props.values["input:scope"]) || "INSTALLATION";
@@ -150,7 +124,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
   const metadata = taskInput(input.id);
   const label = renderCatalogKey(p, metadata.labelId);
   const error = props.errors[errorKey];
-  const offered = choicesFor(input, props.current);
+  const offered = choicesFor(input, props.affordance);
   const selected = formValueText(props.values[input.id]);
   const options =
     offered.includes(selected) || !input.choices.some((value) => value === selected)
@@ -271,7 +245,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
           first,
           second: renderCatalogKey(p, taskInput(peer.id).labelId),
         });
-  const clear = input.clearable && props.task.id !== "case.open";
+  const clear = input.clearable;
   return (
     <fieldset className="selected-fact">
       <legend>
@@ -285,7 +259,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
               props.onFieldsChange(
                 event.target.checked
                   ? Object.fromEntries(
-                      members.map((member) => [member.id, seed(props.current, member.id)]),
+                      members.map((member) => [member.id, seed(props.affordance, member.id)]),
                     )
                   : {},
                 event.target.checked ? [] : ids,
@@ -309,7 +283,10 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
             disabled={props.disabled}
             checked={props.values[input.id] === null}
             onChange={(event) => {
-              props.onChange(input.id, event.target.checked ? null : seed(props.current, input.id));
+              props.onChange(
+                input.id,
+                event.target.checked ? null : seed(props.affordance, input.id),
+              );
             }}
           />
           {p.text("correction.CLEAR.label")}
@@ -341,28 +318,23 @@ const boundInput = (input: Input, props: Props): boolean => {
     peopleInputBound(input, props)
   );
 };
-const workInputPermitted = (input: Input, props: Props): boolean => {
-  if (props.task.subject !== "WORK" || props.current === null) {
-    return true;
-  }
-  const { editableInputs } = props.current.context;
-  return editableInputs.includes(input.id);
+const permitted = (input: Input, props: Props): boolean => {
+  const editable =
+    props.affordance === undefined ? undefined : new Set<string>(props.affordance.editable);
+  const authored =
+    input.source === "AUTHORED" ||
+    (props.task.id === "case.open" && input.id === "field:caseReference");
+  const scoped =
+    input.id !== "field:caseReference" ||
+    props.task.subject !== "PEOPLE" ||
+    (props.values["input:scope"] ?? "INSTALLATION") === "CASE";
+  return (
+    authored &&
+    (editable === undefined || editable.has(input.id)) &&
+    scoped &&
+    !boundInput(input, props)
+  );
 };
-const peopleInputPermitted = (input: Input, props: Props): boolean => {
-  if (props.task.subject !== "PEOPLE" || input.id !== "field:caseReference") {
-    return true;
-  }
-  return (props.values["input:scope"] ?? "INSTALLATION") === "CASE";
-};
-const updateInputPermitted = (input: Input, current: CurrentCase | null): boolean =>
-  input.mode !== "UPDATE" || current === null || current.context.editableInputs.includes(input.id);
-const permitted = (input: Input, props: Props): boolean =>
-  (input.source === "AUTHORED" ||
-    (props.task.id === "case.open" && input.id === "field:caseReference")) &&
-  !boundInput(input, props) &&
-  workInputPermitted(input, props) &&
-  peopleInputPermitted(input, props) &&
-  updateInputPermitted(input, props.current);
 const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
   // The grant scope already controls omission; a visible case reference is required.
   if (subject === "PEOPLE" && input.id === "field:caseReference") {
@@ -470,7 +442,10 @@ const GrantRows = ({
         onClick={() => {
           update([
             ...rows,
-            { key: crypto.randomUUID(), values: { "input:scope": "INSTALLATION" } },
+            {
+              key: crypto.randomUUID(),
+              values: initialCollectionRow(props.affordance, collection.id),
+            },
           ]);
         }}
       >

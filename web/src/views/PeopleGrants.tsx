@@ -1,5 +1,7 @@
+import type { RegionRow, Screen, Region, PresentedValue as Value } from "@contracts/client";
+import type { OperationAffordance } from "../operation/affordances";
 import { ScreenView } from "../ui/ScreenView";
-import type { Screen, Region, PresentedValue as Value } from "@contracts/client";
+
 import { useCallback, useEffect, type ReactNode } from "react";
 import type { PersonDocument } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
@@ -15,20 +17,22 @@ import { useSettingsDetour } from "../hooks/SettingsDetourContext";
 import { followLink } from "../routing/followLink";
 import { navigate } from "../routing/navigation";
 import { RegionView } from "../ui/regions/RegionView";
-import { worklistPath } from "../routing/worklistQuery";
+import { coreLinkPath } from "../routing/coreLinks";
 
-export type RevocationControl = PersonDocument["context"]["revocations"][number];
+export type RevocationControl = Extract<OperationAffordance, { task: "people.revoke" }>;
 const grantPage = (response: ServiceResponse<"people.grants">, actorId: string) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
   const { document } = response.outcome;
-  if (document.basis.kind !== "SNAPSHOT" || document.context.actorId !== actorId) {
+  if (document.basis.kind !== "SNAPSHOT" || document.subject.actorId !== actorId) {
     return null;
   }
   return {
-    items: document.context.revocations,
-    nextCursor: document.context.nextCursor,
+    items: document.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: document.nextCursor,
     screen: document.screen,
     disclosure: document.disclosure,
     basis: document.basis.observation,
@@ -46,7 +50,7 @@ type Props = {
   onRevoke?: ((grant: RevocationControl) => void) | undefined;
 };
 const continuationKey = (page: GrantPage) =>
-  JSON.stringify([page.document.disclosure, page.document.context.tasks]);
+  JSON.stringify([page.document.disclosure, page.document.actions]);
 const useActorGrants = (actorId: string, onDisclosureRefused: Props["onDisclosureRefused"]) => {
   const input = useCallback(
     (cursor: string | null) => ({ actorId, ...(cursor === null ? {} : { cursor }), limit: 50 }),
@@ -56,7 +60,7 @@ const useActorGrants = (actorId: string, onDisclosureRefused: Props["onDisclosur
     (response: ServiceResponse<"people.grants">) => grantPage(response, actorId),
     [actorId],
   );
-  return useEndpointPage<"people.grants", RevocationControl, GrantPage>(
+  return useEndpointPage<"people.grants", RegionRow, GrantPage>(
     "people.grants",
     input,
     select,
@@ -84,18 +88,10 @@ const PersonContents = ({
           view={observed.screen}
           timeZone={observed.basis.timeZone}
           roles={["ACCESS"]}
-          renderActions={(key) => {
-            const grant = observed.items.find((item) => item.key === key);
-            return grant === undefined || onRevoke === undefined ? null : (
-              <button
-                type="button"
-                onClick={() => {
-                  onRevoke(grant);
-                }}
-              >
-                {p.peopleLabel("people.revoke")}
-              </button>
-            );
+          onAction={(action) => {
+            if (action.task === "people.revoke") {
+              onRevoke?.(action);
+            }
           }}
         />
       ))}
@@ -118,11 +114,11 @@ const PersonContents = ({
       {page.page === null ? null : (
         <a
           className="actor-detail-link"
-          href={`/people-history?actorId=${encodeURIComponent(page.page.document.context.actorId)}`}
+          href={`/people-history?actorId=${encodeURIComponent(page.page.document.subject.actorId)}`}
           onClick={(event) => {
             followLink(event, () => {
               navigate(
-                `/people-history?actorId=${encodeURIComponent(page.page!.document.context.actorId)}`,
+                `/people-history?actorId=${encodeURIComponent(page.page!.document.subject.actorId)}`,
               );
             });
           }}
@@ -144,24 +140,22 @@ const PersonContents = ({
     </>
   );
 };
-const responsibilityLink = (offered: PersonDocument["context"]["responsibleCases"] | undefined) => {
-  if (offered === undefined || offered === null) {
-    return undefined;
-  }
-  const href = worklistPath({
-    view: offered.view,
-    responsibleActor: offered.responsibleActor,
-    lifecycle: [offered.lifecycle],
-    status: [offered.status],
-  });
-  return {
-    column: "responsibleCases",
-    href,
-    follow: () => {
-      navigate(href);
-    },
-  };
+const responsibilityLink = (document: PersonDocument | null) => {
+  const offered = document?.links.find(
+    (named) => named.rel === "VIEW" && named.link.endpoint === "case.list",
+  )?.link;
+  const href = offered === undefined ? undefined : coreLinkPath(offered);
+  return href === undefined
+    ? undefined
+    : {
+        column: "responsibleCases",
+        href,
+        follow: () => {
+          navigate(href);
+        },
+      };
 };
+
 const accountPresentation = (
   screen: Screen | undefined,
 ): { caption: Value | undefined; body: Region | undefined } => {
@@ -214,7 +208,7 @@ export const PeopleGrants = ({
   }, [document, onActor]);
   const { caption, body } = accountPresentation(page.views.at(-1)?.view);
   const zone = page.page?.basis.timeZone ?? "UTC";
-  const countLink = responsibilityLink(document?.context.responsibleCases);
+  const countLink = responsibilityLink(document);
   return (
     <Dialog
       title={

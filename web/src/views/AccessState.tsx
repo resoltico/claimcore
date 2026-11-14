@@ -7,7 +7,7 @@ import { ScreenView } from "../ui/ScreenView";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { Button } from "../ui/Button";
-import "./access-state.css";
+import {} from "./access-state.css";
 export const AccessState = ({
   requester,
   locked,
@@ -25,7 +25,7 @@ export const AccessState = ({
     heading.current?.focus({ preventScroll: false });
   }, []);
   const { logout } = useSessionContext();
-  if (requester.context.state === "ACTIVE") {
+  if (requester.subject.state === "ACTIVE") {
     return null;
   }
   return (
@@ -39,12 +39,12 @@ export const AccessState = ({
       <section>
         <h1 tabIndex={-1} ref={heading}>
           {p.text(
-            requester.context.state === "DISABLED"
+            requester.subject.state === "DISABLED"
               ? "ui.accessState.disabled"
               : "ui.accessState.title",
           )}
         </h1>
-        {requester.context.state === "NOT_REGISTERED" ? (
+        {requester.subject.state === "NOT_REGISTERED" ? (
           <p>{p.text("ui.accessState.requested")}</p>
         ) : null}
         <ScreenView

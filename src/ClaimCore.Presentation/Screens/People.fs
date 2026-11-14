@@ -76,7 +76,11 @@ module PeopleScreen =
             |> List.filter (fun column ->
                 not (List.contains column.Key [ "actorId"; "issuer"; "subject" ]))
 
-        resultScreen (fun (row: ActorReviewItem) -> ActorId.format row.Actor.ActorId) columns rows
+        resultScreenWithControls
+            (fun (row: ActorReviewItem) -> ActorId.format row.Actor.ActorId)
+            columns
+            (fun row -> Some(Link.person row.Actor.ActorId), [])
+            rows
 
     let view (reply: ActorReviewPage) =
         page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)

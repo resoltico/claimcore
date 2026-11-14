@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -30,17 +31,28 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "REMINDER",
-      caseId: current.context.caseId,
-      versions: [{ reminderId, revision: 4 }],
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: current.subject.caseId } },
+      },
     },
-    caseLink: current.context.caseId,
-    refreshCase: current.context.caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: {
+        endpoint: "case.get",
+        input: { target: { kind: "ID", caseId: current.subject.caseId } },
+      },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };
@@ -73,6 +85,14 @@ const setup = () => {
                 rows: [
                   {
                     key: reminderId,
+                    actions: [
+                      operationAffordance("reminder.complete", {
+                        kind: "REMINDER",
+                        target: { kind: "ID", caseId: current.subject.caseId },
+                        reminderId,
+                        expectedRevision: 3,
+                      }),
+                    ],
                     values: [
                       { kind: "REFERENCE", value: "CASE-1" },
                       { kind: "TEXT", value: "Call the claimant" },
@@ -83,25 +103,11 @@ const setup = () => {
             },
           ],
         },
-        context: {
-          kind: "REMINDERS",
-          reminders: [
-            {
-              reminderId,
-              caseId: current.context.caseId,
-              revision: 3,
-              tasks: [
-                "reminder.complete",
-                "reminder.update",
-                "reminder.cancel",
-                "reminder.completeAndPlanNext",
-              ],
-              actionSeed: "Call the claimant",
-              dueDateSeed: "2026-11-01",
-            },
-          ],
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -111,7 +117,11 @@ const setup = () => {
       status: 200,
       value: humanReadReply("reminder.list", {
         screen: { regions: [] },
-        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -133,23 +143,27 @@ const setup = () => {
           review: {
             document: {
               screen: { regions: [] },
-              context: {
+              subject: {
                 kind: "REVIEW",
-                task: "reminder.complete",
-                inputs: [
-                  "input:operationId",
-                  "field:caseReference",
-                  "input:reminderId",
-                  "input:expectedReminderRevision",
-                ],
-                consequence: "ROUTINE",
-                target: {
-                  kind: "REMINDER",
-                  caseId: current.context.caseId,
-                  existing: { reminderId, revision: 3 },
-                },
                 confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
+                consequence: "ROUTINE",
               },
+              actions: [
+                operationAffordance(
+                  "reminder.complete",
+                  {
+                    kind: "REMINDER",
+                    target: { kind: "ID", caseId: current.subject.caseId },
+                    reminderId,
+                    expectedRevision: 0,
+                  },
+                  {},
+                  [],
+                ),
+              ],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis: { kind: "SNAPSHOT", observation: workBasis },
               disclosure: "CURRENT",
             },
@@ -214,7 +228,7 @@ it("opens a compact completion preview from an explicit row action and writes on
     task: "reminder.complete",
     binding: {
       kind: "REMINDER",
-      target: { kind: "ID", caseId: current.context.caseId },
+      target: { kind: "ID", caseId: current.subject.caseId },
       reminderId,
       expectedRevision: 3,
     },

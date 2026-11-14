@@ -1,6 +1,7 @@
+import type { OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import { type TaskId, type OperationBinding } from "@contracts/client";
+import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 
 import type { FormValues } from "../../protocol/forms";
@@ -11,6 +12,7 @@ import { useEndpointCache } from "../../hooks/EndpointProvider";
 import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
+  affordance?: OperationAffordance;
   current: CurrentCase;
   disclosureAvailable: boolean;
   subject: "WORK" | "REMINDER" | "NOTE";
@@ -35,7 +37,7 @@ export const WorkOperation = ({
   completionAnchor,
   prefill,
   binding,
-  tasks,
+  affordance,
   onClose,
   onRecorded,
   onLockChange,
@@ -63,18 +65,24 @@ export const WorkOperation = ({
     kind,
     current,
     credential,
-    ...(prefill === undefined ? {} : { prefill }),
-    ...(binding === undefined ? {} : { binding }),
-    ...(targetIdentity === undefined ? {} : { targetIdentity }),
+    affordance,
+    prefill,
+    binding,
+    targetIdentity,
     onLockChange,
     onDisclosureRefused,
   });
   const observed = model.currentCase;
-  const allowed = (tasks ?? observed?.context.tasks ?? []).includes(model.task.id);
+  const allowed = model.affordance?.blocked === null;
+  const authored = model.task.inputs.filter((input) => input.source === "AUTHORED");
+  const autoPreview =
+    authored.length === 0 ||
+    model.affordance?.editable.length === 0 ||
+    (prefill !== undefined && authored.every((input) => Object.hasOwn(prefill, input.id)));
   useEffect(() => {
     if (
       allowed &&
-      ["reminder.complete", "note.add", "note.remove"].includes(kind) &&
+      autoPreview &&
       !previewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -82,7 +90,7 @@ export const WorkOperation = ({
       previewed.current = true;
       void model.preview();
     }
-  }, [kind, model, allowed]);
+  }, [model, allowed, autoPreview]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -96,7 +104,7 @@ export const WorkOperation = ({
     if (
       model.ownerVerified &&
       model.receipt !== null &&
-      model.receipt.context.target.kind === subject &&
+      model.prepared?.input.binding.kind === subject &&
       model.prepared !== null
     ) {
       navigation.committed();

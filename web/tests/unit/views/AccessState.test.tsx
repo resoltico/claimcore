@@ -1,5 +1,10 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
 import { act } from "@testing-library/react";
-import { activeRequester } from "../../support/human-requester.fixtures";
+
 import { DisclosureRefreshDriver } from "../../support/people-drawer.fixtures";
 import { humanReadReply } from "../../support/human-read-reply.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -10,15 +15,11 @@ import { Dashboard } from "../../../src/views/Dashboard";
 import type { HumanReadDocument_context } from "@contracts/client";
 const inactive: ReadonlyArray<HumanReadDocument_context> = [
   {
-    context: {
-      kind: "REQUESTER",
-      state: "NOT_REGISTERED",
-      actorId: null,
-      installationId: null,
-      tasks: [],
-      views: [],
-      peopleIssuerSeed: null,
-    },
+    subject: { kind: "REQUESTER", state: "NOT_REGISTERED", installationId: null, actorId: null },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     screen: {
       regions: [
         {
@@ -47,15 +48,16 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
     disclosure: "CURRENT",
   },
   {
-    context: {
+    subject: {
       kind: "REQUESTER",
       state: "NO_ROLES",
-      actorId: "10000000-0000-4000-8000-000000000001",
       installationId: "90000000-0000-4000-8000-000000000001",
-      tasks: [],
-      views: [],
-      peopleIssuerSeed: null,
+      actorId: "10000000-0000-4000-8000-000000000001",
     },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     screen: {
       regions: [
         {
@@ -78,15 +80,16 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
     disclosure: "CURRENT",
   },
   {
-    context: {
+    subject: {
       kind: "REQUESTER",
       state: "DISABLED",
-      actorId: "10000000-0000-4000-8000-000000000001",
       installationId: null,
-      tasks: [],
-      views: [],
-      peopleIssuerSeed: null,
+      actorId: "10000000-0000-4000-8000-000000000001",
     },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     screen: {
       regions: [
         {
@@ -123,20 +126,20 @@ it.each(inactive)(
     const directory = mockEndpoint("people.list");
     const view = render(<Dashboard />);
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
-      requester.context.state === "DISABLED"
+      requester.subject.state === "DISABLED"
         ? "This account is disabled"
         : "You don’t have access yet",
     );
     expect(cases).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
-    if (requester.context.state === "NOT_REGISTERED") {
+    if (requester.subject.state === "NOT_REGISTERED") {
       expect(view.container).toHaveTextContent("own-account");
       expect(view.container).toHaveTextContent("We’ve let the owners know");
       expect(view.container).toHaveTextContent("IdP hint");
     } else {
       expect(view.container).toHaveTextContent(
-        requester.context.state === "NO_ROLES" ? "Registered name" : "Disabled name",
+        requester.subject.state === "NO_ROLES" ? "Registered name" : "Disabled name",
       );
     }
   },
@@ -167,7 +170,7 @@ it.each(inactive)(
       "ClaimCore could not be reached. Check your connection.",
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      requester.context.state === "DISABLED"
+      requester.subject.state === "DISABLED"
         ? "This account is disabled"
         : "You don’t have access yet",
     );
@@ -225,7 +228,8 @@ it("does not revive active requester presentation or permissions after transport
           kind: "SUCCEEDED",
           document: {
             ...activeRequester,
-            context: { ...activeRequester.context, views: [], tasks: [] },
+            actions: installationActions([]),
+            links: requesterLinks([], []),
             screen: {
               regions: [
                 {

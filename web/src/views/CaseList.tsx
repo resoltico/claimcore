@@ -1,14 +1,16 @@
+import type { RegionRow, CaseSelector } from "@contracts/client";
+import type { OperationAffordance } from "../operation/affordances";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
 import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
-import "./worklist/worklist.css";
+import {} from "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "../ui/Button";
+
 import { CaseReassignment, type ReassignmentSelection } from "./worklist/CaseReassignment";
-import type { CaseSelector, HumanReadDocument_case_list } from "@contracts/client";
+
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -33,7 +35,7 @@ type Props = {
   disclosureAvailable?: boolean;
 };
 const ignoreLock = (_locked: boolean): void => undefined;
-export type CaseListControl = HumanReadDocument_case_list["context"]["cases"][number];
+export type CaseListControl = Extract<OperationAffordance, { task: "work.update" }>;
 const casePage = (response: ServiceResponse<"case.list">) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -43,9 +45,18 @@ const casePage = (response: ServiceResponse<"case.list">) => {
     return null;
   }
   return {
-    items: doc.context.cases,
-    exactCaseId: doc.context.exactCaseId,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    exactCaseId:
+      doc.links.flatMap((named) =>
+        named.rel === "OPEN_CASE" &&
+        named.link.endpoint === "case.get" &&
+        named.link.input.target.kind === "ID"
+          ? [named.link.input.target.caseId]
+          : [],
+      )[0] ?? null,
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
@@ -56,11 +67,11 @@ const useWorklist = () => {
   const search = route.screen === "cases" ? route.query : "";
   const query = useMemo(() => parseWorklistQuery(search), [search]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
-  const page = useEndpointPage<
+  const page = useEndpointPage<"case.list", RegionRow, NonNullable<ReturnType<typeof casePage>>>(
     "case.list",
-    CaseListControl,
-    NonNullable<ReturnType<typeof casePage>>
-  >("case.list", input, casePage);
+    input,
+    casePage,
+  );
   const change = useCallback((next: WorklistQuery) => {
     navigate(worklistPath(next), true);
   }, []);
@@ -154,25 +165,28 @@ const WorklistResults = ({
       {page.items.length === 0 && exact === null ? null : (
         <PageTables
           views={page.views}
-          {...(page.items.some((item) => item.assignment !== null)
-            ? {
-                renderActions: (key: string) => {
-                  const row = page.items.find((item) => item.caseId === key);
-                  return row !== undefined && row.assignment !== null ? (
-                    <Button
-                      id={`reassign-${row.caseId}`}
-                      variant="secondary"
-                      isDisabled={editing}
-                      onPress={() => {
-                        reassign(row);
-                      }}
-                    >
-                      {p.text("ui.reassign")}
-                    </Button>
-                  ) : null;
-                },
-              }
-            : {})}
+          actionPresentation={(action) => {
+            const label = p.text("ui.reassign");
+            if (action.binding.kind !== "WORK" || action.binding.target.kind !== "ID") {
+              return { label };
+            }
+            return { label, id: `reassign-${action.binding.target.caseId}` };
+          }}
+          linkNavigation={(link) =>
+            link.endpoint === "case.get" && link.input.target.kind === "ID"
+              ? {
+                  id: `case-${link.input.target.caseId}`,
+                  follow: () => {
+                    onSelect(link.input.target);
+                  },
+                }
+              : undefined
+          }
+          onAction={(action) => {
+            if (!editing && action.task === "work.update") {
+              reassign(action);
+            }
+          }}
           {...(exact === null
             ? {}
             : {
@@ -184,19 +198,6 @@ const WorklistResults = ({
                   },
                 },
               })}
-          rowLink={(key) => {
-            const item = page.items.find((candidate) => candidate.caseId === key);
-            return item === undefined
-              ? undefined
-              : {
-                  column: "caseReference",
-                  href: casePath(item.caseId),
-                  id: `case-${item.caseId}`,
-                  follow: () => {
-                    onSelect({ kind: "ID", caseId: item.caseId });
-                  },
-                };
-          }}
         />
       )}
       {page.cursor === null ? null : (
@@ -222,7 +223,8 @@ const ReadyCaseList = ({
   const page = useWorklist();
   const [selection, setSelection] = useState<ReassignmentSelection | null>(null);
   const close = () => {
-    const id = selection?.row.caseId;
+    const id =
+      selection?.row.binding.target.kind === "ID" ? selection.row.binding.target.caseId : undefined;
     setSelection(null);
     requestAnimationFrame(() => {
       (

@@ -1,9 +1,9 @@
-import { casePath } from "../../routing/routes";
-import { navigate } from "../../routing/navigation";
+import type { RegionTimelineEntry } from "@contracts/client";
+
 import { PageTables } from "../../ui/PageTables";
 import { useCallback } from "react";
-import type { HumanReadDocument_people_history } from "@contracts/client";
-type HistoryControl = HumanReadDocument_people_history["context"]["entries"][number];
+
+type HistoryControl = RegionTimelineEntry;
 import type { ServiceResponse } from "../../api/service";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
@@ -17,8 +17,10 @@ const select = (reply: ServiceResponse<"people.history">) => {
     return null;
   }
   return {
-    items: doc.context.entries,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TIMELINE" ? region.content.entries : [],
+    ),
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
@@ -50,23 +52,7 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
         </p>
       )}
       <h2 className="sr-only">{p.text("ui.timeline.title")}</h2>
-      <PageTables
-        views={page.views}
-        rowLink={(key) => {
-          const item = page.items.find((entry) => entry.key === key);
-          if (item === undefined || item.caseId === null) {
-            return undefined;
-          }
-          const href = casePath(item.caseId);
-          return {
-            column: "scopeReference",
-            href,
-            follow: () => {
-              navigate(href);
-            },
-          };
-        }}
-      />
+      <PageTables views={page.views} />
 
       <button
         type="button"

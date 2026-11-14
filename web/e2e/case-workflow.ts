@@ -1,9 +1,10 @@
-import { type ResponseFor, type OperationTaskDefinition } from "@contracts/client";
-import { workRequest } from "./work-workflow";
-import type { Language } from "../src/presentation/preferences";
-import { defaults } from "../src/presentation/preferences";
+import { acceptedSubject, workRequest } from "./work-workflow";
+import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
+
+import { type Language, defaults } from "../src/presentation/preferences";
+
 import { createPresenter } from "../src/presentation/presenter";
-import "./localization-support";
+import {} from "./localization-support";
 import { registration } from "../tests/support/inputs";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
@@ -82,21 +83,22 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseReadsSettled(page);
   const receipt = outcome.document;
-  if (receipt.context.target.kind !== "CASE") {
+  const subject = await acceptedSubject(page, receipt.subject.operationId);
+  if (subject.kind !== "CASE") {
     throw new Error("Expected a case receipt.");
   }
   // An access refresh may mask transient feedback; independently verify the accepted case version.
   const current = await workRequest(page, "case.get", {
     target: {
       kind: "ID",
-      caseId: receipt.context.target.caseId,
+      caseId: subject.caseId,
     },
   });
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected authorized case readback.");
   }
-  expect(current.outcome.data.caseId).toBe(receipt.context.target.caseId);
-  expect(current.outcome.data.revision).toBe(receipt.context.target.revision);
+  expect(current.outcome.data.caseId).toBe(subject.caseId);
+  expect(current.outcome.data.revision).toBe(subject.revision);
   await expect(
     page.locator(".case-workspace .entries-view [data-entry='claimantName']"),
   ).toHaveCount(receipt.disclosure === "CURRENT" ? 1 : 0);

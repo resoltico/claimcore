@@ -1,3 +1,4 @@
+import { operationAffordance } from "./affordances.fixtures";
 import type {
   HumanReview,
   OperationSubmission,
@@ -11,7 +12,7 @@ import { taskForCommand } from "../../src/protocol/taskCatalog";
 /** Borrow only declared task bindings; the caller independently authors displayed facts and target. */
 export const humanReviewEnvelope = (
   command: OperationSubmission,
-  binding: Pick<HumanReview["document"]["context"], "target" | "confirmation">,
+  binding: { target: unknown; confirmation: HumanReview["document"]["subject"]["confirmation"] },
   basis: WorkDateBasis,
   screen: Screen,
   presentation: ReviewPresentation,
@@ -25,20 +26,15 @@ export const humanReviewEnvelope = (
       review: {
         document: {
           screen,
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: task.id,
-            inputs: [
-              ...new Set(
-                [
-                  ...task.inputs,
-                  ...task.collections.flatMap((collection) => collection.inputs),
-                ].map((input) => input.id),
-              ),
-            ],
+            confirmation: binding.confirmation,
             consequence: task.consequence,
-            ...binding,
           },
+          actions: [operationAffordance(command.task, command.binding, command.inputs, [])],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,

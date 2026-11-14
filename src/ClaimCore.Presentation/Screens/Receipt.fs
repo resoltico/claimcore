@@ -254,6 +254,55 @@ module ReceiptScreen =
     /// Host session presentation contains no antiforgery-token value.
 
 
+    let private recordedFacts (receipt: OperationReceipt) (screen: Screen) =
+        let selected =
+            match receipt.Subject with
+            | ReceiptSubject.Case value ->
+                match value.Snapshot with
+                | SnapshotDisclosure.Disclosed shown ->
+                    Some(shown.RecordedFields |> List.map FieldPresentation.labelId |> Set.ofList)
+                | _ -> Some Set.empty
+            | ReceiptSubject.Work _ ->
+                Some(Set.ofList [ "field.handlingSummary.label"; "field.responsibleActor.label" ])
+            | _ -> None
+
+        let isRecorded label =
+            selected |> Option.map (Set.contains label) |> Option.defaultValue true
+
+        let markEntry (entry: Entry) =
+            { entry with
+                Recorded = isRecorded entry.LabelId
+            }
+
+        let markSection (section: Section) =
+            { section with
+                Entries = List.map markEntry section.Entries
+            }
+
+        let regions =
+            screen.Regions
+            |> List.map (fun region ->
+                let content =
+                    match region.Content with
+                    | RegionContent.Entries values ->
+                        RegionContent.Entries(List.map markEntry values)
+                    | RegionContent.Table table ->
+                        RegionContent.Table
+                            { table with
+                                Columns =
+                                    table.Columns
+                                    |> List.map (fun column ->
+                                        { column with
+                                            Recorded = isRecorded column.LabelId
+                                        })
+                                Sections = List.map markSection table.Sections
+                            }
+                    | content -> content
+
+                { region with Content = content })
+
+        { screen with Regions = regions }
+
     let view (receipt: OperationReceipt) =
         let source = sections receipt
         let record = List.last source
@@ -413,3 +462,4 @@ module ReceiptScreen =
                      ])
             ]
         )
+        |> recordedFacts receipt

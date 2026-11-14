@@ -34,40 +34,25 @@ export const caseIdentityScreen: Screen = {
     },
   ],
 };
-export const closeCaseScreen: Screen = {
-  regions: [
-    ...caseIdentityScreen.regions,
-    { role: "RECOMMENDATION", content: { kind: "ACTIONS", recommended: "case.close", groups: [] } },
-  ],
-};
-export const emptyCaseSeeds: CurrentCase["context"]["seeds"] = {
-  registration: null,
-  decision: null,
-  paymentCurrency: null,
-  work: null,
-};
-const context: CurrentCase["context"] = {
+export const caseSubject: CurrentCase["subject"] = {
   kind: "CASE",
   caseId: "20000000-0000-4000-8000-000000000001",
   revision: 1,
   workRevision: 0,
-  history: "FULL",
-  tasks: [],
-  editableInputs: [],
-  correction: null,
-  seeds: emptyCaseSeeds,
-  notes: [],
-  payments: [],
-  nextActions: [],
 };
 export const caseDocumentInput = (
-  binding: Partial<CurrentCase["context"]> = {},
+  overrides: Partial<CurrentCase> = {},
   presentation: Screen = caseIdentityScreen,
 ): CurrentCase => ({
+  subject: caseSubject,
   screen: presentation,
-  context: { ...context, ...binding },
+  actions: [],
+  links: [],
+  nextCursor: null,
+  history: "FULL",
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
+  ...overrides,
 });
 
 /** Fixture authors choose offers explicitly; declaration metadata supplies only their input identities. */

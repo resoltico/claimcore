@@ -1,13 +1,20 @@
-import { pendingLookup } from "../tests/support/operation-lookup.fixtures";
-import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
-import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
-import { activeRequester } from "../tests/support/human-requester.fixtures";
 import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../tests/support/human-requester.fixtures";
+import { prefixedInputs } from "../tests/support/submission-inputs";
+import {
+  caseSubject,
   caseDocumentInput,
   caseIdentityScreen,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../tests/support/case-document.fixtures";
+import { operationAffordance } from "../tests/support/affordances.fixtures";
+import { pendingLookup } from "../tests/support/operation-lookup.fixtures";
+import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
+import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
+
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
 import { writeFile } from "node:fs/promises";
@@ -375,12 +382,8 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
       json: {
         ...humanReadReply("context", {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: [],
-            tasks: [],
-            peopleIssuerSeed: null,
-          },
+          actions: installationActions([]),
+          links: requesterLinks([], []),
           basis: {
             kind: "SNAPSHOT",
             observation: presentationBasis,
@@ -450,6 +453,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
                   rows: [
                     {
                       key: "overdue",
+                      link: { endpoint: "case.list", input: { view: "OVERDUE", limit: 20 } },
                       values: [
                         {
                           kind: "MESSAGE",
@@ -463,6 +467,10 @@ test("renders core view ordering, counts and row semantics without reconstructin
                     },
                     {
                       key: "attention",
+                      link: {
+                        endpoint: "case.list",
+                        input: { view: "NEEDS_ATTENTION", limit: 20 },
+                      },
                       values: [
                         {
                           kind: "MESSAGE",
@@ -479,20 +487,11 @@ test("renders core view ordering, counts and row semantics without reconstructin
               },
             ],
           },
-          context: {
-            kind: "WORK_VIEWS",
-            cases: [
-              {
-                key: "overdue",
-                view: "OVERDUE",
-              },
-              {
-                key: "attention",
-                view: "NEEDS_ATTENTION",
-              },
-            ],
-            reminders: [],
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -558,6 +557,12 @@ test("renders core view ordering, counts and row semantics without reconstructin
                 rows: [
                   {
                     key: "20000000-0000-4000-8000-000000000001",
+                    link: {
+                      endpoint: "case.get",
+                      input: {
+                        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                      },
+                    },
                     values: [
                       {
                         kind: "REFERENCE",
@@ -588,18 +593,11 @@ test("renders core view ordering, counts and row semantics without reconstructin
             },
           ],
         },
-        context: {
-          kind: "CASES",
-          cases: [
-            {
-              caseId: "20000000-0000-4000-8000-000000000001",
-              assignment: null,
-            },
-          ],
-          tasks: [],
-          nextCursor: null,
-          exactCaseId: "20000000-0000-4000-8000-000000000001",
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: {
           kind: "SNAPSHOT",
           observation: basis,
@@ -633,9 +631,11 @@ test("renders core view ordering, counts and row semantics without reconstructin
               },
             ],
           },
-          context: {
-            kind: "EMPTY",
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -684,12 +684,8 @@ test("shell case creation returns to the captured core view and focus without se
       json: {
         ...humanReadReply("context", {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: ["CASES"],
-            tasks: ["case.open"],
-            peopleIssuerSeed: null,
-          },
+          actions: installationActions(["case.open"]),
+          links: requesterLinks(["CASES"], ["case.open"]),
           basis: {
             kind: "SNAPSHOT",
             observation: presentationBasis,
@@ -710,13 +706,11 @@ test("shell case creation returns to the captured core view and focus without se
           screen: {
             regions: [],
           },
-          context: {
-            kind: "CASES",
-            cases: [],
-            tasks: [],
-            exactCaseId: null,
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -751,9 +745,11 @@ test("shell case creation returns to the captured core view and focus without se
               },
             ],
           },
-          context: {
-            kind: "EMPTY",
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -820,11 +816,11 @@ test("reminder views keep URL state and leave implicit state predicates to the c
           screen: {
             regions: [],
           },
-          context: {
-            kind: "REMINDERS",
-            reminders: [],
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: {
@@ -975,10 +971,7 @@ for (const language of ["en", "ar"] as const) {
     };
     const current = {
       ...caseDocumentInput(
-        {
-          caseId: target.caseId,
-          history: "FULL",
-        },
+        { subject: { ...caseSubject, caseId: target.caseId }, history: "FULL" },
         {
           regions: [
             ...caseIdentityScreen.regions,
@@ -1228,15 +1221,16 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
           },
         ],
       },
-      context: {
+      subject: {
         kind: "REQUESTER",
         state: kind,
-        actorId: kind === "NOT_REGISTERED" ? null : "10000000-0000-4000-8000-000000000001",
         installationId: kind === "NO_ROLES" ? "90000000-0000-4000-8000-000000000001" : null,
-        views: [],
-        tasks: [],
-        peopleIssuerSeed: null,
+        actorId: kind === "NOT_REGISTERED" ? null : "10000000-0000-4000-8000-000000000001",
       },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: {
         kind: "UNAVAILABLE",
       },
@@ -1281,10 +1275,8 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await seed(page);
   const active: HumanReadDocument_context = {
     ...activeRequester,
-    context: {
-      ...activeRequester.context,
-      views: ["PEOPLE", "OPERATIONS"],
-      tasks: [
+    actions: installationActions(
+      [
         "people.admit",
         "people.list",
         "people.grants",
@@ -1292,8 +1284,19 @@ test("same-requester access loss retains unknown bytes and a visible departure g
         "people.requests",
         "people.requests.dismiss",
       ],
-      peopleIssuerSeed: "https://issuer.example/",
-    },
+      "https://issuer.example/",
+    ),
+    links: requesterLinks(
+      ["PEOPLE", "OPERATIONS"],
+      [
+        "people.admit",
+        "people.list",
+        "people.grants",
+        "people.history",
+        "people.requests",
+        "people.requests.dismiss",
+      ],
+    ),
     basis: {
       kind: "SNAPSHOT",
       observation: presentationBasis,
@@ -1311,15 +1314,16 @@ test("same-requester access loss retains unknown bytes and a visible departure g
                 screen: {
                   regions: [],
                 },
-                context: {
+                subject: {
                   kind: "REQUESTER",
                   state: "NO_ROLES",
-                  actorId: active.context.actorId,
-                  installationId: active.context.installationId,
-                  views: [],
-                  tasks: [],
-                  peopleIssuerSeed: null,
+                  installationId: active.subject.installationId,
+                  actorId: active.subject.actorId,
                 },
+                actions: [],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "UNAVAILABLE",
                 },
@@ -1336,11 +1340,11 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           screen: {
             regions: [],
           },
-          context: {
-            kind: "PEOPLE",
-            actorIds: [],
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: presentationBasis,
@@ -1544,18 +1548,22 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   const view = (revision: number, name: string) => ({
     ...caseDocumentInput(
       {
-        caseId,
-        revision,
+        subject: { ...caseSubject, caseId, revision },
+        actions: [
+          operationAffordance(
+            "case.amendRegistration",
+            { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: revision },
+            {
+              ...prefixedInputs("field:", {
+                ...caseFields.registration,
+                claimantName: name,
+              }),
+            },
+            registrationInputs,
+            {},
+          ),
+        ],
         history: "FULL",
-        tasks: ["case.amendRegistration"],
-        editableInputs: registrationInputs,
-        seeds: {
-          ...emptyCaseSeeds,
-          registration: {
-            ...caseFields.registration,
-            claimantName: name,
-          },
-        },
       },
       {
         regions: [
@@ -1691,10 +1699,11 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                     },
                   })),
                 },
-                context: {
-                  kind: "CONTINUATION",
-                  nextCursor: null,
-                },
+                subject: { kind: "LIST" },
+                actions: [],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "SNAPSHOT",
                   observation: basis,
@@ -1792,13 +1801,9 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(drafts).toHaveLength(2);
   expect(drafts[1]).toMatchObject({
-    expectedRevision: 3,
-    act: {
-      kind: "case.amendRegistration",
-      values: {
-        claimantName: "My retained draft",
-      },
-    },
+    task: "case.amendRegistration",
+    binding: { expectedRevision: 3 },
+    inputs: { "field:claimantName": "My retained draft" },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(writes).toEqual([]);
@@ -1825,10 +1830,18 @@ for (const reviewLanguage of ["en", "ar"] as const) {
         json: {
           ...humanReadReply("context", {
             ...activeRequester,
-            context: {
-              ...activeRequester.context,
-              views: ["PEOPLE", "OPERATIONS"],
-              tasks: [
+            actions: installationActions([
+              "people.register",
+              "people.admit",
+              "people.list",
+              "people.grants",
+              "people.history",
+              "people.requests",
+              "people.requests.dismiss",
+            ]),
+            links: requesterLinks(
+              ["PEOPLE", "OPERATIONS"],
+              [
                 "people.register",
                 "people.admit",
                 "people.list",
@@ -1837,8 +1850,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                 "people.requests",
                 "people.requests.dismiss",
               ],
-              peopleIssuerSeed: "https://issuer.example/",
-            },
+            ),
             basis: {
               kind: "SNAPSHOT",
               observation: presentationBasis,
@@ -1854,11 +1866,11 @@ for (const reviewLanguage of ["en", "ar"] as const) {
             screen: {
               regions: [],
             },
-            context: {
-              kind: "PEOPLE",
-              actorIds: [],
-              nextCursor: null,
-            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis: {
               kind: "SNAPSHOT",
               observation: presentationBasis,
@@ -1897,21 +1909,11 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       }
       previews += 1;
       expect(operationPreviewRequest.inputs["input:grants"]).toEqual([
+        { "input:role": "OWNER", "input:scope": "INSTALLATION" },
         {
-          role: "OWNER",
-          scope: {
-            kind: "INSTALLATION",
-          },
-        },
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            target: {
-              kind: "REFERENCE",
-              caseReference: "SYNTHETIC-1",
-            },
-          },
+          "input:role": "CASE_READER",
+          "input:scope": "CASE",
+          "field:caseReference": "SYNTHETIC-1",
         },
       ]);
       const reply = humanReviewEnvelope(
@@ -2273,9 +2275,20 @@ test("case panels follow compact reading order while a work draft survives respo
   const current = {
     ...caseDocumentInput(
       {
+        actions: [
+          operationAffordance(
+            "work.update",
+            {
+              kind: "WORK",
+              target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+              expectedRevision: 1,
+            },
+            {},
+            ["field:handlingSummary", "field:responsibleActor"],
+            {},
+          ),
+        ],
         history: "NONE",
-        tasks: ["work.update"],
-        editableInputs: ["field:handlingSummary", "field:responsibleActor"],
       },
       {
         regions: [
@@ -2347,7 +2360,7 @@ test("case panels follow compact reading order while a work draft survives respo
       writes += 1;
     }
   });
-  await page.goto(casePath(current.context.caseId), {
+  await page.goto(casePath(current.subject.caseId), {
     waitUntil: "commit",
   });
   await expect(
@@ -2447,6 +2460,7 @@ test("People uses core roles and state without row reads and forwards known-zero
                   rows: [
                     {
                       key: actorId,
+                      link: { endpoint: "people.grants", input: { actorId, limit: 20 } },
                       values: [
                         {
                           kind: "ACTOR",
@@ -2501,11 +2515,11 @@ test("People uses core roles and state without row reads and forwards known-zero
               },
             ],
           },
-          context: {
-            kind: "PEOPLE",
-            actorIds: [actorId, "10000000-0000-4000-8000-000000000002"],
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: presentationBasis,
@@ -2557,25 +2571,26 @@ test("People uses core roles and state without row reads and forwards known-zero
               },
             ],
           },
-          context: {
-            kind: "PERSON",
-            actorId,
-            principal: {
-              kind: "HUMAN",
-              issuer: "https://issuer.example/",
-              subject: "do-not-use-subject",
+          subject: { kind: "PERSON", actorId },
+          actions: [],
+          links: [
+            {
+              rel: "VIEW",
+              labelId: "field.responsibleActor.label",
+              link: {
+                endpoint: "case.list",
+                input: {
+                  limit: 20,
+                  view: "ALL",
+                  lifecycle: ["ACTIVE"],
+                  status: ["OPENED"],
+                  responsibleActor: actorId,
+                },
+              },
             },
-            tasks: [],
-            profileSeed: null,
-            revocations: [],
-            nextCursor: null,
-            responsibleCases: {
-              view: "ALL",
-              responsibleActor: actorId,
-              lifecycle: "ACTIVE",
-              status: "OPENED",
-            },
-          },
+          ],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: presentationBasis,
@@ -2600,13 +2615,11 @@ test("People uses core roles and state without row reads and forwards known-zero
           screen: {
             regions: [],
           },
-          context: {
-            kind: "CASES",
-            cases: [],
-            tasks: [],
-            exactCaseId: null,
-            nextCursor: null,
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -2642,9 +2655,11 @@ test("People uses core roles and state without row reads and forwards known-zero
               },
             ],
           },
-          context: {
-            kind: "EMPTY",
-          },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: {
             kind: "SNAPSHOT",
             observation: basis,
@@ -2740,12 +2755,8 @@ for (const [language, displayLocale, dismiss, separator] of [
         json: {
           ...humanReadReply("context", {
             ...activeRequester,
-            context: {
-              ...activeRequester.context,
-              views: ["CASES"],
-              tasks: ["case.open"],
-              peopleIssuerSeed: null,
-            },
+            actions: installationActions(["case.open"]),
+            links: requesterLinks(["CASES"], ["case.open"]),
             basis: {
               kind: "SNAPSHOT",
               observation: presentationBasis,

@@ -784,12 +784,12 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     if (
       contextReply.representation !== "HUMAN" ||
       contextReply.outcome.kind !== "SUCCEEDED" ||
-      contextReply.outcome.document.context.state !== "ACTIVE"
+      contextReply.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(contextReply.outcome.document.context.actorId).toBe(scope.actorId);
-    expect(contextReply.outcome.document.context.installationId).toBe(scope.installationId);
+    expect(contextReply.outcome.document.subject.actorId).toBe(scope.actorId);
+    expect(contextReply.outcome.document.subject.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(

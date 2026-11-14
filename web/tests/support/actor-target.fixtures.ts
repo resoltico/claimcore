@@ -1,3 +1,5 @@
+import { installationActions, requesterLinks } from "./human-requester.fixtures";
+import { operationAffordance } from "./affordances.fixtures";
 import { humanReadReply } from "./human-read-reply.fixtures";
 import { workBasis } from "./inputs";
 import { expect } from "vitest";
@@ -71,23 +73,36 @@ export const firstPerson: HumanReadDocument_people_grants = {
       },
     ],
   },
-  context: {
-    kind: "PERSON",
-    actorId: firstActor.actor.actorId,
-    principal: firstActor.principal,
-    tasks: [
+  subject: { kind: "PERSON", actorId: firstActor.actor.actorId },
+  actions: [
+    operationAffordance(
       "people.grant",
+      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { "input:scope": "INSTALLATION" },
+      undefined,
+      {},
+      true,
+    ),
+    operationAffordance(
       "people.revoke",
-      "people.enable",
-      "people.disable",
+      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { "input:scope": "INSTALLATION" },
+    ),
+    operationAffordance("people.enable", { kind: "PEOPLE", actorId: firstActor.actor.actorId }),
+    operationAffordance("people.disable", { kind: "PEOPLE", actorId: firstActor.actor.actorId }),
+    operationAffordance(
       "people.setProfile",
-      "people.eraseProfile",
-    ],
-    profileSeed: { displayName: "server-first", contact: null },
-    revocations: [],
-    responsibleCases: null,
-    nextCursor: null,
-  },
+      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { "input:profile.displayName": "server-first" },
+    ),
+    operationAffordance("people.eraseProfile", {
+      kind: "PEOPLE",
+      actorId: firstActor.actor.actorId,
+    }),
+  ],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure: "CURRENT",
 };
@@ -132,12 +147,28 @@ export const secondPerson: HumanReadDocument_people_grants = {
       },
     ],
   },
-  context: {
-    ...firstPerson.context,
-    actorId: secondActor.actor.actorId,
-    principal: secondActor.principal,
-    profileSeed: { displayName: "server-second", contact: null },
-  },
+  actions: [
+    operationAffordance(
+      "people.grant",
+      { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+      { "input:scope": "INSTALLATION" },
+      undefined,
+      {},
+      true,
+    ),
+    operationAffordance("people.enable", { kind: "PEOPLE", actorId: secondActor.actor.actorId }),
+    operationAffordance("people.disable", { kind: "PEOPLE", actorId: secondActor.actor.actorId }),
+    operationAffordance(
+      "people.setProfile",
+      { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+      { "input:profile.displayName": "server-second" },
+    ),
+    operationAffordance("people.eraseProfile", {
+      kind: "PEOPLE",
+      actorId: secondActor.actor.actorId,
+    }),
+  ],
+  subject: { ...firstPerson.subject, actorId: secondActor.actor.actorId },
 };
 export const grantsFor = (document = firstPerson): ApiResult<ServiceResponse<"people.grants">> => ({
   kind: "outcome",
@@ -170,10 +201,19 @@ export const setupActorTargets = (
         document: {
           ...context.outcome.document,
           basis: { kind: "SNAPSHOT", observation: workBasis },
-          context: {
-            ...context.outcome.document.context,
-            views: ["PEOPLE"],
-            tasks: [
+          actions: installationActions([
+            ...offered.map((act) =>
+              act === "case.open" ? ("case.open" as const) : taskForAct("PEOPLE", act).id,
+            ),
+            "people.list",
+            "people.grants",
+            "people.history",
+            "people.requests",
+            "people.requests.dismiss",
+          ]),
+          links: requesterLinks(
+            ["PEOPLE"],
+            [
               ...offered.map((act) =>
                 act === "case.open" ? ("case.open" as const) : taskForAct("PEOPLE", act).id,
               ),
@@ -183,7 +223,7 @@ export const setupActorTargets = (
               "people.requests",
               "people.requests.dismiss",
             ],
-          },
+          ),
         },
       },
     },
@@ -209,6 +249,16 @@ export const setupActorTargets = (
               rows: [
                 {
                   key: firstActor.actor.actorId,
+                  link: {
+                    endpoint: "people.grants",
+                    input: {
+                      actorId: {
+                        ...firstActor.actor,
+                        displayName: { kind: "NAMED", value: "stale-list-first" },
+                      }.actorId,
+                      limit: 20,
+                    },
+                  },
                   values: [
                     {
                       kind: "ACTOR",
@@ -221,6 +271,10 @@ export const setupActorTargets = (
                 },
                 {
                   key: secondActor.actor.actorId,
+                  link: {
+                    endpoint: "people.grants",
+                    input: { actorId: secondActor.actor.actorId, limit: 20 },
+                  },
                   values: [{ kind: "ACTOR", value: secondActor.actor }],
                 },
               ],
@@ -228,11 +282,11 @@ export const setupActorTargets = (
           },
         ],
       },
-      context: {
-        kind: "PEOPLE",
-        actorIds: [firstActor.actor.actorId, secondActor.actor.actorId],
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),
@@ -240,19 +294,33 @@ export const setupActorTargets = (
   mockEndpoint("people.grants").mockImplementation((_credential, input) => {
     const person = input.actorId === firstActor.actor.actorId ? firstPerson : secondPerson;
     return Promise.resolve(
-      grantsFor({
-        ...person,
-        context: {
-          ...person.context,
-          tasks: offered
-            .filter(
-              (act): act is Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"] =>
-                act !== "case.open" && act !== "people.register" && act !== "people.admit",
-            )
-            .map((act) => taskForAct("PEOPLE", act).id),
-          profileSeed: offered.includes("people.setProfile") ? person.context.profileSeed : null,
-        },
-      }),
+      grantsFor(
+        (() => {
+          const selected = person.actions.filter((action) =>
+            offered.some((task) => task === action.task),
+          );
+          const primary = ["people.grant", "people.enable", "people.revoke", "people.disable"].find(
+            (task) => selected.some((action) => action.task === task),
+          );
+          return {
+            ...person,
+            actions: selected.flatMap((action) =>
+              action.task === "people.requests.dismiss"
+                ? []
+                : [
+                    operationAffordance(
+                      action.task,
+                      { kind: "PEOPLE", actorId: person.subject.actorId },
+                      action.seeds,
+                      action.editable,
+                      action.choices,
+                      action.task === primary,
+                    ),
+                  ],
+            ),
+          };
+        })(),
+      ),
     );
   });
   return peoplePreview();

@@ -1,4 +1,6 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { workBasis } from "../support/inputs";
@@ -20,9 +22,20 @@ import { endpointResponse } from "../support/transport-response.fixtures";
 import { humanReadHttpReply } from "../support/human-read-reply.fixtures";
 import { definition } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 describe("catalog rendering", () => {
@@ -173,13 +186,19 @@ const sessionLifecycle = async () => {
   fetch.mockResolvedValueOnce(
     humanReadHttpReply("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["case.open"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

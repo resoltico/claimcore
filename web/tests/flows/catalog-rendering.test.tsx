@@ -1,9 +1,9 @@
+import { allActions } from "../../src/operation/affordances";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
 import {
   caseDocumentInput,
   caseIdentityScreen,
-  emptyCaseSeeds,
-  registrationInputs,
-  decisionInputs,
   correctionChoices,
 } from "../support/case-document.fixtures";
 import {
@@ -45,45 +45,37 @@ const acts = taskDefinitions.flatMap((task) =>
     : [],
 );
 const currentFor = (kind: ActKind): CurrentCase => {
-  const scenarios: Partial<Record<ActKind, Partial<CurrentCase["context"]>>> = {
-    "case.amendRegistration": {
-      editableInputs: registrationInputs,
-      seeds: {
-        ...emptyCaseSeeds,
-        registration: caseFields.registration,
-      },
-    },
-    "case.decide": {
-      editableInputs: decisionInputs,
-    },
-    "case.recordPayment": {
-      seeds: {
-        ...emptyCaseSeeds,
-        paymentCurrency: "EUR",
-      },
-    },
+  const seedsByAct: Partial<Record<ActKind, Record<string, unknown>>> = {
     "case.correct": {
-      editableInputs: [...registrationInputs, ...decisionInputs],
-      correction: correctionChoices,
-      seeds: {
-        ...emptyCaseSeeds,
-        registration: caseFields.registration,
-        decision: {
-          paymentDecisionDate: "2026-09-03",
-          payableAmount: "5",
-          payableCurrency: "EUR",
-        },
-      },
+      ...prefixedInputs("field:", caseFields.registration),
+      "group:registration": "KEEP",
+      "group:decision": "KEEP",
+      "field:paymentDecisionDate": "2026-09-03",
+      "field:payableAmount": "5",
+      "field:payableCurrency": "EUR",
     },
-    "case.removePayment": {
-      payments: [
-        {
-          paymentId: "10000000-0000-7000-8000-000000000003",
-          canRemove: true,
-        },
-      ],
-    },
+    "case.amendRegistration": prefixedInputs("field:", caseFields.registration),
+    "case.recordPayment": { "field:paidCurrency": "EUR" },
   };
+  const action = operationAffordance(
+    kind,
+    {
+      kind: "CASE",
+      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      expectedRevision: 1,
+      ...(kind === "case.removePayment"
+        ? { paymentId: "10000000-0000-7000-8000-000000000003" }
+        : {}),
+    },
+    seedsByAct[kind] ?? {},
+    undefined,
+    kind === "case.correct"
+      ? {
+          "group:registration": correctionChoices.registration,
+          "group:decision": correctionChoices.decision,
+        }
+      : {},
+  );
   const suppliedScreen =
     kind === "case.removePayment"
       ? {
@@ -104,6 +96,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
                 rows: [
                   {
                     key: "10000000-0000-7000-8000-000000000003",
+                    actions: [action],
                     values: [
                       {
                         kind: "MONEY" as const,
@@ -120,10 +113,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
         }
       : caseIdentityScreen;
   return caseDocumentInput(
-    {
-      tasks: [kind],
-      ...scenarios[kind],
-    },
+    { actions: kind === "case.removePayment" ? [] : [action] },
     suppliedScreen,
   );
 };
@@ -169,17 +159,22 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
     screen: {
       regions: [],
     },
-    context: {
-      kind: "RECEIPT",
-      recordedFields: [],
-      target: {
-        kind: "CASE",
-        caseId,
-        revision: request.binding.expectedRevision + 1,
+    subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+    actions: [],
+    links: [
+      {
+        rel: "OPEN_CASE",
+        labelId: "field.caseReference.label",
+        link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
       },
-      caseLink: caseId,
-      refreshCase: caseId,
-    },
+      {
+        rel: "FOLLOW_UP",
+        labelId: "field.caseReference.label",
+        link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+      },
+    ],
+    history: null,
+    nextCursor: null,
     basis: {
       kind: "SNAPSHOT",
       observation,
@@ -235,24 +230,35 @@ const caseReview = (request: CaseInput) => {
       screen: {
         regions: [],
       },
-      context: {
+      subject: {
         kind: "REVIEW",
-        task: task.id,
-        inputs: task.inputs.map((taskInput) => taskInput.id),
-        consequence: task.consequence,
-        target: {
-          kind: "CASE",
-          caseId:
-            request.task === "case.open"
-              ? request.operationId
-              : "20000000-0000-4000-8000-000000000001",
-          beforeRevision: request.task === "case.open" ? null : request.binding.expectedRevision,
-        },
         confirmation: {
           kind: "CASE_REFERENCE",
           reference: caseFields.caseReference,
         },
+        consequence: task.consequence,
       },
+      actions: [
+        operationAffordance(
+          task.id,
+          {
+            kind: "CASE",
+            target: {
+              kind: "ID",
+              caseId:
+                request.task === "case.open"
+                  ? request.operationId
+                  : "20000000-0000-4000-8000-000000000001",
+            },
+            expectedRevision: request.binding.expectedRevision,
+          },
+          {},
+          [],
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: {
         kind: "SNAPSHOT",
         observation,
@@ -358,6 +364,9 @@ it.each(acts)(
         initialAct={act.kind}
         {...(act.kind === "case.removePayment"
           ? {
+              affordance: allActions(currentFor(act.kind)).find(
+                (action) => action.task === "case.removePayment",
+              )!,
               binding: {
                 kind: "CASE" as const,
                 target: {

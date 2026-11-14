@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
+open ClaimCore.Wire
 open ClaimCore.Presentation
 
 module internal ViewText =
@@ -134,31 +135,6 @@ module internal ViewText =
                             |> List.map (fun token -> text (PresentedValue.Code(vocabulary, token)))
                             |> String.concat ", "
                         ]
-                | RegionContent.Actions actions ->
-                    (actions.Recommended
-                     |> Option.map (fun act ->
-                         label "label.recommendedNext"
-                         + ": "
-                         + text (
-                             PresentedValue.Code(
-                                 Vocabulary.name ActKind.vocabulary,
-                                 ActKind.token act
-                             )
-                         ))
-                     |> Option.toList)
-                    @ (actions.Groups
-                       |> List.map (fun group ->
-                           label (Vocabulary.messageKey ActFamily.vocabulary group.Family "label")
-                           + ": "
-                           + (group.Acts
-                              |> List.map (fun act ->
-                                  text (
-                                      PresentedValue.Code(
-                                          Vocabulary.name ActKind.vocabulary,
-                                          ActKind.token act
-                                      )
-                                  ))
-                              |> String.concat ", ")))
                 | RegionContent.Notice notice ->
                     [ label notice.MessageId ] @ (notice.Reason |> Option.map text |> Option.toList)
                 | RegionContent.Timeline entries ->
@@ -212,10 +188,38 @@ module internal ViewText =
             | ObservationBasis.Snapshot basis -> basis.TimeZoneId
             | ObservationBasis.Unavailable -> "UTC"
 
-        renderWithHeader
-            zone
-            true
-            includeDetails
-            (TextTable.environment ())
-            language
-            document.Screen
+        let body =
+            renderWithHeader
+                zone
+                true
+                includeDetails
+                (TextTable.environment ())
+                language
+                document.Screen
+
+        let actions =
+            document.Actions
+            |> List.filter (fun action -> action.Blocked.IsNone)
+            |> List.map (fun action ->
+                let key =
+                    match action.Task with
+                    | TaskId.Operation task ->
+                        Vocabulary.messageKey ActKind.vocabulary task "label"
+                    | TaskId.Command command ->
+                        Vocabulary.messageKey
+                            ActorEndpoint.vocabulary
+                            (ActorEndpoint.Command command)
+                            "label"
+                    | TaskId.Query query ->
+                        Vocabulary.messageKey
+                            ActorEndpoint.vocabulary
+                            (ActorEndpoint.Query query)
+                            "label"
+
+                ReplyTextFormat.label language key)
+
+        body
+        @ (if actions.IsEmpty then
+               []
+           else
+               [ String.concat ", " actions ])

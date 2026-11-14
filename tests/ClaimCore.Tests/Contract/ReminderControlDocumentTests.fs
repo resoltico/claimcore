@@ -41,46 +41,55 @@ let private item =
 
 [<Tests>]
 let tests =
-    testCase "reminder list and detail share versioned task controls and permitted seeds" (fun () ->
-        let document =
-            HumanReadDocuments.reminders
-                {
-                    Basis = Inputs.workBasis
-                    Items = [ item ]
-                    NextCursor = None
-                }
+    testCase
+        "list and detail carry the same versioned reminder affordances and permitted seeds"
+        (fun () ->
+            let document =
+                HumanReadDocuments.reminders
+                    {
+                        Basis = Inputs.workBasis
+                        Items = [ item ]
+                        NextCursor = None
+                    }
 
-        let listControl =
-            match document.Context with
-            | InteractionContext.Reminders page -> List.exactlyOne page.Reminders
-            | _ -> failtest "Reminder list controls required"
+            let controls = Screen.affordances document.Screen
 
-        Expect.equal listControl (ReminderInteraction.ofCore item) "Same authorized projection"
-        Expect.equal listControl.Revision Revision.first "Actual reminder version"
+            Expect.equal
+                (controls |> List.map _.Task)
+                [
+                    TaskId.Operation(ActKind.Reminder ReminderActKind.Update)
+                    TaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
+                ]
+                "Literal offered task set"
 
-        Expect.equal
-            listControl.Tasks
-            [
-                TaskId.Operation(ActKind.Reminder ReminderActKind.Update)
-                TaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
-            ]
-            "Literal permitted task set"
+            for control in controls do
+                Expect.equal
+                    control.Binding
+                    (OperationBinding.Reminder(
+                        CaseSelector.Id(Reminder.caseId item.Reminder),
+                        Some(ReminderId.value (Reminder.id item.Reminder), 1L)
+                    ))
+                    "The exact selected version binds both tasks"
 
-        Expect.equal
-            listControl.ActionSeed
-            (Some "Editable action seed")
-            "Only offered update seeds action"
+            let update = controls.Head
 
-        let readOnly =
-            ReminderInteraction.ofCore
-                { item with
-                    Acts = [ ReminderActKind.Complete ]
-                }
+            Expect.equal
+                (Map.find (TaskAffordances.input InputTarget.ReminderAction) update.Seeds)
+                (SubmissionValue.Text "Editable action seed")
+                "Only update offers the action seed"
 
-        Expect.isNone readOnly.ActionSeed "Completion does not disclose an editable action seed"
-        Expect.isNone readOnly.DueDateSeed "Completion does not offer a due input"
+            Expect.isEmpty controls.Tail.Head.Seeds "Completion carries no editable action or date"
 
-        Expect.isOk
-            (Codec.encode HumanDocumentCodecs.document document
-             |> Codec.decode 65536 HumanDocumentCodecs.document)
-            "Actual native structural boundary")
+            let detail =
+                HumanReadDocuments.reminder
+                    {
+                        Basis = Inputs.workBasis
+                        Item = item
+                    }
+
+            Expect.equal detail.Actions controls "The two presenters reuse the owner projection"
+
+            Expect.isOk
+                (Codec.encode HumanDocumentCodecs.document document
+                 |> Codec.decode 65536 HumanDocumentCodecs.document)
+                "Actual wire boundary")

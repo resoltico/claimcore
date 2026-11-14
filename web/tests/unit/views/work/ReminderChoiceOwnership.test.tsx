@@ -47,7 +47,11 @@ it("uses the core query selection, order, input label and shared wording in the 
               kind: "SUCCEEDED",
               document: {
                 screen: { regions: [] },
-                context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+                subject: { kind: "LIST" },
+                actions: [],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "SNAPSHOT",
                   observation: {

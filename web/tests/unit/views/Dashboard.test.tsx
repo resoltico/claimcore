@@ -1,6 +1,11 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
 import { navigate } from "../../../src/routing/navigation";
 import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
-import { activeRequester } from "../../support/human-requester.fixtures";
+
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { wireReply } from "../../support/reply.fixtures";
 import { stubDashboardContext } from "../../support/dashboard-context.fixtures";
@@ -71,17 +76,17 @@ it("chooses an advertised workspace only for the default entry route", async () 
         kind: "SUCCEEDED",
         document: {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: ["PEOPLE", "OPERATIONS"],
-            tasks: [
-              "people.register",
-              "people.grant",
-              "people.revoke",
-              "people.enable",
-              "people.disable",
-            ],
-          },
+          actions: installationActions([
+            "people.register",
+            "people.grant",
+            "people.revoke",
+            "people.enable",
+            "people.disable",
+          ]),
+          links: requesterLinks(
+            ["PEOPLE", "OPERATIONS"],
+            ["people.register", "people.grant", "people.revoke", "people.enable", "people.disable"],
+          ),
         },
       },
     },
@@ -118,11 +123,8 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
         kind: "SUCCEEDED",
         document: {
           ...activeRequester,
-          context: {
-            ...activeRequester.context,
-            views: ["PEOPLE"],
-            tasks: ["people.list"],
-          },
+          actions: installationActions(["people.list"]),
+          links: requesterLinks(["PEOPLE"], ["people.list"]),
         },
       },
     },

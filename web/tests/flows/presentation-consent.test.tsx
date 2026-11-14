@@ -66,7 +66,7 @@ it.each(["token", "target"] as const)(
         changed === "target"
           ? {
               ...current,
-              context: { ...current.context, caseId: "20000000-0000-4000-8000-000000000099" },
+              subject: { ...current.subject, caseId: "20000000-0000-4000-8000-000000000099" },
             }
           : current,
     });

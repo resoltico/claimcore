@@ -55,7 +55,11 @@ let internal integerLexemes () =
     let wire =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration)
+            (ClaimCore.TestSupport.Inputs.caseOperation (
+                { caseRequest registration with
+                    Act = AuthoredCaseAct.Bare BareAct.Close
+                }
+             )
              |> Submissions.ofCommand None)
         |> Encoding.UTF8.GetString
 
@@ -193,20 +197,19 @@ let internal retainedText () =
 let internal peopleWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
         {|
-            kind = "PEOPLE"
             operationId = id.ToString("D")
-            target =
-                {|
-                    kind = kind
-                    issuer = issuer
-                    subject = subject
-                |}
-            act =
-                {|
-                    kind = "people.register"
-                    profile = {| displayName = "Authored" |}
-                |}
+            task = "people.register"
+            binding = {| kind = "PEOPLE" |}
+            inputs =
+                Map.ofList
+                    [
+                        "input:principal.kind", kind
+                        "input:principal.issuer", issuer
+                        "input:principal.subject", subject
+                        "input:profile.displayName", "Authored"
+                    ]
         |}
+
 
 let internal principalAdmission () =
     let expected =

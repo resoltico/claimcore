@@ -1,8 +1,9 @@
-import {
-  type RequestByEndpoint,
-  type HumanReadDocument_case_get,
-  type HumanReview,
-  type HumanReceiptDocument,
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReadDocument_case_get,
+  HumanReview,
+  HumanReceiptDocument,
 } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -23,25 +24,11 @@ const current: HumanReadDocument_case_get = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 4,
-    workRevision: 6,
-    history: "NONE",
-    tasks: [],
-    editableInputs: [],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId, revision: 4, workRevision: 6 },
+  actions: [],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -54,29 +41,30 @@ const review: HumanReview = {
     screen: {
       regions: [],
     },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "reminder.complete",
-      target: {
-        kind: "REMINDER",
-        caseId,
-        existing: {
-          reminderId,
-          revision: 9,
-        },
-      },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:reminderId",
-        "input:expectedReminderRevision",
-      ],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "CORE-SELECTED",
       },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "reminder.complete",
+        {
+          kind: "REMINDER",
+          target: { kind: "ID", caseId },
+          reminderId,
+          expectedRevision: 0,
+        },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -103,22 +91,22 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "REMINDER",
-      caseId,
-      versions: [
-        {
-          reminderId,
-          revision: 10,
-        },
-      ],
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
     },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -140,6 +128,14 @@ const page = {
           rows: [
             {
               key: reminderId,
+              actions: [
+                operationAffordance("reminder.complete", {
+                  kind: "REMINDER",
+                  target: { kind: "ID", caseId },
+                  reminderId,
+                  expectedRevision: 9,
+                }),
+              ],
               values: [
                 {
                   kind: "TEXT",
@@ -152,20 +148,11 @@ const page = {
       },
     ],
   },
-  context: {
-    kind: "REMINDERS",
-    nextCursor: null,
-    reminders: [
-      {
-        caseId,
-        reminderId,
-        revision: 9,
-        tasks: ["reminder.complete"],
-        actionSeed: null,
-        dueDateSeed: null,
-      },
-    ],
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };

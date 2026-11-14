@@ -290,15 +290,9 @@ let private reviewAndFences () =
         (Advice.installationOffers owner installationOwner)
         [
             InstallationOffer.PeopleAct PeopleActKind.Register
-            InstallationOffer.PeopleAct PeopleActKind.Grant
-            InstallationOffer.PeopleAct PeopleActKind.Revoke
-            InstallationOffer.PeopleAct PeopleActKind.Enable
-            InstallationOffer.PeopleAct PeopleActKind.Disable
-            InstallationOffer.PeopleAct PeopleActKind.SetProfile
-            InstallationOffer.PeopleAct PeopleActKind.EraseProfile
             InstallationOffer.PeopleAct PeopleActKind.Admit
         ]
-        "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
+        "Installation offers contain only creation; existing-person actions require their selected actor"
 
 let private meaninglessScope () =
     let caseId = CaseFixtures.caseId (id 77)

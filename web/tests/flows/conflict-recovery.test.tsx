@@ -1,16 +1,19 @@
 import {
-  type ResponseFor,
-  type HumanRejection_CONFLICT,
-  type HumanDocument,
-  type RegionTimelineEntry,
-  type RequestByEndpoint,
-  type Screen,
-} from "@contracts/client";
-import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+import type {
+  ResponseFor,
+  HumanRejection_CONFLICT,
+  HumanDocument,
+  RegionTimelineEntry,
+  RequestByEndpoint,
+  Screen,
+} from "@contracts/client";
+
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -77,11 +80,11 @@ const timelineResponse = (
 ): Response =>
   humanReadHttpReply("case.timeline", {
     screen: readScreen,
-    context: {
-      kind: "PAGE",
-      tasks: [],
-      nextCursor,
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor,
     basis: {
       kind: "SNAPSHOT",
       observation: basis,
@@ -131,10 +134,11 @@ const conflictDocument = (
       },
     ],
   },
-  context: {
-    kind: "CONTINUATION",
-    nextCursor,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor,
   basis: {
     kind: "SNAPSHOT",
     observation: basis,
@@ -163,10 +167,11 @@ const withheldConflictDocument: HumanDocument = {
       },
     ],
   },
-  context: {
-    kind: "CONTINUATION",
-    nextCursor: null,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: basis,
@@ -180,17 +185,26 @@ const current = (
 ) => {
   const value = caseDocumentInput(
     {
-      tasks: ["case.amendRegistration"],
-      revision,
+      subject: { ...caseSubject, revision },
+      actions: [
+        operationAffordance(
+          "case.amendRegistration",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: revision,
+          },
+          {
+            ...prefixedInputs("field:", {
+              ...fields.registration,
+              claimantName: name,
+            }),
+          },
+          registrationInputs,
+          {},
+        ),
+      ],
       history,
-      editableInputs: registrationInputs,
-      seeds: {
-        ...emptyCaseSeeds,
-        registration: {
-          ...fields.registration,
-          claimantName: name,
-        },
-      },
     },
     {
       regions: [
@@ -354,21 +368,29 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
                 screen: {
                   regions: [],
                 },
-                context: {
+                subject: {
                   kind: "REVIEW",
-                  task: task.id,
-                  inputs: task.inputs.map((taskInput) => taskInput.id),
-                  target: {
-                    kind: "CASE",
-                    caseId: latest.context.caseId,
-                    beforeRevision: 54,
-                  },
-                  consequence: task.consequence,
                   confirmation: {
                     kind: "CASE_REFERENCE",
                     reference: "CASE-1",
                   },
+                  consequence: task.consequence,
                 },
+                actions: [
+                  operationAffordance(
+                    task.id,
+                    {
+                      kind: "CASE",
+                      target: { kind: "ID", caseId: latest.subject.caseId },
+                      expectedRevision: 54,
+                    },
+                    {},
+                    [],
+                  ),
+                ],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "SNAPSHOT",
                   observation: basis,
@@ -880,10 +902,7 @@ it.each([
         ? current(55, "After downgrade", "SUMMARY")
         : {
             ...caseDocumentInput(
-              {
-                revision: 55,
-                history: "SUMMARY",
-              },
+              { subject: { ...caseSubject, revision: 55 }, history: "SUMMARY" },
               {
                 regions: [
                   {

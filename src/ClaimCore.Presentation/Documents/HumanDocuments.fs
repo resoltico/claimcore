@@ -1,7 +1,6 @@
 namespace ClaimCore.Presentation
 
 open ClaimCore.CommandLine
-
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -20,294 +19,44 @@ type ObservationBasis =
     | Snapshot of WorkDateBasis
     | Unavailable
 
-type WorkInputSeed =
-    {
-        Summary: string option
-        Responsible: ActorId option
-    }
-
-type CaseInputSeeds =
-    {
-        Registration: RegistrationInput option
-        Decision: DecisionInput option
-        Work: WorkInputSeed option
-        PaymentCurrency: string option
-    }
-
-type NoteHandle = { NoteId: NoteId; CanRemove: bool }
-
-module NoteHandle =
-    let ofCore (item: NoteReadModel) =
-        {
-            NoteId = item.NoteId
-            CanRemove = item.CanRemove
-        }
-
-type NotePageInteraction =
-    {
-        CaseId: CaseId
-        NextCursor: string option
-        Tasks: TaskId list
-        Notes: NoteHandle list
-    }
-
-type ReminderInteraction =
-    {
-        CaseId: CaseId
-        ReminderId: ReminderId
-        Revision: Revision
-        Tasks: TaskId list
-        ActionSeed: string option
-        DueDateSeed: string option
-    }
-
-module ReminderInteraction =
-    let ofCore (value: ReminderReadModel) =
-        let item = value.Reminder
-        let update = List.contains ReminderActKind.Update value.Acts
-
-        {
-            ReminderInteraction.CaseId = Reminder.caseId item
-            ReminderId = Reminder.id item
-            Revision = Reminder.revision item
-            Tasks = value.Acts |> List.map (ActKind.Reminder >> TaskId.Operation)
-            ActionSeed =
-                if update then
-                    Some(ReminderAction.format (Reminder.action item))
-                else
-                    None
-            DueDateSeed =
-                if update || List.contains ReminderActKind.Reopen value.Acts then
-                    Some(CalendarDate.format (Reminder.due item))
-                else
-                    None
-        }
-
-type PaymentHandle =
-    {
-        PaymentId: OperationId
-        CanRemove: bool
-    }
-
-type CaseInteraction =
-    {
-        CaseId: CaseId
-        Revision: Revision
-        WorkRevision: Revision
-        History: HistoryAccess
-        Tasks: TaskId list
-        EditableInputs: TaskInputId list
-        Correction: CorrectionChoices option
-        Seeds: CaseInputSeeds
-        Notes: NoteHandle list
-        Payments: PaymentHandle list
-        NextActions: ReminderInteraction list
-    }
-
-type RequesterInteraction =
-    {
-        State: RequesterKind
-        InstallationId: System.Guid option
-        ActorId: ActorId option
-        Views: View list
-        Tasks: TaskId list
-        PeopleIssuerSeed: string option
-    }
-
-type PageInteraction =
-    {
-        NextCursor: string option
-        Tasks: TaskId list
-    }
-
-/// Reviewed versions are control bindings, never copies of saved business state.
-type ReminderIdentity =
-    {
-        ReminderId: ReminderId
-        Revision: Revision
-    }
-
-[<RequireQualifiedAccess>]
-type ReviewTarget =
-    | Case of CaseId * before: Revision option
-    | Work of CaseId * before: Revision
-    | Note of CaseId * existing: NoteId option
-    | Reminder of CaseId * existing: ReminderIdentity option
-    | People of ActorId option * GrantScope
-
 [<RequireQualifiedAccess>]
 type ConfirmationTarget =
     | CaseReference of CaseReference
     | Operation of System.Guid
 
-type ReviewInteraction =
+type RequesterSubject =
     {
-        Task: TaskId
-        Target: ReviewTarget
-        Inputs: TaskInputId list
-        Consequence: Consequence
-        Confirmation: ConfirmationTarget
+        State: RequesterKind
+        InstallationId: System.Guid option
+        ActorId: ActorId option
     }
 
 [<RequireQualifiedAccess>]
-type ReceiptTarget =
-    | Case of CaseId * Revision
-    | Work of CaseId * Revision
-    | Note of CaseId * NoteId
-    | Reminder of CaseId * ReminderIdentity list
-    | People of ActorId
-
-type ReceiptInteraction =
-    {
-        Target: ReceiptTarget
-        RecordedFields: BusinessField list
-        CaseLink: CaseId option
-        RefreshCase: CaseId option
-    }
-
-type PaymentPageInteraction =
-    {
-        CaseId: CaseId
-        Revision: Revision
-        NextCursor: string option
-        Payments: PaymentHandle list
-    }
-
-/// Choice identities bind to core-authored Screen rows; captions are never reconstructed from handles.
-type ActorPageInteraction =
-    {
-        NextCursor: string option
-        ActorIds: ActorId list
-    }
-
-type AssignmentBinding =
-    {
-        Revision: Revision
-        ResponsibleSeed: ActorId option
-    }
-
-type CaseListHandle =
-    {
-        CaseId: CaseId
-        Assignment: AssignmentBinding option
-    }
-
-type CasePageInteraction =
-    {
-        NextCursor: string option
-        Tasks: TaskId list
-        Cases: CaseListHandle list
-        ExactCaseId: CaseId option
-    }
-
-type WorkViewChoice<'view> = { Key: string; View: 'view }
-
-type WorkViewsInteraction =
-    {
-        Cases: WorkViewChoice<CaseView> list
-        Reminders: WorkViewChoice<ReminderView> list
-    }
-
-type ReminderPageInteraction =
-    {
-        NextCursor: string option
-        Reminders: ReminderInteraction list
-    }
-
-/// Row destinations bind authorized history effects without exposing their business DTOs.
-type PeopleHistoryHandle = { Key: string; CaseId: CaseId option }
-
-type PeopleHistoryInteraction =
-    {
-        NextCursor: string option
-        Entries: PeopleHistoryHandle list
-    }
-
-/// Request hints are unverified editable seeds, never evidence of an admitted account/profile.
-type AccessRequestHandle =
-    {
-        Key: string
-        Principal: PrincipalKey
-        ProfileSeed: ActorProfileInput
-    }
-
-type AccessRequestInteraction =
-    {
-        NextCursor: string option
-        Requests: AccessRequestHandle list
-    }
-
-[<RequireQualifiedAccess>]
-type GrantSelectionScope =
-    | Installation
-    | Case of CaseId
-
-type GrantRevocation =
-    {
-        Key: string
-        Role: Role
-        Scope: GrantSelectionScope
-    }
-
-type ResponsibleCasesNavigation =
-    {
-        View: CaseView
-        ResponsibleActor: ActorId
-        Lifecycle: Lifecycle
-        Status: CaseStatus
-    }
-
-/// Identity and permitted editable input for the person currently being reviewed.
-type PersonInteraction =
-    {
-        ActorId: ActorId
-        Principal: PrincipalKey
-        NextCursor: string option
-        Tasks: TaskId list
-        ProfileSeed: ActorProfileInput option
-        Revocations: GrantRevocation list
-        ResponsibleCases: ResponsibleCasesNavigation option
-    }
-
-[<RequireQualifiedAccess>]
-type InteractionContext =
-    | Empty
-    | Case of CaseInteraction
-    | Continuation of nextCursor: string option
-    | Requester of RequesterInteraction
-    | Page of PageInteraction
-    | Reminder of ReminderInteraction
-    | Review of ReviewInteraction
-    | Receipt of ReceiptInteraction
-    | PaymentPage of PaymentPageInteraction
-    | Assignees of ActorPageInteraction
-    | Cases of CasePageInteraction
-    | WorkViews of WorkViewsInteraction
-    | Reminders of ReminderPageInteraction
-    | People of ActorPageInteraction
-    | AccessRequests of AccessRequestInteraction
-    | Person of PersonInteraction
-    | PeopleHistory of PeopleHistoryInteraction
-    | NotePage of NotePageInteraction
+type DocumentSubject =
+    | Case of CaseId * revision: Revision * workRevision: Revision
+    | Person of ActorId
+    | Requester of RequesterSubject
+    | List
+    | Review of ConfirmationTarget * Consequence
+    | Receipt of OperationId
+    | Operation of System.Guid
 
 type HumanDocument =
     {
+        Subject: DocumentSubject
         Screen: Screen
-        Context: InteractionContext
+        Actions: Affordance list
+        Links: NamedLink list
+        NextCursor: string option
         Basis: ObservationBasis
         Disclosure: HumanDisclosure
+        History: HistoryAccess option
     }
 
 type HumanReview =
     {
         Document: HumanDocument
         Presentation: ReviewPresentation
-    }
-
-type HumanAdvice =
-    {
-        Message: PresentedMessage
-        Action: RecommendedAction
     }
 
 type HumanInputIssue =
@@ -363,500 +112,700 @@ type HumanLookupResult =
     | Failed of CoreFault
 
 module HumanDocument =
-    let nextCursor document =
-        match document.Context with
-        | InteractionContext.Continuation cursor -> cursor
-        | InteractionContext.Page page -> page.NextCursor
-        | InteractionContext.PaymentPage page -> page.NextCursor
-        | InteractionContext.Assignees page -> page.NextCursor
-        | InteractionContext.Cases page -> page.NextCursor
-        | InteractionContext.Reminders page -> page.NextCursor
-        | InteractionContext.People page -> page.NextCursor
-        | InteractionContext.AccessRequests page -> page.NextCursor
-        | InteractionContext.Person page -> page.NextCursor
-        | InteractionContext.PeopleHistory page -> page.NextCursor
-        | InteractionContext.NotePage page -> page.NextCursor
-        | _ -> None
+    let create
+        subject
+        screen
+        actions
+        links
+        cursor
+        basis
+        disclosure
+        (history: HistoryAccess option)
+        =
+        if
+            (actions |> List.filter _.Primary |> List.length) > 1
+            || not (List.forall Affordance.valid actions)
+        then
+            invalidArg
+                (nameof actions)
+                "A document requires valid affordances and at most one primary action."
+
+        let screen =
+            Screen.create screen.Regions |> Screen.withCurrentGroups screen.CurrentGroups
+
+        match subject with
+        | DocumentSubject.Requester identity when identity.State = RequesterKind.Active ->
+            if
+                identity.InstallationId.IsNone
+                || identity.ActorId.IsNone
+                || basis = ObservationBasis.Unavailable
+            then
+                invalidArg
+                    (nameof subject)
+                    "An active requester requires its authenticated identity and observation basis."
+        | _ -> ()
+
+        let controls = actions @ Screen.affordances screen
+
+        if
+            List.contains
+                disclosure
+                [ HumanDisclosure.Withheld; HumanDisclosure.Erased; HumanDisclosure.None ]
+            && not controls.IsEmpty
+        then
+            invalidArg (nameof disclosure) "Undisclosed resources cannot retain authoring controls."
+
+        if
+            history.IsSome
+            && (match subject with
+                | DocumentSubject.Case _ -> false
+                | _ -> true)
+        then
+            invalidArg (nameof history) "History access belongs only to a case document."
+
+        {
+            Subject = subject
+            Screen = screen
+            Actions = actions
+            Links = links
+            NextCursor = cursor
+            Basis = basis
+            Disclosure = disclosure
+            History = history
+        }
 
     let empty disclosure =
-        {
-            Screen = Screen.create []
-            Context = InteractionContext.Empty
-            Basis = ObservationBasis.Unavailable
-            Disclosure = disclosure
-        }
+        create
+            DocumentSubject.List
+            (Screen.create [])
+            []
+            []
+            None
+            ObservationBasis.Unavailable
+            disclosure
+            None
 
 module HumanCaseDocument =
-    let private operation act = TaskId.Operation(ActKind.Case act)
-
     let ofCore (value: CaseReadModel) =
         let disclosed = CaseState.lifecycle value.Snapshot.State <> Lifecycle.Erased
-        let canSummary = disclosed && value.Work.CanUpdateSummary
-        let canAssign = disclosed && value.Work.CanAssign
-        let fields = CaseState.fields value.Snapshot.State
-        let actions = if disclosed then value.Advice.Acts else []
+        let current = CaseState.fields value.Snapshot.State
+        let taskInputs task = TaskAffordances.authored task
 
-        let correct group =
-            (if disclosed then value.Advice.Correction else None)
+        let canCorrect group =
+            value.Advice.Correction
             |> Option.exists (fun choices ->
-                (match group with
-                 | RecordGroup.Registration -> choices.Registration
-                 | RecordGroup.Decision -> choices.Decision
-                 | RecordGroup.Payment -> [])
-                |> List.contains CorrectionGroupAction.Update)
-
-        let registration =
-            List.contains CaseActKind.AmendRegistration actions
-            || correct RecordGroup.Registration
-
-        let decision =
-            List.contains CaseActKind.Decide actions || correct RecordGroup.Decision
-
-        let editable =
-            [
-                if registration then
-                    yield! BusinessField.ofGroup RecordGroup.Registration
-                if decision then
-                    yield! BusinessField.ofGroup RecordGroup.Decision
-                if canSummary then
-                    yield BusinessField.HandlingSummary
-                if canAssign then
-                    yield BusinessField.ResponsibleActor
-            ]
-            |> List.map (InputTarget.Field >> TaskInputId.Target)
-
-        let tasks =
-            (actions |> List.map operation)
-            @ [
-                if canSummary || canAssign then
-                    yield TaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
-                if disclosed && value.Work.CanCreateReminder then
-                    yield TaskId.Operation(ActKind.Reminder ReminderActKind.Create)
-                if disclosed && value.Notes.CanAdd then
-                    yield TaskId.Operation(ActKind.Note NoteActKind.AddNote)
-                if
-                    disclosed
-                    && List.exists (fun (item: NoteReadModel) -> item.CanRemove) value.Notes.Items
-                then
-                    yield TaskId.Operation(ActKind.Note NoteActKind.RemoveNote)
-            ]
-
-        let seeds =
-            {
-                PaymentCurrency =
-                    if disclosed && List.contains CaseActKind.RecordPayment actions then
-                        fields
-                        |> Option.bind (fun fields -> fields.Finance.Decision)
-                        |> Option.map (Decision.payable >> Money.currency)
+                let choices =
+                    if group = RecordGroup.Registration then
+                        choices.Registration
                     else
-                        None
-                Registration =
-                    if registration then
-                        fields
-                        |> Option.map (fun fields -> Registration.authored fields.Registration)
-                    else
-                        None
-                Decision =
-                    if decision then
-                        fields |> Option.bind _.Decision |> Option.map Decision.authored
-                    else
-                        None
-                Work =
-                    if canSummary || canAssign then
-                        Some
-                            {
-                                Summary =
-                                    if canSummary then
-                                        value.Work.Summary |> Option.map HandlingSummary.format
-                                    else
-                                        None
-                                Responsible =
-                                    if canAssign then
-                                        value.Work.Responsible |> Option.map _.ActorId
-                                    else
-                                        None
-                            }
-                    else
-                        None
-            }
+                        choices.Decision
 
-        {
-            Screen = CaseScreen.view value
-            Context =
-                InteractionContext.Case
-                    {
-                        CaseId = value.Snapshot.CaseId
-                        Revision = value.Snapshot.Revision
-                        WorkRevision = value.Work.Revision
-                        History = value.Advice.History
-                        Tasks = tasks
-                        EditableInputs = editable
-                        Correction = if disclosed then value.Advice.Correction else None
-                        Seeds = seeds
-                        Payments =
-                            if disclosed then
-                                value.LatestPayments
-                                |> List.map (fun payment ->
-                                    {
-                                        PaymentId = PaymentEntry.id payment
-                                        CanRemove = List.contains CaseActKind.RemovePayment actions
-                                    })
+                List.contains CorrectionGroupAction.Update choices)
+
+        let actions =
+            if not disclosed then
+                []
+            else
+                let offered =
+                    value.Advice.Acts
+                    |> List.filter ((<>) CaseActKind.RemovePayment)
+                    |> List.map (fun kind ->
+                        let task = TaskId.Operation(ActKind.Case kind)
+
+                        let registration =
+                            if
+                                kind = CaseActKind.AmendRegistration
+                                || (kind = CaseActKind.Correct
+                                    && canCorrect RecordGroup.Registration)
+                            then
+                                current
+                                |> Option.map (fun fields ->
+                                    Registration.authored fields.Registration
+                                    |> RegistrationInput.values
+                                    |> TaskAffordances.fields)
+                                |> Option.defaultValue Map.empty
                             else
-                                []
-                        NextActions =
-                            if disclosed then
-                                value.NextActions |> List.map ReminderInteraction.ofCore
+                                Map.empty
+
+                        let decision =
+                            if
+                                kind = CaseActKind.Decide
+                                || (kind = CaseActKind.Correct && canCorrect RecordGroup.Decision)
+                            then
+                                current
+                                |> Option.bind _.Decision
+                                |> Option.map (
+                                    Decision.authored
+                                    >> DecisionInput.values
+                                    >> TaskAffordances.fields
+                                )
+                                |> Option.defaultValue Map.empty
                             else
-                                []
-                        Notes =
-                            if disclosed then
-                                value.Notes.Items |> List.map NoteHandle.ofCore
+                                Map.empty
+
+                        let seeds =
+                            Map.fold
+                                (fun seed input value -> Map.add input value seed)
+                                registration
+                                decision
+
+                        let seeds =
+                            if kind = CaseActKind.Correct then
+                                seeds
+                                |> Map.add
+                                    (TaskAffordances.input (
+                                        InputTarget.Group RecordGroup.Registration
+                                    ))
+                                    (TaskAffordances.text "KEEP")
+                                |> Map.add
+                                    (TaskAffordances.input (InputTarget.Group RecordGroup.Decision))
+                                    (TaskAffordances.text "KEEP")
                             else
+                                seeds
+
+                        let seeds =
+                            if kind = CaseActKind.RecordPayment then
+                                current
+                                |> Option.bind (fun fields -> fields.Finance.Decision)
+                                |> Option.map (fun decision ->
+                                    seeds
+                                    |> Map.add
+                                        (TaskAffordances.field BusinessField.PaidCurrency)
+                                        (TaskAffordances.text (
+                                            Money.currency (Decision.payable decision)
+                                        )))
+                                |> Option.defaultValue seeds
+                            else
+                                seeds
+
+                        let choices =
+                            if kind = CaseActKind.Correct then
+                                value.Advice.Correction
+                                |> Option.map (fun choices ->
+                                    Map.ofList
+                                        [
+                                            TaskAffordances.input (
+                                                InputTarget.Group RecordGroup.Registration
+                                            ),
+                                            choices.Registration
+                                            |> List.map CorrectionGroupAction.token
+                                            TaskAffordances.input (
+                                                InputTarget.Group RecordGroup.Decision
+                                            ),
+                                            choices.Decision
+                                            |> List.map CorrectionGroupAction.token
+                                        ])
+                                |> Option.defaultValue Map.empty
+                            else
+                                Map.empty
+
+                        let editable =
+                            taskInputs task
+                            |> List.filter (fun input ->
+                                match kind, input, value.Advice.Correction with
+                                | CaseActKind.Correct,
+                                  TaskInputId.Target(InputTarget.Field field),
+                                  Some choices ->
+                                    match (BusinessField.describe field).Group with
+                                    | Some RecordGroup.Registration ->
+                                        List.contains
+                                            CorrectionGroupAction.Update
+                                            choices.Registration
+                                    | Some RecordGroup.Decision ->
+                                        List.contains
+                                            CorrectionGroupAction.Update
+                                            choices.Decision
+                                    | _ -> true
+                                | _ -> true)
+
+                        let action =
+                            TaskAffordances.caseAction
+                                kind
+                                value.Snapshot.CaseId
+                                value.Snapshot.Revision
+                                seeds
+                                editable
+                                choices
+
+                        { action with
+                            Primary = value.Advice.Recommended = Some kind
+                        })
+
+                let blocked =
+                    value.Advice.Blocked
+                    |> List.filter (fun value -> value.Act <> CaseActKind.RemovePayment)
+                    |> List.map (fun blocked ->
+                        let action =
+                            TaskAffordances.caseAction
+                                blocked.Act
+                                value.Snapshot.CaseId
+                                value.Snapshot.Revision
+                                Map.empty
                                 []
-                    }
-            Basis = ObservationBasis.Snapshot value.Work.Basis
-            Disclosure =
-                if CaseState.lifecycle value.Snapshot.State = Lifecycle.Erased then
-                    HumanDisclosure.Erased
-                else
-                    HumanDisclosure.Current
-        }
+                                Map.empty
+
+                        { action with
+                            Blocked = Some(TaskAffordances.availability blocked.Reason)
+                        })
+
+                let work =
+                    if value.Work.CanUpdateSummary || value.Work.CanAssign then
+                        let seeds =
+                            [
+                                if value.Work.CanUpdateSummary then
+                                    match value.Work.Summary with
+                                    | Some value ->
+                                        TaskAffordances.field BusinessField.HandlingSummary,
+                                        TaskAffordances.text (HandlingSummary.format value)
+                                    | None -> ()
+                                if value.Work.CanAssign then
+                                    match value.Work.Responsible with
+                                    | Some actor ->
+                                        TaskAffordances.field BusinessField.ResponsibleActor,
+                                        TaskAffordances.text (ActorId.format actor.ActorId)
+                                    | None -> ()
+                            ]
+                            |> Map.ofList
+
+                        let editable =
+                            [
+                                if value.Work.CanUpdateSummary then
+                                    TaskAffordances.field BusinessField.HandlingSummary
+                                if value.Work.CanAssign then
+                                    TaskAffordances.field BusinessField.ResponsibleActor
+                            ]
+
+                        [
+                            TaskAffordances.work
+                                value.Snapshot.CaseId
+                                value.Work.Revision
+                                seeds
+                                editable
+                        ]
+                    else
+                        []
+
+                offered
+                @ blocked
+                @ work
+                @ [
+                    if value.Work.CanCreateReminder then
+                        yield TaskAffordances.reminderCreate value.Snapshot.CaseId
+                    if value.Notes.CanAdd then
+                        yield TaskAffordances.noteAdd value.Snapshot.CaseId
+                ]
+
+        HumanDocument.create
+            (DocumentSubject.Case(
+                value.Snapshot.CaseId,
+                value.Snapshot.Revision,
+                value.Work.Revision
+            ))
+            (CaseScreen.view value)
+            actions
+            []
+            None
+            (ObservationBasis.Snapshot value.Work.Basis)
+            (if disclosed then
+                 HumanDisclosure.Current
+             else
+                 HumanDisclosure.Erased)
+            (Some value.Advice.History)
 
 module HumanReadDocuments =
-    let private offer =
-        function
-        | InstallationOffer.Open -> TaskId.Operation(ActKind.Case CaseActKind.Open)
-        | InstallationOffer.PeopleAct kind -> TaskId.Operation(ActKind.People kind)
+    let private resource basis screen subject actions links cursor disclosure history =
+        HumanDocument.create
+            subject
+            screen
+            actions
+            links
+            cursor
+            (ObservationBasis.Snapshot basis)
+            disclosure
+            history
 
-    let private resource basis screen context disclosure =
+    let private listPage basis screen cursor =
+        resource basis screen DocumentSubject.List [] [] cursor HumanDisclosure.Current None
+
+    let private caseList view =
+        Link.CaseList
+            {
+                Page =
+                    {
+                        AfterCursor = None
+                        Limit = Paging.DefaultPageSize
+                    }
+                Filter =
+                    { CaseListFilter.empty<string> with
+                        View = view
+                    }
+            }
+
+    let private reminderList view =
+        Link.ReminderList
+            {
+                View = Some view
+                Target = None
+                State = None
+                Due = None
+                Assignment = None
+                Text = None
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
+                IncludeInactive = None
+            }
+
+    let private named label relation link =
         {
-            Screen = screen
-            Context = context
-            Basis = ObservationBasis.Snapshot basis
-            Disclosure = disclosure
+            NamedLink.Relation = relation
+            LabelId = label
+            Link = link
         }
 
-    let private page basis cursor screen =
-        resource
-            basis
-            screen
-            (InteractionContext.Page { NextCursor = cursor; Tasks = [] })
-            HumanDisclosure.Current
+    let private installationOffer issuer =
+        function
+        | InstallationOffer.Open ->
+            let task = TaskId.Operation(ActKind.Case CaseActKind.Open)
+
+            TaskAffordances.offered
+                task
+                (OperationBinding.Case(CaseSelector.Reference "", 0L, None))
+                Map.empty
+                (TaskAffordances.input (InputTarget.Field BusinessField.CaseReference)
+                 :: TaskAffordances.authored task)
+                Map.empty
+        | InstallationOffer.PeopleAct kind ->
+            let task = TaskId.Operation(ActKind.People kind)
+
+            let seeds =
+                [
+                    TaskAffordances.input InputTarget.PrincipalKind, TaskAffordances.text "HUMAN"
+                    if kind = PeopleActKind.Admit then
+                        TaskAffordances.input InputTarget.Grants, TaskAffordances.initialGrantRows
+                    match issuer with
+                    | Some value ->
+                        TaskAffordances.input InputTarget.PrincipalIssuer,
+                        TaskAffordances.text value
+                    | None -> ()
+                ]
+                |> Map.ofList
+
+            TaskAffordances.offered
+                task
+                (OperationBinding.People None)
+                seeds
+                (TaskAffordances.authored task)
+                Map.empty
 
     let context (value: ContextReply) =
-        let identity, basis =
+        let identity, basis, actions, links =
             match value.Requester with
             | RequesterState.Active actor ->
+                let actions =
+                    if actor.Maintenance.Active then
+                        []
+                    else
+                        actor.Offers |> List.map (installationOffer (Some actor.Issuer))
+
+                let links =
+                    actor.View
+                    |> List.map (function
+                        | View.Cases -> named "view.CASES.label" LinkRelation.View (caseList None)
+                        | View.People ->
+                            named
+                                "view.PEOPLE.label"
+                                LinkRelation.View
+                                (Link.PeopleList
+                                    {
+                                        Role = None
+                                        AfterCursor = None
+                                        Limit = Paging.DefaultPageSize
+                                        Text = None
+                                    })
+                        | View.Operations ->
+                            named "view.OPERATIONS.label" LinkRelation.View Link.OperationLookupForm)
+
+                let links =
+                    links
+                    @ [
+                        if List.contains View.Cases actor.View then
+                            yield
+                                named
+                                    "label.reminders"
+                                    LinkRelation.View
+                                    (reminderList ReminderView.Pending)
+                        if List.contains Capability.ReadAccess actor.Capability then
+                            yield
+                                named
+                                    "endpoint.people.history.label"
+                                    LinkRelation.View
+                                    (Link.PeopleHistory
+                                        {
+                                            TargetActorId = None
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
+                        if List.contains Capability.ManageAccess actor.Capability then
+                            yield
+                                named
+                                    "endpoint.people.requests.label"
+                                    LinkRelation.View
+                                    (Link.PeopleRequests
+                                        {
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        })
+                    ]
+
                 {
                     State = RequesterKind.Active
                     InstallationId = Some actor.InstallationId
                     ActorId = Some actor.ActorId
-                    Views = actor.View
-                    Tasks =
-                        (if actor.Maintenance.Active then
-                             []
-                         else
-                             actor.Offers |> List.map offer)
-                        @ [
-                            if List.contains Capability.ReadAccess actor.Capability then
-                                yield TaskId.Query QueryTaskId.PeopleList
-                                yield TaskId.Query QueryTaskId.PeopleGrants
-                                yield TaskId.Query QueryTaskId.PeopleHistory
-                            if List.contains Capability.ManageAccess actor.Capability then
-                                yield TaskId.Query QueryTaskId.PeopleRequests
-                                yield TaskId.Command CommandTaskId.PeopleRequestsDismiss
-                        ]
-                    PeopleIssuerSeed =
-                        if
-                            not actor.Maintenance.Active
-                            && (actor.Offers
-                                |> List.exists (function
-                                    | InstallationOffer.PeopleAct(PeopleActKind.Admit | PeopleActKind.Register) ->
-                                        true
-                                    | _ -> false))
-                        then
-                            Some actor.Issuer
-                        else
-                            None
                 },
-                ObservationBasis.Snapshot actor.Runtime.Basis
+                ObservationBasis.Snapshot actor.Runtime.Basis,
+                actions,
+                links
             | RequesterState.NoRoles actor ->
                 {
                     State = RequesterKind.NoRoles
                     InstallationId = Some actor.InstallationId
                     ActorId = Some actor.Self.ActorId
-                    Views = []
-                    Tasks = []
-                    PeopleIssuerSeed = None
                 },
-                ObservationBasis.Unavailable
+                ObservationBasis.Unavailable,
+                [],
+                []
             | RequesterState.Disabled actor ->
                 {
                     State = RequesterKind.Disabled
                     InstallationId = None
                     ActorId = Some actor.ActorId
-                    Views = []
-                    Tasks = []
-                    PeopleIssuerSeed = None
                 },
-                ObservationBasis.Unavailable
+                ObservationBasis.Unavailable,
+                [],
+                []
             | RequesterState.NotRegistered _ ->
                 {
                     State = RequesterKind.NotRegistered
                     InstallationId = None
                     ActorId = None
-                    Views = []
-                    Tasks = []
-                    PeopleIssuerSeed = None
                 },
-                ObservationBasis.Unavailable
+                ObservationBasis.Unavailable,
+                [],
+                []
 
-        {
-            Screen = ContextScreen.view value
-            Context = InteractionContext.Requester identity
-            Basis = basis
-            Disclosure = HumanDisclosure.Current
-        }
+        HumanDocument.create
+            (DocumentSubject.Requester identity)
+            (ContextScreen.view value)
+            actions
+            links
+            None
+            basis
+            HumanDisclosure.Current
+            None
 
     let cases (value: CaseSummaryPage) =
+        let links =
+            value.ExactReference
+            |> Option.map (fun value ->
+                named
+                    "field.caseReference.label"
+                    LinkRelation.OpenCase
+                    (Link.caseById value.CaseId))
+            |> Option.toList
+
         resource
             value.Basis
             (CaseListScreen.view value)
-            (InteractionContext.Cases
-                {
-                    NextCursor = value.NextCursor
-                    Tasks = value.Offers |> List.map offer
-                    Cases =
-                        value.Items
-                        |> List.map (fun item ->
-                            {
-                                CaseId = item.CaseId
-                                Assignment =
-                                    if item.CanAssign then
-                                        Some
-                                            {
-                                                Revision = item.WorkRevision
-                                                ResponsibleSeed =
-                                                    item.Responsible |> Option.map _.ActorId
-                                            }
-                                    else
-                                        None
-                            })
-                    ExactCaseId = value.ExactReference |> Option.map _.CaseId
-                })
+            DocumentSubject.List
+            (value.Offers |> List.map (installationOffer None))
+            links
+            value.NextCursor
             HumanDisclosure.Current
+            None
 
     let assignees (value: AssigneePage) =
-        resource
-            value.Basis
-            (AssigneesScreen.view value)
-            (InteractionContext.Assignees
-                {
-                    NextCursor = value.NextCursor
-                    ActorIds = value.Items |> List.map _.ActorId
-                })
-            HumanDisclosure.Current
+        listPage value.Basis (AssigneesScreen.view value) value.NextCursor
 
     let summary (value: CaseWorklistSummary) =
-        resource
-            value.Basis
-            (CaseTotalsScreen.view value)
-            InteractionContext.Empty
-            HumanDisclosure.Current
+        listPage value.Basis (CaseTotalsScreen.view value) None
 
     let views (value: WorkViews) =
+        let links =
+            (value.CaseViews
+             |> List.map (fun item ->
+                 named
+                     (Vocabulary.messageKey CaseView.vocabulary item.View "label")
+                     LinkRelation.View
+                     (caseList (Some item.View))))
+            @ (value.ReminderViews
+               |> List.map (fun item ->
+                   named
+                       (Vocabulary.messageKey ReminderView.vocabulary item.View "label")
+                       LinkRelation.View
+                       (reminderList item.View)))
+
         resource
             value.Basis
             (WorkViewsScreen.view value)
-            (InteractionContext.WorkViews
-                {
-                    Cases =
-                        value.CaseViews
-                        |> List.map (fun item ->
-                            {
-                                Key = WorkViewsScreen.caseKey item.View
-                                View = item.View
-                            })
-                    Reminders =
-                        value.ReminderViews
-                        |> List.map (fun item ->
-                            {
-                                Key = WorkViewsScreen.reminderKey item.View
-                                View = item.View
-                            })
-                })
+            DocumentSubject.List
+            []
+            links
+            None
             HumanDisclosure.Current
+            None
 
     let timeline (value: CaseTimelinePage) =
-        { page value.Basis value.NextCursor (TimelineScreen.view value) with
-            Disclosure =
-                match value.Disclosure with
-                | HistoryDisclosure.Full -> HumanDisclosure.Full
-                | HistoryDisclosure.Summary -> HumanDisclosure.Summary
-                | HistoryDisclosure.Erased -> HumanDisclosure.Erased
-        }
+        let disclosure =
+            match value.Disclosure with
+            | HistoryDisclosure.Full -> HumanDisclosure.Full
+            | HistoryDisclosure.Summary -> HumanDisclosure.Summary
+            | HistoryDisclosure.Erased -> HumanDisclosure.Erased
+
+        resource
+            value.Basis
+            (TimelineScreen.view value)
+            DocumentSubject.List
+            []
+            []
+            value.NextCursor
+            disclosure
+            None
 
     let payments (value: CasePaymentPage) =
         resource
             value.Basis
             (PaymentsScreen.page value)
-            (InteractionContext.PaymentPage
-                {
-                    CaseId = value.CaseId
-                    Revision = value.Revision
-                    NextCursor = value.NextCursor
-                    Payments =
-                        value.Items
-                        |> List.map (fun item ->
-                            {
-                                PaymentId = PaymentEntry.id item.Entry
-                                CanRemove = item.CanRemove
-                            })
-                })
+            (DocumentSubject.Case(value.CaseId, value.Revision, value.WorkRevision))
+            []
+            []
+            value.NextCursor
             (if CaseState.lifecycle value.State = Lifecycle.Erased then
                  HumanDisclosure.Erased
              else
                  HumanDisclosure.Current)
+            None
 
     let notes (value: CaseNotesPage) =
         resource
             value.Basis
             (NotesScreen.page value)
-            (InteractionContext.NotePage
-                {
-                    CaseId = value.CaseId
-                    NextCursor = value.NextCursor
-                    Tasks =
-                        [
-                            if value.Notes.CanAdd then
-                                yield TaskId.Operation(ActKind.Note NoteActKind.AddNote)
-                            if
-                                List.exists
-                                    (fun (item: NoteReadModel) -> item.CanRemove)
-                                    value.Notes.Items
-                            then
-                                yield TaskId.Operation(ActKind.Note NoteActKind.RemoveNote)
-                        ]
-                    Notes = value.Notes.Items |> List.map NoteHandle.ofCore
-                })
+            DocumentSubject.List
+            (if value.Notes.CanAdd then
+                 [ TaskAffordances.noteAdd value.CaseId ]
+             else
+                 [])
+            [
+                named "field.caseReference.label" LinkRelation.OpenCase (Link.caseById value.CaseId)
+            ]
+            value.NextCursor
             HumanDisclosure.Current
+            None
 
     let reminder (value: ReminderRead) =
-        let context = ReminderInteraction.ofCore value.Item
-
         resource
             value.Basis
             (ReminderScreen.view value)
-            (InteractionContext.Reminder context)
+            DocumentSubject.List
+            (TaskAffordances.reminder value.Item)
+            []
+            None
             HumanDisclosure.Current
+            None
 
     let reminders (value: ReminderPage) =
-        resource
-            value.Basis
-            (ReminderListScreen.view value)
-            (InteractionContext.Reminders
-                {
-                    NextCursor = value.NextCursor
-                    Reminders = value.Items |> List.map ReminderInteraction.ofCore
-                })
-            HumanDisclosure.Current
+        listPage value.Basis (ReminderListScreen.view value) value.NextCursor
 
     let actors (value: ActorReviewPage) =
-        resource
-            value.Basis
-            (PeopleScreen.view value)
-            (InteractionContext.People
-                {
-                    NextCursor = value.NextCursor
-                    ActorIds = value.Items |> List.map _.Actor.ActorId
-                })
-            HumanDisclosure.Current
+        listPage value.Basis (PeopleScreen.view value) value.NextCursor
 
     let grants (value: PeopleGrantPage) =
+        let actor = value.Actor.Actor.ActorId
+
+        let primary =
+            [
+                PeopleActKind.Grant
+                PeopleActKind.Enable
+                PeopleActKind.Revoke
+                PeopleActKind.Disable
+            ]
+            |> List.tryFind (fun kind -> List.contains kind value.Offers)
+
+        let actions =
+            value.Offers
+            |> List.map (fun kind ->
+                let task = TaskId.Operation(ActKind.People kind)
+
+                let seeds =
+                    if kind = PeopleActKind.SetProfile then
+                        value.ProfileSeed
+                        |> Option.map TaskAffordances.profile
+                        |> Option.defaultValue Map.empty
+                    else
+                        Map.empty
+
+                let seeds =
+                    if kind = PeopleActKind.Grant || kind = PeopleActKind.Revoke then
+                        seeds |> Map.add TaskInputId.Scope (TaskAffordances.text "INSTALLATION")
+                    else
+                        seeds
+
+                let choices =
+                    if kind = PeopleActKind.Grant then
+                        Map.ofList
+                            [
+                                TaskAffordances.input InputTarget.Role,
+                                Role.all
+                                |> List.filter (fun role ->
+                                    PrincipalKey.isHuman value.Actor.Principal
+                                    || not (Access.humanOnlyRole role))
+                                |> List.map Role.token
+                            ]
+                    else
+                        Map.empty
+
+                let action =
+                    TaskAffordances.person kind actor seeds (TaskAffordances.authored task) choices
+
+                { action with
+                    Primary = primary = Some kind
+                })
+
+        let links =
+            value.Actor.ResponsibleCases
+            |> Option.map (fun selection ->
+                named
+                    "field.responsibleActor.label"
+                    LinkRelation.View
+                    (Link.CaseList
+                        {
+                            Page =
+                                {
+                                    AfterCursor = None
+                                    Limit = Paging.DefaultPageSize
+                                }
+                            Filter =
+                                { CaseListFilter.activeOpen<string> with
+                                    View = Some selection.View
+                                    ResponsibleActor = Some selection.ResponsibleActor
+                                }
+                        }))
+            |> Option.toList
+
         resource
             value.Basis
             (PersonScreen.view value)
-            (InteractionContext.Person
-                {
-                    ActorId = value.Actor.Actor.ActorId
-                    Principal = value.Actor.Principal
-                    NextCursor = value.NextCursor
-                    Tasks = value.Offers |> List.map (ActKind.People >> TaskId.Operation)
-                    ProfileSeed = value.ProfileSeed
-                    Revocations =
-                        if List.contains PeopleActKind.Revoke value.Offers then
-                            value.Items
-                            |> List.map (fun item ->
-                                {
-                                    Key = PersonScreen.key { Role = item.Role; Scope = item.Scope }
-                                    Role = item.Role
-                                    Scope =
-                                        match item.Scope with
-                                        | GrantScope.Installation ->
-                                            GrantSelectionScope.Installation
-                                        | GrantScope.Case(id, _) -> GrantSelectionScope.Case id
-                                })
-                        else
-                            []
-                    ResponsibleCases =
-                        value.Actor.ResponsibleCases
-                        |> Option.map (fun item ->
-                            {
-                                View = item.View
-                                ResponsibleActor = item.ResponsibleActor
-                                Lifecycle = item.Lifecycle
-                                Status = item.Status
-                            })
-                })
+            (DocumentSubject.Person actor)
+            actions
+            links
+            value.NextCursor
             HumanDisclosure.Current
+            None
 
     let history (value: PeopleHistoryPage) =
-        resource
-            value.Basis
-            (AccessHistoryScreen.view value)
-            (InteractionContext.PeopleHistory
-                {
-                    NextCursor = value.NextCursor
-                    Entries =
-                        value.Entries
-                        |> List.map (fun item ->
-                            {
-                                Key = EffectPosition.format item.Position
-                                CaseId =
-                                    match item.Facts with
-                                    | PeopleHistoryFacts.Granted { Scope = GrantScope.Case(id, _) }
-                                    | PeopleHistoryFacts.Revoked { Scope = GrantScope.Case(id, _) } ->
-                                        Some id
-                                    | _ -> None
-                            })
-                })
-            HumanDisclosure.Current
+        listPage value.Basis (AccessHistoryScreen.view value) value.NextCursor
 
     let requests (value: AccessRequestPage) =
-        resource
-            value.Basis
-            (AccessRequestsScreen.view value)
-            (InteractionContext.AccessRequests
-                {
-                    NextCursor = value.NextCursor
-                    Requests =
-                        value.Items
-                        |> List.map (fun item ->
-                            {
-                                Key = ScreenEntries.principalKey item.Principal
-                                Principal = item.Principal
-                                ProfileSeed =
-                                    {
-                                        DisplayName =
-                                            item.Claims.Name
-                                            |> Option.orElse item.Claims.PreferredUsername
-                                            |> Option.map PartyName.format
-                                            |> Option.defaultValue ""
-                                        Contact = item.Claims.Email |> Option.map PartyName.format
-                                    }
-                            })
-                })
-            HumanDisclosure.Current
+        listPage value.Basis (AccessRequestsScreen.view value) value.NextCursor
 
     let dismissed () =
         { HumanDocument.empty HumanDisclosure.Current with

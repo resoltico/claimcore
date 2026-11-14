@@ -50,10 +50,19 @@ module ReminderListScreen =
         let columns = reminderColumns |> List.filter (fun column -> column.Key <> "id")
 
         let data =
-            table
+            tableWithControls
                 (fun (row: ReminderReadModel) -> ReminderId.format (Reminder.id row.Reminder))
                 (fun _ -> None)
                 columns
+                (fun row ->
+                    Some(
+                        Link.ReminderGet
+                            {
+                                Target = CaseSelector.Id(Reminder.caseId row.Reminder)
+                                ReminderId = ReminderId.value (Reminder.id row.Reminder)
+                            }
+                    ),
+                    TaskAffordances.reminder row)
                 rows
 
         let groups =

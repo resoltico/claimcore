@@ -1,3 +1,5 @@
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { useState } from "react";
 import { within } from "@testing-library/react";
 import { initialOperationValues } from "../../../src/operation/operationForm";
@@ -14,25 +16,24 @@ import type { OperationTaskId, TaskInputId } from "@contracts/client";
 const target = { kind: "ID", caseId: "00000000-0000-4000-8000-000000000002" } as const;
 const current: CurrentCase = {
   screen: { regions: [] },
-  context: {
-    kind: "CASE",
-    caseId: target.caseId,
-    revision: 7,
-    workRevision: 2,
-    history: "NONE",
-    tasks: ["work.update"],
-    editableInputs: ["field:handlingSummary"],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: { summary: "Permitted input seed", responsible: null },
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId: target.caseId, revision: 7, workRevision: 2 },
+  actions: [
+    operationAffordance(
+      "work.update",
+      { kind: "WORK", target: { kind: "ID", caseId: target.caseId }, expectedRevision: 2 },
+      {
+        ...prefixedInputs("field:", {
+          handlingSummary: "Permitted input seed",
+          responsibleActor: null,
+        }),
+      },
+      ["field:handlingSummary"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -48,6 +49,7 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
   const fields = vi.fn();
   const change = vi.fn();
   const props = {
+    affordance: current.actions.find((action) => action.task === "work.update")!,
     task: operationTask("work.update"),
     binding: { kind: "WORK", target, expectedRevision: 2 } as const,
     current,
@@ -74,15 +76,18 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
 it("consumes the current correction choices instead of offering the declaration's full static set", () => {
   const correction: CurrentCase = {
     ...current,
-    context: {
-      ...current.context,
-      tasks: ["case.correct"],
-      editableInputs: [],
-      correction: { registration: ["KEEP"], decision: ["KEEP"] },
-      seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
-    },
+    actions: [
+      operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP"], "group:decision": ["KEEP"] },
+      ),
+    ],
   };
   const props = {
+    affordance: correction.actions.find((action) => action.task === "case.correct")!,
     task: operationTask("case.correct"),
     binding: { kind: "CASE", target, expectedRevision: 7 } as const,
     current: correction,
@@ -97,12 +102,24 @@ it("consumes the current correction choices instead of offering the declaration'
   view.rerender(
     <TaskInputs
       {...props}
+      affordance={operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP"] },
+      )}
       current={{
         ...correction,
-        context: {
-          ...correction.context,
-          correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP"] },
-        },
+        actions: [
+          operationAffordance(
+            "case.correct",
+            { kind: "CASE", target, expectedRevision: 7 },
+            {},
+            undefined,
+            { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP"] },
+          ),
+        ],
       }}
     />,
   );
@@ -193,14 +210,26 @@ it("preserves a selected correction choice when current Core choices stop offeri
   const change = vi.fn();
   render(
     <TaskInputs
+      affordance={operationAffordance(
+        "case.correct",
+        { kind: "CASE", target, expectedRevision: 7 },
+        {},
+        undefined,
+        { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP", "UPDATE"] },
+      )}
       task={operationTask("case.correct")}
       binding={{ kind: "CASE", target, expectedRevision: 7 }}
       current={{
         ...current,
-        context: {
-          ...current.context,
-          correction: { registration: ["KEEP", "UPDATE"], decision: ["KEEP", "UPDATE"] },
-        },
+        actions: [
+          operationAffordance(
+            "case.correct",
+            { kind: "CASE", target, expectedRevision: 7 },
+            {},
+            undefined,
+            { "group:registration": ["KEEP", "UPDATE"], "group:decision": ["KEEP", "UPDATE"] },
+          ),
+        ],
       }}
       values={{ "group:registration": "KEEP", "group:decision": "CLEAR" }}
       disabled={false}
@@ -244,9 +273,11 @@ it("keeps reminder identity and revision bound while editing only authored actio
 const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
   const [values, setValues] = useState<FormValues>(() =>
     initialOperationValues(
-      id === "case.open" ? "CASE" : "PEOPLE",
-      id === "case.open" ? "case.open" : "people.admit",
-      null,
+      operationAffordance(
+        id === "case.open" ? "case.open" : "people.admit",
+        id === "case.open" ? { kind: "CASE", target, expectedRevision: 0 } : { kind: "PEOPLE" },
+        id === "people.admit" ? { "input:principal.kind": "HUMAN" } : {},
+      ),
     ),
   );
   return (
@@ -351,7 +382,7 @@ it.each([
   currency: string;
   inputs: TaskInputId[];
   values: FormValues;
-  correction: CurrentCase["context"]["correction"];
+  correction: { registration: ReadonlyArray<string>; decision: ReadonlyArray<string> } | null;
   expected: FormValues;
 }>)(
   "selects $currency only through its one atomic money pair",
@@ -359,11 +390,23 @@ it.each([
     const fields = vi.fn();
     const view = render(
       <TaskInputs
+        affordance={operationAffordance(
+          task,
+          { kind: "CASE", target, expectedRevision: 7 },
+          {},
+          inputs,
+          correction === null
+            ? {}
+            : {
+                "group:registration": correction.registration,
+                "group:decision": correction.decision,
+              },
+        )}
         task={operationTask(task)}
         binding={{ kind: "CASE", target, expectedRevision: 7 }}
         current={{
           ...current,
-          context: { ...current.context, tasks: [task], editableInputs: inputs, correction },
+          actions: current.actions.filter((action) => new Set<string>([task]).has(action.task)),
         }}
         values={values}
         disabled={false}

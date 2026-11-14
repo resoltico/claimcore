@@ -8,10 +8,7 @@ import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
 import { ReminderQueue } from "../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../src/routing/navigation";
-import {
-  type HumanReadDocument_case_list,
-  type HumanReadDocument_work_views,
-} from "@contracts/client";
+import type { HumanReadDocument_case_list, HumanReadDocument_work_views } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
 const exactId = "00000000-0000-4000-8000-000000000002";
 const basis = {
@@ -46,6 +43,7 @@ const counts: HumanReadDocument_work_views = {
           rows: [
             {
               key: "case-choice",
+              link: { endpoint: "case.list", input: { view: "ALL", limit: 20 } },
               values: [
                 {
                   kind: "COUNT",
@@ -59,6 +57,7 @@ const counts: HumanReadDocument_work_views = {
             },
             {
               key: "reminder-choice",
+              link: { endpoint: "reminder.list", input: { view: "PENDING", limit: 20 } },
               values: [
                 {
                   kind: "COUNT",
@@ -75,21 +74,11 @@ const counts: HumanReadDocument_work_views = {
       },
     ],
   },
-  context: {
-    kind: "WORK_VIEWS",
-    cases: [
-      {
-        key: "case-choice",
-        view: "ALL",
-      },
-    ],
-    reminders: [
-      {
-        key: "reminder-choice",
-        view: "PENDING",
-      },
-    ],
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -111,6 +100,7 @@ const cases: HumanReadDocument_case_list = {
           rows: [
             {
               key: caseId,
+              link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
               values: [
                 {
                   kind: "TEXT",
@@ -139,18 +129,17 @@ const cases: HumanReadDocument_case_list = {
       },
     ],
   },
-  context: {
-    kind: "CASES",
-    cases: [
-      {
-        caseId,
-        assignment: null,
-      },
-    ],
-    exactCaseId: exactId,
-    tasks: [],
-    nextCursor: null,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId: exactId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -182,11 +171,11 @@ const service = () => {
             screen: {
               regions: [],
             },
-            context: {
-              kind: "REMINDERS",
-              reminders: [],
-              nextCursor: null,
-            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           });
@@ -195,9 +184,11 @@ const service = () => {
             screen: {
               regions: [],
             },
-            context: {
-              kind: "EMPTY",
-            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis,
             disclosure: "CURRENT",
           });
@@ -332,43 +323,36 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
               },
             ],
             rows: [
-              row("all", "Core all cases", 17),
-              row("attention", "Core attention cases", 5),
-              row("pending", "Core pending reminders", 23),
-              row("overdue", "Core overdue reminders", 1),
-              row("today", "Core reminders today", 2),
+              {
+                ...row("all", "Core all cases", 17),
+                link: { endpoint: "case.list", input: { view: "ALL", limit: 20 } },
+              },
+              {
+                ...row("attention", "Core attention cases", 5),
+                link: { endpoint: "case.list", input: { view: "NEEDS_ATTENTION", limit: 20 } },
+              },
+              {
+                ...row("pending", "Core pending reminders", 23),
+                link: { endpoint: "reminder.list", input: { view: "PENDING", limit: 20 } },
+              },
+              {
+                ...row("overdue", "Core overdue reminders", 1),
+                link: { endpoint: "reminder.list", input: { view: "OVERDUE", limit: 20 } },
+              },
+              {
+                ...row("today", "Core reminders today", 2),
+                link: { endpoint: "reminder.list", input: { view: "TODAY", limit: 20 } },
+              },
             ],
           },
         },
       ],
     },
-    context: {
-      kind: "WORK_VIEWS",
-      cases: [
-        {
-          key: "all",
-          view: "ALL",
-        },
-        {
-          key: "attention",
-          view: "NEEDS_ATTENTION",
-        },
-      ],
-      reminders: [
-        {
-          key: "pending",
-          view: "PENDING",
-        },
-        {
-          key: "overdue",
-          view: "OVERDUE",
-        },
-        {
-          key: "today",
-          view: "TODAY",
-        },
-      ],
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
   };
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(response(navigation)));
   render(
@@ -381,7 +365,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
           }}
           presentation={null}
           active="cases"
-          views={["CASES"]}
+          views={["case.list"]}
           tasks={[]}
           locked={false}
           openCase={vi.fn()}

@@ -39,6 +39,7 @@ it("renders the supplied person caption and navigates with its typed identity wi
             rows: [
               {
                 key: actorId,
+                link: { endpoint: "people.grants", input: { actorId, limit: 20 } },
                 values: [{ kind: "TEXT", value: "Core opaque directory caption Ω" }],
               },
             ],
@@ -46,7 +47,11 @@ it("renders the supplied person caption and navigates with its typed identity wi
         },
       ],
     },
-    context: { kind: "PEOPLE", actorIds: [actorId], nextCursor: null },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   };
@@ -54,7 +59,6 @@ it("renders the supplied person caption and navigates with its typed identity wi
   const select = vi.fn();
   render(
     <PeopleListing
-      mayReadGrants
       onSelect={select}
       onDisclosureRefused={vi.fn()}
       onDisclosureRestored={vi.fn()}
@@ -97,7 +101,11 @@ it("renders supplied aggregate precision and opaque totals content from a HUMAN 
         },
       ],
     },
-    context: { kind: "EMPTY" },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   };

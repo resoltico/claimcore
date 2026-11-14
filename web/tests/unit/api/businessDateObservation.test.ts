@@ -106,7 +106,19 @@ it("ignores a stale dispatch and a context response for a different installation
       representation: "HUMAN",
       outcome: {
         kind: "SUCCEEDED",
-        document: { context: { kind: "REQUESTER", ...data }, basis: observation("2026-11-06") },
+        document: {
+          subject: {
+            kind: "REQUESTER",
+            state: "ACTIVE",
+            installationId: data.installationId,
+            actorId: data.actorId,
+          },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
+          basis: observation("2026-11-06"),
+        },
       },
     });
   }
@@ -119,7 +131,16 @@ it("ignores a stale dispatch and a context response for a different installation
     outcome: {
       kind: "SUCCEEDED",
       document: {
-        context: { kind: "REQUESTER", installationId: "installation", actorId: "actor" },
+        subject: {
+          kind: "REQUESTER",
+          state: "ACTIVE",
+          installationId: "installation",
+          actorId: "actor",
+        },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: observation("2026-11-06"),
       },
     },
@@ -141,7 +162,11 @@ it("does not publish an aborted validated read when its transport eventually fin
           kind: "SUCCEEDED",
           document: {
             screen: { regions: [] },
-            context: { kind: "CASES", cases: [], nextCursor: null, exactCaseId: null, tasks: [] },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis: {
               kind: "SNAPSHOT",
               observation: {

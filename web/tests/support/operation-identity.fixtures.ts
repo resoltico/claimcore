@@ -5,8 +5,12 @@ const owner = {
   actorId: testWorkspaceIdentity.actorId,
   sessionEpoch: 0,
 };
-import type { OperationState, EffectIdentity } from "../../src/operation/operationState";
-import { operationReducer } from "../../src/operation/operationState";
+import {
+  type OperationState,
+  type EffectIdentity,
+  operationReducer,
+} from "../../src/operation/operationState";
+
 import { valuesFor, preparedFor, current } from "./operation-form.fixtures";
 import { closeReview } from "./operation-documents.fixtures";
 export { firstId, secondId } from "./operation-form.fixtures";
@@ -47,6 +51,7 @@ export const initial = (): OperationState => {
       baseline: valuesFor(),
       generation: 0,
       pendingDiscard: null,
+      affordance: null,
     },
     disclosed: {
       review: null,

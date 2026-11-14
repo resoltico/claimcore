@@ -1,13 +1,14 @@
+import type { OperationAffordance } from "./affordances";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
-import {
-  type CaseGetRequest,
-  type HumanReview,
-  type HumanRejection,
-  type OperationSubmission,
-  type HumanRejection_CONFLICT,
-  type HumanReadDocument_case_get,
-  type OperationBinding,
+import type {
+  CaseGetRequest,
+  HumanReview,
+  HumanRejection,
+  OperationSubmission,
+  HumanRejection_CONFLICT,
+  HumanReadDocument_case_get,
+  OperationBinding,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
@@ -116,6 +117,7 @@ type OperationContext = Readonly<{
   target: string;
 }>;
 export type OperationDraft = {
+  affordance: OperationAffordance | null;
   owner: OwnerScope | null;
   entry: OperationSelection;
   target: string;

@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { chooseOption } from "../support/choice-entry";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
@@ -53,9 +54,8 @@ it("prefills a deep-linked actor from disclosed identity rather than a stale lis
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    kind: "PEOPLE",
-    target: firstActor.principal,
-    act: { kind: "people.grant" },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
   });
 });
 it("uses an offered alternative instead of inventing GRANT on actor detail", async () => {
@@ -94,7 +94,9 @@ it("declining retarget consent retains the authored principal and returns to its
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
   });
-  expect(preview.mock.calls[0]![0].input).toMatchObject({ target: { subject: "authored-other" } });
+  expect(preview.mock.calls[0]![0].input).toMatchObject({
+    inputs: { "input:principal.subject": "authored-other" },
+  });
 });
 it("explicit retarget consent creates a fresh request for the disclosed actor", async () => {
   const preview = setupActorTargets();
@@ -116,7 +118,10 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
     expect(preview).toHaveBeenCalledTimes(2);
   });
   const [next] = preview.mock.calls[1]!;
-  expect(next.input).toMatchObject({ target: firstActor.principal, act: { kind: "people.grant" } });
+  expect(next.input).toMatchObject({
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+  });
   expect(next.input.operationId).not.toBe(previous.input.operationId);
 });
 it("declining an uncertain request retarget preserves the exact request and retry identity", async () => {
@@ -144,7 +149,7 @@ it("declining an uncertain request retarget preserves the exact request and retr
   });
   expect(execute.mock.calls[1]![0]).toBe(original);
   expect(execute.mock.calls[1]![0].bytes).toBe(original.bytes);
-  expect(original.input).toMatchObject({ target: { subject: "authored-other" } });
+  expect(original.input).toMatchObject({ inputs: { "input:principal.subject": "authored-other" } });
   expect(preview).toHaveBeenCalledOnce();
 });
 it("changing acts retains the bound actor identity after discard consent", async () => {
@@ -169,8 +174,8 @@ it("changing acts retains the bound actor identity after discard consent", async
     expect(preview).toHaveBeenCalledTimes(2);
   });
   expect(preview.mock.calls[1]![0].input).toMatchObject({
-    target: firstActor.principal,
-    act: { kind: "people.disable" },
+    task: "people.disable",
+    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
   });
 });
 it("ignores a late actor disclosure when a different actor is selected", async () => {
@@ -197,7 +202,9 @@ it("ignores a late actor disclosure when a different actor is selected", async (
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
   });
-  expect(preview.mock.calls[0]![0].input).toMatchObject({ target: secondActor.principal });
+  expect(preview.mock.calls[0]![0].input).toMatchObject({
+    binding: { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+  });
 });
 it("waits for fresh actor disclosure after availability loss and never restores refused prefills", async () => {
   setupActorTargets();
@@ -275,8 +282,9 @@ it("opens one named person panel and prefills profile edits only from its curren
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    target: firstActor.principal,
-    act: { kind: "people.setProfile", profile: { displayName: "Updated first", contact: null } },
+    task: "people.setProfile",
+    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    inputs: { "input:profile.displayName": "Updated first", "input:profile.contact": null },
   });
 });
 
@@ -291,18 +299,9 @@ it("opens a row revocation with the exact supplied principal, role and case hand
     value: {
       ...humanReadReply("people.grants", {
         ...firstPerson,
-        context: {
-          ...firstPerson.context,
-          tasks: ["people.revoke"],
-          profileSeed: null,
-          revocations: [
-            {
-              key: "grant-row",
-              role: "CASE_READER",
-              scope: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001" },
-            },
-          ],
-        },
+        actions: firstPerson.actions.filter((action) =>
+          new Set<string>(["people.revoke"]).has(action.task),
+        ),
         screen: {
           regions: [
             ...firstPerson.screen.regions,
@@ -327,6 +326,18 @@ it("opens a row revocation with the exact supplied principal, role and case hand
                 rows: [
                   {
                     key: "grant-row",
+                    actions: [
+                      operationAffordance(
+                        "people.revoke",
+                        { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+                        {
+                          "input:role": "CASE_READER",
+                          "input:scope": "CASE",
+                          "field:caseReference": "CASE-FROM-GRANT",
+                        },
+                        [],
+                      ),
+                    ],
                     values: [
                       { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
                       { kind: "REFERENCE", value: "CASE-FROM-GRANT" },
@@ -350,14 +361,12 @@ it("opens a row revocation with the exact supplied principal, role and case hand
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    target: firstActor.principal,
-    act: {
-      kind: "people.revoke",
-      role: "CASE_READER",
-      scope: {
-        kind: "CASE",
-        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-      },
+    task: "people.revoke",
+    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    inputs: {
+      "input:role": "CASE_READER",
+      "input:scope": "CASE",
+      "field:caseReference": "CASE-FROM-GRANT",
     },
   });
   expect(getEndpointMock("people.grants")).toHaveBeenCalledOnce();

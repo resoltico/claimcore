@@ -147,7 +147,6 @@ let private principalRefusals fixture =
                                 "input:principal.issuer", box issuer
                                 "input:principal.subject", box subject
                                 "input:profile.displayName", box "Refusal fixture"
-                                "input:profile.contact", null
                             ]
                 |}
                 2

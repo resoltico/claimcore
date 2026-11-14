@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { fireEvent, within } from "@testing-library/react";
@@ -51,32 +52,22 @@ const review: HumanReview = {
   ...closeReview,
   document: {
     ...closeReview.document,
-    context: {
-      ...closeReview.document.context,
-      task: "case.correct",
-      target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 1 },
+    subject: {
+      ...closeReview.document.subject,
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:expectedRevision",
-        "group:registration",
-        "group:decision",
-        "field:incidentDate",
-        "field:incidentNotificationDate",
-        "field:incidentCountry",
-        "field:incidentDescription",
-        "field:policyNumber",
-        "field:insurerClaimReference",
-        "field:claimantName",
-        "field:insurerName",
-        "field:claimedAmount",
-        "field:claimedCurrency",
-        "field:paymentDecisionDate",
-        "field:payableAmount",
-        "field:payableCurrency",
-      ],
     },
+    actions: [
+      operationAffordance(
+        "case.correct",
+        {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: "CASE-1" },
+          expectedRevision: 1,
+        },
+        {},
+        [],
+      ),
+    ],
     screen: {
       regions: [
         {
@@ -134,33 +125,22 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
     ...closeReview,
     document: {
       ...closeReview.document,
-      context: {
+      subject: {
         kind: "REVIEW",
-        task: "people.grant",
-        consequence: "ROUTINE",
         confirmation: { kind: "OPERATION", operationId },
-        inputs: [
-          "input:operationId",
-          "input:principal.kind",
-          "input:principal.issuer",
-          "input:principal.subject",
-          "input:role",
-          "input:scope",
-          "field:caseReference",
-        ],
-        target: {
-          kind: "PEOPLE",
-          actorId: "10000000-0000-4000-8000-000000000099",
-          scope:
-            kind === "CASE"
-              ? {
-                  kind,
-                  caseId: "20000000-0000-4000-8000-000000000001",
-                  caseReference: "SYNTHETIC-GRANT",
-                }
-              : { kind },
-        },
+        consequence: "ROUTINE",
       },
+      actions: [
+        operationAffordance(
+          "people.grant",
+          { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000099" },
+          {},
+          [],
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       screen: {
         regions: [
           details([
@@ -285,13 +265,23 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     ...closeReview,
     document: {
       ...closeReview.document,
-      context: {
-        ...closeReview.document.context,
-        task: "case.erase",
-        consequence: "IRREVERSIBLE",
-        target: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000001", beforeRevision: 1 },
+      subject: {
+        ...closeReview.document.subject,
         confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+        consequence: "IRREVERSIBLE",
       },
+      actions: [
+        operationAffordance(
+          "case.erase",
+          {
+            kind: "CASE",
+            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            expectedRevision: 1,
+          },
+          {},
+          [],
+        ),
+      ],
       screen: {
         regions: [
           {
@@ -319,25 +309,22 @@ it("shows Core profile changes rather than recomputing proposed values from auth
     ...closeReview,
     document: {
       ...closeReview.document,
-      context: {
+      subject: {
         kind: "REVIEW",
-        task: "people.setProfile",
-        consequence: "ROUTINE",
-        inputs: [
-          "input:operationId",
-          "input:principal.kind",
-          "input:principal.issuer",
-          "input:principal.subject",
-          "input:profile.displayName",
-          "input:profile.contact",
-        ],
-        target: {
-          kind: "PEOPLE",
-          actorId: "10000000-0000-4000-8000-000000000099",
-          scope: { kind: "INSTALLATION" },
-        },
         confirmation: { kind: "OPERATION", operationId },
+        consequence: "ROUTINE",
       },
+      actions: [
+        operationAffordance(
+          "people.setProfile",
+          { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000099" },
+          {},
+          [],
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
     },
     presentation: {
       changes: [

@@ -449,6 +449,8 @@ module TimelineScreen =
 
         {
             RegionTimelineEntry.Key = EffectPosition.format entry.Position
+            Link = None
+            Actions = []
             When = entry.RecordedAt
             Who = entry.RecordedBy
             Summary = summary

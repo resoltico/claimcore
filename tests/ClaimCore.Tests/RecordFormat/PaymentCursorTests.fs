@@ -107,37 +107,28 @@ let tests =
                         (RequestCodecs.casePaymentsRequest.Validate "$" raw |> Result.isOk)
                         valid
                         "Read limits are not lifetime payment limits")
-            testCase "authored HUMAN payment rows require matching declared handles" (fun () ->
+            testCase "authored HUMAN payment rows carry their own closed remove binding" (fun () ->
                 let literal =
-                    """{"representation":"HUMAN","outcome":{"kind":"SUCCEEDED","document":{"screen":{"regions":[{"role":"PAYMENTS","content":{"kind":"TABLE","columns":[{"key":"saved","labelId":"label.details","prominence":"PRIMARY","isMoney":false}],"rows":[{"key":"019aa6a0-0000-7000-8000-000000000002","values":[{"kind":"TEXT","value":"Independent core caption Ω"}]}]}}]},"context":{"kind":"PAYMENT_PAGE","caseId":"019aa6a0-0000-7000-8000-000000000001","revision":3,"nextCursor":null,"payments":[{"paymentId":"019aa6a0-0000-7000-8000-000000000002","canRemove":true}]},"basis":{"kind":"SNAPSHOT","observation":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"}},"disclosure":"CURRENT"}}}"""
+                    """{"representation":"HUMAN","outcome":{"kind":"SUCCEEDED","document":{"screen":{"regions":[{"role":"PAYMENTS","content":{"kind":"TABLE","columns":[{"key":"saved","labelId":"label.details","prominence":"PRIMARY","isMoney":false}],"rows":[{"key":"caption-key","values":[{"kind":"TEXT","value":"Independent core caption Ω"}],"actions":[{"task":"case.removePayment","binding":{"kind":"CASE","target":{"kind":"ID","caseId":"019aa6a0-0000-7000-8000-000000000001"},"expectedRevision":3,"paymentId":"019aa6a0-0000-7000-8000-000000000002"},"seeds":{},"editable":[],"choices":{},"primary":false,"blocked":null}]}]}}]},"subject":{"kind":"CASE","caseId":"019aa6a0-0000-7000-8000-000000000001","revision":3,"workRevision":0},"actions":[],"links":[],"history":null,"nextCursor":null,"basis":{"kind":"SNAPSHOT","observation":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"}},"disclosure":"CURRENT"}}}"""
 
-                let raw (value: string) =
-                    System.Text.Encoding.UTF8.GetBytes value |> StrictJson.read 10000 |> accepted
+                let decode (value: string) =
+                    System.Text.Encoding.UTF8.GetBytes value
+                    |> Codec.decode 10000 Api.casePayments.Output
 
-                Expect.isOk
-                    (Api.casePayments.Output.Validate "$" (raw literal))
-                    "Positive independent document"
-
-                let orphan =
-                    literal.Replace(
-                        "\"paymentId\":\"019aa6a0-0000-7000-8000-000000000002\"",
-                        "\"paymentId\":\"019aa6a0-0000-7000-8000-000000000009\""
-                    )
+                Expect.isOk (decode literal) "Independent document"
 
                 Expect.isError
-                    (Api.casePayments.Output.Validate "$" (raw orphan))
-                    "Saved row cannot refer to an undeclared handle"
+                    (decode (literal.Replace("case.removePayment", "work.update")))
+                    "Foreign subject binding"
 
                 Expect.isError
-                    (Api.casePayments.Output.Validate
-                        "$"
-                        (raw (literal.Replace("CURRENT", "ERASED"))))
-                    "Erasure cannot retain private row handles")
+                    (decode (literal.Replace("CURRENT", "ERASED")))
+                    "Erasure removes authoring controls")
             testCase
                 "native raw financial shape agrees without moving equations to transport"
                 (fun () ->
                     let literal =
-                        """{"representation":"DATA","outcome":{"kind":"SUCCEEDED","data":{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"caseId":"019aa6a0-0000-7000-8000-000000000001","caseReference":"FIN-1","revision":3,"state":{"kind":"ACTIVE","finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"paidAmount":"99","paymentCount":1,"firstPaymentDate":"2026-01-11","lastPaymentDate":"2026-01-11"}},"items":[],"nextCursor":null}}}"""
+                        """{"representation":"DATA","outcome":{"kind":"SUCCEEDED","data":{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"caseId":"019aa6a0-0000-7000-8000-000000000001","caseReference":"FIN-1","revision":3,"workRevision":0,"state":{"kind":"ACTIVE","finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"paidAmount":"99","paymentCount":1,"firstPaymentDate":"2026-01-11","lastPaymentDate":"2026-01-11"}},"items":[],"nextCursor":null}}}"""
 
                     let raw =
                         System.Text.Encoding.UTF8.GetBytes literal

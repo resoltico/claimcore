@@ -97,8 +97,12 @@ let private diagnosticGroups () =
 
     Expect.equal
         actual
-        [ RecordGroup.Payment, "payment" ]
-        "Only payment has a group diagnostic producer"
+        [
+            RecordGroup.Registration, "registration"
+            RecordGroup.Decision, "decision"
+            RecordGroup.Payment, "payment"
+        ]
+        "All declared groups have empty-update admission diagnostics"
 
 let private actGroups () =
     let expected group =

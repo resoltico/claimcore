@@ -64,7 +64,7 @@ module internal WorkListCommand =
                                                          Outcome = HumanReadOutcome.Succeeded document
                                                      }) ->
                         io.Deliver frame response
-                        Some(HumanDocument.nextCursor document)
+                        Some(document.NextCursor)
                     | _ -> None
 
                 match next with

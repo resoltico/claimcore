@@ -19,11 +19,11 @@ const diagnostic: HumanRejection_CONFLICT = {
     screen: {
       regions: [],
     },
-    context: {
-      kind: "PAGE",
-      tasks: [],
-      nextCursor: null,
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis: current.basis,
     disclosure: "WITHHELD",
   },
@@ -120,10 +120,7 @@ it("fences refreshed conflict observations by correlation identity and session",
   const value = {
     current: {
       ...current,
-      context: {
-        ...current.context,
-        revision: 8,
-      },
+      subject: { ...current.subject, revision: 8 },
     },
     revision: 8,
   };
@@ -165,10 +162,7 @@ it("refuses implicit preview and re-preparation for a different case target", ()
     value: {
       current: {
         ...current,
-        context: {
-          ...current.context,
-          revision: 8,
-        },
+        subject: { ...current.subject, revision: 8 },
       },
       revision: 8,
     },

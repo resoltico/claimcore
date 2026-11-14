@@ -24,14 +24,7 @@ let tests =
 
             let document = HumanCaseDocument.ofCore { original with Advice = advice }
 
-            match document.Context with
-            | InteractionContext.Case context ->
-                Expect.equal
-                    context.History
-                    access
-                    "Exactly the authorized hint, including tightened and absent scope"
-
-            | _ -> failtest "Typed case controls required"
+            Expect.equal document.History (Some access) "Exactly the authorized history hint"
 
             Expect.isOk
                 (Codec.encode HumanDocumentCodecs.document document

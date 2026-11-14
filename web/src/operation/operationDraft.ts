@@ -1,3 +1,4 @@
+import type { OperationAffordance } from "./affordances";
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { roleAdmitted } from "./roleAvailability";
 import type { OperationAction, OperationDraft } from "./operationTypes";
@@ -22,10 +23,12 @@ export const createDraft = (
   binding: OperationBinding,
   authored: FormValues,
   owner: OwnerScope | null,
+  affordance: OperationAffordance | null,
 ): OperationDraft => {
   const values = { ...authored };
   return {
     owner,
+    affordance,
     entry,
     target,
     binding,

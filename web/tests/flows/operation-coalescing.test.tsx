@@ -1,4 +1,6 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { recoveryOptions } from "../support/recovery.fixtures";
 
 import { act, renderHook } from "@testing-library/react";
@@ -8,9 +10,20 @@ import { useOperation } from "../../src/hooks/operation/useOperation";
 import { previewReply } from "../support/presentation-state.fixtures";
 
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 const closePreview = () => previewReply();

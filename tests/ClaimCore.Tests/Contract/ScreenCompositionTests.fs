@@ -28,6 +28,8 @@ let invalidTables =
     testCase "screen constructors refuse duplicate rows widths and incomplete row groups" (fun () ->
         let row key values =
             {
+                Link = None
+                Actions = []
                 RegionRow.Key = key
                 Values = values
                 Detail = None
@@ -35,6 +37,7 @@ let invalidTables =
 
         let column: Column =
             {
+                Recorded = false
                 Key = "value"
                 LabelId = "label.details"
                 Prominence = Prominence.Primary
@@ -71,6 +74,8 @@ let invalidTables =
             Screen.create
                 [
                     {
+                        Link = None
+                        Actions = []
                         Role = RegionRole.Results
                         TitleId = None
                         Content = RegionContent.Table(table [ row "one" values ] [])
@@ -85,6 +90,8 @@ let invalidTables =
                     Screen.create
                         [
                             {
+                                Link = None
+                                Actions = []
                                 Role = RegionRole.Results
                                 TitleId = None
                                 Content = RegionContent.Table value
@@ -200,7 +207,6 @@ let tests =
                     RegionRole.Identity
                     RegionRole.Attention
                     RegionRole.Progress
-                    RegionRole.Recommendation
                     RegionRole.Facts
                     RegionRole.Payments
                     RegionRole.Work

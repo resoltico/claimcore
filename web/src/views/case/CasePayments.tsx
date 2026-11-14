@@ -9,18 +9,16 @@ import { Entries } from "../../ui/regions/Entries";
 import { MoneyMeter } from "../../ui/regions/MoneyMeter";
 import { Button } from "../../ui/Button";
 import type { ActKind } from "../../operation/metadata";
-import "./payments.css";
+import {} from "./payments.css";
 type PaymentTable = Extract<Region["content"], { kind: "TABLE" }>;
 const PaymentPreview = ({
   content,
-  handles,
   total,
   zone,
   onRemove,
   onExpand,
 }: {
   content: PaymentTable;
-  handles: CurrentCase["context"]["payments"];
   total: number | null;
   zone: string;
   onRemove: (id: string) => void;
@@ -32,7 +30,7 @@ const PaymentPreview = ({
       {content.rows.length === 0 ? (
         <p className="payments-empty">{p.text("ui.noPayments")}</p>
       ) : (
-        <PaymentRows content={content} handles={handles} zone={zone} onRemove={onRemove} />
+        <PaymentRows content={content} zone={zone} onRemove={onRemove} />
       )}
       {total === null ? null : <PaymentsShown shown={content.rows.length} total={total} />}
       {total !== null && total > content.rows.length ? (
@@ -55,7 +53,7 @@ export const CasePayments = ({
   onChanged: () => void;
 }) => {
   const p = usePresentation();
-  const owner = `${current.context.caseId}:${current.context.revision}`;
+  const owner = `${current.subject.caseId}:${current.subject.revision}`;
   const [expanded, setExpanded] = useState<string | null>(null);
   if (region.content.kind !== "TABLE") {
     return null;
@@ -77,7 +75,9 @@ export const CasePayments = ({
         <h2 id="case-payments-title">
           {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
         </h2>
-        {current.context.tasks.includes("case.decide") ? (
+        {current.actions.some(
+          (action) => action.task === "case.decide" && action.blocked === null,
+        ) ? (
           <Button
             variant="secondary"
             onPress={() => {
@@ -107,7 +107,6 @@ export const CasePayments = ({
       ) : (
         <PaymentPreview
           content={content}
-          handles={current.context.payments}
           total={total}
           zone={zone}
           onRemove={(id) => {

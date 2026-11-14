@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -11,15 +12,9 @@ const first = "10000000-0000-7000-8000-000000000003";
 const second = "10000000-0000-7000-8000-000000000004";
 const current: CurrentCase = {
   ...bindingDocument,
-  context: {
-    ...bindingDocument.context,
-    tasks: ["case.removePayment"],
-    correction: null,
-    payments: [
-      { paymentId: first, canRemove: true },
-      { paymentId: second, canRemove: true },
-    ],
-  },
+  actions: bindingDocument.actions.filter((action) =>
+    new Set<string>(["case.removePayment"]).has(action.task),
+  ),
 };
 const supplied: Region = {
   role: "PAYMENTS",
@@ -43,6 +38,14 @@ const supplied: Region = {
     rows: [
       {
         key: second,
+        actions: [
+          operationAffordance("case.removePayment", {
+            kind: "CASE",
+            target: { kind: "ID", caseId: current.subject.caseId },
+            expectedRevision: current.subject.revision,
+            paymentId: second,
+          }),
+        ],
         values: [
           { kind: "DATE", value: "2026-09-03" },
           { kind: "MONEY", amount: "77", currency: "USD", displayScale: 2 },
@@ -50,6 +53,14 @@ const supplied: Region = {
       },
       {
         key: first,
+        actions: [
+          operationAffordance("case.removePayment", {
+            kind: "CASE",
+            target: { kind: "ID", caseId: current.subject.caseId },
+            expectedRevision: current.subject.revision,
+            paymentId: first,
+          }),
+        ],
         values: [
           { kind: "DATE", value: "2026-09-02" },
           { kind: "MONEY", amount: "23", currency: "USD", displayScale: 2 },
@@ -58,6 +69,16 @@ const supplied: Region = {
     ],
     sections: [],
   },
+};
+const withoutRowActions = (): Region => {
+  const { content } = supplied;
+  if (content.kind !== "TABLE") {
+    throw new Error("Table fixture required");
+  }
+  return {
+    ...supplied,
+    content: { ...content, rows: content.rows.map(({ key, values }) => ({ key, values })) },
+  };
 };
 it("renders supplied payment facts and binds reordered row removal by entry identity", async () => {
   const onAct = vi.fn();
@@ -70,20 +91,13 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
     .click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
   expect(onAct).toHaveBeenCalledExactlyOnceWith("case.removePayment", second);
 });
-it("offers no removal without the supplied offered-act flag", () => {
+it("offers no removal when Core withdraws its row controls", () => {
   render(
     <CasePayments
-      region={supplied}
+      region={withoutRowActions()}
       current={{
         ...current,
-        context: {
-          ...current.context,
-          tasks: [],
-          payments: current.context.payments.map((payment) => ({
-            paymentId: payment.paymentId,
-            canRemove: false,
-          })),
-        },
+        actions: current.actions.filter((action) => new Set<string>([]).has(action.task)),
       }}
       onAct={vi.fn()}
       onChanged={vi.fn()}

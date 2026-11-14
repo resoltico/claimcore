@@ -14,7 +14,7 @@ module NotesScreen =
                 (Note.text note |> optional (NoteText.format >> PresentedValue.Narrative))
         ]
 
-    let table (notes: CaseNotes) =
+    let table caseId (notes: CaseNotes) =
         let definitions =
             [
                 column
@@ -31,7 +31,7 @@ module NotesScreen =
             ]
 
         let table =
-            ScreenEntries.table
+            ScreenEntries.tableWithControls
                 (fun (item: NoteReadModel) -> NoteId.format item.NoteId)
                 (fun item ->
                     Some
@@ -54,6 +54,7 @@ module NotesScreen =
                                 ]
                         })
                 definitions
+                (fun item -> None, TaskAffordances.noteRemove caseId item)
                 notes.Items
 
         { table with
@@ -87,5 +88,5 @@ module NotesScreen =
                 region
                     RegionRole.Notes
                     (Some "section.notes.label")
-                    (RegionContent.Table(table page.Notes))
+                    (RegionContent.Table(table page.CaseId page.Notes))
             ]

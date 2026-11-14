@@ -70,22 +70,22 @@ module internal OperationText =
         previewLinesWithDetails false language request reply
 
     let private mutationReceiptLines details language alreadyRecorded (receipt: HumanDocument) =
+        let recordedEntries entries =
+            entries
+            |> List.filter (fun (entry: Entry) -> entry.Recorded)
+            |> List.map _.LabelId
+
         let selected =
-            match receipt.Context with
-            | InteractionContext.Receipt {
-                                             Target = ReceiptTarget.Case _
-                                             RecordedFields = fields
-                                         } ->
-                fields |> List.map FieldPresentation.labelId |> Set.ofList
-            | InteractionContext.Receipt { Target = ReceiptTarget.Work _ } ->
-                Set.ofList [ "field.handlingSummary.label"; "field.responsibleActor.label" ]
-            | _ ->
-                receipt.Screen.Regions
-                |> List.collect (fun region ->
-                    match region.Content with
-                    | RegionContent.Entries entries -> entries |> List.map _.LabelId
-                    | _ -> [])
-                |> Set.ofList
+            receipt.Screen.Regions
+            |> List.collect (fun region ->
+                match region.Content with
+                | RegionContent.Entries entries -> recordedEntries entries
+                | RegionContent.Table table ->
+                    (table.Columns |> List.filter _.Recorded |> List.map _.LabelId)
+                    @ (table.Sections
+                       |> List.collect (fun section -> recordedEntries section.Entries))
+                | _ -> [])
+            |> Set.ofList
 
         let recordedFinancials =
             [ RecordGroup.Decision; RecordGroup.Payment ]

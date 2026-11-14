@@ -1,4 +1,4 @@
-import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
+import type { ResponseFor, RequestByEndpoint } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type Response } from "@playwright/test";
@@ -166,8 +166,18 @@ const expandPayments = async (page: Page, sizes: ReadonlyArray<number>) => {
     const response = await pending;
     const document = await paymentDocument(response);
     expect(response.request().postDataJSON()).not.toHaveProperty("limit");
-    expect(document.context.payments).toHaveLength(size);
-    ids.push(...document.context.payments.map((handle) => handle.paymentId));
+    const rows = document.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    );
+    expect(rows).toHaveLength(size);
+    ids.push(
+      ...rows.flatMap(
+        (row) =>
+          row.actions?.flatMap((action) =>
+            action.task === "case.removePayment" ? [action.binding.paymentId] : [],
+          ) ?? [],
+      ),
+    );
     await expect(section.locator(".case-payment-pages tbody tr")).toHaveCount(ids.length);
   }
   await expect(

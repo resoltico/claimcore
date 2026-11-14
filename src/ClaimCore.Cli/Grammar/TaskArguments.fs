@@ -41,7 +41,9 @@ module internal TaskArguments =
             | CommandArgument.Operand, [] ->
                 problems.Add(
                     UsageError.MissingOperand(
-                        CommandGrammar.inputName input.Name |> _.ToUpperInvariant()
+                        CommandGrammar.inputName input.Name
+                        |> CommandGrammar.kebab
+                        |> _.ToUpperInvariant()
                     )
                 )
 
@@ -86,7 +88,7 @@ module internal TaskArguments =
                 if
                     acquired.IsNone
                     && input.Required
-                    && input.Argument <> CommandArgument.Implicit
+                    && input.Argument = CommandArgument.Named
                     && not clear
                     && not (incomplete && input.Declaration.Source = InputSource.ExpectedRevision)
                 then

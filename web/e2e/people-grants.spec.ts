@@ -1,5 +1,5 @@
 import { selectedActor, applyPeople } from "./people-setup";
-import { type ResponseFor } from "@contracts/client";
+import type { ResponseFor } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 
@@ -111,9 +111,22 @@ test("selected people grants use bounded core pages and survive presentation cha
   });
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
+  const listingResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/people.list",
+  );
   await page.getByRole("link").and(page.locator('nav a[href="/people"]')).click();
-  const table = page.locator(".table-view table").first();
-  await expect(table.getByRole("columnheader")).toHaveCount(9);
+  const listing = (await (await listingResponse).json()) as ResponseFor<"people.list", "HUMAN">;
+  if (listing.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Directory read required");
+  }
+  const content = listing.outcome.document.screen.regions.find(
+    (region) => region.role === "RESULTS",
+  )?.content;
+  if (content?.kind !== "TABLE") {
+    throw new Error("Core directory table required");
+  }
+  const table = page.locator('table[aria-labelledby="people-title"]');
+  await expect(table.getByRole("columnheader")).toHaveCount(content.columns.length);
   await expect(table.locator("thead")).toBeVisible();
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
@@ -145,7 +158,7 @@ test("selected people grants use bounded core pages and survive presentation cha
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(view.locator(".ui-dialog-title")).toHaveAccessibleName(name.value);
   await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
-  await checkPresentation(page, grantDocument.context.nextCursor === null, count, name.value);
+  await checkPresentation(page, grantDocument.nextCursor === null, count, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
   await selectLanguage(page, "en");

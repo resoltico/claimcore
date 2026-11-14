@@ -1,7 +1,8 @@
+import type { RegionRow, ActorListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 import { PageTables } from "../ui/PageTables";
 import { renderCatalogKey } from "../presentation/messages";
-import type { ActorListRequest } from "@contracts/client";
+
 import { FieldHelp } from "../components/FieldHelp";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
@@ -9,7 +10,7 @@ import { queryInput, taskInput } from "../protocol/taskCatalog";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
-import { type ApiResult, type ServiceResponse } from "../api/service";
+import type { ApiResult, ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -22,17 +23,18 @@ const peoplePage = (response: ServiceResponse<"people.list">) => {
     return null;
   }
   return {
-    items: doc.context.actorIds,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
   };
 };
-type Actor = string;
+type Actor = RegionRow;
 type ListingProps = {
   titleId?: string;
-  mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
   onDisclosureRestored: (source: "listing") => void;
@@ -75,20 +77,16 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
       <PageTables
         labelledBy={props.titleId ?? "people-actors-title"}
         views={page.views}
-        rowLink={(key) => {
-          const id = page.items.find((candidate) => candidate === key);
-          if (id === undefined || !props.mayReadGrants) {
-            return undefined;
-          }
-          return {
-            column: "actor",
-            href: `/people/${encodeURIComponent(id)}`,
-            id: `actor-grants-${id}`,
-            follow: () => {
-              props.onSelect(id);
-            },
-          };
-        }}
+        linkNavigation={(link) =>
+          link.endpoint === "people.grants"
+            ? {
+                id: `actor-grants-${link.input.actorId}`,
+                follow: () => {
+                  props.onSelect(link.input.actorId);
+                },
+              }
+            : undefined
+        }
       />
       {page.message === null ? null : (
         <p role="alert">

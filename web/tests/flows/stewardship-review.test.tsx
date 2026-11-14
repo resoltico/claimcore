@@ -1,4 +1,6 @@
-import { type RequestByEndpoint } from "@contracts/client";
+import { operationAffordance } from "../support/affordances.fixtures";
+
+import type { RequestByEndpoint } from "@contracts/client";
 import { fields } from "../support/service-ui.fixtures";
 import { caseDocumentInput } from "../support/case-document.fixtures";
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
@@ -74,21 +76,29 @@ const stubReview = (
                     },
                   ],
                 },
-                context: {
+                subject: {
                   kind: "REVIEW",
-                  task: task.id,
-                  inputs: task.inputs.map((taskInput) => taskInput.id),
-                  target: {
-                    kind: "CASE",
-                    caseId: "20000000-0000-4000-8000-000000000001",
-                    beforeRevision: operationPreviewRequest.binding.expectedRevision,
-                  },
-                  consequence: task.consequence,
                   confirmation: {
                     kind: "CASE_REFERENCE",
                     reference: fields.caseReference,
                   },
+                  consequence: task.consequence,
                 },
+                actions: [
+                  operationAffordance(
+                    task.id,
+                    {
+                      kind: "CASE",
+                      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                      expectedRevision: operationPreviewRequest.binding.expectedRevision,
+                    },
+                    {},
+                    [],
+                  ),
+                ],
+                links: [],
+                history: null,
+                nextCursor: null,
                 basis: {
                   kind: "SNAPSHOT",
                   observation: workBasis,
@@ -151,7 +161,13 @@ it.each([
       editor({
         initialAct: act,
         current: caseDocumentInput({
-          tasks: [act],
+          actions: [
+            operationAffordance(act, {
+              kind: "CASE",
+              target: { kind: "REFERENCE", caseReference: "CASE-1" },
+              expectedRevision: 1,
+            }),
+          ],
         }),
       }),
     );

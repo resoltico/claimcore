@@ -1,11 +1,16 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../../support/human-requester.fixtures";
 import { requestAddress } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
 import { Dashboard } from "../../../src/views/Dashboard";
 import { navigate } from "../../../src/routing/navigation";
-import { activeRequester } from "../../support/human-requester.fixtures";
-import { type HumanReadDocument_context } from "@contracts/client";
+
+import type { HumanReadDocument_context } from "@contracts/client";
 const reply = (document: unknown) => ({
   representation: "HUMAN",
   outcome: {
@@ -62,15 +67,16 @@ const inactive = (
       },
     ],
   },
-  context: {
+  subject: {
     kind: "REQUESTER",
     state,
-    installationId: state === "NO_ROLES" ? activeRequester.context.installationId : null,
-    actorId: state === "NOT_REGISTERED" ? null : activeRequester.context.actorId,
-    tasks: [],
-    views: [],
-    peopleIssuerSeed: null,
+    installationId: state === "NO_ROLES" ? activeRequester.subject.installationId : null,
+    actorId: state === "NOT_REGISTERED" ? null : activeRequester.subject.actorId,
   },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "UNAVAILABLE",
   },
@@ -116,11 +122,8 @@ it("uses advertised query tasks for deep-link availability and the supplied own-
         },
       ],
     },
-    context: {
-      ...activeRequester.context,
-      views: ["OPERATIONS"],
-      tasks: [],
-    },
+    actions: installationActions([]),
+    links: requesterLinks(["OPERATIONS"], []),
   };
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((url) =>
     Promise.try(() => {
@@ -167,11 +170,8 @@ it("masks the old requester Screen during a failed access refresh", async () => 
 it("renders the Core maintenance notice without a requester maintenance DTO", async () => {
   const document: HumanReadDocument_context = {
     ...activeRequester,
-    context: {
-      ...activeRequester.context,
-      tasks: [],
-      views: ["OPERATIONS"],
-    },
+    actions: installationActions([]),
+    links: requesterLinks(["OPERATIONS"], []),
     screen: {
       regions: [
         {

@@ -16,7 +16,7 @@ import { Button } from "../../ui/Button";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
-import "./timeline.css";
+import {} from "./timeline.css";
 const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -33,7 +33,7 @@ const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
       region.content.kind === "TIMELINE" ? region.content.entries : [],
     ),
     screen: doc.screen,
-    nextCursor: doc.context.nextCursor,
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     disclosure: doc.disclosure,
   };

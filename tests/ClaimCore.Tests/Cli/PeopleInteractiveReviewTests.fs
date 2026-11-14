@@ -70,6 +70,45 @@ let private run words (answer: string option) =
                     let reply =
                         if (Frames.endpoint frame).Id = Api.context.Id then
                             response frame Api.context (ResponseExamples.defaultHuman Api.context)
+                        elif (Frames.endpoint frame).Id = Api.peopleGrants.Id then
+                            let person =
+                                {
+                                    ActorReviewItem.Actor = targetActor
+                                    Principal =
+                                        PrincipalKey.human "https://intent.example/" "person"
+                                        |> Fixtures.accepted
+                                    Contact = None
+                                    State = AccountState.Active
+                                    Roles = []
+                                    ResponsibleCases = None
+                                }
+
+                            response
+                                frame
+                                Api.peopleGrants
+                                (RepresentationReply.Human(
+                                    HumanReplies.read
+                                        HumanReadDocuments.grants
+                                        (Outcome.Succeeded
+                                            {
+                                                Basis = Inputs.workBasis
+                                                Actor = person
+                                                Offers =
+                                                    [
+                                                        PeopleActKind.SetProfile
+                                                        PeopleActKind.Disable
+                                                        PeopleActKind.EraseProfile
+                                                    ]
+                                                ProfileSeed =
+                                                    Some
+                                                        {
+                                                            DisplayName = "Current person"
+                                                            Contact = None
+                                                        }
+                                                Items = []
+                                                NextCursor = None
+                                            })
+                                ))
                         elif (Frames.endpoint frame).Id = Api.operationPreview.Id then
                             let request =
                                 (Frames.value Api.operationPreview >> Option.map command) frame
@@ -233,14 +272,20 @@ let tests =
 
                 Expect.equal
                     (calls |> List.map (Frames.endpoint >> _.Token))
-                    [ "context"; "operation.preview"; "operation.execute" ]
-                    "No case read is invented for people"
+                    [ "context"; "people.grants"; "operation.preview"; "operation.execute" ]
+                    "The person read supplies the ready binding before preview"
 
                 Expect.equal ids 1 "Allocate only one ID after valid syntax"
 
                 Expect.equal
-                    (Frames.inputBytes calls[1])
-                    (Frames.inputBytes calls[2])
+                    (calls
+                     |> List.find (fun frame ->
+                         (Frames.endpoint frame).Token = "operation.preview")
+                     |> Frames.inputBytes)
+                    (calls
+                     |> List.find (fun frame ->
+                         (Frames.endpoint frame).Token = "operation.execute")
+                     |> Frames.inputBytes)
                     "The exact reviewed request is executed"
 
                 Expect.stringContains text "Current person" "The target has its core current name")
@@ -250,7 +295,7 @@ let tests =
 
                 Expect.equal
                     (calls |> List.map (Frames.endpoint >> _.Token))
-                    [ "context"; "operation.preview" ]
+                    [ "context"; "people.grants"; "operation.preview" ]
                     "No mutation"
 
                 let key = PresentationKeys.consequence (ActKind.People PeopleActKind.Disable)

@@ -13,7 +13,11 @@ it("selects the first core view and changes views without adding hidden state pr
     value: {
       ...humanReadReply("reminder.list", {
         screen: { regions: [] },
-        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -43,7 +47,11 @@ it("requires explicit manual filters for inactive work and never sends interface
     value: {
       ...humanReadReply("reminder.list", {
         screen: { regions: [] },
-        context: { kind: "REMINDERS", reminders: [], nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),

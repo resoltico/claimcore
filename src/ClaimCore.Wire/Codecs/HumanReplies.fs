@@ -97,16 +97,18 @@ module HumanReplies =
             let document =
                 match conflict.Changes with
                 | Some(ConflictChanges.Page page) ->
-                    {
-                        Screen = TimelineScreen.rows page.Entries
-                        Context = InteractionContext.Continuation page.NextCursor
-                        Basis = ObservationBasis.Snapshot page.Basis
-                        Disclosure =
-                            match page.Disclosure with
-                            | HistoryDisclosure.Full -> HumanDisclosure.Full
-                            | HistoryDisclosure.Summary -> HumanDisclosure.Summary
-                            | HistoryDisclosure.Erased -> HumanDisclosure.Erased
-                    }
+                    HumanDocument.create
+                        DocumentSubject.List
+                        (TimelineScreen.rows page.Entries)
+                        []
+                        []
+                        page.NextCursor
+                        (ObservationBasis.Snapshot page.Basis)
+                        (match page.Disclosure with
+                         | HistoryDisclosure.Full -> HumanDisclosure.Full
+                         | HistoryDisclosure.Summary -> HumanDisclosure.Summary
+                         | HistoryDisclosure.Erased -> HumanDisclosure.Erased)
+                        None
                 | Some ConflictChanges.Withheld
                 | None -> HumanDocument.empty HumanDisclosure.Withheld
 
@@ -158,6 +160,7 @@ module HumanReplies =
     let lookup (reply: OperationReply<OperationLookupResult>) =
         let document screen =
             { HumanDocument.empty HumanDisclosure.None with
+                Subject = DocumentSubject.Operation reply.OperationId
                 Screen = screen
             }
 

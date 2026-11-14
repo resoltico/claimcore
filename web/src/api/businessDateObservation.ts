@@ -20,7 +20,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 const object = (value: unknown): Record<string, unknown> | null => (isObject(value) ? value : null);
 const humanContextOwned = (document: Record<string, unknown> | null, owner: Registration) => {
-  const context = object(document?.["context"]);
+  const context = object(document?.["subject"]);
   return (
     context?.["kind"] === "REQUESTER" &&
     context["actorId"] === owner.actorId &&

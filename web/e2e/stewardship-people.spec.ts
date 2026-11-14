@@ -1,10 +1,11 @@
+import { acceptedSubject } from "./work-workflow";
 import { selectedActor, syntheticPrincipals } from "./people-setup";
-import { type ResponseFor, type OperationTaskDefinition } from "@contracts/client";
+import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import type { Language } from "../src/presentation/preferences";
-import { defaults } from "../src/presentation/preferences";
+import { type Language, defaults } from "../src/presentation/preferences";
+
 import { createPresenter } from "../src/presentation/presenter";
 import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
@@ -89,7 +90,7 @@ const stewardAct = async (
   }
   expect(operationExecuteReply.outcome.kind).toBe("ACCEPTED");
   if (operationExecuteReply.outcome.kind === "ACCEPTED") {
-    expect(operationExecuteReply.outcome.document.context.target.kind).toBe("CASE");
+    expect((await acceptedSubject(page, operationExecuteReply.operationId)).kind).toBe("CASE");
     const references = operationExecuteReply.outcome.document.screen.regions.flatMap((region) =>
       region.role === "IDENTITY" && region.content.kind === "ENTRIES"
         ? region.content.entries.map((entry) => entry.value)
@@ -183,7 +184,7 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   }
   if (
     operationPreviewReply.outcome.kind !== "REVIEWED" ||
-    operationPreviewReply.outcome.review.document.context.target.kind !== "PEOPLE"
+    operationPreviewReply.outcome.review.document.actions[0]?.binding.kind !== "PEOPLE"
   ) {
     throw new Error("Expected people review.");
   }
@@ -198,7 +199,7 @@ const submitPeople = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
   if (
     operationExecuteReply.representation !== "HUMAN" ||
     operationExecuteReply.outcome.kind !== "ACCEPTED" ||
-    operationExecuteReply.outcome.document.context.target.kind !== "PEOPLE"
+    (await acceptedSubject(page, operationExecuteReply.operationId)).kind !== "PEOPLE"
   ) {
     throw new Error("Missing accepted people response.");
   }
@@ -359,11 +360,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   // D2 admission records profile and the original case-only grant atomically; no extra installation access is added.
   await openAdmission(page, source.issuer, subject, name, reference);
   const admitted = await submitPeople(page, "ACCEPTED");
-  if (
-    admitted === null ||
-    admitted.context.target.kind !== "PEOPLE" ||
-    admitted.disclosure !== "CURRENT"
-  ) {
+  if (admitted === null || admitted.disclosure !== "CURRENT") {
     throw new Error("Missing disclosed admitted service target.");
   }
   const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');
@@ -375,7 +372,14 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
       path: testInfo.outputPath("people-receipt-en-light.png"),
     });
   }
-  const { actorId } = admitted.context.target;
+  const accepted = await acceptedSubject(page, admitted.subject.operationId);
+  if (accepted.kind !== "PEOPLE") {
+    throw new Error("People receipt required");
+  }
+  const actorId =
+    accepted.targetActor.kind === "DISCLOSED"
+      ? accepted.targetActor.actor.actorId
+      : accepted.targetActor.actorId;
   await openActor(page, actorId, name);
   await beginActorAct(page, name, "people.grant", "en");
   await chooseChoice(page, "input:role", "CASE_READER");

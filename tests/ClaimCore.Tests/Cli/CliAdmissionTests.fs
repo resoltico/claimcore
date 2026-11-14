@@ -77,16 +77,7 @@ let tests =
                     for words, target in
                         [
                             [ "case"; "erase"; "CASE-X"; "--expected-revision"; "7" ], "CASE-X"
-                            [
-                                "people"
-                                "erase-profile"
-                                "--principal-kind"
-                                "human"
-                                "--issuer"
-                                "https://id.example/"
-                                "--subject"
-                                "person"
-                            ],
+                            [ "people"; "erase-profile"; "10000000-0000-4000-8000-000000000001" ],
                             identity ()
                         ] do
                         let plain = Grammar.prepare identity words |> Fixtures.accepted

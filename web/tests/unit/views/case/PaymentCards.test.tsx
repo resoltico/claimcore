@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -20,6 +21,14 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
   rows: [
     {
       key: paymentId,
+      actions: [
+        operationAffordance("case.removePayment", {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: "CASE-1" },
+          expectedRevision: 1,
+          paymentId,
+        }),
+      ],
       values: [
         { kind: "DATE", value: "2026-09-03" },
         { kind: "MONEY", amount: "77", currency: "USD", displayScale: 2 },
@@ -46,14 +55,7 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
 };
 it("renders narrow payment cards from supplied columns and keeps technical identity in Details", async () => {
   const remove = vi.fn();
-  render(
-    <PaymentRows
-      content={content}
-      handles={[{ paymentId, canRemove: true }]}
-      zone="UTC"
-      onRemove={remove}
-    />,
-  );
+  render(<PaymentRows content={content} zone="UTC" onRemove={remove} />);
   const card = within(screen.getByRole("list")).getByRole("listitem");
   expect(within(card).getByText("Payment date")).toBeVisible();
   expect(within(card).getByText("Paid amount")).toBeVisible();

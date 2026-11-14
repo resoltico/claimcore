@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { recoveryOptions } from "../support/recovery.fixtures";
 import { chooseRoleForReview } from "../support/people-input.fixtures";
 import { chooseOption } from "../support/choice-entry";
@@ -47,6 +48,11 @@ const PeopleForm = ({ kind }: { kind: "people.grant" | "people.revoke" }) => {
     ...recoveryOptions,
     subject: "PEOPLE",
     kind,
+    affordance: operationAffordance(
+      kind,
+      { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      { "input:scope": "INSTALLATION" },
+    ),
     current: null,
     credential: "synthetic-token",
     onLockChange: noLockChange,
@@ -104,18 +110,8 @@ const rejectedPreview = () =>
     }),
   );
 const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale: Locale) => {
-  await user.type(
-    screen.getByRole("textbox", {
-      name: locale.people["field.principal.issuer.label"],
-    }),
-    "https://synthetic.example/",
-  );
-  await user.type(
-    screen.getByRole("textbox", {
-      name: locale.people["field.principal.subject.label"],
-    }),
-    "synthetic-target",
-  );
+  expect(document.querySelector('[name="input:principal.issuer"]')).toBeNull();
+  expect(document.querySelector('[name="input:principal.subject"]')).toBeNull();
   await chooseOption(
     user,
     screen.getByRole("group", { name: locale.people["input.scope.label"] }),
@@ -191,18 +187,9 @@ it.each(
     });
     expect(preview).toHaveBeenCalledOnce();
     expect(preview.mock.calls[0]![0].input).toMatchObject({
-      kind: "PEOPLE",
-      target: {
-        issuer: "https://synthetic.example/",
-        subject: "synthetic-target",
-      },
-      act: {
-        kind: active ? "people.grant" : "people.revoke",
-        scope: {
-          kind: "CASE",
-          target: { kind: "REFERENCE", caseReference: "bad reference" },
-        },
-      },
+      task: active ? "people.grant" : "people.revoke",
+      binding: { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      inputs: { "input:scope": "CASE", "field:caseReference": "bad reference" },
     });
     expect(reference).toHaveAttribute("aria-invalid", "true");
     expectReferenceDescription(reference, locale, true);

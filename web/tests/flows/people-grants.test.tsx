@@ -1,3 +1,5 @@
+import { installationActions, requesterLinks } from "../support/human-requester.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import {
   chooseAdmissionRole,
@@ -81,6 +83,19 @@ const grants = (
             rows: [
               {
                 key: "grant-row",
+                link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+                actions: [
+                  operationAffordance(
+                    "people.revoke",
+                    { kind: "PEOPLE", actorId },
+                    {
+                      "input:role": "CASE_READER",
+                      "input:scope": "CASE",
+                      "field:caseReference": reference,
+                    },
+                    [],
+                  ),
+                ],
                 values: [
                   { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
                   { kind: "REFERENCE", value: reference },
@@ -101,20 +116,15 @@ const grants = (
         },
       ],
     },
-    context: {
-      kind: "PERSON",
-      actorId,
-      principal: {
-        kind: "SERVICE",
-        issuer: "https://issuer.example/",
-        subject: `header-${actorId}`,
-      },
-      tasks: ["people.grant", "people.revoke", "people.enable"],
-      profileSeed: null,
-      revocations: [{ key: "grant-row", role: "CASE_READER", scope: { kind: "CASE", caseId } }],
-      responsibleCases: null,
-      nextCursor,
-    },
+    subject: { kind: "PERSON", actorId },
+    actions: [
+      operationAffordance("people.grant", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
+      operationAffordance("people.revoke", { kind: "PEOPLE", actorId }, {}, undefined, {}),
+      operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}),
+    ],
+    links: [],
+    history: null,
+    nextCursor,
     basis: { kind: "SNAPSHOT", observation: workBasis },
     disclosure: "CURRENT",
   }),
@@ -129,6 +139,7 @@ const pending = <T,>() => {
 const actorPage = (
   ids: string[],
   nextCursor: string | null = null,
+  linksAllowed = true,
 ): ApiResult<ServiceResponse<"people.list">> => ({
   kind: "outcome",
   status: 200,
@@ -149,6 +160,9 @@ const actorPage = (
             ],
             rows: ids.map((actorId): RegionRow => ({
               key: actorId,
+              ...(linksAllowed
+                ? { link: { endpoint: "people.grants" as const, input: { actorId, limit: 20 } } }
+                : {}),
               values: [
                 {
                   kind: "ACTOR",
@@ -165,7 +179,11 @@ const actorPage = (
         },
       ],
     },
-    context: { kind: "PEOPLE", actorIds: ids, nextCursor },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor,
     basis: { kind: "SNAPSHOT", observation: workBasis },
     disclosure: "CURRENT",
   }),
@@ -175,7 +193,7 @@ const focusedBack = closePersonDetails;
 const reads = (offered = true) => {
   navigate("/people", true);
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.document.context.state !== "ACTIVE") {
+  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.document.subject.state !== "ACTIVE") {
     throw new Error("Context fixture absent.");
   }
   mockEndpoint("context").mockResolvedValue({
@@ -187,17 +205,23 @@ const reads = (offered = true) => {
         kind: "SUCCEEDED",
         document: {
           ...context.outcome.document,
-          context: {
-            ...context.outcome.document.context,
-            tasks: ["people.admit", "people.grant", "people.list", "people.grants"],
-            peopleIssuerSeed: "https://issuer.example/",
-            views: offered ? ["PEOPLE"] : [],
-          },
+          actions: installationActions([
+            "people.admit",
+            "people.grant",
+            "people.list",
+            "people.grants",
+          ]),
+          links: requesterLinks(offered ? ["PEOPLE"] : [], [
+            "people.admit",
+            "people.grant",
+            "people.list",
+            "people.grants",
+          ]),
         },
       },
     },
   });
-  mockEndpoint("people.list").mockResolvedValue(actorPage([first, second]));
+  mockEndpoint("people.list").mockResolvedValue(actorPage([first, second], null, offered));
 };
 beforeEach(() => {
   peoplePreview();
@@ -234,7 +258,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
     expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
   });
 });
-it("consumes the core read offer rather than inferring it from actor rows", async () => {
+it("uses the Core row link rather than inferring a destination from actor facts", async () => {
   reads(false);
   const request = mockEndpoint("people.grants");
   render(<PeoplePanel onLockChange={vi.fn()} />);
@@ -591,9 +615,16 @@ it("binds a repeated page-local grant key to the selected page's case scope", as
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
   await screen.findByText("SECOND-SCOPE");
   fireEvent.click(screen.getAllByRole("button", { name: "Revoke role" })[1]!);
-  expect(revoke).toHaveBeenCalledExactlyOnceWith({
-    key: "grant-row",
-    role: "CASE_READER",
-    scope: { kind: "CASE", caseId: "20000000-0000-4000-8000-000000000002" },
-  });
+  expect(revoke).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      task: "people.revoke",
+      binding: { kind: "PEOPLE", actorId: first },
+      seeds: {
+        "input:role": "CASE_READER",
+        "input:scope": "CASE",
+        "field:caseReference": "SECOND-SCOPE",
+      },
+      editable: [],
+    }),
+  );
 });

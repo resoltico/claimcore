@@ -1,4 +1,4 @@
-import { type ResponseByEndpoint } from "@contracts/client";
+import type { ResponseByEndpoint } from "@contracts/client";
 import { showExactLookup } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
@@ -55,12 +55,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
       throw new Error("Expected the real reviewed stewardship draft.");
     }
     const authored: unknown = JSON.parse(response.request().postData() ?? "null");
-    expect(authored).toMatchObject({
-      act: {
-        kind: "case.void",
-        reason,
-      },
-    });
+    expect(authored).toMatchObject({ task: "case.void", inputs: { "input:reason": reason } });
     if (
       typeof authored !== "object" ||
       authored === null ||

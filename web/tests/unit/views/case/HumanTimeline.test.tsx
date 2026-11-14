@@ -36,7 +36,11 @@ const document = (
       },
     ],
   },
-  context: { kind: "PAGE", tasks: [], nextCursor },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor,
   basis: {
     kind: "SNAPSHOT",
     observation: {

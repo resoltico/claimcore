@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadHttpReply as response } from "../support/human-read-reply.fixtures";
 import { endpointResponse } from "../support/transport-response.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
@@ -204,13 +205,19 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
     response("case.list", {
       screen: { regions: [] },
-      context: {
-        kind: "CASES",
-        cases: [],
-        tasks: ["case.open"],
-        exactCaseId: null,
-        nextCursor: null,
-      },
+      subject: { kind: "LIST" },
+      actions: [
+        operationAffordance(
+          "case.open",
+          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "SNAPSHOT", observation: workBasis },
       disclosure: "CURRENT",
     }),

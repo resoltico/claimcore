@@ -157,6 +157,75 @@ let private reviewAndTime () =
         (Verdict.Refuse(Refusal.revisionConflict (CaseFixtures.revision 1L)))
         "Execution rechecks the current revision"
 
+let private affordanceExecution () =
+    let _, _, current, _ = created 18 "AFFORDANCE-STATE"
+
+    let offered =
+        TaskAffordances.caseAction
+            CaseActKind.Close
+            current.CaseId
+            current.Snapshot.Revision
+            Map.empty
+            []
+            Map.empty
+
+    let command task binding inputs number =
+        OperationSubmission.admit
+            {
+                OperationId = id number
+                Task = task
+                Binding = binding
+                Inputs = inputs
+            }
+        |> Result.defaultWith (fun () -> failtest "Valid submission shape required")
+        |> fun submission ->
+            match submission.Operation with
+            | Ok(SubmittedOperation.Command(OperationInput.Case value)) -> value
+            | other -> failtestf "Case command required: %A" other
+
+    let run request view =
+        let services = services installation calendar owner
+
+        CaseOperations.prepare request
+        |> Result.bind (fun prepared -> CaseOperations.complete services prepared view.Read)
+        |> function
+            | Error refusal -> Verdict.Refuse refusal
+            | Ok parsed ->
+                executeCase
+                    services
+                    parsed
+                    {
+                        Head = view.Head
+                        NewPayloadNonce = fun () -> view.PayloadNonce
+                    }
+                    view.Read
+
+    let close =
+        command (ActKind.Case CaseActKind.Close) offered.Binding offered.Seeds 19
+
+    let later =
+        { current with
+            Snapshot =
+                { current.Snapshot with
+                    Revision = CaseFixtures.revision 2L
+                }
+        }
+
+    let view = locked worker (Some later) None
+
+    Expect.equal
+        (run close view)
+        (Verdict.Refuse(Refusal.revisionConflict (CaseFixtures.revision 2L)))
+        "A previously offered binding cannot authorize against a later revision"
+
+    let reader = actor owner (CaseFixtures.actorId (id 1)) [ Role.CaseReader ] []
+    let direct = command (ActKind.Case CaseActKind.Erase) offered.Binding Map.empty 20
+
+    match run direct (locked reader (Some current) None) with
+    | Verdict.Refuse(Refusal.Access(AccessRefusal.NotAuthorized _)) -> ()
+    | other ->
+        failtestf "Direct execution must independently refuse an unpermitted action: %A" other
+
 let private integrityAndPrivacy () =
     let original, entry, _, _ = created 16 "PURE-IDENTITY"
 
@@ -353,6 +422,9 @@ let tests =
             testCase "canonical replay preserves attribution and original identity" replay
             testCase "current resource access precedes replay and creation" authorization
             testCase "review business date and revision use the supplied view" reviewAndTime
+            testCase
+                "stale offered bindings and direct unpermitted submissions cannot authorize execution"
+                affordanceExecution
             testCase
                 "corruption faults and foreign identity privacy remain distinct"
                 integrityAndPrivacy

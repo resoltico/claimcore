@@ -107,7 +107,7 @@ let private reminderRevisionAdmission () =
 
     let raw revision =
         sprintf
-            """{"endpoint":"operation.execute","input":{"kind":"REMINDER","operationId":"%s","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"act":{"kind":"reminder.complete","reminderId":"%s","expectedRevision":%d}}}"""
+            """{"endpoint":"operation.execute","input":{"operationId":"%s","task":"reminder.complete","binding":{"kind":"REMINDER","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"reminderId":"%s","expectedRevision":%d},"inputs":{}}}"""
             (operationId.ToString("D"))
             reminderId
             revision

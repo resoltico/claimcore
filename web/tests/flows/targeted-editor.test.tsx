@@ -1,10 +1,13 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -21,17 +24,67 @@ import { productMetadata } from "../../src/protocol/productMetadata";
 import { fields } from "../support/service-ui.fixtures";
 
 const current = caseDocumentInput({
-  tasks: ["case.amendRegistration", "case.correct", "case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 4,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 4 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: fields.registration,
-    decision: fields.finance.decision,
-  },
 });
 import { service } from "../../src/api/service";
 import { changeField } from "../support/field-entry";
@@ -74,7 +127,7 @@ it("sends only a selected registration fact and does not serialize retained cont
   editor();
   await name();
   const frame = await prepared(spy);
-  expect(frame.input).toMatchObject({ kind: "CASE", expectedRevision: 4 });
+  expect(frame.input).toMatchObject({ binding: { kind: "CASE", expectedRevision: 4 } });
   expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
     task: "case.amendRegistration",
     inputs: { "field:claimantName": "Only selected claimant" },
@@ -131,7 +184,7 @@ it.each([
       },
     });
     const execute = vi.spyOn(service, "execute");
-    const path = actPath({ kind: "ID", caseId: current.context.caseId }, "case.amendRegistration");
+    const path = actPath({ kind: "ID", caseId: current.subject.caseId }, "case.amendRegistration");
     navigate(path);
     render(<Dashboard />);
     await screen.findByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u });

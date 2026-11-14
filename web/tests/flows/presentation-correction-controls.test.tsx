@@ -1,10 +1,13 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { selectFact } from "../support/field-entry";
 import { chooseOption, selectedOption } from "../support/choice-entry";
 
@@ -20,18 +23,46 @@ import { preferenceKey } from "../../src/presentation/preferences";
 
 const decision = { paymentDecisionDate: "2026-09-03", payableAmount: "1", payableCurrency: "EUR" };
 const paidCase: CurrentCase = caseDocumentInput({
-  tasks: ["case.correct"],
-  revision: 1,
+  subject: { ...caseSubject, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: { ...emptyCaseSeeds, registration: fields.registration, decision },
 });
 const payable: CurrentCase = caseDocumentInput({
-  tasks: ["case.recordPayment"],
-  revision: 1,
+  subject: { ...caseSubject, revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.recordPayment",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { "field:paidCurrency": decision?.payableCurrency ?? null },
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
-  seeds: { ...emptyCaseSeeds, paymentCurrency: decision?.payableCurrency ?? null },
 });
 const inputRefusal = (
   input: "field:paidAmount" | "group:payment",

@@ -149,4 +149,38 @@ let tests =
                      |> Codec.decode Limits.MaximumResponseBytes CatalogCodecs.codec)
                     (Ok value)
                     "Current neutral codec")
+            testCase
+                "clearable metadata describes updates rather than creation-time absence"
+                (fun () ->
+                    let inputs act =
+                        (TaskDeclarations.describe (TaskId.Operation act)).Inputs
+
+                    for act in
+                        [
+                            ActKind.Case CaseActKind.Open
+                            ActKind.People PeopleActKind.Register
+                            ActKind.People PeopleActKind.Admit
+                        ] do
+                        Expect.isFalse
+                            (inputs act |> List.exists _.Clearable)
+                            "Creation has no previously stored value to clear"
+
+                    let contact =
+                        inputs (ActKind.People PeopleActKind.SetProfile)
+                        |> List.find (fun input ->
+                            input.Input = TaskInputId.Target InputTarget.ProfileContact)
+
+                    Expect.isTrue contact.Clearable "Profile updates can clear existing contact"
+
+                    let narrative =
+                        inputs (ActKind.Case CaseActKind.AmendRegistration)
+                        |> List.find (fun input ->
+                            input.Input =
+                                TaskInputId.Target(
+                                    InputTarget.Field BusinessField.IncidentDescription
+                                ))
+
+                    Expect.isTrue
+                        narrative.Clearable
+                        "Optional registration updates can clear narrative")
         ]

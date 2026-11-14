@@ -33,7 +33,9 @@ export const CaseFactRegions = ({
               />
             );
           }
-          const act = current.context.tasks.includes("case.amendRegistration")
+          const act = current.actions.some(
+            (action) => action.task === "case.amendRegistration" && action.blocked === null,
+          )
             ? "case.amendRegistration"
             : undefined;
           return (

@@ -28,7 +28,22 @@ let private peopleReview () =
                                                 Scope = GrantScope.Installation
                                             }
                                     ]
-                                Target = None
+                                Target =
+                                    Some(
+                                        ActorReviewItem.ofActor
+                                            []
+                                            {
+                                                ActorId =
+                                                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                                                Principal =
+                                                    PrincipalKey.human
+                                                        "https://issuer.example/"
+                                                        "synthetic"
+                                                    |> Fixtures.accepted
+                                                Enabled = false
+                                                Profile = None
+                                            }
+                                    )
                                 AccessScope = GrantScope.Installation
                                 Before =
                                     {
@@ -332,6 +347,8 @@ let assigneePresentation =
 
             let page: AssigneePage =
                 {
+                    CaseId = ResponseExamples.snapshot.CaseId
+                    WorkRevision = Revision.zero
                     Basis = Inputs.workBasis
                     Items = [ actor ]
                     NextCursor = Some "next-page"

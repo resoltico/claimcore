@@ -1,8 +1,9 @@
-import {
-  type RequestByEndpoint,
-  type HumanReview,
-  type HumanReceiptDocument,
-  type HumanLookupResult,
+import { operationAffordance } from "../../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReview,
+  HumanReceiptDocument,
+  HumanLookupResult,
 } from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { useEndpointCache } from "../../../../src/hooks/EndpointProvider";
@@ -27,25 +28,19 @@ const current: CurrentCase = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 7,
-    workRevision: 0,
-    history: "NONE",
-    tasks: ["case.close"],
-    editableInputs: [],
-    correction: null,
-    seeds: {
-      registration: null,
-      decision: null,
-      work: null,
-      paymentCurrency: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId, revision: 7, workRevision: 0 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+      {},
+      [],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -58,21 +53,25 @@ const review: HumanReview = {
     screen: {
       regions: [],
     },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "case.close",
-      target: {
-        kind: "CASE",
-        caseId,
-        beforeRevision: 7,
-      },
-      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "CORE-CASE",
       },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "case.close",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -99,17 +98,22 @@ const receipt: HumanReceiptDocument = {
       },
     ],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "CASE",
-      caseId,
-      revision: 8,
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
     },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -468,9 +472,11 @@ const absence: HumanLookupResult = {
     screen: {
       regions: [],
     },
-    context: {
-      kind: "EMPTY",
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis: {
       kind: "UNAVAILABLE",
     },

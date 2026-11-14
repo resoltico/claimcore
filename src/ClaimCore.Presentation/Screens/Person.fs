@@ -32,7 +32,7 @@ module PersonScreen =
            | GrantScope.Installation -> "INSTALLATION"
            | GrantScope.Case(id, _) -> CaseId.format id)
 
-    let access (rows: GrantReadModel list) =
+    let private accessWithControls controls (rows: GrantReadModel list) =
         let columns =
             grantColumns
             |> List.map (fun column ->
@@ -61,14 +61,18 @@ module PersonScreen =
                     RegionRole.Access
                     None
                     (RegionContent.Table(
-                        table
+                        tableWithControls
                             (fun (row: GrantReadModel) ->
                                 key { Role = row.Role; Scope = row.Scope })
                             (fun _ -> None)
                             columns
+                            controls
                             rows
                     ))
             ]
+
+    let access rows =
+        accessWithControls (fun _ -> None, []) rows
 
     let view (reply: PeopleGrantPage) =
         let actor = reply.Actor
@@ -80,7 +84,29 @@ module PersonScreen =
                 not (List.contains column.Key [ "actorId"; "issuer"; "subject"; "roles" ])
                 && (column.Key <> "responsibleCases" || actor.ResponsibleCases.IsSome))
 
-        let body = access reply.Items
+        let body =
+            accessWithControls
+                (fun row ->
+                    let link =
+                        match row.Scope with
+                        | GrantScope.Case(id, _) -> Some(Link.caseById id)
+                        | _ -> None
+
+                    let actions =
+                        if List.contains PeopleActKind.Revoke reply.Offers then
+                            [
+                                TaskAffordances.person
+                                    PeopleActKind.Revoke
+                                    actor.Actor.ActorId
+                                    (TaskAffordances.grantSeeds row.Role row.Scope)
+                                    []
+                                    Map.empty
+                            ]
+                        else
+                            []
+
+                    link, actions)
+                reply.Items
 
         let screen =
             Screen.create (

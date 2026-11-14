@@ -22,7 +22,11 @@ export const timelineDocument = (
   disclosure: HumanReadDocument_case_timeline["disclosure"] = "FULL",
 ): HumanReadDocument_case_timeline => ({
   screen: { regions: [{ role: "ACTIVITY", content: { kind: "TIMELINE", entries } }] },
-  context: { kind: "PAGE", tasks: [], nextCursor },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor,
   basis: { kind: "SNAPSHOT", observation: workBasis },
   disclosure,
 });

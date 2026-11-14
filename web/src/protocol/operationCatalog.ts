@@ -1,4 +1,4 @@
-import { taskForAct, taskForCommand } from "./taskCatalog";
+import { taskForAct } from "./taskCatalog";
 import type { OperationTaskDefinition } from "@contracts/client";
 
 export type OperationSelection = {
@@ -7,4 +7,3 @@ export type OperationSelection = {
 };
 export const operationEntry = (identity: OperationSelection): OperationTaskDefinition =>
   taskForAct(identity.subject, identity.kind);
-export const operationEntryForInput = taskForCommand;

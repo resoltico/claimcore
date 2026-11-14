@@ -1,8 +1,12 @@
 import {
-  type RequestByEndpoint,
-  type HumanReadDocument_reminder_list,
-  type Region,
-} from "@contracts/client";
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../tests/support/human-requester.fixtures";
+import type { OperationTaskDefinition, RequestByEndpoint, Region } from "@contracts/client";
+import { caseSubject, caseDocumentInput } from "../tests/support/case-document.fixtures";
+import { operationAffordance } from "../tests/support/affordances.fixtures";
+
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
@@ -12,15 +16,21 @@ import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { expectAccessible } from "./session-helpers";
 import { casePath } from "../src/routing/routes";
 import { ui } from "./localization-support";
-import { activeRequester } from "../tests/support/human-requester.fixtures";
-import { caseDocumentInput } from "../tests/support/case-document.fixtures";
+
 import { timelineDocument } from "../tests/support/timeline-document.fixtures";
 const basis = {
   observedAt: "2026-11-04T12:00:00.000000Z",
   businessDate: "2026-11-04",
   timeZone: "Etc/UTC",
 };
-const reminders: HumanReadDocument_reminder_list["context"]["reminders"] = [
+const reminders: ReadonlyArray<{
+  reminderId: string;
+  caseId: string;
+  revision: number;
+  tasks: ReadonlyArray<Extract<OperationTaskDefinition, { subject: "REMINDER" }>["id"]>;
+  actionSeed: string;
+  dueDateSeed: string;
+}> = [
   {
     reminderId: "30000000-0000-4000-8000-000000000003",
     caseId: "20000000-0000-4000-8000-000000000001",
@@ -75,6 +85,21 @@ const reminderRegion: Region = {
     rows: [
       {
         key: "30000000-0000-4000-8000-000000000003",
+        actions: reminders[0]!.tasks.map((task) =>
+          operationAffordance(
+            task,
+            {
+              kind: "REMINDER",
+              target: { kind: "ID", caseId: reminders[0]!.caseId },
+              reminderId: reminders[0]!.reminderId,
+              expectedRevision: 3,
+            },
+            {
+              "field:reminderAction": reminders[0]!.actionSeed,
+              "field:reminderDueDate": reminders[0]!.dueDateSeed,
+            },
+          ),
+        ),
         values: [
           {
             kind: "TEXT",
@@ -93,6 +118,21 @@ const reminderRegion: Region = {
       },
       {
         key: "30000000-0000-4000-8000-000000000004",
+        actions: reminders[1]!.tasks.map((task) =>
+          operationAffordance(
+            task,
+            {
+              kind: "REMINDER",
+              target: { kind: "ID", caseId: reminders[1]!.caseId },
+              reminderId: reminders[1]!.reminderId,
+              expectedRevision: 1,
+            },
+            {
+              "field:reminderAction": reminders[1]!.actionSeed,
+              "field:reminderDueDate": reminders[1]!.dueDateSeed,
+            },
+          ),
+        ),
         values: [
           {
             kind: "TEXT",
@@ -115,17 +155,64 @@ const reminderRegion: Region = {
 const current = {
   ...caseDocumentInput(
     {
-      revision: 3,
-      history: "SUMMARY",
-      nextActions: reminders,
-      payments: [
-        {
-          paymentId: "10000000-0000-7000-8000-000000000003",
-          canRemove: false,
-        },
+      subject: { ...caseSubject, revision: 3 },
+      actions: [
+        operationAffordance(
+          "case.close",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 3,
+          },
+          {},
+          ["field:handlingSummary", "field:responsibleActor"],
+          {},
+        ),
+        operationAffordance(
+          "case.void",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 3,
+          },
+          {},
+          ["field:handlingSummary", "field:responsibleActor"],
+          {},
+        ),
+        operationAffordance(
+          "case.erase",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 3,
+          },
+          {},
+          ["field:handlingSummary", "field:responsibleActor"],
+          {},
+        ),
+        operationAffordance(
+          "work.update",
+          {
+            kind: "WORK",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 3,
+          },
+          {},
+          ["field:handlingSummary", "field:responsibleActor"],
+          {},
+        ),
+        operationAffordance(
+          "reminder.create",
+          {
+            kind: "REMINDER",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+          },
+          {},
+          ["field:handlingSummary", "field:responsibleActor"],
+          {},
+        ),
       ],
-      tasks: ["case.close", "case.void", "case.erase", "work.update", "reminder.create"],
-      editableInputs: ["field:handlingSummary", "field:responsibleActor"],
+      history: "SUMMARY",
     },
     {
       regions: [
@@ -206,19 +293,7 @@ const current = {
             ],
           },
         },
-        {
-          role: "RECOMMENDATION",
-          content: {
-            kind: "ACTIONS",
-            recommended: "case.close",
-            groups: [
-              {
-                family: "STEWARDSHIP",
-                acts: ["case.void", "case.erase"],
-              },
-            ],
-          },
-        },
+        ...[],
         {
           role: "FACTS",
           titleId: "group.registration.label",
@@ -370,11 +445,8 @@ for (const { language, accent, mode, mobile } of contexts) {
         json: {
           ...humanReadReply("context", {
             ...activeRequester,
-            context: {
-              ...activeRequester.context,
-              views: ["CASES", "OPERATIONS"],
-              tasks: [],
-            },
+            actions: installationActions([]),
+            links: requesterLinks(["CASES", "OPERATIONS"], []),
             basis: {
               kind: "SNAPSHOT",
               observation: basis,
@@ -410,11 +482,11 @@ for (const { language, accent, mode, mobile } of contexts) {
             screen: {
               regions: [reminderRegion],
             },
-            context: {
-              kind: "REMINDERS",
-              reminders,
-              nextCursor: null,
-            },
+            subject: { kind: "LIST" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis: {
               kind: "SNAPSHOT",
               observation: basis,
@@ -454,7 +526,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         {
           target: {
             kind: "REMINDER",
-            caseId: current.context.caseId,
+            caseId: current.subject.caseId,
             existing: {
               reminderId: operationPreviewRequest.binding.reminderId,
               revision: 3,
@@ -530,7 +602,7 @@ for (const { language, accent, mode, mobile } of contexts) {
         writes += 1;
       }
     });
-    await page.goto(casePath(current.context.caseId), {
+    await page.goto(casePath(current.subject.caseId), {
       waitUntil: "commit",
     });
     await expect(

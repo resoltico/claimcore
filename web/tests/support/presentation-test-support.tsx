@@ -35,8 +35,8 @@ export const TestSession = ({
 const testSession = { kind: "authenticated", token: "token", epoch: 0 } as const;
 export const testWorkspaceIdentity = {
   serviceOrigin: location.origin,
-  actorId: requester.context.actorId,
-  installationId: requester.context.installationId,
+  actorId: requester.subject.actorId,
+  installationId: requester.subject.installationId,
   credential: testSession.token,
   sessionEpoch: testSession.epoch,
 };

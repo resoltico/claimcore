@@ -10,6 +10,7 @@ module ScreenEntries =
         |> List.map (fun definition ->
             {
                 Entry.Key = definition.Key
+                Recorded = false
                 LabelId = definition.LabelId
                 Prominence = definition.Prominence
                 Value = definition.Read value
@@ -72,6 +73,7 @@ module ScreenEntries =
     let value key label prominence value =
         {
             Entry.Key = key
+            Recorded = false
             LabelId = label
             Prominence = prominence
             Value = value
@@ -91,6 +93,7 @@ module ScreenEntries =
     let count key label value =
         {
             Entry.Key = key
+            Recorded = false
             LabelId = label
             Prominence = Prominence.Primary
             Value = PresentedValue.Count value
@@ -189,6 +192,8 @@ module ScreenEntries =
             Role = role
             TitleId = title
             Content = content
+            Link = None
+            Actions = []
         }
 
     let entryRegion role title entries =
@@ -204,7 +209,7 @@ module ScreenEntries =
 
     let factScreen sections = Screen.create (factRegions sections)
 
-    let table key describe (definitions: EntryDefinition<'row> list) rows =
+    let tableWithControls key describe (definitions: EntryDefinition<'row> list) controls rows =
         {
             RegionTable.Columns =
                 definitions
@@ -214,19 +219,38 @@ module ScreenEntries =
                         LabelId = definition.LabelId
                         Prominence = definition.Prominence
                         IsMoney = definition.IsMoney
+                        Recorded = false
                     })
             Rows =
                 rows
                 |> List.map (fun row ->
+                    let link, actions = controls row
+
                     {
                         RegionRow.Key = key row
                         Values = definitions |> List.map (fun definition -> definition.Read row)
                         Detail = describe row
+                        Link = link
+                        Actions = actions
                     })
             Groups = []
             Sections = []
             Meter = None
         }
+
+    let table key describe definitions rows =
+        tableWithControls key describe definitions (fun _ -> None, []) rows
+
+    let resultScreenWithControls key definitions controls rows =
+        Screen.create
+            [
+                region
+                    RegionRole.Results
+                    None
+                    (RegionContent.Table(
+                        tableWithControls key (fun _ -> None) definitions controls rows
+                    ))
+            ]
 
     let resultScreen key definitions rows =
         Screen.create

@@ -10,7 +10,7 @@ export const useCaseDisclosure = (target: CaseSelector) => {
   return {
     value,
     screen: value?.screen ?? null,
-    historyAccess: value?.context.history ?? "NONE",
+    historyAccess: value?.history ?? "NONE",
     message: query.message,
     loading: query.loading,
     revalidate: query.reload,

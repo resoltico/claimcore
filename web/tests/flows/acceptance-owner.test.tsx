@@ -1,25 +1,26 @@
+import { requesterLinks, activeRequester } from "../support/human-requester.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { beforeEach, expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render } from "../support/presentation-test-support";
 import { Dashboard } from "../../src/views/Dashboard";
 import { SessionContext } from "../../src/session/SessionContext";
-import { activeRequester } from "../support/human-requester.fixtures";
+
 import type { ActiveRequester } from "../../src/hooks/useRequesterContext";
-import { isCaseReceipt } from "../../src/protocol/types";
+import { linkedCaseReceipt, type CaseLinkedReceipt } from "../../src/protocol/types";
 import { wireReply } from "../support/reply.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { casePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
-import type { CaseOperationReceipt } from "../../src/api/service";
+
 beforeEach(() => {
   stubViewCounts();
 });
 const audit = vi.hoisted(() => ({
   context: null as ActiveRequester | null,
   refused: false,
-  receipt: null as CaseOperationReceipt | null,
-  callbacks: [] as ((receipt: CaseOperationReceipt, operationId: string) => void)[],
+  receipt: null as CaseLinkedReceipt | null,
+  callbacks: [] as ((receipt: CaseLinkedReceipt, operationId: string) => void)[],
 }));
 vi.mock("../../src/hooks/useEndpoint", () => ({
   useEndpoint: (endpoint: string) => ({
@@ -47,7 +48,7 @@ vi.mock("../../src/views/RoutedContent", () => ({
   RoutedContent: ({
     committed,
   }: {
-    committed: (receipt: CaseOperationReceipt, operationId: string) => void;
+    committed: (receipt: CaseLinkedReceipt, operationId: string) => void;
   }) => {
     audit.callbacks.push(committed);
     return (
@@ -77,15 +78,15 @@ const shown = (token: string, epoch: number) =>
   sessionView({ kind: "authenticated", token, epoch });
 const start = async () => {
   const example = wireReply("operation.execute");
-  if (example.outcome.kind !== "ACCEPTED" || !isCaseReceipt(example.outcome.document)) {
+  if (example.outcome.kind !== "ACCEPTED" || !linkedCaseReceipt(example.outcome.document)) {
     throw new Error("Need an accepted HUMAN case receipt");
   }
-  audit.receipt = example.outcome.document;
+  audit.receipt = linkedCaseReceipt(example.outcome.document);
   audit.context = {
     ...activeRequester,
-    context: { ...activeRequester.context, views: ["CASES", "OPERATIONS"] },
+    links: requesterLinks(["CASES", "OPERATIONS"]),
   };
-  navigate(casePath(audit.receipt.context.target.caseId), true);
+  navigate(casePath(audit.receipt!.caseId), true);
   const view = render(shown("actor-a-token", 1));
   await userEvent.click(await view.findByRole("button", { name: "Simulate admitted acceptance" }));
   expect(view.container.querySelector(".success-toast")).not.toBeNull();
@@ -101,11 +102,8 @@ it("a new actor/session cannot inherit the previous actor acceptance feedback", 
   const view = await start();
   audit.context = {
     ...audit.context!,
-    context: {
-      ...audit.context!.context,
-      actorId: "90000000-0000-4000-8000-000000000099",
-      views: ["OPERATIONS"],
-    },
+    subject: { ...audit.context!.subject, actorId: "90000000-0000-4000-8000-000000000099" },
+    links: audit.context!.links.filter((link) => new Set<string>(["OPERATIONS"]).has(link.labelId)),
   };
   view.rerender(shown("actor-b-token", 2));
   expect(
@@ -122,7 +120,7 @@ it("cannot revive prior feedback on actor A to B to A in the same session", asyn
   const original = audit.context!;
   audit.context = {
     ...original,
-    context: { ...original.context, actorId: "90000000-0000-4000-8000-000000000099" },
+    subject: { ...original.subject, actorId: "90000000-0000-4000-8000-000000000099" },
   };
   view.rerender(shown("actor-a-token", 1));
   expect(view.container.querySelector(".success-toast")).toBeNull();
@@ -138,7 +136,7 @@ it("masks acceptance during unverified context and after installation replacemen
   expect(view.container.querySelector(".success-toast")).toBeNull();
   audit.context = {
     ...original,
-    context: { ...original.context, installationId: "90000000-0000-4000-8000-000000000099" },
+    subject: { ...original.subject, installationId: "90000000-0000-4000-8000-000000000099" },
   };
   view.rerender(shown("renewed-token", 2));
   expect(view.container.querySelector(".success-toast")).toBeNull();
@@ -159,7 +157,7 @@ it("ignores a late acceptance callback after an owner transition", async () => {
   const late = audit.callbacks.at(-1)!;
   audit.context = {
     ...audit.context!,
-    context: { ...audit.context!.context, actorId: "90000000-0000-4000-8000-000000000099" },
+    subject: { ...audit.context!.subject, actorId: "90000000-0000-4000-8000-000000000099" },
   };
   view.rerender(shown("actor-b-token", 2));
   const before = location.href;
@@ -182,7 +180,10 @@ it("masks own acceptance through a read invalidation and restores identity feedb
 it("does not restore prior acceptance after known case access is removed and later returns", async () => {
   const view = await start();
   const original = audit.context!;
-  audit.context = { ...original, context: { ...original.context, views: ["OPERATIONS"] } };
+  audit.context = {
+    ...original,
+    links: original.links.filter((link) => new Set<string>(["OPERATIONS"]).has(link.labelId)),
+  };
   view.rerender(shown("actor-a-token", 1));
   expect(view.container.querySelector(".success-toast")).toBeNull();
   audit.context = original;

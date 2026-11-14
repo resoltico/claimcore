@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import { Table } from "../../../src/ui/regions/Table";
 import { render, screen } from "../../support/presentation-test-support";
@@ -5,7 +6,7 @@ import { render, screen } from "../../support/presentation-test-support";
 it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
     <Table
-      renderActions={(key) => <button>Act {key}</button>}
+      onAction={() => undefined}
       view={{
         kind: "TABLE",
         sections: [],
@@ -44,6 +45,13 @@ it("renders supplied columns and cells without field knowledge", () => {
           ] as const
         ).map((values, index) => ({
           key: String(index),
+          actions: [
+            operationAffordance("case.close", {
+              kind: "CASE",
+              target: { kind: "REFERENCE", caseReference: "OPAQUE" },
+              expectedRevision: 3,
+            }),
+          ],
           values,
           detail: { summary: null, highlights: [], sections: [] },
         })),
@@ -57,7 +65,7 @@ it("renders supplied columns and cells without field knowledge", () => {
     screen
       .getAllByRole("cell")
       .at(-1)
-      ?.contains(screen.getByRole("button", { name: "Act 0" })),
+      ?.contains(screen.getByRole("button", { name: "Close the case" })),
   ).toBe(true);
   expect(screen.getByText("Not recorded")).toBeVisible();
   expect(rendered.container.querySelector('bdi[dir="auto"]')).toHaveTextContent("العربية");

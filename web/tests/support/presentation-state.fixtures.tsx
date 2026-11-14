@@ -1,4 +1,5 @@
-import { caseDocumentInput } from "./case-document.fixtures";
+import { caseSubject, caseDocumentInput } from "./case-document.fixtures";
+import { operationAffordance } from "./affordances.fixtures";
 
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
@@ -12,9 +13,20 @@ import { definition, fields } from "./service-ui.fixtures";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 import { endpointResponse } from "./transport-response.fixtures";
 export const current: CurrentCase = caseDocumentInput({
-  tasks: ["case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   history: "FULL",
 });
 const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEditor>>) => {
@@ -64,23 +76,8 @@ export const previewReply = (index = 0): Response => {
       review: {
         document: {
           screen: { regions: [] },
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: task.id,
-            inputs: [
-              ...new Set(
-                [
-                  ...task.inputs,
-                  ...task.collections.flatMap((collection) => collection.inputs),
-                ].map((input) => input.id),
-              ),
-            ],
-            consequence: task.consequence,
-            target: {
-              kind: "CASE",
-              caseId: current.context.caseId,
-              beforeRevision: draft.binding.expectedRevision,
-            },
             confirmation: {
               kind: "CASE_REFERENCE",
               reference:
@@ -88,7 +85,23 @@ export const previewReply = (index = 0): Response => {
                   ? draft.binding.target.caseReference
                   : fields.caseReference,
             },
+            consequence: task.consequence,
           },
+          actions: [
+            operationAffordance(
+              task.id,
+              {
+                kind: "CASE",
+                target: { kind: "ID", caseId: current.subject.caseId },
+                expectedRevision: draft.binding.expectedRevision,
+              },
+              {},
+              [],
+            ),
+          ],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: current.basis,
           disclosure: "CURRENT",
         },

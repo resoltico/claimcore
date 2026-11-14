@@ -16,13 +16,13 @@ export type { CaseFields } from "@contracts/client";
 export type PersonDocument = HumanReadDocument_people_grants;
 export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
-export type CaseOperationReceipt = OperationReceipt & {
-  readonly context: OperationReceipt["context"] & {
-    readonly target: Extract<OperationReceipt["context"]["target"], { kind: "CASE" }>;
-  };
+export type CaseLinkedReceipt = { readonly document: OperationReceipt; readonly caseId: string };
+export const linkedCaseReceipt = (document: OperationReceipt): CaseLinkedReceipt | null => {
+  const target = document.links.find((link) => link.rel === "OPEN_CASE")?.link;
+  return target?.endpoint === "case.get" && target.input.target.kind === "ID"
+    ? { document, caseId: target.input.target.caseId }
+    : null;
 };
-export const isCaseReceipt = (value: OperationReceipt): value is CaseOperationReceipt =>
-  value.context.target.kind === "CASE";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
 export type FieldCatalogEntry = (

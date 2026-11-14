@@ -1,3 +1,4 @@
+import type { OperationAffordance } from "../../operation/affordances";
 import { Entries } from "../../ui/regions/Entries";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
@@ -11,15 +12,12 @@ import { taskForAct } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues, FormValue } from "../../protocol/forms";
 import type { Notice } from "../../protocol/notices";
-import {
-  type HumanRejection,
-  type OperationTaskDefinition,
-  type OperationBinding,
-} from "@contracts/client";
+import type { HumanRejection, OperationTaskDefinition, OperationBinding } from "@contracts/client";
 
 import type { OperationSelection } from "../../protocol/operationCatalog";
 
 type FormModel = {
+  affordance?: OperationAffordance | null | undefined;
   entry: OperationSelection;
   task: OperationTaskDefinition;
   bindingSource: OperationBinding;
@@ -81,6 +79,7 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
       {offered.length === 0 && !creation ? null : (
         <TaskInputs
           task={model.task}
+          affordance={model.affordance ?? undefined}
           binding={model.bindingSource}
           current={current}
           values={model.values}

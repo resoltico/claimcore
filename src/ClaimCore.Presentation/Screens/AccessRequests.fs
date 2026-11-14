@@ -56,9 +56,10 @@ module AccessRequestsScreen =
 
 
     let rows rows =
-        resultScreen
+        resultScreenWithControls
             (fun (row: AccessRequest) -> principalKey row.Principal)
             accessRequestColumns
+            (fun row -> None, TaskAffordances.requestActions row)
             rows
 
     let view (reply: AccessRequestPage) =

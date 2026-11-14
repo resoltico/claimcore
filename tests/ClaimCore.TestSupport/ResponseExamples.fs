@@ -266,6 +266,7 @@ let private replies () : IEndpointOutput list =
                         CaseId = snapshot.CaseId
                         Reference = snapshot.Reference
                         Revision = snapshot.Revision
+                        WorkRevision = Revision.zero
                         State = CaseState.map _.Finance snapshot.State
                         Items = []
                         NextCursor = None
@@ -325,6 +326,8 @@ let private replies () : IEndpointOutput list =
                 HumanReadDocuments.assignees
                 (Outcome.Succeeded
                     {
+                        CaseId = snapshot.CaseId
+                        WorkRevision = Revision.zero
                         Basis = basis
                         Items = []
                         NextCursor = None

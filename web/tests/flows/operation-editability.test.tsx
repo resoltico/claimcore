@@ -1,10 +1,13 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
   decisionInputs,
   correctionChoices,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 
@@ -15,20 +18,70 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { deferredResponse, editor, previewReply } from "../support/presentation-state.fixtures";
 import { fields } from "../support/service-ui.fixtures";
-import { type CurrentCase } from "../../src/api/service";
+import type { CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/reply.fixtures";
 const current: CurrentCase = caseDocumentInput({
-  tasks: ["case.amendRegistration", "case.correct", "case.close"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs, "group:registration", "group:decision"],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      {
+        ...prefixedInputs("field:", fields.registration ?? {}),
+        ...prefixedInputs("field:", fields.finance.decision ?? {}),
+        "group:registration": "KEEP",
+        "group:decision": "KEEP",
+      },
+      [...registrationInputs, ...decisionInputs],
+      {
+        "group:registration": correctionChoices.registration,
+        "group:decision": correctionChoices.decision,
+      },
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs, ...decisionInputs],
-  correction: correctionChoices,
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: fields.registration,
-    decision: fields.finance.decision,
-  },
 });
 const expectAuthoringDisabled = () => {
   const controls = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(

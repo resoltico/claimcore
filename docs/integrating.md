@@ -47,9 +47,9 @@ claimcore case get DEMO-0001
 claimcore people history
 ```
 
-HUMAN replies contain Core-authored documents, messages and interaction controls. DATA replies expose
-typed facts for automation and export. Choose the representation your consumer needs; neither is a
-source of additional permissions.
+HUMAN documents carry a subject, actions, typed query links and row controls; DATA exposes automation facts.
+An operation lookup link with empty input opens the ID-entry form; actual `operation.get` calls require `operationId`.
+Choose the representation your consumer needs; neither grants additional permissions.
 
 Keep the observation basis with the data you display. It identifies the server observation and the
 business date/time zone. Changing a display locale does not change a recorded date or amount.

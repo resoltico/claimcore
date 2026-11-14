@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -7,7 +8,7 @@ import { workBasis } from "../../../support/inputs";
 import type { CurrentCase } from "../../../../src/protocol/types";
 import type { HumanReadDocument_case_payments, Region } from "@contracts/client";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
-type Handle = HumanReadDocument_case_payments["context"]["payments"][number];
+type Handle = { paymentId: string; canRemove: boolean };
 const ids = [
   "10000000-0000-7000-8000-000000000101",
   "10000000-0000-7000-8000-000000000102",
@@ -31,6 +32,16 @@ const table = (handles: ReadonlyArray<Handle>, currency: string, firstAmount: nu
     ],
     rows: handles.map((handle, index) => ({
       key: handle.paymentId,
+      actions: handle.canRemove
+        ? [
+            operationAffordance("case.removePayment", {
+              kind: "CASE",
+              target: { kind: "ID", caseId: source.subject.caseId },
+              expectedRevision: 7,
+              paymentId: handle.paymentId,
+            }),
+          ]
+        : [],
       values: [
         {
           kind: "MONEY",
@@ -68,12 +79,10 @@ const current: CurrentCase = {
   screen: {
     regions: [region],
   },
-  context: {
-    ...source.context,
-    revision: 7,
-    tasks: ["case.removePayment"],
-    payments: preview,
-  },
+  subject: { ...source.subject, revision: 7 },
+  actions: source.actions.filter((action) =>
+    new Set<string>(["case.removePayment"]).has(action.task),
+  ),
 };
 const reply = (
   handles: ReadonlyArray<Handle>,
@@ -85,13 +94,11 @@ const reply = (
     screen: {
       regions: disclosure === "ERASED" ? [] : [table(handles, "USD", 41)],
     },
-    context: {
-      kind: "PAYMENT_PAGE",
-      caseId: current.context.caseId,
-      revision,
-      nextCursor: cursor,
-      payments: handles,
-    },
+    subject: { kind: "CASE", caseId: current.subject.caseId, revision, workRevision: 0 },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: cursor,
     basis: {
       kind: "SNAPSHOT",
       observation: workBasis,
@@ -166,7 +173,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
   expect(JSON.parse(requestText(fetch.mock.calls[0]?.[1]?.body))).toEqual({
     target: {
       kind: "ID",
-      caseId: current.context.caseId,
+      caseId: current.subject.caseId,
     },
   });
   expect(fetch.mock.calls[0]?.[1]?.headers).toMatchObject({
@@ -183,7 +190,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
   expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({
     target: {
       kind: "ID",
-      caseId: current.context.caseId,
+      caseId: current.subject.caseId,
     },
     cursor: "core-payment-cursor",
   });

@@ -1,3 +1,4 @@
+import { Actions } from "../../ui/regions/Actions";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { PeopleTarget } from "../../hooks/operation/usePeopleTarget";
@@ -19,53 +20,20 @@ export const ActorActions = ({
   target: PeopleTarget;
   busy: boolean;
   onOpen: () => void;
-}) => {
-  const p = usePresentation();
-  if (target.offered.length === 0) {
-    return null;
-  }
-  const groups = [
-    {
-      label: p.text("ui.people.roles"),
-      acts: target.offered.filter((kind) => kind === "people.grant" || kind === "people.revoke"),
-    },
-    {
-      label: p.text("ui.account"),
-      acts: target.offered.filter((kind) => kind !== "people.grant" && kind !== "people.revoke"),
-    },
-  ];
-  return (
-    <>
-      {groups
-        .filter((group) => group.acts.length > 0)
-        .map((group) => (
-          <section key={group.label} aria-label={group.label}>
-            <h2>{group.label}</h2>
-            <div className="actions">
-              {group.acts.map((kind) => (
-                <button
-                  key={kind}
-                  className={kind === target.primary ? "primary" : undefined}
-                  type="button"
-                  disabled={busy}
-                  aria-label={p.text("ui.actDescription", {
-                    label: p.peopleLabel(kind),
-                    meaning: p.peopleMeaning(kind),
-                  })}
-                  onClick={() => {
-                    target.begin(kind);
-                    onOpen();
-                  }}
-                >
-                  {p.peopleLabel(kind)}
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
-    </>
-  );
-};
+}) => (
+  <fieldset disabled={busy}>
+    <Actions
+      actions={target.actions}
+      expandOther
+      onAction={(action) => {
+        if (action.task !== "people.requests.dismiss") {
+          target.begin(action);
+          onOpen();
+        }
+      }}
+    />
+  </fieldset>
+);
 export const ActorOperation = ({
   model,
   target,

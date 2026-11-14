@@ -7,8 +7,9 @@
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="Messages/DiagnosticMetadata.fs" />
     <Compile Include="Catalog/Prominence.fs" />
-    <Compile Include="Documents/Values.fs" />
+    <Compile Include="Documents/Links.fs" />
     <Compile Include="Documents/ReplyPresentation.fs" />
+    <Compile Include="Documents/Values.fs" />
     <Compile Include="Documents/OutcomePresentation.fs" />
     <Compile Include="Catalog/Consequence.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
@@ -20,6 +21,7 @@
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Documents/TimelineEventPresentation.fs" />
     <Compile Include="Documents/ScreenEntries.fs" />
+    <Compile Include="Documents/TaskAffordances.fs" />
     <Compile Include="Screens/Reminder.fs" />
     <Compile Include="Screens/ReminderList.fs" />
     <Compile Include="Screens/Payments.fs" />

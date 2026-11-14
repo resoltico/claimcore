@@ -52,72 +52,96 @@ module internal PaymentQueries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok before ->
-                                                    let! rows =
-                                                        match parent.Snapshot.State with
-                                                        | CaseState.Erased ->
-                                                            System.Threading.Tasks.Task.FromResult(
-                                                                { Items = []; Next = None }
-                                                                : Page<
-                                                                    PaymentEntry * EffectPosition,
-                                                                    EffectPosition
-                                                                   >
-                                                            )
-                                                        | _ ->
-                                                            tx.PaymentPage
-                                                                {
-                                                                    CaseId = parent.CaseId
-                                                                    Before = before
-                                                                    Limit = request.Limit
-                                                                }
+                                                    let! work = tx.FindWork parent.CaseId
 
-                                                    let canRemove =
-                                                        not view.Maintenance.Active
-                                                        && Access.canAct
-                                                            services.Principal
-                                                            view.Actor
-                                                            (Scope.Case parent.CaseId)
-                                                            (CaseAct.probe CaseActKind.RemovePayment)
-                                                        && (Case.ofAccepted parent.Snapshot
-                                                            |> Result.map (
-                                                                Case.actRefusal
-                                                                    CaseActKind.RemovePayment
-                                                            )
-                                                                =
-                                                                Ok None)
-
-                                                    return
-                                                        Outcome.Succeeded
-                                                            {
-                                                                Basis =
-                                                                    ServiceContext.basis
-                                                                        services
-                                                                        tx.ObservedAt
-                                                                CaseId = parent.CaseId
-                                                                Reference =
-                                                                    parent.Snapshot.Reference
-                                                                Revision = parent.Snapshot.Revision
-                                                                State =
-                                                                    CaseState.map
-                                                                        _.Finance
-                                                                        parent.Snapshot.State
-                                                                Items =
-                                                                    rows.Items
-                                                                    |> List.map
-                                                                        (fun (entry, position) ->
-                                                                            {
-                                                                                Entry = entry
-                                                                                Position = position
-                                                                                CanRemove =
-                                                                                    canRemove
-                                                                            })
-                                                                NextCursor =
-                                                                    rows.Next
-                                                                    |> Option.map (
-                                                                        Cursors.encodePayments
-                                                                            services.InstallationId
-                                                                            parent.CaseId
+                                                    match work with
+                                                    | Some work when
+                                                        work.CaseId = parent.CaseId
+                                                        && (match
+                                                                parent.Snapshot.State, work.Snapshot
+                                                            with
+                                                            | CaseState.Erased, None -> true
+                                                            | _, Some snapshot ->
+                                                                snapshot.Revision = work.Revision
+                                                            | _ -> false)
+                                                        ->
+                                                        let! rows =
+                                                            match parent.Snapshot.State with
+                                                            | CaseState.Erased ->
+                                                                System.Threading.Tasks
+                                                                    .Task.FromResult(
+                                                                        { Items = []; Next = None }
+                                                                        : Page<
+                                                                            PaymentEntry *
+                                                                            EffectPosition,
+                                                                            EffectPosition
+                                                                           >
                                                                     )
-                                                            }
+                                                            | _ ->
+                                                                tx.PaymentPage
+                                                                    {
+                                                                        CaseId = parent.CaseId
+                                                                        Before = before
+                                                                        Limit = request.Limit
+                                                                    }
+
+                                                        let canRemove =
+                                                            not view.Maintenance.Active
+                                                            && Access.canAct
+                                                                services.Principal
+                                                                view.Actor
+                                                                (Scope.Case parent.CaseId)
+                                                                (CaseAct.probe
+                                                                    CaseActKind.RemovePayment)
+                                                            && (Case.ofAccepted parent.Snapshot
+                                                                |> Result.map (
+                                                                    Case.actRefusal
+                                                                        CaseActKind.RemovePayment
+                                                                )
+                                                                    =
+                                                                    Ok None)
+
+                                                        return
+                                                            Outcome.Succeeded
+                                                                {
+                                                                    Basis =
+                                                                        ServiceContext.basis
+                                                                            services
+                                                                            tx.ObservedAt
+                                                                    CaseId = parent.CaseId
+                                                                    Reference =
+                                                                        parent.Snapshot.Reference
+                                                                    Revision =
+                                                                        parent.Snapshot.Revision
+                                                                    WorkRevision = work.Revision
+                                                                    State =
+                                                                        CaseState.map
+                                                                            _.Finance
+                                                                            parent.Snapshot.State
+                                                                    Items =
+                                                                        rows.Items
+                                                                        |> List.map
+                                                                            (fun (entry, position) ->
+                                                                                {
+                                                                                    Entry = entry
+                                                                                    Position =
+                                                                                        position
+                                                                                    CanRemove =
+                                                                                        canRemove
+                                                                                })
+                                                                    NextCursor =
+                                                                        rows.Next
+                                                                        |> Option.map (
+                                                                            Cursors.encodePayments
+                                                                                services
+                                                                                    .InstallationId
+                                                                                parent.CaseId
+                                                                        )
+                                                                }
+                                                    | _ ->
+                                                        return
+                                                            Outcome.Failed
+                                                                CoreFault.StoreIntegrityError
                                             | _ -> return QueryResults.unavailable
                                         }
                             }

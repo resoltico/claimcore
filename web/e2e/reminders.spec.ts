@@ -1,5 +1,14 @@
+import {
+  acceptedSubject,
+  recordWorkReview,
+  workRequest,
+  workConfirmButton,
+  reviewReminderCompletion,
+  selectReminderAction,
+  selectCaseReminderState,
+} from "./work-workflow";
 import { prefixedInputs } from "../tests/support/submission-inputs";
-import { type ResponseFor } from "@contracts/client";
+import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, settlePopupTriggerScroll } from "./workspace-navigation";
@@ -12,14 +21,7 @@ import { expect, test } from "@playwright/test";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft, startOpen, recordReviewed, startAct } from "./case-workflow";
 import { fillBusinessField } from "./typed-entry";
-import {
-  recordWorkReview,
-  workRequest,
-  workConfirmButton,
-  reviewReminderCompletion,
-  selectReminderAction,
-  selectCaseReminderState,
-} from "./work-workflow";
+
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
@@ -37,11 +39,11 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   // The raw fixture is a separate client; observe the accepted current page before its next request.
-  const { target } = receipt.document.context;
-  if (target.kind !== "REMINDER" || target.versions.length !== 1) {
+  const target = await acceptedSubject(page, receipt.operationId);
+  if (target.kind !== "REMINDER" || target.effects.kind !== "SINGLE") {
     throw new Error("Expected the accepted reminder creation identity.");
   }
-  const { reminderId } = target.versions[0]!;
+  const { reminderId } = target.effects.reminder;
   expect(reminderId).toBe(receipt.operationId);
   await expect(page.locator(`[id="reminder-${reminderId}-reminder.complete"]`)).toBeVisible();
   return receipt;
@@ -255,13 +257,13 @@ test("a compound action has one correlated accepting operation and a new reminde
   const reviewed = await reviewDraft(page);
   const receipt = await recordWorkReview(page, "REMINDER");
   expect(receipt.operationId).toBe(reviewed.operationId);
-  const { target } = receipt.document.context;
-  if (target.kind !== "REMINDER" || target.versions.length !== 2) {
+  const target = await acceptedSubject(page, receipt.operationId);
+  if (target.kind !== "REMINDER" || target.effects.kind !== "COMPLETED_AND_PLANNED") {
     throw new Error("Expected bounded pair");
   }
-  expect(target.versions[1]!.reminderId).toBe(receipt.operationId);
-  expect(target.versions[1]!.revision).toBe(1);
-  expect(target.versions[0]!.revision).toBe(2);
+  expect(target.effects.next.reminderId).toBe(receipt.operationId);
+  expect(target.effects.next.revision).toBe(1);
+  expect(target.effects.completed.revision).toBe(2);
   await expect(
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
   ).toHaveCount(1);
@@ -510,19 +512,11 @@ test("paid description correction preserves payment, then a closed case accepts 
   await reviewDraft(page);
   const requested: unknown = (await advisory).request().postDataJSON();
   expect(requested).toMatchObject({
-    act: {
-      kind: "case.correct",
-      groups: {
-        registration: {
-          kind: "reminder.update",
-          values: {
-            incidentDescription: description,
-          },
-        },
-        decision: {
-          kind: "KEEP",
-        },
-      },
+    task: "case.correct",
+    inputs: {
+      "group:registration": "reminder.update",
+      "field:incidentDescription": description,
+      "group:decision": "KEEP",
     },
   });
   await recordReviewed(page);

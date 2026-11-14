@@ -1,5 +1,10 @@
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../tests/support/human-requester.fixtures";
 import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
-import { activeRequester } from "../tests/support/human-requester.fixtures";
+
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
@@ -150,10 +155,11 @@ export const observe = async (
                 },
               ],
             },
-            context: {
-              ...activeRequester.context,
-              tasks: ["people.list", "people.grants", "people.history"],
-            },
+            actions: installationActions(["people.list", "people.grants", "people.history"]),
+            links: requesterLinks(
+              ["CASES", "PEOPLE", "OPERATIONS"],
+              ["people.list", "people.grants", "people.history"],
+            ),
             basis: { kind: "SNAPSHOT", observation: presentationBasis },
           }),
         },
@@ -177,7 +183,11 @@ export const seed = async (
       json: {
         ...humanReadReply("people.requests", {
           screen: { regions: [] },
-          context: { kind: "ACCESS_REQUESTS", requests: [], nextCursor: null },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: presentationBasis },
           disclosure: "CURRENT",
         }),

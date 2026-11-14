@@ -1,8 +1,11 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
+
 import { testJournal, recoveryScope } from "../support/recovery.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
@@ -56,15 +59,21 @@ const refusal = (kind: "access" | "session") =>
 const currentCanary = "CURRENT_DISCLOSURE_CANARY";
 const reviewCanary = "REVIEW_DISCLOSURE_CANARY";
 const disclosedCurrent = caseDocumentInput({
-  tasks: ["case.amendRegistration"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { ...prefixedInputs("field:", { ...fields.registration, claimantName: currentCanary }) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs],
-  seeds: {
-    ...emptyCaseSeeds,
-    registration: { ...fields.registration, claimantName: currentCanary },
-  },
 });
 const preview = () => {
   const task = operationTask("case.amendRegistration");
@@ -75,14 +84,26 @@ const preview = () => {
       review: {
         document: {
           screen: { regions: [] },
-          context: {
+          subject: {
             kind: "REVIEW",
-            task: task.id,
-            inputs: task.inputs.map((input) => input.id),
-            consequence: task.consequence,
-            target: { kind: "CASE", caseId: disclosedCurrent.context.caseId, beforeRevision: 1 },
             confirmation: { kind: "CASE_REFERENCE", reference: fields.caseReference },
+            consequence: task.consequence,
           },
+          actions: [
+            operationAffordance(
+              task.id,
+              {
+                kind: "CASE",
+                target: { kind: "ID", caseId: disclosedCurrent.subject.caseId },
+                expectedRevision: 1,
+              },
+              {},
+              [],
+            ),
+          ],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "SNAPSHOT", observation: workBasis },
           disclosure: "CURRENT",
         },

@@ -1,8 +1,10 @@
 import {
+  caseSubject,
   caseDocumentInput,
   registrationInputs,
-  emptyCaseSeeds,
 } from "../support/case-document.fixtures";
+import { prefixedInputs } from "../support/submission-inputs";
+import { operationAffordance } from "../support/affordances.fixtures";
 
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -11,12 +13,21 @@ import { editor } from "../support/presentation-state.fixtures";
 
 import { fields } from "../support/service-ui.fixtures";
 const current = caseDocumentInput({
-  tasks: ["case.amendRegistration"],
-  caseId: "20000000-0000-4000-8000-000000000001",
-  revision: 1,
+  subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 1,
+      },
+      { ...prefixedInputs("field:", fields.registration ?? {}) },
+      [...registrationInputs],
+      {},
+    ),
+  ],
   history: "FULL",
-  editableInputs: [...registrationInputs],
-  seeds: { ...emptyCaseSeeds, registration: fields.registration },
 });
 import { service } from "../../src/api/service";
 import { changeField, selectFact } from "../support/field-entry";

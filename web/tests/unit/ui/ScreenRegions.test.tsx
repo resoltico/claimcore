@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -118,8 +119,28 @@ it("routes grouped row actions by supplied identity rather than visible position
                 { key: "name", labelId: "label.details", prominence: "PRIMARY", isMoney: false },
               ],
               rows: [
-                { key: "first-id", values: [{ kind: "TEXT", value: "First" }] },
-                { key: "second-id", values: [{ kind: "TEXT", value: "Second" }] },
+                {
+                  key: "first-id",
+                  actions: [
+                    operationAffordance("case.close", {
+                      kind: "CASE",
+                      target: { kind: "REFERENCE", caseReference: "OPAQUE" },
+                      expectedRevision: 3,
+                    }),
+                  ],
+                  values: [{ kind: "TEXT", value: "First" }],
+                },
+                {
+                  key: "second-id",
+                  actions: [
+                    operationAffordance("case.close", {
+                      kind: "CASE",
+                      target: { kind: "REFERENCE", caseReference: "OPAQUE" },
+                      expectedRevision: 3,
+                    }),
+                  ],
+                  values: [{ kind: "TEXT", value: "Second" }],
+                },
               ],
               groups: [
                 { titleId: "reminderDue.TODAY.label", count: 1, rowKeys: ["second-id"] },
@@ -129,23 +150,17 @@ it("routes grouped row actions by supplied identity rather than visible position
           },
         ],
       }}
-      renderActions={(key) => (
-        <button
-          onClick={() => {
-            selected(key);
-          }}
-        >
-          Choose {key}
-        </button>
-      )}
+      onAction={(_action, row) => {
+        selected(row!.key);
+      }}
     />,
   );
-  await userEvent.setup().click(screen.getByRole("button", { name: "Choose second-id" }));
+  await userEvent.setup().click(screen.getAllByRole("button", { name: "Close the case" })[0]!);
   expect(selected).toHaveBeenCalledOnce();
   expect(selected).toHaveBeenCalledWith("second-id");
   expect(
     screen
       .getByRole("group", { name: "Second" })
-      .contains(screen.getByRole("button", { name: "Choose second-id" })),
+      .contains(screen.getAllByRole("button", { name: "Close the case" })[0]!),
   ).toBe(true);
 });

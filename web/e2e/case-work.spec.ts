@@ -1,4 +1,4 @@
-import { type ResponseFor } from "@contracts/client";
+import type { ResponseFor } from "@contracts/client";
 import { recordWorkReview, workRequest } from "./work-workflow";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -9,7 +9,7 @@ import {
   openAuthenticated,
   sessionToken,
 } from "./session-helpers";
-import { chooseChoice, goToView } from "./workspace-navigation";
+import { goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { currentCase } from "./localization-correction-workflow";
 import { pauseJsonReply, selectFormat, settingsNavigation, ui } from "./localization-support";
@@ -41,10 +41,11 @@ test("records future planned work and scoped responsibility, then finds the case
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const planned = tomorrow.toISOString().slice(0, 10);
   await page.locator("#case-work-assignee").click();
-  await expect(
-    page.getByRole("dialog").locator('input[name="input:responsibleActorAction"][value="SET"]'),
-  ).toBeVisible();
-  await chooseChoice(page, "input:responsibleActorAction", "SET");
+  const selection = page
+    .getByRole("dialog")
+    .locator('input[data-selects-fields="responsibleActor"]');
+  await expect(selection).toBeVisible();
+  await selection.check();
   const roster = page.locator(".assignee-input");
   await roster.locator(`input[type="radio"][value="${actorId}"]`).check();
   if (browserName === "chromium") {
@@ -162,13 +163,8 @@ for (const [entered, expected] of [
       .click();
     const captured = await preview.ready;
     expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
-      act: {
-        kind: "case.amendRegistration",
-        values: {
-          claimedAmount: expected,
-          claimedCurrency: "EUR",
-        },
-      },
+      task: "case.amendRegistration",
+      inputs: { "field:claimedAmount": expected, "field:claimedCurrency": "EUR" },
     });
     expect(captured.reply.outcome.kind).toBe("REVIEWED");
     preview.release();

@@ -117,7 +117,8 @@ let private verbPreparation () =
     Expect.isNone (JsonValue.tryMember "operationId" input) "Offline drafting allocates no identity"
 
     Expect.equal
-        (JsonValue.tryMember "target" input)
+        (JsonValue.tryMember "binding" input
+         |> Option.bind (JsonValue.tryMember "target"))
         (Some(
             JsonValue.Object
                 [
@@ -128,13 +129,14 @@ let private verbPreparation () =
         "Authored target is retained"
 
     Expect.equal
-        (JsonValue.tryMember "expectedRevision" input)
+        (JsonValue.tryMember "binding" input
+         |> Option.bind (JsonValue.tryMember "expectedRevision"))
         (Some(JsonValue.Integer 1L))
         "Authored revision remains exact"
 
     Expect.equal
-        (JsonValue.tryMember "act" input)
-        (Some(JsonValue.Object [ "kind", JsonValue.String "case.close" ]))
+        (JsonValue.tryMember "task" input)
+        (Some(JsonValue.String "case.close"))
         "Authored act remains exact"
 
     let preview =
@@ -339,17 +341,19 @@ let private peoplePreviewInvocation verb =
 
     let prepared =
         prepared (
-            [
-                "people"
-                verb
-                "--principal-kind"
-                "HUMAN"
-                "--issuer"
-                "https://issuer.example/"
-                "--subject"
-                "synthetic-subject"
-                "--preview"
-            ]
+            ([ "people"; verb ]
+             @ (if verb = "register" then
+                    [
+                        "--principal-kind"
+                        "HUMAN"
+                        "--issuer"
+                        "https://issuer.example/"
+                        "--subject"
+                        "synthetic-subject"
+                    ]
+                else
+                    [ "10000000-0000-7000-8000-000000000001" ])
+             @ [ "--preview" ])
             @ role
             @ (if verb = "register" then [ "--name"; "Authored" ] else [])
         )
@@ -482,7 +486,15 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
 
     let input =
         (Frames.value Api.operationPreview
-         >> Option.map ClaimCore.TestSupport.Submissions.command)
+         >> Option.map (fun submission ->
+             match submission.Operation with
+             | Ok(SubmittedOperation.ActorPeople value) ->
+                 OperationInput.People
+                     { CliReplyFixtures.peopleRequest with
+                         OperationId = value.OperationId
+                         Act = value.Act
+                     }
+             | _ -> ClaimCore.TestSupport.Submissions.command submission))
             invocation
         |> Option.defaultWith (fun () -> failtest "Preview input required")
 

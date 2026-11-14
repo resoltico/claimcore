@@ -112,8 +112,8 @@ let tests =
                         "Opaque presentation is retained"
 
                     Expect.equal
-                        opaque.Context
-                        original.Context
+                        opaque.Actions
+                        original.Actions
                         "Presentation changes never become editable input seeds")
             testCase
                 "erased and unoffered groups are absent and invalid cross-references refuse"
@@ -164,25 +164,24 @@ let tests =
                                 let first = values[0] |> nonNull
                                 values[1] <- first.DeepClone())
                             mutate (fun node ->
-                                let context = node["context"] |> nonNull
-                                let correction = context["correction"] |> nonNull
-                                let keep = JsonArray()
-                                keep.Add "KEEP"
-                                correction["decision"] <- keep)
+                                let actions = (node["actions"] |> nonNull).AsArray()
+
+                                let correction =
+                                    actions
+                                    |> Seq.choose Option.ofObj
+                                    |> Seq.find (fun action ->
+                                        (action["task"] |> nonNull).GetValue<string>() =
+                                            "case.correct")
+
+                                let choices = correction["choices"] |> nonNull
+                                choices["group:decision"] <- JsonNode.Parse("[\"UNKNOWN\"]"))
                             mutate (fun node ->
                                 node["disclosure"] <-
-                                    System.Text.Json.Nodes.JsonValue.Create "WITHHELD"
-
-                                let context = node["context"] |> nonNull
-                                let seeds = context["seeds"] |> nonNull
-                                seeds["registration"] <- null
-                                seeds["decision"] <- null
-                                seeds["work"] <- null
-                                context["editableInputs"] <- JsonArray())
+                                    System.Text.Json.Nodes.JsonValue.Create "WITHHELD")
                         ]
 
                     for raw in invalid do
                         Expect.isError
-                            (Codec.validate 65536 HumanDocumentCodecs.document raw)
-                            "Groups must be unique, offered and currently disclosed")
+                            (Codec.decode 65536 HumanDocumentCodecs.document raw)
+                            "Groups stay unique, choices stay declared, and disclosure removes authoring controls")
         ]

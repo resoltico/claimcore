@@ -93,7 +93,7 @@ module CaseListScreen =
                 (fun (row: CaseSummary) -> codes CaseAttention.vocabulary row.Attention)
 
         let data =
-            table
+            tableWithControls
                 (fun (row: CaseSummary) -> CaseId.format row.CaseId)
                 (fun row ->
                     Some
@@ -104,6 +104,30 @@ module CaseListScreen =
                                 [ section "label.recordDetails" (entries [ workRevision ] row) ]
                         })
                 (caseSummaryColumns @ [ attention ])
+                (fun row ->
+                    let actions =
+                        if row.CanAssign then
+                            let seeds =
+                                row.Responsible
+                                |> Option.map (fun actor ->
+                                    Map.ofList
+                                        [
+                                            TaskAffordances.field BusinessField.ResponsibleActor,
+                                            TaskAffordances.text (ActorId.format actor.ActorId)
+                                        ])
+                                |> Option.defaultValue Map.empty
+
+                            [
+                                TaskAffordances.work
+                                    row.CaseId
+                                    row.WorkRevision
+                                    seeds
+                                    [ TaskAffordances.field BusinessField.ResponsibleActor ]
+                            ]
+                        else
+                            []
+
+                    Some(Link.caseById row.CaseId), actions)
                 rows
 
         Screen.create [ region RegionRole.Results None (RegionContent.Table data) ]

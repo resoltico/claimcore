@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { CurrentCase } from "../../../src/protocol/types";
@@ -44,6 +45,13 @@ it("renders supplied note narrative and author captions and binds remove to the 
             rows: [
               {
                 key: noteId,
+                actions: [
+                  operationAffordance("note.remove", {
+                    kind: "NOTE",
+                    target: { kind: "ID", caseId },
+                    noteId,
+                  }),
+                ],
                 values: [
                   { kind: "NARRATIVE", value: "Core note narrative Ω" },
                   { kind: "TEXT", value: "Core opaque author Ψ" },
@@ -67,20 +75,19 @@ it("renders supplied note narrative and author captions and binds remove to the 
         },
       ],
     },
-    context: {
-      kind: "CASE",
-      caseId,
-      revision: 7,
-      workRevision: 2,
-      history: "NONE",
-      tasks: ["note.remove"],
-      editableInputs: [],
-      correction: null,
-      seeds: { paymentCurrency: null, registration: null, decision: null, work: null },
-      notes: [{ noteId, canRemove: true }],
-      payments: [],
-      nextActions: [],
-    },
+    subject: { kind: "CASE", caseId, revision: 7, workRevision: 2 },
+    actions: [
+      operationAffordance(
+        "note.remove",
+        { kind: "NOTE", target: { kind: "ID", caseId }, noteId },
+        {},
+        [],
+        {},
+      ),
+    ],
+    links: [],
+    history: "NONE",
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   };
@@ -97,19 +104,16 @@ it("renders supplied note narrative and author captions and binds remove to the 
   expect(screen.getByText("Core note narrative Ω")).toBeVisible();
   expect(screen.getByText("Core opaque author Ψ")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: /remove note/iu }));
-  expect(remove).toHaveBeenCalledWith(noteId);
+  expect(remove).toHaveBeenCalledWith(
+    expect.objectContaining({
+      task: "note.remove",
+      binding: { kind: "NOTE", target: { kind: "ID", caseId }, noteId },
+    }),
+  );
   expect(screen.queryByText(noteId)).not.toBeInTheDocument();
 });
 
 it("renders reminder rows from Core while actions use versioned task controls without raw reminder data", async () => {
-  const control = {
-    caseId,
-    reminderId,
-    revision: 4,
-    tasks: ["reminder.complete"],
-    actionSeed: null,
-    dueDateSeed: null,
-  };
   const document = {
     screen: {
       regions: [
@@ -134,6 +138,15 @@ it("renders reminder rows from Core while actions use versioned task controls wi
             rows: [
               {
                 key: reminderId,
+                link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+                actions: [
+                  operationAffordance("reminder.complete", {
+                    kind: "REMINDER",
+                    target: { kind: "ID", caseId },
+                    reminderId,
+                    expectedRevision: 4,
+                  }),
+                ],
                 values: [
                   { kind: "TEXT", value: "Core case caption Ω" },
                   { kind: "TEXT", value: "Core reminder caption Ψ" },
@@ -144,7 +157,11 @@ it("renders reminder rows from Core while actions use versioned task controls wi
         },
       ],
     },
-    context: { kind: "REMINDERS", nextCursor: null, reminders: [control] },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   };
@@ -167,5 +184,16 @@ it("renders reminder rows from Core while actions use versioned task controls wi
     expect.stringContaining(caseId),
   );
   await userEvent.click(screen.getByRole("button", { name: /complete/iu }));
-  expect(act).toHaveBeenCalledWith(control, "reminder.complete", expect.any(String));
+  expect(act).toHaveBeenCalledWith(
+    expect.objectContaining({
+      task: "reminder.complete",
+      binding: {
+        kind: "REMINDER",
+        target: { kind: "ID", caseId },
+        reminderId,
+        expectedRevision: 4,
+      },
+    }),
+    expect.any(String),
+  );
 });

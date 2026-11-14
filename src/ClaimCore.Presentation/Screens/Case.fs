@@ -198,6 +198,8 @@ module CaseScreen =
                             |> List.map (fun step ->
                                 {
                                     RegionStage.Stage = step.Stage
+                                    Link = None
+                                    Actions = []
                                     Reached = step.Completed
                                     Date = step.Date
                                     Meter =
@@ -217,34 +219,6 @@ module CaseScreen =
                                 })
                     }
 
-        let actions =
-            let recommended = reply.Advice.Recommended |> Option.map ActKind.Case
-
-            let offered =
-                reply.Advice.Acts
-                |> List.filter ((<>) CaseActKind.RemovePayment)
-                |> List.filter (fun act -> Some(ActKind.Case act) <> recommended)
-
-            {
-                RegionActions.Recommended = recommended
-                Groups =
-                    Vocabulary.all ActFamily.vocabulary
-                    |> List.choose (fun family ->
-                        let acts =
-                            offered
-                            |> List.filter (fun act -> (CaseActKind.describe act).Family = family)
-                            |> List.map ActKind.Case
-
-                        if acts.IsEmpty then
-                            None
-                        else
-                            Some
-                                {
-                                    RegionActionGroup.Family = family
-                                    Acts = acts
-                                })
-            }
-
         let work =
             (caseWork reply.Work).Entries
             |> List.filter (fun entry ->
@@ -257,10 +231,19 @@ module CaseScreen =
             |> List.filter (fun column -> List.contains column.Key [ "action"; "due"; "timing" ])
 
         let next =
-            table
+            tableWithControls
                 (fun (row: ReminderReadModel) -> ReminderId.format (Reminder.id row.Reminder))
                 (fun _ -> None)
                 nextColumns
+                (fun row ->
+                    Some(
+                        Link.ReminderGet
+                            {
+                                Target = CaseSelector.Id(Reminder.caseId row.Reminder)
+                                ReminderId = ReminderId.value (Reminder.id row.Reminder)
+                            }
+                    ),
+                    TaskAffordances.reminder row)
                 reply.NextActions
 
         let next =
@@ -341,7 +324,6 @@ module CaseScreen =
                                 (RegionContent.Stages progress))
                         |> Option.toList
 
-                    yield region RegionRole.Recommendation None (RegionContent.Actions actions)
 
                     for group, facts in List.zip scalarGroups groups do
                         if group = RecordGroup.Registration then
@@ -354,7 +336,25 @@ module CaseScreen =
                                 RegionRole.Payments
                                 (Some "label.paymentDecisionAndPayments")
                                 (RegionContent.Table(
-                                    PaymentsScreen.table fields.Finance reply.LatestPayments
+                                    PaymentsScreen.tableWithControls
+                                        id
+                                        (fun entry ->
+                                            None,
+                                            (if
+                                                 List.contains
+                                                     CaseActKind.RemovePayment
+                                                     reply.Advice.Acts
+                                             then
+                                                 [
+                                                     TaskAffordances.paymentRemoveEntry
+                                                         reply.Snapshot.CaseId
+                                                         reply.Snapshot.Revision
+                                                         entry
+                                                 ]
+                                             else
+                                                 []))
+                                        fields.Finance
+                                        reply.LatestPayments
                                 ))
                     | None -> ()
 
@@ -370,7 +370,9 @@ module CaseScreen =
                         region
                             RegionRole.Notes
                             (Some "section.notes.label")
-                            (RegionContent.Table(NotesScreen.table reply.Notes))
+                            (RegionContent.Table(
+                                NotesScreen.table reply.Snapshot.CaseId reply.Notes
+                            ))
                 yield entryRegion RegionRole.Details (Some "label.recordDetails") details
             ]
 

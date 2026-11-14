@@ -1,4 +1,4 @@
-import { caseDocumentInput } from "../support/case-document.fixtures";
+import { operationAffordance } from "../support/affordances.fixtures";
 
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
@@ -9,15 +9,21 @@ import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
   it("keeps optional facts unselected and assembles the selected semantic task with its binding", () => {
-    const current = caseDocumentInput({
-      tasks: [],
-      caseId: "20000000-0000-4000-8000-000000000001",
-      revision: 1,
-      history: "FULL" as const,
-    });
-    const values = initialOperationValues("CASE", "case.amendRegistration", current);
+    const values = initialOperationValues(
+      operationAffordance("case.amendRegistration", {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    );
     expect(values["field:claimantName"]).toBeUndefined();
-    const close = initialOperationValues("CASE", "case.close", current);
+    const close = initialOperationValues(
+      operationAffordance("case.close", {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        expectedRevision: 0,
+      }),
+    );
     expect(
       assembleOperation(
         operationEntry({ subject: "CASE", kind: "case.close" }),

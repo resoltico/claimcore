@@ -1,11 +1,15 @@
-import { ReminderActions, type ReminderActHandler } from "./ReminderActions";
-import { casePath } from "../../routing/routes";
-import { navigate } from "../../routing/navigation";
+import type {
+  RegionRow,
+  CaseSelector,
+  ReminderListRequest,
+  HumanResponseByEndpoint,
+} from "@contracts/client";
+import type { ReminderActHandler } from "./reminderActions";
+
 import { PageTables } from "../../ui/PageTables";
-import "./reminder-list.css";
+import {} from "./reminder-list.css";
 import { useCallback } from "react";
-import type { CaseSelector, ReminderListRequest, HumanResponseByEndpoint } from "@contracts/client";
-import type { ReminderControl } from "./ReminderActions";
+
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
@@ -19,8 +23,10 @@ const select = (reply: HumanResponseByEndpoint["reminder.list"]) => {
     return null;
   }
   return {
-    items: doc.context.reminders,
-    nextCursor: doc.context.nextCursor,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: doc.nextCursor,
     basis: doc.basis.observation,
     screen: doc.screen,
     disclosure: doc.disclosure,
@@ -48,7 +54,7 @@ export const ReminderList = ({
     }),
     [filter, target],
   );
-  const result = useEndpointPage<"reminder.list", ReminderControl, ObservedReminderPage>(
+  const result = useEndpointPage<"reminder.list", RegionRow, ObservedReminderPage>(
     "reminder.list",
     input,
     select,
@@ -68,24 +74,15 @@ export const ReminderList = ({
       ) : null}
       <PageTables
         views={result.views}
-        rowLink={(key) => {
-          const row = result.items.find((candidate) => candidate.reminderId === key);
-          if (target !== undefined || row === undefined) {
-            return undefined;
-          }
-          const href = casePath(row.caseId);
-          return {
-            column: "reference",
-            href,
-            follow: () => {
-              navigate(href);
-            },
-          };
-        }}
-        renderActions={(key) => {
-          const row = result.items.find((candidate) => candidate.reminderId === key);
-          return row === undefined ? null : <ReminderActions row={row} onAct={onAct} />;
-        }}
+        {...(onAct === undefined
+          ? {}
+          : {
+              onAction: (action, _row, originId) => {
+                if (action.task !== "people.requests.dismiss") {
+                  onAct(action, originId);
+                }
+              },
+            })}
       />
       {result.cursor === null ? null : (
         <button

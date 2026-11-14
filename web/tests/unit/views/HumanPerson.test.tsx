@@ -1,8 +1,9 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
 import { PeopleGrants } from "../../../src/views/PeopleGrants";
-import { type HumanReadDocument_people_grants } from "@contracts/client";
+import type { HumanReadDocument_people_grants } from "@contracts/client";
 const actorId = "00000000-0000-4000-8000-000000000001";
 const caseId = "00000000-0000-4000-8000-000000000002";
 const document: HumanReadDocument_people_grants = {
@@ -58,6 +59,18 @@ const document: HumanReadDocument_people_grants = {
           rows: [
             {
               key: "selected-grant",
+              actions: [
+                operationAffordance(
+                  "people.revoke",
+                  { kind: "PEOPLE", actorId },
+                  {
+                    "input:role": "CASE_READER",
+                    "input:scope": "CASE",
+                    "field:caseReference": "PRIVATE-REFERENCE",
+                  },
+                  [],
+                ),
+              ],
               values: [
                 {
                   kind: "TEXT",
@@ -70,34 +83,26 @@ const document: HumanReadDocument_people_grants = {
       },
     ],
   },
-  context: {
-    kind: "PERSON",
-    actorId,
-    principal: {
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject: "person",
-    },
-    tasks: ["people.revoke"],
-    profileSeed: null,
-    nextCursor: null,
-    revocations: [
-      {
-        key: "selected-grant",
-        role: "CASE_READER",
-        scope: {
-          kind: "CASE",
-          caseId,
+  subject: { kind: "PERSON", actorId },
+  actions: [operationAffordance("people.revoke", { kind: "PEOPLE", actorId }, {}, undefined, {})],
+  links: [
+    {
+      rel: "VIEW",
+      labelId: "field.responsibleActor.label",
+      link: {
+        endpoint: "case.list",
+        input: {
+          limit: 20,
+          view: "ALL",
+          lifecycle: ["ACTIVE"],
+          status: ["OPENED"],
+          responsibleActor: actorId,
         },
       },
-    ],
-    responsibleCases: {
-      view: "ALL",
-      responsibleActor: actorId,
-      lifecycle: "ACTIVE",
-      status: "OPENED",
     },
-  },
+  ],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -158,7 +163,13 @@ it("renders an opaque Core person title and binds revoke/navigation to typed con
       name: /revoke/iu,
     }),
   );
-  expect(revoke).toHaveBeenCalledExactlyOnceWith(document.context.revocations[0]);
+  expect(revoke).toHaveBeenCalledExactlyOnceWith(
+    document.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE"
+        ? region.content.rows.flatMap((row) => row.actions ?? [])
+        : [],
+    )[0],
+  );
   expect(observed).toHaveBeenCalledWith(document);
 });
 it("does not publish a person document for a different requested actor", async () => {

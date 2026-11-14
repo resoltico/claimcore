@@ -20,12 +20,29 @@ module AssigneesScreen =
 
 
 
-    let rows rows =
+    let private rows caseId revision rows =
         let columns = assigneeColumns |> List.filter (fun column -> column.Key <> "actorId")
-        resultScreen (fun (row: ActorRef) -> ActorId.format row.ActorId) columns rows
+
+        resultScreenWithControls
+            (fun (row: ActorRef) -> ActorId.format row.ActorId)
+            columns
+            (fun row ->
+                Some(Link.person row.ActorId),
+                [
+                    TaskAffordances.work
+                        caseId
+                        revision
+                        (Map.ofList
+                            [
+                                TaskAffordances.field BusinessField.ResponsibleActor,
+                                TaskAffordances.text (ActorId.format row.ActorId)
+                            ])
+                        []
+                ])
+            rows
 
     let view (reply: AssigneePage) =
-        let screen = rows reply.Items
+        let screen = rows reply.CaseId reply.WorkRevision reply.Items
 
         let details =
             reply.Items

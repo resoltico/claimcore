@@ -20,7 +20,7 @@ open ClaimCore.TestSupport.TestServerFixture
 
 let private peopleBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"kind":"PEOPLE","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER","profile":{{"displayName":"Host transport person","contact":null}}}}}}"""
+        $"""{{"operationId":"{operationId}","task":"people.register","binding":{{"kind":"PEOPLE"}},"inputs":{{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example.test/realm","input:principal.subject":"person","input:profile.displayName":"Host transport person"}}}}"""
     )
 
 let private body name =
@@ -426,9 +426,10 @@ let private peoplePreview () =
                  |> List.exists (fun region -> region.Role = RegionRole.Facts))
                 "Actual people receipt supplies its outcome facts"
 
-            match document.Context with
-            | InteractionContext.Receipt { Target = ReceiptTarget.People _ } -> ()
-            | _ -> failtest "Bounded people receipt handle required"
+            Expect.equal
+                document.Subject
+                (DocumentSubject.Receipt(ClaimCore.TestSupport.CaseFixtures.operationId id))
+                "HUMAN receipt owns the accepted operation identity"
         | _ -> failtest "Expected same acceptance through HUMAN"
 
         let changed =
@@ -436,21 +437,16 @@ let private peoplePreview () =
                 Codec.decode 100000 Api.operationExecute.Input input
                 |> Result.defaultWith (string >> failtest)
 
-            match authored with
-            | OperationInput.People request ->
-                match request.Act with
-                | PeopleAct.Register profile ->
-                    OperationInput.People
-                        { request with
-                            Act =
-                                PeopleAct.Register
-                                    { profile with
-                                        DisplayName = "Changed after acceptance"
-                                    }
-                        }
-                    |> Codec.encode Api.operationExecute.Input
-                | _ -> failtest "Registration fixture required"
-            | _ -> failtest "People fixture required"
+            OperationSubmission.admit
+                { authored.Envelope with
+                    Inputs =
+                        Map.add
+                            (TaskInputId.Target InputTarget.ProfileDisplayName)
+                            (SubmissionValue.Text "Changed after acceptance")
+                            authored.Inputs
+                }
+            |> Result.defaultWith (fun () -> failtest "Valid changed registration shape")
+            |> Codec.encode Api.operationExecute.Input
 
         let! changedStatus, changedReply = host.Call("operation.execute", changed, token)
 
@@ -538,23 +534,14 @@ let private principalAdmission () =
         let target kind issuer subject =
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
                 {|
-                    kind = "PEOPLE"
                     operationId = operationId
-                    target =
-                        {|
-                            kind = kind
-                            issuer = issuer
-                            subject = subject
-                        |}
-                    act =
-                        {|
-                            kind = "REGISTER"
-                            profile =
-                                {|
-                                    displayName = "Principal boundary person"
-                                    contact = null
-                                |}
-                        |}
+                    task = "people.register"
+                    binding = {| kind = "PEOPLE" |}
+                    inputs =
+                        Map.ofList["input:principal.kind", kind
+                                   "input:principal.issuer", issuer
+                                   "input:principal.subject", subject
+                                   "input:profile.displayName", "Principal boundary person"]
                 |}
 
         let samples =

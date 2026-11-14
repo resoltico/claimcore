@@ -272,42 +272,60 @@ module internal Queries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok after ->
-                                                    let! page =
-                                                        tx.AssigneePage
-                                                            {
-                                                                CaseId = record.CaseId
-                                                                ReadRoles =
-                                                                    Access.rolesFor
-                                                                        Capability.ReadCase
-                                                                WorkRoles =
-                                                                    Access.rolesFor
-                                                                        Capability.ManageCaseWork
-                                                                AfterActorId = after
-                                                                Limit = request.Limit
-                                                            }
+                                                    let! work = tx.FindWork record.CaseId
 
-                                                    if page.Items.Length > request.Limit then
+                                                    match work with
+                                                    | Some work when
+                                                        work.CaseId = record.CaseId
+                                                        && (work.Snapshot
+                                                            |> Option.exists (fun snapshot ->
+                                                                snapshot.Revision = work.Revision))
+                                                        ->
+                                                        let! page =
+                                                            tx.AssigneePage
+                                                                {
+                                                                    CaseId = record.CaseId
+                                                                    ReadRoles =
+                                                                        Access.rolesFor
+                                                                            Capability.ReadCase
+                                                                    WorkRoles =
+                                                                        Access.rolesFor
+                                                                            Capability
+                                                                                .ManageCaseWork
+                                                                    AfterActorId = after
+                                                                    Limit = request.Limit
+                                                                }
+
+                                                        if page.Items.Length > request.Limit then
+                                                            return
+                                                                Outcome.Failed
+                                                                    CoreFault.StoreIntegrityError
+                                                        else
+                                                            return
+                                                                Outcome.Succeeded
+                                                                    {
+                                                                        AssigneePage.CaseId =
+                                                                            record.CaseId
+                                                                        WorkRevision = work.Revision
+                                                                        Basis =
+                                                                            ServiceContext.basis
+                                                                                services
+                                                                                tx.ObservedAt
+                                                                        Items = page.Items
+                                                                        NextCursor =
+                                                                            page.Next
+                                                                            |> Option.map (
+                                                                                Cursors
+                                                                                    .encodeAssignees
+                                                                                    services
+                                                                                        .InstallationId
+                                                                                    record.CaseId
+                                                                            )
+                                                                    }
+                                                    | _ ->
                                                         return
                                                             Outcome.Failed
                                                                 CoreFault.StoreIntegrityError
-                                                    else
-                                                        return
-                                                            Outcome.Succeeded
-                                                                {
-                                                                    AssigneePage.Basis =
-                                                                        ServiceContext.basis
-                                                                            services
-                                                                            tx.ObservedAt
-                                                                    Items = page.Items
-                                                                    NextCursor =
-                                                                        page.Next
-                                                                        |> Option.map (
-                                                                            Cursors.encodeAssignees
-                                                                                services
-                                                                                    .InstallationId
-                                                                                record.CaseId
-                                                                        )
-                                                                }
                                             | _ -> return unavailable
                                         }
                                 CancellationToken = token

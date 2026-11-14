@@ -14,7 +14,7 @@ import { NoticeView } from "../../presentation/Message";
 import type { Notice } from "../../protocol/notices";
 import type { RevisionConflictSnapshot } from "../../operation/operationTypes";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import "./conflict.css";
+import {} from "./conflict.css";
 const historyDisclosure = (document: HumanDocument): HistoryDisclosure | null => {
   switch (document.disclosure) {
     case "FULL":
@@ -60,9 +60,7 @@ const ConflictPage = ({
     });
   }
   const previousDisclosure = useRef(initialDisclosure);
-  const [cursor, setCursor] = useState(
-    initial.context.kind === "CONTINUATION" ? initial.context.nextCursor : null,
-  );
+  const [cursor, setCursor] = useState(initial.nextCursor);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Notice | null>(null);
   const pending = useRef<AbortController | null>(null);
@@ -118,7 +116,7 @@ const ConflictPage = ({
           ...prior,
           pages: changed ? [presented] : [...prior.pages, presented],
         }));
-        setCursor(page.context.nextCursor);
+        setCursor(page.nextCursor);
         if (changed) {
           scope.onDisclosureChanged();
         }
@@ -163,7 +161,7 @@ const detailFor = (snapshot: RevisionConflictSnapshot) => {
   if (snapshot.latest.current.disclosure === "ERASED") {
     return "ERASED";
   }
-  return snapshot.latest.current.context.history === "FULL" ? "CURRENT" : "SUMMARY";
+  return snapshot.latest.current.history === "FULL" ? "CURRENT" : "SUMMARY";
 };
 const conflictDocument = (snapshot: RevisionConflictSnapshot) =>
   snapshot.diagnostic?.document ?? null;
@@ -184,8 +182,7 @@ export const ConflictChanges = ({
     heading.current?.focus();
   }, []);
   const changes = conflictDocument(snapshot);
-  const metadataAllowed =
-    snapshot.latest === null || snapshot.latest.current.context.history !== "NONE";
+  const metadataAllowed = snapshot.latest === null || snapshot.latest.current.history !== "NONE";
   const detail = detailFor(snapshot);
   const onDisclosureChanged = () => {
     model.invalidateDisclosure();

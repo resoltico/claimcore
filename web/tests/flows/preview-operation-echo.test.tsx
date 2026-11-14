@@ -1,9 +1,15 @@
-import { type RequestByEndpoint } from "@contracts/client";
+import { operationAffordance } from "../support/affordances.fixtures";
+import {
+  installationActions,
+  requesterLinks,
+  activeRequester,
+} from "../support/human-requester.fixtures";
+import type { RequestByEndpoint } from "@contracts/client";
 import { beforeEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { current } from "../support/operation-form.fixtures";
-import { activeRequester } from "../support/human-requester.fixtures";
+
 import { closeReview } from "../support/operation-documents.fixtures";
 import { peopleReview } from "../support/people-operation.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
@@ -25,6 +31,10 @@ const PeopleEditor = () => {
   const model = useOperation({
     subject: "PEOPLE",
     kind: "people.grant",
+    affordance: operationAffordance("people.grant", {
+      kind: "PEOPLE",
+      actorId: "10000000-0000-4000-8000-000000000001",
+    }),
     current: null,
     credential,
     prefill: {
@@ -76,11 +86,8 @@ it.each(["CASE", "PEOPLE"] as const)(
     });
     const context = {
       ...activeRequester,
-      context: {
-        ...activeRequester.context,
-        views: ["PEOPLE"] as const,
-        tasks: ["people.grant"] as const,
-      },
+      actions: installationActions(["people.grant"] as const),
+      links: requesterLinks(["PEOPLE"] as const, ["people.grant"] as const),
     };
     render(
       kind === "CASE" ? (

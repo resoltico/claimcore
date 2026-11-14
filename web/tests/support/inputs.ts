@@ -1,11 +1,4 @@
-import type {
-  RequesterState_ACTIVE,
-  ActorRef,
-  Principal,
-  Registration,
-  CaseFields,
-  WorkDateBasis,
-} from "@contracts/client";
+import type { RequesterState_ACTIVE, ActorRef, CaseFields, WorkDateBasis } from "@contracts/client";
 export const actorId = "10000000-0000-4000-8000-000000000001";
 export const workBasis: WorkDateBasis = {
   observedAt: "2026-09-01T12:00:00.000000Z",
@@ -61,8 +54,8 @@ export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T)
 });
 // Build inputs only. Expected outputs and oracle values must stay literal.
 export const registration = (
-  changes: Partial<Registration> = {},
-): Registration & CaseFields["registration"] => ({
+  changes: Partial<CaseFields["registration"]> = {},
+): CaseFields["registration"] => ({
   incidentDate: "2026-09-01",
   incidentNotificationDate: "2026-09-02",
   incidentCountry: "LV",
@@ -71,11 +64,5 @@ export const registration = (
   claimedAmount: "12.34",
   claimedCurrency: "EUR",
   incidentDescription: null,
-  ...changes,
-});
-export const principal = (changes: Partial<Principal> = {}): Principal => ({
-  kind: "HUMAN",
-  issuer: "https://issuer.example/",
-  subject: "synthetic-owner",
   ...changes,
 });

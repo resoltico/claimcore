@@ -11,7 +11,11 @@ export const absentLookup = (operationId: string) =>
         kind: "NOT_ACCEPTED",
         document: {
           screen: { regions: [] },
-          context: { kind: "EMPTY" },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "UNAVAILABLE" },
           disclosure: "NONE",
         },
@@ -30,7 +34,11 @@ export const pendingLookup = (operationId: string, finalAt = "2026-11-07T10:10:0
         kind: "PENDING",
         finalAt,
         document: {
-          context: { kind: "EMPTY" },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "UNAVAILABLE" },
           disclosure: "NONE",
           screen: {

@@ -126,15 +126,16 @@ module internal InteractiveReview =
             | Some(RepresentationReply.Human {
                                                  Outcome = HumanPreviewResult.Reviewed {
                                                                                            Document = {
-                                                                                                          Context = InteractionContext.Review binding
+                                                                                                          Subject = DocumentSubject.Review(confirmation,
+                                                                                                                                           consequence)
                                                                                                       }
                                                                                        }
                                              }) when not draft.PreviewOnly ->
                 let consent =
-                    match binding.Consequence with
+                    match consequence with
                     | Consequence.Irreversible ->
                         let target =
-                            match binding.Confirmation with
+                            match confirmation with
                             | ConfirmationTarget.CaseReference reference ->
                                 CaseReference.format reference
                             | ConfirmationTarget.Operation id -> id.ToString("D")
@@ -173,141 +174,246 @@ module internal InteractiveReview =
             | _ -> return response.ExitCode
         }
 
-    let private complete newId (draft: InteractiveDraft) binding =
-        let input =
-            { draft.Input with
-                OperationId = Some(draft.Input.OperationId |> Option.defaultWith newId)
+    let private allActions (document: HumanDocument) =
+        document.Actions
+        @ (document.Screen.Regions
+           |> List.collect (fun region ->
+               region.Actions
+               @ (match region.Content with
+                  | RegionContent.Table table -> table.Rows |> List.collect _.Actions
+                  | RegionContent.Stages stages -> stages.Steps |> List.collect _.Actions
+                  | RegionContent.Timeline entries -> entries |> List.collect _.Actions
+                  | _ -> [])))
+
+    let private selected (draft: InteractiveDraft) (action: Affordance) =
+        let sameSelection =
+            match draft.Input.Binding, action.Binding with
+            | OperationBinding.Case(_, _, Some expected), OperationBinding.Case(_, _, Some actual) ->
+                expected = actual
+            | OperationBinding.Note(_, Some expected), OperationBinding.Note(_, Some actual) ->
+                expected = actual
+            | OperationBinding.Reminder(_, Some(expected, _)),
+              OperationBinding.Reminder(_, Some(actual, _)) -> expected = actual
+            | _ -> true
+
+        let sameGrant =
+            if draft.Input.Task <> ActKind.People PeopleActKind.Revoke then
+                true
+            else
+                let normalize input value =
+                    match input, value with
+                    | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
+                      SubmissionValue.Text text ->
+                        CaseReference.parse text
+                        |> Result.map (
+                            CaseReference.format >> CaseReference.key >> SubmissionValue.Text
+                        )
+                        |> Result.defaultValue value
+                    | _ -> value
+
+                action.Seeds
+                |> Map.forall (fun input value ->
+                    draft.Input.Inputs
+                    |> Map.tryFind input
+                    |> Option.exists (fun supplied ->
+                        normalize input supplied = normalize input value))
+
+        action.Task = TaskId.Operation draft.Input.Task && sameSelection && sameGrant
+
+    let private complete newId (draft: InteractiveDraft) (action: Affordance) =
+        let binding =
+            match draft.Input.Task, draft.Input.Binding, action.Binding with
+            | ActKind.Case CaseActKind.Open,
+              OperationBinding.Case(target, _, _),
+              OperationBinding.Case(_, revision, payment) ->
+                OperationBinding.Case(target, revision, payment)
+            | _ -> action.Binding
+
+        let fixedInputs =
+            action.Seeds
+            |> Map.filter (fun input _ -> not (List.contains input action.Editable))
+
+        let inputs =
+            Map.fold
+                (fun values input value -> Map.add input value values)
+                draft.Input.Inputs
+                fixedInputs
+
+        OperationSubmission.admit
+            {
+                OperationId = draft.Input.OperationId |> Option.defaultWith newId
+                Task = draft.Input.Task
                 Binding = binding
+                Inputs = inputs
             }
+        |> Result.defaultWith (fun () ->
+            invalidOp "A supplied affordance and acquired values form a declared submission.")
 
-        OperationSubmission.completeDraft input
-        |> Option.defaultWith (fun () ->
-            invalidOp "Current review metadata completes the acquired submission.")
+    let private unavailable console (draft: InteractiveDraft) =
+        MessageCatalogs.renderCli draft.Language CliMessage.NotRecorded
+        |> fun text -> console.Write(Encoding.UTF8.GetBytes(text + "\n"))
 
-    let rec private runValidated newId console transport (draft: InteractiveDraft) token =
-        task {
-            let context =
-                invocation Api.context () |> Frames.withRepresentation Representation.Human
+        ExitCode.value ExitCode.Rejected
 
-            let! response = transport.Exchange context token
+    let private reviewDocument newId console transport draft installation document token =
+        match allActions document |> List.tryFind (selected draft) with
+        | Some action when action.Blocked.IsNone ->
+            review console transport draft (complete newId draft action) installation token
+        | _ -> Task.FromResult(unavailable console draft)
 
-            match unpack Api.context response with
-            | Some(RepresentationReply.Human {
-                                                 Outcome = HumanReadOutcome.Succeeded {
-                                                                                          Context = InteractionContext.Requester {
-                                                                                                                                     State = RequesterKind.Active
-                                                                                                                                     InstallationId = Some installation
-                                                                                                                                 }
-                                                                                      }
-                                             }) ->
-                match draft.Input.Binding with
-                | OperationBinding.People _
-                | OperationBinding.Case(_, Some 0L, _) ->
-                    return!
-                        review
-                            console
-                            transport
-                            draft
-                            (complete newId draft draft.Input.Binding)
-                            installation
-                            token
-                | OperationBinding.Case(target, _, _)
-                | OperationBinding.Work(target, _)
-                | OperationBinding.Note(target, _)
-                | OperationBinding.Reminder(target, _) ->
-                    return! readCase newId console transport draft target installation token
-            | Some(RepresentationReply.Human {
-                                                 Outcome = HumanReadOutcome.Succeeded _
-                                             }) ->
-                transport.Deliver context response
-                return ExitCode.value ExitCode.Rejected
-            | _ ->
-                transport.Deliver context response
-                return response.ExitCode
-        }
-
-    and private readCase
+    let rec private readPages
         newId
         console
         transport
-        (draft: InteractiveDraft)
-        target
+        draft
         installation
+        endpoint
+        input
+        withCursor
         token
         =
         task {
-            let lookup =
-                invocation Api.caseGet { CaseGetRequest.Target = target }
-                |> Frames.withRepresentation Representation.Human
+            let frame =
+                invocation endpoint input |> Frames.withRepresentation Representation.Human
 
-            let! response = transport.Exchange lookup token
+            let! response = transport.Exchange frame token
 
-            match unpack Api.caseGet response with
+            match unpack endpoint response with
             | Some(RepresentationReply.Human {
-                                                 Outcome = HumanReadOutcome.Succeeded {
-                                                                                          Context = InteractionContext.Case current
-                                                                                      }
+                                                 Outcome = HumanReadOutcome.Succeeded document
                                              }) ->
-                let target = CaseSelector.Id current.CaseId
-
-                let submit binding =
-                    review console transport draft (complete newId draft binding) installation token
-
-                match draft.Input.Binding with
-                | OperationBinding.Case(_, revision, payment) ->
-                    return!
-                        submit (
-                            OperationBinding.Case(
-                                target,
-                                Some(defaultArg revision (Revision.value current.Revision)),
-                                payment
-                            )
-                        )
-                | OperationBinding.Work(_, revision) ->
-                    return!
-                        submit (
-                            OperationBinding.Work(
-                                target,
-                                Some(defaultArg revision (Revision.value current.WorkRevision))
-                            )
-                        )
-                | OperationBinding.Note(_, selected) ->
-                    return! submit (OperationBinding.Note(target, selected))
-                | OperationBinding.Reminder(_, None) ->
-                    return! submit (OperationBinding.Reminder(target, None))
-                | OperationBinding.Reminder(_, Some(id, Some revision)) ->
-                    return! submit (OperationBinding.Reminder(target, Some(id, Some revision)))
-                | OperationBinding.Reminder(_, Some(id, None)) ->
-                    let frame =
-                        invocation
-                            Api.reminder
-                            {
-                                ReminderGetRequest.Target = target
-                                ReminderId = id
-                            }
-                        |> Frames.withRepresentation Representation.Human
-
-                    let! response = transport.Exchange frame token
-
-                    match unpack Api.reminder response with
-                    | Some(RepresentationReply.Human {
-                                                         Outcome = HumanReadOutcome.Succeeded {
-                                                                                                  Context = InteractionContext.Reminder current
-                                                                                              }
-                                                     }) ->
+                if allActions document |> List.exists (selected draft) then
+                    return! reviewDocument newId console transport draft installation document token
+                else
+                    match document.NextCursor with
+                    | Some cursor ->
                         return!
-                            submit (
-                                OperationBinding.Reminder(
-                                    target,
-                                    Some(id, Some(Revision.value current.Revision))
-                                )
-                            )
-                    | _ ->
-                        transport.Deliver frame response
-                        return response.ExitCode
-                | OperationBinding.People _ -> return invalidOp "People drafts have no parent case."
+                            readPages
+                                newId
+                                console
+                                transport
+                                draft
+                                installation
+                                endpoint
+                                (withCursor input cursor)
+                                withCursor
+                                token
+                    | None -> return unavailable console draft
             | _ ->
-                transport.Deliver lookup response
+                transport.Deliver frame response
+                return response.ExitCode
+        }
+
+    let private readTarget newId console transport (draft: InteractiveDraft) installation token =
+        match draft.Input.Binding with
+        | OperationBinding.People(Some actor) ->
+            readPages
+                newId
+                console
+                transport
+                draft
+                installation
+                Api.peopleGrants
+                {
+                    ActorId = actor
+                    AfterCursor = None
+                    Limit = Paging.DefaultPageSize
+                }
+                (fun request cursor ->
+                    { request with
+                        GrantsRequest.AfterCursor = Some cursor
+                    })
+                token
+        | OperationBinding.Case(target, _, Some _) ->
+            readPages
+                newId
+                console
+                transport
+                draft
+                installation
+                Api.casePayments
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = Paging.DefaultPageSize
+                }
+                (fun request cursor ->
+                    { request with
+                        CasePaymentsRequest.AfterCursor = Some cursor
+                    })
+                token
+        | OperationBinding.Note(target, Some _) ->
+            readPages
+                newId
+                console
+                transport
+                draft
+                installation
+                Api.caseNotes
+                {
+                    Target = target
+                    AfterCursor = None
+                    Limit = Paging.DefaultPageSize
+                }
+                (fun request cursor ->
+                    { request with
+                        CaseNotesRequest.AfterCursor = Some cursor
+                    })
+                token
+        | OperationBinding.Reminder(target, Some(id, _)) ->
+            readPages
+                newId
+                console
+                transport
+                draft
+                installation
+                Api.reminder
+                { Target = target; ReminderId = id }
+                (fun request _ -> request)
+                token
+        | OperationBinding.Case(target, _, _)
+        | OperationBinding.Work(target, _)
+        | OperationBinding.Note(target, _)
+        | OperationBinding.Reminder(target, _) ->
+            readPages
+                newId
+                console
+                transport
+                draft
+                installation
+                Api.caseGet
+                { Target = target }
+                (fun request _ -> request)
+                token
+        | OperationBinding.People None -> Task.FromResult(unavailable console draft)
+
+    let private runValidated newId console transport (draft: InteractiveDraft) token =
+        task {
+            let frame =
+                invocation Api.context () |> Frames.withRepresentation Representation.Human
+
+            let! response = transport.Exchange frame token
+
+            match unpack Api.context response with
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanReadOutcome.Succeeded document
+                                             }) ->
+                match document.Subject with
+                | DocumentSubject.Requester {
+                                                State = RequesterKind.Active
+                                                InstallationId = Some installation
+                                            } ->
+                    match draft.Input.Binding with
+                    | OperationBinding.People None
+                    | OperationBinding.Case(_, Some 0L, _) ->
+                        return!
+                            reviewDocument newId console transport draft installation document token
+                    | _ -> return! readTarget newId console transport draft installation token
+                | _ ->
+                    transport.Deliver frame response
+                    return ExitCode.value ExitCode.Rejected
+            | _ ->
+                transport.Deliver frame response
                 return response.ExitCode
         }
 

@@ -19,8 +19,7 @@ let private mutate name replacement =
     function
     | JsonValue.Object members ->
         JsonValue.Object(
-            members
-            |> List.map (fun (key, value) -> key, if key = name then replacement else value)
+            (name, replacement) :: (members |> List.filter (fun (key, _) -> key <> name))
         )
     | _ -> failtest "Expected an authored object"
 
@@ -131,28 +130,22 @@ let tests =
                     | ReceiptSubject.Case value -> value.CaseId
                     | _ -> failtest "Case required"
 
-                match document.Context with
-                | InteractionContext.Receipt context ->
-                    Expect.equal
-                        context.CaseLink
-                        (Some id)
-                        "A recovered close can navigate to its known case"
+                Expect.equal
+                    (document.Links
+                     |> List.filter (fun link -> link.Relation = LinkRelation.OpenCase)
+                     |> List.map _.Link)
+                    [ Link.caseById id ]
+                    "Known case destination"
 
-                    Expect.isNone
-                        context.RefreshCase
-                        "Closing does not add a CLI work-refresh frame"
-                | _ -> failtest "Receipt context required"
+                Expect.isEmpty
+                    (document.Links
+                     |> List.filter (fun link -> link.Relation = LinkRelation.FollowUp))
+                    "Closing needs no work refresh"
 
-                let wire = HumanDocumentCodecs.document.Write document
-                let context = JsonValue.tryMember "context" wire |> Option.get
-
-                let wrong =
-                    context
-                    |> mutate "caseLink" (JsonValue.String "ffffffff-ffff-4fff-8fff-ffffffffffff")
-
-                Expect.isError
-                    (HumanDocumentCodecs.document.Validate "$" (mutate "context" wrong wire))
-                    "An unrelated case cannot become a navigation target")
+                Expect.equal
+                    document.Subject
+                    (DocumentSubject.Receipt receipt.OperationId)
+                    "Receipt identity")
             testCase
                 "review supplies the authored operation identity only in Core Details"
                 (fun () ->
@@ -188,37 +181,29 @@ let tests =
                     let input, review, actor = peopleReview ()
                     let result = HumanReviewDocument.ofCore input review
 
-                    match result.Document.Context with
-                    | InteractionContext.Review binding ->
-                        Expect.equal
-                            binding.Task
-                            (TaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
-                            "Semantic task"
-
-                        Expect.equal
-                            binding.Consequence
+                    Expect.equal
+                        result.Document.Subject
+                        (DocumentSubject.Review(
+                            ConfirmationTarget.Operation(OperationInput.operationId input),
                             Consequence.Irreversible
-                            "Core consequence"
+                        ))
+                        "Core confirmation"
 
-                        Expect.equal
-                            binding.Target
-                            (ReviewTarget.People(Some actor.ActorId, GrantScope.Installation))
-                            "Resolved target"
+                    let action = List.exactlyOne result.Document.Actions
 
-                        Expect.equal
-                            binding.Confirmation
-                            (ConfirmationTarget.Operation(OperationInput.operationId input))
-                            "Exact confirmation target supplied by core"
+                    Expect.equal
+                        action.Task
+                        (TaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
+                        "Task"
 
-                        Expect.contains
-                            binding.Inputs
-                            (TaskInputId.Target InputTarget.PrincipalSubject)
-                            "Semantic input binding"
-                    | _ -> failtest "Review context required"
+                    Expect.equal
+                        action.Binding
+                        (OperationBinding.People(Some(ActorId.value actor.ActorId)))
+                        "Target"
 
                     let wire = HumanDocumentCodecs.reviewDocument.Write result
 
-                    for retired in [ "subject"; "proposed"; "snapshot" ] do
+                    for retired in [ "proposed"; "snapshot" ] do
                         Expect.isFalse
                             (containsMember retired wire)
                             ("No duplicated raw review " + retired)
@@ -234,46 +219,18 @@ let tests =
                         (HumanDocumentCodecs.reviewDocument.Validate "$" unrelated)
                         "A structurally valid unrelated document cannot be a review")
 
-            testCase
-                "structural review binding refuses mismatched task target input and consequence"
-                (fun () ->
-                    let input, review, _ = peopleReview ()
-                    let document = (HumanReviewDocument.ofCore input review).Document
-                    let wire = HumanDocumentCodecs.document.Write document
-                    HumanDocumentCodecs.document.Validate "$" wire |> accepted |> ignore
-                    let context = JsonValue.tryMember "context" wire |> Option.get
+            testCase "review rejects a retired context sibling" (fun () ->
+                let input, review, _ = peopleReview ()
 
-                    for altered in
-                        [
-                            mutate "task" (JsonValue.String "context") context
-                            mutate "inputs" (JsonValue.Array []) context
-                            mutate "consequence" (JsonValue.String "ROUTINE") context
-                            mutate
-                                "target"
-                                (JsonValue.Object
-                                    [
-                                        "kind", JsonValue.String "CASE"
-                                        "caseId",
-                                        JsonValue.String(
-                                            CaseId.format ResponseExamples.snapshot.CaseId
-                                        )
-                                        "beforeRevision", JsonValue.Null
-                                    ])
-                                context
-                            mutate
-                                "confirmation"
-                                (JsonValue.Object
-                                    [
-                                        "kind", JsonValue.String "CASE_REFERENCE"
-                                        "reference", JsonValue.String "UNRELATED"
-                                    ])
-                                context
-                        ] do
-                        Expect.isError
-                            (HumanDocumentCodecs.document.Validate
-                                "$"
-                                (mutate "context" altered wire))
-                            "Cross references must fail before typed interpretation")
+                let wire =
+                    HumanDocumentCodecs.document.Write
+                        (HumanReviewDocument.ofCore input review).Document
+
+                Expect.isError
+                    (HumanDocumentCodecs.document.Validate
+                        "$"
+                        (mutate "context" (JsonValue.Object []) wire))
+                    "Closed document")
 
             testCase "people receipt retains supplied outcome facts in its core Screen" (fun () ->
                 let _, _, actor = peopleReview ()
@@ -379,39 +336,15 @@ let tests =
                         HumanDisclosure.Partial
                         "Mixed compartments are neither wholly disclosed nor wholly erased"
 
-                    match document.Context with
-                    | InteractionContext.Receipt {
-                                                     Target = ReceiptTarget.Reminder(id, versions)
-                                                 } ->
-                        Expect.equal id parent "Parent handle"
+                    Expect.equal
+                        document.Subject
+                        (DocumentSubject.Receipt receipt.OperationId)
+                        "Receipt owns operation identity"
 
-                        Expect.equal
-                            (versions |> List.map _.ReminderId)
-                            [ first; second ]
-                            "Both compound identities in effect order"
-                    | _ -> failtest "Compound reminder handles required"
-
+                    Expect.isEmpty document.Actions "Receipt is not an authoring surface"
                     let wire = HumanDocumentCodecs.document.Write document
-                    HumanDocumentCodecs.document.Validate "$" wire |> accepted |> ignore
-                    let context = JsonValue.tryMember "context" wire |> Option.get
-                    let target = JsonValue.tryMember "target" context |> Option.get
+                    HumanDocumentCodecs.document.Read "$" wire |> accepted |> ignore)
 
-                    let duplicate =
-                        JsonValue.Object
-                            [
-                                "reminderId", JsonValue.String(ReminderId.format first)
-                                "revision", JsonValue.Integer 1L
-                            ]
-
-                    let altered =
-                        mutate
-                            "target"
-                            (mutate "versions" (JsonValue.Array [ duplicate; duplicate ]) target)
-                            context
-
-                    Expect.isError
-                        (HumanDocumentCodecs.document.Validate "$" (mutate "context" altered wire))
-                        "Repeated effect IDs cannot masquerade as two handles")
         ]
 
 
@@ -495,22 +428,19 @@ let mutationSummary =
 
         let decision =
             { document with
-                Context =
-                    match document.Context with
-                    | InteractionContext.Receipt context ->
-                        InteractionContext.Receipt
-                            { context with
-                                RecordedFields =
-                                    [ BusinessField.PayableAmount; BusinessField.PayableCurrency ]
-                            }
-                    | _ -> failtest "Receipt context"
                 Screen =
                     Screen.create
                         [
                             ScreenEntries.region
                                 RegionRole.Payments
                                 None
-                                (RegionContent.Table table)
+                                (RegionContent.Table
+                                    { table with
+                                        Columns =
+                                            table.Columns
+                                            |> List.map (fun column ->
+                                                { column with Recorded = true })
+                                    })
                         ]
             }
 

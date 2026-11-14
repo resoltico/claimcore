@@ -156,7 +156,7 @@ module TaskDeclarations =
             Input = input
             Mode = mode
             Source = source
-            Clearable = input = TaskInputId.Target InputTarget.ProfileContact
+            Clearable = false
             Atom =
                 if
                     source = InputSource.ExpectedRevision
@@ -214,7 +214,8 @@ module TaskDeclarations =
                     mode
 
             { definition selected (field input) with
-                Clearable = (BusinessField.describe input).AllowsAbsence
+                Clearable =
+                    mode = TaskInputMode.Update && (BusinessField.describe input).AllowsAbsence
             })
 
     let private worklist =
@@ -396,6 +397,8 @@ module TaskDeclarations =
                             | ActKind.Work _,
                               TaskInputId.Target(InputTarget.Field(BusinessField.ResponsibleActor | BusinessField.HandlingSummary)) ->
                                 true
+                            | ActKind.People PeopleActKind.SetProfile,
+                              TaskInputId.Target InputTarget.ProfileContact -> true
                             | _ -> input.Clearable
 
                         { input with

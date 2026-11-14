@@ -34,15 +34,9 @@ const outcomes = [
 const expectAuthored = (bytes: Buffer, caseId: string, modes: Modes, revision: number) => {
   const authored: unknown = JSON.parse(bytes.toString("utf8"));
   expect(authored).toMatchObject({
-    target: { kind: "ID", caseId },
-    expectedRevision: revision,
-    act: {
-      kind: "case.correct",
-      groups: {
-        registration: { kind: modes.registration },
-        decision: { kind: modes.decision },
-      },
-    },
+    task: "case.correct",
+    binding: { target: { kind: "ID", caseId }, expectedRevision: revision },
+    inputs: { "group:registration": modes.registration, "group:decision": modes.decision },
   });
 };
 const expectClaimantWarning = async (field: Locator, language: "en" | "lv" | "ar") => {

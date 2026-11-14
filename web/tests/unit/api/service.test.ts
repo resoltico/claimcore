@@ -1,6 +1,12 @@
 import { afterEach, it, expect, vi } from "vitest";
-import { isMutationUncertain } from "../../../src/api/service";
-import type { ApiResult, EndpointOutcome } from "../../../src/api/service";
+import {
+  isMutationUncertain,
+  type ApiResult,
+  type EndpointOutcome,
+  service,
+  requestEndpoint,
+} from "../../../src/api/service";
+
 it("explicit uncertainty is retained while definite rejection and cancellation remain definite", () => {
   const unknown: ApiResult<EndpointOutcome> = {
     kind: "outcome",
@@ -42,7 +48,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     }),
   ).toBe(true);
 });
-import { service, requestEndpoint } from "../../../src/api/service";
+
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 const operation = "10000000-0000-7000-8000-000000000001";
 const installation = "90000000-0000-4000-8000-000000000001";
@@ -58,17 +64,22 @@ const receipt = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "CASE",
-      caseId: operation,
-      revision: 2,
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId: operation } } },
     },
-    caseLink: operation,
-    refreshCase: operation,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId: operation } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis: observation,
   disclosure: "WITHHELD",
 };
@@ -76,25 +87,11 @@ const current = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "CASE",
-    history: "NONE",
-    caseId: operation,
-    revision: 1,
-    workRevision: 0,
-    tasks: [],
-    editableInputs: [],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+  subject: { kind: "CASE", caseId: operation, revision: 1, workRevision: 0 },
+  actions: [],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: observation,
   disclosure: "CURRENT",
 };
@@ -153,9 +150,11 @@ it("lookup keeps its installation binding and rejects an operation echo mismatch
         screen: {
           regions: [],
         },
-        context: {
-          kind: "EMPTY",
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: {
           kind: "UNAVAILABLE",
         },

@@ -734,13 +734,17 @@ module ResponseCodecs =
         |> named "CasesPage"
 
     let assigneePage =
-        (record (fun basis items next ->
+        (record (fun caseId revision basis items next ->
             {
-                AssigneePage.Basis = basis
+                AssigneePage.CaseId = caseId
+                WorkRevision = revision
+                Basis = basis
                 Items = items
                 NextCursor = next
             })
         : Fields<AssigneePage, _>)
+        |> field "caseId" _.CaseId ResponseScalars.caseId
+        |> field "workRevision" _.WorkRevision ResponseScalars.revision
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list Paging.MaximumPageSize ActorCodecs.actorRef)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))

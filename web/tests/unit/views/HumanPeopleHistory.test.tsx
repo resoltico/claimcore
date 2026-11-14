@@ -2,7 +2,7 @@ import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { PeopleHistory } from "../../../src/views/people/PeopleHistory";
-import { type HumanReadDocument_people_history } from "@contracts/client";
+import type { HumanReadDocument_people_history } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
 const document: HumanReadDocument_people_history = {
   screen: {
@@ -14,6 +14,7 @@ const document: HumanReadDocument_people_history = {
           entries: [
             {
               key: "1/0",
+              link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
               when: "2026-11-09T12:00:00.000000Z",
               who: {
                 actorId: caseId,
@@ -51,16 +52,11 @@ const document: HumanReadDocument_people_history = {
       },
     ],
   },
-  context: {
-    kind: "PEOPLE_HISTORY",
-    nextCursor: null,
-    entries: [
-      {
-        key: "1/0",
-        caseId,
-      },
-    ],
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {

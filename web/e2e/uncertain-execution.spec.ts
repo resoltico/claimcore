@@ -1,4 +1,5 @@
-import { type ResponseFor, type HumanReceiptDocument } from "@contracts/client";
+import { acceptedSubject } from "./work-workflow";
+import type { ResponseFor, HumanReceiptDocument } from "@contracts/client";
 import { settingsNavigation } from "./localization-support";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -240,9 +241,8 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(Number.isFinite(Date.parse(replayObservedAt))).toBe(true);
   expect(replayObservedAt >= firstObservedAt).toBe(true);
   expect(operationExecuteReply2.operationId).toBe(identity.operationId);
-  expect(
-    second.document.context.target.kind === "CASE" ? second.document.context.target.revision : null,
-  ).toBe(2);
+  const subject = await acceptedSubject(page, second.document.subject.operationId);
+  expect(subject.kind === "CASE" ? subject.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);
   await expect(page.locator("#case-detail-title")).toBeVisible();
 });

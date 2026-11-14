@@ -1,8 +1,10 @@
 import {
+  type Screen,
   type ResponseFor,
   presentationDisplayOptions,
   presentationDefaults,
 } from "@contracts/client";
+
 import { createPresenter } from "../src/presentation/presenter";
 import { termLabel } from "../src/presentation/terms";
 import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
@@ -16,7 +18,7 @@ import { expect, type Page, type TestInfo, type Response, type Request } from "@
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { preferenceKey } from "../src/presentation/preferences";
-import "./localization-support";
+import {} from "./localization-support";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 export const displayLocaleFor = (language: Dimension["language"]) =>
   presentationDisplayOptions.find((option) => option.language === language)?.value ??
@@ -114,16 +116,19 @@ const assertListPresentation = async (
     return;
   }
   const rows = page.locator(".table-view tbody > tr:not(.table-group)");
-  await expect(rows).toHaveCount(payload.outcome.document.context.cases.length);
   const table = payload.outcome.document.screen.regions.find(
     (region) => region.role === "RESULTS",
   )?.content;
   if (table?.kind !== "TABLE") {
     throw new Error("The case page must supply its table view.");
   }
-  for (const [index, item] of payload.outcome.document.context.cases.entries()) {
+  await expect(rows).toHaveCount(table.rows.length);
+  for (const [index, item] of table.rows.entries()) {
+    if (item.link?.endpoint !== "case.get" || item.link.input.target.kind !== "ID") {
+      throw new Error("Case query required");
+    }
     const row = rows.nth(index);
-    await expect(row.locator(`a[href="/cases/id/${item.caseId}"]`)).toBeVisible();
+    await expect(row.locator(`a[href="/cases/id/${item.link.input.target.caseId}"]`)).toBeVisible();
     await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {
@@ -140,6 +145,15 @@ const assertListPresentation = async (
   await expect(
     page.locator(`.table-view tbody > tr a[href="/cases/id/${assigned!.key}"]`),
   ).toBeVisible();
+};
+const principalKindFact = (screen: Screen) => {
+  const value = screen.regions
+    .flatMap((region) => (region.content.kind === "ENTRIES" ? region.content.entries : []))
+    .find((entry) => entry.key === "principalKind")?.value;
+  if (value?.kind !== "CODE" || (value.token !== "HUMAN" && value.token !== "SERVICE")) {
+    throw new Error("Core principal kind required");
+  }
+  return value.token;
 };
 const assertCasePresentation = async (
   page: Page,
@@ -191,7 +205,7 @@ const assertReadResponse = async (
   }
   const peopleGrantsReply = payload as ResponseFor<"people.grants", "HUMAN">;
   if (route.endpoint === "people.grants" && peopleGrantsReply.outcome.kind === "SUCCEEDED") {
-    const { principal } = peopleGrantsReply.outcome.document.context;
+    const principalKind = principalKindFact(peopleGrantsReply.outcome.document.screen);
     const panel = page.getByRole("dialog");
     await expect(panel.locator('[data-entry="principalKind"] dd')).toHaveText(
       termLabel(
@@ -202,7 +216,7 @@ const assertReadResponse = async (
           accent: dimension.accent,
         },
         "principalKind",
-        principal.kind,
+        principalKind,
       ),
     );
   }

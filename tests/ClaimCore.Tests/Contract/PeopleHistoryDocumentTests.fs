@@ -47,39 +47,23 @@ let tests =
                     NextCursor = Some "history-next"
                 }
 
-        match document.Context with
-        | InteractionContext.PeopleHistory controls ->
-            Expect.equal
-                (controls.Entries |> List.map _.Key)
-                [ "1/0"; "1/1" ]
-                "Actual effect positions"
+        let rows =
+            document.Screen.Regions
+            |> List.collect (fun region ->
+                match region.Content with
+                | RegionContent.Timeline entries -> entries
+                | _ -> [])
 
-            Expect.equal
-                (controls.Entries |> List.map _.CaseId)
-                [ Some parent; None ]
-                "Only scoped effect has a destination"
-        | _ -> failtest "People history context required"
+        Expect.equal (rows |> List.map _.Key) [ "1/0"; "1/1" ] "Actual effect positions"
 
         Expect.equal
-            (HumanDocument.nextCursor document)
-            (Some "history-next")
-            "Native cursor traversal"
+            (rows |> List.map _.Link)
+            [ Some(Link.caseById parent); None ]
+            "Only a scoped effect has a destination"
 
-        let encoded = Codec.encode HumanDocumentCodecs.document document
+        Expect.equal document.NextCursor (Some "history-next") "Cursor belongs to the document"
 
         Expect.isOk
-            (Codec.decode 65536 HumanDocumentCodecs.document encoded)
-            "Native document boundary"
-
-        let invalid = JsonNode.Parse(System.Text.Encoding.UTF8.GetString encoded) |> nonNull
-        let context = nonNull invalid["context"]
-        let entries = nonNull context["entries"]
-        let first = nonNull entries[0]
-        first["key"] <- System.Text.Json.Nodes.JsonValue.Create "different"
-
-        Expect.isError
-            (Codec.decode
-                65536
-                HumanDocumentCodecs.document
-                (System.Text.Encoding.UTF8.GetBytes(invalid.ToJsonString())))
-            "Unbound destination refused")
+            (Codec.encode HumanDocumentCodecs.document document
+             |> Codec.decode 65536 HumanDocumentCodecs.document)
+            "Actual native boundary")

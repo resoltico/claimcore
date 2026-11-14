@@ -70,7 +70,7 @@ export const observeCase = (
       revision: resource.revision + 1,
     };
   }
-  if (read.query.target.kind === "ID" && action.value.context.caseId !== read.query.target.caseId) {
+  if (read.query.target.kind === "ID" && action.value.subject.caseId !== read.query.target.caseId) {
     return {
       ...resource,
       read: null,
@@ -111,7 +111,7 @@ export const observeConflict = (
     };
   }
   const { target } = snapshot.source.prepared.input.binding;
-  if (target.kind === "ID" && action.value.current.context.caseId !== target.caseId) {
+  if (target.kind === "ID" && action.value.current.subject.caseId !== target.caseId) {
     return {
       ...resource,
       read: null,

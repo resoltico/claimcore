@@ -1,16 +1,16 @@
+import type { Link, RegionRow, Affordance } from "@contracts/client";
 import type { ReactNode } from "react";
-import type { RegionContent } from "@contracts/client";
+
 import type { RowLink } from "./Table";
-export type OfferedAct = Extract<
-  RegionContent,
-  { kind: "ACTIONS" }
->["groups"][number]["acts"][number];
+export type LinkNavigation = (link: Link) => Pick<RowLink, "id" | "follow"> | undefined;
+export type ActionPresentation = (action: Affordance) => { label?: string; id?: string };
 export type RegionInteraction = {
-  renderActions?: (key: string) => ReactNode;
-  rowLink?: (key: string) => RowLink | undefined;
+  actionPresentation?: ActionPresentation;
+  linkNavigation?: LinkNavigation;
+  actionsDisabled?: boolean;
+  onAction?: (action: Affordance, row?: RegionRow, originId?: string) => void;
   sectionLink?: RowLink;
   countLink?: RowLink;
-  onAct?: (act: OfferedAct) => void;
   labelledBy?: string;
   headerActions?: ReactNode;
 };

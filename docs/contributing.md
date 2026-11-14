@@ -100,8 +100,8 @@ A custom output directory contains the contract artifacts only.
 
 Host bindings compute locale-neutral screens with semantic regions through
 [screen presenters](../src/ClaimCore.Presentation/Screens). Actor replies negotiate distinct
-HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded interaction context,
-observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
+HUMAN documents and DATA projections. A HUMAN document owns its subject, Screen, affordances, typed query links,
+observation, disclosure and cursor. Rows carry their own controls. DATA carries no Screen; browser and native text consume documents,
 while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
 [Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
 [submission assembly](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) owns their command construction.

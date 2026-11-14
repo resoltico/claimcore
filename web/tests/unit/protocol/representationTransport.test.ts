@@ -1,4 +1,5 @@
-import { type ResponseFor } from "@contracts/client";
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type { ResponseFor } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { requestEndpoint } from "../../../src/api/service";
 import { EndpointCache, endpointCacheKey, typedResult } from "../../../src/hooks/endpointCache";
@@ -125,21 +126,29 @@ const operationReview = {
         screen: {
           regions: [],
         },
-        context: {
+        subject: {
           kind: "REVIEW",
-          task: "case.close",
-          target: {
-            kind: "CASE",
-            caseId: "019aa6a0-0000-7000-8000-000000000002",
-            beforeRevision: 1,
-          },
-          inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-          consequence: "ROUTINE",
           confirmation: {
             kind: "CASE_REFERENCE",
             reference: "SYNTHETIC-CASE",
           },
+          consequence: "ROUTINE",
         },
+        actions: [
+          operationAffordance(
+            "case.close",
+            {
+              kind: "CASE",
+              target: { kind: "ID", caseId: "019aa6a0-0000-7000-8000-000000000002" },
+              expectedRevision: 1,
+            },
+            {},
+            [],
+          ),
+        ],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: {
           kind: "SNAPSHOT",
           observation: {

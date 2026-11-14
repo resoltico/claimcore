@@ -131,7 +131,8 @@ const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, pay
     operationExecuteReply.representation !== "HUMAN" ||
     (operationExecuteReply.outcome.kind !== "ACCEPTED" &&
       operationExecuteReply.outcome.kind !== "ALREADY_ACCEPTED") ||
-    operationExecuteReply.outcome.document.context.target.kind !== family
+    operationExecuteReply.outcome.document.subject.operationId !==
+      operationExecuteRequest.operationId
   ) {
     throw new Error("E2E_WORK_SUBMIT_FAILED");
   }
@@ -145,8 +146,9 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
   page: Page,
   endpoint: K,
   body: RequestByEndpoint[K],
+  access?: { installationId: string; token: string },
 ) => {
-  const token = await sessionToken(page);
+  const token = access?.token ?? (await sessionToken(page));
   const entry = endpoints.find((value) => value.id === endpoint)!;
   const result = await browserRequest(page, entry.path, {
     method: entry.method,
@@ -155,7 +157,7 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
       "X-ClaimCore-Antiforgery": token,
       ...(entry.requiresInstallation
         ? {
-            "ClaimCore-Installation": await installationId(page, token),
+            "ClaimCore-Installation": access?.installationId ?? (await installationId(page, token)),
           }
         : {}),
     },
@@ -173,6 +175,19 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
   }
   return endpointReply;
 };
+/** Check durable facts through DATA independently of the HUMAN receipt display. */
+export const acceptedSubject = async (
+  page: Page,
+  operationId: string,
+  access?: { installationId: string; token: string },
+) => {
+  const reply = await workRequest(page, "operation.get", { operationId }, access);
+  if (reply.outcome.kind !== "ACCEPTED") {
+    throw new Error("Expected accepted durable operation.");
+  }
+  return reply.outcome.data.receipt.subject;
+};
+
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
   const language = await languageOf(page);
@@ -216,7 +231,7 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   await expectCaseReadsSettled(page);
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
-  const { target } = receipt.context;
+  const target = await acceptedSubject(page, receipt.subject.operationId);
   if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {
       target: {
@@ -229,7 +244,11 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
     }
     expect(fresh.outcome.data.work.revision).toBe(target.revision);
   } else if (target.kind === "REMINDER") {
-    for (const version of target.versions) {
+    const versions =
+      target.effects.kind === "SINGLE"
+        ? [target.effects.reminder]
+        : [target.effects.completed, target.effects.next];
+    for (const version of versions) {
       const fresh = await workRequest(page, "reminder.get", {
         target: {
           kind: "ID",

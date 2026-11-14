@@ -1,3 +1,5 @@
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { HumanReadDocument_case_get, Region, PresentedEntry } from "@contracts/client";
@@ -31,6 +33,24 @@ const table = (role: Region["role"], key: string, caption: string): Region => ({
     rows: [
       {
         key,
+        actions:
+          role === "PAYMENTS"
+            ? [
+                operationAffordance("case.removePayment", {
+                  kind: "CASE",
+                  target: { kind: "ID", caseId },
+                  expectedRevision: 4,
+                  paymentId: key,
+                }),
+              ]
+            : [
+                operationAffordance("reminder.complete", {
+                  kind: "REMINDER",
+                  target: { kind: "ID", caseId },
+                  reminderId: key,
+                  expectedRevision: 9,
+                }),
+              ],
         values: [
           {
             kind: "TEXT",
@@ -70,42 +90,36 @@ const document: HumanReadDocument_case_get = {
       table("NEXT_ACTIONS", reminderId, "Core next action caption Δ"),
     ],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 4,
-    workRevision: 6,
-    history: "NONE",
-    tasks: ["case.amendRegistration", "case.removePayment", "work.update"],
-    editableInputs: ["field:handlingSummary"],
-    correction: null,
-    seeds: {
-      paymentCurrency: null,
-      registration: null,
-      decision: null,
-      work: {
-        summary: "Editable summary seed",
-        responsible: null,
-      },
-    },
-    notes: [],
-    payments: [
+  subject: { kind: "CASE", caseId, revision: 4, workRevision: 6 },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 4 },
       {
-        paymentId,
-        canRemove: true,
+        ...prefixedInputs("field:", {
+          handlingSummary: "Editable summary seed",
+          responsibleActor: null,
+        }),
       },
-    ],
-    nextActions: [
+      ["field:handlingSummary"],
+      {},
+    ),
+    operationAffordance(
+      "work.update",
+      { kind: "WORK", target: { kind: "ID", caseId }, expectedRevision: 6 },
       {
-        caseId,
-        reminderId,
-        revision: 9,
-        tasks: ["reminder.complete"],
-        actionSeed: null,
-        dueDateSeed: null,
+        ...prefixedInputs("field:", {
+          handlingSummary: "Editable summary seed",
+          responsibleActor: null,
+        }),
       },
-    ],
-  },
+      ["field:handlingSummary"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -185,9 +199,9 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
   );
   expect(f.onAct).toHaveBeenCalledWith(
     expect.objectContaining<{
-      context: unknown;
+      subject: unknown;
     }>({
-      context: expect.objectContaining({
+      subject: expect.objectContaining({
         caseId,
       }),
     }),

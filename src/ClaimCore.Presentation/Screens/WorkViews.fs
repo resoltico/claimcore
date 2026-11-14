@@ -32,12 +32,14 @@ module WorkViewsScreen =
             [
                 {
                     Column.Key = "view"
+                    Recorded = false
                     LabelId = "label.views"
                     Prominence = Prominence.Primary
                     IsMoney = false
                 }
                 {
                     Column.Key = "count"
+                    Recorded = false
                     LabelId = "label.total"
                     Prominence = Prominence.Secondary
                     IsMoney = false
@@ -49,6 +51,22 @@ module WorkViewsScreen =
             |> List.map (fun item ->
                 {
                     RegionRow.Key = caseKey item.View
+                    Link =
+                        Some(
+                            Link.CaseList
+                                {
+                                    Page =
+                                        {
+                                            AfterCursor = None
+                                            Limit = Paging.DefaultPageSize
+                                        }
+                                    Filter =
+                                        { CaseListFilter.empty<string> with
+                                            View = Some item.View
+                                        }
+                                }
+                        )
+                    Actions = []
                     Values =
                         [
                             PresentedValue.Message(labelId (CaseView.token item.View))
@@ -62,6 +80,22 @@ module WorkViewsScreen =
             |> List.map (fun item ->
                 {
                     RegionRow.Key = reminderKey item.View
+                    Link =
+                        Some(
+                            Link.ReminderList
+                                {
+                                    View = Some item.View
+                                    Target = None
+                                    State = None
+                                    Due = None
+                                    Assignment = None
+                                    Text = None
+                                    AfterCursor = None
+                                    Limit = Paging.DefaultPageSize
+                                    IncludeInactive = None
+                                }
+                        )
+                    Actions = []
                     Values =
                         [
                             PresentedValue.Message(labelId (ReminderView.token item.View))

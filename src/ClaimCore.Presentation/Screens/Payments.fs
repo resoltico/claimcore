@@ -1,6 +1,7 @@
 namespace ClaimCore.Presentation
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module PaymentsScreen =
@@ -26,10 +27,12 @@ module PaymentsScreen =
                     }
             })
 
-    let table (position: FinancialPosition) (entries: PaymentEntry list) =
+    let tableWithControls select controls (position: FinancialPosition) entries =
         let totals = FinancialPosition.totals position
 
-        let amount entry =
+        let amount row =
+            let entry = select row
+
             match totals with
             | Some totals ->
                 PresentedValue.money (
@@ -44,14 +47,16 @@ module PaymentsScreen =
                     "field.paymentDate.label"
                     Prominence.Primary
                     false
-                    (PaymentEntry.date >> PresentedValue.Date)
+                    (select >> PaymentEntry.date >> PresentedValue.Date)
                 column "paidAmount" "field.paidAmount.label" Prominence.Primary true amount
             ]
 
         let table =
-            ScreenEntries.table
-                (PaymentEntry.id >> OperationId.format)
-                (fun entry ->
+            ScreenEntries.tableWithControls
+                (select >> PaymentEntry.id >> OperationId.format)
+                (fun row ->
+                    let entry = select row
+
                     Some
                         {
                             Summary = None
@@ -72,6 +77,7 @@ module PaymentsScreen =
                                 ]
                         })
                 definitions
+                controls
                 entries
 
         { table with
@@ -112,6 +118,9 @@ module PaymentsScreen =
                 ]
         }
 
+    let table position entries =
+        tableWithControls id (fun _ -> None, []) position entries
+
     let page (value: ClaimCore.Application.Contracts.CasePaymentPage) =
         let body =
             match CaseState.fields value.State with
@@ -133,7 +142,15 @@ module PaymentsScreen =
                     ScreenEntries.region
                         RegionRole.Payments
                         (Some "label.payments")
-                        (RegionContent.Table(table position (value.Items |> List.map _.Entry)))
+                        (RegionContent.Table(
+                            tableWithControls
+                                (fun (item: CasePaymentItem) -> item.Entry)
+                                (fun item ->
+                                    None,
+                                    TaskAffordances.paymentRemove value.CaseId value.Revision item)
+                                position
+                                value.Items
+                        ))
                 ]
 
         Screen.create (

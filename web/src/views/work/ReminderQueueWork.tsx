@@ -1,32 +1,30 @@
+import type { OperationAffordance } from "../../operation/affordances";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useRef, useState } from "react";
 import { useSessionContext } from "../../session/SessionContext";
-import type { ReminderListRequest, OperationTaskId } from "@contracts/client";
+import type { ReminderListRequest } from "@contracts/client";
 import type { OperationReceipt } from "../../protocol/types";
-import type { ReminderControl } from "./ReminderActions";
+
 import { operationTask } from "../../protocol/taskCatalog";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import type { CurrentCase } from "../../api/service";
-import { isCurrentCase } from "../../api/service";
+import { type CurrentCase, isCurrentCase } from "../../api/service";
+
 import { renderCatalogKey } from "../../presentation/messages";
 import { Dialog } from "../../ui/Dialog";
 import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
 
 type Selection = {
-  row: ReminderControl;
-  kind: OperationTaskId;
+  action: Extract<OperationAffordance, { binding: { kind: "REMINDER" } }>;
   anchor: string | null;
   readId: string;
 };
-const reminderInputSeeds = (row: ReminderControl) => ({
-  ...(row.actionSeed === null ? {} : { "input:reminderAction": row.actionSeed }),
-  ...(row.dueDateSeed === null ? {} : { "input:reminderDueDate": row.dueDateSeed }),
-});
+const isReminderAction = (action: OperationAffordance): action is Selection["action"] =>
+  action.binding.kind === "REMINDER";
 const SelectedReminder = ({
   selection,
   close,
@@ -43,10 +41,12 @@ const SelectedReminder = ({
   refused: () => void;
 }) => {
   const p = usePresentation();
-  const { row, kind } = selection;
+  const { action } = selection;
+  const kind = action.task;
+  const { binding } = action;
   const query = useEndpoint(
     "case.get",
-    { target: { kind: "ID", caseId: row.caseId } },
+    { target: binding.target },
     disclosureAvailable,
     selection.readId,
   );
@@ -86,18 +86,12 @@ const SelectedReminder = ({
       current={parent}
       subject="REMINDER"
       kind={task.act}
-      targetIdentity={row.reminderId}
+      targetIdentity={"reminderId" in binding ? binding.reminderId : action.task}
       {...(kind !== "reminder.complete" || selection.anchor === null
         ? {}
         : { completionAnchor: selection.anchor })}
-      tasks={row.tasks}
-      binding={{
-        kind: "REMINDER",
-        target: { kind: "ID", caseId: row.caseId },
-        reminderId: row.reminderId,
-        expectedRevision: row.revision,
-      }}
-      prefill={reminderInputSeeds(row)}
+      affordance={action}
+      binding={binding}
       disclosureAvailable={disclosureAvailable}
       onClose={close}
       onRecorded={recorded}
@@ -136,12 +130,18 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
         <ReminderList
           key={refresh}
           filter={filter}
-          onAct={(row, kind, originId?: string) => {
+          onAct={(action, originId?: string) => {
             focus.current =
               originId ??
               (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
             done.clear();
-            setSelection({ row, kind, anchor: focus.current, readId: crypto.randomUUID() });
+            if (isReminderAction(action)) {
+              setSelection({
+                action,
+                anchor: focus.current,
+                readId: crypto.randomUUID(),
+              });
+            }
           }}
         />
       ) : null}

@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import { createPresenter } from "../../src/presentation/presenter";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
@@ -49,7 +50,13 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
         kind: "case.open",
       }),
       {
-        ...initialOperationValues("CASE", "case.open", null),
+        ...initialOperationValues(
+          operationAffordance("case.open", {
+            kind: "CASE",
+            target: { kind: "REFERENCE", caseReference: "" },
+            expectedRevision: 0,
+          }),
+        ),
         "field:caseReference": reference,
         "field:claimedAmount": values.claimedAmount,
         "field:incidentDate": values.incidentDate,

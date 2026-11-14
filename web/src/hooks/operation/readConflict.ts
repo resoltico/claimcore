@@ -22,9 +22,9 @@ const observe = async (
     return { kind: "observed", value: { current, revision: null } };
   }
   const { input } = effect.source.prepared;
-  let observedRevision = current.context.revision;
+  let observedRevision = current.subject.revision;
   if (input.binding.kind === "WORK") {
-    observedRevision = current.context.workRevision;
+    observedRevision = current.subject.workRevision;
   }
   if (input.binding.kind === "REMINDER") {
     if (!("reminderId" in input.binding)) {
@@ -39,7 +39,13 @@ const observe = async (
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
       return { kind: "failed", notice: resultNotice(result), refused: isDisclosureRefused(result) };
     }
-    observedRevision = result.value.outcome.document.context.revision;
+    const binding = result.value.outcome.document.actions.find(
+      (action) => action.binding.kind === "REMINDER" && "expectedRevision" in action.binding,
+    )?.binding;
+    if (binding?.kind !== "REMINDER" || !("expectedRevision" in binding)) {
+      return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
+    }
+    observedRevision = binding.expectedRevision;
   }
   return observedRevision < effect.minimumRevision
     ? { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false }

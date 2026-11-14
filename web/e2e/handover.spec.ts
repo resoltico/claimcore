@@ -1,11 +1,11 @@
 import { selectedActor, applyPeople } from "./people-setup";
 import { prefixedInputs } from "../tests/support/submission-inputs";
-import { type RequestByEndpoint } from "@contracts/client";
+import type { RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft } from "./case-workflow";
-import { workRequest } from "./work-workflow";
+import { acceptedSubject, workRequest } from "./work-workflow";
 
 import { goToView } from "./workspace-navigation";
 import { operationId } from "../src/operation/operationId";
@@ -109,7 +109,6 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     binding: { kind: "PEOPLE" },
     inputs: {
       "input:profile.displayName": "Incoming handler",
-      "input:profile.contact": null,
       ...prefixedInputs("input:principal.", principal),
     },
   });
@@ -178,7 +177,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
       exact: true,
     }),
   ).toHaveCount(0);
-  await expect(page.locator('input[data-selects-fields~="handlingSummary"]')).not.toBeChecked();
+  await expect(page.locator('input[data-selects-fields~="handlingSummary"]')).toHaveCount(0);
   const preview = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
   );
@@ -198,10 +197,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   expect({ task: operationPreviewRequest.task, inputs: operationPreviewRequest.inputs }).toEqual({
     task: "work.update",
     inputs: {
-      "field:responsibleActor": {
-        kind: "SET",
-        value: actor,
-      },
+      "field:responsibleActor": actor,
     },
   });
   expect(writes).toBe(0);
@@ -216,16 +212,21 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     representation: "HUMAN",
     outcome: {
       kind: "ACCEPTED",
-      document: {
-        context: {
-          target: {
-            kind: "WORK",
-            revision: 2,
-          },
-        },
-      },
+      document: { subject: { kind: "RECEIPT", operationId: operationPreviewRequest.operationId } },
     },
   });
+  const observedHeaders = written.request().headers();
+  expect(observedHeaders).toHaveProperty("x-claimcore-antiforgery");
+  expect(observedHeaders).toHaveProperty(
+    "claimcore-installation",
+    context.outcome.data.requester.installationId,
+  );
+  expect(
+    await acceptedSubject(page, operationPreviewRequest.operationId, {
+      installationId: context.outcome.data.requester.installationId,
+      token: observedHeaders["x-claimcore-antiforgery"]!,
+    }),
+  ).toMatchObject({ kind: "WORK", revision: 2 });
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectWorklistReady(page, references[0], references[1]);
   await expect(first).toHaveCount(0);
@@ -272,9 +273,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     })
     .click();
   const refused = await stale;
-  expect(refused.request().postDataJSON()).toMatchObject({
-    expectedRevision: 1,
-  });
+  expect(refused.request().postDataJSON()).toMatchObject({ binding: { expectedRevision: 1 } });
   expect(await refused.json()).toMatchObject({
     representation: "HUMAN",
     outcome: {
@@ -304,15 +303,9 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     .click();
   const reviewedLatest = await latest;
   expect(reviewedLatest.request().postDataJSON()).toMatchObject({
-    expectedRevision: 2,
-    act: {
-      values: {
-        responsibleActor: {
-          kind: "SET",
-          value: actor,
-        },
-      },
-    },
+    task: "work.update",
+    binding: { expectedRevision: 2 },
+    inputs: { "field:responsibleActor": actor },
   });
   const confirm = page.getByRole("dialog").locator("button[data-confirm-operation]");
   await expect(confirm).toBeEnabled();

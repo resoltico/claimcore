@@ -1,11 +1,11 @@
-import { type ResponseFor } from "@contracts/client";
+import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled, expectReceiptReadSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal, issueMeanings, humanFormatIssues } from "./input-refusal-expectations";
-import type { Page } from "@playwright/test";
+import { type Page, expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+
 import { openCase, startOpen, startAct } from "./case-workflow";
 import { openAuthenticated, browserRequest, sessionToken, installationId } from "./session-helpers";
 import {
@@ -72,14 +72,7 @@ const reviewDecimal = async (page: Page, language: "en" | "lv" | "ar") => {
     })
     .click();
   const draft: unknown = (await sent).postDataJSON();
-  expect(draft).toMatchObject({
-    act: {
-      kind: "case.open",
-      values: {
-        claimedAmount: "0.10",
-      },
-    },
-  });
+  expect(draft).toMatchObject({ task: "case.open", inputs: { "field:claimedAmount": "0.10" } });
   const operationPreviewReply = (await (await pending).json()) as ResponseFor<
     "operation.preview",
     "HUMAN"

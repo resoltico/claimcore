@@ -1,5 +1,6 @@
-import { isCaseReceipt } from "../protocol/types";
-import { taskDefinitions } from "@contracts/client";
+import { isCaseAct } from "../operation/metadata";
+import { linkedCaseReceipt } from "../protocol/types";
+
 import { CaseIdentity } from "./case/CaseIdentity";
 import { ScreenView } from "../ui/ScreenView";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
@@ -17,6 +18,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
   const p = usePresentation();
   const model = useOperation({
     subject: "CASE",
+    ...(props.affordance === undefined ? {} : { affordance: props.affordance }),
     kind: props.initialAct,
     current: props.current,
     prefill: {
@@ -35,7 +37,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
   useEffect(() => {
     if (
       props.autoReview === true &&
-      model.currentCase?.context.tasks.includes(model.task.id) === true &&
+      model.affordance?.blocked === null &&
       !reviewed.current &&
       model.ownerVerified &&
       model.disclosureCurrent
@@ -66,8 +68,9 @@ const useCaseOperation = (props: OperationEditorProps) => {
     [navigation, props, model.prepared],
   );
   useEffect(() => {
-    if (model.ownerVerified && model.receipt !== null && isCaseReceipt(model.receipt)) {
-      commit(model.receipt);
+    const receipt = model.receipt === null ? null : linkedCaseReceipt(model.receipt);
+    if (model.ownerVerified && receipt !== null) {
+      commit(receipt);
     }
   }, [model.receipt, model.ownerVerified, commit]);
   return { model, navigation, commit };
@@ -92,38 +95,25 @@ const CurrentObservation = ({
   </section>
 );
 const caseOffers = (
-  props: OperationEditorProps,
+  _props: OperationEditorProps,
   current: OperationEditorProps["current"],
   requester: ReturnType<typeof useRequesterContext>,
-) => {
-  const offered =
-    current?.context.tasks.flatMap((taskId) => {
-      const task = taskDefinitions.find((candidate) => candidate.id === taskId);
-      return task?.kind === "OPERATION" &&
-        task.subject === "CASE" &&
-        (task.act !== "case.removePayment" || props.initialAct === "case.removePayment")
-        ? [task.act]
-        : [];
-    }) ??
-    (props.current === null &&
-    props.initialAct === "case.open" &&
-    requester?.context.tasks.includes("case.open") === true
-      ? ["case.open"]
-      : []);
-  return offered;
-};
+) =>
+  [
+    ...(_props.affordance === undefined ? [] : [_props.affordance]),
+    ...(current?.actions ?? requester?.actions ?? []),
+  ]
+    .filter((action) => isCaseAct(action.task) && action.blocked === null)
+    .map((action) => action.task);
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();
-  if (
-    props.disclosureAvailable !== false &&
-    model.receipt !== null &&
-    isCaseReceipt(model.receipt)
-  ) {
+  const receipt = model.receipt === null ? null : linkedCaseReceipt(model.receipt);
+  if (props.disclosureAvailable !== false && receipt !== null) {
     return (
       <AcceptedOperation
         definition={props.definition}
-        receipt={model.receipt}
+        receipt={receipt}
         message={model.notice}
         onCommitted={commit}
       />

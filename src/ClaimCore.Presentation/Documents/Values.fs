@@ -56,6 +56,7 @@ type Entry =
         LabelId: string
         Prominence: Prominence
         Value: PresentedValue
+        Recorded: bool
     }
 
 type Section =
@@ -67,6 +68,7 @@ type Column =
         LabelId: string
         Prominence: Prominence
         IsMoney: bool
+        Recorded: bool
     }
 
 type PresentedMessage =
@@ -74,6 +76,108 @@ type PresentedMessage =
         MessageId: string
         Arguments: Map<string, PresentedValue>
     }
+
+type HumanAdvice =
+    {
+        Message: PresentedMessage
+        Action: RecommendedAction
+    }
+
+/// Ready selection and authored controls share one declaration-owned shape.
+type Affordance =
+    {
+        Task: TaskId
+        Binding: OperationBinding<int64>
+        Seeds: Map<TaskInputId, SubmissionValue>
+        Editable: TaskInputId list
+        Choices: Map<TaskInputId, string list>
+        Primary: bool
+        Blocked: HumanAdvice option
+    }
+
+module Affordance =
+    let valid value =
+        let subject =
+            match value.Binding with
+            | OperationBinding.Case _ -> ActSubject.Case
+            | OperationBinding.Work _ -> ActSubject.Work
+            | OperationBinding.Note _ -> ActSubject.Note
+            | OperationBinding.Reminder _ -> ActSubject.Reminder
+            | OperationBinding.People _ -> ActSubject.People
+
+        let matches =
+            match value.Task with
+            | TaskId.Operation task -> ActKind.subject task = subject
+            | TaskId.Command CommandTaskId.PeopleRequestsDismiss -> subject = ActSubject.People
+            | TaskId.Query _ -> false
+
+        match
+            TaskDeclarations.all
+            |> List.tryFind (fun declaration -> declaration.Task = value.Task)
+        with
+        | None -> false
+        | Some declaration ->
+            let scalarKeys = declaration.Inputs |> List.map _.Input |> Set.ofList
+
+            let collections =
+                declaration.Collections
+                |> List.map (fun collection ->
+                    TaskCollectionId.input collection.Collection, collection)
+                |> Map.ofList
+
+            let inputs = Set.union scalarKeys (collections |> Map.keys |> Set.ofSeq)
+
+            let seedsValid =
+                value.Seeds
+                |> Map.forall (fun input seed ->
+                    match Map.tryFind input collections, seed with
+                    | Some collection, SubmissionValue.Rows rows ->
+                        let keys = collection.Inputs |> List.map _.Input |> Set.ofList
+
+                        rows
+                        |> List.forall (
+                            Map.forall (fun key value ->
+                                Set.contains key keys
+                                && (match value with
+                                    | SubmissionValue.Rows _ -> false
+                                    | _ -> true))
+                        )
+                    | Some _, _
+                    | None, SubmissionValue.Rows _ -> false
+                    | None, _ -> Set.contains input scalarKeys)
+
+            matches
+            && seedsValid
+            && List.distinct value.Editable = value.Editable
+            && (value.Editable |> List.forall (fun input -> Set.contains input inputs))
+            && (value.Choices
+                |> Map.forall (fun input choices ->
+                    Set.contains input inputs
+                    && List.distinct choices = choices
+                    && (TaskChoiceId.ofInput input
+                        |> Option.exists (fun choice ->
+                            choices
+                            |> List.forall (fun token ->
+                                List.contains token (TaskChoiceId.tokens choice))))))
+
+    let create task binding seeds editable choices primary blocked =
+        let value =
+            {
+                Task = task
+                Binding = binding
+                Seeds = seeds
+                Editable = editable
+                Choices = choices
+                Primary = primary
+                Blocked = blocked
+            }
+
+        if not (valid value) then
+            invalidArg
+                (nameof task)
+                "Affordances require a matching subject and declared input controls."
+
+        value
 
 type RowDetail =
     {
@@ -111,7 +215,6 @@ type RegionContentKind =
     | Table
     | Stages
     | Codes
-    | Actions
     | Notice
     | Timeline
 
@@ -136,6 +239,8 @@ type RegionRow =
         Key: string
         Values: PresentedValue list
         Detail: RowDetail option
+        Link: Link option
+        Actions: Affordance list
     }
 
 type RegionRowGroup =
@@ -169,24 +274,14 @@ type RegionStage =
         Date: CalendarDate option
         Amount: PresentedMoney option
         Meter: PresentedMoneyMeter option
+        Link: Link option
+        Actions: Affordance list
     }
 
 type RegionStages =
     {
         Current: CaseStageKind
         Steps: RegionStage list
-    }
-
-type RegionActionGroup =
-    {
-        Family: ActFamily
-        Acts: ActKind list
-    }
-
-type RegionActions =
-    {
-        Recommended: ActKind option
-        Groups: RegionActionGroup list
     }
 
 type RegionNotice =
@@ -204,6 +299,8 @@ type RegionTimelineEntry =
         Summary: PresentedMessage
         Highlights: Section list
         Details: Section list
+        Link: Link option
+        Actions: Affordance list
     }
 
 [<RequireQualifiedAccess>]
@@ -212,7 +309,6 @@ type RegionContent =
     | Table of RegionTable
     | Stages of RegionStages
     | Codes of vocabulary: string * tokens: string list
-    | Actions of RegionActions
     | Notice of RegionNotice
     | Timeline of RegionTimelineEntry list
 
@@ -221,6 +317,8 @@ type Region =
         Role: RegionRole
         TitleId: string option
         Content: RegionContent
+        Link: Link option
+        Actions: Affordance list
     }
 
 /// Core-authored saved presentation for an offered correction group.
@@ -234,6 +332,17 @@ type Screen =
     }
 
 module Screen =
+    let regionAffordances (region: Region) =
+        region.Actions
+        @ (match region.Content with
+           | RegionContent.Table table -> table.Rows |> List.collect _.Actions
+           | RegionContent.Timeline entries -> entries |> List.collect _.Actions
+           | RegionContent.Stages stages -> stages.Steps |> List.collect _.Actions
+           | _ -> [])
+
+    let affordances (screen: Screen) =
+        screen.Regions |> List.collect regionAffordances
+
     let valid regions =
         regions
         |> List.filter (fun region -> region.Role <> RegionRole.Facts)
@@ -247,6 +356,16 @@ module Screen =
         let unique values = List.distinct values = values
 
         for region in regions do
+            let controls = regionAffordances region
+
+            if
+                (controls |> List.filter _.Primary |> List.length) > 1
+                || not (List.forall Affordance.valid controls)
+            then
+                invalidArg
+                    (nameof regions)
+                    "A region requires valid affordances and at most one primary action."
+
             match region.Content with
             | RegionContent.Table table ->
                 let keys = table.Rows |> List.map _.Key

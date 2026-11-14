@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { recoveryOptions } from "../support/recovery.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act, renderHook, waitFor } from "@testing-library/react";
@@ -17,6 +18,7 @@ const preparedHook = async () => {
         ...recoveryOptions,
         subject: "PEOPLE",
         kind: "people.register",
+        affordance: operationAffordance("people.register", { kind: "PEOPLE" }),
         current: null,
         credential,
         onLockChange: vi.fn(),
@@ -233,13 +235,11 @@ it("observation cannot resolve pending people content", async () => {
           byRequester: true,
           document: {
             ...peopleReceipt(),
-            context: {
-              kind: "RECEIPT",
-              recordedFields: [],
-              target: { kind: "PEOPLE", actorId: input.operationId },
-              caseLink: null,
-              refreshCase: null,
-            },
+            subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+            actions: [],
+            links: [],
+            history: null,
+            nextCursor: null,
           },
         },
       },

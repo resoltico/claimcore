@@ -1,3 +1,4 @@
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { isActiveRequester } from "../../src/hooks/useRequesterContext";
 import { act } from "@testing-library/react";
@@ -46,13 +47,13 @@ const refreshedContext = (
         kind: "SUCCEEDED",
         document: {
           ...current,
-          context: {
-            ...current.context,
-            actorId: different ? "10000000-0000-4000-8000-000000000099" : current.context.actorId,
-            tasks: offered
-              ? current.context.tasks
-              : current.context.tasks.filter((task) => task !== "case.open"),
+          subject: {
+            ...current.subject,
+            actorId: different ? "10000000-0000-4000-8000-000000000099" : current.subject.actorId,
           },
+          actions: offered
+            ? current.actions
+            : current.actions.filter((action) => action.task !== "case.open"),
         },
       },
     },
@@ -72,13 +73,19 @@ it.each([
       status: 200,
       value: humanReadReply("case.list", {
         screen: { regions: [] },
-        context: {
-          kind: "CASES",
-          cases: [],
-          tasks: ["case.open"],
-          exactCaseId: null,
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [
+          operationAffordance(
+            "case.open",
+            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            {},
+            undefined,
+            {},
+          ),
+        ],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -133,13 +140,19 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       status: 200,
       value: humanReadReply("case.list", {
         screen: { regions: [] },
-        context: {
-          kind: "CASES",
-          cases: [],
-          tasks: ["case.open"],
-          exactCaseId: null,
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [
+          operationAffordance(
+            "case.open",
+            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            {},
+            undefined,
+            {},
+          ),
+        ],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -179,15 +192,16 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     const self = active.value.outcome.document;
     const inactive = {
       screen: { regions: [] },
-      context: {
+      subject: {
         kind: "REQUESTER" as const,
         state: kind,
-        actorId: self.context.actorId,
-        installationId: kind === "NO_ROLES" ? self.context.installationId : null,
-        tasks: [],
-        views: [],
-        peopleIssuerSeed: null,
+        actorId: self.subject.actorId,
+        installationId: kind === "NO_ROLES" ? self.subject.installationId : null,
       },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "UNAVAILABLE" as const },
       disclosure: "CURRENT" as const,
     };

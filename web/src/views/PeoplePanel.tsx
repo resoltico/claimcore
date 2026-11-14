@@ -1,6 +1,7 @@
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
+import { initialAffordanceValues } from "../operation/affordances";
 import { taskDefinitions, type Principal } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
 import { ScreenView } from "../ui/ScreenView";
@@ -125,7 +126,6 @@ const PeopleDirectory = ({
   disclosure,
   available,
   onSelect,
-  mayReadGrants,
   onActor,
   open,
   actions,
@@ -138,7 +138,6 @@ const PeopleDirectory = ({
   disclosure: Disclosure;
   available: boolean;
   onSelect: (id: string) => void;
-  mayReadGrants: boolean;
   onActor: (actor: PersonDocument) => void;
 }) => {
   if (!available) {
@@ -156,7 +155,6 @@ const PeopleDirectory = ({
       />
       <PeopleListing
         titleId="people-title"
-        mayReadGrants={mayReadGrants}
         onSelect={onSelect}
         onDisclosureRefused={disclosure.refused}
         onDisclosureRestored={disclosure.restored}
@@ -176,7 +174,9 @@ const usePeopleWorkspace = (disclosure: Disclosure, target: PeopleTarget) => {
       taskDefinitions.flatMap((task) =>
         task.kind === "OPERATION" &&
         task.subject === "PEOPLE" &&
-        context.value?.context.tasks.includes(task.id) === true
+        context.value?.actions.some(
+          (action) => action.task === task.id && action.blocked === null,
+        ) === true
           ? [task.act]
           : [],
       ),
@@ -208,17 +208,23 @@ const PendingPeopleRequests = ({
 }) => (
   <AccessRequests
     available={
-      !selected && available && context?.context.tasks.includes("people.requests") === true
+      !selected &&
+      available &&
+      context?.links.some((named) => named.link.endpoint === "people.requests") === true
     }
     busy={
       model.busy ||
       (model.phase !== "ACCEPTED" &&
         (model.dirty || model.prepared !== null || model.priorUncertain))
     }
-    mayAdmit={context?.context.tasks.includes("people.admit") === true}
+    mayAdmit={
+      context?.actions.some(
+        (action) => action.task === "people.admit" && action.blocked === null,
+      ) === true
+    }
     onDisclosureRefused={refused}
     onAdmit={(request) => {
-      editor.admit(request.principal.issuer, request);
+      editor.admit(request);
       editor.open();
     }}
   />
@@ -245,7 +251,9 @@ const PeopleWorkspace = ({
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
       {selectedActorId === null &&
-      context.value?.context.tasks.includes("people.admit") === true ? (
+      context.value?.actions.some(
+        (action) => action.task === "people.admit" && action.blocked === null,
+      ) === true ? (
         <button
           type="button"
           disabled={model.busy}
@@ -254,7 +262,12 @@ const PeopleWorkspace = ({
               model.phase === "ACCEPTED" ||
               (!model.dirty && model.prepared === null && !model.priorUncertain)
             ) {
-              editor.admit(context.value!.context.peopleIssuerSeed ?? "");
+              const action = context.value?.actions.find(
+                (candidate): candidate is AccessRequestControl => candidate.task === "people.admit",
+              );
+              if (action !== undefined) {
+                editor.admit(action);
+              }
             }
             editor.open();
           }}
@@ -279,17 +292,7 @@ const PeopleWorkspace = ({
             onRevoke={
               target.offered.includes("people.revoke")
                 ? (grant) => {
-                    target.begin(
-                      "people.revoke",
-                      {},
-                      {
-                        role: grant.role,
-                        scope:
-                          grant.scope.kind === "INSTALLATION"
-                            ? { kind: "INSTALLATION" }
-                            : { kind: "CASE", caseId: grant.scope.caseId },
-                      },
-                    );
+                    target.begin(grant);
                     editor.open();
                   }
                 : undefined
@@ -297,7 +300,6 @@ const PeopleWorkspace = ({
             disclosure={disclosure}
             available={disclosureAvailable}
             onSelect={setSelectedActorId}
-            mayReadGrants={context.value?.context.views.includes("PEOPLE") === true}
             onActor={onActor}
           />
         </div>
@@ -355,7 +357,7 @@ type PeopleEditor = {
   active: boolean;
   open: () => void;
   close: () => void;
-  admit: (issuer: string, request?: AccessRequestControl) => void;
+  admit: (action: AccessRequestControl) => void;
 };
 type PeopleLayoutProps = {
   editor: PeopleEditor;
@@ -427,8 +429,8 @@ const PeopleLayout = ({
     recorded.serviceOrigin === location.origin &&
     recorded.credential === credential &&
     recorded.sessionEpoch === session.epoch &&
-    recorded.installationId === requester.context.installationId &&
-    recorded.actorId === requester.context.actorId;
+    recorded.installationId === requester.subject.installationId &&
+    recorded.actorId === requester.subject.actorId;
   const { invalidate } = disclosure;
   return (
     <section aria-labelledby="people-title" className="people-panel">
@@ -495,8 +497,8 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
   if (owner === null && requester !== null) {
     setOwner({
       serviceOrigin: location.origin,
-      installationId: requester.context.installationId,
-      actorId: requester.context.actorId,
+      installationId: requester.subject.installationId,
+      actorId: requester.subject.actorId,
       sessionEpoch: session.epoch,
       credential,
     });
@@ -515,15 +517,10 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
     },
     [cache, refuseDisclosure],
   );
-  const onRecorded = (receipt: OperationReceipt) => {
+  const onRecorded = (_receipt: OperationReceipt) => {
     replaceDisclosureRoute("/people");
     const operationId = actions.current?.operationId;
-    if (
-      receipt.context.target.kind === "PEOPLE" &&
-      operationId !== null &&
-      operationId !== undefined &&
-      owner !== null
-    ) {
+    if (operationId !== null && operationId !== undefined && owner !== null) {
       setRecorded({ ...owner, operationId });
     }
     cache?.invalidate();
@@ -584,28 +581,22 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
           setEditor({ selection, active: true });
         },
         close: navigation.close,
-        admit: (issuer, request) => {
-          setAdmissionPrincipal(request?.principal ?? null);
+        admit: (action) => {
+          const kind = action.seeds["input:principal.kind"];
+          const issuer = action.seeds["input:principal.issuer"];
+          const subject = action.seeds["input:principal.subject"];
+          const fixed =
+            !action.editable.includes("input:principal.subject") &&
+            typeof kind === "string" &&
+            typeof issuer === "string" &&
+            typeof subject === "string";
+          setAdmissionPrincipal(fixed ? { kind, issuer, subject } : null);
           state.model.discard(
             false,
-            "people.admit",
-            {
-              "input:principal.issuer": issuer,
-              ...(request === undefined
-                ? {}
-                : {
-                    "input:principal.kind": request.principal.kind,
-                    "input:principal.issuer": request.principal.issuer,
-                    "input:principal.subject": request.principal.subject,
-                    "input:profile.displayName": request.profileSeed.displayName,
-                    ...(typeof request.profileSeed.contact === "string"
-                      ? { "input:profile.contact": request.profileSeed.contact }
-                      : {}),
-                  }),
-            },
-            {
-              kind: "PEOPLE",
-            },
+            action.task,
+            initialAffordanceValues(action),
+            action.binding,
+            action,
           );
         },
       }}

@@ -1,3 +1,5 @@
+import { operationActions, type OperationAffordance } from "../../operation/affordances";
+
 import { createDraft } from "../../operation/operationDraft";
 import { ownerScope, sameOwnerScope } from "../../protocol/ownerScope";
 import type { MutationLockChange } from "../useWorkspaceMutationLock";
@@ -46,10 +48,12 @@ import {
 import type { LocalSource } from "../../operation/operationTypes";
 import type { Notice } from "../../protocol/notices";
 type Options = {
+  affordance?: OperationAffordance | undefined;
+  affordances?: ReadonlyArray<OperationAffordance>;
   subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
-  prefill?: FormValues;
-  binding?: OperationBinding;
-  targetIdentity?: string;
+  prefill?: FormValues | undefined;
+  binding?: OperationBinding | undefined;
+  targetIdentity?: string | undefined;
   kind: string;
   current: CurrentCase | null;
   credential: string;
@@ -69,16 +73,10 @@ type Options = {
 const targetKey = (options: Options): string =>
   JSON.stringify([
     options.subject,
-    options.current?.context.caseId ?? null,
+    options.current?.subject.caseId ?? null,
     options.targetIdentity ?? null,
     options.binding !== undefined && "actorId" in options.binding ? options.binding.actorId : null,
   ]);
-type PeopleBinding = Extract<
-  OperationBinding,
-  {
-    kind: "PEOPLE";
-  }
->;
 const initialBinding = (options: Options): OperationBinding => {
   if (options.binding !== undefined) {
     return options.binding;
@@ -101,20 +99,20 @@ const initialBinding = (options: Options): OperationBinding => {
   }
   const target = {
     kind: "ID",
-    caseId: current.context.caseId,
+    caseId: current.subject.caseId,
   } as const;
   switch (options.subject) {
     case "CASE":
       return {
         kind: "CASE",
         target,
-        expectedRevision: current.context.revision,
+        expectedRevision: current.subject.revision,
       };
     case "WORK":
       return {
         kind: "WORK",
         target,
-        expectedRevision: current.context.workRevision,
+        expectedRevision: current.subject.workRevision,
       };
     case "NOTE":
       return {
@@ -128,22 +126,40 @@ const initialBinding = (options: Options): OperationBinding => {
       };
   }
 };
+const suppliedAffordance = (options: Options, kind: string) => {
+  const actions = [
+    ...(options.affordance === undefined ? [] : [options.affordance]),
+    ...(options.affordances ?? []),
+    ...(options.current?.actions ?? []),
+  ];
+  return actions.find(
+    (action): action is OperationAffordance =>
+      action.task === kind && action.task !== "people.requests.dismiss",
+  );
+};
 const fresh = (
   options: Options,
   kind = options.kind,
   prefill: FormValues = {},
   binding?: OperationBinding,
+  selected?: OperationAffordance,
 ): OperationState => {
-  const selectedBinding = binding ?? initialBinding(options);
+  const affordance = selected ?? suppliedAffordance(options, kind);
+  const selectedBinding =
+    binding ??
+    (kind === options.kind ? options.binding : undefined) ??
+    affordance?.binding ??
+    initialBinding(options);
   const values = {
-    ...initialOperationValues(options.subject, kind, options.current),
+    ...(affordance === undefined ? {} : initialOperationValues(affordance)),
     ...options.prefill,
     ...prefill,
   };
+  const epoch = options.contextEpoch ?? 0;
   const context = {
     generation: 0,
-    owner: ownerScope(options.recoveryScope, options.contextEpoch ?? 0),
-    epoch: options.contextEpoch ?? 0,
+    owner: ownerScope(options.recoveryScope, epoch),
+    epoch,
     credential: options.credential,
     target: targetKey(options),
   };
@@ -155,6 +171,7 @@ const fresh = (
       selectedBinding,
       values,
       context.owner,
+      affordance ?? null,
     ),
     disclosed: {
       review: null,
@@ -687,6 +704,10 @@ const prepareValues = (
   binding: OperationBinding = state.draft.binding,
 ): LocalSource => {
   const task = operationEntry(state.draft.entry);
+  const affordance = state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind);
+  if (affordance === undefined || affordance.blocked !== null) {
+    throw new Error("A current Core affordance is required.");
+  }
   const submission = assembleOperation(
     task,
     options.normalizeValues?.(values, task) ?? values,
@@ -842,7 +863,7 @@ const editing = (
         dispatch({
           type: "READ_CURRENT",
           identity: identity(options, state.disclosed.context.generation),
-          caseId: options.current.context.caseId,
+          caseId: options.current.subject.caseId,
           reference: "",
         });
       }
@@ -851,7 +872,8 @@ const editing = (
       acknowledgedUncertainty = false,
       kind = options.kind,
       prefill?: FormValues,
-      binding?: PeopleBinding,
+      binding?: OperationBinding,
+      affordance?: OperationAffordance,
     ) => {
       if (!view.busy && (!view.priorUncertain || acknowledgedUncertainty)) {
         dispatch({
@@ -869,6 +891,7 @@ const editing = (
             prefill,
             binding ??
               (state.draft.target === targetKey(options) ? state.draft.binding : undefined),
+            affordance,
           ),
           abandon: acknowledgedUncertainty,
         });
@@ -930,7 +953,8 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   !state.disclosed.refused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.context.tasks.includes("case.open") === true;
+  requester?.actions.some((action) => action.task === "case.open" && action.blocked === null) ===
+  true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
@@ -990,8 +1014,8 @@ const requesterRecoveryScope = (
     ? undefined
     : {
         serviceOrigin: location.origin,
-        installationId: requester.context.installationId,
-        actorId: requester.context.actorId,
+        installationId: requester.subject.installationId,
+        actorId: requester.subject.actorId,
       };
 const operationOwnership = (state: OperationState, options: Options, contextEpoch: number) => {
   const observedOwner = ownerScope(options.recoveryScope, contextEpoch);
@@ -1007,23 +1031,29 @@ const operationOwnership = (state: OperationState, options: Options, contextEpoc
       (observedOwner !== null && !sameOwnerScope(original, observedOwner)));
   return { ownerVerified, scopeVerified, ownerChanged };
 };
+const resolveOperationOptions = (
+  supplied: Options,
+  requester: ReturnType<typeof useRequesterContext>,
+  journal: ReturnType<typeof useRecoveryJournal>,
+  contextEpoch: number,
+): Options => {
+  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
+  const requesterActions = requester === null ? [] : operationActions(requester.actions);
+  return {
+    ...supplied,
+    affordances: [...(supplied.affordances ?? []), ...requesterActions],
+    contextEpoch,
+    journal: supplied.journal ?? journal,
+    ...(recoveryScope === undefined ? {} : { recoveryScope }),
+  };
+};
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
   const journal = useRecoveryJournal();
   const session = useContext(SessionContext);
   const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
-  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
-  const options: Options = {
-    ...supplied,
-    contextEpoch,
-    journal: supplied.journal ?? journal,
-    ...(recoveryScope === undefined
-      ? {}
-      : {
-          recoveryScope,
-        }),
-  };
+  const options = resolveOperationOptions(supplied, requester, journal, contextEpoch);
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const { ownerVerified, scopeVerified, ownerChanged } = operationOwnership(
     state,
@@ -1068,6 +1098,7 @@ export const useOperation = (supplied: Options) => {
     ...view,
     task: operationEntry(state.draft.entry),
     bindingSource: state.draft.binding,
+    affordance: state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind),
     ownerVerified,
     ...controls,
     preview: () => (ownerVerified ? controls.preview() : Promise.resolve()),

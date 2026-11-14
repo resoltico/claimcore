@@ -307,7 +307,6 @@ let private setupFrames (fixture: PublishedFixture.Fixture) =
                                 "input:principal.issuer", box fixture.Issuer
                                 "input:principal.subject", box subject
                                 "input:profile.displayName", box displayName
-                                "input:profile.contact", null
                             ]
                 |}
             :: (roles |> List.map (grantFrame operation)))

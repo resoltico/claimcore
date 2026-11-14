@@ -1,8 +1,10 @@
+import type { OperationTaskId, OperationBinding } from "@contracts/client";
+import { operationAffordance } from "./affordances.fixtures";
 import type { CurrentCase } from "../../src/protocol/types";
-import type { OperationBinding } from "@contracts/client";
+
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
-import { type FormValues } from "../../src/protocol/forms";
+import type { FormValues } from "../../src/protocol/forms";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
@@ -10,28 +12,77 @@ export const current: CurrentCase = {
   screen: {
     regions: [],
   },
-  context: {
+  subject: {
     kind: "CASE",
     caseId: "20000000-0000-4000-8000-000000000001",
     revision: 4,
     workRevision: 0,
-    history: "FULL",
-    tasks: ["case.amendRegistration", "case.correct", "case.close"],
-    editableInputs: [],
-    correction: {
-      registration: ["KEEP", "UPDATE"],
-      decision: ["KEEP", "UPDATE", "CLEAR"],
-    },
-    seeds: {
-      registration: null,
-      decision: null,
-      work: null,
-      paymentCurrency: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
   },
+  actions: [
+    operationAffordance(
+      "case.amendRegistration",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      { "group:registration": "KEEP", "group:decision": "KEEP" },
+      [],
+      {
+        "group:registration": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.registration,
+        "group:decision": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.decision,
+      },
+    ),
+    operationAffordance(
+      "case.correct",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      { "group:registration": "KEEP", "group:decision": "KEEP" },
+      [],
+      {
+        "group:registration": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.registration,
+        "group:decision": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.decision,
+      },
+    ),
+    operationAffordance(
+      "case.close",
+      {
+        kind: "CASE",
+        target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+        expectedRevision: 4,
+      },
+      { "group:registration": "KEEP", "group:decision": "KEEP" },
+      [],
+      {
+        "group:registration": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.registration,
+        "group:decision": {
+          registration: ["KEEP", "UPDATE"],
+          decision: ["KEEP", "UPDATE", "CLEAR"],
+        }.decision,
+      },
+    ),
+  ],
+  links: [],
+  history: "FULL",
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -55,9 +106,10 @@ export const bindingFor = (kind = "case.close"): OperationBinding =>
           kind: "REFERENCE",
           caseReference: "CASE-SERIALIZATION",
         },
-        expectedRevision: current.context.revision,
+        expectedRevision: current.subject.revision,
       };
-export const valuesFor = (kind = "case.close") => initialOperationValues("CASE", kind, current);
+export const valuesFor = (kind = "case.close") =>
+  initialOperationValues(operationAffordance(kind as OperationTaskId, bindingFor(kind)));
 export const requestFor = (values: FormValues, kind = "case.close") =>
   assembleOperation(
     operationEntry({

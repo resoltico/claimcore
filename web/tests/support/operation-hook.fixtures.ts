@@ -1,3 +1,4 @@
+import { operationAffordance } from "./affordances.fixtures";
 import type { PreparedRequest } from "../../src/protocol/preparedRequest";
 import { recoveryOptions } from "./recovery.fixtures";
 import { renderHook } from "@testing-library/react";
@@ -35,13 +36,6 @@ export const preview = (
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
   const source = input.task === "case.open" ? openReview : closeReview;
-  let { caseId } = current.context;
-  if (input.binding.target.kind === "ID") {
-    ({ caseId } = input.binding.target);
-  }
-  if (input.task === "case.open") {
-    caseId = input.operationId;
-  }
   const reference =
     input.binding.target.kind === "REFERENCE"
       ? input.binding.target.caseReference
@@ -58,15 +52,11 @@ export const preview = (
           ...source,
           document: {
             ...source.document,
-            context: {
-              ...source.document.context,
-              target: {
-                kind: "CASE",
-                caseId,
-                beforeRevision: input.task === "case.open" ? null : input.binding.expectedRevision,
-              },
+            subject: {
+              ...source.document.subject,
               confirmation: { kind: "CASE_REFERENCE", reference },
             },
+            actions: [operationAffordance(input.task, input.binding, input.inputs, [])],
           },
         },
       },

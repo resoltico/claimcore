@@ -1,14 +1,21 @@
+import type { Principal, Affordance, RegionRow } from "@contracts/client";
+import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import type { RegionRow } from "@contracts/client";
-import { AccessRequests, type AccessRequestControl } from "../../src/views/people/AccessRequests";
+
+import { AccessRequests } from "../../src/views/people/AccessRequests";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { render, screen, waitFor, TestSession } from "../support/presentation-test-support";
 import { workBasis } from "../support/inputs";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
-type RequestFixture = AccessRequestControl & { row: RegionRow };
+type RequestFixture = {
+  key: string;
+  principal: Principal;
+  profileSeed: { displayName: string; contact: string | null };
+  row: RegionRow;
+};
 const request: RequestFixture = {
   key: "0",
   principal: { kind: "SERVICE", issuer: "https://issuer.example/", subject: "shared-subject" },
@@ -59,16 +66,45 @@ const succeeded = (
               { key: "first", labelId: "label.firstSeen", prominence: "SECONDARY", isMoney: false },
               { key: "last", labelId: "label.lastSeen", prominence: "SECONDARY", isMoney: false },
             ],
-            rows: items.map((item) => item.row),
+            rows: items.map((item) => ({
+              ...item.row,
+              actions: [
+                operationAffordance(
+                  "people.admit",
+                  { kind: "PEOPLE" },
+                  {
+                    "input:principal.kind": item.principal.kind,
+                    "input:principal.issuer": item.principal.issuer,
+                    "input:principal.subject": item.principal.subject,
+                    "input:profile.displayName": item.profileSeed.displayName,
+                    "input:profile.contact": item.profileSeed.contact,
+                  },
+                  ["input:profile.displayName", "input:profile.contact", "input:grants"],
+                ),
+                {
+                  task: "people.requests.dismiss",
+                  binding: { kind: "PEOPLE" },
+                  seeds: {
+                    "input:principal.kind": item.principal.kind,
+                    "input:principal.issuer": item.principal.issuer,
+                    "input:principal.subject": item.principal.subject,
+                  },
+                  editable: [],
+                  choices: {},
+                  primary: false,
+                  blocked: null,
+                } satisfies Affordance,
+              ],
+            })),
           },
         },
       ],
     },
-    context: {
-      kind: "ACCESS_REQUESTS",
-      requests: items.map(({ key, principal, profileSeed }) => ({ key, principal, profileSeed })),
-      nextCursor,
-    },
+    subject: { kind: "LIST" },
+    actions: [],
+    links: [],
+    history: null,
+    nextCursor,
     basis: { kind: "SNAPSHOT", observation: workBasis },
     disclosure: "CURRENT",
   }),
@@ -107,18 +143,33 @@ it("pages with the actual cursor and binds admission to the exact principal and 
     { limit: 50, cursor: "next-request-page" },
   ]);
   await user.click(screen.getAllByRole("button", { name: "Add person" })[0]!);
-  expect(onAdmit).toHaveBeenCalledExactlyOnceWith({
-    key: "0",
-    principal: request.principal,
-    profileSeed: { displayName: "Unverified hint", contact: "hint@example.test" },
-  });
+  expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      seeds: {
+        "input:principal.kind": "SERVICE",
+        "input:principal.issuer": request.principal.issuer,
+        "input:principal.subject": request.principal.subject,
+        "input:profile.displayName": "Unverified hint",
+        "input:profile.contact": "hint@example.test",
+      },
+    }),
+  );
   onAdmit.mockClear();
   await user.click(screen.getAllByRole("button", { name: "Add person" })[1]!);
-  expect(onAdmit).toHaveBeenCalledExactlyOnceWith({
-    key: "0",
-    principal: { ...request.principal, kind: "HUMAN" },
-    profileSeed: request.profileSeed,
-  });
+  expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      task: "people.admit",
+      seeds: {
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": request.principal.issuer,
+        "input:principal.subject": request.principal.subject,
+        "input:profile.displayName": "Unverified hint",
+        "input:profile.contact": "hint@example.test",
+      },
+    }),
+  );
 });
 it("requires dismiss confirmation and sends the actual principal kind, issuer and subject", async () => {
   mockEndpoint("people.requests").mockResolvedValue(succeeded([request]));
@@ -129,7 +180,11 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
     value: {
       ...humanReadReply("people.requests.dismiss", {
         screen: { regions: [] },
-        context: { kind: "EMPTY" },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "UNAVAILABLE" },
         disclosure: "NONE",
       }),
@@ -214,7 +269,11 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       value: {
         ...humanReadReply("people.requests.dismiss", {
           screen: { regions: [] },
-          context: { kind: "EMPTY" },
+          subject: { kind: "LIST" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis: { kind: "UNAVAILABLE" },
           disclosure: "NONE",
         }),
@@ -310,7 +369,11 @@ it("reviews and dismisses the selected page-local request without reusing an ear
     status: 200,
     value: humanReadReply("people.requests.dismiss", {
       screen: { regions: [] },
-      context: { kind: "EMPTY" },
+      subject: { kind: "LIST" },
+      actions: [],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis: { kind: "UNAVAILABLE" },
       disclosure: "NONE",
     }),

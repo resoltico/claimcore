@@ -1,6 +1,7 @@
+import { operationAffordance } from "../../../support/affordances.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { type HumanReview, type OperationSubmission } from "@contracts/client";
+import type { HumanReview, OperationSubmission } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
 import { OperationReview } from "../../../../src/views/operation/OperationReview";
 import { prepareRequest } from "../../../../src/protocol/preparedRequest";
@@ -51,21 +52,25 @@ const review: HumanReview = {
         },
       ],
     },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "case.erase",
-      target: {
-        kind: "CASE",
-        caseId,
-        beforeRevision: 7,
-      },
-      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-      consequence: "IRREVERSIBLE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "CORE-REFERENCE",
       },
+      consequence: "IRREVERSIBLE",
     },
+    actions: [
+      operationAffordance(
+        "case.erase",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis: {
       kind: "SNAPSHOT",
       observation: {
@@ -162,8 +167,8 @@ it("resets consent when a new Core review supplies a different target", async ()
     ...review,
     document: {
       ...review.document,
-      context: {
-        ...review.document.context,
+      subject: {
+        ...review.document.subject,
         confirmation: {
           kind: "CASE_REFERENCE",
           reference: "OTHER-REFERENCE",
@@ -197,11 +202,19 @@ it("records a routine review with one consent action", async () => {
     ...review,
     document: {
       ...review.document,
-      context: {
-        ...review.document.context,
-        task: "case.close",
-        consequence: "ROUTINE",
-      },
+      subject: { ...review.document.subject, consequence: "ROUTINE" },
+      actions: [
+        operationAffordance(
+          "case.close",
+          {
+            kind: "CASE",
+            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            expectedRevision: 1,
+          },
+          {},
+          [],
+        ),
+      ],
     },
   };
   const value = model(

@@ -14,7 +14,11 @@ it("focuses the selected person dialog and restores its originating control on r
     value: {
       ...humanReadReply("case.list", {
         screen: { regions: [] },
-        context: { kind: "CASES", cases: [], tasks: [], exactCaseId: null, nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -56,13 +60,24 @@ it("focuses the selected person dialog and restores its originating control on r
                   },
                 ],
                 rows: [
-                  { key: actor.actor.actorId, values: [{ kind: "ACTOR", value: actor.actor }] },
+                  {
+                    key: actor.actor.actorId,
+                    link: {
+                      endpoint: "people.grants",
+                      input: { actorId: actor.actor.actorId, limit: 20 },
+                    },
+                    values: [{ kind: "ACTOR", value: actor.actor }],
+                  },
                 ],
               },
             },
           ],
         },
-        context: { kind: "PEOPLE", actorIds: [actor.actor.actorId], nextCursor: null },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -91,16 +106,11 @@ it("focuses the selected person dialog and restores its originating control on r
             },
           ],
         },
-        context: {
-          kind: "PERSON",
-          actorId: actor.actor.actorId,
-          principal: actor.principal,
-          tasks: [],
-          profileSeed: null,
-          responsibleCases: null,
-          revocations: [],
-          nextCursor: null,
-        },
+        subject: { kind: "PERSON", actorId: actor.actor.actorId },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: { kind: "SNAPSHOT", observation: workBasis },
         disclosure: "CURRENT",
       }),
@@ -108,7 +118,7 @@ it("focuses the selected person dialog and restores its originating control on r
   });
   const user = userEvent.setup();
   render(<Dashboard />);
-  await user.click(await screen.findByRole("link", { name: "People & access" }));
+  await user.click(await screen.findByRole("link", { name: "People and access" }));
   const origin = (await screen.findAllByRole("link", { name: "focus-origin" }))[0]!;
   await user.click(origin);
   const heading = await screen.findByRole("dialog", { name: "focus-origin" });

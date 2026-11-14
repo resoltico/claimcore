@@ -1,8 +1,10 @@
-import {
-  type RequestByEndpoint,
-  type HumanReadDocument_case_get,
-  type HumanReview,
-  type HumanReceiptDocument,
+import { prefixedInputs } from "../../support/submission-inputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
+import type {
+  RequestByEndpoint,
+  HumanReadDocument_case_get,
+  HumanReview,
+  HumanReceiptDocument,
 } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -24,28 +26,24 @@ const current: HumanReadDocument_case_get = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "CASE",
-    caseId,
-    revision: 7,
-    workRevision: 12,
-    history: "NONE",
-    tasks: ["work.update"],
-    editableInputs: ["field:responsibleActor"],
-    correction: null,
-    seeds: {
-      registration: null,
-      decision: null,
-      work: {
-        responsible: actorId,
-        summary: null,
+  subject: { kind: "CASE", caseId, revision: 7, workRevision: 12 },
+  actions: [
+    operationAffordance(
+      "work.update",
+      { kind: "WORK", target: { kind: "ID", caseId }, expectedRevision: 12 },
+      {
+        ...prefixedInputs("field:", {
+          responsibleActor: actorId,
+          handlingSummary: null,
+        }),
       },
-      paymentCurrency: null,
-    },
-    notes: [],
-    payments: [],
-    nextActions: [],
-  },
+      ["field:responsibleActor"],
+      {},
+    ),
+  ],
+  links: [],
+  history: "NONE",
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -58,27 +56,25 @@ const review: HumanReview = {
     screen: {
       regions: [],
     },
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "work.update",
-      target: {
-        kind: "WORK",
-        caseId,
-        beforeRevision: 12,
-      },
-      inputs: [
-        "input:operationId",
-        "field:caseReference",
-        "input:expectedWorkRevision",
-        "field:responsibleActor",
-        "field:handlingSummary",
-      ],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "CORE-CASE",
       },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "work.update",
+        { kind: "WORK", target: { kind: "ID", caseId }, expectedRevision: 12 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -87,17 +83,22 @@ const receipt: HumanReceiptDocument = {
   screen: {
     regions: [],
   },
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "WORK",
-      caseId,
-      revision: 13,
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
     },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 };
@@ -157,6 +158,18 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                       rows: [
                         {
                           key: actorId,
+                          actions: [
+                            operationAffordance(
+                              "work.update",
+                              {
+                                kind: "WORK",
+                                target: { kind: "ID", caseId },
+                                expectedRevision: 12,
+                              },
+                              { "field:responsibleActor": actorId },
+                              [],
+                            ),
+                          ],
                           values: [
                             {
                               kind: "TEXT",
@@ -166,6 +179,18 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                         },
                         {
                           key: replacementActorId,
+                          actions: [
+                            operationAffordance(
+                              "work.update",
+                              {
+                                kind: "WORK",
+                                target: { kind: "ID", caseId },
+                                expectedRevision: 12,
+                              },
+                              { "field:responsibleActor": replacementActorId },
+                              [],
+                            ),
+                          ],
                           values: [
                             {
                               kind: "TEXT",
@@ -178,11 +203,11 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                   },
                 ],
               },
-              context: {
-                kind: "ASSIGNEES",
-                actorIds: [actorId, replacementActorId],
-                nextCursor: null,
-              },
+              subject: { kind: "LIST" },
+              actions: [],
+              links: [],
+              history: null,
+              nextCursor: null,
               basis,
               disclosure: "CURRENT",
             },
@@ -214,9 +239,11 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                       screen: {
                         regions: [],
                       },
-                      context: {
-                        kind: "EMPTY",
-                      },
+                      subject: { kind: "LIST" },
+                      actions: [],
+                      links: [],
+                      history: null,
+                      nextCursor: null,
                       basis: {
                         kind: "UNAVAILABLE",
                       },
@@ -250,13 +277,11 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   render(
     <CaseReassignment
       selection={{
-        row: {
-          caseId,
-          assignment: {
-            revision: 3,
-            responsibleSeed: actorId,
-          },
-        },
+        row: operationAffordance(
+          "work.update",
+          { kind: "WORK", target: { kind: "ID", caseId }, expectedRevision: 3 },
+          { "field:responsibleActor": actorId },
+        ),
         readId: "selection",
       }}
       disclosureAvailable
@@ -333,19 +358,9 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
     expect(previews).toHaveLength(3);
   });
   expect(JSON.parse(previews[2]!.bytes)).toMatchObject({
-    expectedRevision: 12,
-    target: {
-      kind: "ID",
-      caseId,
-    },
-    act: {
-      values: {
-        responsibleActor: {
-          kind: "SET",
-          value: replacementActorId,
-        },
-      },
-    },
+    task: "work.update",
+    binding: { kind: "WORK", expectedRevision: 12, target: { kind: "ID", caseId } },
+    inputs: { "field:responsibleActor": replacementActorId },
   });
   expect(previews[2]!.operationId).not.toBe(previews[1]!.operationId);
   expect(executions).toEqual([]);

@@ -1,4 +1,5 @@
-import type { GrantScope, HumanReview } from "@contracts/client";
+import { operationAffordance } from "./affordances.fixtures";
+import type { HumanReview } from "@contracts/client";
 import { workBasis } from "./inputs";
 import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
@@ -8,46 +9,22 @@ type PeopleInput = Extract<
   Parameters<typeof service.preview>[0]["input"],
   { binding: { kind: "PEOPLE" } }
 >;
-const actorId = "10000000-0000-4000-8000-000000000001";
 const basis = { kind: "SNAPSHOT", observation: workBasis } as const;
-const resolvedScope = (input: PeopleInput): GrantScope => {
-  if (
-    (input.task !== "people.grant" && input.task !== "people.revoke") ||
-    input.inputs["input:scope"] === "INSTALLATION"
-  ) {
-    return { kind: "INSTALLATION" };
-  }
-  return {
-    kind: "CASE",
-    caseId: input.inputs["input:caseId"] ?? "20000000-0000-4000-8000-000000000001",
-    caseReference: input.inputs["field:caseReference"] ?? "SYNTHETIC-GRANT",
-  };
-};
 /** Interaction fixtures borrow only declared binding metadata; independent policy and rendering oracles live in their focused tests. */
 export const peopleReview = (input: PeopleInput): HumanReview => {
   const task = taskForCommand(input);
-  const inputs = [
-    ...task.inputs,
-    ...task.collections.flatMap((collection) => collection.inputs),
-  ].map((entry) => entry.id);
   return {
     document: {
       screen: { regions: [] },
-      context: {
+      subject: {
         kind: "REVIEW",
-        task: task.id,
-        inputs: [...new Set(inputs)],
-        consequence: task.consequence,
-        target: {
-          kind: "PEOPLE",
-          actorId: ["people.register", "people.admit"].includes(input.task) ? null : actorId,
-          scope:
-            input.task === "people.grant" || input.task === "people.revoke"
-              ? resolvedScope(input)
-              : { kind: "INSTALLATION" },
-        },
         confirmation: { kind: "OPERATION", operationId: input.operationId },
+        consequence: task.consequence,
       },
+      actions: [operationAffordance(input.task, input.binding, input.inputs, [])],
+      links: [],
+      history: null,
+      nextCursor: null,
       basis,
       disclosure: "CURRENT",
     },
@@ -86,18 +63,11 @@ export const peopleAcceptance = (
         kind: "ACCEPTED",
         document: {
           screen: { regions: [] },
-          context: {
-            kind: "RECEIPT",
-            recordedFields: [],
-            target: {
-              kind: "PEOPLE",
-              actorId: ["people.register", "people.admit"].includes(input.task)
-                ? input.operationId
-                : actorId,
-            },
-            caseLink: null,
-            refreshCase: null,
-          },
+          subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+          actions: [],
+          links: [],
+          history: null,
+          nextCursor: null,
           basis,
           disclosure: "CURRENT",
         },

@@ -19,9 +19,12 @@ module OperationSubmissionCodecs =
             | TaskAtom.Text ->
                 let codec =
                     TaskChoiceId.ofInput input.Input
-                    |> Option.map (
-                        TaskChoiceId.tokens >> List.map (fun token -> token, token) >> enumeration
-                    )
+                    |> Option.map (fun choice ->
+                        Vocabulary.define
+                            (Vocabulary.token TaskChoiceId.vocabulary choice)
+                            (TaskChoiceId.tokens choice)
+                            id
+                        |> VocabularyCodec.create)
                     |> Option.defaultValue text
 
                 codec
@@ -78,6 +81,34 @@ module OperationSubmissionCodecs =
                         | _ -> invalidOp "Collection task input required.")
 
                 input, TaskInputId.token input, false, codec)
+
+        fieldMapWithPresence (members @ collections)
+
+    /// Prefill is partial, including collection rows that the user has not completed yet.
+    let seedInputs (declaration: TaskDeclaration) =
+        let members =
+            declaration.Inputs
+            |> List.map (fun input ->
+                input.Input, TaskInputId.token input.Input, true, scalar input)
+
+        let collections =
+            declaration.Collections
+            |> List.map (fun collection ->
+                let input = TaskCollectionId.input collection.Collection
+
+                let row =
+                    collection.Inputs
+                    |> List.map (fun input ->
+                        input.Input, TaskInputId.token input.Input, true, scalar input)
+                    |> fieldMapWithPresence
+
+                let codec =
+                    boundedList 0 (TaskCollectionId.maximumRows collection.Collection) row
+                    |> map SubmissionValue.Rows (function
+                        | SubmissionValue.Rows rows -> rows
+                        | _ -> invalidOp "Collection seed required.")
+
+                input, TaskInputId.token input, true, codec)
 
         fieldMapWithPresence (members @ collections)
 

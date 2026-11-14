@@ -1,4 +1,5 @@
-import { type RequestByEndpoint, type HumanReview } from "@contracts/client";
+import { operationAffordance } from "../../../support/affordances.fixtures";
+import type { RequestByEndpoint, HumanReview } from "@contracts/client";
 import { requestText } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
@@ -12,24 +13,17 @@ import { navigate } from "../../../../src/routing/navigation";
 import type { PersonDocument } from "../../../../src/protocol/types";
 const firstId = "00000000-0000-4000-8000-000000000001";
 const secondId = "00000000-0000-4000-8000-000000000002";
-const person = (actorId: string, subject: string): PersonDocument => ({
+const person = (actorId: string, _subject: string): PersonDocument => ({
   screen: {
     regions: [],
   },
-  context: {
-    kind: "PERSON",
-    actorId,
-    principal: {
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject,
-    },
-    nextCursor: null,
-    tasks: ["people.enable"],
-    profileSeed: null,
-    revocations: [],
-    responsibleCases: null,
-  },
+  subject: { kind: "PERSON", actorId },
+  actions: [
+    operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
+  ],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis: {
     kind: "SNAPSHOT",
     observation: {
@@ -60,28 +54,20 @@ const fixture = () => {
             screen: {
               regions: [],
             },
-            context: {
+            subject: {
               kind: "REVIEW",
-              task: "people.enable",
-              target: {
-                kind: "PEOPLE",
-                actorId: firstId,
-                scope: {
-                  kind: "INSTALLATION",
-                },
-              },
-              inputs: [
-                "input:operationId",
-                "input:principal.kind",
-                "input:principal.issuer",
-                "input:principal.subject",
-              ],
-              consequence: "ROUTINE",
               confirmation: {
                 kind: "OPERATION",
                 operationId: operationExecuteRequest.operationId,
               },
+              consequence: "ROUTINE",
             },
+            actions: [
+              operationAffordance("people.enable", { kind: "PEOPLE", actorId: firstId }, {}, []),
+            ],
+            links: [],
+            history: null,
+            nextCursor: null,
             basis:
               first.basis.kind === "SNAPSHOT"
                 ? first.basis
@@ -161,11 +147,11 @@ it("keeps a retained request on person A until explicit discard consent binds th
   expect(f.target().person).toBeNull();
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: first.context.principal,
+    actorId: firstId,
   });
   await act(() =>
     Promise.try(() => {
-      f.target().begin("people.enable");
+      f.target().begin(second.actions.find((action) => action.task === "people.enable")!);
     }),
   );
   expect(f.target().model.pendingDiscard).toBe("people.enable");
@@ -178,7 +164,7 @@ it("keeps a retained request on person A until explicit discard consent binds th
   );
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: second.context.principal,
+    actorId: secondId,
   });
   expect(f.target().model.prepared).toBeNull();
   expect(f.target().model.confirmed).toBe(false);
@@ -215,14 +201,19 @@ it("uses the permitted profile seed rather than saved account presentation and i
         },
       ],
     },
-    context: {
-      ...first.context,
-      tasks: ["people.setProfile"],
-      profileSeed: {
-        displayName: "Core editable profile seed",
-        contact: "contact@example.test",
-      },
-    },
+    actions: [
+      operationAffordance(
+        "people.setProfile",
+        { kind: "PEOPLE", actorId: firstId },
+        {
+          "input:profile.displayName": "Core editable profile seed",
+          "input:profile.contact": "contact@example.test",
+        },
+        undefined,
+        {},
+        true,
+      ),
+    ],
   };
   await act(() =>
     Promise.try(() => {
@@ -231,7 +222,7 @@ it("uses the permitted profile seed rather than saved account presentation and i
   );
   await act(() =>
     Promise.try(() => {
-      f.target().begin("people.setProfile");
+      f.target().begin(profile.actions.find((action) => action.task === "people.setProfile")!);
     }),
   );
   expect(f.target().model.values).toEqual({
@@ -240,7 +231,7 @@ it("uses the permitted profile seed rather than saved account presentation and i
   });
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: first.context.principal,
+    actorId: firstId,
   });
   expect(f.bodies).toEqual([]);
 });

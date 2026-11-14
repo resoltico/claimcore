@@ -1,5 +1,6 @@
-import { caseDocumentInput } from "./case-document.fixtures";
+import { installationActions, requesterLinks, activeRequester } from "./human-requester.fixtures";
 import {
+  type DocumentSubject,
   type EndpointId,
   type HumanReceiptDocument,
   type HumanResponseByEndpoint,
@@ -7,8 +8,11 @@ import {
   type Screen,
   consumerContractIdentity,
 } from "@contracts/client";
-import { principal, workBasis } from "./inputs";
-import { activeRequester } from "./human-requester.fixtures";
+import { caseSubject, caseDocumentInput } from "./case-document.fixtures";
+import { operationAffordance } from "./affordances.fixtures";
+
+import { workBasis } from "./inputs";
+
 import { endpointResponse } from "./transport-response.fixtures";
 const operationId = "10000000-0000-7000-8000-000000000001";
 const caseId = "20000000-0000-4000-8000-000000000001";
@@ -27,13 +31,17 @@ const succeeded = <T>(data: T) => ({
     view: empty,
   },
 });
-const read = <const C>(context: C) => ({
+const read = <const C extends DocumentSubject>(subject: C) => ({
   representation: "HUMAN" as const,
   outcome: {
     kind: "SUCCEEDED" as const,
     document: {
       screen: empty,
-      context,
+      subject,
+      actions: [],
+      links: [],
+      nextCursor: null,
+      history: null,
       basis,
       disclosure: "CURRENT" as const,
     },
@@ -41,53 +49,57 @@ const read = <const C>(context: C) => ({
 });
 const caseReceipt = (): HumanReceiptDocument => ({
   screen: empty,
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "CASE",
-      caseId,
-      revision: 2,
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [
+    {
+      rel: "OPEN_CASE",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
     },
-    caseLink: caseId,
-    refreshCase: caseId,
-  },
+    {
+      rel: "FOLLOW_UP",
+      labelId: "field.caseReference.label",
+      link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+    },
+  ],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 });
 export const peopleReceipt = (): HumanReceiptDocument => ({
   screen: empty,
-  context: {
-    kind: "RECEIPT",
-    recordedFields: [],
-    target: {
-      kind: "PEOPLE",
-      actorId,
-    },
-    caseLink: null,
-    refreshCase: null,
-  },
+  subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: null,
   basis,
   disclosure: "CURRENT",
 });
 const caseReview: HumanReview = {
   document: {
     screen: empty,
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "case.close",
-      target: {
-        kind: "CASE",
-        caseId,
-        beforeRevision: 1,
-      },
-      inputs: ["input:operationId", "field:caseReference", "input:expectedRevision"],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "CASE_REFERENCE",
         reference: "CASE-1",
       },
+      consequence: "ROUTINE",
     },
+    actions: [
+      operationAffordance(
+        "case.close",
+        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 1 },
+        {},
+        [],
+      ),
+    ],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -99,31 +111,18 @@ const caseReview: HumanReview = {
 const peopleReview: HumanReview = {
   document: {
     screen: empty,
-    context: {
+    subject: {
       kind: "REVIEW",
-      task: "people.grant",
-      target: {
-        kind: "PEOPLE",
-        actorId,
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
-      inputs: [
-        "input:operationId",
-        "input:principal.kind",
-        "input:principal.issuer",
-        "input:principal.subject",
-        "input:role",
-        "input:scope",
-        "field:caseReference",
-      ],
-      consequence: "ROUTINE",
       confirmation: {
         kind: "OPERATION",
         operationId,
       },
+      consequence: "ROUTINE",
     },
+    actions: [operationAffordance("people.grant", { kind: "PEOPLE", actorId }, {}, [])],
+    links: [],
+    history: null,
+    nextCursor: null,
     basis,
     disclosure: "CURRENT",
   },
@@ -148,9 +147,22 @@ const replies: Replies = {
       kind: "SUCCEEDED",
       document: {
         ...activeRequester,
-        context: {
-          ...activeRequester.context,
-          tasks: [
+        actions: installationActions([
+          "case.open",
+          "people.register",
+          "people.admit",
+          "people.grant",
+          "people.revoke",
+          "people.enable",
+          "people.disable",
+          "people.list",
+          "people.grants",
+          "people.history",
+          "people.requests",
+        ]),
+        links: requesterLinks(
+          ["CASES", "PEOPLE", "OPERATIONS"],
+          [
             "case.open",
             "people.register",
             "people.admit",
@@ -163,7 +175,7 @@ const replies: Replies = {
             "people.history",
             "people.requests",
           ],
-        },
+        ),
       },
     },
   }),
@@ -172,108 +184,26 @@ const replies: Replies = {
     outcome: {
       kind: "SUCCEEDED",
       document: caseDocumentInput({
-        tasks: [],
-        caseId,
-        revision: 1,
+        subject: { ...caseSubject, caseId, revision: 1 },
+        actions: [],
         history: "NONE",
       }),
     },
   }),
-  "case.list": () =>
-    read({
-      kind: "CASES",
-      nextCursor: null,
-      tasks: [],
-      cases: [],
-      exactCaseId: null,
-    }),
-  "case.summary": () =>
-    read({
-      kind: "EMPTY",
-    }),
-  "case.assignees": () =>
-    read({
-      kind: "ASSIGNEES",
-      actorIds: [],
-      nextCursor: null,
-    }),
-  "case.notes": () =>
-    read({
-      kind: "NOTE_PAGE",
-      caseId,
-      notes: [],
-      tasks: [],
-      nextCursor: null,
-    }),
-  "case.payments": () =>
-    read({
-      kind: "PAYMENT_PAGE",
-      caseId,
-      revision: 1,
-      payments: [],
-      nextCursor: null,
-    }),
-  "case.timeline": () =>
-    read({
-      kind: "PAGE",
-      tasks: [],
-      nextCursor: null,
-    }),
-  "work.views": () =>
-    read({
-      kind: "WORK_VIEWS",
-      cases: [],
-      reminders: [],
-    }),
-  "reminder.get": () =>
-    read({
-      kind: "REMINDER",
-      caseId,
-      reminderId: operationId,
-      revision: 1,
-      tasks: [],
-      actionSeed: null,
-      dueDateSeed: null,
-    }),
-  "reminder.list": () =>
-    read({
-      kind: "REMINDERS",
-      reminders: [],
-      nextCursor: null,
-    }),
-  "people.list": () =>
-    read({
-      kind: "PEOPLE",
-      actorIds: [],
-      nextCursor: null,
-    }),
-  "people.grants": () =>
-    read({
-      kind: "PERSON",
-      actorId,
-      principal: principal(),
-      profileSeed: null,
-      revocations: [],
-      responsibleCases: null,
-      tasks: [],
-      nextCursor: null,
-    }),
-  "people.history": () =>
-    read({
-      kind: "PEOPLE_HISTORY",
-      entries: [],
-      nextCursor: null,
-    }),
-  "people.requests": () =>
-    read({
-      kind: "ACCESS_REQUESTS",
-      requests: [],
-      nextCursor: null,
-    }),
-  "people.requests.dismiss": () =>
-    read({
-      kind: "EMPTY",
-    }),
+  "case.list": () => read({ kind: "LIST" }),
+  "case.summary": () => read({ kind: "LIST" }),
+  "case.assignees": () => read({ kind: "LIST" }),
+  "case.notes": () => read({ kind: "LIST" }),
+  "case.payments": () => read({ kind: "CASE", caseId, revision: 1, workRevision: 0 }),
+  "case.timeline": () => read({ kind: "LIST" }),
+  "work.views": () => read({ kind: "LIST" }),
+  "reminder.get": () => read({ kind: "LIST" }),
+  "reminder.list": () => read({ kind: "LIST" }),
+  "people.list": () => read({ kind: "LIST" }),
+  "people.grants": () => read({ kind: "PERSON", actorId }),
+  "people.history": () => read({ kind: "LIST" }),
+  "people.requests": () => read({ kind: "LIST" }),
+  "people.requests.dismiss": () => read({ kind: "LIST" }),
   "operation.execute": (subject) => ({
     representation: "HUMAN",
     operationId,

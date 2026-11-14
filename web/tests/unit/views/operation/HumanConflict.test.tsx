@@ -41,10 +41,11 @@ const document = (
       },
     ],
   },
-  context: {
-    kind: "CONTINUATION",
-    nextCursor: cursor,
-  },
+  subject: { kind: "LIST" },
+  actions: [],
+  links: [],
+  history: null,
+  nextCursor: cursor,
   basis: {
     kind: "UNAVAILABLE",
   },
@@ -121,11 +122,11 @@ it("uses the supplied conflict document and replaces full history with a tighten
       kind: "SUCCEEDED",
       document: {
         ...original,
-        context: {
-          kind: "PAGE",
-          tasks: [],
-          nextCursor: null,
-        },
+        subject: { kind: "LIST" },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
         basis: {
           kind: "SNAPSHOT",
           observation: {

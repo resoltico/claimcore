@@ -1,12 +1,15 @@
-import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
-import { timelineDocument } from "../../support/timeline-document.fixtures";
-import userEvent from "@testing-library/user-event";
-import { within } from "@testing-library/react";
+import { operationAffordance } from "../../support/affordances.fixtures";
 import {
+  caseSubject,
   caseDocumentInput,
   caseIdentityScreen,
   correctionChoices,
 } from "../../support/case-document.fixtures";
+import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
+import { timelineDocument } from "../../support/timeline-document.fixtures";
+import userEvent from "@testing-library/user-event";
+import { within } from "@testing-library/react";
+
 import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
@@ -17,7 +20,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
     .mockResolvedValueOnce(
       response("case.get", {
         ...caseDocumentInput(
-          { revision: 4, history: "SUMMARY" },
+          { subject: { ...caseSubject, revision: 4 }, history: "SUMMARY" },
           {
             regions: [
               {
@@ -64,26 +67,41 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   const user = userEvent.setup();
   const current = caseDocumentInput(
     {
-      revision: 4,
+      subject: { ...caseSubject, revision: 4 },
+      actions: [
+        operationAffordance(
+          "case.correct",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 4,
+          },
+          { "group:registration": "KEEP", "group:decision": "KEEP" },
+          undefined,
+          {
+            "group:registration": correctionChoices.registration,
+            "group:decision": correctionChoices.decision,
+          },
+        ),
+        operationAffordance(
+          "case.reopen",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 4,
+          },
+          { "group:registration": "KEEP", "group:decision": "KEEP" },
+          undefined,
+          {
+            "group:registration": correctionChoices.registration,
+            "group:decision": correctionChoices.decision,
+          },
+        ),
+      ],
       history: "NONE",
-      tasks: ["case.correct", "case.reopen"],
-      correction: correctionChoices,
     },
     {
-      regions: [
-        ...caseIdentityScreen.regions,
-        {
-          role: "RECOMMENDATION",
-          content: {
-            kind: "ACTIONS",
-            recommended: null,
-            groups: [
-              { family: "STEWARDSHIP", acts: ["case.correct"] },
-              { family: "BUSINESS", acts: ["case.reopen"] },
-            ],
-          },
-        },
-      ],
+      regions: [...caseIdentityScreen.regions, ...[]],
     },
   );
   vi.mocked(fetch).mockResolvedValueOnce(response("case.get", current));
@@ -103,8 +121,8 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
   expect(onAct).toHaveBeenCalledWith(
-    expect.objectContaining<{ context: unknown }>({
-      context: expect.objectContaining({ revision: 4, tasks: ["case.correct", "case.reopen"] }),
+    expect.objectContaining<{ subject: unknown }>({
+      subject: expect.objectContaining({ revision: 4 }),
     }),
     "case.reopen",
   );

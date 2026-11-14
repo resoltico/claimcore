@@ -13,10 +13,12 @@ const select = (reply: HumanResponseByEndpoint["case.payments"]) => {
   }
   const doc = reply.outcome.document;
   return {
-    items: doc.context.payments,
-    nextCursor: doc.context.nextCursor,
-    caseId: doc.context.caseId,
-    revision: doc.context.revision,
+    items: doc.screen.regions.flatMap((region) =>
+      region.content.kind === "TABLE" ? region.content.rows : [],
+    ),
+    nextCursor: doc.nextCursor,
+    caseId: doc.subject.caseId,
+    revision: doc.subject.revision,
     screen: doc.screen,
     basis: reply.outcome.document.basis.observation,
     disclosure: doc.disclosure,
@@ -39,10 +41,10 @@ export const CasePaymentPages = ({
   const p = usePresentation();
   const input = useCallback(
     (cursor: string | null) => ({
-      target: { kind: "ID" as const, caseId: current.context.caseId },
+      target: { kind: "ID" as const, caseId: current.subject.caseId },
       ...(cursor === null ? {} : { cursor }),
     }),
-    [current.context.caseId],
+    [current.subject.caseId],
   );
   const result = useEndpointPage<"case.payments", Handle, Page>(
     "case.payments",
@@ -55,8 +57,8 @@ export const CasePaymentPages = ({
   const { page } = result;
   const matches =
     page === null ||
-    (page.caseId === current.context.caseId &&
-      page.revision === current.context.revision &&
+    (page.caseId === current.subject.caseId &&
+      page.revision === current.subject.revision &&
       page.disclosure === current.disclosure);
   useLayoutEffect(() => {
     if (!matches) {
@@ -74,7 +76,6 @@ export const CasePaymentPages = ({
           <PaymentRows
             key={content.rows[0]?.key ?? "empty"}
             content={content}
-            handles={result.items}
             zone={observed.basis.timeZone}
             onRemove={onRemove}
           />

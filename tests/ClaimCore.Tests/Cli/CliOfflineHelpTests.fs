@@ -42,25 +42,13 @@ let private selectedInputs () =
                     (ClaimCore.Cli.ContractDiscovery.localized "en" input.LabelId)
                     "Published input labels survive"
 
-// These historical grammar captures intentionally retain a noncanonical bare-host issuer.
-// L6 now refuses their business syntax locally; they remain authored structural command examples.
+// Creation captures principal syntax; existing-person verbs now bind an actor ID.
 let private noncanonicalPeopleExample arguments =
     match arguments with
-    | "people" :: act :: _ ->
-        List.contains
-            act
-            [
-                "register"
-                "grant"
-                "revoke"
-                "enable"
-                "disable"
-                "set-profile"
-                "erase-profile"
-            ]
-        && (arguments
-            |> List.windowed 2
-            |> List.contains [ "--issuer"; "https://id.example" ])
+    | "people" :: "register" :: _ ->
+        arguments
+        |> List.windowed 2
+        |> List.contains [ "--issuer"; "https://id.example" ]
     | _ -> false
 
 let private principalRefusal arguments =
@@ -139,7 +127,10 @@ let private commandExamples () =
                 (Frames.admit result.StandardOutput)
                 "Published dry-run output is an admissible frame"
 
-    Expect.equal localRefusals 8 "All eight original noncanonical issuer examples remain exercised"
+    Expect.equal
+        localRefusals
+        1
+        "Creation retains the issuer rejection; existing-person verbs use actor IDs"
 
 let private diagnosticRoute () =
     let result = invoke [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))

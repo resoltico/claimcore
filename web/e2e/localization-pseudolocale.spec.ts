@@ -1,6 +1,7 @@
-import { type ResponseFor } from "@contracts/client";
+import { acceptedSubject, workRequest } from "./work-workflow";
+import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
-import { workRequest } from "./work-workflow";
+
 import { showCaseRecordDetails } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
@@ -126,16 +127,19 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   if (
     operationExecuteReply.representation !== "HUMAN" ||
     operationExecuteReply.outcome.kind !== "ACCEPTED" ||
-    operationExecuteReply.outcome.document.context.target.kind !== "CASE" ||
     operationExecuteReply.outcome.document.disclosure !== "CURRENT"
   ) {
     throw new Error("E2E_PSEUDO_ACCEPTED_CASE_MISSING");
   }
   await expectCaseReadsSettled(page);
+  const subject = await acceptedSubject(page, operationExecuteReply.operationId);
+  if (subject.kind !== "CASE") {
+    throw new Error("Case receipt required");
+  }
   const current = await workRequest(page, "case.get", {
     target: {
       kind: "ID",
-      caseId: operationExecuteReply.outcome.document.context.target.caseId,
+      caseId: subject.caseId,
     },
   });
   if (current.outcome.kind !== "SUCCEEDED" || current.outcome.data.state.kind === "ERASED") {
