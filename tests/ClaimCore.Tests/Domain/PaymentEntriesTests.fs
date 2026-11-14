@@ -6,6 +6,7 @@ open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Tests.PropertyHarness
 open ClaimCore.Domain
+open ClaimCore.TestSupport
 
 let private today = DateOnly(2026, 11, 8)
 
@@ -48,8 +49,7 @@ let private sendOn date number act (previous: Scenario option) =
                 before |> Option.map (_.Revision >> Revision.value) |> Option.defaultValue 0L
             Act = act
         }
-    |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (CaseSubject.decide date state)
+    |> Result.bind (CaseSubject.decide (CaseFixtures.recordedContext date) state)
     |> Result.map (fun decision ->
         let stamp =
             {
@@ -127,7 +127,7 @@ let private correction amount currency : AuthoredCaseAct =
 
 let private positiveError result =
     match result with
-    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues)) ->
+    | Error(Refusal.InvalidInput issues) ->
         Expect.isTrue
             (InputIssues.toList issues
              |> List.exists (fun issue ->
@@ -211,8 +211,7 @@ let tests =
                         send 58 (CaseAct.Void "Entry error") current |> accepted
                     ] do
                     match send 59 (payment "2026-09-07" "1" "EUR") protectedState with
-                    | Error(CaseDecisionError.Refused(Refusal.Case(CaseRefusal.NotOffered _))) ->
-                        ()
+                    | Error(Refusal.Case(CaseRefusal.NotOffered _)) -> ()
                     | other -> failtestf "Lifecycle protection: %A" (Result.map ignore other)
 
                 let removed = send 54 (CaseAct.RemovePayment(operation 3)) current |> accepted
@@ -325,7 +324,7 @@ let tests =
 
                     Expect.equal
                         (send 3 (payment "2026-09-08" "1" "EUR") current |> Result.map ignore)
-                        (Error(CaseDecisionError.Refused Refusal.IdempotencyConflict))
+                        (Error Refusal.IdempotencyConflict)
                         "The same accepting identity cannot create a second entry")
             testCase "erasure removes every payment entry with the case facts" (fun () ->
                 let erased =

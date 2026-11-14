@@ -13,9 +13,15 @@ type internal SubjectExecutionMode =
 [<NoEquality; NoComparison>]
 type internal OperationRegistration<'input, 'facts, 'decision, 'rows> =
     {
-        LoadAndDecide:
-            SubjectExecutionMode -> IReadTx -> 'input -> Task<'facts * Verdict<'decision>>
-        Actor: 'facts -> AccessView
+        Load: IReadTx -> 'input -> Task<'facts>
+        Context: SubjectExecutionMode -> 'facts -> DecisionContext
+        Decide:
+            SubjectExecutionMode
+                -> DecisionContext
+                -> IReadTx
+                -> 'input
+                -> 'facts
+                -> Task<Verdict<'decision>>
         Append: 'input -> 'facts -> 'decision -> LedgerAppend<'rows>
         Project: IWriteTx -> 'rows -> Task<unit>
         Review: 'input -> 'facts -> 'decision -> OperationReview
@@ -27,6 +33,27 @@ module internal SubjectExecution =
         function
         | SubjectExecutionMode.Preview -> false
         | SubjectExecutionMode.Commit _ -> true
+
+    let context
+        (services: ServiceContext)
+        mode
+        observedAt
+        access
+        (maintenance: RegisterMaintenance)
+        frontier
+        =
+        {
+            DecisionContext.BusinessDate = Some(services.Calendar.DateAt observedAt)
+            ObservedAt = observedAt
+            Principal = services.Principal
+            Access = access
+            Maintenance = maintenance.Active
+            Lifetime =
+                if isCommit mode then
+                    DecisionLifetime.Execution frontier
+                else
+                    DecisionLifetime.Preview frontier
+        }
 
     let accept services actor write append proposed =
         proposed
@@ -41,18 +68,18 @@ module internal SubjectExecution =
                     NewPayloadNonce = tx.NewPayloadNonce
                 }
 
-            let! facts, proposed =
-                registration.LoadAndDecide (SubjectExecutionMode.Commit write) tx input
+            try
+                let mode = SubjectExecutionMode.Commit write
+                let! facts = registration.Load tx input
+                let context = registration.Context mode facts
+                let! proposed = registration.Decide mode context tx input facts
 
-            let accepted =
-                accept
-                    services
-                    (registration.Actor facts)
-                    write
-                    (registration.Append input facts)
-                    proposed
+                let accepted =
+                    accept services context.Access write (registration.Append input facts) proposed
 
-            return! ExecutionFacts.persist tx (registration.Project tx) accepted
+                return! ExecutionFacts.persist tx (registration.Project tx) accepted
+            with SubjectStateInvalid _ ->
+                return Verdict.Fail CoreFault.StoreIntegrityError
         }
 
     let transact (services: ServiceContext) work token =
@@ -74,14 +101,20 @@ module internal SubjectExecution =
 
     let inSnapshot registration input tx =
         task {
-            let! facts, proposed =
-                registration.LoadAndDecide SubjectExecutionMode.Preview tx input
+            try
+                let mode = SubjectExecutionMode.Preview
+                let! facts = registration.Load tx input
+                let context = registration.Context mode facts
+                let! proposed = registration.Decide mode context tx input facts
 
-            return
-                proposed
-                |> Verdict.outcome
-                    (fun decision -> Previewed.Reviewed(registration.Review input facts decision))
-                    Previewed.AlreadyAccepted
+                return
+                    proposed
+                    |> Verdict.outcome
+                        (fun decision ->
+                            Previewed.Reviewed(registration.Review input facts decision))
+                        Previewed.AlreadyAccepted
+            with SubjectStateInvalid _ ->
+                return Outcome.Failed CoreFault.StoreIntegrityError
         }
 
     let preview (services: ServiceContext) registration input (token: CancellationToken) =

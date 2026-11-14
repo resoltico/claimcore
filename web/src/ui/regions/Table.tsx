@@ -1,9 +1,8 @@
-import type { ActionPresentation, LinkNavigation } from "./interaction";
+import type { RowLink, ActionPresentation, LinkNavigation } from "./interaction";
 import type { RegionRow, Affordance, RegionContent } from "@contracts/client";
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The sole named scroll region must support keyboard scrolling, including empty tables. */
 import { Actions } from "./Actions";
-import { coreLinkPath } from "../../routing/coreLinks";
-import { navigate } from "../../routing/navigation";
+import { coreRowLink } from "./rowLink";
 import { MoneyMeter } from "./MoneyMeter";
 import { SectionsView } from "../SectionsView";
 import { RowDetails } from "./RowDetails";
@@ -15,36 +14,22 @@ import { PresentedValue } from "../../components/PresentedValue";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 
-export type RowLink = {
-  href: string;
-  follow: () => void;
-  kind?: "ACTOR" | "REFERENCE";
-  column?: string;
-  label?: string;
-  id?: string;
-};
-
 type TableContent = Extract<RegionContent, { kind: "TABLE" }>;
 const rowNavigation = (
   row: RegionRow,
   columns: TableContent["columns"],
   navigation: LinkNavigation | undefined,
 ): RowLink | undefined => {
-  const path = row.link === undefined ? undefined : coreLinkPath(row.link);
-  const override = row.link === undefined ? undefined : navigation?.(row.link);
+  const link = coreRowLink(row.link, navigation);
   const kind = row.link?.endpoint === "people.grants" ? "ACTOR" : "REFERENCE";
   const matching = row.values.findIndex((value) => value.kind === kind);
   const primary = columns.findIndex((column) => column.prominence === "PRIMARY");
   const linkColumn = columns[matching < 0 ? Math.max(primary, 0) : matching]?.key;
-  return path === undefined
+  return link === undefined
     ? undefined
     : {
-        href: path,
-        follow: () => {
-          navigate(path);
-        },
+        ...link,
         ...(linkColumn === undefined ? {} : { column: linkColumn }),
-        ...override,
       };
 };
 export const Table = ({

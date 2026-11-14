@@ -70,30 +70,68 @@ module ReminderSubject =
             |> Option.defaultValue (Refusal.Access AccessRefusal.ResourceUnavailable)
         | ReminderRefusal.NoChanges -> Refusal.Reminder ReminderRuleRefusal.NoChanges
 
-    let decide operation dependencies (state: ReminderSubjectState option) command =
-        match dependencies.Parent.Snapshot with
-        | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | Some parent ->
-            Reminder.decide
-                operation
-                parent
-                (state |> Option.bind _.Snapshot)
-                dependencies.IdentityReserved
-                command
-            |> Result.mapError (refusal dependencies.Parent state)
+    let decide context operation dependencies (state: ReminderSubjectState option) command =
+        DecisionContext.admit
+            context
+            operation
+            (DecisionContext.workAccess context dependencies.Parent.CaseId)
+            (fun () -> Ok())
+        |> Result.bind (fun () ->
+            match dependencies.Parent.Snapshot with
+            | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+            | Some parent ->
+                Reminder.decide
+                    operation
+                    parent
+                    (state |> Option.bind _.Snapshot)
+                    dependencies.IdentityReserved
+                    command
+                |> Result.mapError (refusal dependencies.Parent state))
+
+    let private applySnapshots before effects =
+        let same before after =
+            Reminder.id before = Reminder.id after
+            && Reminder.caseId before = Reminder.caseId after
+            && Revision.value (Reminder.revision before) < Revision.Maximum
+            && Reminder.revision after = Revision.successor (Reminder.revision before)
+
+        match before, effects with
+        | None, ReminderEffects.Created value when
+            Reminder.revision value = Revision.first
+            && Reminder.state value = ReminderState.Pending
+            ->
+            Ok [ value ]
+        | Some before, ReminderEffects.Changed value when same before value -> Ok [ value ]
+        | Some before, ReminderEffects.CompletedAndPlanned(completed, next) when
+            same before completed
+            && Reminder.state completed = ReminderState.Completed
+            && Reminder.id next <> Reminder.id completed
+            && Reminder.caseId next = Reminder.caseId completed
+            && Reminder.revision next = Revision.first
+            && Reminder.state next = ReminderState.Pending
+            ->
+            Ok [ completed; next ]
+        | _ -> Error RecordViolation.InvalidSubjectState
+
+    let applyRecorded operation before command effects =
+        Reminder.transition operation before command
+        |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
+        |> Result.bind (fun expected ->
+            if expected = effects then
+                applySnapshots before effects
+            else
+                Error RecordViolation.InvalidSubjectState)
 
     /// One compound decision yields the primary and newly planned entity states together.
     let apply
         (recordedAt: DateTimeOffset)
         (recordedBy: ActorId)
-        (_state: ReminderSubjectState option)
+        (state: ReminderSubjectState option)
         effects
         =
         let values =
-            match effects with
-            | ReminderEffects.Created value
-            | ReminderEffects.Changed value -> [ value ]
-            | ReminderEffects.CompletedAndPlanned(completed, next) -> [ completed; next ]
+            applySnapshots (state |> Option.bind _.Snapshot) effects
+            |> Result.defaultWith (SubjectStateInvalid >> raise)
 
         values
         |> List.map (fun value ->
@@ -109,65 +147,75 @@ module ReminderSubject =
             })
 
     let applyErased
+        context
         (dependencies: ReminderSubjectDependencies)
         (state: ReminderSubjectState option)
         (effect: ReminderSubjectStructure)
         =
-        let parent = dependencies.Parent
-        let expected = state |> Option.map _.Revision |> Option.defaultValue Revision.zero
-        let creating = effect.Act = ReminderActKind.Create
+        DecisionContext.admit
+            context
+            effect.Stamp.OperationId
+            (DecisionContext.workAccess context dependencies.Parent.CaseId)
+            (fun () -> Ok())
+        |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
+        |> Result.bind (fun () ->
+            let parent = dependencies.Parent
+            let expected = state |> Option.map _.Revision |> Option.defaultValue Revision.zero
+            let creating = effect.Act = ReminderActKind.Create
 
-        let terminal =
-            effect.Act = ReminderActKind.Complete || effect.Act = ReminderActKind.Cancel
+            let terminal =
+                effect.Act = ReminderActKind.Complete || effect.Act = ReminderActKind.Cancel
 
-        let nextStatus = ReminderState.after effect.Act (state |> Option.bind _.Status)
+            let nextStatus = ReminderState.after effect.Act (state |> Option.bind _.Status)
 
-        let valid =
-            parent.Lifecycle = Lifecycle.Active
-            && parent.CaseId = effect.CaseId
-            && (terminal || parent.Status = CaseStatus.Opened)
-            && creating = state.IsNone
-            && Revision.value expected < Revision.Maximum
-            && effect.Revision = Revision.successor expected
-            && (state
-                |> Option.forall (fun state ->
-                    state.ReminderId = effect.ReminderId && state.CaseId = effect.CaseId))
-            && nextStatus.IsSome
-            && not dependencies.IdentityReserved
-            && ((effect.NextReminderId.IsSome) = (effect.Act = ReminderActKind.CompleteAndPlanNext))
-            && (not creating
-                || effect.ReminderId = ReminderId.ofOperationId effect.Stamp.OperationId)
-            && (effect.NextReminderId
-                |> Option.forall (fun id ->
-                    id = ReminderId.ofOperationId effect.Stamp.OperationId
-                    && id <> effect.ReminderId))
+            let compound = effect.Act = ReminderActKind.CompleteAndPlanNext
 
-        if not valid then
-            Error RecordViolation.InvalidSubjectState
-        else
-            let primary =
-                {
-                    ReminderId = effect.ReminderId
-                    CaseId = effect.CaseId
-                    Revision = effect.Revision
-                    Status = nextStatus
-                    Snapshot = None
-                    RecordedAt = effect.Stamp.RecordedAt
-                    RecordedBy = effect.Stamp.ActorId
-                    Erased = false
-                }
+            let valid =
+                parent.Lifecycle = Lifecycle.Active
+                && parent.CaseId = effect.CaseId
+                && (terminal || parent.Status = CaseStatus.Opened)
+                && creating = state.IsNone
+                && Revision.value expected < Revision.Maximum
+                && effect.Revision = Revision.successor expected
+                && (state
+                    |> Option.forall (fun state ->
+                        state.ReminderId = effect.ReminderId && state.CaseId = effect.CaseId))
+                && nextStatus.IsSome
+                && not dependencies.IdentityReserved
+                && (effect.NextReminderId.IsSome = compound)
+                && (not creating
+                    || effect.ReminderId = ReminderId.ofOperationId effect.Stamp.OperationId)
+                && (effect.NextReminderId
+                    |> Option.forall (fun id ->
+                        id = ReminderId.ofOperationId effect.Stamp.OperationId
+                        && id <> effect.ReminderId))
 
-            let next =
-                effect.NextReminderId
-                |> Option.map (fun id ->
-                    { primary with
-                        ReminderId = id
-                        Revision = Revision.first
-                        Status = Some ReminderState.Pending
-                    })
-                |> Option.toList
+            if not valid then
+                Error RecordViolation.InvalidSubjectState
+            else
+                let primary =
+                    {
+                        ReminderId = effect.ReminderId
+                        CaseId = effect.CaseId
+                        Revision = effect.Revision
+                        Status = nextStatus
+                        Snapshot = None
+                        RecordedAt = effect.Stamp.RecordedAt
+                        RecordedBy = effect.Stamp.ActorId
+                        Erased = false
+                    }
 
-            Ok(primary :: next)
+                let next =
+                    effect.NextReminderId
+                    |> Option.map (fun id ->
+                        { primary with
+                            ReminderId = id
+                            Revision = Revision.first
+                            Status = Some ReminderState.Pending
+                        })
+                    |> Option.toList
+
+                Ok(primary :: next))
 
     let erase (state: ReminderSubjectState) =
         { state with

@@ -187,13 +187,13 @@ module internal PeopleOperations =
 
     let private dependencies (view: PeopleExecutionFacts) =
         {
-            PeopleSubjectDependencies.Requester = view.Actor
-            TargetCases = view.TargetCases |> Map.map (fun _ record -> record.CaseId)
+            PeopleSubjectDependencies.TargetCases =
+                view.TargetCases |> Map.map (fun _ record -> record.CaseId)
             EnabledHumanOwners = view.EnabledHumanOwners
             ActorCount = view.ActorCount
         }
 
-    let private propose (command: PeopleCommand) (view: PeopleExecutionFacts) =
+    let private propose context (command: PeopleCommand) (view: PeopleExecutionFacts) =
         let consistent =
             match view.Target.Actor, view.State with
             | None, None -> true
@@ -203,7 +203,7 @@ module internal PeopleOperations =
         if not consistent then
             Verdict.Fail CoreFault.StoreIntegrityError
         else
-            PeopleSubject.decide PeopleAdmissionMode.Current (dependencies view) view.State command
+            PeopleSubject.decide context (dependencies view) view.State command
             |> Result.map Verdict.Proceed
             |> Result.defaultWith Verdict.Refuse
 
@@ -263,6 +263,7 @@ module internal PeopleOperations =
 
     let decide
         mode
+        context
         (services: ServiceContext)
         (command: PeopleCommand)
         (view: PeopleExecutionFacts)
@@ -275,28 +276,10 @@ module internal PeopleOperations =
                 Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
             | _ -> authorizeIdentity services command.OperationId (bytes ()) view
 
-        let window =
-            if SubjectExecution.isCommit mode then
-                if
-                    view.ExistingOperation.IsNone
-                    && (isProvision command || Access.validActor services.Principal view.Actor)
-                then
-                    LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId
-                else
-                    Verdict.Proceed()
-            else
-                LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId
-
         recorded services command view
         |> Verdict.bind (fun records ->
             admit (fun () -> identity command records)
-            |> Verdict.bind (fun () -> window)
-            |> Verdict.bind (fun () ->
-                // Writes retain the final writable-state gate; previews report the pause before current admission.
-                if view.Maintenance.Active && not (SubjectExecution.isCommit mode) then
-                    Verdict.Refuse Refusal.RegisterMaintenance
-                else
-                    propose command view)
+            |> Verdict.bind (fun () -> propose context command view)
             |> Verdict.map (fun effect -> records, effect))
 
     let append
@@ -333,21 +316,29 @@ module internal PeopleOperations =
 
     let registration (services: ServiceContext) =
         {
-            LoadAndDecide =
-                fun mode tx (command: PeopleCommand) ->
-                    task {
-                        let! view =
-                            ExecutionFacts.target
-                                services
-                                tx
-                                (People.factsNeeded command.Act)
-                                command.OperationId
-                                command.Target
-                                (PeopleRequests.targetCases command)
-
-                        return view, decide mode services command view
-                    }
-            Actor = fun view -> view.Actor
+            Load =
+                fun tx (command: PeopleCommand) ->
+                    ExecutionFacts.target
+                        services
+                        tx
+                        (People.factsNeeded command.Act)
+                        command.OperationId
+                        command.Target
+                        (PeopleRequests.targetCases command)
+            Context =
+                fun mode view ->
+                    SubjectExecution.context
+                        services
+                        mode
+                        view.ObservedAt
+                        view.Actor
+                        view.Maintenance
+                        view.ExpiredBefore
+            Decide =
+                fun mode context _ command view ->
+                    System.Threading.Tasks.Task.FromResult(
+                        decide mode context services command view
+                    )
             Append = fun command view decision -> append services command view decision
             Project = fun tx rows -> tx.ProjectPeople rows
             Review =

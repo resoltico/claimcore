@@ -1,7 +1,8 @@
 namespace ClaimCore.Domain
 
 module CaseWorkDecision =
-    let apply expected (update: ValidCaseWorkUpdate) (before: CaseWorkSnapshot) =
+    /// Permanent transition over already typed values, shared with retained-effect application.
+    let transition expected (update: ValidCaseWorkUpdate) (before: CaseWorkSnapshot) =
         let next = CaseWork.apply update before.Work
 
         if before.Revision <> expected || Revision.value before.Revision = Revision.Maximum then
@@ -9,24 +10,25 @@ module CaseWorkDecision =
         elif next = before.Work then
             Error(Refusal.Case CaseRefusal.WorkNoChanges)
         else
-            let summary =
-                match update.Summary with
-                | WorkValue.Set value when Some value <> before.Work.Summary ->
-                    HandlingSummary.admit value
-                    |> Result.map ignore
-                    |> Result.mapError (fun violation ->
-                        Refusal.invalidInput (
-                            InputTarget.Field BusinessField.HandlingSummary,
-                            violation
-                        ))
-                | _ -> Ok()
-
-            summary
-            |> Result.map (fun () ->
+            Ok
                 { before with
                     Revision = Revision.successor before.Revision
                     Work = next
-                })
+                }
+
+    let apply expected (update: ValidCaseWorkUpdate) before =
+        transition expected update before
+        |> Result.bind (fun after ->
+            match update.Summary with
+            | WorkValue.Set value when Some value <> before.Work.Summary ->
+                HandlingSummary.admit value
+                |> Result.map (fun _ -> after)
+                |> Result.mapError (fun violation ->
+                    Refusal.invalidInput (
+                        InputTarget.Field BusinessField.HandlingSummary,
+                        violation
+                    ))
+            | _ -> Ok after)
 
     let decide (parent: CaseSnapshot) eligible expected update (before: CaseWorkSnapshot) =
         match CaseWorkPolicy.parentRefusal parent with

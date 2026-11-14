@@ -8,31 +8,28 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.VerificationChecks
 
-module internal ReplayAccess =
-    let executor (actors: Map<ActorId, ActorAccess>) (entry: StoredEffect) human ownerRequired =
-        result {
-            let! actor =
-                Map.tryFind entry.ActorId actors
-                |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
+module internal ReplayContext =
+    let issue at =
+        function
+        | ExecutorIssue.ActorNotEnabled -> divergence at VerificationFinding.ActorNotEnabled
+        | ExecutorIssue.HumanRequired -> divergence at VerificationFinding.HumanRequired
+        | ExecutorIssue.OwnerRequired -> divergence at VerificationFinding.OwnerRequired
 
-            do! require (Some entry.Sequence) VerificationFinding.ActorNotEnabled actor.Enabled
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.HumanRequired
-                    (not human || PrincipalKey.isHuman actor.Principal)
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.OwnerRequired
-                    (not ownerRequired || People.isEnabledHumanOwner actor)
-
-            return ()
+    let recorded (header: OperationHeader) principal access =
+        {
+            DecisionContext.BusinessDate = header.BusinessDate
+            ObservedAt = header.RecordedAt
+            Principal = principal
+            Access = access
+            Maintenance = false
+            Lifetime = DecisionLifetime.Recorded
         }
 
-
+    let create (actors: Map<ActorId, ActorAccess>) (entry: StoredEffect) =
+        Map.tryFind entry.ActorId actors
+        |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
+        |> Result.map (fun actor ->
+            recorded entry.Operation.Root.Header actor.Principal (AccessView.ofActor (Some actor)))
 
 
 type CaseHistory =
@@ -96,14 +93,17 @@ module internal SubjectReplay =
 
     /// Every available effect is independently decided before application; erased content takes the structural owner path.
     let run at finding matches decide apply applyErased content =
-        match content with
-        | Content.Available(command, recorded) ->
-            result {
-                let! expected = decide command
-                do! require at finding (matches expected recorded)
-                return! apply expected
-            }
-        | Content.Erased -> applyErased ()
+        try
+            match content with
+            | Content.Available(command, recorded) ->
+                result {
+                    let! expected = decide command
+                    do! require at finding (matches expected recorded)
+                    return! apply expected
+                }
+            | Content.Erased -> applyErased ()
+        with SubjectStateInvalid _ ->
+            Error(divergence at finding)
 
     let caseState id (history: CaseHistory) =
         history.Reference
@@ -119,9 +119,9 @@ module internal SubjectReplay =
                 ChangedAt = history.ChangedAt
             })
 
-    let caseEffect histories (entry: StoredEffect) payload =
+    let caseEffect context histories (entry: StoredEffect) payload =
         match entry.Subject with
-        | EntryTarget.Case(id, revision, act, businessDate) ->
+        | EntryTarget.Case(id, revision, act, _businessDate) ->
             let at = Some entry.Sequence
             let previous = Map.tryFind id histories
             let state = previous |> Option.bind (caseState id)
@@ -157,7 +157,12 @@ module internal SubjectReplay =
                 | _ -> divergence at VerificationFinding.StateSequence
 
             let applyErased () =
-                CaseSubject.applyErased state structure |> Result.mapError finding
+                // Preserve the verifier's access-failure category; the subject still enforces this
+                // same policy when applying its structural effect.
+                CaseSubject.authorizeStructure context id act
+                |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
+                |> Result.bind (fun () ->
+                    CaseSubject.applyErased context state structure |> Result.mapError finding)
 
             result {
                 do! CaseSubject.validateStructure state structure |> Result.mapError finding
@@ -182,9 +187,10 @@ module internal SubjectReplay =
                             recorded = Some expected
                             || (expected.After.State = CaseState.Erased && recorded.IsNone))
                         (fun command ->
-                            CaseSubject.decide businessDate state command
-                            |> Result.mapError (fun _ ->
-                                divergence at VerificationFinding.StateSequence))
+                            CaseSubject.decide context state command
+                            |> Result.mapError (function
+                                | Refusal.Access _ -> divergence at VerificationFinding.PeopleFold
+                                | _ -> divergence at VerificationFinding.StateSequence))
                         (fun expected -> Ok(CaseSubject.apply stamp state expected))
                         applyErased
                         content
@@ -296,19 +302,12 @@ module internal SubjectReplay =
             |> Option.exists (fun actor ->
                 decide actor.Principal (AccessView.ofActor (Some actor)) caseId)
 
-        let authorized caseId actorId =
-            policy caseId actorId (fun principal people caseId ->
-                CaseWorkPolicy.authorize principal people caseId |> Result.isOk)
-
         let eligible caseId actorId =
             policy caseId actorId CaseWorkPolicy.eligibleAssignee
 
         let parent caseId =
             result {
                 let! parent = Map.tryFind caseId cases |> known
-                do! check (parent.State = CaseState.Active())
-                do! check (authorized caseId entry.ActorId)
-                do! ReplayAccess.executor actors entry true false
                 return parent
             }
 
@@ -335,6 +334,8 @@ module internal SubjectReplay =
                         work,
                     reminders
             | EntryTarget.Work descriptor ->
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
                 let! parent = parent descriptor.CaseId
                 let! parentState = caseState descriptor.CaseId parent |> known
                 let! previous = Map.tryFind descriptor.CaseId work |> known
@@ -357,6 +358,8 @@ module internal SubjectReplay =
 
                 let decide (request: WorkDecisionInput) =
                     WorkSubject.decide
+                        context
+                        entry.OperationId
                         {
                             Parent = parentState
                             AssigneeEligible = eligible descriptor.CaseId
@@ -384,6 +387,7 @@ module internal SubjectReplay =
                             ))
                         (fun () ->
                             WorkSubject.applyErased
+                                context
                                 stamp
                                 parentState
                                 descriptor.Revision
@@ -414,6 +418,8 @@ module internal SubjectReplay =
                         work,
                     reminders
             | EntryTarget.Reminder descriptor ->
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
                 let! parent = parent descriptor.CaseId
                 let! parentState = caseState descriptor.CaseId parent |> known
                 let previous = Map.tryFind descriptor.ReminderId reminders
@@ -440,6 +446,7 @@ module internal SubjectReplay =
 
                 let! structural =
                     ReminderSubject.applyErased
+                        context
                         dependencies
                         before
                         {
@@ -460,7 +467,12 @@ module internal SubjectReplay =
                     | _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
                 let decide (request: ReminderDecisionInput) =
-                    ReminderSubject.decide request.OperationId dependencies before request.Command
+                    ReminderSubject.decide
+                        context
+                        request.OperationId
+                        dependencies
+                        before
+                        request.Command
                     |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
 
                 let! applied =
@@ -586,17 +598,8 @@ module internal SubjectReplay =
             | EntryTarget.Note descriptor ->
                 let! parent = Map.tryFind descriptor.CaseId cases |> known
                 let! parentState = caseState descriptor.CaseId parent |> known
-                do! ReplayAccess.executor actors entry true false
-                let! actor = Map.tryFind entry.ActorId actors |> known
-
-                do!
-                    check (
-                        CaseWorkPolicy.authorize
-                            actor.Principal
-                            (AccessView.ofActor (Some actor))
-                            descriptor.CaseId
-                        |> Result.isOk
-                    )
+                let! context = ReplayContext.create actors entry
+                do! DecisionContext.workExecutor context |> Result.mapError (ReplayContext.issue at)
 
                 let prior = Map.tryFind descriptor.NoteId notes
                 let before = prior |> Option.map (noteState descriptor.NoteId false)
@@ -618,7 +621,7 @@ module internal SubjectReplay =
                     }
 
                 let! structural =
-                    NoteSubject.applyErased parentState before structure
+                    NoteSubject.applyErased context parentState before structure
                     |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
 
                 let! content =
@@ -629,7 +632,7 @@ module internal SubjectReplay =
                     | _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
                 let decide (request: NoteDecisionInput) =
-                    NoteSubject.decide entry.OperationId parentState before request.Command
+                    NoteSubject.decide context entry.OperationId parentState before request.Command
                     |> Result.mapError (fun _ -> divergence at VerificationFinding.StateSequence)
 
                 let! applied =
@@ -773,9 +776,7 @@ module Replay =
 
         let dependencies =
             {
-                PeopleSubjectDependencies.Requester =
-                    AccessView.ofActor (Map.tryFind operation.ActorId actors)
-                TargetCases =
+                PeopleSubjectDependencies.TargetCases =
                     grants
                     |> List.choose (fun grant ->
                         match grant.Scope with
@@ -789,6 +790,19 @@ module Replay =
                     )
                 ActorCount = Some actors.Count
             }
+
+        let recordedContext =
+            match Map.tryFind operation.ActorId actors, scope.Act with
+            | Some actor, _ ->
+                Ok(
+                    ReplayContext.recorded
+                        operation.Root.Header
+                        actor.Principal
+                        (AccessView.ofActor (Some actor))
+                )
+            | None, PeopleAct.ProvisionOwner _ ->
+                Ok(ReplayContext.recorded operation.Root.Header scope.Principal AccessView.empty)
+            | _ -> Error(divergence at VerificationFinding.ActorNotEnabled)
 
         let provenance = SubjectProvenance.people operation
 
@@ -810,6 +824,8 @@ module Replay =
             | _ -> divergence at VerificationFinding.PeopleFold
 
         result {
+            let! context = recordedContext
+
             let! content =
                 match resolved with
                 | Ok act ->
@@ -823,7 +839,7 @@ module Replay =
                 | Error() -> Ok SubjectReplay.Content.Erased
 
             let decide command =
-                PeopleSubject.decide PeopleAdmissionMode.Recorded dependencies before command
+                PeopleSubject.decide context dependencies before command
                 |> Result.mapError finding
 
             let apply effect =
@@ -832,6 +848,7 @@ module Replay =
 
             let erased () =
                 PeopleSubject.applyErased
+                    context
                     dependencies
                     provenance
                     before
@@ -966,39 +983,6 @@ module Replay =
             | None -> Ok(Map.remove id history)
         | _ -> Ok history
 
-    let private authorizeCase actors (entry: StoredEffect) payload =
-        result {
-            let! actor =
-                Map.tryFind entry.ActorId actors
-                |> known (Some entry.Sequence) VerificationFinding.ActorNotEnabled
-
-            let! parent, act =
-                match entry.Subject with
-                | EntryTarget.Case(id, _, act, _) -> Ok(id, act)
-                | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-
-            let human =
-                List.contains act [ CaseActKind.Void; CaseActKind.Reinstate; CaseActKind.Erase ]
-
-            do! ReplayAccess.executor actors entry human false
-            let view = AccessView.ofActor (Some actor)
-
-            let scope =
-                if act = CaseActKind.Open then
-                    Scope.Installation
-                else
-                    Scope.Case parent
-
-            let permitted =
-                match payload with
-                | VerifiedPayload.Case(command, _) ->
-                    Access.canAct actor.Principal view scope command.Act
-                | VerifiedPayload.Erased -> Access.canAdvertise actor.Principal view scope act
-                | _ -> false
-
-            do! require (Some entry.Sequence) VerificationFinding.PeopleFold permitted
-        }
-
     let append
         installationId
         (expected: LedgerPosition option)
@@ -1057,10 +1041,15 @@ module Replay =
                                     match entry.Subject with
                                     | EntryTarget.Case(id, _, act, _) ->
                                         result {
-                                            do! authorizeCase actors entry payload
+                                            let! context = ReplayContext.create actors entry
+
+                                            do!
+                                                CaseSubject.executor context act
+                                                |> Result.mapError (ReplayContext.issue at)
 
                                             let! cases =
                                                 SubjectReplay.caseEffect
+                                                    context
                                                     current.Cases
                                                     entry
                                                     payload

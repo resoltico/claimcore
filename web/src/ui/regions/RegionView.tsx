@@ -38,23 +38,13 @@ const Content = ({
     case "TABLE":
       return <Table view={content} timeZone={timeZone} {...interaction} />;
     case "STAGES":
-      return <Stages content={content} timeZone={timeZone} />;
+      return <Stages content={content} timeZone={timeZone} {...interaction} />;
     case "CODES":
       return <Codes content={content} />;
     case "NOTICE":
       return <Notice content={content} timeZone={timeZone} />;
     case "TIMELINE":
-      return (
-        <Timeline
-          content={content}
-          timeZone={timeZone}
-          {...(interaction.onAction === undefined
-            ? {}
-            : {
-                onAction: (action, originId) => interaction.onAction?.(action, undefined, originId),
-              })}
-        />
-      );
+      return <Timeline content={content} timeZone={timeZone} {...interaction} />;
   }
 };
 const RegionActions = ({

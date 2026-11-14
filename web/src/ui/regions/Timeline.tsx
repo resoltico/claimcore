@@ -1,28 +1,29 @@
-import type { RegionContent, Affordance } from "@contracts/client";
+import type { RegionInteraction, RowLink } from "./interaction";
+import type { RegionContent } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { PresentedValue } from "../../components/PresentedValue";
 import { SectionsView } from "../SectionsView";
-import { coreLinkPath } from "../../routing/coreLinks";
-import { navigate } from "../../routing/navigation";
+import { coreRowLink } from "./rowLink";
 import { Actions } from "./Actions";
 
-import type { RowLink } from "./Table";
 import {} from "./timeline.css";
 import { SuppliedMessage } from "../SuppliedMessage";
 export const Timeline = ({
   content,
   timeZone,
   onAction,
-}: {
+  actionsDisabled,
+  actionPresentation,
+  linkNavigation,
+}: RegionInteraction & {
   content: Extract<RegionContent, { kind: "TIMELINE" }>;
   timeZone: string;
-  onAction?: (action: Affordance, originId?: string) => void;
 }) => {
   const p = usePresentation();
   return (
     <ol className="region-timeline">
       {content.entries.map((entry) => {
-        const path = entry.link === undefined ? undefined : coreLinkPath(entry.link);
+        const rowLink = coreRowLink(entry.link, linkNavigation);
         const values = [...entry.highlights, ...entry.details].flatMap(
           (section) => section.entries,
         );
@@ -30,14 +31,11 @@ export const Timeline = ({
           values.find((value) => value.value.kind === "REFERENCE") ??
           values.find((value) => value.prominence === "PRIMARY");
         const link: RowLink | undefined =
-          path === undefined
+          rowLink === undefined
             ? undefined
             : {
-                href: path,
+                ...rowLink,
                 ...(destination === undefined ? {} : { column: destination.key }),
-                follow: () => {
-                  navigate(path);
-                },
               };
         return (
           <li key={entry.key}>
@@ -67,7 +65,15 @@ export const Timeline = ({
             )}
             <Actions
               actions={entry.actions ?? []}
-              {...(onAction === undefined ? {} : { onAction })}
+              disabled={actionsDisabled ?? false}
+              {...(actionPresentation === undefined ? {} : { actionPresentation })}
+              {...(onAction === undefined
+                ? {}
+                : {
+                    onAction: (action, originId) => {
+                      onAction(action, undefined, originId);
+                    },
+                  })}
               compact
             />
           </li>

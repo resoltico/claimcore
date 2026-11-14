@@ -84,26 +84,7 @@ module internal CaseOperations =
                 Error CoreFault.StoreIntegrityError)
 
     let permissionFor principal actor act (record: StoredCase option) =
-        if CaseAct.kind act = CaseActKind.Open then
-            if Access.canAct principal actor Scope.Installation act then
-                Ok()
-            else
-                Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-        else
-            match record with
-            | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-            | Some value when Access.canAct principal actor (Scope.Case value.CaseId) act -> Ok()
-            | Some value when
-                Access.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
-                ->
-                let required =
-                    Access.missingCapabilities principal actor (Scope.Case value.CaseId) act
-                    |> List.tryHead
-                    |> Option.defaultWith (fun () ->
-                        invalidOp "A readable denied act has a missing capability.")
-
-                Error(Refusal.Access(AccessRefusal.NotAuthorized required))
-            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        CaseSubject.authorize principal actor (record |> Option.map _.CaseId) act
 
     let permission principal actor (request: CaseCommand) record =
         permissionFor principal actor request.Act record
@@ -134,7 +115,7 @@ module internal CaseOperations =
                     (view.Actor.Actor |> Option.map Actor.currentReference)
                     (ReceiptCurrent.Case view.Case))
 
-    let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
+    let private propose installationId context request (view: CaseFacts) =
         try
             let before =
                 match view.Case with
@@ -159,18 +140,17 @@ module internal CaseOperations =
             match before with
             | Error fault -> Verdict.Fail fault
             | Ok before ->
-                match CaseSubject.decide (calendar.DateAt view.ObservedAt) view.State request with
-                | Error(CaseDecisionError.Refused refusal) -> Verdict.Refuse refusal
-                | Error(CaseDecisionError.InvalidState _) ->
-                    Verdict.Fail CoreFault.StoreIntegrityError
+                match CaseSubject.decide context view.State request with
+                | Error refusal -> Verdict.Refuse refusal
                 | Ok after when after.After.State = CaseState.Erased ->
                     match view.Family with
                     | Some family when CaseFamily.validate after.After.CaseId family |> Result.isOk ->
                         Verdict.Proceed(before, after)
                     | _ -> Verdict.Fail CoreFault.StoreIntegrityError
                 | Ok after -> Verdict.Proceed(before, after)
-        with :? System.OverflowException ->
-            Verdict.Fail CoreFault.InternalError
+        with
+        | SubjectStateInvalid _ -> Verdict.Fail CoreFault.StoreIntegrityError
+        | :? System.OverflowException -> Verdict.Fail CoreFault.InternalError
 
     let private project
         _installationId
@@ -259,7 +239,7 @@ module internal CaseOperations =
             Projection = projection
         }
 
-    let decide mode (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
+    let decide context (services: ServiceContext) (command: CaseCommand) (view: CaseFacts) =
         let id =
             view.Case
             |> Option.map _.CaseId
@@ -280,33 +260,33 @@ module internal CaseOperations =
         let identity = OperationIntent.case command.OperationId scope command
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () ->
-            if SubjectExecution.isCommit mode then
-                LedgerEnvelope.lifetime view.ExpiredBefore view.ObservedAt command.OperationId
-            else
-                LedgerEnvelope.frontier view.ExpiredBefore view.ObservedAt command.OperationId)
-        |> Verdict.bind (fun () ->
-            if view.Maintenance.Active then
-                Verdict.Refuse Refusal.RegisterMaintenance
-            else
-                propose services.InstallationId services.Calendar command view)
+        |> Verdict.bind (fun () -> propose services.InstallationId context command view)
 
     let append (services: ServiceContext) command view (_, after) =
         project services.InstallationId services.Calendar command view after
 
     let registration (services: ServiceContext) =
         {
-            LoadAndDecide =
-                fun mode tx request ->
+            Load =
+                fun tx request ->
+                    ExecutionFacts.case
+                        services
+                        tx
+                        (operationId request)
+                        (target request)
+                        (Some(act request))
+            Context =
+                fun mode view ->
+                    SubjectExecution.context
+                        services
+                        mode
+                        view.ObservedAt
+                        view.Actor
+                        view.Maintenance
+                        view.ExpiredBefore
+            Decide =
+                fun _ context tx request view ->
                     task {
-                        let! view =
-                            ExecutionFacts.case
-                                services
-                                tx
-                                (operationId request)
-                                (target request)
-                                (Some(act request))
-
                         match complete services request view with
                         | Error refusal ->
                             let! result =
@@ -320,7 +300,6 @@ module internal CaseOperations =
                                     refusal
 
                             return
-                                view,
                                 (result
                                  |> Result.map Verdict.Refuse
                                  |> Result.defaultWith Verdict.Fail)
@@ -333,11 +312,10 @@ module internal CaseOperations =
                                     view.Case
                                     ChangeEntity.Case
                                     (Revision.value command.ExpectedRevision)
-                                    (decide mode services command view)
+                                    (decide context services command view)
 
-                            return view, Verdict.map (fun decision -> command, decision) proposed
+                            return Verdict.map (fun decision -> command, decision) proposed
                     }
-            Actor = fun view -> view.Actor
             Append = fun _ view (command, decision) -> append services command view decision
             Project = fun tx rows -> tx.ProjectCase rows
             Review =

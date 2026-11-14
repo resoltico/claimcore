@@ -15,6 +15,9 @@ let private id =
 let private installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
+let private decisionContext =
+    CaseFixtures.recordedContext (DateOnly.FromDateTime instant.UtcDateTime)
+
 let private human =
     PrincipalKey.human "https://issuer.example/" "synthetic-owner" |> accepted
 
@@ -242,6 +245,7 @@ let private caseChecks =
         VerificationFinding.RevisionSequence,
         (fun () ->
             SubjectReplay.caseEffect
+                decisionContext
                 Map.empty
                 (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
                 VerifiedPayload.Erased
@@ -249,6 +253,7 @@ let private caseChecks =
         VerificationFinding.HistoryStart,
         (fun () ->
             SubjectReplay.caseEffect
+                decisionContext
                 (Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -262,6 +267,7 @@ let private caseChecks =
         VerificationFinding.StateSequence,
         (fun () ->
             SubjectReplay.caseEffect
+                decisionContext
                 (Map.ofList
                     [
                         CaseFixtures.caseId id,
@@ -312,12 +318,28 @@ let private caseChecks =
     ]
 
 let private peopleChecks =
-    let executor actor human required =
-        ReplayAccess.executor (Map.ofList [ owner.ActorId, actor ]) (entry ()) human required
+    let check context human required =
+        DecisionContext.executor context human required
+        |> Result.mapError (ReplayContext.issue (Some (entry ()).Sequence))
+
+    let executor (actor: ActorAccess) human required =
+        check
+            { decisionContext with
+                Principal = actor.Principal
+                Access = AccessView.ofActor (Some actor)
+            }
+            human
+            required
 
     [
         VerificationFinding.ActorNotEnabled,
-        (fun () -> ReplayAccess.executor Map.empty (entry ()) false false)
+        (fun () ->
+            check
+                { decisionContext with
+                    Access = AccessView.empty
+                }
+                false
+                false)
         VerificationFinding.HumanRequired, (fun () -> executor (actor service []) true false)
         VerificationFinding.OwnerRequired, (fun () -> executor (actor human []) true true)
         VerificationFinding.PeopleFold,

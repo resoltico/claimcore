@@ -51,6 +51,10 @@ const seedValues = (
   }
   return values;
 };
+/** Core prefill, including editable values; collection identities stay local. */
+export const seededAffordanceValues = (action: OperationAffordance): FormValues =>
+  seedValues(action, operationTask(action.task));
+
 /** Newly added rows reuse the Core prefill, never the user's already edited rows. */
 export const initialCollectionRow = (
   action: OperationAffordance | undefined,

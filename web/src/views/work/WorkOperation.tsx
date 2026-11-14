@@ -1,6 +1,6 @@
-import type { OperationAffordance } from "../../operation/affordances";
+import { seededAffordanceValues, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
-import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
+import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent, useMemo } from "react";
 import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 
@@ -60,13 +60,20 @@ export const WorkOperation = ({
     },
     [cache, onRecorded],
   );
+  const filled = useMemo(
+    () => ({
+      ...(affordance === undefined ? {} : seededAffordanceValues(affordance)),
+      ...prefill,
+    }),
+    [affordance, prefill],
+  );
   const model = useOperation({
     subject,
     kind,
     current,
     credential,
     affordance,
-    prefill,
+    prefill: filled,
     binding,
     targetIdentity,
     onLockChange,
@@ -78,7 +85,11 @@ export const WorkOperation = ({
   const autoPreview =
     authored.length === 0 ||
     model.affordance?.editable.length === 0 ||
-    (prefill !== undefined && authored.every((input) => Object.hasOwn(prefill, input.id)));
+    authored.every(
+      (input) =>
+        Object.hasOwn(model.affordance?.seeds ?? {}, input.id) ||
+        Object.hasOwn(prefill ?? {}, input.id),
+    );
   useEffect(() => {
     if (
       allowed &&

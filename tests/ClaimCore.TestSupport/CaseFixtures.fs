@@ -79,3 +79,39 @@ let paymentRows parent (entries: PaymentEntry list) =
             Content = PaymentProjectionContent.Available(entry, false)
         })
     |> Map.ofList
+
+/// Pure retained-transition fixtures exercise state rules; context admission has separate denied/current tests.
+let recordedContext (date: System.DateOnly) =
+    let principal =
+        PrincipalKey.human "https://issuer.example/" "subject-fixture" |> accepted
+
+    let actor =
+        {
+            Actor.ActorId = actorId (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
+            Principal = principal
+            Enabled = true
+            Profile = None
+        }
+
+    {
+        DecisionContext.BusinessDate = Some date
+        ObservedAt =
+            System.DateTimeOffset(date.ToDateTime(System.TimeOnly.MinValue), System.TimeSpan.Zero)
+        Principal = principal
+        Access =
+            AccessView.ofActor (
+                Some
+                    {
+                        Actor = actor
+                        Grants =
+                            Role.all
+                            |> List.map (fun role ->
+                                {
+                                    Role = role
+                                    Scope = Scope.Installation
+                                })
+                    }
+            )
+        Maintenance = false
+        Lifetime = DecisionLifetime.Recorded
+    }

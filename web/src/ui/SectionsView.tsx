@@ -2,7 +2,7 @@ import { useId } from "react";
 import type { PresentedSection } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
-import type { RowLink } from "./regions/Table";
+import type { RowLink } from "./regions/interaction";
 import { Entries } from "./regions/Entries";
 const EntrySection = ({
   section,

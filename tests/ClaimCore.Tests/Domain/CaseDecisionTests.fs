@@ -61,7 +61,10 @@ let private replay () =
 
     match
         CaseOperations.decide
-            SubjectExecutionMode.Preview
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                laterView.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             laterView.Read
@@ -102,7 +105,10 @@ let private reviewAndTime () =
 
     match
         CaseOperations.decide
-            SubjectExecutionMode.Preview
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                view.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read

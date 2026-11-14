@@ -10,7 +10,7 @@
     <Compile Include="Work/CaseWorkReadModels.fs" />
     <Compile Include="Reads/QueryResults.fs" />
     <Compile Include="Reads/RequestRefusals.fs" />
-    <Compile Include="Operations/RecordedDecisions.fs" />
+    <Compile Include="Operations/RecordedInputs.fs" />
     <Compile Include="Operations/LedgerEntries.fs" />
     <Compile Include="Reads/ReceiptReads.fs" />
     <Compile Include="Cases/CaseChanges.fs" />

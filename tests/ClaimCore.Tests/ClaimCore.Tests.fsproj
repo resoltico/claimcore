@@ -57,6 +57,7 @@
     <Compile Include="Domain/PaymentEntriesTests.fs" />
     <Compile Include="Domain/FinancialPositionTests.fs" />
     <Compile Include="Domain/CaseSubjectTests.fs" />
+    <Compile Include="Domain/DecisionContextTests.fs" />
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
@@ -129,6 +130,7 @@
     <Compile Include="Application/ReplayDecisionTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
+    <Compile Include="Application/SubjectTimelineTests.fs" />
     <Compile Include="Application/PeopleDecisionTests.fs" />
     <Compile Include="Application/PeopleRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />

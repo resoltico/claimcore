@@ -60,16 +60,57 @@ module WorkSubject =
             Erased = false
         }
 
-    let decide (dependencies: WorkSubjectDependencies) (state: WorkSubjectState option) command =
-        match dependencies.Parent.Snapshot, state |> Option.bind _.Snapshot with
-        | Some parent, Some before ->
-            let eligible =
-                match command.Update.Responsible with
-                | WorkValue.Set id -> dependencies.AssigneeEligible id
-                | _ -> true
+    let decide
+        context
+        operation
+        (dependencies: WorkSubjectDependencies)
+        (state: WorkSubjectState option)
+        command
+        =
+        DecisionContext.admit
+            context
+            operation
+            (DecisionContext.workAccess context dependencies.Parent.CaseId)
+            (fun () ->
+                dependencies.Parent.Snapshot
+                |> Option.bind CaseWorkPolicy.parentRefusal
+                |> Option.map (Refusal.Case >> Error)
+                |> Option.defaultValue (Ok()))
+        |> Result.bind (fun () ->
+            match dependencies.Parent.Snapshot, state |> Option.bind _.Snapshot with
+            | Some parent, Some before ->
+                let eligible =
+                    match command.Update.Responsible with
+                    | WorkValue.Set id -> dependencies.AssigneeEligible id
+                    | _ -> true
 
-            CaseWorkDecision.decide parent eligible command.ExpectedRevision command.Update before
-        | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+                CaseWorkDecision.decide
+                    parent
+                    eligible
+                    command.ExpectedRevision
+                    command.Update
+                    before
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+
+    let private applySnapshot (before: CaseWorkSnapshot) (after: CaseWorkSnapshot) =
+        if
+            before.CaseId = after.CaseId
+            && Revision.value before.Revision < Revision.Maximum
+            && after.Revision = Revision.successor before.Revision
+        then
+            Ok after
+        else
+            Error RecordViolation.InvalidSubjectState
+
+    /// Validate retained command/effect agreement using permanent application, not current eligibility.
+    let applyRecorded caseId expected update (before: CaseWorkSnapshot) (after: CaseWorkSnapshot) =
+        CaseWorkDecision.transition expected update before
+        |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
+        |> Result.bind (fun proposed ->
+            if caseId = before.CaseId && proposed = after then
+                applySnapshot before after
+            else
+                Error RecordViolation.InvalidSubjectState)
 
     let apply
         (recordedAt: DateTimeOffset)
@@ -80,6 +121,12 @@ module WorkSubject =
         let before =
             state
             |> Option.defaultWith (fun () -> invalidOp "Work requires its case-created root.")
+
+        before.Snapshot
+        |> Option.map (fun snapshot -> applySnapshot snapshot effect)
+        |> Option.defaultValue (Error RecordViolation.InvalidSubjectState)
+        |> Result.defaultWith (SubjectStateInvalid >> raise)
+        |> ignore
 
         let summaryAt, summaryBy =
             match effect.Work.Summary with
@@ -103,30 +150,38 @@ module WorkSubject =
             }
 
     let applyErased
+        context
         (stamp: SubjectStamp)
         (parent: CaseSubjectState)
         revision
         (state: WorkSubjectState option)
         =
-        match state with
-        | Some before when
-            parent.Lifecycle = Lifecycle.Active
-            && before.CaseId = parent.CaseId
-            && Revision.value before.Revision < Revision.Maximum
-            && revision = Revision.successor before.Revision
-            ->
-            Ok(
-                Some
-                    { before with
-                        Revision = revision
-                        Snapshot = None
-                        ChangedAt = Some stamp.RecordedAt
-                        RecordedBy = Some stamp.ActorId
-                        SummaryChangedAt = None
-                        SummaryRecordedBy = None
-                    }
-            )
-        | _ -> Error RecordViolation.InvalidSubjectState
+        DecisionContext.admit
+            context
+            stamp.OperationId
+            (DecisionContext.workAccess context parent.CaseId)
+            (fun () -> Ok())
+        |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
+        |> Result.bind (fun () ->
+            match state with
+            | Some before when
+                parent.Lifecycle = Lifecycle.Active
+                && before.CaseId = parent.CaseId
+                && Revision.value before.Revision < Revision.Maximum
+                && revision = Revision.successor before.Revision
+                ->
+                Ok(
+                    Some
+                        { before with
+                            Revision = revision
+                            Snapshot = None
+                            ChangedAt = Some stamp.RecordedAt
+                            RecordedBy = Some stamp.ActorId
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
+                        }
+                )
+            | _ -> Error RecordViolation.InvalidSubjectState)
 
     let erase (state: WorkSubjectState) =
         { state with

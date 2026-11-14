@@ -259,6 +259,10 @@ let private reviewAndFences () =
     match
         PeopleOperations.decide
             SubjectExecutionMode.Preview
+            (peopleContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                view.Read)
             (DecisionFixtures.services installation calendar owner)
             request
             view.Read
@@ -510,14 +514,20 @@ let private reaffirmedGrant () =
 
     let dependencies =
         {
-            PeopleSubjectDependencies.Requester = view.Actor
-            TargetCases = view.TargetCases |> Map.map (fun _ value -> value.CaseId)
+            PeopleSubjectDependencies.TargetCases =
+                view.TargetCases |> Map.map (fun _ value -> value.CaseId)
             EnabledHumanOwners = view.EnabledHumanOwners
             ActorCount = view.ActorCount
         }
 
     let retained =
         PeopleSubject.applyErased
+            { CaseFixtures.recordedContext (
+                  System.DateOnly.FromDateTime view.ObservedAt.UtcDateTime
+              ) with
+                Principal = view.Actor.Actor.Value.Principal
+                Access = view.Actor
+            }
             dependencies
             provenance
             (Some state)

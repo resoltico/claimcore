@@ -37,7 +37,7 @@ let private command number (state: CaseSubjectState option) act =
 let private apply number (state: CaseSubjectState option) act =
     let command = command number state act
 
-    CaseSubject.decide today state command
+    CaseSubject.decide (CaseFixtures.recordedContext today) state command
     |> accepted
     |> CaseSubject.apply (stamp number) state
     |> Option.get
@@ -149,7 +149,10 @@ let tests =
                         command 5 (Some erased) (AuthoredCaseAct.Open Inputs.registration)
 
                     Expect.isError
-                        (CaseSubject.decide today (Some erased) opening)
+                        (CaseSubject.decide
+                            (CaseFixtures.recordedContext today)
+                            (Some erased)
+                            opening)
                         "Erased and never-created states are distinct")
             testCase
                 "erased-content replay rejects a forged removal and projects only after erasure"
@@ -167,14 +170,24 @@ let tests =
                         }
 
                     let opened =
-                        CaseSubject.applyErased None (effect 1 CaseActKind.Open None) |> accepted
+                        CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
+                            None
+                            (effect 1 CaseActKind.Open None)
+                        |> accepted
 
                     let decided =
-                        CaseSubject.applyErased opened (effect 2 CaseActKind.Decide None)
+                        CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
+                            opened
+                            (effect 2 CaseActKind.Decide None)
                         |> accepted
 
                     let recorded =
-                        CaseSubject.applyErased decided (effect 3 CaseActKind.RecordPayment None)
+                        CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
+                            decided
+                            (effect 3 CaseActKind.RecordPayment None)
                         |> accepted
 
                     Expect.isNone
@@ -183,18 +196,23 @@ let tests =
 
                     Expect.isError
                         (CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
                             recorded
                             (effect 4 CaseActKind.RemovePayment (Some (stamp 9).OperationId)))
                         "An unheld payment cannot be removed"
 
                     let removed =
                         CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
                             recorded
                             (effect 4 CaseActKind.RemovePayment (Some (stamp 3).OperationId))
                         |> accepted
 
                     let erased =
-                        CaseSubject.applyErased removed (effect 5 CaseActKind.Erase None)
+                        CaseSubject.applyErased
+                            (CaseFixtures.recordedContext today)
+                            removed
+                            (effect 5 CaseActKind.Erase None)
                         |> accepted
 
                     let rows = erased |> Option.bind CaseSubject.rows |> Option.get

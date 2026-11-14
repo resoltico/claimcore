@@ -24,9 +24,37 @@ type internal Fixture =
         Dispose: unit -> unit
     }
 
+let internal caseContext services mode (view: CaseFacts) =
+    SubjectExecution.context
+        services
+        mode
+        view.ObservedAt
+        view.Actor
+        view.Maintenance
+        view.ExpiredBefore
+
+let internal peopleContext services mode (view: PeopleExecutionFacts) =
+    SubjectExecution.context
+        services
+        mode
+        view.ObservedAt
+        view.Actor
+        view.Maintenance
+        view.ExpiredBefore
+
 /// Pure fixtures compose the same decision and accepted-row path as the registered transaction runner.
 let internal executeCase services command (write: LedgerWriteContext) (view: CaseFacts) =
-    CaseOperations.decide (SubjectExecutionMode.Commit write) services command view
+    CaseOperations.decide
+        (SubjectExecution.context
+            services
+            (SubjectExecutionMode.Commit write)
+            view.ObservedAt
+            view.Actor
+            view.Maintenance
+            view.ExpiredBefore)
+        services
+        command
+        view
     |> SubjectExecution.accept
         services
         view.Actor
@@ -39,7 +67,18 @@ let internal executePeople
     (write: LedgerWriteContext)
     (view: PeopleExecutionFacts)
     =
-    PeopleOperations.decide (SubjectExecutionMode.Commit write) services command view
+    PeopleOperations.decide
+        (SubjectExecutionMode.Commit write)
+        (SubjectExecution.context
+            services
+            (SubjectExecutionMode.Commit write)
+            view.ObservedAt
+            view.Actor
+            view.Maintenance
+            view.ExpiredBefore)
+        services
+        command
+        view
     |> SubjectExecution.accept
         services
         view.Actor

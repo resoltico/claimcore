@@ -10,16 +10,10 @@ type PeopleSubjectState =
 
 type PeopleSubjectDependencies =
     {
-        Requester: AccessView
         TargetCases: Map<GrantTarget, CaseId>
         EnabledHumanOwners: int option
         ActorCount: int option
     }
-
-[<RequireQualifiedAccess>]
-type PeopleAdmissionMode =
-    | Current
-    | Recorded
 
 type PeopleSubjectEffect =
     {
@@ -50,13 +44,13 @@ module PeopleSubject =
             Grants = state.Grants |> Map.keys |> Seq.toList
         }
 
-    let private facts dependencies state =
+    let private facts context dependencies state =
         {
             PeopleFacts.TargetActor = state |> Option.map access
             TargetCases = dependencies.TargetCases
             EnabledHumanOwners = dependencies.EnabledHumanOwners
             ActorCount = dependencies.ActorCount
-            Requester = dependencies.Requester
+            Requester = context.Access
         }
 
     let restore actor grants erasure =
@@ -79,15 +73,15 @@ module PeopleSubject =
             Error RecordViolation.InvalidSubjectState
 
     let decide
-        mode
+        context
         (dependencies: PeopleSubjectDependencies)
         (state: PeopleSubjectState option)
         (command: PeopleCommand)
         =
         let admission =
-            match mode with
-            | PeopleAdmissionMode.Current -> People.admitPrepared command
-            | PeopleAdmissionMode.Recorded -> Ok()
+            match context.Lifetime with
+            | DecisionLifetime.Recorded -> Ok()
+            | _ -> People.admitPrepared command
 
         let admission =
             if state |> Option.exists (fun state -> state.Actor.Principal <> command.Target) then
@@ -95,8 +89,22 @@ module PeopleSubject =
             else
                 admission
 
-        admission
-        |> Result.bind (fun () -> People.decide (facts dependencies state) command)
+        let permitted =
+            match command.Act with
+            | PeopleAct.ProvisionOwner _ -> Ok()
+            | _ when
+                Access.can
+                    context.Principal
+                    context.Access
+                    Capability.ManageAccess
+                    Scope.Installation
+                ->
+                Ok()
+            | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+        DecisionContext.admit context command.OperationId permitted (fun () -> Ok())
+        |> Result.bind (fun () -> admission)
+        |> Result.bind (fun () -> People.decide (facts context dependencies state) command)
         |> Result.map (fun change ->
             let target =
                 state
@@ -219,8 +227,8 @@ module PeopleSubject =
         applyAccess expected provenance state effect.After
 
     /// Missing profile bytes retain structural registration/rights semantics; later erasure is proved by the ledger fold.
-    let applyErased dependencies provenance state target operation principal act =
-        let currentFacts = facts dependencies state
+    let applyErased context dependencies provenance state target operation principal act =
+        let currentFacts = facts context dependencies state
 
         People.replayRetained currentFacts target operation principal act
         |> Result.bind (fun after ->

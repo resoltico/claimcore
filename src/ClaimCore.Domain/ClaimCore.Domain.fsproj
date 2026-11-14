@@ -51,6 +51,7 @@
     <Compile Include="CaseWorkPolicy.fs" />
     <Compile Include="CaseWorkDecision.fs" />
     <Compile Include="Validation.fs" />
+    <Compile Include="DecisionContext.fs" />
     <Compile Include="CaseSubject.fs" />
     <Compile Include="WorkSubject.fs" />
     <Compile Include="ReminderSubject.fs" />

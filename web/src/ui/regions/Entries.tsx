@@ -5,7 +5,7 @@ import { CopyValue } from "../../components/CopyValue";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { canonicalPresented } from "../../presentation/canonicalPresented";
-import type { RowLink } from "./Table";
+import type { RowLink } from "./interaction";
 import { followLink } from "../../routing/followLink";
 
 type Props = {

@@ -16,6 +16,9 @@ let private id = CaseFixtures.caseId operation
 let private reference = CaseFixtures.reference "REPLAY-EFFECT"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
+let private decisionContext =
+    CaseFixtures.recordedContext (DateOnly.FromDateTime instant.UtcDateTime)
+
 let private registration name =
     Inputs.registrationWith
         [ BusinessField.ClaimantName, name ]
@@ -347,6 +350,7 @@ let tests =
 
                         Expect.isOk
                             (SubjectReplay.caseEffect
+                                decisionContext
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, recorded)))
@@ -368,6 +372,7 @@ let tests =
 
                         match
                             SubjectReplay.caseEffect
+                                decisionContext
                                 histories
                                 entry
                                 (VerifiedPayload.Case(command, forged))
@@ -404,6 +409,7 @@ let recordedBusinessDate =
                     { After = expected; Payment = None }
 
             SubjectReplay.caseEffect
+                decisionContext
                 Map.empty
                 entry
                 (VerifiedPayload.Case(command, Some { After = expected; Payment = None }))
@@ -492,11 +498,16 @@ let paymentAmountTamper =
 
             Expect.isOk
                 (SubjectReplay.caseEffect
+                    decisionContext
                     prior
                     stored
                     (VerifiedPayload.Case(command, Some expected)))
                 "The exact recorded payment is the positive control"
 
             Expect.isError
-                (SubjectReplay.caseEffect prior stored (VerifiedPayload.Case(command, Some forged)))
+                (SubjectReplay.caseEffect
+                    decisionContext
+                    prior
+                    stored
+                    (VerifiedPayload.Case(command, Some forged)))
                 "Equal totals cannot conceal entry-level tampering")

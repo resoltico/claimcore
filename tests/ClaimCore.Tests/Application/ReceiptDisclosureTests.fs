@@ -65,7 +65,10 @@ let private disclosure () =
 
     match
         CaseOperations.decide
-            SubjectExecutionMode.Preview
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                view.Read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             view.Read
@@ -127,7 +130,10 @@ let private foreignScope () =
 
     match
         CaseOperations.decide
-            SubjectExecutionMode.Preview
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                read)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             read
@@ -145,7 +151,10 @@ let private foreignScope () =
 
     match
         CaseOperations.decide
-            SubjectExecutionMode.Preview
+            (caseContext
+                (DecisionFixtures.services installation calendar owner)
+                SubjectExecutionMode.Preview
+                narrowed)
             (DecisionFixtures.services installation calendar owner)
             (CaseFixtures.command request)
             narrowed

@@ -33,17 +33,6 @@ module internal LedgerEnvelope =
         |> Option.map _.ActorId
         |> Option.defaultWith (fun () -> invalidArg (nameof view) "Authorized actor is missing.")
 
-    let private verdict =
-        function
-        | None -> Verdict.Proceed()
-        | Some refusal -> Verdict.Refuse refusal
-
-    let frontier expiredBefore observedAt operation =
-        OperationLifetime.frontierRefusal expiredBefore observedAt operation |> verdict
-
-    let lifetime expiredBefore observedAt operation =
-        OperationLifetime.refusal expiredBefore observedAt operation |> verdict
-
     let accept
         (services: ServiceContext)
         actor

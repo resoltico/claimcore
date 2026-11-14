@@ -94,7 +94,8 @@ let private originalRequest: ReminderDecisionInput =
     }
 
 let private originalEffects =
-    RecordedDecisions.reminder originalRequest None |> required
+    Reminder.transition originalRequest.OperationId None originalRequest.Command
+    |> required
 
 let private reminderValue =
     function
@@ -115,7 +116,9 @@ let private changed number change before =
                 ReminderCommand.Change(parent, Reminder.id before, Reminder.revision before, change)
         }
 
-    request, RecordedDecisions.reminder request (Some before) |> required
+    request,
+    Reminder.transition request.OperationId (Some before) request.Command
+    |> required
 
 let private projection scope (request: ReminderDecisionInput) effects previous =
     let content = EntryContent.Reminder(request, effects)

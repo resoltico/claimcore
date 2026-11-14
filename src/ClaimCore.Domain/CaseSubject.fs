@@ -111,14 +111,73 @@ module CaseSubject =
         else
             Case.ofAccepted snapshot |> Result.map (fun _ -> state)
 
-    let decide today (state: CaseSubjectState option) (command: CaseCommand) =
-        let current = state |> Option.bind _.Snapshot
-        let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
+    let executor context kind =
+        let human =
+            match (CaseActKind.describe kind).Capabilities with
+            | ActCapabilities.Required capabilities ->
+                List.exists Access.humanOnlyCapability capabilities
+            | ActCapabilities.CorrectionGroups -> false
 
-        if state.IsSome && current.IsNone then
-            Error(CaseDecisionError.InvalidState RecordViolation.InvalidFinancialPosition)
+        DecisionContext.executor context human false
+
+    let authorize principal access caseId act =
+        let scope =
+            if CaseAct.kind act = CaseActKind.Open then
+                Scope.Installation
+            else
+                caseId |> Option.map Scope.Case |> Option.defaultValue Scope.Installation
+
+        if CaseAct.kind act <> CaseActKind.Open && caseId.IsNone then
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        elif Access.canAct principal access scope act then
+            Ok()
+        elif
+            CaseAct.kind act <> CaseActKind.Open
+            && caseId.IsSome
+            && Access.can principal access Capability.ReadCase scope
+        then
+            Access.missingCapabilities principal access scope act
+            |> List.tryHead
+            |> Option.map (AccessRefusal.NotAuthorized >> Refusal.Access >> Error)
+            |> Option.defaultValue (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         else
-            Case.decideSnapshot today payments command current
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+    let authorizeStructure context caseId kind =
+        let scope =
+            if kind = CaseActKind.Open then
+                Scope.Installation
+            else
+                Scope.Case caseId
+
+        if Access.canAdvertise context.Principal context.Access scope kind then
+            Ok()
+        else
+            Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+    let decide context (state: CaseSubjectState option) (command: CaseCommand) =
+        DecisionContext.admit
+            context
+            command.OperationId
+            (authorize context.Principal context.Access (state |> Option.map _.CaseId) command.Act)
+            (fun () -> Ok())
+        |> Result.bind (fun () ->
+            let current = state |> Option.bind _.Snapshot
+            let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
+
+            if state.IsSome && current.IsNone then
+                raise (SubjectStateInvalid RecordViolation.InvalidFinancialPosition)
+
+            Case.decideSnapshot
+                (context.BusinessDate
+                 |> Option.defaultWith (fun () ->
+                     raise (SubjectStateInvalid RecordViolation.InvalidSubjectState)))
+                payments
+                command
+                current
+            |> Result.mapError (function
+                | CaseDecisionError.Refused refusal -> refusal
+                | CaseDecisionError.InvalidState violation -> raise (SubjectStateInvalid violation)))
 
     let apply (stamp: SubjectStamp) (state: CaseSubjectState option) (effect: CaseDecision) =
         let snapshot = effect.After
@@ -199,83 +258,90 @@ module CaseSubject =
     let validateStructure state effect =
         structure state effect |> Result.map ignore
 
-    let applyErased (state: CaseSubjectState option) (effect: CaseSubjectStructure) =
-        match structure state effect with
-        | Error error -> Error error
-        | Ok(reference, lifecycle) ->
-            let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
+    let applyErased context (state: CaseSubjectState option) (effect: CaseSubjectStructure) =
+        DecisionContext.admit
+            context
+            effect.Stamp.OperationId
+            (authorizeStructure context effect.CaseId effect.Act)
+            (fun () -> Ok())
+        |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
+        |> Result.bind (fun () ->
+            match structure state effect with
+            | Error error -> Error error
+            | Ok(reference, lifecycle) ->
+                let payments = state |> Option.map _.Payments |> Option.defaultValue Map.empty
 
-            let payments =
-                match effect.Act, effect.RemovedPayment with
-                | CaseActKind.RecordPayment, None when
-                    not (Map.containsKey effect.Stamp.OperationId payments)
-                    ->
-                    Ok(
-                        Map.add
-                            effect.Stamp.OperationId
-                            {
-                                CaseId = effect.CaseId
-                                PaymentId = effect.Stamp.OperationId
-                                Position = effect.Stamp.Position
-                                Content = PaymentProjectionContent.Cleared false
-                            }
-                            payments
-                    )
-                | CaseActKind.RemovePayment, Some id ->
-                    match Map.tryFind id payments with
-                    | Some row ->
-                        match row.Content with
-                        | PaymentProjectionContent.Available(_, false)
-                        | PaymentProjectionContent.Cleared false ->
-                            Ok(
-                                Map.add
-                                    id
-                                    { row with
-                                        Content = PaymentProjectionContent.Cleared true
-                                    }
-                                    payments
-                            )
-                        | _ -> Error RecordViolation.InvalidPaymentState
-                    | None -> Error RecordViolation.InvalidPaymentState
-                | CaseActKind.RecordPayment, _
-                | CaseActKind.RemovePayment, _ -> Error RecordViolation.InvalidPaymentState
-                | CaseActKind.Erase, None -> Ok(cleared payments)
-                | _, None -> Ok payments
-                | _ -> Error RecordViolation.InvalidPaymentState
+                let payments =
+                    match effect.Act, effect.RemovedPayment with
+                    | CaseActKind.RecordPayment, None when
+                        not (Map.containsKey effect.Stamp.OperationId payments)
+                        ->
+                        Ok(
+                            Map.add
+                                effect.Stamp.OperationId
+                                {
+                                    CaseId = effect.CaseId
+                                    PaymentId = effect.Stamp.OperationId
+                                    Position = effect.Stamp.Position
+                                    Content = PaymentProjectionContent.Cleared false
+                                }
+                                payments
+                        )
+                    | CaseActKind.RemovePayment, Some id ->
+                        match Map.tryFind id payments with
+                        | Some row ->
+                            match row.Content with
+                            | PaymentProjectionContent.Available(_, false)
+                            | PaymentProjectionContent.Cleared false ->
+                                Ok(
+                                    Map.add
+                                        id
+                                        { row with
+                                            Content = PaymentProjectionContent.Cleared true
+                                        }
+                                        payments
+                                )
+                            | _ -> Error RecordViolation.InvalidPaymentState
+                        | None -> Error RecordViolation.InvalidPaymentState
+                    | CaseActKind.RecordPayment, _
+                    | CaseActKind.RemovePayment, _ -> Error RecordViolation.InvalidPaymentState
+                    | CaseActKind.Erase, None -> Ok(cleared payments)
+                    | _, None -> Ok payments
+                    | _ -> Error RecordViolation.InvalidPaymentState
 
-            payments
-            |> Result.map (fun payments ->
-                let snapshot =
-                    if lifecycle = Lifecycle.Erased then
-                        Some
-                            {
-                                CaseId = effect.CaseId
-                                Reference = reference
-                                Revision = effect.Revision
-                                State = CaseState.Erased
-                            }
-                    else
-                        None
+                payments
+                |> Result.map (fun payments ->
+                    let snapshot =
+                        if lifecycle = Lifecycle.Erased then
+                            Some
+                                {
+                                    CaseId = effect.CaseId
+                                    Reference = reference
+                                    Revision = effect.Revision
+                                    State = CaseState.Erased
+                                }
+                        else
+                            None
 
-                Some
-                    {
-                        CaseId = effect.CaseId
-                        Reference = reference
-                        Revision = effect.Revision
-                        Lifecycle = lifecycle
-                        Status =
-                            match effect.Act with
-                            | CaseActKind.Open
-                            | CaseActKind.Reopen -> CaseStatus.Opened
-                            | CaseActKind.Close -> CaseStatus.Closed
-                            | _ ->
-                                state
-                                |> Option.map _.Status
-                                |> Option.defaultValue CaseStatus.Opened
-                        Snapshot = snapshot
-                        Payments = payments
-                        ChangedAt = effect.Stamp.RecordedAt
-                    })
+                    Some
+                        {
+                            CaseId = effect.CaseId
+                            Reference = reference
+                            Revision = effect.Revision
+                            Lifecycle = lifecycle
+                            Status =
+                                match effect.Act with
+                                | CaseActKind.Open
+                                | CaseActKind.Reopen -> CaseStatus.Opened
+                                | CaseActKind.Close -> CaseStatus.Closed
+                                | _ ->
+                                    state
+                                    |> Option.map _.Status
+                                    |> Option.defaultValue CaseStatus.Opened
+                            Snapshot = snapshot
+                            Payments = payments
+                            ChangedAt = effect.Stamp.RecordedAt
+                        }))
 
     let rows (state: CaseSubjectState) =
         let snapshot =

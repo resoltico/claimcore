@@ -108,23 +108,27 @@ module internal TimelineDifferences =
                             |> Option.toList
                     ])
 
-    let private work references request (after: CaseWorkSnapshot) previous =
+    let private work references (request: WorkDecisionInput) (after: CaseWorkSnapshot) previous =
         let before =
             match previous with
             | None ->
-                Ok
-                    {
-                        CaseWorkSnapshot.CaseId = after.CaseId
-                        Revision = Revision.zero
-                        Work = CaseWork.empty
-                    }
+                (WorkSubject.initial after.CaseId).Snapshot
+                |> Option.map Ok
+                |> Option.defaultValue fault
             | Some(EntryContent.Work(_, snapshot)) -> Ok snapshot
             | _ -> fault
 
         before
         |> Result.bind (fun before ->
-            match RecordedDecisions.work request before with
-            | Ok expected when expected = after ->
+            match
+                WorkSubject.applyRecorded
+                    request.CaseId
+                    request.ExpectedRevision
+                    request.Update
+                    before
+                    after
+            with
+            | Ok after ->
                 match
                     actorOption references before.Work.Responsible,
                     actorOption references after.Work.Responsible
@@ -166,10 +170,11 @@ module internal TimelineDifferences =
 
         reminderBefore id previous
         |> Result.bind (fun before ->
-            match RecordedDecisions.reminder request before with
-            | Ok expected when expected = after ->
-                after
-                |> reminders
+            match
+                ReminderSubject.applyRecorded request.OperationId before request.Command after
+            with
+            | Ok applied ->
+                applied
                 |> List.map (fun value ->
                     let prior =
                         before |> Option.filter (fun old -> Reminder.id old = Reminder.id value)
@@ -210,29 +215,28 @@ module internal TimelineDifferences =
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
         | EntryContent.Note(request, snapshot) ->
-            let valid =
-                match request.Command, previous with
-                | NoteCommand.AddNote(_, text), None ->
-                    Note.text snapshot = Some text
-                    && Note.id snapshot = NoteId.ofOperationId request.OperationId
-                | NoteCommand.RemoveNote(parent, id), Some(EntryContent.Note(_, before)) ->
-                    Note.id before = id
-                    && Note.caseId before = parent
-                    && (Note.text before).IsSome
-                    && (Note.text snapshot).IsNone
-                | _ -> false
+            let before =
+                match previous with
+                | None -> Ok None
+                | Some(EntryContent.Note(_, before)) -> Ok(Some before)
+                | _ -> fault
 
-            if valid then
+            match
+                before
+                |> Result.bind (fun before ->
+                    NoteSubject.applyRecorded request.OperationId before request.Command snapshot
+                    |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError))
+            with
+            | Ok applied ->
                 Ok
                     [
                         TimelineChange.Note(
                             NoteCommand.kind request.Command,
-                            Note.id snapshot,
-                            Note.text snapshot
+                            Note.id applied,
+                            Note.text applied
                         )
                     ]
-            else
-                fault
+            | Error _ -> fault
         | EntryContent.People _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase

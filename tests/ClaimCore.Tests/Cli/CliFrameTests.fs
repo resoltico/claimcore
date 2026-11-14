@@ -327,7 +327,11 @@ let private exampleFrames () =
             |> Fixtures.accepted
 
         let decision =
-            CaseSubject.decide (DateOnly(2026, 10, 15)) current command |> Fixtures.accepted
+            CaseSubject.decide
+                (CaseFixtures.recordedContext (DateOnly(2026, 10, 15)))
+                current
+                command
+            |> Fixtures.accepted
 
         let stamp =
             {

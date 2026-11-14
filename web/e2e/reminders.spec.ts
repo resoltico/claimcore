@@ -167,6 +167,11 @@ test("supports multiple independently revised reminders, terminal records, reope
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.reopen",
   );
+  // The supplied due-date seed opens review immediately; editing remains an explicit choice.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Return to editing", exact: true })
+    .click();
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");

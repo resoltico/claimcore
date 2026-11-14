@@ -173,6 +173,10 @@ let reviewPeople installation principal (request: ClaimCore.Domain.PeopleRequest
     | Ok command ->
         PeopleOperations.decide
             SubjectExecutionMode.Preview
+            (peopleContext
+                (services installation calendar principal)
+                SubjectExecutionMode.Preview
+                view)
             (services installation calendar principal)
             command
             view
