@@ -34,12 +34,7 @@ const observation = {
   businessDate: runtime.businessDate,
   timeZone: runtime.timeZone,
 };
-type CaseInput = Extract<
-  RequestByEndpoint["operation.execute"],
-  {
-    kind: "CASE";
-  }
->;
+type CaseInput = Extract<RequestByEndpoint["operation.execute"], { binding: { kind: "CASE" } }>;
 const acts = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "CASE"
     ? [
@@ -169,7 +164,7 @@ const authorCase = (kind: ActKind) => {
 };
 const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
   const caseId =
-    request.act.kind === "case.open" ? request.operationId : "20000000-0000-4000-8000-000000000001";
+    request.task === "case.open" ? request.operationId : "20000000-0000-4000-8000-000000000001";
   return {
     screen: {
       regions: [],
@@ -180,7 +175,7 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
       target: {
         kind: "CASE",
         caseId,
-        revision: request.expectedRevision + 1,
+        revision: request.binding.expectedRevision + 1,
       },
       caseLink: caseId,
       refreshCase: caseId,
@@ -193,7 +188,7 @@ const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
   };
 };
 const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] => {
-  if (request.act.kind === "case.decide") {
+  if (request.task === "case.decide") {
     return [
       {
         key: "payable",
@@ -211,7 +206,7 @@ const presentationChanges = (request: CaseInput): ReviewPresentation["changes"] 
       },
     ];
   }
-  if (request.act.kind === "case.correct") {
+  if (request.task === "case.correct") {
     return [
       {
         key: "claimantName",
@@ -248,10 +243,10 @@ const caseReview = (request: CaseInput) => {
         target: {
           kind: "CASE",
           caseId:
-            request.act.kind === "case.open"
+            request.task === "case.open"
               ? request.operationId
               : "20000000-0000-4000-8000-000000000001",
-          beforeRevision: request.act.kind === "case.open" ? null : request.expectedRevision,
+          beforeRevision: request.task === "case.open" ? null : request.binding.expectedRevision,
         },
         confirmation: {
           kind: "CASE_REFERENCE",
@@ -280,8 +275,8 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     if (typeof path !== "string" || typeof init?.body !== "string") {
       throw new Error("Expected a typed case dispatch.");
     }
-    const operationExecuteRequest = JSON.parse(init.body) as RequestByEndpoint["operation.execute"];
-    if (operationExecuteRequest.kind !== "CASE") {
+    const operationExecuteRequest = JSON.parse(init.body) as CaseInput;
+    if (operationExecuteRequest.binding.kind !== "CASE") {
       throw new Error("Production editor did not produce a complete case request.");
     }
     calls.push({
@@ -307,38 +302,36 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
     );
   });
 const assertAuthoredCase = (request: CaseInput) => {
-  switch (request.act.kind) {
+  switch (request.task) {
     case "case.open":
-      expect(request.act.values.claimantName).toBe(caseFields.registration.claimantName);
+      expect(request.binding.target).toEqual({
+        kind: "REFERENCE",
+        caseReference: caseFields.caseReference,
+      });
+      expect(request.inputs["field:claimantName"]).toBe(caseFields.registration.claimantName);
       break;
     case "case.amendRegistration":
-      expect(request.act.values.claimantName).toBe("Synthetic replacement");
+      expect(request.inputs["field:claimantName"]).toBe("Synthetic replacement");
       break;
     case "case.decide":
-      expect(request.act.values.payableAmount).toBe("5.0000");
+      expect(request.inputs["field:payableAmount"]).toBe("5.0000");
       break;
     case "case.recordPayment":
-      expect(request.act.values.paymentDate).toBe("2026-09-04");
+      expect(request.inputs["field:paymentDate"]).toBe("2026-09-04");
       break;
     case "case.removePayment":
-      expect(request.act.paymentId).toBe("10000000-0000-7000-8000-000000000003");
+      expect(request.binding.paymentId).toBe("10000000-0000-7000-8000-000000000003");
       break;
     case "case.correct":
-      expect(request.act.groups).toMatchObject({
-        registration: {
-          kind: "UPDATE",
-          values: {
-            claimantName: "Synthetic correction",
-          },
-        },
-        decision: {
-          kind: "KEEP",
-        },
+      expect(request.inputs).toMatchObject({
+        "group:registration": "UPDATE",
+        "field:claimantName": "Synthetic correction",
+        "group:decision": "KEEP",
       });
       break;
     case "case.void":
     case "case.reinstate":
-      expect(request.act.reason).toBe("Synthetic reason العربية");
+      expect(request.inputs["input:reason"]).toBe("Synthetic reason العربية");
       break;
     default:
       break;
@@ -371,7 +364,7 @@ it.each(acts)(
                   kind: "ID" as const,
                   caseId: "20000000-0000-4000-8000-000000000001",
                 },
-                revision: 1,
+                expectedRevision: 1,
                 paymentId: "10000000-0000-7000-8000-000000000003",
               },
             }
@@ -417,8 +410,8 @@ it.each(acts)(
       "/api/operation.execute",
     ]);
     expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
-    expect(calls[1]!.input.act.kind).toBe(act.kind);
-    expect(calls[1]!.input.expectedRevision).toBe(act.kind === "case.open" ? 0 : 1);
+    expect(calls[1]!.input.task).toBe(act.kind);
+    expect(calls[1]!.input.binding.expectedRevision).toBe(act.kind === "case.open" ? 0 : 1);
     assertAuthoredCase(calls[1]!.input);
   },
 );

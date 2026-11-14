@@ -1,9 +1,10 @@
+import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
-import { applyPeople, syntheticPrincipals } from "./people-setup";
+
 import { operationId } from "../src/operation/operationId";
 test("successful summary continuation removes previously loaded full history after permission revocation", async ({
   page,
@@ -13,19 +14,17 @@ test("successful summary continuation removes previously loaded full history aft
   await openCase(page, reference);
   for (let revision = 1; revision <= 12; revision += 1) {
     await applyPeople(page, {
-      kind: "CASE",
       operationId: operationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
-      },
-      expectedRevision: revision,
-      act: {
-        kind: "case.amendRegistration",
-        values: {
-          claimantName: `PRIVATE_HISTORY_${revision}`,
+      task: "case.amendRegistration",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
         },
+        expectedRevision: revision,
       },
+      inputs: { "field:claimantName": `PRIVATE_HISTORY_${revision}` },
     });
   }
   const principals = await syntheticPrincipals();
@@ -35,32 +34,20 @@ test("successful summary continuation removes previously loaded full history aft
     subject: principals.ownerSubject,
   } as const;
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: operationId(),
-    target,
-    act: {
-      kind: "people.grant",
-      role: "CASE_READER",
-      scope: {
-        kind: "INSTALLATION",
-      },
-    },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
   });
   try {
     await page.reload();
     const history = page.locator(".case-timeline-panel");
     await expect(history).toContainText("PRIVATE_HISTORY_11");
     await applyPeople(page, {
-      kind: "PEOPLE",
       operationId: operationId(),
-      target,
-      act: {
-        kind: "people.revoke",
-        role: "CASE_HANDLER",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      task: "people.revoke",
+      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
     });
     const refreshed = page.waitForResponse(async (response) => {
       if (new URL(response.url()).pathname !== "/api/case.timeline") {
@@ -106,28 +93,16 @@ test("successful summary continuation removes previously loaded full history aft
     await expect(history.locator(".region-timeline > li")).toHaveCount(10);
   } finally {
     await applyPeople(page, {
-      kind: "PEOPLE",
       operationId: operationId(),
-      target,
-      act: {
-        kind: "people.grant",
-        role: "CASE_HANDLER",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      task: "people.grant",
+      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
     });
     await applyPeople(page, {
-      kind: "PEOPLE",
       operationId: operationId(),
-      target,
-      act: {
-        kind: "people.revoke",
-        role: "CASE_READER",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      task: "people.revoke",
+      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
     });
   }
 });

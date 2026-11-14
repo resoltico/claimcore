@@ -110,7 +110,7 @@ export const observeConflict = (
       revision: resource.revision + 1,
     };
   }
-  const { target } = snapshot.source.prepared.input;
+  const { target } = snapshot.source.prepared.input.binding;
   if (target.kind === "ID" && action.value.current.context.caseId !== target.caseId) {
     return {
       ...resource,

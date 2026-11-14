@@ -116,24 +116,24 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "CASE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "expectedRevision": 0,
-        "act": {
-          "kind": "case.open",
-          "values": {
-            "incidentDate": "2026-01-01",
-            "incidentNotificationDate": "2026-01-01",
-            "incidentCountry": "LV",
-            "claimantName": "x",
-            "insurerName": "x",
-            "claimedAmount": "0",
-            "claimedCurrency": "EUR"
-          }
+        "task": "case.open",
+        "binding": {
+          "kind": "CASE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "x"
+          },
+          "expectedRevision": 0
         },
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "x"
+        "inputs": {
+          "field:incidentDate": "2026-01-01",
+          "field:incidentNotificationDate": "2026-01-01",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "x",
+          "field:insurerName": "x",
+          "field:claimedAmount": "0",
+          "field:claimedCurrency": "EUR"
         }
       }
     },
@@ -152,24 +152,24 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "CASE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "expectedRevision": 0,
-        "act": {
-          "kind": "case.open",
-          "values": {
-            "incidentDate": "2026-01-01",
-            "incidentNotificationDate": "2026-01-01",
-            "incidentCountry": "LV",
-            "claimantName": "x",
-            "insurerName": "x",
-            "claimedAmount": "0",
-            "claimedCurrency": "EUR"
-          }
+        "task": "case.open",
+        "binding": {
+          "kind": "CASE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "x"
+          },
+          "expectedRevision": 0
         },
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "x"
+        "inputs": {
+          "field:incidentDate": "2026-01-01",
+          "field:incidentNotificationDate": "2026-01-01",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "x",
+          "field:insurerName": "x",
+          "field:claimedAmount": "0",
+          "field:claimedCurrency": "EUR"
         }
       }
     },
@@ -221,18 +221,16 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "PEOPLE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "target": {
-          "kind": "HUMAN",
-          "issuer": "x",
-          "subject": "x"
+        "task": "people.register",
+        "binding": {
+          "kind": "PEOPLE"
         },
-        "act": {
-          "kind": "people.register",
-          "profile": {
-            "displayName": "Authored fixture account"
-          }
+        "inputs": {
+          "input:profile.displayName": "Authored fixture account",
+          "input:principal.kind": "HUMAN",
+          "input:principal.issuer": "x",
+          "input:principal.subject": "x"
         }
       }
     },
@@ -242,20 +240,18 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "WORK",
         "operationId": "10000000-0000-7000-8000-000000000041",
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "TARGETED"
+        "task": "work.update",
+        "binding": {
+          "kind": "WORK",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "TARGETED"
+          },
+          "expectedRevision": 1
         },
-        "expectedRevision": 1,
-        "act": {
-          "kind": "work.update",
-          "values": {
-            "responsibleActor": {
-              "kind": "CLEAR"
-            }
-          }
+        "inputs": {
+          "field:responsibleActor": null
         }
       }
     },
@@ -265,16 +261,18 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "REMINDER",
         "operationId": "10000000-0000-7000-8000-000000000041",
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "TARGETED"
+        "task": "reminder.create",
+        "binding": {
+          "kind": "REMINDER",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "TARGETED"
+          }
         },
-        "act": {
-          "kind": "reminder.create",
-          "action": "Contact insurer",
-          "dueDate": "2027-12-31"
+        "inputs": {
+          "input:reminderAction": "Contact insurer",
+          "input:reminderDueDate": "2027-12-31"
         }
       }
     },
@@ -284,37 +282,29 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "CASE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "expectedRevision": 0,
-        "act": {
-          "kind": "case.correct",
-          "groups": {
-            "registration": {
-              "kind": "UPDATE",
-              "values": {
-                "incidentDate": "2026-01-01",
-                "incidentNotificationDate": "2026-01-01",
-                "incidentCountry": "LV",
-                "claimantName": "x",
-                "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
-              }
-            },
-            "decision": {
-              "kind": "UPDATE",
-              "values": {
-                "paymentDecisionDate": "2026-01-01",
-                "payableAmount": "0",
-                "payableCurrency": "EUR"
-              }
-            }
-          }
+        "task": "case.correct",
+        "binding": {
+          "kind": "CASE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "x"
+          },
+          "expectedRevision": 0
         },
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "x"
+        "inputs": {
+          "group:registration": "UPDATE",
+          "field:incidentDate": "2026-01-01",
+          "field:incidentNotificationDate": "2026-01-01",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "x",
+          "field:insurerName": "x",
+          "field:claimedAmount": "0",
+          "field:claimedCurrency": "EUR",
+          "group:decision": "UPDATE",
+          "field:paymentDecisionDate": "2026-01-01",
+          "field:payableAmount": "0",
+          "field:payableCurrency": "EUR"
         }
       }
     },
@@ -324,37 +314,28 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "PEOPLE",
         "operationId": "11111111-2222-7333-8444-555555555555",
-        "target": {
-          "kind": "HUMAN",
-          "issuer": "https://id.example/",
-          "subject": "admitted"
+        "task": "people.admit",
+        "binding": {
+          "kind": "PEOPLE"
         },
-        "act": {
-          "kind": "people.admit",
-          "profile": {
-            "displayName": "Authored",
-            "contact": "Contact"
-          },
-          "grants": [
+        "inputs": {
+          "input:profile.displayName": "Authored",
+          "input:profile.contact": "Contact",
+          "input:grants": [
             {
-              "role": "CASE_READER",
-              "scope": {
-                "kind": "INSTALLATION"
-              }
+              "input:role": "CASE_READER",
+              "input:scope": "INSTALLATION"
             },
             {
-              "role": "CASE_HANDLER",
-              "scope": {
-                "kind": "CASE",
-                "target": {
-                  "kind": "REFERENCE",
-                  "caseReference": "00000000-0000-7000-8000-000000000001"
-                }
-              }
+              "input:role": "CASE_HANDLER",
+              "input:scope": "CASE",
+              "field:caseReference": "00000000-0000-7000-8000-000000000001"
             }
-          ]
+          ],
+          "input:principal.kind": "HUMAN",
+          "input:principal.issuer": "https://id.example/",
+          "input:principal.subject": "admitted"
         }
       }
     },
@@ -364,18 +345,18 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "WORK",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "target": {
-          "kind": "ID",
-          "caseId": "20000000-0000-7000-8000-000000000001"
+        "task": "work.update",
+        "binding": {
+          "kind": "WORK",
+          "target": {
+            "kind": "ID",
+            "caseId": "20000000-0000-7000-8000-000000000001"
+          },
+          "expectedRevision": 0
         },
-        "expectedRevision": 0,
-        "act": {
-          "kind": "work.update",
-          "values": {
-            "handlingSummary": "  First paragraph\nSecond paragraph 😀  "
-          }
+        "inputs": {
+          "field:handlingSummary": "  First paragraph\nSecond paragraph 😀  "
         }
       }
     },
@@ -385,18 +366,20 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "REMINDER",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "target": {
-          "kind": "ID",
-          "caseId": "20000000-0000-7000-8000-000000000001"
-        },
-        "act": {
-          "kind": "reminder.update",
+        "task": "reminder.update",
+        "binding": {
+          "kind": "REMINDER",
+          "target": {
+            "kind": "ID",
+            "caseId": "20000000-0000-7000-8000-000000000001"
+          },
           "reminderId": "30000000-0000-7000-8000-000000000001",
-          "expectedRevision": 3,
-          "action": "Review response",
-          "dueDate": "2026-11-11"
+          "expectedRevision": 3
+        },
+        "inputs": {
+          "input:reminderAction": "Review response",
+          "input:reminderDueDate": "2026-11-11"
         }
       }
     },
@@ -422,43 +405,31 @@
       "direction": "request",
       "valid": false,
       "value": {
-        "kind": "CASE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "expectedRevision": 0,
-        "act": {
-          "kind": "case.correct",
-          "groups": {
-            "registration": {
-              "kind": "UPDATE",
-              "values": {
-                "incidentDate": "2026-01-01",
-                "incidentNotificationDate": "2026-01-01",
-                "incidentCountry": "LV",
-                "claimantName": "x",
-                "insurerName": "x",
-                "claimedAmount": "0",
-                "claimedCurrency": "EUR"
-              }
-            },
-            "decision": {
-              "kind": "UPDATE",
-              "values": {
-                "paymentDecisionDate": "2026-01-01",
-                "payableAmount": "0",
-                "payableCurrency": "EUR"
-              }
-            },
-            "payment": {
-              "kind": "REPLACE",
-              "values": {
-                "paymentDate": "2026-01-01"
-              }
-            }
-          }
+        "task": "case.correct",
+        "binding": {
+          "kind": "CASE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "x"
+          },
+          "expectedRevision": 0
         },
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "x"
+        "inputs": {
+          "group:registration": "UPDATE",
+          "field:incidentDate": "2026-01-01",
+          "field:incidentNotificationDate": "2026-01-01",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "x",
+          "field:insurerName": "x",
+          "field:claimedAmount": "0",
+          "field:claimedCurrency": "EUR",
+          "group:decision": "UPDATE",
+          "field:paymentDecisionDate": "2026-01-01",
+          "field:payableAmount": "0",
+          "field:payableCurrency": "EUR",
+          "group:payment": "REPLACE",
+          "field:paymentDate": "2026-01-01"
         }
       }
     },
@@ -494,15 +465,17 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "NOTE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "CASE-1"
+        "task": "note.add",
+        "binding": {
+          "kind": "NOTE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "CASE-1"
+          }
         },
-        "act": {
-          "kind": "note.add",
-          "text": "First\nSecond"
+        "inputs": {
+          "input:noteText": "First\nSecond"
         }
       }
     },
@@ -512,16 +485,17 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "NOTE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "CASE-1"
-        },
-        "act": {
-          "kind": "note.remove",
+        "task": "note.remove",
+        "binding": {
+          "kind": "NOTE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "CASE-1"
+          },
           "noteId": "10000000-0000-7000-8000-000000000002"
-        }
+        },
+        "inputs": {}
       }
     },
     {
@@ -530,16 +504,18 @@
       "direction": "request",
       "valid": false,
       "value": {
-        "kind": "NOTE",
         "operationId": "10000000-0000-7000-8000-000000000001",
-        "expectedRevision": 1,
-        "target": {
-          "kind": "REFERENCE",
-          "caseReference": "CASE-1"
+        "task": "note.add",
+        "binding": {
+          "kind": "NOTE",
+          "target": {
+            "kind": "REFERENCE",
+            "caseReference": "CASE-1"
+          },
+          "expectedRevision": 1
         },
-        "act": {
-          "kind": "note.add",
-          "text": "First"
+        "inputs": {
+          "input:noteText": "First"
         }
       }
     },

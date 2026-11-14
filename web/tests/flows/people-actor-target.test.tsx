@@ -68,7 +68,7 @@ it("uses an offered alternative instead of inventing GRANT on actor detail", asy
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
   });
-  expect(preview.mock.calls[0]![0].input.act.kind).toBe("people.revoke");
+  expect(preview.mock.calls[0]![0].input.task).toBe("people.revoke");
 });
 it("does not offer REGISTER or manufacture mutation inputs for an actor with no offered existing-actor act", async () => {
   const preview = setupActorTargets(["people.register"]);

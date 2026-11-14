@@ -8,6 +8,7 @@ vi.mock("../../e2e/case-workflow", () => ({
 vi.mock("../../e2e/people-setup", () => ({
   applyPeople: vi.fn(),
   syntheticPrincipals: vi.fn(),
+  selectedActor: vi.fn().mockResolvedValue("10000000-0000-7000-8000-000000000001"),
 }));
 import { applyPeople } from "../../e2e/people-setup";
 import { configureRole, type RoleFixture } from "../../e2e/narrow-role-fixture";
@@ -43,19 +44,24 @@ it("restores only the confirmed baseline grant when narrow setup fails", async (
     }),
   ).rejects.toBe(failed);
   await restore();
-  const bodies = vi.mocked(applyPeople).mock.calls.map((call) => call[1].act);
+  const bodies = vi.mocked(applyPeople).mock.calls.map((call) => call[1]);
   expect(bodies).toMatchObject([
-    { role: "DATA_STEWARD", kind: "people.revoke" },
+    { task: "people.revoke", inputs: { "input:role": "DATA_STEWARD" } },
     {
-      role: "CASE_READER",
-      kind: "people.grant",
-      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: fixture.reference } },
+      task: "people.grant",
+      inputs: {
+        "input:role": "CASE_READER",
+        "input:scope": "CASE",
+        "field:caseReference": fixture.reference,
+      },
     },
-    { role: "DATA_STEWARD", kind: "people.grant" },
+    { task: "people.grant", inputs: { "input:role": "DATA_STEWARD" } },
   ]);
-  expect(bodies.some((body) => body.kind === "people.revoke" && body.role === "CASE_READER")).toBe(
-    false,
-  );
+  expect(
+    bodies.some(
+      (body) => body.task === "people.revoke" && body.inputs["input:role"] === "CASE_READER",
+    ),
+  ).toBe(false);
 });
 
 it("does not invent rollback after the first people action is unconfirmed", async () => {

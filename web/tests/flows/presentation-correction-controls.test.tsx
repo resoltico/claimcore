@@ -102,11 +102,13 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   await waitFor(() => {
     expect(globalThis.fetch).toHaveBeenCalledOnce();
   });
-  expect(draftAt(0).act).toMatchObject({
-    kind: "case.correct",
-    groups: {
-      registration: { kind: "UPDATE", values: { claimedAmount: "1.0000", claimedCurrency: "EUR" } },
-      decision: { kind: "CLEAR" },
+  expect({ task: draftAt(0).task, inputs: draftAt(0).inputs }).toMatchObject({
+    task: "case.correct",
+    inputs: {
+      "group:registration": "UPDATE",
+      "field:claimedAmount": "1.0000",
+      "field:claimedCurrency": "EUR",
+      "group:decision": "CLEAR",
     },
   });
 });

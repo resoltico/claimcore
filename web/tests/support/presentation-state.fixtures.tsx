@@ -3,7 +3,7 @@ import { caseDocumentInput } from "./case-document.fixtures";
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { OperationDraft, CurrentCase } from "../../src/api/service";
+import type { CaseSubmission, CurrentCase } from "../../src/api/service";
 import { SettingsWorkspace } from "../../src/views/SettingsWorkspace";
 import { useRoute } from "../../src/routing/useRoute";
 import type userEvent from "@testing-library/user-event";
@@ -39,21 +39,21 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
   <EditorWorkspace {...overrides} />
 );
 
-export const draftAt = (index: number): OperationDraft => {
+export const draftAt = (index: number): CaseSubmission => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("Expected one serialized canonical request.");
   }
-  return JSON.parse(body) as OperationDraft;
+  return JSON.parse(body) as CaseSubmission;
 };
 /** Interaction review borrows only declared task bindings; display/policy oracles are independently authored. */
 export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   const task = taskForCommand(draft);
   if (
-    draft.act.kind !== "case.close" &&
-    draft.act.kind !== "case.amendRegistration" &&
-    draft.act.kind !== "case.correct"
+    draft.task !== "case.close" &&
+    draft.task !== "case.amendRegistration" &&
+    draft.task !== "case.correct"
   ) {
     throw new Error("This interaction fixture reviews CLOSE, AMEND_REGISTRATION or CORRECT only");
   }
@@ -79,13 +79,13 @@ export const previewReply = (index = 0): Response => {
             target: {
               kind: "CASE",
               caseId: current.context.caseId,
-              beforeRevision: draft.expectedRevision,
+              beforeRevision: draft.binding.expectedRevision,
             },
             confirmation: {
               kind: "CASE_REFERENCE",
               reference:
-                draft.target.kind === "REFERENCE"
-                  ? draft.target.caseReference
+                draft.binding.target.kind === "REFERENCE"
+                  ? draft.binding.target.caseReference
                   : fields.caseReference,
             },
           },

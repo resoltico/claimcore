@@ -1,22 +1,28 @@
-import type { Scope, GrantScope, HumanReview } from "@contracts/client";
+import type { GrantScope, HumanReview } from "@contracts/client";
 import { workBasis } from "./inputs";
 import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { taskForCommand } from "../../src/protocol/taskCatalog";
 
-type PeopleInput = Extract<Parameters<typeof service.preview>[0]["input"], { kind: "PEOPLE" }>;
+type PeopleInput = Extract<
+  Parameters<typeof service.preview>[0]["input"],
+  { binding: { kind: "PEOPLE" } }
+>;
 const actorId = "10000000-0000-4000-8000-000000000001";
 const basis = { kind: "SNAPSHOT", observation: workBasis } as const;
-const resolvedScope = (scope: Scope): GrantScope =>
-  scope.kind === "INSTALLATION"
-    ? scope
-    : {
-        kind: "CASE",
-        caseId:
-          scope.target.kind === "ID" ? scope.target.caseId : "20000000-0000-4000-8000-000000000001",
-        caseReference:
-          scope.target.kind === "REFERENCE" ? scope.target.caseReference : "SYNTHETIC-GRANT",
-      };
+const resolvedScope = (input: PeopleInput): GrantScope => {
+  if (
+    (input.task !== "people.grant" && input.task !== "people.revoke") ||
+    input.inputs["input:scope"] === "INSTALLATION"
+  ) {
+    return { kind: "INSTALLATION" };
+  }
+  return {
+    kind: "CASE",
+    caseId: input.inputs["input:caseId"] ?? "20000000-0000-4000-8000-000000000001",
+    caseReference: input.inputs["field:caseReference"] ?? "SYNTHETIC-GRANT",
+  };
+};
 /** Interaction fixtures borrow only declared binding metadata; independent policy and rendering oracles live in their focused tests. */
 export const peopleReview = (input: PeopleInput): HumanReview => {
   const task = taskForCommand(input);
@@ -34,10 +40,10 @@ export const peopleReview = (input: PeopleInput): HumanReview => {
         consequence: task.consequence,
         target: {
           kind: "PEOPLE",
-          actorId: ["people.register", "people.admit"].includes(input.act.kind) ? null : actorId,
+          actorId: ["people.register", "people.admit"].includes(input.task) ? null : actorId,
           scope:
-            input.act.kind === "people.grant" || input.act.kind === "people.revoke"
-              ? resolvedScope(input.act.scope)
+            input.task === "people.grant" || input.task === "people.revoke"
+              ? resolvedScope(input)
               : { kind: "INSTALLATION" },
         },
         confirmation: { kind: "OPERATION", operationId: input.operationId },
@@ -50,7 +56,7 @@ export const peopleReview = (input: PeopleInput): HumanReview => {
 };
 export const peoplePreview = () =>
   vi.spyOn(service, "preview").mockImplementation((prepared) => {
-    if (prepared.input.kind !== "PEOPLE") {
+    if (prepared.input.binding.kind !== "PEOPLE") {
       throw new Error("People preview fixture required");
     }
     return Promise.resolve({
@@ -59,7 +65,7 @@ export const peoplePreview = () =>
       value: {
         representation: "HUMAN",
         operationId: prepared.input.operationId,
-        outcome: { kind: "REVIEWED", review: peopleReview(prepared.input) },
+        outcome: { kind: "REVIEWED", review: peopleReview(prepared.input as PeopleInput) },
       },
     });
   });
@@ -67,7 +73,7 @@ export const peopleAcceptance = (
   prepared: Parameters<typeof service.execute>[0],
 ): ApiResult<ServiceResponse<"operation.execute">> => {
   const { input } = prepared;
-  if (input.kind !== "PEOPLE") {
+  if (input.binding.kind !== "PEOPLE") {
     throw new Error("People fixture required.");
   }
   return {
@@ -85,7 +91,7 @@ export const peopleAcceptance = (
             recordedFields: [],
             target: {
               kind: "PEOPLE",
-              actorId: ["people.register", "people.admit"].includes(input.act.kind)
+              actorId: ["people.register", "people.admit"].includes(input.task)
                 ? input.operationId
                 : actorId,
             },

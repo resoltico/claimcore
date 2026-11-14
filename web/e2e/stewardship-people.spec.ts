@@ -1,4 +1,5 @@
-import { type ResponseFor, type CaseAct, type PeopleAct } from "@contracts/client";
+import { selectedActor, syntheticPrincipals } from "./people-setup";
+import { type ResponseFor, type OperationTaskDefinition } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -17,7 +18,7 @@ import {
   sessionToken,
 } from "./session-helpers";
 import { confirmReview } from "./localization-support";
-import { syntheticPrincipals } from "./people-setup";
+
 import { recoveryRecords } from "./recovery-storage";
 let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
 test.beforeAll(async ({ browser, baseURL }) => {
@@ -27,7 +28,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
 const stewardAct = async (
   page: Page,
   reference: string,
-  kind: CaseAct["kind"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
   reason?: string,
 ) => {
   const p = createPresenter({
@@ -285,7 +286,7 @@ const openActor = async (page: Page, actorId: string, name: string) => {
 const beginActorAct = async (
   page: Page,
   name: string,
-  kind: PeopleAct["kind"],
+  kind: Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"],
   language: Language,
 ) => {
   const p = createPresenter({
@@ -321,20 +322,17 @@ const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: stri
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: {
-        kind: "SERVICE",
-        issuer,
-        subject,
+      task: "people.grant",
+      binding: {
+        kind: "PEOPLE",
+        actorId: await selectedActor(page, {
+          kind: "SERVICE",
+          issuer,
+          subject,
+        }),
       },
-      act: {
-        kind: "people.grant",
-        role: "OWNER",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      inputs: { "input:role": "OWNER", "input:scope": "INSTALLATION" },
     }),
   });
   const value = response.payload;
@@ -402,20 +400,17 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
       "X-ClaimCore-Antiforgery": await sessionToken(page),
     },
     body: JSON.stringify({
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: {
-        kind: "SERVICE",
-        issuer: source.issuer,
-        subject: `unregistered-${randomUUID()}`,
+      task: "people.grant",
+      binding: {
+        kind: "PEOPLE",
+        actorId: await selectedActor(page, {
+          kind: "SERVICE",
+          issuer: source.issuer,
+          subject: `unregistered-${randomUUID()}`,
+        }),
       },
-      act: {
-        kind: "people.grant",
-        role: "CASE_READER",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
     }),
   });
   expect(missing.status).toBe(200);

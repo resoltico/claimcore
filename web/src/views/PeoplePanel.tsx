@@ -1,7 +1,7 @@
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import { taskDefinitions, type PrincipalInput } from "@contracts/client";
+import { taskDefinitions, type Principal } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
 import { ScreenView } from "../ui/ScreenView";
 import { useOperationObservation } from "../hooks/useOperationObservation";
@@ -287,7 +287,7 @@ const PeopleWorkspace = ({
                         scope:
                           grant.scope.kind === "INSTALLATION"
                             ? { kind: "INSTALLATION" }
-                            : { kind: "CASE", target: { kind: "ID", caseId: grant.scope.caseId } },
+                            : { kind: "CASE", caseId: grant.scope.caseId },
                       },
                     );
                     editor.open();
@@ -554,7 +554,7 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
 };
 const PeopleEditorPanel = (props: PeoplePanelProps) => {
   const state = usePeopleOperation(props);
-  const [admissionPrincipal, setAdmissionPrincipal] = useState<PrincipalInput | null>(null);
+  const [admissionPrincipal, setAdmissionPrincipal] = useState<Principal | null>(null);
   const target = usePeopleTarget(
     state.model,
     state.disclosure.revision,
@@ -594,6 +594,9 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
               ...(request === undefined
                 ? {}
                 : {
+                    "input:principal.kind": request.principal.kind,
+                    "input:principal.issuer": request.principal.issuer,
+                    "input:principal.subject": request.principal.subject,
                     "input:profile.displayName": request.profileSeed.displayName,
                     ...(typeof request.profileSeed.contact === "string"
                       ? { "input:profile.contact": request.profileSeed.contact }
@@ -602,7 +605,6 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
             },
             {
               kind: "PEOPLE",
-              ...(request === undefined ? {} : { principal: request.principal }),
             },
           );
         },

@@ -49,7 +49,7 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
   const change = vi.fn();
   const props = {
     task: operationTask("work.update"),
-    binding: { kind: "WORK", target, workRevision: 2 } as const,
+    binding: { kind: "WORK", target, expectedRevision: 2 } as const,
     current,
     disabled: false,
     errors: {},
@@ -84,7 +84,7 @@ it("consumes the current correction choices instead of offering the declaration'
   };
   const props = {
     task: operationTask("case.correct"),
-    binding: { kind: "CASE", target, revision: 7 } as const,
+    binding: { kind: "CASE", target, expectedRevision: 7 } as const,
     current: correction,
     values: {},
     disabled: false,
@@ -150,7 +150,7 @@ const representativeBinding = (
     return { kind: "PEOPLE" as const };
   }
   if (id === "case.open") {
-    return { kind: "NEW_CASE" as const };
+    return { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 };
   }
   if (task.subject === "NOTE") {
     return { kind: "NOTE" as const, target };
@@ -158,7 +158,7 @@ const representativeBinding = (
   if (task.subject === "REMINDER") {
     return { kind: "REMINDER" as const, target };
   }
-  return { kind: "CASE" as const, target, revision: 7 };
+  return { kind: "CASE" as const, target, expectedRevision: 7 };
 };
 it("renders representative control shapes across the declared subjects", () => {
   const operations: ReadonlyArray<OperationTaskId> = [
@@ -194,7 +194,7 @@ it("preserves a selected correction choice when current Core choices stop offeri
   render(
     <TaskInputs
       task={operationTask("case.correct")}
-      binding={{ kind: "CASE", target, revision: 7 }}
+      binding={{ kind: "CASE", target, expectedRevision: 7 }}
       current={{
         ...current,
         context: {
@@ -223,9 +223,9 @@ it("keeps reminder identity and revision bound while editing only authored actio
       task={operationTask("reminder.update")}
       binding={{
         kind: "REMINDER",
-
         target,
-        reminder: { reminderId: "30000000-0000-4000-8000-000000000003", revision: 1 },
+        reminderId: "30000000-0000-4000-8000-000000000003",
+        expectedRevision: 1,
       }}
       current={current}
       values={{ "input:reminderAction": "Retained action", "input:reminderDueDate": "2026-11-05" }}
@@ -253,7 +253,15 @@ const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
     <>
       <TaskInputs
         task={operationTask(id)}
-        binding={id === "case.open" ? { kind: "NEW_CASE" } : { kind: "PEOPLE" }}
+        binding={
+          id === "case.open"
+            ? {
+                kind: "CASE",
+                target: { kind: "REFERENCE", caseReference: "" },
+                expectedRevision: 0,
+              }
+            : { kind: "PEOPLE" }
+        }
         current={null}
         values={values}
         disabled={false}
@@ -289,6 +297,14 @@ it("edits admission rows independently while principal and scope restrict role c
   await user.click(within(row).getByRole("radio", { name: "One case" }));
   expect(within(row).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(row).getByRole("textbox", { name: /Case reference/u })).toBeVisible();
+  await user.type(within(row).getByRole("textbox", { name: /Case reference/u }), "SCOPED-CASE");
+  await user.click(within(row).getByRole("radio", { name: "All cases" }));
+  const authored = JSON.parse(screen.getByTestId("authored-inputs").textContent ?? "null") as {
+    peopleGrants: { rows: { values: Record<string, unknown> }[] };
+  };
+  expect(authored.peopleGrants.rows[1]!.values).not.toHaveProperty("field:caseReference");
+  expect(within(row).queryByRole("textbox", { name: /Case reference/u })).toBeNull();
+
   await user.click(screen.getByRole("radio", { name: "Service account" }));
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
@@ -344,7 +360,7 @@ it.each([
     const view = render(
       <TaskInputs
         task={operationTask(task)}
-        binding={{ kind: "CASE", target, revision: 7 }}
+        binding={{ kind: "CASE", target, expectedRevision: 7 }}
         current={{
           ...current,
           context: { ...current.context, tasks: [task], editableInputs: inputs, correction },

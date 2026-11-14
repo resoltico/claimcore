@@ -74,7 +74,7 @@ it("preserves authored content, text selection and operation identity across lan
     }),
   );
   expect(globalThis.fetch).toHaveBeenCalledOnce();
-  expect(draftAt(0).act.kind).toBe("case.open");
+  expect(draftAt(0).task).toBe("case.open");
   expect(document.querySelector('input[name="field:incidentDate"]')).toHaveValue("2026-02-28");
 });
 it("finishes an in-flight language load without replaying or replacing the reviewed action", async () => {
@@ -150,7 +150,7 @@ it("keeps the authored revision on a fresh preview after language switching and 
   const { operationId: nextId, ...nextCommand } = next;
   expect(nextCommand).toEqual(firstCommand);
   expect(nextId).not.toBe(firstId);
-  expect(draftAt(1).expectedRevision).toBe(1);
+  expect(draftAt(1).binding.expectedRevision).toBe(1);
 });
 it("localizes late validation by diagnostic identity and focuses the unchanged authoring field", async () => {
   const user = userEvent.setup();

@@ -75,9 +75,9 @@ it("sends only a selected registration fact and does not serialize retained cont
   await name();
   const frame = await prepared(spy);
   expect(frame.input).toMatchObject({ kind: "CASE", expectedRevision: 4 });
-  expect(frame.input.act).toEqual({
-    kind: "case.amendRegistration",
-    values: { claimantName: "Only selected claimant" },
+  expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Only selected claimant" },
   });
 });
 
@@ -98,9 +98,9 @@ it("selects and removes a complete money pair as one authoring event", async () 
   await userEvent.setup().click(pair);
   expect(screen.queryByRole("textbox", { name: "Claimed amount" })).toBeNull();
   const frame = await prepared(spy);
-  expect(frame.input.act).toEqual({
-    kind: "case.amendRegistration",
-    values: { claimantName: "Only selected claimant" },
+  expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Only selected claimant" },
   });
 });
 
@@ -159,9 +159,9 @@ it.each([
     await switchFormat(display);
     expect(screen.getByRole("textbox", { name: "Claimed amount" })).toHaveValue(raw);
     const frame = await prepared(spy);
-    expect(frame.input.act).toEqual({
-      kind: "case.amendRegistration",
-      values: { claimedAmount: expected, claimedCurrency: "EUR" },
+    expect({ task: frame.input.task, inputs: frame.input.inputs }).toEqual({
+      task: "case.amendRegistration",
+      inputs: { "field:claimedAmount": expected, "field:claimedCurrency": "EUR" },
     });
     const { operationId: reviewedId, ...reviewedInput } = frame.input;
     await switchFormat(entered);

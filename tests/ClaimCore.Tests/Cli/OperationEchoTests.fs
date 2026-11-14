@@ -47,7 +47,7 @@ let tests =
             let executed =
                 delivered
                     Api.operationExecute
-                    input
+                    (Submissions.ofCommand None input)
                     {
                         ExecuteReply.OperationId = echoed
                         Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
@@ -67,7 +67,7 @@ let tests =
             let previewed =
                 delivered
                     Api.operationPreview
-                    input
+                    (Submissions.ofCommand None input)
                     {
                         PreviewReply.OperationId = echoed
                         Outcome = Outcome.Failed CoreFault.StoreUnavailable

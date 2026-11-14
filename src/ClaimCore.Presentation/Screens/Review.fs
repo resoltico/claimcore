@@ -345,25 +345,15 @@ module ReviewScreen =
                 Basis = review.Basis
             }
 
-    let authoredDetails input =
-        match input with
-        | Some input ->
-            let kind =
-                match input with
-                | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
-                | OperationInput.People item -> ActKind.People(PeopleAct.kind item.Act)
-                | OperationInput.Note item -> ActKind.Note(AuthoredNoteAct.kind item.Act)
-                | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
-                | OperationInput.Reminder item ->
-                    ActKind.Reminder(AuthoredReminderAct.kind item.Act)
-
-            let consequence =
+    let authoredDetails act input =
+        let consequence =
+            act
+            |> Option.toList
+            |> List.collect (fun kind ->
                 match Consequence.ofAct kind with
                 | Consequence.Routine -> []
-                | Consequence.Stewardship
-                | Consequence.Irreversible ->
-                    [ PresentationKeys.consequence kind ]
-                    |> List.map (fun key ->
+                | _ ->
+                    [
                         section
                             "label.effect"
                             [
@@ -371,33 +361,33 @@ module ReviewScreen =
                                     "consequence"
                                     "label.effect"
                                     Prominence.Primary
-                                    (PresentedValue.Message key)
-                            ])
-
-            let intent =
-                match input with
-                | OperationInput.Case {
-                                          Act = CaseAct.Void reason | CaseAct.Reinstate reason
-                                      } ->
-                    [
-                        section
-                            "label.details"
-                            [
-                                value
-                                    "reason"
-                                    "field.reason.label"
-                                    Prominence.Primary
-                                    (PresentedValue.Text reason)
+                                    (PresentedValue.Message(PresentationKeys.consequence kind))
                             ]
-                    ]
-                | _ -> []
+                    ])
 
-            consequence @ intent
-        | None -> []
+        let intent =
+            match input with
+            | Some(OperationInput.Case {
+                                           Act = CaseAct.Void reason | CaseAct.Reinstate reason
+                                       }) ->
+                [
+                    section
+                        "label.details"
+                        [
+                            value
+                                "reason"
+                                "field.reason.label"
+                                Prominence.Primary
+                                (PresentedValue.Text reason)
+                        ]
+                ]
+            | _ -> []
 
-    let operationReview input review =
+        consequence @ intent
+
+    let operationReview act input review =
         let described = reviewValues review
 
         { described with
-            Effects = authoredDetails input @ described.Effects
+            Effects = authoredDetails act input @ described.Effects
         }

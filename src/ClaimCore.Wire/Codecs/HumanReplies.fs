@@ -122,18 +122,24 @@ module HumanReplies =
                 | Outcome.Failed fault -> HumanReadOutcome.Failed fault
         }
 
-    let preview input (reply: PreviewReply) =
+    let private previewWith describe (reply: PreviewReply) =
         {
             HumanOperationReply.OperationId = reply.OperationId
             Outcome =
                 match reply.Outcome with
                 | Outcome.Succeeded(Previewed.Reviewed review) ->
-                    HumanPreviewResult.Reviewed(HumanReviewDocument.ofCore input review)
+                    HumanPreviewResult.Reviewed(describe review)
                 | Outcome.Succeeded(Previewed.AlreadyAccepted receipt) ->
                     HumanPreviewResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
                 | Outcome.Rejected value -> HumanPreviewResult.Rejected(rejection value)
                 | Outcome.Failed value -> HumanPreviewResult.Failed value
         }
+
+    let preview input reply =
+        previewWith (HumanReviewDocument.ofCore input) reply
+
+    let previewSubmission input reply =
+        previewWith (HumanReviewDocument.ofSubmission input) reply
 
     let execute (reply: ExecuteReply) =
         {

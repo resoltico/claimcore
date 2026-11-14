@@ -24,6 +24,7 @@
     <Compile Include="PostgresReadiness.fs" />
     <Compile Include="SessionResults.fs" />
     <Compile Include="OperationIds.fs" />
+    <Compile Include="Submissions.fs" />
     <Compile Include="Inputs.fs" />
     <Compile Include="DecodingExamples.fs" />
     <Compile Include="CaseFixtures.fs" />

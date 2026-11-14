@@ -276,15 +276,16 @@ it("connects the actual form, Core review and journal-before-send to one exact p
   expect(f.bodies).toHaveLength(2);
   expect(f.bodies[1]).toBe(f.bodies[0]);
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
-    kind: "CASE",
-    target: {
-      kind: "ID",
-      caseId,
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "ID",
+        caseId,
+      },
+      expectedRevision: 7,
     },
-    expectedRevision: 7,
-    act: {
-      kind: "case.close",
-    },
+    inputs: {},
   });
   expect(f.events).toEqual(["journal", "send", "cleanup"]);
   expect(f.onRecorded).toHaveBeenCalledExactlyOnceWith(receipt);

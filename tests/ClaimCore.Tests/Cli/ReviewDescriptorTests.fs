@@ -119,7 +119,7 @@ let reviews =
                                 Context = context
                             }
 
-                    let delta = ReviewScreen.operationReview None review
+                    let delta = ReviewScreen.operationReview None None review
 
                     Expect.equal
                         (delta.Changes |> List.map _.Key)
@@ -216,7 +216,7 @@ let reviews =
                             Context = context
                         }
 
-                let delta = ReviewScreen.operationReview None (review proposed)
+                let delta = ReviewScreen.operationReview None None (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
@@ -231,6 +231,7 @@ let reviews =
 
                 let erased =
                     ReviewScreen.operationReview
+                        None
                         None
                         (review { before with State = CaseState.Erased })
 
@@ -358,7 +359,7 @@ let assignmentIdentity =
                     Context = context
                 }
 
-        let delta = ReviewScreen.operationReview None review
+        let delta = ReviewScreen.operationReview None None review
 
         Expect.equal
             delta.Changes

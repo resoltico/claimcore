@@ -59,7 +59,9 @@ let private examples () =
 
             seen <- Set.add (Api.id endpoint) seen
         else
-            Expect.isError (admit endpoint raw) "Negative authored request must be refused"
+            Expect.isError
+                (admit endpoint raw)
+                ("Negative authored request must be refused: " + text "id" example)
 
     Expect.equal
         seen
@@ -70,7 +72,8 @@ let private scalarAdmission () =
     let id = "10000000-0000-7000-8000-000000000001"
 
     let request =
-        RequestCodecs.operationInput.Write(
+        (OperationSubmissionCodecs.submission.Write
+         << ClaimCore.TestSupport.Submissions.ofCommand None) (
             ClaimCore.TestSupport.Inputs.caseOperation
                 {
                     OperationId = Guid.Parse id
@@ -115,7 +118,7 @@ let private scalarAdmission () =
             "Read reference format also reaches Application"
 
     let voided =
-        $"{{\"kind\":\"CASE\",\"operationId\":\"{id}\",\"target\":{{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"}},\"expectedRevision\":1,\"act\":{{\"kind\":\"case.void\",\"reason\":\"\"}}}}"
+        $"""{{"operationId":"{id}","task":"case.void","binding":{{"kind":"CASE","target":{{"kind":"REFERENCE","caseReference":"CASE"}},"expectedRevision":1}},"inputs":{{"input:reason":""}}}}"""
 
     Expect.isOk
         (admit (endpoint "operation.preview") voided)
@@ -137,7 +140,7 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        "{\"kind\":\"CASE\",\"operationId\":\"00000000-0000-0000-0000-000000000000\",\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"CASE\"},\"expectedRevision\":0,\"act\":{\"kind\":\"case.erase\"}}"
+        """{"operationId":"00000000-0000-0000-0000-000000000000","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":0},"inputs":{}}"""
 
     Expect.isOk
         (admit
@@ -158,22 +161,14 @@ let private structure () =
 
 let private registrationClear () =
     let raw =
-        """{"kind":"CASE","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"act":{"kind":"case.correct","groups":{"registration":{"kind":"CLEAR"},"decision":{"kind":"KEEP"}}}}"""
+        """{"operationId":"10000000-0000-7000-8000-000000000001","task":"case.correct","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1},"inputs":{"group:registration":"CLEAR","group:decision":"KEEP"}}"""
 
-    match
-        Codec.decode
+    Expect.isError
+        (Codec.decode
             Limits.MaximumRequestBytes
-            RequestCodecs.operationInput
-            (Encoding.UTF8.GetBytes raw)
-    with
-    | Error problem ->
-        Expect.equal
-            problem.Path
-            "$.act.groups.registration.kind"
-            "Registration clearing fails at its wire discriminator"
-
-        Expect.equal problem.Reason "unknown tag" "The rejected input is a shape error"
-    | Ok _ -> failtest "A registration cannot be cleared."
+            OperationSubmissionCodecs.submission
+            (Encoding.UTF8.GetBytes raw))
+        "Registration clearing is outside the declared correction actions"
 
 [<Tests>]
 let tests =

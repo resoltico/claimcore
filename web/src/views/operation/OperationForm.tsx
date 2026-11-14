@@ -11,14 +11,18 @@ import { taskForAct } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues, FormValue } from "../../protocol/forms";
 import type { Notice } from "../../protocol/notices";
-import type { HumanRejection, OperationTaskDefinition } from "@contracts/client";
-import type { TaskBindingSource } from "../../operation/taskForm";
+import {
+  type HumanRejection,
+  type OperationTaskDefinition,
+  type OperationBinding,
+} from "@contracts/client";
+
 import type { OperationSelection } from "../../protocol/operationCatalog";
 
 type FormModel = {
   entry: OperationSelection;
   task: OperationTaskDefinition;
-  bindingSource: TaskBindingSource;
+  bindingSource: OperationBinding;
   values: FormValues;
   fieldErrors: Readonly<Record<string, Notice>>;
   rejection: HumanRejection | null;

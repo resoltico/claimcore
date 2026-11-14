@@ -895,10 +895,6 @@
     "text": "提醒视图",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "责任变更",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "授权范围",
     "source": "d6417785a41b"
@@ -1790,14 +1786,6 @@
   "input.includeInactive.rule": {
     "text": "明确包含已结案或已作废案件上的工作。待办提醒保留其日期和状态。",
     "source": "c8addb209dac"
-  },
-  "input.responsibleActorAction.rule": {
-    "text": "选择设置或清除；省略则保留当前负责账户。",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "设置或清除此案件的负责人。",
-    "source": "d788923ffdfd"
   },
   "group.registration.rule": {
     "text": "保留登记资料或更新所选资料。未提供的资料保持不变；金额和币种须一起提交。",

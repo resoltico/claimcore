@@ -66,7 +66,7 @@ module internal VerbRunner =
             Frames.value Api.operationPreview invocation
         ]
         |> List.tryPick id
-        |> Option.bind ClaimCore.Application.Contracts.OperationInput.syntax
+        |> Option.bind OperationSubmission.syntax
 
     let private syntaxReply invocation issues =
         let refusal = Refusal.InvalidInput issues
@@ -83,7 +83,7 @@ module internal VerbRunner =
             | Some input ->
                 let core =
                     {
-                        ExecuteReply.OperationId = OperationInput.operationId input
+                        ExecuteReply.OperationId = input.OperationId
                         Outcome = ExecuteResult.Rejected refusal
                     }
 
@@ -98,14 +98,14 @@ module internal VerbRunner =
 
                 let core =
                     {
-                        PreviewReply.OperationId = OperationInput.operationId input
+                        PreviewReply.OperationId = input.OperationId
                         Outcome = Outcome.Rejected refusal
                     }
 
                 let reply =
                     match Frames.representation invocation with
                     | Representation.Human ->
-                        RepresentationReply.Human(HumanReplies.preview input core)
+                        RepresentationReply.Human(HumanReplies.previewSubmission input core)
                     | Representation.Data -> RepresentationReply.Data core
 
                 output Api.operationPreview reply

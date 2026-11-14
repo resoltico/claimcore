@@ -46,7 +46,8 @@ let private request reference =
     }
 
 let commandInput =
-    RequestCodecs.operationInput.Write(
+    (OperationSubmissionCodecs.submission.Write
+     << ClaimCore.TestSupport.Submissions.ofCommand None) (
         ClaimCore.TestSupport.Inputs.caseOperation (request "WEB-001")
     )
     |> ClaimCore.Json.WireWriter.bytes
@@ -256,29 +257,28 @@ type Stub() =
             Route.represented
                 Api.operationPreview
                 Api.operationPreviewUnavailable
-                HumanReplies.preview
+                HumanReplies.previewSubmission
                 (fun _ -> None)
                 (fun _ input _ ->
                     let outcome =
-                        match input with
-                        | OperationInput.Case input ->
+                        match input.Operation with
+                        | Ok(SubmittedOperation.Command(OperationInput.Case input)) ->
                             let request = Inputs.referencedCase input
 
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                                 receipt request.OperationId request.CaseReference
                             )
-                        | OperationInput.People request ->
+                        | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
                             (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
                                 peopleReceipt request
                             )
-                        | OperationInput.Note _
-                        | OperationInput.Work _
-                        | OperationInput.Reminder _ -> Outcome.Failed CoreFault.InternalError
+                        | Error refusal -> Outcome.Rejected refusal
+                        | _ -> Outcome.Failed CoreFault.InternalError
 
                     this.Invoke
                         "operation.preview"
                         {
-                            PreviewReply.OperationId = OperationInput.operationId input
+                            PreviewReply.OperationId = input.OperationId
                             Outcome = outcome
                         })
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
@@ -298,19 +298,18 @@ type Stub() =
                             calls.Add "operation.execute"
 
                             let! outcome =
-                                match input with
-                                | OperationInput.Case request ->
+                                match input.Operation with
+                                | Ok(SubmittedOperation.Command(OperationInput.Case request)) ->
                                     this.Execute(Inputs.referencedCase request, token)
-                                | OperationInput.People request ->
+                                | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
                                     this.ExecutePeople(request, token)
-                                | OperationInput.Note _
-                                | OperationInput.Work _
-                                | OperationInput.Reminder _ ->
+                                | Error refusal -> Task.FromResult(ExecuteResult.Rejected refusal)
+                                | _ ->
                                     Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
 
                             return
                                 {
-                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    ExecuteReply.OperationId = input.OperationId
                                     Outcome = outcome
                                 }
 

@@ -52,17 +52,11 @@ module internal CliConfirmation =
 
     let irreversibleTarget invocation =
         match Frames.value Api.operationExecute invocation with
-        | Some(OperationInput.Case request) when
-            Consequence.ofAct (ActKind.Case(CaseAct.kind request.Act)) = Consequence.Irreversible
-            ->
-            match request.Target with
-            | CaseSelector.Reference reference -> Some reference
-            | CaseSelector.Id _ -> invalidOp "Human irreversible commands require a case reference."
-        | Some(OperationInput.People request) when
-            Consequence.ofAct (ActKind.People(PeopleAct.kind request.Act)) =
-                Consequence.Irreversible
-            ->
-            Some(request.OperationId.ToString("D"))
+        | Some input when Consequence.ofAct input.Task = Consequence.Irreversible ->
+            match input.Binding with
+            | OperationBinding.Case(CaseSelector.Reference reference, _, _) -> Some reference
+            | OperationBinding.People _ -> Some(input.OperationId.ToString("D"))
+            | _ -> invalidOp "Human irreversible commands require their confirmation target."
         | _ -> None
 
     let validate isInteractive (prepared: PreparedVerb) =

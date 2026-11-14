@@ -124,9 +124,14 @@ let fields group =
     let schema, definitions =
         match group with
         | "registration" ->
-            RequestCodecs.registration.Schema, RequestCodecs.registration.Definitions
-        | "decision" -> RequestCodecs.decision.Schema, RequestCodecs.decision.Definitions
-        | "payment" -> RequestCodecs.payment.Schema, RequestCodecs.payment.Definitions
+            ClaimCore.RecordFormat.CanonicalInputs.registration.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.registration.Definitions
+        | "decision" ->
+            ClaimCore.RecordFormat.CanonicalInputs.decision.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.decision.Definitions
+        | "payment" ->
+            ClaimCore.RecordFormat.CanonicalInputs.payment.Schema,
+            ClaimCore.RecordFormat.CanonicalInputs.payment.Definitions
         | _ -> invalidArg (nameof group) "Unknown record group."
 
     let rec keys =
@@ -182,7 +187,7 @@ let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
 
 let registration: RegistrationInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.registration
+        ClaimCore.RecordFormat.CanonicalInputs.registration
         "registration"
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
@@ -210,13 +215,13 @@ let registrationOn incident notification =
 
 let decision: DecisionInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.decision
+        ClaimCore.RecordFormat.CanonicalInputs.decision
         "decision"
         (Map.ofList [ "paymentDecisionDate", "2026-08-15"; "payableAmount", "750.00" ])
 
 let payment: PaymentInput =
     groupInput
-        ClaimCore.Wire.RequestCodecs.payment
+        ClaimCore.RecordFormat.CanonicalInputs.payment
         "payment"
         (Map.ofList [ "paymentDate", "2026-08-20"; "paidAmount", "750"; "paidCurrency", "EUR" ])
 
@@ -341,13 +346,18 @@ let caseActs registration decision payment reason =
                     [
                         "kind", JsonValue.String "UPDATE"
                         "values",
-                        RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
+                        ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate.Write(
+                            registrationUpdate registration
+                        )
                     ]
                 "decision",
                 JsonValue.Object
                     [
                         "kind", JsonValue.String "UPDATE"
-                        "values", RequestCodecs.decisionUpdate.Write(decisionUpdate decision)
+                        "values",
+                        ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate.Write(
+                            decisionUpdate decision
+                        )
                     ]
             ]
 
@@ -360,14 +370,21 @@ let caseActs registration decision payment reason =
             match payload with
             | ActPayload.Bare _ -> []
             | ActPayload.Registration ->
-                [ "values", RequestCodecs.registration.Write registration ]
+                [
+                    "values",
+                    ClaimCore.RecordFormat.CanonicalInputs.registration.Write registration
+                ]
             | ActPayload.RegistrationUpdate ->
                 [
                     "values",
-                    RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
+                    ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate.Write(
+                        registrationUpdate registration
+                    )
                 ]
-            | ActPayload.Decision -> [ "values", RequestCodecs.decision.Write decision ]
-            | ActPayload.Payment -> [ "values", RequestCodecs.payment.Write payment ]
+            | ActPayload.Decision ->
+                [ "values", ClaimCore.RecordFormat.CanonicalInputs.decision.Write decision ]
+            | ActPayload.Payment ->
+                [ "values", ClaimCore.RecordFormat.CanonicalInputs.payment.Write payment ]
             | ActPayload.PaymentId ->
                 [ "paymentId", JsonValue.String "10000000-0000-7000-8000-000000000003" ]
             | ActPayload.Reason -> [ "reason", JsonValue.String reason ]
@@ -375,7 +392,7 @@ let caseActs registration decision payment reason =
 
         let act =
             JsonValue.Object(("kind", JsonValue.String token) :: members)
-            |> RequestCodecs.caseAct.Read "$"
+            |> ClaimCore.RecordFormat.CanonicalInputs.caseAct.Read "$"
             |> Result.defaultWith (fun problem ->
                 failtestf "Declared act input refused: %A" problem)
 

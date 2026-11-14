@@ -75,10 +75,9 @@ export const CaseReassignment = ({
       binding={{
         kind: "WORK",
         target: { kind: "ID", caseId: row.caseId },
-        workRevision: row.assignment.revision,
+        expectedRevision: row.assignment.revision,
       }}
       prefill={{
-        "input:responsibleActorAction": "SET",
         "field:responsibleActor": row.assignment.responsibleSeed ?? "",
       }}
       disclosureAvailable={disclosureAvailable}

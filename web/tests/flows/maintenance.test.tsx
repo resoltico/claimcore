@@ -109,9 +109,12 @@ it("keeps an authored draft through Core offer withdrawal and explicit resumptio
   await waitFor(() => {
     expect(preview).toHaveBeenCalledOnce();
   });
-  expect(preview.mock.calls[0]![0].input.act).toEqual({
-    kind: "case.amendRegistration",
-    values: { claimantName: "Retained local draft" },
+  expect({
+    task: preview.mock.calls[0]![0].input.task,
+    inputs: preview.mock.calls[0]![0].input.inputs,
+  }).toEqual({
+    task: "case.amendRegistration",
+    inputs: { "field:claimantName": "Retained local draft" },
   });
 });
 

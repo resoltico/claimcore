@@ -1,19 +1,21 @@
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
-import type {
-  CaseGetRequest,
-  HumanReview,
-  HumanRejection,
-  OperationInput,
-  HumanRejection_CONFLICT,
-  HumanReadDocument_case_get,
+import {
+  type CaseGetRequest,
+  type HumanReview,
+  type HumanRejection,
+  type OperationSubmission,
+  type HumanRejection_CONFLICT,
+  type HumanReadDocument_case_get,
+  type OperationBinding,
 } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { PreparedRequest } from "../protocol/preparedRequest";
-import type { TaskSubmission, TaskBindingSource } from "./taskForm";
+import type { TaskSubmission } from "./taskForm";
+
 import type { FieldErrors } from "./inputErrors";
 export type EffectIdentity = {
   owner: OwnerScope;
@@ -28,7 +30,7 @@ export type LocalSource = {
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
-    input: Exclude<OperationInput, { kind: "PEOPLE" }>;
+    input: Exclude<OperationSubmission, { binding: { kind: "PEOPLE" } }>;
   };
 };
 export type ConflictObservation = {
@@ -117,7 +119,7 @@ export type OperationDraft = {
   owner: OwnerScope | null;
   entry: OperationSelection;
   target: string;
-  binding: TaskBindingSource;
+  binding: OperationBinding;
   values: FormValues;
   dateEntries: DateEntryDrafts;
   baseline: FormValues;

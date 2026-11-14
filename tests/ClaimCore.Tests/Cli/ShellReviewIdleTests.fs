@@ -49,7 +49,10 @@ let private reviewed frame =
         Api.operationPreview
         (RepresentationReply.Human(
             HumanReplies.preview
-                (Frames.value Api.operationPreview frame |> Option.get)
+                ((Frames.value Api.operationPreview
+                  >> Option.map ClaimCore.TestSupport.Submissions.command)
+                    frame
+                 |> Option.get)
                 {
                     OperationId = Frames.operationId frame |> Option.get
                     Outcome = Outcome.Succeeded(Previewed.Reviewed review)

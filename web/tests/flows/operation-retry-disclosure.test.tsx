@@ -187,7 +187,7 @@ it.each(["access", "session"] as const)(
     expect((await testJournal.list(recoveryScope)).map((entry) => entry.operationId)).toContain(
       draftAt(1).operationId,
     );
-    expect(draftAt(1).expectedRevision).toBe(1);
+    expect(draftAt(1).binding.expectedRevision).toBe(1);
     await user.click(getButton("Send again"));
     expectPendingOnly(locked);
     await user.click(getButton("Send again"));

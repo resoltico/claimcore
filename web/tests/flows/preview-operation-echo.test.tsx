@@ -48,7 +48,7 @@ it.each(["CASE", "PEOPLE"] as const)(
         throw new Error("Expected frozen preview bytes");
       }
       const operationPreviewRequest = JSON.parse(raw) as RequestByEndpoint["operation.preview"];
-      if (operationPreviewRequest.kind !== kind) {
+      if (operationPreviewRequest.binding.kind !== kind) {
         throw new Error("Expected the authored operation family");
       }
       bodies.push(raw);
@@ -61,9 +61,9 @@ it.each(["CASE", "PEOPLE"] as const)(
         outcome: {
           kind: "REVIEWED",
           review:
-            operationPreviewRequest.kind === "CASE"
+            operationPreviewRequest.binding.kind === "CASE"
               ? closeReview
-              : peopleReview(operationPreviewRequest),
+              : peopleReview(operationPreviewRequest as Parameters<typeof peopleReview>[0]),
         },
       };
       return Promise.resolve(

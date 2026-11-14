@@ -20,9 +20,11 @@ let private original (fixture: PublishedFixture.Fixture) =
     let input = source["input"] |> nonNull
     let reference = "CLI-DISCLOSURE-" + id ()
     input["operationId"] <- JsonValue.Create(id ())
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
 
-    ((input["act"] |> nonNull)["values"] |> nonNull)["incidentDescription"] <-
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create reference
+
+    (input["inputs"] |> nonNull)["field:incidentDescription"] <-
         JsonValue.Create "Earlier history\nOriginal exact paragraph"
 
     Encoding.UTF8.GetBytes(source.ToJsonString()), input, reference
@@ -30,16 +32,13 @@ let private original (fixture: PublishedFixture.Fixture) =
 let private amend (input: JsonNode) =
     let pending = input.DeepClone()
     pending["operationId"] <- JsonValue.Create(id ())
-    pending["expectedRevision"] <- JsonValue.Create 1L
-    let act = pending["act"] |> nonNull
-    act["kind"] <- JsonValue.Create "AMEND_REGISTRATION"
+    (pending["binding"] |> nonNull)["expectedRevision"] <- JsonValue.Create 1L
+    pending["task"] <- JsonValue.Create "case.amendRegistration"
 
-    act["values"] <-
-        JsonSerializer.SerializeToNode
-            {|
-                claimedAmount = "2.0000"
-                claimedCurrency = "EUR"
-            |}
+    pending["inputs"] <-
+        JsonSerializer.SerializeToNode(
+            dict [ "field:claimedAmount", "2.0000"; "field:claimedCurrency", "EUR" ]
+        )
 
     pending
 
@@ -54,29 +53,18 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
 
     run fixture fixture.Environment bytes 0 |> require "REVIEWED" |> ignore
 
-    let close =
-        {|
-            kind = "CASE"
-            operationId = id ()
-            target =
-                {|
-                    kind = "REFERENCE"
-                    caseReference = reference
-                |}
-            expectedRevision = 1L
-            act =
-                {|
-                    kind = "AMEND_REGISTRATION"
-                    values =
-                        {|
-                            claimedAmount = "9876.5432"
-                            claimedCurrency = "EUR"
-                            incidentDate = "2026-09-07"
-                            incidentNotificationDate = "2026-09-08"
-                            incidentDescription = "Distinctive history\nSecond exact line"
-                        |}
-                |}
-        |}
+    let update =
+        RegistrationUpdateInput.create
+            [
+                BusinessField.ClaimedAmount, Some "9876.5432"
+                BusinessField.ClaimedCurrency, Some "EUR"
+                BusinessField.IncidentDate, Some "2026-09-07"
+                BusinessField.IncidentNotificationDate, Some "2026-09-08"
+                BusinessField.IncidentDescription, Some "Distinctive history\nSecond exact line"
+            ]
+        |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+    let close = caseSubmission (id ()) reference 1L (CaseAct.AmendRegistration update)
 
     automation fixture "operation.execute" close 0 |> require "ACCEPTED" |> ignore
     let refused = automation fixture "operation.execute" pending 2 |> require "REJECTED"
@@ -144,50 +132,52 @@ let private directoryDetails fixture reference =
     let subject = "detail-person-" + id ()
     let target = principal fixture "HUMAN" subject
 
-    let apply act =
-        run
-            fixture
-            environment
-            (frame
-                "operation.execute"
-                {|
-                    kind = "PEOPLE"
-                    operationId = id ()
-                    target = target
-                    act = act
-                |})
-            0
+    let apply input =
+        run fixture environment (frame "operation.execute" input) 0
         |> require "ACCEPTED"
         |> ignore
 
     apply
         {|
-            kind = PeopleActKind.token PeopleActKind.Register
-            profile =
-                {|
-                    displayName = subject
-                    contact = "historical-only@example.test"
-                |}
+            operationId = id ()
+            task = "people.register"
+            binding = {| kind = "PEOPLE" |}
+            inputs =
+                dict
+                    [
+                        "input:principal.kind", "HUMAN"
+                        "input:principal.issuer", fixture.Issuer
+                        "input:principal.subject", subject
+                        "input:profile.displayName", subject
+                        "input:profile.contact", "historical-only@example.test"
+                    ]
         |}
+
+    let actorId = selectedActorId fixture target
 
     apply
         {|
-            kind = PeopleActKind.token PeopleActKind.SetProfile
-            profile =
-                {|
-                    displayName = subject
-                    contact = "current-only@example.test"
-                |}
+            operationId = id ()
+            task = "people.setProfile"
+            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            inputs =
+                dict
+                    [
+                        "input:profile.displayName", subject
+                        "input:profile.contact", "current-only@example.test"
+                    ]
         |}
 
     let accounts =
         verb fixture environment [ "people"; "list"; "--text"; subject ] 0
         |> require "SUCCEEDED"
 
-    let actorId =
+    let observedActorId =
         accounts.GetProperty("items").EnumerateArray()
         |> Seq.exactlyOne
         |> fun item -> item.GetProperty("actor").GetProperty("actorId").GetString() |> nonNull
+
+    Expect.equal observedActorId actorId "Directory selection identifies the registered account"
 
     let noGrants =
         invoke fixture environment [ "people"; "grants"; actorId; "--format"; "text" ] Array.empty 0
@@ -200,24 +190,24 @@ let private directoryDetails fixture reference =
 
     apply
         {|
-            kind = PeopleActKind.token PeopleActKind.Grant
-            role = "CASE_READER"
-            scope = {| kind = "INSTALLATION" |}
+            operationId = id ()
+            task = "people.grant"
+            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            inputs = dict [ "input:role", "CASE_READER"; "input:scope", "INSTALLATION" ]
         |}
 
     apply
         {|
-            kind = PeopleActKind.token PeopleActKind.Grant
-            role = "CASE_HANDLER"
-            scope =
-                {|
-                    kind = "CASE"
-                    target =
-                        {|
-                            kind = "REFERENCE"
-                            caseReference = reference
-                        |}
-                |}
+            operationId = id ()
+            task = "people.grant"
+            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            inputs =
+                dict
+                    [
+                        "input:role", "CASE_HANDLER"
+                        "input:scope", "CASE"
+                        "field:caseReference", reference
+                    ]
         |}
 
     let directory =

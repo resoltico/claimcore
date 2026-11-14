@@ -8,7 +8,7 @@ import { CopyValue } from "../../components/CopyValue";
 import { useRecovery, type RecoveryFinalAnswer } from "../../recovery/RecoveryContext";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { NoticeView } from "../../presentation/Message";
-import { operationEntryForInput } from "../../protocol/operationCatalog";
+import { taskForAct } from "../../protocol/taskCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { usePresentation } from "../../presentation/context";
 import { ScreenView } from "../../ui/ScreenView";
@@ -137,12 +137,7 @@ const RecoveryCard = ({
           {p.text(stateLabels[state])}
         </span>
         {state === "RECORDED" ? null : (
-          <strong>
-            {renderCatalogKey(
-              p,
-              operationEntryForInput({ kind: record.subject, act: { kind: record.act } }).labelId,
-            )}
-          </strong>
+          <strong>{renderCatalogKey(p, taskForAct(record.subject, record.act).labelId)}</strong>
         )}
       </div>
       <RecoveryContent view={view} timeZone={zone} notRecorded={state === "NOT_RECORDED"} />

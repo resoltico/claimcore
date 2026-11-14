@@ -1,14 +1,14 @@
 import { peoplePrimaryAction } from "../../operation/peopleActionPriority";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { taskDefinitions, type PrincipalInput, type PeopleGrantInput } from "@contracts/client";
+import { taskDefinitions, type Principal, type OperationBinding } from "@contracts/client";
 import type { PersonDocument } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
-import type { TaskBindingSource } from "../../operation/taskForm";
+
 import { useCredential, useSessionContext } from "../../session/SessionContext";
 import { useContentRoute } from "../SettingsDetourContext";
 import type { OperationModel } from "./useOperation";
 
-type Binding = Extract<TaskBindingSource, { kind: "PEOPLE" }>;
+type Binding = Extract<OperationBinding, { kind: "PEOPLE" }>;
 type Snapshot = { key: string; document: PersonDocument; offered: ReadonlyArray<string> };
 type Intent = {
   epoch: string;
@@ -17,10 +17,13 @@ type Intent = {
   values: FormValues;
   binding: Binding;
 };
-const samePrincipal = (left: PrincipalInput | undefined, right: PrincipalInput) =>
-  left?.kind === right.kind && left.issuer === right.issuer && left.subject === right.subject;
-const boundPrincipal = (model: OperationModel) =>
-  model.bindingSource.kind === "PEOPLE" ? model.bindingSource.principal : undefined;
+const boundActor = (model: OperationModel) =>
+  "actorId" in model.bindingSource ? model.bindingSource.actorId : undefined;
+const principalValues = (principal: Principal): FormValues => ({
+  "input:principal.kind": principal.kind,
+  "input:principal.issuer": principal.issuer,
+  "input:principal.subject": principal.subject,
+});
 const retained = (model: OperationModel) =>
   model.phase !== "ACCEPTED" && (model.dirty || model.prepared !== null || model.priorUncertain);
 const actorValues = (
@@ -29,6 +32,7 @@ const actorValues = (
   values: FormValues = {},
 ): FormValues => ({
   ...values,
+  "input:principal.kind": document.context.principal.kind,
   ...(kind === "people.setProfile" && document.context.profileSeed !== null
     ? {
         "input:profile.displayName": document.context.profileSeed.displayName,
@@ -93,18 +97,20 @@ const useActorDefault = (model: OperationModel, source: Snapshot | null, fixed: 
       seeded.current = source.key;
       model.discard(false, kind, actorValues(source.document, kind), {
         kind: "PEOPLE",
-        principal: source.document.context.principal,
+        actorId: source.document.context.actorId,
       });
     }
   }, [model, source, fixed]);
 };
-const admissionBinding = (model: OperationModel, principal: PrincipalInput | null) =>
+const admissionBinding = (model: OperationModel, principal: Principal | null) =>
   principal !== null &&
   model.entry.kind === "people.admit" &&
-  samePrincipal(boundPrincipal(model), principal);
+  model.values["input:principal.kind"] === principal.kind &&
+  model.values["input:principal.issuer"] === principal.issuer &&
+  model.values["input:principal.subject"] === principal.subject;
 const personBinding = (model: OperationModel, source: Snapshot | null): source is Snapshot =>
   source !== null &&
-  samePrincipal(boundPrincipal(model), source.document.context.principal) &&
+  boundActor(model) === source.document.context.actorId &&
   model.entry.kind !== "people.admit" &&
   model.entry.kind !== "people.register";
 const defaultPeopleActKind = (source: Snapshot | null) =>
@@ -113,16 +119,30 @@ const matchingIntent = (intent: Intent | null, kind: string, epoch: string, avai
   intent?.kind === kind && intent.epoch === epoch && available ? intent : null;
 const discardBinding = (
   kind: string,
-  principal: PrincipalInput | null,
+  principal: Principal | null,
   source: Snapshot | null,
 ): Binding => {
   if (principal !== null) {
-    return { kind: "PEOPLE", principal };
+    return { kind: "PEOPLE" };
   }
   if (source === null || kind === "people.admit" || kind === "people.register") {
     return { kind: "PEOPLE" };
   }
-  return { kind: "PEOPLE", principal: source.document.context.principal };
+  return { kind: "PEOPLE", actorId: source.document.context.actorId };
+};
+const discardSeeds = (
+  kind: string,
+  principal: Principal | null,
+  source: Snapshot | null,
+  prefill: FormValues = {},
+): FormValues => {
+  if (principal !== null) {
+    return principalValues(principal);
+  }
+  if (source !== null) {
+    return actorValues(source.document, kind, prefill);
+  }
+  return {};
 };
 const targetMode = (
   actorId: string | null,
@@ -141,7 +161,7 @@ export const usePeopleTarget = (
   model: OperationModel,
   revision: number,
   available: boolean,
-  admissionPrincipal: PrincipalInput | null = null,
+  admissionPrincipal: Principal | null = null,
 ) => {
   const { source, epoch, actorId, observe } = useActorDisclosure(revision, available);
   const [intent, setIntent] = useState<Intent | null>(null);
@@ -149,20 +169,32 @@ export const usePeopleTarget = (
   const actorBound = personBinding(model, source);
   const fixed = admissionBound || actorBound;
   useActorDefault(model, source, fixed);
-  const begin = (kind: string, values: FormValues = {}, grant?: PeopleGrantInput) => {
+  const begin = (
+    kind: string,
+    values: FormValues = {},
+    grant?: Pick<PersonDocument["context"]["revocations"][number], "role" | "scope">,
+  ) => {
     if (source === null || !source.offered.includes(kind) || model.busy) {
       return;
     }
     const binding: Binding = {
       kind: "PEOPLE",
-      principal: source.document.context.principal,
-      ...(grant === undefined ? {} : { grant }),
+      actorId: source.document.context.actorId,
     };
+    const seeded =
+      grant === undefined
+        ? values
+        : {
+            ...values,
+            "input:role": grant.role,
+            "input:scope": grant.scope.kind,
+            ...(grant.scope.kind === "CASE" ? { "input:caseId": grant.scope.caseId } : {}),
+          };
     if (retained(model)) {
-      setIntent({ epoch, source, kind, values, binding });
+      setIntent({ epoch, source, kind, values: seeded, binding });
       model.requestDiscard(kind);
     } else {
-      model.discard(false, kind, actorValues(source.document, kind, values), binding);
+      model.discard(false, kind, actorValues(source.document, kind, seeded), binding);
     }
   };
   const discard: OperationModel["discard"] = (acknowledged, kind, values, explicitBinding) => {
@@ -177,7 +209,12 @@ export const usePeopleTarget = (
       acknowledged ?? false,
       nextKind,
       values ??
-        (selected === null ? {} : actorValues(selected.document, nextKind, pending?.values)),
+        discardSeeds(
+          nextKind,
+          admissionBound ? admissionPrincipal : null,
+          selected,
+          pending?.values,
+        ),
       binding,
     );
     setIntent(null);

@@ -17,13 +17,13 @@ module internal DiagnosticText =
         ContractDiscovery.inputLabel (TaskInputId.Target target)
 
     let reference request =
-        let target input =
-            match input with
-            | OperationInput.Case request -> Some request.Target
-            | OperationInput.Note request -> Some request.Target
-            | OperationInput.Work request -> Some request.Target
-            | OperationInput.Reminder request -> Some request.Target
-            | OperationInput.People _ -> None
+        let target (input: OperationSubmission) =
+            match input.Binding with
+            | OperationBinding.Case(target, _, _)
+            | OperationBinding.Note(target, _)
+            | OperationBinding.Work(target, _)
+            | OperationBinding.Reminder(target, _) -> Some target
+            | OperationBinding.People _ -> None
 
         request
         |> Option.bind (fun frame ->

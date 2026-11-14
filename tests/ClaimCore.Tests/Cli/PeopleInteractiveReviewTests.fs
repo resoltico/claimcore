@@ -14,17 +14,24 @@ open ClaimCore.TestSupport
 
 let private operation = Guid.Parse "6f91c638-a33f-793d-9a32-000000000001"
 
-let private baseWords verb =
-    [
-        "people"
-        verb
-        "--principal-kind"
-        "human"
-        "--issuer"
-        "https://intent.example/"
-        "--subject"
-        "person"
-    ]
+let private actor = Guid.Parse "10000000-0000-7000-8000-000000000001"
+let private baseWords verb = [ "people"; verb; actor.ToString("D") ]
+
+let private command (submission: OperationSubmission) =
+    match submission.Operation with
+    | Ok(SubmittedOperation.ActorPeople value) ->
+        OperationInput.People
+            {
+                OperationId = value.OperationId
+                Target =
+                    {
+                        Kind = PrincipalKind.Human
+                        Issuer = "https://intent.example/"
+                        Subject = "person"
+                    }
+                Act = value.Act
+            }
+    | _ -> Submissions.command submission
 
 let private targetActor =
     { CliReplyFixtures.receipt.RecordedBy with
@@ -64,7 +71,9 @@ let private run words (answer: string option) =
                         if (Frames.endpoint frame).Id = Api.context.Id then
                             response frame Api.context (ResponseExamples.defaultHuman Api.context)
                         elif (Frames.endpoint frame).Id = Api.operationPreview.Id then
-                            let request = Frames.value Api.operationPreview frame |> Option.get
+                            let request =
+                                (Frames.value Api.operationPreview >> Option.map command) frame
+                                |> Option.get
 
                             let people =
                                 match request with
@@ -108,7 +117,7 @@ let private run words (answer: string option) =
                                 frame
                                 Api.operationPreview
                                 (RepresentationReply.Human(
-                                    HumanReplies.preview
+                                    HumanReplies.previewSubmission
                                         (Frames.value Api.operationPreview frame |> Option.get)
                                         {
                                             PreviewReply.OperationId = people.OperationId
@@ -130,7 +139,9 @@ let private run words (answer: string option) =
                                         }
                                 ))
                         elif (Frames.endpoint frame).Id = Api.operationExecute.Id then
-                            let request = Frames.value Api.operationExecute frame |> Option.get
+                            let request =
+                                (Frames.value Api.operationExecute >> Option.map command) frame
+                                |> Option.get
 
                             let people =
                                 match request with

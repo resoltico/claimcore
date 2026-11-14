@@ -19,25 +19,12 @@ type internal InteractiveTransport =
         Deliver: Invocation -> CliReply -> unit
     }
 
-[<RequireQualifiedAccess>]
-type internal DraftAct =
-    | Case of AuthoredCaseAct
-    | Note of AuthoredNoteAct
-    | Work of AuthoredWorkAct
-    | Reminder of ReminderAct<int64 option>
-
-[<RequireQualifiedAccess>]
-type internal DraftIntent =
-    | Case of reference: string * act: DraftAct
-    | People of target: PrincipalInput * act: AuthoredPeopleAct
-
-/// A structurally checked draft has no executable revision or automatically allocated operation id.
+/// A draft retains authored tokens and only metadata already supplied by the caller.
 [<NoEquality; NoComparison>]
 type internal InteractiveDraft =
     private
         {
-            Intent: DraftIntent
-            SuppliedId: Guid option
+            Input: SubmissionEnvelope<int64 option, Guid option>
             DisplayLanguage: string
             PreviewOnly: bool
         }
@@ -97,53 +84,15 @@ module internal InteractiveReview =
         else
             match operation arguments with
             | None -> Ok None
-            | Some entry ->
-                let caseIntent adapt result =
-                    result
-                    |> Result.map (fun ((target, act, supplied), language, preview) ->
-                        let reference =
-                            match target with
-                            | CaseSelector.Reference reference -> reference
-                            | CaseSelector.Id _ ->
-                                invalidOp "Interactive case bindings require a reference."
-
-                        DraftIntent.Case(reference, adapt act), supplied, language, preview)
-
-                let intent =
-                    match (TaskRouting.act entry) with
-                    | Some(ActKind.People _) ->
-                        Grammar.peopleIntent arguments
-                        |> Result.map (fun ((target, act, supplied), language, preview) ->
-                            DraftIntent.People(target, act), supplied, language, preview)
-                    | Some(ActKind.Note _) ->
-                        Grammar.noteIntent arguments |> caseIntent DraftAct.Note
-                    | Some(ActKind.Reminder _) ->
-                        Grammar.reminderIntent arguments |> caseIntent DraftAct.Reminder
-                    | Some(ActKind.Work _) ->
-                        Grammar.workIntent arguments |> caseIntent DraftAct.Work
-                    | _ -> Grammar.caseIntent arguments |> caseIntent DraftAct.Case
-
-                intent
-                |> Result.map (fun (intent, supplied, language, preview) ->
+            | Some _ ->
+                Grammar.draft arguments
+                |> Result.map (fun (input, language, preview) ->
                     Some
                         {
-                            Intent = intent
-                            SuppliedId = supplied
+                            Input = input
                             DisplayLanguage = language
                             PreviewOnly = preview
                         })
-
-    let private authoredIntent (draft: InteractiveDraft) =
-        match draft.Intent with
-        | DraftIntent.Case(reference, DraftAct.Case act) ->
-            AuthoredIntent.Case(draft.SuppliedId, Some reference, None, act)
-        | DraftIntent.Case(reference, DraftAct.Note act) ->
-            AuthoredIntent.Note(draft.SuppliedId, Some reference, act)
-        | DraftIntent.Case(reference, DraftAct.Work(WorkAct.UpdateWork work)) ->
-            AuthoredIntent.Work(draft.SuppliedId, Some reference, None, work)
-        | DraftIntent.Case(reference, DraftAct.Reminder act) ->
-            AuthoredIntent.Reminder(draft.SuppliedId, Some reference, act)
-        | DraftIntent.People(target, act) -> AuthoredIntent.People(draft.SuppliedId, target, act)
 
     let private invocation (endpoint: Endpoint<'Input, 'Output>) input =
         Frames.create endpoint input
@@ -161,7 +110,7 @@ module internal InteractiveReview =
         (console: InteractiveConsole)
         transport
         (draft: InteractiveDraft)
-        (input: OperationInput)
+        (input: OperationSubmission)
         installation
         token
         =
@@ -203,7 +152,7 @@ module internal InteractiveReview =
                         invocation Api.operationExecute input
                         |> Frames.withRepresentation Representation.Human
                         |> (fun frame ->
-                            if draft.SuppliedId.IsNone then
+                            if draft.Input.OperationId.IsNone then
                                 Frames.provisional frame
                             else
                                 frame)
@@ -224,36 +173,25 @@ module internal InteractiveReview =
             | _ -> return response.ExitCode
         }
 
-    let private reminderIdentity =
-        function
-        | ReminderAct.Create _ -> None
-        | ReminderAct.Update(id, _, _)
-        | ReminderAct.Complete(id, _)
-        | ReminderAct.Cancel(id, _)
-        | ReminderAct.Reopen(id, _, _)
-        | ReminderAct.CompleteAndPlanNext(id, _, _) -> Some id
+    let private complete newId (draft: InteractiveDraft) binding =
+        let input =
+            { draft.Input with
+                OperationId = Some(draft.Input.OperationId |> Option.defaultWith newId)
+                Binding = binding
+            }
 
-    let private reminderAct revision =
-        function
-        | ReminderAct.Create plan -> ReminderAct.Create plan
-        | ReminderAct.Update(id, expected, plan) ->
-            ReminderAct.Update(id, defaultArg expected revision, plan)
-        | ReminderAct.Complete(id, expected) ->
-            ReminderAct.Complete(id, defaultArg expected revision)
-        | ReminderAct.Cancel(id, expected) -> ReminderAct.Cancel(id, defaultArg expected revision)
-        | ReminderAct.Reopen(id, expected, due) ->
-            ReminderAct.Reopen(id, defaultArg expected revision, due)
-        | ReminderAct.CompleteAndPlanNext(id, expected, plan) ->
-            ReminderAct.CompleteAndPlanNext(id, defaultArg expected revision, plan)
+        OperationSubmission.completeDraft input
+        |> Option.defaultWith (fun () ->
+            invalidOp "Current review metadata completes the acquired submission.")
 
     let rec private runValidated newId console transport (draft: InteractiveDraft) token =
         task {
             let context =
                 invocation Api.context () |> Frames.withRepresentation Representation.Human
 
-            let! contextReply = transport.Exchange context token
+            let! response = transport.Exchange context token
 
-            match unpack Api.context contextReply with
+            match unpack Api.context response with
             | Some(RepresentationReply.Human {
                                                  Outcome = HumanReadOutcome.Succeeded {
                                                                                           Context = InteractionContext.Requester {
@@ -262,40 +200,30 @@ module internal InteractiveReview =
                                                                                                                                  }
                                                                                       }
                                              }) ->
-                match draft.Intent with
-                | DraftIntent.Case(reference, DraftAct.Case act) when
-                    (CaseActKind.describe (CaseAct.kind act)).Revision = RevisionInput.New
-                    ->
-                    let input =
-                        OperationInput.Case
-                            {
-                                OperationId = draft.SuppliedId |> Option.defaultWith newId
-                                Target = CaseSelector.Reference reference
-                                ExpectedRevision = 0L
-                                Act = act
-                            }
-
-                    return! review console transport draft input installation token
-                | DraftIntent.Case(reference, act) ->
-                    return! readCase newId console transport draft reference act installation token
-                | DraftIntent.People(target, act) ->
-                    let input =
-                        OperationInput.People
-                            {
-                                OperationId = draft.SuppliedId |> Option.defaultWith newId
-                                Target = target
-                                Act = act
-                            }
-
-                    return! review console transport draft input installation token
+                match draft.Input.Binding with
+                | OperationBinding.People _
+                | OperationBinding.Case(_, Some 0L, _) ->
+                    return!
+                        review
+                            console
+                            transport
+                            draft
+                            (complete newId draft draft.Input.Binding)
+                            installation
+                            token
+                | OperationBinding.Case(target, _, _)
+                | OperationBinding.Work(target, _)
+                | OperationBinding.Note(target, _)
+                | OperationBinding.Reminder(target, _) ->
+                    return! readCase newId console transport draft target installation token
             | Some(RepresentationReply.Human {
                                                  Outcome = HumanReadOutcome.Succeeded _
                                              }) ->
-                transport.Deliver context contextReply
+                transport.Deliver context response
                 return ExitCode.value ExitCode.Rejected
             | _ ->
-                transport.Deliver context contextReply
-                return contextReply.ExitCode
+                transport.Deliver context response
+                return response.ExitCode
         }
 
     and private readCase
@@ -303,20 +231,15 @@ module internal InteractiveReview =
         console
         transport
         (draft: InteractiveDraft)
-        reference
-        act
+        target
         installation
         token
         =
         task {
             let lookup =
-                invocation
-                    Api.caseGet
-                    {
-                        CaseGetRequest.Target = CaseSelector.Reference reference
-                    }
+                invocation Api.caseGet { CaseGetRequest.Target = target }
+                |> Frames.withRepresentation Representation.Human
 
-            let lookup = Frames.withRepresentation Representation.Human lookup
             let! response = transport.Exchange lookup token
 
             match unpack Api.caseGet response with
@@ -327,86 +250,75 @@ module internal InteractiveReview =
                                              }) ->
                 let target = CaseSelector.Id current.CaseId
 
-                match act with
-                | DraftAct.Note act ->
-                    let input =
-                        OperationInput.Note
+                let submit binding =
+                    review console transport draft (complete newId draft binding) installation token
+
+                match draft.Input.Binding with
+                | OperationBinding.Case(_, revision, payment) ->
+                    return!
+                        submit (
+                            OperationBinding.Case(
+                                target,
+                                Some(defaultArg revision (Revision.value current.Revision)),
+                                payment
+                            )
+                        )
+                | OperationBinding.Work(_, revision) ->
+                    return!
+                        submit (
+                            OperationBinding.Work(
+                                target,
+                                Some(defaultArg revision (Revision.value current.WorkRevision))
+                            )
+                        )
+                | OperationBinding.Note(_, selected) ->
+                    return! submit (OperationBinding.Note(target, selected))
+                | OperationBinding.Reminder(_, None) ->
+                    return! submit (OperationBinding.Reminder(target, None))
+                | OperationBinding.Reminder(_, Some(id, Some revision)) ->
+                    return! submit (OperationBinding.Reminder(target, Some(id, Some revision)))
+                | OperationBinding.Reminder(_, Some(id, None)) ->
+                    let frame =
+                        invocation
+                            Api.reminder
                             {
-                                OperationId = draft.SuppliedId |> Option.defaultWith newId
-                                Target = target
-                                Act = act
+                                ReminderGetRequest.Target = target
+                                ReminderId = id
                             }
+                        |> Frames.withRepresentation Representation.Human
 
-                    return! review console transport draft input installation token
-                | DraftAct.Reminder act ->
-                    let submit revision =
-                        let input =
-                            OperationInput.Reminder
-                                {
-                                    ReminderOperationRequest.OperationId =
-                                        draft.SuppliedId |> Option.defaultWith newId
-                                    Target = target
-                                    Act = reminderAct revision act
-                                }
+                    let! response = transport.Exchange frame token
 
-                        review console transport draft input installation token
-
-                    match reminderIdentity act with
-                    | None -> return! submit 0L
-                    | Some id ->
-                        let frame =
-                            invocation
-                                Api.reminder
-                                {
-                                    ReminderGetRequest.Target = target
-                                    ReminderId = id
-                                }
-
-                        let frame = Frames.withRepresentation Representation.Human frame
-                        let! response = transport.Exchange frame token
-
-                        match unpack Api.reminder response with
-                        | Some(RepresentationReply.Human {
-                                                             Outcome = HumanReadOutcome.Succeeded {
-                                                                                                      Context = InteractionContext.Reminder value
-                                                                                                  }
-                                                         }) ->
-                            return! submit (Revision.value value.Revision)
-                        | _ ->
-                            transport.Deliver frame response
-                            return response.ExitCode
-                | DraftAct.Case act ->
-                    let input =
-                        OperationInput.Case
-                            {
-                                CaseOperationRequest.OperationId =
-                                    draft.SuppliedId |> Option.defaultWith newId
-                                Target = target
-                                ExpectedRevision = Revision.value current.Revision
-                                Act = act
-                            }
-
-                    return! review console transport draft input installation token
-                | DraftAct.Work act ->
-                    let input =
-                        OperationInput.Work
-                            {
-                                WorkOperationRequest.OperationId =
-                                    draft.SuppliedId |> Option.defaultWith newId
-                                Target = target
-                                ExpectedRevision = Revision.value current.WorkRevision
-                                Act = act
-                            }
-
-                    return! review console transport draft input installation token
+                    match unpack Api.reminder response with
+                    | Some(RepresentationReply.Human {
+                                                         Outcome = HumanReadOutcome.Succeeded {
+                                                                                                  Context = InteractionContext.Reminder current
+                                                                                              }
+                                                     }) ->
+                        return!
+                            submit (
+                                OperationBinding.Reminder(
+                                    target,
+                                    Some(id, Some(Revision.value current.Revision))
+                                )
+                            )
+                    | _ ->
+                        transport.Deliver frame response
+                        return response.ExitCode
+                | OperationBinding.People _ -> return invalidOp "People drafts have no parent case."
             | _ ->
                 transport.Deliver lookup response
                 return response.ExitCode
         }
 
-
     let run newId console transport (draft: InteractiveDraft) token =
-        match Validation.syntaxIntent (authoredIntent draft) with
+        let issues =
+            match OperationSubmission.syntaxDraft draft.Input with
+            | Ok issues -> issues
+            | Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues)) -> Some issues
+            | Error _ -> invalidOp "Declared argv must assemble a valid submission shape."
+
+        match issues with
         | None -> runValidated newId console transport draft token
         | Some issues ->
             DiagnosticText.refusalLines draft.Language (Refusal.InvalidInput issues)

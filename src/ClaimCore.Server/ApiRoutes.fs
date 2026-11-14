@@ -67,9 +67,9 @@ module internal ApiRoutes =
             Route.represented
                 Api.operationPreview
                 Api.operationPreviewUnavailable
-                HumanReplies.preview
+                HumanReplies.previewSubmission
                 (fun _ -> None)
-                Service.preview
+                Service.previewSubmission
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.represented
                 Api.operationExecute
@@ -79,7 +79,7 @@ module internal ApiRoutes =
                     match reply.Outcome with
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
-                Service.execute
+                Service.executeSubmission
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with

@@ -100,16 +100,17 @@ const current = {
 };
 const prepared = () =>
   prepareRequest("operation.execute", {
-    kind: "CASE",
     operationId: operation,
-    target: {
-      kind: "REFERENCE",
-      caseReference: "CORRELATION",
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: "CORRELATION",
+      },
+      expectedRevision: 1,
     },
-    expectedRevision: 1,
-    act: {
-      kind: "case.close",
-    },
+    inputs: {},
   });
 const reply = (value: unknown) =>
   new Response(JSON.stringify(value), {

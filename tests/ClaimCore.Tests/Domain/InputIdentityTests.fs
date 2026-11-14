@@ -25,16 +25,19 @@ let tests =
         | Ok _ -> failtest "Undeclared principal kinds cannot reach Domain."
 
         let role =
-            """{"kind":"people.grant","role":"UNDECLARED","scope":{"kind":"INSTALLATION"}}"""
+            """{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.grant","binding":{"kind":"PEOPLE","actorId":"10000000-0000-7000-8000-000000000002"},"inputs":{"input:role":"UNDECLARED","input:scope":"INSTALLATION"}}"""
 
         match
             Codec.decode
                 Limits.MaximumRequestBytes
-                RequestCodecs.peopleAct
+                OperationSubmissionCodecs.submission
                 (Encoding.UTF8.GetBytes role)
         with
         | Error problem ->
-            Expect.equal problem.Path "$.role" "An undeclared role is a protocol fault"
+            Expect.equal
+                problem.Path
+                "$.inputs.input:role"
+                "An undeclared role is a protocol fault at its authored token"
         | Ok _ -> failtest "Undeclared roles cannot reach Domain.")
 
 let private malformedIdentity () =
@@ -49,12 +52,18 @@ let private malformedIdentity () =
                 ))
 
         let wire =
-            ClaimCore.Wire.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
+            ClaimCore.Wire.OperationSubmissionCodecs.submission.Write(
+                Inputs.caseOperation request |> Submissions.ofCommand None
+            )
 
         let admitted =
-            ClaimCore.Wire.RequestCodecs.caseRequest.Read "$" wire
+            ClaimCore.Wire.OperationSubmissionCodecs.submission.Read "$" wire
             |> ClaimCore.Tests.Fixtures.accepted
-            |> Inputs.referencedCase
+            |> Submissions.command
+            |> function
+                | ClaimCore.Application.Contracts.OperationInput.Case request ->
+                    Inputs.referencedCase request
+                | _ -> failtest "Case required"
 
         Expect.equal admitted request "Wire admission preserves malformed authored scalars"
 

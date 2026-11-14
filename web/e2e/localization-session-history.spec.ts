@@ -146,37 +146,35 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
   const reference = `EXACT-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
   await applyPeople(page, {
-    kind: "CASE",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
-    },
-    expectedRevision: 1,
-    act: {
-      kind: "case.amendRegistration",
-      values: {
-        incidentDescription: "Earlier browser history\nOriginal exact paragraph",
+    task: "case.amendRegistration",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
       },
+      expectedRevision: 1,
     },
+    inputs: { "field:incidentDescription": "Earlier browser history\nOriginal exact paragraph" },
   });
   await applyPeople(page, {
-    kind: "CASE",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
-    },
-    expectedRevision: 2,
-    act: {
-      kind: "case.amendRegistration",
-      values: {
-        claimedAmount: "9876.5432",
-        claimedCurrency: "EUR",
-        incidentDate: "2026-09-07",
-        incidentNotificationDate: "2026-09-08",
-        incidentDescription: "Distinctive browser history\nSecond exact paragraph",
+    task: "case.amendRegistration",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
       },
+      expectedRevision: 2,
+    },
+    inputs: {
+      "field:claimedAmount": "9876.5432",
+      "field:claimedCurrency": "EUR",
+      "field:incidentDate": "2026-09-07",
+      "field:incidentNotificationDate": "2026-09-08",
+      "field:incidentDescription": "Distinctive browser history\nSecond exact paragraph",
     },
   });
   await page.reload();

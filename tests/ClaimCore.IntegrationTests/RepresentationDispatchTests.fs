@@ -111,7 +111,7 @@ let private dispatch () =
         let preview = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Preview)
 
         let preparedPreview =
-            preview.Prepare(Api.operationPreview.Input.Write input)
+            preview.Prepare(Api.operationPreview.Input.Write(Submissions.ofCommand None input))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let beforeWrites = writes
@@ -133,7 +133,7 @@ let private dispatch () =
         let execute = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Execute)
 
         let prepared =
-            execute.Prepare(Api.operationExecute.Input.Write input)
+            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None input))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let head () =
@@ -170,7 +170,7 @@ let private dispatch () =
                 }
 
         let changed =
-            execute.Prepare(Api.operationExecute.Input.Write changed)
+            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None changed))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let conflict =

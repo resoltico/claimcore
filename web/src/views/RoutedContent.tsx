@@ -135,7 +135,7 @@ const RoutedEditor = (
       binding={{
         kind: "CASE",
         target: props.route.target,
-        revision: opened.context.revision,
+        expectedRevision: opened.context.revision,
         ...(props.route.paymentId === undefined ? {} : { paymentId: props.route.paymentId }),
       }}
       {...(props.route.act === "case.removePayment" && props.route.paymentId !== undefined

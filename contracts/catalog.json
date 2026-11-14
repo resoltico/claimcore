@@ -759,13 +759,6 @@
       "hintId": null,
       "ruleId": "input.includeInactive.rule",
       "scalar": null
-    },
-    {
-      "name": "responsibleActorAction",
-      "labelId": "input.responsibleActorAction.label",
-      "hintId": "input.responsibleActorAction.hint",
-      "ruleId": "input.responsibleActorAction.rule",
-      "scalar": null
     }
   ],
   "characterWarnings": {

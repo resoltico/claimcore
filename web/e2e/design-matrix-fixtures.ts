@@ -1,11 +1,12 @@
+import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
+import { prefixedInputs } from "../tests/support/submission-inputs";
 import {
   type ResponseFor,
   endpoints,
   type EndpointId,
   type RequestByEndpoint,
   type DataResponseByEndpoint,
-  type CaseAct,
-  type CaseWorkUpdate,
+  type OperationInputs_work_update,
 } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { randomUUID } from "node:crypto";
@@ -13,7 +14,7 @@ import { registration as registrationInput } from "../tests/support/inputs";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { referencePath, actPath } from "../src/routing/routes";
-import { applyPeople, syntheticPrincipals } from "./people-setup";
+
 import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
 const request = async <K extends EndpointId>(
   page: Page,
@@ -52,44 +53,53 @@ const execute = async (page: Page, body: RequestByEndpoint["operation.execute"])
   }
   return reply.outcome.data;
 };
-const caseAct = (page: Page, reference: string, revision: number, act: CaseAct) =>
+type CaseSubmission = Extract<
+  RequestByEndpoint["operation.execute"],
+  { binding: { kind: "CASE" } }
+>;
+const caseAct = (
+  page: Page,
+  reference: string,
+  revision: number,
+  authored: Pick<CaseSubmission, "task" | "inputs">,
+) =>
   execute(page, {
-    kind: "CASE",
+    ...authored,
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: reference },
+      expectedRevision: revision,
     },
-    expectedRevision: revision,
-    act,
-  });
-const workAct = (page: Page, reference: string, revision: number, values: CaseWorkUpdate) =>
+  } as CaseSubmission);
+const workAct = (
+  page: Page,
+  reference: string,
+  revision: number,
+  inputs: OperationInputs_work_update,
+) =>
   execute(page, {
-    kind: "WORK",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+    task: "work.update",
+    binding: {
+      kind: "WORK",
+      target: { kind: "REFERENCE", caseReference: reference },
+      expectedRevision: revision,
     },
-    expectedRevision: revision,
-    act: {
-      kind: "work.update",
-      values,
-    },
+    inputs,
   });
 const planReminder = (page: Page, reference: string, date: string) =>
   execute(page, {
-    kind: "REMINDER",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+    task: "reminder.create",
+    binding: {
+      kind: "REMINDER",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
     },
-    act: {
-      kind: "reminder.create",
-      action: "Review synthetic case",
-      dueDate: date,
-    },
+    inputs: { "input:reminderAction": "Review synthetic case", "input:reminderDueDate": date },
   });
 const states = ["undecided", "decided", "paid", "closed", "voided", "erased"] as const;
 type CaseState = (typeof states)[number];
@@ -390,18 +400,12 @@ const ownerStewardship = async (page: Page) => {
   } as const;
   const owner = await findOwner(page, target);
   const existing = await hasStewardship(page, owner.actor.actorId);
-  const set = (active: boolean) =>
+  const set = async (active: boolean) =>
     applyPeople(page, {
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target,
-      act: {
-        kind: active ? "people.grant" : "people.revoke",
-        role: "DATA_STEWARD",
-        scope: {
-          kind: "INSTALLATION",
-        },
-      },
+      task: active ? "people.grant" : "people.revoke",
+      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      inputs: { "input:role": "DATA_STEWARD", "input:scope": "INSTALLATION" },
     });
   return {
     inventory,
@@ -420,41 +424,37 @@ const ownerStewardship = async (page: Page) => {
 const advanceCase = async (page: Page, reference: string, state: CaseState, date: string) => {
   if (state === "decided" || state === "paid") {
     await caseAct(page, reference, 1, {
-      kind: "case.decide",
-      values: {
-        paymentDecisionDate: date,
-        payableAmount: "300.25",
-        payableCurrency: "EUR",
+      task: "case.decide",
+      inputs: {
+        "field:paymentDecisionDate": date,
+        "field:payableAmount": "300.25",
+        "field:payableCurrency": "EUR",
       },
     });
   }
   if (state === "paid") {
     return (
       await caseAct(page, reference, 2, {
-        kind: "case.recordPayment",
-        values: {
-          paymentDate: date,
-          paidAmount: "300.25",
-          paidCurrency: "EUR",
+        task: "case.recordPayment",
+        inputs: {
+          "field:paymentDate": date,
+          "field:paidAmount": "300.25",
+          "field:paidCurrency": "EUR",
         },
       })
     ).operationId;
   }
   if (state === "closed") {
-    await caseAct(page, reference, 1, {
-      kind: "case.close",
-    });
+    await caseAct(page, reference, 1, { task: "case.close", inputs: {} });
   }
   if (state === "voided") {
     await caseAct(page, reference, 1, {
-      kind: "case.void",
-      reason: "Synthetic matrix entry error",
+      task: "case.void",
+      inputs: { "input:reason": "Synthetic matrix entry error" },
     });
   }
   if (state === "erased") {
-    await caseAct(page, reference, 1, {
-      kind: "case.erase",
-    });
+    await caseAct(page, reference, 1, { task: "case.erase", inputs: {} });
   }
   return null;
 };
@@ -505,8 +505,8 @@ const seedCases = async (page: Page, marker: string, date: string) => {
   for (const state of states) {
     const reference = references[state];
     await caseAct(page, reference, 0, {
-      kind: "case.open",
-      values: registration,
+      task: "case.open",
+      inputs: { ...prefixedInputs("field:", registration) },
     });
     const acceptedId = await advanceCase(page, reference, state, date);
     if (acceptedId !== null) {
@@ -515,23 +515,26 @@ const seedCases = async (page: Page, marker: string, date: string) => {
     await assertCase(page, reference, state);
     if (state === "decided") {
       await caseAct(page, reference, 2, {
-        kind: "case.recordPayment",
-        values: {
-          paymentDate: date,
-          paidAmount: "100",
-          paidCurrency: "EUR",
+        task: "case.recordPayment",
+        inputs: {
+          "field:paymentDate": date,
+          "field:paidAmount": "100",
+          "field:paidCurrency": "EUR",
         },
       });
       await execute(page, {
-        kind: "NOTE",
         operationId: mintOperationId(),
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
+        task: "note.add",
+        binding: {
+          kind: "NOTE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: reference,
+          },
         },
-        act: {
-          kind: "note.add",
-          text: "Documents received. Review the remaining payment after the claimant confirms the estimate.",
+        inputs: {
+          "input:noteText":
+            "Documents received. Review the remaining payment after the claimant confirms the estimate.",
         },
       });
     }
@@ -548,33 +551,25 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
     subject: `matrix-${randomUUID()}`,
   } as const;
   const registered = await execute(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target,
-    act: {
-      kind: "people.register",
-      profile: {
-        displayName: "Synthetic matrix account",
-      },
+    task: "people.register",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:profile.displayName": "Synthetic matrix account",
+      ...prefixedInputs("input:principal.", target),
     },
   });
   if (registered.subject.kind !== "PEOPLE") {
     throw new Error("E2E_MATRIX_PEOPLE_RECEIPT");
   }
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target,
-    act: {
-      kind: "people.grant",
-      role: "CASE_READER",
-      scope: {
-        kind: "CASE",
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
-        },
-      },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    inputs: {
+      "input:role": "CASE_READER",
+      "input:scope": "CASE",
+      "field:caseReference": reference,
     },
   });
   return registered.subject.targetActor.kind === "DISCLOSED"
@@ -588,12 +583,7 @@ const setOwnerCaseWork = async (
   date: string,
   restore: () => Promise<void>,
 ) => {
-  await workAct(page, reference, 0, {
-    responsibleActor: {
-      kind: "SET",
-      value: actorId,
-    },
-  });
+  await workAct(page, reference, 0, { "field:responsibleActor": actorId });
   await planReminder(page, reference, date);
   const assigned = await request(page, "case.get", {
     target: {
@@ -608,11 +598,7 @@ const setOwnerCaseWork = async (
   expect(assigned.outcome.data.work.responsible?.actorId).toBe(actorId);
   return async () => {
     try {
-      await workAct(page, reference, 1, {
-        responsibleActor: {
-          kind: "CLEAR",
-        },
-      });
+      await workAct(page, reference, 1, { "field:responsibleActor": null });
     } finally {
       await restore();
     }
@@ -625,14 +611,12 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
     subject: `matrix-assignee-${randomUUID()}`,
   } as const;
   const registered = await execute(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target,
-    act: {
-      kind: "people.register",
-      profile: {
-        displayName: "Synthetic matrix account",
-      },
+    task: "people.register",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:profile.displayName": "Synthetic matrix account",
+      ...prefixedInputs("input:principal.", target),
     },
   });
   if (registered.subject.kind !== "PEOPLE") {
@@ -643,37 +627,24 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
       ? registered.subject.targetActor.actor.actorId
       : registered.subject.targetActor.actorId;
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target,
-    act: {
-      kind: "people.grant",
-      role: "CASE_HANDLER",
-      scope: {
-        kind: "CASE",
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
-        },
-      },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    inputs: {
+      "input:role": "CASE_HANDLER",
+      "input:scope": "CASE",
+      "field:caseReference": reference,
     },
   });
   const yesterday = new Date(`${date}T12:00:00Z`);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  await workAct(page, reference, 0, {
-    responsibleActor: {
-      kind: "SET",
-      value: actorId,
-    },
-  });
+  await workAct(page, reference, 0, { "field:responsibleActor": actorId });
   await planReminder(page, reference, yesterday.toISOString().slice(0, 10));
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target,
-    act: {
-      kind: "people.disable",
-    },
+    task: "people.disable",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    inputs: {},
   });
   const current = await request(page, "case.get", {
     target: {

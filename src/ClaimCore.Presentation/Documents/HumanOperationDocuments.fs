@@ -40,11 +40,13 @@ module HumanReviewDocument =
             value.Basis,
             None
 
-    let ofCore input review =
+    let private describe act operationId input review =
         let target, basis, reference = binding review
-        let task = TaskId.ofOperation input
+        let task = TaskId.Operation act
         let declaration = TaskDeclarations.describe task
-        let screen, presentation = ReviewDocumentParts.ofCore (Some input) review
+
+        let screen, presentation =
+            ReviewDocumentParts.describe (Some(act, operationId)) input review
 
         let context =
             {
@@ -54,11 +56,11 @@ module HumanReviewDocument =
                     (declaration.Inputs @ (declaration.Collections |> List.collect _.Inputs))
                     |> List.map _.Input
                     |> List.distinct
-                Consequence = Consequence.ofAct (ActKind.ofInput input)
+                Consequence = Consequence.ofAct act
                 Confirmation =
                     match reference with
                     | Some value -> ConfirmationTarget.CaseReference value
-                    | None -> ConfirmationTarget.Operation(OperationInput.operationId input)
+                    | None -> ConfirmationTarget.Operation operationId
             }
 
         {
@@ -71,6 +73,17 @@ module HumanReviewDocument =
                 }
             Presentation = presentation
         }
+
+    let ofCore input review =
+        describe (ActKind.ofInput input) (OperationInput.operationId input) (Some input) review
+
+    let ofSubmission (submission: OperationSubmission) review =
+        let authored =
+            match submission.Operation with
+            | Ok(SubmittedOperation.Command input) -> Some input
+            | _ -> None
+
+        describe submission.Task submission.OperationId authored review
 
 /// Receipt handles retain identities and versions, never the disclosed snapshots they identify.
 module HumanReceiptDocument =

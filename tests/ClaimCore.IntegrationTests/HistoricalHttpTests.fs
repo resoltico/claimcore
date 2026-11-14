@@ -20,7 +20,10 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    Codec.encode Api.operationExecute.Input (ClaimCore.TestSupport.Inputs.caseOperation request)
+    Codec.encode
+        Api.operationExecute.Input
+        (ClaimCore.TestSupport.Inputs.caseOperation request
+         |> ClaimCore.TestSupport.Submissions.ofCommand None)
 
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes

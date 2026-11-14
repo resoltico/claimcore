@@ -28,8 +28,8 @@ module CatalogValidation =
 
         [
             ContractCatalog.render ()
-            (TaskAssemblers.declarationSource () |> System.Text.Encoding.UTF8.GetBytes)
-            (TaskAssemblers.inputPresentationSource () |> System.Text.Encoding.UTF8.GetBytes)
+            (TaskMetadata.declarationSource () |> System.Text.Encoding.UTF8.GetBytes)
+            (TaskMetadata.inputPresentationSource () |> System.Text.Encoding.UTF8.GetBytes)
         ]
         |> List.collect (fun source ->
             source

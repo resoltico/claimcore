@@ -895,10 +895,6 @@
     "text": "Atgādinājumu skats",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "Atbildības maiņa",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "Pilnvaru tvērums",
     "source": "d6417785a41b"
@@ -1790,14 +1786,6 @@
   "input.includeInactive.rule": {
     "text": "Skaidri iekļaut slēgtu vai anulētu lietu apstrādi. Gaidošie atgādinājumi saglabā datumus un stāvokli.",
     "source": "c8addb209dac"
-  },
-  "input.responsibleActorAction.rule": {
-    "text": "Izvēlieties norādīt vai noņemt; izlaidiet, lai saglabātu pašreizējo atbildīgo kontu.",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "Norādiet vai noņemiet par šo lietu atbildīgo personu.",
-    "source": "d788923ffdfd"
   },
   "group.registration.rule": {
     "text": "Saglabāt reģistrācijas datus vai atjaunināt izvēlētos datus. Nenorādītie dati paliek nemainīti; summa un valūta jānorāda kopā.",

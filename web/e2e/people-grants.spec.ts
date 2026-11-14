@@ -1,7 +1,8 @@
-import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
+import { selectedActor, applyPeople } from "./people-setup";
+import { type ResponseFor } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { applyPeople } from "./people-setup";
+
 import { openCase } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -187,50 +188,42 @@ test("preserves historical profile contact and distinguishes global and case rol
     issuer: "https://historical-issuer.example/",
     subject,
   } as const;
-  const apply = (
-    act: Extract<
-      RequestByEndpoint["operation.execute"],
-      {
-        kind: "PEOPLE";
-      }
-    >["act"],
-  ) =>
-    applyPeople(page, {
-      kind: "PEOPLE",
-      operationId: mintOperationId(),
-      target,
-      act,
-    });
-  await apply({
-    kind: "people.register",
-    profile: {
-      displayName: subject,
-      contact: "historical-browser-only@example.test",
+  await applyPeople(page, {
+    operationId: mintOperationId(),
+    task: "people.register",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:principal.kind": target.kind,
+      "input:principal.issuer": target.issuer,
+      "input:principal.subject": target.subject,
+      "input:profile.displayName": subject,
+      "input:profile.contact": "historical-browser-only@example.test",
     },
   });
-  await apply({
-    kind: "people.setProfile",
-    profile: {
-      displayName: subject,
-      contact: "current-browser-only@example.test",
+  const actorId = await selectedActor(page, target);
+  await applyPeople(page, {
+    operationId: mintOperationId(),
+    task: "people.setProfile",
+    binding: { kind: "PEOPLE", actorId },
+    inputs: {
+      "input:profile.displayName": subject,
+      "input:profile.contact": "current-browser-only@example.test",
     },
   });
-  await apply({
-    kind: "people.grant",
-    role: "CASE_READER",
-    scope: {
-      kind: "INSTALLATION",
-    },
+  await applyPeople(page, {
+    operationId: mintOperationId(),
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId },
+    inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
   });
-  await apply({
-    kind: "people.grant",
-    role: "CASE_HANDLER",
-    scope: {
-      kind: "CASE",
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
-      },
+  await applyPeople(page, {
+    operationId: mintOperationId(),
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId },
+    inputs: {
+      "input:role": "CASE_HANDLER",
+      "input:scope": "CASE",
+      "field:caseReference": reference,
     },
   });
   await page.goto("/people");

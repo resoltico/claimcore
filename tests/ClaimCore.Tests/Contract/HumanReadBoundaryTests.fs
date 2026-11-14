@@ -348,7 +348,12 @@ let tests =
                                 Act = CaseAct.Bare BareAct.Close
                             }
 
-                    let original = Frames.create Api.operationExecute input |> required
+                    let original =
+                        (Frames.create Api.operationExecute
+                         << ClaimCore.TestSupport.Submissions.ofCommand None)
+                            input
+                        |> required
+
                     let human = Frames.withRepresentation Representation.Human original
                     let data = Frames.withRepresentation Representation.Data original
 

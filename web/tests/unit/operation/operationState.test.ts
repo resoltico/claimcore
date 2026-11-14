@@ -444,7 +444,9 @@ const creationRefresh = (): OperationState => {
       },
       target: prior.target,
       binding: {
-        kind: "NEW_CASE",
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "" },
+        expectedRevision: 0,
       },
       dateEntries: {
         "field:incidentDate": {
@@ -724,24 +726,24 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
     const identity = creationIdentity(state);
     const source = {
       prepared: prepareRequest("operation.execute", {
-        kind: "CASE",
         operationId: firstId,
-        target: {
-          kind: "REFERENCE",
-          caseReference: "OWN-REF",
-        },
-        expectedRevision: 0,
-        act: {
-          kind: "case.open",
-          values: {
-            incidentDate: "2026-09-01",
-            incidentNotificationDate: "2026-09-02",
-            incidentCountry: "LV",
-            claimantName: "Synthetic claimant",
-            insurerName: "Synthetic insurer",
-            claimedAmount: "12.34",
-            claimedCurrency: "EUR",
+        task: "case.open",
+        binding: {
+          kind: "CASE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: "OWN-REF",
           },
+          expectedRevision: 0,
+        },
+        inputs: {
+          "field:incidentDate": "2026-09-01",
+          "field:incidentNotificationDate": "2026-09-02",
+          "field:incidentCountry": "LV",
+          "field:claimantName": "Synthetic claimant",
+          "field:insurerName": "Synthetic insurer",
+          "field:claimedAmount": "12.34",
+          "field:claimedCurrency": "EUR",
         },
       }),
       submittedRows: {},

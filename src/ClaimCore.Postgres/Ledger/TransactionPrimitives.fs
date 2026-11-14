@@ -420,6 +420,33 @@ type private ReadTx
                         |> Map.ofList
             }
 
+        member _.ActorPrincipal id =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT principal_kind,issuer,subject FROM claimcore.actors WHERE actor_id=$1"
+                        [| box (ActorId.value id) |]
+                        token
+
+                match rows with
+                | [] -> return None
+                | [ row ] ->
+                    let kind =
+                        DatabaseSession.value<string> 0 row
+                        |> DatabaseSession.admitted (Vocabulary.tryParse PrincipalKind.vocabulary)
+
+                    return
+                        PrincipalKey.ofKind
+                            kind
+                            (DatabaseSession.value<string> 1 row)
+                            (DatabaseSession.value<string> 2 row)
+                        |> Result.map Some
+                        |> Result.defaultWith (fun _ ->
+                            raise (RecordCorruptException "Invalid actor selection principal."))
+                | _ -> return raise (RecordCorruptException "Duplicate actor selection rows.")
+            }
+
         member _.PeopleState principal =
             PeopleStateStorage.load connection principal token
 

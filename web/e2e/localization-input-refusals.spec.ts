@@ -28,24 +28,17 @@ const forgedCorrection = async (page: Page, reference: string) => {
       "ClaimCore-Installation": await installationId(page, antiforgery),
     },
     body: JSON.stringify({
-      kind: "CASE",
       operationId: mintOperationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
-      },
-      expectedRevision: 2,
-      act: {
-        kind: "case.correct",
-        groups: {
-          registration: {
-            kind: "KEEP",
-          },
-          decision: {
-            kind: "CLEAR",
-          },
+      task: "case.correct",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
         },
+        expectedRevision: 2,
       },
+      inputs: { "group:registration": "KEEP", "group:decision": "CLEAR" },
     }),
   });
   expect(reply.status).toBe(200);

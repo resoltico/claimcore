@@ -256,16 +256,17 @@ it("takes one parent read and carries the selected reminder version through revi
   expect(sent).toHaveLength(2);
   expect(sent[1]).toBe(sent[0]);
   expect(JSON.parse(sent[0]!)).toMatchObject({
-    kind: "REMINDER",
-    target: {
-      kind: "ID",
-      caseId,
-    },
-    act: {
-      kind: "reminder.complete",
+    task: "reminder.complete",
+    binding: {
+      kind: "REMINDER",
+      target: {
+        kind: "ID",
+        caseId,
+      },
       reminderId,
       expectedRevision: 9,
     },
+    inputs: {},
   });
   expect(fetch.mock.calls.filter(([url]) => requestAddress(url).endsWith("case.get"))).toHaveLength(
     1,

@@ -94,7 +94,8 @@ const SelectedReminder = ({
       binding={{
         kind: "REMINDER",
         target: { kind: "ID", caseId: row.caseId },
-        reminder: { reminderId: row.reminderId, revision: row.revision },
+        reminderId: row.reminderId,
+        expectedRevision: row.revision,
       }}
       prefill={reminderInputSeeds(row)}
       disclosureAvailable={disclosureAvailable}

@@ -467,6 +467,7 @@ type IReadTx =
     abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
+    abstract ActorPrincipal: ActorId -> Task<PrincipalKey option>
     abstract PeopleState: PrincipalKey -> Task<PeopleSubjectState option>
     abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>

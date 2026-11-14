@@ -55,7 +55,8 @@ let internal integerLexemes () =
     let wire =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
+            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration)
+             |> Submissions.ofCommand None)
         |> Encoding.UTF8.GetString
 
     for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
@@ -167,7 +168,7 @@ let internal retainedText () =
             Api.operationExecute.Input
             (Codec.encode
                 Api.operationExecute.Input
-                (ClaimCore.TestSupport.Inputs.caseOperation input))
+                (ClaimCore.TestSupport.Inputs.caseOperation input |> Submissions.ofCommand None))
         |> accepted
         |> ignore
 
@@ -242,7 +243,7 @@ let internal principalAdmission () =
             |> accepted
 
         Expect.equal
-            (match syntax with
+            (match Submissions.command syntax with
              | OperationInput.People request -> People.parse request |> Result.isOk
              | _ -> false)
             admitted
@@ -314,7 +315,6 @@ let internal peopleFieldPresentation () =
             | TaskInputId.TimelineFilter
             | TaskInputId.Order
             | TaskInputId.Due
-            | TaskInputId.ResponsibilityChange
             | TaskInputId.Assignment -> "input."
 
         Expect.equal
@@ -347,7 +347,8 @@ let internal decoderProperty =
     let seed =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration))
+            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration)
+             |> Submissions.ofCommand None)
 
     let generator = Gen.choice [ DecoderCorpora.jsonLike; DecoderCorpora.mutated seed ]
 

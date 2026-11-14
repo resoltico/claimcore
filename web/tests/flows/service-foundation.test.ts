@@ -19,20 +19,25 @@ describe("core act metadata", () => {
     expect(values["field:claimantName"]).toBeUndefined();
     const close = initialOperationValues("CASE", "case.close", current);
     expect(
-      assembleOperation(operationEntry({ subject: "CASE", kind: "case.close" }), close, {
-        kind: "CASE",
-        operationId: "10000000-0000-4000-8000-000000000001",
-        target: { kind: "REFERENCE", caseReference: fields.caseReference },
-        revision: 1,
-      }).command,
+      assembleOperation(
+        operationEntry({ subject: "CASE", kind: "case.close" }),
+        close,
+        {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: fields.caseReference },
+          expectedRevision: 1,
+        },
+        "10000000-0000-4000-8000-000000000001",
+      ).command,
     ).toEqual({
-      kind: "CASE",
       operationId: "10000000-0000-4000-8000-000000000001",
-      target: { kind: "REFERENCE", caseReference: fields.caseReference },
-      expectedRevision: 1,
-      act: {
-        kind: "case.close",
+      task: "case.close",
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: fields.caseReference },
+        expectedRevision: 1,
       },
+      inputs: {},
     });
   });
 });

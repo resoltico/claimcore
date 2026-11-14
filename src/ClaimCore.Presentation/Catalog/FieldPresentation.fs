@@ -6,7 +6,7 @@ open ClaimCore.Application.Contracts
 /// Presentation maps validated values to client fields; Domain owns every field and scalar rule.
 module FieldPresentation =
     /// Human fact order belongs to Presentation, independently of Domain declaration order.
-    let declarations =
+    let private factOrder =
         [
             BusinessField.IncidentDate
             BusinessField.IncidentNotificationDate
@@ -29,7 +29,14 @@ module FieldPresentation =
             BusinessField.ResponsibleActor
             BusinessField.HandlingSummary
         ]
-        |> List.map BusinessField.describe
+        |> List.mapi (fun position field -> field, position)
+        |> Map.ofList
+
+    /// New facts follow existing presentation order until their own display policy is specified.
+    let declarations =
+        BusinessField.declarations
+        |> List.sortBy (fun field ->
+            Map.tryFind field.Field factOrder |> Option.defaultValue factOrder.Count)
 
     let prominence =
         function
@@ -41,18 +48,7 @@ module FieldPresentation =
         | BusinessField.PayableCurrency -> Prominence.Primary
         | BusinessField.IncidentNotificationDate
         | BusinessField.InsurerName -> Prominence.Secondary
-        | BusinessField.IncidentDate
-        | BusinessField.IncidentCountry
-        | BusinessField.IncidentDescription
-        | BusinessField.PolicyNumber
-        | BusinessField.InsurerClaimReference
-        | BusinessField.PaymentDecisionDate
-        | BusinessField.PaymentDate
-        | BusinessField.PaidAmount
-        | BusinessField.PaidCurrency
-        | BusinessField.Status
-        | BusinessField.ResponsibleActor
-        | BusinessField.HandlingSummary -> Prominence.Detail
+        | _ -> Prominence.Detail
 
     let listed =
         function
@@ -62,20 +58,7 @@ module FieldPresentation =
         | BusinessField.ClaimedCurrency
         | BusinessField.PayableAmount
         | BusinessField.PayableCurrency -> true
-        | BusinessField.IncidentDate
-        | BusinessField.IncidentNotificationDate
-        | BusinessField.IncidentCountry
-        | BusinessField.IncidentDescription
-        | BusinessField.PolicyNumber
-        | BusinessField.InsurerClaimReference
-        | BusinessField.CaseReference
-        | BusinessField.PaymentDecisionDate
-        | BusinessField.PaymentDate
-        | BusinessField.PaidAmount
-        | BusinessField.PaidCurrency
-        | BusinessField.Status
-        | BusinessField.ResponsibleActor
-        | BusinessField.HandlingSummary -> false
+        | _ -> false
 
     let labelId field =
         Vocabulary.messageKey BusinessField.vocabulary field "label"

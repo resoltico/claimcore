@@ -270,11 +270,123 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         Expect.equal after before "An erased replay attempt appends nothing"
     }
 
+let private submissionMaps (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+
+        let decode source =
+            ClaimCore.Json.Codec.decode
+                ClaimCore.Wire.Limits.MaximumRequestBytes
+                ClaimCore.Wire.OperationSubmissionCodecs.submission
+                (System.Text.Encoding.UTF8.GetBytes(source: string))
+            |> Result.defaultWith (fun error -> failtestf "Submission admission: %A" error)
+
+        let opening =
+            opening database.Fixture 9400 "Map-Replay" "10.50" "Claimant"
+            |> Inputs.caseOperation
+            |> Submissions.ofCommand None
+
+        let! opened = Service.executeSubmission actor opening token
+        accepted opened |> ignore
+        let operation = (id database.Fixture 9401).ToString("D")
+
+        let raw inputs =
+            sprintf
+                """{"operationId":"%s","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"Map-Replay"},"expectedRevision":1},"inputs":{%s}}"""
+                operation
+                inputs
+
+        let first =
+            raw "\"field:policyNumber\":\"PN-1\",\"field:claimantName\":\"Changed\""
+            |> decode
+
+        let! result = Service.executeSubmission actor first token
+        let receipt = accepted result
+        let! before = verified database
+
+        let reordered =
+            raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-1\""
+            |> decode
+
+        let! replay = Service.executeSubmission actor reordered token
+
+        expectReceipt
+            (replayReceipt replay)
+            receipt
+            "Map member order does not change accepted identity"
+
+        let! conflict =
+            Service.executeSubmission
+                actor
+                (raw "\"field:claimantName\":\"Changed\",\"field:policyNumber\":\"PN-2\""
+                 |> decode)
+                token
+
+        Expect.equal
+            conflict.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
+            "Changed map content cannot reuse an accepted operation ID"
+
+        for key in [ "unknown"; "input:noteText" ] do
+            let invalid = raw (sprintf "\"%s\":\"foreign\"" key)
+
+            Expect.isError
+                (ClaimCore.Json.Codec.decode
+                    ClaimCore.Wire.Limits.MaximumRequestBytes
+                    ClaimCore.Wire.OperationSubmissionCodecs.submission
+                    (System.Text.Encoding.UTF8.GetBytes invalid))
+                "Unknown and foreign keys cannot become dispatched writes"
+
+        let! after = verified database
+        Expect.equal after before "Replay, conflict and closed-map refusals append nothing"
+        let registration = id database.Fixture 9402
+
+        let principal =
+            PrincipalKey.human "https://issuer.example/" "selected-person"
+            |> Result.defaultWith (string >> failtest)
+
+        let command =
+            OperationInput.People(
+                peopleRequest registration principal (PeopleAct.Register Inputs.actorProfile)
+            )
+
+        let! registered =
+            Service.executeSubmission actor (Submissions.ofCommand None command) token
+
+        acceptedPeople registered
+
+        let selected =
+            ActorId.ofOperationId (OperationId.create registration |> Option.get)
+            |> ActorId.value
+
+        let disable =
+            sprintf
+                """{"operationId":"%s","task":"people.disable","binding":{"kind":"PEOPLE","actorId":"%s"},"inputs":{}}"""
+                ((id database.Fixture 9403).ToString("D"))
+                (selected.ToString("D"))
+            |> decode
+
+        let! disabled = Service.executeSubmission actor disable token
+        let receipt = accepted disabled
+        let! repeated = Service.executeSubmission actor disable token
+
+        expectReceipt
+            (replayReceipt repeated)
+            receipt
+            "Actor selection resolves the same immutable identity for exact replay"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
         "canonical operation identity"
         [
+            testCaseAsync
+                "declared submission maps preserve key-order replay conflict and actor selection"
+                (run submissionMaps)
             testCaseAsync
                 "equivalent amounts and references replay while different content conflicts"
                 (run casePairs)

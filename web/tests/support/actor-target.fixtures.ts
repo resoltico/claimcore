@@ -5,7 +5,7 @@ import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
 import { peoplePreview } from "./people-operation.fixtures";
-import type { PeopleAct, HumanReadDocument_people_grants } from "@contracts/client";
+import type { OperationTaskDefinition, HumanReadDocument_people_grants } from "@contracts/client";
 import { taskForAct } from "../../src/protocol/taskCatalog";
 import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
@@ -145,7 +145,9 @@ export const grantsFor = (document = firstPerson): ApiResult<ServiceResponse<"pe
   value: humanReadReply("people.grants", document),
 });
 export const setupActorTargets = (
-  offered: ReadonlyArray<PeopleAct["kind"] | "case.open"> = [
+  offered: ReadonlyArray<
+    Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"] | "case.open"
+  > = [
     "people.register",
     "people.admit",
     "people.grant",
@@ -244,7 +246,7 @@ export const setupActorTargets = (
           ...person.context,
           tasks: offered
             .filter(
-              (act): act is PeopleAct["kind"] =>
+              (act): act is Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"] =>
                 act !== "case.open" && act !== "people.register" && act !== "people.admit",
             )
             .map((act) => taskForAct("PEOPLE", act).id),

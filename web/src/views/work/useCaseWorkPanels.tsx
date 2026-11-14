@@ -2,10 +2,10 @@ import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { TaskId } from "@contracts/client";
+import { type TaskId, type OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./ReminderActions";
-import type { TaskBindingSource } from "../../operation/taskForm";
+
 import { operationTask } from "../../protocol/taskCatalog";
 import type { FormValues } from "../../protocol/forms";
 import { CaseNextActions } from "./CaseNextActions";
@@ -19,7 +19,7 @@ type Editor = {
   kind: string;
   identity: string;
   prefill: FormValues;
-  binding?: TaskBindingSource;
+  binding?: OperationBinding;
   tasks?: ReadonlyArray<TaskId>;
   anchor?: string;
   origin?: string;
@@ -95,7 +95,6 @@ export const useCaseWorkPanels = ({
                   kind: "work.update",
                   identity: "work",
                   prefill: {
-                    "input:responsibleActorAction": "SET",
                     "field:responsibleActor": current.context.seeds.work?.responsible ?? "",
                   },
                 });
@@ -124,7 +123,8 @@ export const useCaseWorkPanels = ({
       binding: {
         kind: "REMINDER",
         target,
-        reminder: { reminderId: row.reminderId, revision: row.revision },
+        reminderId: row.reminderId,
+        expectedRevision: row.revision,
       },
       tasks: row.tasks,
       prefill: {

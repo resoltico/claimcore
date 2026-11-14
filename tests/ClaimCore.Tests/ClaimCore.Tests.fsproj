@@ -154,7 +154,7 @@
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
-    <Compile Include="Contract/TaskAssemblyTests.fs" />
+    <Compile Include="Contract/OperationSubmissionTests.fs" />
     <Compile Include="Contract/TaskCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Contract/ResponsibilitySelectionTests.fs" />

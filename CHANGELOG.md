@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - Fresh installation is required for InstallationFormat 3; stored act identities now use dotted task IDs.
+- Submit operations as {operationId, task, binding, inputs}; use declared input tokens, omit to keep updates, and null only for clearable inputs.
+- Existing-person operations select ActorId in bindings; CLI person changes take an actor-ID operand instead of principal flags.
 - Replace claimcore-database with claimcore-server subcommands; start hosting with claimcore-server serve. Missing-command usage exits 64.
 - Use people.* endpoints and MANAGE_ACCESS/READ_ACCESS capabilities. CLI verbs follow dotted IDs, including case notes and case payments.
 - Regenerate clients: rejected replies use rejection, failed replies share fault with messageId, and input issues use input tokens and row ordinals.

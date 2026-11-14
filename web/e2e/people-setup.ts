@@ -69,3 +69,35 @@ export const applyPeople = async (page: Page, body: RequestByEndpoint["operation
   }
   throw new Error("Synthetic people completion remains unconfirmed; original request retained.");
 };
+
+/** Resolve a synthetic principal through the supported directory before selecting an actor binding. */
+export const selectedActor = async (
+  page: Page,
+  principal: { kind: "HUMAN" | "SERVICE"; issuer: string; subject: string },
+): Promise<string> => {
+  let cursor: string | null = null;
+  do {
+    const endpoint = endpoints.find((entry) => entry.id === "people.list")!;
+    const antiforgery = await sessionToken(page);
+    const reply = await browserRequest(page, endpoint.path, {
+      method: endpoint.method,
+      headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": antiforgery },
+      body: JSON.stringify({ limit: 50, ...(cursor === null ? {} : { cursor }) }),
+    });
+    const payload = reply.payload as ResponseFor<"people.list", "DATA">;
+    if (reply.status !== 200 || payload.outcome.kind !== "SUCCEEDED") {
+      throw new Error("Synthetic actor selection requires the directory.");
+    }
+    const actor = payload.outcome.data.items.find(
+      (item) =>
+        item.principal.kind === principal.kind &&
+        item.principal.issuer === principal.issuer &&
+        item.principal.subject === principal.subject,
+    );
+    if (actor !== undefined) {
+      return actor.actor.actorId;
+    }
+    cursor = payload.outcome.data.nextCursor;
+  } while (cursor !== null);
+  throw new Error("Synthetic principal is not registered.");
+};

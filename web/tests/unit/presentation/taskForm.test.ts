@@ -1,605 +1,115 @@
 import { expect, it } from "vitest";
-import { assembleTask, TaskInputError } from "../../../src/operation/taskForm";
-import { taskForAct, taskForCommand, taskInput } from "../../../src/protocol/taskCatalog";
+import { assembleTask } from "../../../src/operation/taskForm";
+import { taskForCommand, taskInput } from "../../../src/protocol/taskCatalog";
 import { isCaseAct } from "../../../src/operation/metadata";
 const operationId = "019aa6a0-0000-7000-8000-000000000001";
-const target = {
-  kind: "ID",
-  caseId: "00000000-0000-4000-8000-000000000002",
-} as const;
-const principal = {
-  kind: "HUMAN",
-  issuer: "https://issuer.example/",
-  subject: "typed-person",
-} as const;
-it("binds reviewed versions and resource handles outside editable form values", () => {
-  const bait = {
-    "input:expectedRevision": "999",
-    "input:expectedWorkRevision": "999",
-    "input:expectedReminderRevision": "999",
-    "input:reminderId": "00000000-0000-4000-8000-000000000099",
-    "input:noteId": "00000000-0000-4000-8000-000000000099",
-    "input:paymentId": "00000000-0000-4000-8000-000000000099",
-  };
-  const record = assembleTask("case.close", bait, {
-    kind: "CASE",
+const target = { kind: "ID", caseId: "00000000-0000-4000-8000-000000000002" } as const;
+it("keeps reviewed selection and version outside authored inputs", () => {
+  const value = assembleTask(
+    "case.removePayment",
+    {
+      "input:expectedRevision": "999",
+      "input:paymentId": "foreign",
+      "field:policyNumber": "foreign",
+    },
+    { kind: "CASE", target, expectedRevision: 7, paymentId: operationId },
     operationId,
-    target,
-    revision: 7,
-  });
-  const work = assembleTask(
-    "work.update",
-    {
-      ...bait,
-      "field:handlingSummary": "Exact\nwork",
-    },
-    {
-      kind: "WORK",
-      operationId,
-      target,
-      workRevision: 2,
-    },
   );
-  const reminder = assembleTask("reminder.complete", bait, {
-    kind: "REMINDER",
+  expect(value.command).toEqual({
     operationId,
-    target,
-    reminder: {
-      reminderId: operationId,
-      revision: 3,
-    },
-  });
-  const note = assembleTask("note.remove", bait, {
-    kind: "NOTE",
-    operationId,
-    target,
-    noteId: operationId,
-  });
-  const payment = assembleTask("case.removePayment", bait, {
-    kind: "CASE",
-    operationId,
-    target,
-    revision: 7,
-    paymentId: operationId,
-  });
-  expect(record.command).toMatchObject({
-    expectedRevision: 7,
-  });
-  expect(work.command).toMatchObject({
-    expectedRevision: 2,
-    act: {
-      values: {
-        handlingSummary: "Exact\nwork",
-      },
-    },
-  });
-  expect(reminder.command).toMatchObject({
-    act: {
-      kind: "reminder.complete",
-      reminderId: operationId,
-      expectedRevision: 3,
-    },
-  });
-  expect(note.command).toMatchObject({
-    act: {
-      kind: "note.remove",
-      noteId: operationId,
-    },
-  });
-  expect(payment.command).toMatchObject({
-    act: {
-      kind: "case.removePayment",
-      paymentId: operationId,
-    },
+    task: "case.removePayment",
+    binding: { kind: "CASE", target, expectedRevision: 7, paymentId: operationId },
+    inputs: {},
   });
 });
-it("preserves selected empty text, explicit clear, omitted fields and correction group intent", () => {
-  const result = assembleTask(
-    "case.correct",
-    {
-      "group:registration": "UPDATE",
-      "group:decision": "CLEAR",
-      "field:claimantName": "",
-      "field:policyNumber": null,
-    },
-    {
-      kind: "CASE",
-      operationId,
-      target,
-      revision: 7,
-    },
-  );
-  expect(result.command).toEqual({
-    kind: "CASE",
-    operationId,
-    target,
-    expectedRevision: 7,
-    act: {
-      kind: "case.correct",
-      groups: {
-        registration: {
-          kind: "UPDATE",
-          values: {
-            claimantName: "",
-            policyNumber: null,
-          },
-        },
-        decision: {
-          kind: "CLEAR",
-        },
-      },
-    },
-  });
-});
-it("requires both coordinates when a money update is selected", () => {
-  expect(() =>
-    assembleTask(
-      "case.amendRegistration",
-      {
-        "field:claimedAmount": "12.3400",
-      },
-      {
-        kind: "CASE",
-        operationId,
-        target,
-        revision: 7,
-      },
-    ),
-  ).toThrow(TaskInputError);
-  try {
-    assembleTask(
-      "case.amendRegistration",
-      {
-        "field:claimedAmount": "12.3400",
-      },
-      {
-        kind: "CASE",
-        operationId,
-        target,
-        revision: 7,
-      },
-    );
-  } catch (error) {
-    expect(error).toBeInstanceOf(TaskInputError);
-    if (error instanceof TaskInputError) {
-      expect(error.input).toBe("field:claimedCurrency");
-    }
-  }
-});
-it("freezes the submitted ordinal map while retaining invalid duplicate business rows for Core diagnostics", () => {
-  const rows = [
-    {
-      key: "row-a",
-      values: {
-        "input:role": "CASE_READER",
-        "input:scope": "CASE",
-        "field:caseReference": "CASE-A",
-      },
-    },
-    {
-      key: "row-b",
-      values: {
-        "input:role": "CASE_READER",
-        "input:scope": "CASE",
-        "field:caseReference": "CASE-A",
-      },
-    },
-  ];
-  const result = assembleTask(
-    "people.admit",
-    {
-      "input:profile.displayName": "Authored profile",
-      peopleGrants: {
-        kind: "COLLECTION",
-        rows,
-      },
-    },
-    {
-      kind: "PEOPLE",
-      operationId,
-      principal,
-    },
-  );
-  rows.reverse();
-  expect(result.submittedRows.peopleGrants).toEqual(["row-a", "row-b"]);
-  expect(Object.isFrozen(result.submittedRows)).toBe(true);
-  expect(Object.isFrozen(result.submittedRows.peopleGrants)).toBe(true);
-  expect(result.command).toMatchObject({
-    kind: "PEOPLE",
-    target: principal,
-    act: {
-      kind: "people.admit",
-      grants: [
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            target: {
-              kind: "REFERENCE",
-              caseReference: "CASE-A",
-            },
-          },
-        },
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            target: {
-              kind: "REFERENCE",
-              caseReference: "CASE-A",
-            },
-          },
-        },
-      ],
-    },
-  });
-  expect(JSON.stringify(result.command)).not.toContain("row-a");
-});
-it("rejects duplicate interface row keys without guessing which row owns a diagnostic", () => {
-  expect(() =>
-    assembleTask(
-      "people.admit",
-      {
-        "input:profile.displayName": "Authored profile",
-        peopleGrants: {
-          kind: "COLLECTION",
-          rows: [
-            {
-              key: "same",
-              values: {
-                "input:role": "AUDITOR",
-              },
-            },
-            {
-              key: "same",
-              values: {
-                "input:role": "AUDITOR",
-              },
-            },
-          ],
-        },
-      },
-      {
-        kind: "PEOPLE",
-        operationId,
-        principal,
-      },
-    ),
-  ).toThrow(TaskInputError);
-});
-it("maps semantic actions and family-local command tags using declared bindings", () => {
-  expect(taskForAct("REMINDER", "reminder.complete").id).toBe("reminder.complete");
-  expect(
-    taskForCommand({
-      kind: "REMINDER",
-      act: {
-        kind: "reminder.complete",
-      },
-    }).id,
-  ).toBe("reminder.complete");
-  expect(taskInput("field:claimantName")).toMatchObject({
-    key: "claimantName",
-    kind: "FIELD",
-    group: "registration",
-  });
-  expect(isCaseAct("case.close")).toBe(true);
-  expect(isCaseAct("reminder.complete")).toBe(false);
-});
-it("preserves exact Unicode narrative input and a work-summary clear without financial fields", () => {
-  const exact = "  العربية\n\n😀  ";
-  const amended = assembleTask(
+it("preserves authored tokens, omission, null, empty text and exact money", () => {
+  const value = assembleTask(
     "case.amendRegistration",
     {
-      "field:incidentDescription": exact,
+      "field:claimantName": "",
+      "field:incidentDescription": null,
+      "field:claimedAmount": "12.3400",
+      "field:claimedCurrency": "EUR",
     },
-    {
-      kind: "CASE",
-      operationId,
-      target,
-      revision: 7,
-    },
-  );
-  expect(amended.command).toMatchObject({
-    act: {
-      kind: "case.amendRegistration",
-      values: {
-        incidentDescription: exact,
-      },
-    },
-  });
-  const work = assembleTask(
-    "work.update",
-    {
-      "field:handlingSummary": null,
-    },
-    {
-      kind: "WORK",
-      operationId,
-      target: {
-        kind: "REFERENCE",
-        caseReference: "WORK-1",
-      },
-      workRevision: 7,
-    },
-  );
-  expect(work.command).toEqual({
-    kind: "WORK",
+    { kind: "CASE", target, expectedRevision: 1 },
     operationId,
-    target: {
-      kind: "REFERENCE",
-      caseReference: "WORK-1",
-    },
-    expectedRevision: 7,
-    act: {
-      kind: "work.update",
-      values: {
-        handlingSummary: null,
-      },
-    },
+  );
+  expect(value.command.inputs).toEqual({
+    "field:claimantName": "",
+    "field:incidentDescription": null,
+    "field:claimedAmount": "12.3400",
+    "field:claimedCurrency": "EUR",
   });
+  expect(value.command.inputs).not.toHaveProperty("field:policyNumber");
 });
-it("keeps ordered admission scope branches and authored references while refusing an incomplete row set", () => {
-  const values = {
-    "input:profile.displayName": "Authored profile",
-    peopleGrants: {
-      kind: "COLLECTION" as const,
-      rows: [
-        {
-          key: "owner",
-          values: {
-            "input:role": "OWNER",
-            "input:scope": "INSTALLATION",
-            "field:caseReference": "ignored",
-          },
-        },
-        {
-          key: "reader",
-          values: {
-            "input:role": "CASE_READER",
-            "input:scope": "CASE",
-            "field:caseReference": "  Exact/مرجع  ",
-          },
-        },
-      ],
-    },
-  };
-  const result = assembleTask("people.admit", values, {
-    kind: "PEOPLE",
+it("retains work omission and explicit clearing without a second intent vocabulary", () => {
+  const value = assembleTask(
+    "work.update",
+    { "field:responsibleActor": null },
+    { kind: "WORK", target, expectedRevision: 2 },
     operationId,
-    principal,
-  });
-  expect(result.command).toMatchObject({
-    act: {
-      kind: "people.admit",
-      grants: [
-        {
-          role: "OWNER",
-          scope: {
-            kind: "INSTALLATION",
-          },
-        },
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            target: {
-              kind: "REFERENCE",
-              caseReference: "  Exact/مرجع  ",
-            },
-          },
-        },
-      ],
+  );
+  expect(value.command.inputs).toEqual({ "field:responsibleActor": null });
+});
+it("freezes submitted row ordinals separately from the business map", () => {
+  const rows = [
+    { key: "row-a", values: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" } },
+    { key: "row-b", values: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" } },
+  ];
+  const value = assembleTask(
+    "people.admit",
+    {
+      peopleGrants: { kind: "COLLECTION", rows },
+      "input:principal.kind": "HUMAN",
+      "input:principal.issuer": "https://issuer.example/",
+      "input:principal.subject": "person",
+      "input:profile.displayName": "Person",
     },
-  });
+    { kind: "PEOPLE" },
+    operationId,
+  );
+  expect(value.submittedRows.peopleGrants).toEqual(["row-a", "row-b"]);
+  expect(Object.isFrozen(value.submittedRows.peopleGrants)).toBe(true);
+  expect(
+    value.command.task === "people.admit" ? value.command.inputs["input:grants"] : null,
+  ).toEqual([
+    { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
+    { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
+  ]);
+  rows.reverse();
+  expect(value.submittedRows.peopleGrants).toEqual(["row-a", "row-b"]);
+});
+it("uses task identities and declarations without a field mapping table", () => {
+  expect(taskForCommand({ task: "case.open" }).id).toBe("case.open");
+  expect(taskInput("field:policyNumber").key).toBe("policyNumber");
+  expect(isCaseAct("case.recordPayment")).toBe(true);
+  expect(isCaseAct("people.disable")).toBe(false);
+});
+
+it("rejects duplicate local row keys before correlating diagnostics", () => {
+  const rows = [
+    { key: "same", values: {} },
+    { key: "same", values: {} },
+  ];
   expect(() =>
     assembleTask(
       "people.admit",
-      {
-        ...values,
-        peopleGrants: {
-          kind: "COLLECTION",
-          rows: [],
-        },
-      },
-      {
-        kind: "PEOPLE",
-        operationId,
-        principal,
-      },
+      { peopleGrants: { kind: "COLLECTION", rows } },
+      { kind: "PEOPLE" },
+      operationId,
     ),
-  ).toThrow(TaskInputError);
+  ).toThrow("row keys must be unique");
 });
-it.each([
-  ["field:incidentDescription", "incidentDescription"],
-  ["field:policyNumber", "policyNumber"],
-  ["field:insurerClaimReference", "insurerClaimReference"],
-] as const)(
-  "keeps empty Set, Clear and omission distinct for new registration %s",
-  (input, field) => {
-    const authored = {
-      "field:caseReference": "EMPTY-SET",
-      "field:incidentDate": "2026-11-01",
-      "field:incidentNotificationDate": "2026-11-02",
-      "field:incidentCountry": "LV",
-      "field:claimantName": "Claimant",
-      "field:insurerName": "Insurer",
-      "field:claimedAmount": "10",
-      "field:claimedCurrency": "EUR",
-    };
-    const expected = {
-      incidentDate: "2026-11-01",
-      incidentNotificationDate: "2026-11-02",
-      incidentCountry: "LV",
-      claimantName: "Claimant",
-      insurerName: "Insurer",
-      claimedAmount: "10",
-      claimedCurrency: "EUR",
-    };
-    for (const value of ["", null, undefined]) {
-      const result = assembleTask(
-        "case.open",
-        {
-          ...authored,
-          ...(value === undefined
-            ? {}
-            : {
-                [input]: value,
-              }),
-        },
-        {
-          kind: "NEW_CASE",
-          operationId,
-        },
-      );
-      expect(result.command).toEqual({
-        kind: "CASE",
-        operationId,
-        target: {
-          kind: "REFERENCE",
-          caseReference: "EMPTY-SET",
-        },
-        expectedRevision: 0,
-        act: {
-          kind: "case.open",
-          values: {
-            ...expected,
-            ...(value === undefined
-              ? {}
-              : {
-                  [field]: value,
-                }),
-          },
-        },
-      });
-    }
-  },
-);
-it.each(["people.register", "people.setProfile"] as const)(
-  "preserves authored empty contact, Clear and omission for %s",
-  (task) => {
-    for (const contact of ["", null, undefined]) {
-      const result = assembleTask(
-        task,
-        {
-          "input:profile.displayName": "Profile",
-          ...(contact === undefined
-            ? {}
-            : {
-                "input:profile.contact": contact,
-              }),
-        },
-        {
-          kind: "PEOPLE",
-          operationId,
-          principal,
-        },
-      );
-      expect(result.command).toEqual({
-        kind: "PEOPLE",
-        operationId,
-        target: principal,
-        act: {
-          kind: task === "people.register" ? "people.register" : "people.setProfile",
-          profile: {
-            displayName: "Profile",
-            ...(contact === undefined
-              ? {}
-              : {
-                  contact,
-                }),
-          },
-        },
-      });
-    }
-  },
-);
-it.each(["people.grant", "people.revoke"] as const)(
-  "submits the visible blank case-scope reference for Core refusal on %s",
-  (kind) => {
-    const binding = {
-      kind: "PEOPLE",
-      operationId,
-      principal,
-    } as const;
-    const values = {
-      "input:role": "CASE_READER",
-      "input:scope": "CASE",
-    };
-    const result = assembleTask(kind, values, binding);
-    expect(result.command).toEqual({
-      kind: "PEOPLE",
-      operationId,
-      target: principal,
-      act: {
-        kind,
-        role: "CASE_READER",
-        scope: {
-          kind: "CASE",
-          target: {
-            kind: "REFERENCE",
-            caseReference: "",
-          },
-        },
-      },
-    });
-    expect(() =>
-      assembleTask(
-        kind,
-        {
-          ...values,
-          "field:caseReference": null,
-        },
-        binding,
-      ),
-    ).toThrow(TaskInputError);
-  },
-);
-it("retains an unedited case-scoped admission row for ordinal-correlated Core refusal", () => {
-  const result = assembleTask(
-    "people.admit",
-    {
-      "input:profile.displayName": "Candidate",
-      peopleGrants: {
-        kind: "COLLECTION",
-        rows: [
-          {
-            key: "unentered-case",
-            values: {
-              "input:role": "CASE_READER",
-              "input:scope": "CASE",
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: "PEOPLE",
-      operationId,
-      principal,
-    },
-  );
-  expect(result.command).toEqual({
-    kind: "PEOPLE",
+it("keeps a UUID-shaped authored case reference as a reference", () => {
+  const value = assembleTask(
+    "case.open",
+    { "field:caseReference": operationId },
+    { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
     operationId,
-    target: principal,
-    act: {
-      kind: "people.admit",
-      profile: {
-        displayName: "Candidate",
-      },
-      grants: [
-        {
-          role: "CASE_READER",
-          scope: {
-            kind: "CASE",
-            target: {
-              kind: "REFERENCE",
-              caseReference: "",
-            },
-          },
-        },
-      ],
-    },
+  );
+  expect(value.command.binding).toEqual({
+    kind: "CASE",
+    target: { kind: "REFERENCE", caseReference: operationId },
+    expectedRevision: 0,
   });
-  expect(result.submittedRows.peopleGrants).toEqual(["unentered-case"]);
 });

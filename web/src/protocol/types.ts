@@ -31,7 +31,10 @@ export type FieldCatalogEntry = (
   readonly scalar: NonNullable<CatalogDocument["inputFields"][number]["scalar"]>;
   readonly valueKind?: CatalogDocument["fields"][number]["valueKind"];
 };
-export type OperationDraft = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>;
+export type CaseSubmission = Extract<
+  RequestByEndpoint["operation.execute"],
+  { binding: { kind: "CASE" } }
+>;
 export type ServiceResponse<
   K extends keyof ResponseByEndpoint,
   R extends Representation = "HUMAN",

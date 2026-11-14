@@ -11,19 +11,8 @@ module CaseSearch =
         | BusinessField.InsurerName
         | BusinessField.CaseReference
         | BusinessField.HandlingSummary -> true
-        | BusinessField.IncidentDate
-        | BusinessField.IncidentNotificationDate
-        | BusinessField.IncidentCountry
-        | BusinessField.ClaimedAmount
-        | BusinessField.ClaimedCurrency
-        | BusinessField.PaymentDecisionDate
-        | BusinessField.PayableAmount
-        | BusinessField.PayableCurrency
-        | BusinessField.PaymentDate
-        | BusinessField.PaidAmount
-        | BusinessField.PaidCurrency
-        | BusinessField.Status
-        | BusinessField.ResponsibleActor -> false
+        // Search is opt-in; a newly declared optional fact is not automatically indexed.
+        | _ -> false
 
     let fields =
         BusinessField.declarations |> List.map _.Field |> List.filter searchable

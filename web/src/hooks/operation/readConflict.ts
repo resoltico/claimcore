@@ -23,17 +23,17 @@ const observe = async (
   }
   const { input } = effect.source.prepared;
   let observedRevision = current.context.revision;
-  if (input.kind === "WORK") {
+  if (input.binding.kind === "WORK") {
     observedRevision = current.context.workRevision;
   }
-  if (input.kind === "REMINDER") {
-    if (input.act.kind === "reminder.create") {
+  if (input.binding.kind === "REMINDER") {
+    if (!("reminderId" in input.binding)) {
       return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
     }
     const result = await requestEndpoint(
       "reminder.get",
       effect.identity.credential,
-      { target: input.target, reminderId: input.act.reminderId },
+      { target: input.binding.target, reminderId: input.binding.reminderId },
       signal,
     );
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
@@ -56,7 +56,7 @@ export const readConflict = async (
     const result = await requestEndpoint(
       "case.get",
       effect.identity.credential,
-      { target: effect.source.prepared.input.target },
+      { target: effect.source.prepared.input.binding.target },
       controller.signal,
     );
     if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {

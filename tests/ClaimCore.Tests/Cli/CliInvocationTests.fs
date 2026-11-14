@@ -481,7 +481,9 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
     let invocation = peoplePreviewInvocation verb
 
     let input =
-        Frames.value Api.operationPreview invocation
+        (Frames.value Api.operationPreview
+         >> Option.map ClaimCore.TestSupport.Submissions.command)
+            invocation
         |> Option.defaultWith (fun () -> failtest "Preview input required")
 
     let frame =

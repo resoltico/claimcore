@@ -1,3 +1,4 @@
+import { prefixedInputs } from "../tests/support/submission-inputs";
 import { type ResponseFor } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { registration } from "../tests/support/inputs";
@@ -78,18 +79,23 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
         "X-ClaimCore-Antiforgery": await sessionToken(page),
       },
       body: JSON.stringify({
-        kind: "CASE",
         operationId: mintOperationId(),
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
+        task: "case.open",
+        binding: {
+          kind: "CASE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: reference,
+          },
+          expectedRevision: 0,
         },
-        expectedRevision: 0,
-        act: {
-          kind: "case.open",
-          values: registration({
-            incidentDate,
-          }),
+        inputs: {
+          ...prefixedInputs(
+            "field:",
+            registration({
+              incidentDate,
+            }),
+          ),
         },
       }),
     });

@@ -234,17 +234,7 @@ module CommandGrammar =
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
 
-    /// Clears describe replacement intent, never optional values on a creation.
-    let canClear (operation: TaskId) (input: CommandInput) =
-        match input.Name, (TaskRouting.act operation) with
-        | TaskInputId.Target(InputTarget.Field field),
-          Some(ActKind.Case(CaseActKind.AmendRegistration | CaseActKind.Correct)) ->
-            (BusinessField.describe field).AllowsAbsence
-        | TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary), Some(ActKind.Work _) ->
-            true
-        | TaskInputId.Target InputTarget.ProfileContact,
-          Some(ActKind.People PeopleActKind.SetProfile) -> true
-        | _ -> false
+    let canClear (_operation: TaskId) (input: CommandInput) = input.Declaration.Clearable
 
     let synopsisForDraft draft (operation: TaskId) =
         let placeholder =

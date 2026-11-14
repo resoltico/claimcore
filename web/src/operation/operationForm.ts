@@ -1,9 +1,9 @@
-import type { OperationTaskDefinition } from "@contracts/client";
+import { type OperationTaskDefinition, type OperationBinding } from "@contracts/client";
 import { operationEntry, type OperationSelection } from "../protocol/operationCatalog";
 import { taskInput } from "../protocol/taskCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
 import type { CurrentCase } from "../protocol/types";
-import { assembleTask, type TaskBinding } from "./taskForm";
+import { assembleTask } from "./taskForm";
 
 const groupSeed = (current: CurrentCase | null, group: ReturnType<typeof taskInput>["group"]) => {
   switch (group) {
@@ -42,9 +42,9 @@ const acquiredInput = (
   subject: OperationSelection["subject"],
   current: CurrentCase | null,
 ) =>
-  input.source === "AUTHORED" &&
+  (input.source === "AUTHORED" ||
+    (input.id === "field:caseReference" && current === null && subject === "CASE")) &&
   input.mode === "REQUIRED" &&
-  !(input.id === "field:caseReference" && current !== null && subject !== "PEOPLE") &&
   !["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id);
 
 /** Draft acquisition has no executable identity or version; those belong to its reviewed binding. */
@@ -74,5 +74,6 @@ export const initialOperationValues = (
 export const assembleOperation = (
   task: OperationTaskDefinition,
   values: FormValues,
-  binding: TaskBinding,
-) => assembleTask(task.id, values, binding);
+  binding: OperationBinding,
+  operationId: string,
+) => assembleTask(task.id, values, binding, operationId);

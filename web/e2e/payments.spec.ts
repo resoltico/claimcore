@@ -76,12 +76,9 @@ test("records instalments and removes the selected entry through one reviewed co
     .click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
-    kind: "CASE",
-    expectedRevision: 4,
-    act: {
-      kind: "case.removePayment",
-      paymentId: first.paymentId,
-    },
+    task: "case.removePayment",
+    binding: { kind: "CASE", expectedRevision: 4, paymentId: first.paymentId },
+    inputs: {},
   });
   const dialog = page.getByRole("dialog");
   const confirm = dialog.locator("button[data-confirm-operation]");
@@ -120,36 +117,28 @@ const paymentDocument = async (response: Response) => {
   return casePaymentsReply.outcome.document;
 };
 const recordPayments = async (page: Page, caseId: string) => {
-  const commands: Extract<
-    RequestByEndpoint["operation.execute"],
-    {
-      readonly kind: "CASE";
-    }
-  >[] = [];
+  const commands: Extract<RequestByEndpoint["operation.execute"], { binding: { kind: "CASE" } }>[] =
+    [];
   let revision = 2;
   for (let index = 0; index < 55; index += 1) {
-    const command: Extract<
-      RequestByEndpoint["operation.execute"],
+    const command: Extract<RequestByEndpoint["operation.execute"], { binding: { kind: "CASE" } }> =
       {
-        readonly kind: "CASE";
-      }
-    > = {
-      kind: "CASE",
-      operationId: mintOperationId(),
-      target: {
-        kind: "ID",
-        caseId,
-      },
-      expectedRevision: revision,
-      act: {
-        kind: "case.recordPayment",
-        values: {
-          paymentDate: "2026-09-04",
-          paidAmount: "1",
-          paidCurrency: "EUR",
+        operationId: mintOperationId(),
+        task: "case.recordPayment",
+        binding: {
+          kind: "CASE",
+          target: {
+            kind: "ID",
+            caseId,
+          },
+          expectedRevision: revision,
         },
-      },
-    };
+        inputs: {
+          "field:paymentDate": "2026-09-04",
+          "field:paidAmount": "1",
+          "field:paidCurrency": "EUR",
+        },
+      };
     const result = await workRequest(page, "operation.execute", command);
     if (result.outcome.kind !== "ACCEPTED" || result.outcome.data.subject.kind !== "CASE") {
       throw new Error("A fresh payment must append one genuine case operation.");
@@ -255,11 +244,9 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     .click();
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
-    expectedRevision: 57,
-    act: {
-      kind: "case.removePayment",
-      paymentId: original.operationId,
-    },
+    task: "case.removePayment",
+    binding: { kind: "CASE", expectedRevision: 57, paymentId: original.operationId },
+    inputs: {},
   });
   const execution = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.execute",

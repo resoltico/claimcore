@@ -52,9 +52,12 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let operation = id ()
     let reference = "NATIVE-OUTPUT-" + id ()
     input["operationId"] <- JsonValue.Create operation
-    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
-    let values = (input["act"] |> nonNull)["values"] |> nonNull
-    values["claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
+
+    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        JsonValue.Create reference
+
+    let values = input["inputs"] |> nonNull
+    values["field:claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"
     Encoding.UTF8.GetBytes(request.ToJsonString()), operation, reference
 
 let private head (fixture: PublishedFixture.Fixture) =

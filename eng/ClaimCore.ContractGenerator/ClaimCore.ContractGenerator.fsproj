@@ -10,7 +10,7 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="AuthoredMessages.fs" />
     <Compile Include="CatalogRendering.fs" />
-    <Compile Include="TaskAssemblers.fs" />
+    <Compile Include="TaskMetadata.fs" />
     <Compile Include="TypeScript.fs" />
     <Compile Include="Terms.fs" />
     <Compile Include="MessageRegisters.fs" />

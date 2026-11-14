@@ -121,7 +121,7 @@ module private FrameInvocation =
 
             let kind =
                 Frames.value Api.operationExecute frame
-                |> Option.map ActKind.ofInput
+                |> Option.map (fun (input: OperationSubmission) -> input.Task)
                 |> Option.defaultWith (fun () ->
                     invalidOp "A mutation handoff requires its admitted typed operation.")
 

@@ -34,20 +34,8 @@ export const taskForAct = (
 };
 
 export const taskForCommand = (input: {
-  readonly kind: string;
-  readonly act: { readonly kind: string };
-}): OperationTaskDefinition => {
-  const task = taskDefinitions.find(
-    (candidate): candidate is OperationTaskDefinition =>
-      candidate.kind === "OPERATION" &&
-      candidate.subject === input.kind &&
-      candidate.wireAct === input.act.kind,
-  );
-  if (task === undefined) {
-    throw new Error("Unknown operation command.");
-  }
-  return task;
-};
+  readonly task: OperationTaskId;
+}): OperationTaskDefinition => operationTask(input.task);
 
 export const taskInput = (id: TaskInputId): TaskInputDefinition => {
   const input = taskInputDefinitions.find((candidate) => candidate.id === id);

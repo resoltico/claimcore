@@ -5,6 +5,7 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type InputSource =
     | Authored
+    | Binding
     | OperationIdentity
     | ExpectedRevision
 
@@ -34,7 +35,6 @@ type TaskInputId =
     | ReminderState
     | ReminderDue
     | IncludeInactive
-    | ResponsibilityChange
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TaskInputId =
@@ -60,8 +60,6 @@ module TaskInputId =
         | TaskInputId.TimelineFilter -> "timelineFilter"
         | TaskInputId.Order -> "order"
         | TaskInputId.Due -> "due"
-        | TaskInputId.ResponsibilityChange ->
-            BusinessField.key BusinessField.ResponsibleActor + "Action"
         | TaskInputId.Assignment -> "assignment"
 
     /// Opaque semantic tokens distinguish facts and group inputs from similarly named query controls.
@@ -97,10 +95,11 @@ module TaskInputId =
          |> List.choose (fun (target, _) ->
              match target with
              | InputTarget.Field _
-             | InputTarget.Group _ -> None
+             | InputTarget.Group _
+             | InputTarget.Scope
+             | InputTarget.CaseId -> None
              | _ -> Some(TaskInputId.Target target)))
         @ extras
-        @ [ TaskInputId.ResponsibilityChange ]
 
     let all =
         (BusinessField.declarations
@@ -166,7 +165,11 @@ type TaskInputIssue =
 module TaskInputIssue =
     let ofDomain (issue: InputIssue) =
         {
-            Input = TaskInputId.Target issue.Target
+            Input =
+                match issue.Target with
+                | InputTarget.Scope -> TaskInputId.Scope
+                | InputTarget.CaseId -> TaskInputId.CaseId
+                | target -> TaskInputId.Target target
             Row =
                 issue.GrantRow
                 |> Option.bind (

@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { type HumanReview, type OperationInput } from "@contracts/client";
+import { type HumanReview, type OperationSubmission } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
 import { OperationReview } from "../../../../src/views/operation/OperationReview";
 import { prepareRequest } from "../../../../src/protocol/preparedRequest";
@@ -77,7 +77,7 @@ const review: HumanReview = {
     disclosure: "CURRENT",
   },
 };
-const model = (input: OperationInput, value: HumanReview) => ({
+const model = (input: OperationSubmission, value: HumanReview) => ({
   prepared: prepareRequest("operation.execute", input),
   review: value,
   phase: "REVIEWING",
@@ -90,16 +90,17 @@ const model = (input: OperationInput, value: HumanReview) => ({
 it("renders Core review content and requires its exact confirmation target while technical IDs stay in Details", async () => {
   const value = model(
     {
-      kind: "CASE",
       operationId,
-      target: {
-        kind: "ID",
-        caseId,
+      task: "case.erase",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "ID",
+          caseId,
+        },
+        expectedRevision: 7,
       },
-      expectedRevision: 7,
-      act: {
-        kind: "case.erase",
-      },
+      inputs: {},
     },
     review,
   );
@@ -130,16 +131,17 @@ it("renders Core review content and requires its exact confirmation target while
 it("resets consent when a new Core review supplies a different target", async () => {
   const value = model(
     {
-      kind: "CASE",
       operationId,
-      target: {
-        kind: "ID",
-        caseId,
+      task: "case.erase",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "ID",
+          caseId,
+        },
+        expectedRevision: 7,
       },
-      expectedRevision: 7,
-      act: {
-        kind: "case.erase",
-      },
+      inputs: {},
     },
     review,
   );
@@ -204,16 +206,17 @@ it("records a routine review with one consent action", async () => {
   };
   const value = model(
     {
-      kind: "CASE",
       operationId,
-      target: {
-        kind: "ID",
-        caseId,
+      task: "case.close",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "ID",
+          caseId,
+        },
+        expectedRevision: 7,
       },
-      expectedRevision: 7,
-      act: {
-        kind: "case.close",
-      },
+      inputs: {},
     },
     routine,
   );

@@ -158,8 +158,9 @@ it("keeps a complete leap date canonical and emits only its ISO value after Arab
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    kind: "CASE",
-    act: { kind: "case.open", values: { incidentDate: "2024-02-29" } },
+    task: "case.open",
+    binding: { kind: "CASE" },
+    inputs: { "field:incidentDate": "2024-02-29" },
   });
   expect(execute).not.toHaveBeenCalled();
 });

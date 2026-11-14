@@ -61,12 +61,11 @@ alone derives the family index. [SubjectExecution](../src/ClaimCore.Application/
 runs registered operations in one transaction path; replay validates the closed journal before applying
 those contracts.
 [TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
-inputs and choices; [TaskAssembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) assembles
+inputs and choices; [OperationSubmission](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) assembles
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
-Generated typed constructors live in `contracts/client.ts`; collection row keys stay outside commands.
+Generated types and task metadata live in `contracts/client.ts`; collection row keys stay outside submissions.
 
-RecordFormat owns canonical business-input codecs and the single installation format. Wire embeds
-those codecs and owns transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
+RecordFormat owns canonical business-input codecs and the single installation format. Wire owns closed submission maps and transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
 
 `Codec.validate` admits strict structural JSON without invoking semantic constructors. `Read` and
@@ -105,7 +104,7 @@ HUMAN documents and DATA projections. A HUMAN document owns Screen, bounded inte
 observation and disclosure; DATA carries no Screen. Browser and native text consume supplied documents,
 while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
 [Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
-[typed assembly](../src/ClaimCore.Application.Contracts/TaskAssembly.fs) owns their command construction.
+[submission assembly](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) owns their command construction.
 
 Keep action eligibility, lifecycle, reminder timing, disclosure and recommendations in their core owners.
 A client formats values and handles interaction; it does not compare replies against its submitted

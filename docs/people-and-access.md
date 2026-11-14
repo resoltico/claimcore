@@ -62,7 +62,8 @@ provide that case visibility. Responsibility never grants access.
 Use names or contact details to find people, optionally selecting a role. In the CLI,
 `people list --text TEXT --role case-handler` combines current saved name/contact search with the
 selected role.
-Use the returned actor ID with `people grants ACTOR-ID`; do not guess IDs or use a sign-in subject as
+Use the returned actor ID with `people grants ACTOR-ID` and the person-change verbs (grant, revoke,
+set-profile, enable, disable and erase-profile); do not guess IDs or use a sign-in subject as
 an actor ID.
 
 ## Change a profile or roles

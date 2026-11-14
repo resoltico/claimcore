@@ -114,7 +114,10 @@ let tests =
                                     }
                         }
 
-                    let raw = ClaimCore.Application.Contracts.OperationInput.People authored
+                    let raw =
+                        ClaimCore.Application.Contracts.OperationInput.People authored
+                        |> ClaimCore.TestSupport.Submissions.ofCommand None
+
                     let bytes = Codec.encode Api.operationExecute.Input raw
 
                     Expect.isOk

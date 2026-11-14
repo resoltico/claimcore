@@ -345,15 +345,15 @@ module Api =
             "ReminderReadReply"
             WorkReadCodecs.reminder
 
-    let operationPreviewUnavailable input : PreviewReply =
+    let operationPreviewUnavailable (input: OperationSubmission) : PreviewReply =
         {
-            OperationId = OperationInput.operationId input
+            OperationId = input.OperationId
             Outcome = Outcome.Failed CoreFault.StoreUnavailable
         }
 
-    let operationExecuteUnavailable input : ExecuteReply =
+    let operationExecuteUnavailable (input: OperationSubmission) : ExecuteReply =
         {
-            OperationId = OperationInput.operationId input
+            OperationId = input.OperationId
             Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
         }
 
@@ -368,7 +368,7 @@ module Api =
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
-            Input = RequestCodecs.operationInput
+            Input = OperationSubmissionCodecs.submission
             Output =
                 RepresentationCodecs.reply
                     "PreviewReply"
@@ -381,7 +381,7 @@ module Api =
             Correlation =
                 Some
                     {
-                        Request = OperationInput.operationId
+                        Request = fun (input: OperationSubmission) -> input.OperationId
                         Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
             Unavailable = operationPreviewUnavailable >> RepresentationReply.Data
@@ -392,7 +392,7 @@ module Api =
             Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
             Method = HttpMethod.Post
             Effect = EndpointEffect.LedgerExecution
-            Input = RequestCodecs.operationInput
+            Input = OperationSubmissionCodecs.submission
             Output =
                 RepresentationCodecs.reply
                     "ExecuteReply"
@@ -404,7 +404,7 @@ module Api =
             Correlation =
                 Some
                     {
-                        Request = OperationInput.operationId
+                        Request = fun (input: OperationSubmission) -> input.OperationId
                         Reply = RepresentationReply.fold _.OperationId _.OperationId
                     }
             Unavailable = operationExecuteUnavailable >> RepresentationReply.Data

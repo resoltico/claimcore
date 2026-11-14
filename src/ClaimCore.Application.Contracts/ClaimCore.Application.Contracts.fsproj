@@ -24,7 +24,7 @@
     <Compile Include="Operations.fs" />
     <Compile Include="TaskIdentities.fs" />
     <Compile Include="TaskDeclarations.fs" />
-    <Compile Include="TaskAssembly.fs" />
+    <Compile Include="OperationSubmission.fs" />
     <Compile Include="OperationLookup.fs" />
   </ItemGroup>
 </Project>

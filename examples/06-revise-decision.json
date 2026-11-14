@@ -1,15 +1,19 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 5,
-    "act": {
-      "kind": "case.decide",
-      "values": { "paymentDecisionDate": "2026-08-15", "payableAmount": "800.00", "payableCurrency": "EUR" }
+    "task": "case.decide",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 5
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
+    "inputs": {
+      "field:paymentDecisionDate": "2026-08-15",
+      "field:payableAmount": "800.00",
+      "field:payableCurrency": "EUR"
     }
   }
 }

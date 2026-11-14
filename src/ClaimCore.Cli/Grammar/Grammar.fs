@@ -266,7 +266,7 @@ module Grammar =
             | Choice1Of2(Some input) -> Ok input
             | Choice1Of2 None -> invalidOp "Invalid argv must be reported before admission."
             | Choice2Of2 intent ->
-                TaskAssembly.completeIntent intent
+                OperationSubmission.completeDraft intent
                 |> Option.map (fun input ->
                     if endpoint = Api.operationPreview.Token then
                         EndpointValues.input Api.operationPreview input
@@ -343,7 +343,13 @@ module Grammar =
                             |> WireWriter.bytes
                         Language = language
                         Format = format
-                        Issues = Validation.syntaxIntent intent
+                        Issues =
+                            match OperationSubmission.syntaxDraft intent with
+                            | Ok issues -> issues
+                            | Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues)) ->
+                                Some issues
+                            | Error _ ->
+                                invalidOp "Declared argv must assemble a valid submission shape."
                     }
 
             prepareWith
@@ -354,16 +360,16 @@ module Grammar =
                 arguments
             |> Result.map Some
 
-    /// Keep acquired typed intent through interactive preparation; encoding belongs to delivery.
-    let private intent adapt arguments =
+    /// Interactive acquisition retains incomplete metadata until the current read supplies it.
+    let internal draft arguments =
         let admit _ =
             function
-            | Choice2Of2 intent -> adapt intent
-            | Choice1Of2 _ ->
+            | Choice2Of2 draft -> Ok draft
+            | _ ->
                 Error
                     {
                         Path = "$"
-                        Reason = "An operation intent is required."
+                        Reason = "An operation draft is required."
                     }
 
         let finish input _ _ _ language preview _ _ = Ok(input, language, preview)
@@ -372,55 +378,5 @@ module Grammar =
             true
             admit
             finish
-            (fun () -> invalidOp "Intent does not allocate an operation ID.")
-            arguments
-
-    let private wrongIntent () =
-        Error
-            {
-                Path = "$"
-                Reason = "Unexpected operation subject."
-            }
-
-    let private reference value =
-        value
-        |> Option.map CaseSelector.Reference
-        |> Option.defaultWith (fun () ->
-            invalidOp "A case operand must be acquired before intent assembly.")
-
-    let internal caseIntent arguments =
-        intent
-            (function
-            | AuthoredIntent.Case(operation, target, _, act) -> Ok(reference target, act, operation)
-            | _ -> wrongIntent ())
-            arguments
-
-    let internal noteIntent arguments =
-        intent
-            (function
-            | AuthoredIntent.Note(operation, target, act) -> Ok(reference target, act, operation)
-            | _ -> wrongIntent ())
-            arguments
-
-    let internal workIntent arguments =
-        intent
-            (function
-            | AuthoredIntent.Work(operation, target, _, update) ->
-                Ok(reference target, WorkAct.UpdateWork update, operation)
-            | _ -> wrongIntent ())
-            arguments
-
-    let internal reminderIntent arguments =
-        intent
-            (function
-            | AuthoredIntent.Reminder(operation, target, act) ->
-                Ok(reference target, act, operation)
-            | _ -> wrongIntent ())
-            arguments
-
-    let internal peopleIntent arguments =
-        intent
-            (function
-            | AuthoredIntent.People(operation, target, act) -> Ok(target, act, operation)
-            | _ -> wrongIntent ())
+            (fun () -> invalidOp "A draft never allocates an operation ID.")
             arguments

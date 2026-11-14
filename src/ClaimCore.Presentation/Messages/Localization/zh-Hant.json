@@ -895,10 +895,6 @@
     "text": "提醒視圖",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "責任變更",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "授權範圍",
     "source": "d6417785a41b"
@@ -1790,14 +1786,6 @@
   "input.includeInactive.rule": {
     "text": "明確包含已結案或已作廢案件上的工作。待辦提醒保留其日期和狀態。",
     "source": "c8addb209dac"
-  },
-  "input.responsibleActorAction.rule": {
-    "text": "選擇設定或清除；省略則保留當前負責帳戶。",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "設定或清除此案件的負責人。",
-    "source": "d788923ffdfd"
   },
   "group.registration.rule": {
     "text": "保留登記資料或更新所選資料。未提供的資料保持不變；金額和幣種須一起提交。",

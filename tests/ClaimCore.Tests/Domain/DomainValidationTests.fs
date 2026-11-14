@@ -85,7 +85,7 @@ let private restorationTests =
                             BusinessField.ClaimedAmount, "1000"
                         ]
                         Inputs.registration
-                    |> RequestCodecs.registration.Write
+                    |> ClaimCore.RecordFormat.CanonicalInputs.registration.Write
                     |> function
                         | JsonValue.Object fields ->
                             JsonValue.Object(fields @ [ "incidentDescription", JsonValue.Null ])

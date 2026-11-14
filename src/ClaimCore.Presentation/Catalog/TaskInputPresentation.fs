@@ -22,7 +22,6 @@ module TaskInputPresentation =
         | TaskInputId.ReminderState
         | TaskInputId.ReminderDue
         | TaskInputId.IncludeInactive
-        | TaskInputId.ResponsibilityChange
         | TaskInputId.Scope
         | TaskInputId.ActorId
         | TaskInputId.CaseId

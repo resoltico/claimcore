@@ -1,8 +1,9 @@
+import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
-import { applyPeople, syntheticPrincipals } from "./people-setup";
+
 import { openCase } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
@@ -25,7 +26,7 @@ export const prepareRoleFixture = async (page: Page) => {
   return { reference, unrelated, principal };
 };
 
-const setGrant = (
+const setGrant = async (
   page: Page,
   fixture: RoleFixture,
   role: NarrowRole,
@@ -33,15 +34,13 @@ const setGrant = (
   active: boolean,
 ) =>
   applyPeople(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target: fixture.principal,
-    act: {
-      kind: active ? "people.grant" : "people.revoke",
-      role,
-      scope: scoped
-        ? { kind: "CASE", target: { kind: "REFERENCE", caseReference: fixture.reference } }
-        : { kind: "INSTALLATION" },
+    task: active ? "people.grant" : "people.revoke",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, fixture.principal) },
+    inputs: {
+      "input:role": role,
+      "input:scope": scoped ? "CASE" : "INSTALLATION",
+      ...(scoped ? { "field:caseReference": fixture.reference } : {}),
     },
   });
 

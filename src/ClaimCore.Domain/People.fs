@@ -160,6 +160,19 @@ module People =
         PeopleAct.traverse Ok (ActorProfile.admit >> profileIssues) command.Act
         |> Result.map ignore
 
+    /// Authored action checks do not require selected actor identity or service state.
+    let syntaxAction operationId act =
+        Admission.collect
+            [
+                operationId
+                |> Option.map (operationIdentity >> Result.map ignore)
+                |> Option.defaultValue (Ok())
+                PeopleAct.traverse Ok prepareProfile act |> Result.map ignore
+                grantCount act
+                scopeReference act
+            ]
+        |> InputValidation.ordered
+
     let syntaxIntent operationId target act =
         match act with
         | PeopleAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)

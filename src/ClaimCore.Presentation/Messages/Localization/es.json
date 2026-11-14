@@ -895,10 +895,6 @@
     "text": "Vista de recordatorios",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "Cambio de responsabilidad",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "Ámbito de la asignación",
     "source": "d6417785a41b"
@@ -1790,14 +1786,6 @@
   "input.includeInactive.rule": {
     "text": "Incluir explícitamente la tramitación de expedientes cerrados o anulados. Los recordatorios pendientes conservan sus fechas y su estado.",
     "source": "c8addb209dac"
-  },
-  "input.responsibleActorAction.rule": {
-    "text": "Elige establecer o eliminar; omítelo para conservar la cuenta responsable actual.",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "Establecer o eliminar la persona responsable de este expediente.",
-    "source": "d788923ffdfd"
   },
   "group.registration.rule": {
     "text": "Conservar los datos de registro o actualizar los seleccionados. Los datos omitidos no cambian; el importe y la moneda se indican juntos.",

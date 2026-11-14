@@ -208,7 +208,7 @@ export const ConflictChanges = ({
           initial={changes}
           detail={detail}
           scope={{
-            target: snapshot.source.prepared.input.target,
+            target: snapshot.source.prepared.input.binding.target,
             credential: snapshot.identity.credential,
             onRefused: onDisclosureChanged,
             onDisclosureChanged: model.revalidateDisclosure,

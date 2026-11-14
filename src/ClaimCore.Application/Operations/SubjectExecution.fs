@@ -55,41 +55,40 @@ module internal SubjectExecution =
             return! ExecutionFacts.persist tx (registration.Project tx) accepted
         }
 
-    let run (services: ServiceContext) registration input token =
+    let transact (services: ServiceContext) work token =
         services.Store.Write
             {
-                Work = inTransaction services registration input
+                Work = work
                 CancellationToken = token
             }
+
+    let snapshot (services: ServiceContext) work token =
+        services.Store.Read
+            {
+                Work = work
+                CancellationToken = token
+            }
+
+    let run services registration input token =
+        transact services (inTransaction services registration input) token
+
+    let inSnapshot registration input tx =
+        task {
+            let! facts, proposed =
+                registration.LoadAndDecide SubjectExecutionMode.Preview tx input
+
+            return
+                proposed
+                |> Verdict.outcome
+                    (fun decision -> Previewed.Reviewed(registration.Review input facts decision))
+                    Previewed.AlreadyAccepted
+        }
 
     let preview (services: ServiceContext) registration input (token: CancellationToken) =
         task {
             if token.IsCancellationRequested then
                 return Outcome.Failed CoreFault.StoreUnavailable
             else
-                let! result =
-                    services.Store.Read
-                        {
-                            Work =
-                                fun tx ->
-                                    task {
-                                        let! facts, proposed =
-                                            registration.LoadAndDecide
-                                                SubjectExecutionMode.Preview
-                                                tx
-                                                input
-
-                                        return
-                                            proposed
-                                            |> Verdict.outcome
-                                                (fun decision ->
-                                                    Previewed.Reviewed(
-                                                        registration.Review input facts decision
-                                                    ))
-                                                Previewed.AlreadyAccepted
-                                    }
-                            CancellationToken = token
-                        }
-
+                let! result = snapshot services (inSnapshot registration input) token
                 return QueryResults.readResult result
         }

@@ -200,7 +200,10 @@ it.each(["context", "listing"] as const)(
       expect(execute).toHaveBeenCalledOnce();
     });
     const [prepared] = execute.mock.calls[0]!;
-    expect(prepared.input.act).toEqual({ kind: "people.disable" });
+    expect({ task: prepared.input.task, inputs: prepared.input.inputs }).toEqual({
+      task: "people.disable",
+      inputs: {},
+    });
     await finish(execution, acceptance(prepared));
     expect(queryReviewConfirm()).toBeNull();
     if (first === "listing") {
@@ -235,9 +238,9 @@ it.each(["context", "listing"] as const)(
     expect(reviewConfirm()).toBeVisible();
     const [next] = vi.mocked(service.preview).mock.calls.at(-1)!;
     expect(next.input).toMatchObject({
-      kind: "PEOPLE",
-      target: { subject: "synthetic-next" },
-      act: { kind: "people.admit" },
+      task: "people.admit",
+      binding: { kind: "PEOPLE" },
+      inputs: { "input:principal.subject": "synthetic-next" },
     });
     expect(next.input.operationId).not.toBe(prepared.input.operationId);
     expect(next.bytes).not.toBe(prepared.bytes);

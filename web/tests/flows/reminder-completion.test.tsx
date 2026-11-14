@@ -211,9 +211,14 @@ it("opens a compact completion preview from an explicit row action and writes on
   expect(preview).toHaveBeenCalledTimes(1);
   expect(execute).not.toHaveBeenCalled();
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    kind: "REMINDER",
-    target: { kind: "ID", caseId: current.context.caseId },
-    act: { kind: "reminder.complete", reminderId, expectedRevision: 3 },
+    task: "reminder.complete",
+    binding: {
+      kind: "REMINDER",
+      target: { kind: "ID", caseId: current.context.caseId },
+      reminderId,
+      expectedRevision: 3,
+    },
+    inputs: {},
   });
   await user.click(reviewConfirm());
   await waitFor(() => {

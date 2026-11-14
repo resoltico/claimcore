@@ -69,45 +69,6 @@ module RequestSchemas =
     let CaseSelector = "CaseSelector"
 
     [<Literal>]
-    let Registration = "Registration"
-
-    [<Literal>]
-    let Decision = "Decision"
-
-    [<Literal>]
-    let Payment = "Payment"
-
-    [<Literal>]
-    let RegistrationGroup = "RegistrationGroup"
-
-    [<Literal>]
-    let DecisionGroup = "DecisionGroup"
-
-    [<Literal>]
-    let Correction = "Correction"
-
-    [<Literal>]
-    let CaseAct = "CaseAct"
-
-    [<Literal>]
-    let CaseRequest = "CaseRequest"
-
-    [<Literal>]
-    let PrincipalInput = "PrincipalInput"
-
-    [<Literal>]
-    let Scope = "Scope"
-
-    [<Literal>]
-    let PeopleAct = "PeopleAct"
-
-    [<Literal>]
-    let PeopleRequest = "PeopleRequest"
-
-    [<Literal>]
-    let OperationInput = "OperationInput"
-
-    [<Literal>]
     let CaseGetRequest = "CaseGetRequest"
 
     [<Literal>]

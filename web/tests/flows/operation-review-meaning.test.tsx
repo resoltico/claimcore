@@ -4,13 +4,13 @@ import { fireEvent, within } from "@testing-library/react";
 import { render, screen } from "../support/presentation-test-support";
 import { OperationReview } from "../../src/views/operation/OperationReview";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
-import type { OperationInput, HumanReview, PresentedEntry, Screen } from "@contracts/client";
+import type { OperationSubmission, HumanReview, PresentedEntry, Screen } from "@contracts/client";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { operationId } from "../support/service-foundation.fixtures";
 import { closeReview } from "../support/operation-documents.fixtures";
 
 type Model = ComponentProps<typeof OperationReview>["model"];
-const model = (input: OperationInput, review: HumanReview): Model => ({
+const model = (input: OperationSubmission, review: HumanReview): Model => ({
   prepared: prepareRequest("operation.execute", input),
   review,
   phase: "REVIEWING",
@@ -31,20 +31,20 @@ const details = (entries: ReadonlyArray<PresentedEntry>): Screen["regions"][numb
   titleId: "label.recordDetails",
   content: { kind: "ENTRIES", entries },
 });
-const correction: OperationInput = {
-  kind: "CASE",
+const correction: OperationSubmission = {
   operationId,
-  target: { kind: "REFERENCE", caseReference: "CASE-1" },
-  expectedRevision: 1,
-  act: {
-    kind: "case.correct",
-    groups: {
-      registration: {
-        kind: "UPDATE",
-        values: { claimantName: "KEEP", claimedAmount: "12.3400", claimedCurrency: "EUR" },
-      },
-      decision: { kind: "KEEP" },
-    },
+  task: "case.correct",
+  binding: {
+    kind: "CASE",
+    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    expectedRevision: 1,
+  },
+  inputs: {
+    "group:registration": "UPDATE",
+    "field:claimantName": "KEEP",
+    "field:claimedAmount": "12.3400",
+    "field:claimedCurrency": "EUR",
+    "group:decision": "KEEP",
   },
 };
 const review: HumanReview = {
@@ -120,15 +120,15 @@ it("preserves Core-supplied target and technical values without changing the pre
 });
 
 const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
-  const scope =
-    kind === "CASE"
-      ? { kind, target: { kind: "REFERENCE" as const, caseReference: "SYNTHETIC-GRANT" } }
-      : { kind };
-  const input: OperationInput = {
-    kind: "PEOPLE",
+  const input: OperationSubmission = {
     operationId,
-    target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "KEEP" },
-    act: { kind: "people.grant", role: "CASE_READER", scope },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: "10000000-0000-7000-8000-000000000001" },
+    inputs: {
+      "input:role": "CASE_READER",
+      "input:scope": kind,
+      ...(kind === "CASE" ? { "field:caseReference": "SYNTHETIC-GRANT" } : {}),
+    },
   };
   const proposed: HumanReview = {
     ...closeReview,
@@ -271,12 +271,15 @@ it.each(localized)(
   },
 );
 it("renders the Core-authored erasure meaning and external-copy limitation", () => {
-  const input: OperationInput = {
-    kind: "CASE",
+  const input: OperationSubmission = {
     operationId,
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
-    expectedRevision: 1,
-    act: { kind: "case.erase" },
+    task: "case.erase",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      expectedRevision: 1,
+    },
+    inputs: {},
   };
   const proposed: HumanReview = {
     ...closeReview,
@@ -303,13 +306,13 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
   expect(screen.getByRole("dialog")).toHaveTextContent(/Copies held elsewhere are not affected/u);
 });
 it("shows Core profile changes rather than recomputing proposed values from authored input", () => {
-  const input: OperationInput = {
-    kind: "PEOPLE",
+  const input: OperationSubmission = {
     operationId,
-    target: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "profile-target" },
-    act: {
-      kind: "people.setProfile",
-      profile: { displayName: "Requested name", contact: "Requested contact" },
+    task: "people.setProfile",
+    binding: { kind: "PEOPLE", actorId: "10000000-0000-7000-8000-000000000001" },
+    inputs: {
+      "input:profile.displayName": "Requested name",
+      "input:profile.contact": "Requested contact",
     },
   };
   const proposed: HumanReview = {

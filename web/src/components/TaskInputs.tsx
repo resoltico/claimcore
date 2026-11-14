@@ -3,6 +3,7 @@ import { renderCatalogKey } from "../presentation/messages";
 import { isTerm, isVocabulary } from "../presentation/terms";
 import { CatalogField } from "./CatalogField";
 import { AssigneeInput } from "./AssigneeInput";
+import { editGrantInput } from "../operation/operationDraft";
 import { roleAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { NoticeView } from "../presentation/Message";
@@ -16,13 +17,16 @@ import {
 } from "../protocol/forms";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
-import type { OperationTaskDefinition, TaskInputId } from "@contracts/client";
-import type { TaskBindingSource } from "../operation/taskForm";
+import {
+  type OperationTaskDefinition,
+  type TaskInputId,
+  type OperationBinding,
+} from "@contracts/client";
 
 type Input = OperationTaskDefinition["inputs"][number];
 type Props = {
   task: OperationTaskDefinition;
-  binding: TaskBindingSource;
+  binding: OperationBinding;
   current: CurrentCase | null;
   values: FormValues;
   disabled: boolean;
@@ -132,10 +136,7 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
   ) {
     return null;
   }
-  const principalKind =
-    props.principalKind ??
-    (props.binding.kind === "PEOPLE" ? props.binding.principal?.kind : undefined) ??
-    formValueText(props.values["input:principal.kind"]);
+  const principalKind = props.principalKind ?? formValueText(props.values["input:principal.kind"]);
   const scope = formValueText(props.values["input:scope"]) || "INSTALLATION";
   if (roleAdmitted(value, principalKind, scope)) {
     return null;
@@ -262,9 +263,6 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
   const members = peer === undefined ? [input] : [input, peer];
   const ids = members.map((member) => member.id);
   const selected = ids.some((id) => Object.hasOwn(props.values, id));
-  const field = productMetadata.catalog.fields.find(
-    (candidate) => candidate.name === taskInput(input.id).key,
-  );
   const first = renderCatalogKey(p, taskInput(input.id).labelId);
   const title =
     peer === undefined
@@ -273,9 +271,7 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
           first,
           second: renderCatalogKey(p, taskInput(peer.id).labelId),
         });
-  const clear =
-    (field?.allowsAbsence === true || input.id === "input:profile.contact") &&
-    props.task.id !== "case.open";
+  const clear = input.clearable && props.task.id !== "case.open";
   return (
     <fieldset className="selected-fact">
       <legend>
@@ -329,22 +325,16 @@ const peopleInputBound = (input: Input, props: Props): boolean => {
   if (props.binding.kind !== "PEOPLE") {
     return false;
   }
-  const principalBound =
-    props.binding.principal !== undefined &&
-    ["input:principal.kind", "input:principal.issuer", "input:principal.subject"].includes(
-      input.id,
-    );
-  const grantBound =
-    props.task.id === "people.revoke" &&
-    props.binding.grant !== undefined &&
-    ["input:role", "input:scope", "field:caseReference"].includes(input.id);
-  return principalBound || grantBound;
+  return (
+    "actorId" in props.binding &&
+    ["input:principal.kind", "input:principal.issuer", "input:principal.subject"].includes(input.id)
+  );
 };
 const boundInput = (input: Input, props: Props): boolean => {
   const caseReferenceBound =
     input.id === "field:caseReference" &&
     props.task.subject !== "PEOPLE" &&
-    props.binding.kind !== "NEW_CASE";
+    props.task.id !== "case.open";
   return (
     caseReferenceBound ||
     ["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id) ||
@@ -356,19 +346,7 @@ const workInputPermitted = (input: Input, props: Props): boolean => {
     return true;
   }
   const { editableInputs } = props.current.context;
-  switch (input.id) {
-    case "input:responsibleActorAction":
-      return editableInputs.includes("field:responsibleActor");
-    case "field:responsibleActor":
-      return (
-        editableInputs.includes("field:responsibleActor") &&
-        props.values["input:responsibleActorAction"] === "SET"
-      );
-    case "field:handlingSummary":
-      return editableInputs.includes("field:handlingSummary");
-    default:
-      return true;
-  }
+  return editableInputs.includes(input.id);
 };
 const peopleInputPermitted = (input: Input, props: Props): boolean => {
   if (props.task.subject !== "PEOPLE" || input.id !== "field:caseReference") {
@@ -379,7 +357,8 @@ const peopleInputPermitted = (input: Input, props: Props): boolean => {
 const updateInputPermitted = (input: Input, current: CurrentCase | null): boolean =>
   input.mode !== "UPDATE" || current === null || current.context.editableInputs.includes(input.id);
 const permitted = (input: Input, props: Props): boolean =>
-  input.source === "AUTHORED" &&
+  (input.source === "AUTHORED" ||
+    (props.task.id === "case.open" && input.id === "field:caseReference")) &&
   !boundInput(input, props) &&
   workInputPermitted(input, props) &&
   peopleInputPermitted(input, props) &&
@@ -392,8 +371,7 @@ const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean 
   return (
     input.mode === "UPDATE" ||
     (input.mode === "OPTIONAL" &&
-      (taskInput(input.id).kind === "FIELD" || input.id === "input:profile.contact") &&
-      input.id !== "field:responsibleActor")
+      (taskInput(input.id).kind === "FIELD" || input.id === "input:profile.contact"))
   );
 };
 const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) => {
@@ -460,17 +438,14 @@ const GrantRows = ({
                 {...props}
                 input={input}
                 current={null}
-                principalKind={
-                  (props.binding.kind === "PEOPLE" ? props.binding.principal?.kind : undefined) ??
-                  formValueText(props.values["input:principal.kind"])
-                }
+                principalKind={formValueText(props.values["input:principal.kind"])}
                 values={row.values}
                 errorKey={taskRowInputKey(collection.id, row.key, input.id)}
                 onChange={(id, nextValue) => {
                   update(
                     rows.map((previous) =>
                       previous.key === row.key
-                        ? { ...previous, values: { ...previous.values, [id]: nextValue } }
+                        ? { ...previous, values: editGrantInput(previous.values, id, nextValue) }
                         : previous,
                     ),
                   );

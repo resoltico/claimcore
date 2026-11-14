@@ -1,16 +1,17 @@
-import { taskChoices } from "@contracts/client";
+import {
+  taskChoices,
+  type CaseTimelineRequest,
+  type HistoryDisclosure,
+  type CaseSelector,
+  type RegionTimelineEntry,
+  type HumanResponseByEndpoint,
+} from "@contracts/client";
 import { isTerm } from "../../presentation/terms";
 import { permitsHistory } from "../../api/historyDisclosure";
 import { ViewTabs } from "../../ui/ViewTabs";
 import { PageTables } from "../../ui/PageTables";
 import { useCallback, useState, useEffect, useRef } from "react";
-import type {
-  CaseTimelineRequest,
-  HistoryDisclosure,
-  CaseSelector,
-  RegionTimelineEntry,
-  HumanResponseByEndpoint,
-} from "@contracts/client";
+
 import { Button } from "../../ui/Button";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";

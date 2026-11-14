@@ -1,4 +1,4 @@
-import { type ResponseFor, type CaseAct } from "@contracts/client";
+import { type ResponseFor, type OperationTaskDefinition } from "@contracts/client";
 import { workRequest } from "./work-workflow";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
@@ -196,7 +196,11 @@ export const showCaseActionMenu = async (page: Page): Promise<void> => {
 };
 
 /** Reveal a Core-offered case action and check its complete localized accessible name. */
-export const caseActionButton = async (page: Page, kind: CaseAct["kind"], language: Language) => {
+export const caseActionButton = async (
+  page: Page,
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  language: Language,
+) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const p = createPresenter({
     ...defaults,
@@ -234,7 +238,7 @@ export const caseActionButton = async (page: Page, kind: CaseAct["kind"], langua
 };
 export const startAct = async (
   page: Page,
-  kind: CaseAct["kind"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
   language: Language,
 ): Promise<void> => {
   await (
@@ -298,7 +302,7 @@ const submit = async (page: Page): Promise<void> => {
 /** Complete an English case form; localized action-only callers use startAct with their language. */
 export const completeAct = async (
   page: Page,
-  kind: CaseAct["kind"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
   await startAct(page, kind, "en");

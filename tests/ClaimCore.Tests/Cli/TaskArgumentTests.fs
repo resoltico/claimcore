@@ -16,7 +16,9 @@ let private prepare args =
     |> Result.defaultWith (fun errors -> failtestf "%A" errors)
 
 let private input args =
-    Frames.value Api.operationExecute (prepare args).Invocation
+    (Frames.value Api.operationExecute
+     >> Option.map ClaimCore.TestSupport.Submissions.command)
+        (prepare args).Invocation
     |> Option.defaultWith (fun () -> failtest "Executable operation required")
 
 [<Tests>]

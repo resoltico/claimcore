@@ -40,7 +40,7 @@ export const initial = (): OperationState => {
           kind: "REFERENCE",
           caseReference: "CASE-SERIALIZATION",
         },
-        revision: 4,
+        expectedRevision: 4,
       },
       dateEntries: {},
       values: valuesFor(),

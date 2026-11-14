@@ -16,7 +16,11 @@ import {
 } from "./operationDisclosure";
 import { sameOwnerScope } from "../protocol/ownerScope";
 import { editDraft, editDraftFields, captureDraftDate, clearDraftDates } from "./operationDraft";
-import { conflictFromRefusal, sameConflictTarget, rebasedTaskBinding } from "./operationConflict";
+import {
+  conflictFromRefusal,
+  sameConflictTarget,
+  rebasedOperationBinding,
+} from "./operationConflict";
 import { operationEntry } from "../protocol/operationCatalog";
 import { taskForAct } from "../protocol/taskCatalog";
 import { inputErrors } from "./inputErrors";
@@ -249,7 +253,7 @@ const reviewLatest = (
       draft: {
         ...state.draft,
         values: action.values,
-        binding: rebasedTaskBinding(action.source.prepared.input, snapshot.latest.revision),
+        binding: rebasedOperationBinding(action.source.prepared.input, snapshot.latest.revision),
         generation: state.draft.generation + 1,
       },
       disclosed: {

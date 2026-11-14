@@ -35,9 +35,9 @@ let private expectGroup group (codec: Codec<'T>) =
         "Codec members follow the record declaration"
 
 let private codecs () =
-    expectGroup (Some RecordGroup.Registration) RequestCodecs.registration
-    expectGroup (Some RecordGroup.Decision) RequestCodecs.decision
-    expectGroup (Some RecordGroup.Payment) RequestCodecs.payment
+    expectGroup (Some RecordGroup.Registration) ClaimCore.RecordFormat.CanonicalInputs.registration
+    expectGroup (Some RecordGroup.Decision) ClaimCore.RecordFormat.CanonicalInputs.decision
+    expectGroup (Some RecordGroup.Payment) ClaimCore.RecordFormat.CanonicalInputs.payment
 
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema

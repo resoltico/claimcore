@@ -33,7 +33,11 @@ let private prepared tail =
 let private admission tail =
     let value = prepared tail |> Fixtures.accepted
 
-    match Frames.value Api.operationExecute value.Invocation with
+    match
+        (Frames.value Api.operationExecute
+         >> Option.map ClaimCore.TestSupport.Submissions.command)
+            value.Invocation
+    with
     | Some(OperationInput.People { Act = PeopleAct.Admit admission }) -> admission
     | other -> failtestf "Expected a typed ADMIT operation: %A" other
 
@@ -154,7 +158,11 @@ let tests =
 
                 let prepared = Grammar.prepare identity words |> Fixtures.accepted
 
-                match Frames.value Api.operationExecute prepared.Invocation with
+                match
+                    (Frames.value Api.operationExecute
+                     >> Option.map ClaimCore.TestSupport.Submissions.command)
+                        prepared.Invocation
+                with
                 | Some(OperationInput.People request) ->
                     Expect.equal
                         request.Target.Issuer

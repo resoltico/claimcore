@@ -197,7 +197,7 @@ it("previews the typed selected payment and preserves selector spelling through 
           kind: "REFERENCE",
           caseReference: "ORIGINAL-CASE",
         },
-        revision: 7,
+        expectedRevision: 7,
         paymentId,
       }}
       autoReview
@@ -220,16 +220,17 @@ it("previews the typed selected payment and preserves selector spelling through 
   expect(bodies).toHaveLength(2);
   expect(bodies[1]).toBe(bodies[0]);
   expect(JSON.parse(bodies[0]!)).toMatchObject({
-    kind: "CASE",
-    target: {
-      kind: "REFERENCE",
-      caseReference: "ORIGINAL-CASE",
-    },
-    expectedRevision: 7,
-    act: {
-      kind: "case.removePayment",
+    task: "case.removePayment",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: "ORIGINAL-CASE",
+      },
+      expectedRevision: 7,
       paymentId,
     },
+    inputs: {},
   });
 });
 it("takes the payment currency default only from an offered Core input seed", () => {

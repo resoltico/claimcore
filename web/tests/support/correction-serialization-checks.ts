@@ -1,37 +1,29 @@
 import { expect } from "vitest";
-import type { OperationInput } from "@contracts/client";
-
+import type { OperationSubmission } from "@contracts/client";
+import { prefixedInputs } from "./submission-inputs";
 type Group = "registration" | "decision";
-type Literal = { act: { groups: Record<Group, { values?: Record<string, unknown> }> } };
-
-// Keep every literal oracle value. Separately require complete authored patch identity with the authored
-// input, so unmentioned fields cannot disappear or acquire extra values during serialization.
+/** Literal values stay independent while full authored patches cannot silently lose fields. */
 export const expectCorrection = (
-  actual: OperationInput,
+  actual: OperationSubmission,
   serializedLiteral: string,
   authored: Record<Group, object>,
 ) => {
-  if (actual.kind !== "CASE" || actual.act.kind !== "case.correct") {
+  if (actual.task !== "case.correct") {
     throw new Error("Expected a case correction.");
   }
-  const literal = JSON.parse(serializedLiteral) as Literal;
-  const projected: Record<string, unknown> = { ...actual.act.groups };
+  const literal = JSON.parse(serializedLiteral) as Extract<
+    OperationSubmission,
+    { task: "case.correct" }
+  >;
+  const expected: Record<string, unknown> = { ...literal.inputs };
   for (const group of ["registration", "decision"] as const) {
-    const actualGroup = actual.act.groups[group];
-    const literalValues = literal.act.groups[group].values;
-    if ("values" in actualGroup && literalValues !== undefined) {
-      expect(actualGroup.values).toEqual(authored[group]);
-      const keys = new Set(Object.keys(literalValues));
-      projected[group] = {
-        ...actualGroup,
-        values: Object.fromEntries(
-          Object.entries(actualGroup.values).filter(([key]) => keys.has(key)),
-        ),
-      };
+    if (literal.inputs[`group:${group}`] === "UPDATE") {
+      Object.assign(expected, prefixedInputs("field:", authored[group]));
     }
   }
-  expect({ ...actual, act: { ...actual.act, groups: projected } }).toEqual({
-    kind: "CASE",
-    ...literal,
-  });
+  expect(actual.inputs).toEqual(expected);
+  for (const [key, value] of Object.entries(literal.inputs)) {
+    expect(actual.inputs).toHaveProperty(key, value);
+  }
+  expect({ ...actual, inputs: literal.inputs }).toEqual(literal);
 };

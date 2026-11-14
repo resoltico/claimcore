@@ -47,32 +47,20 @@ let private sessions (fixture: PublishedFixture.Fixture) =
     command.ExecuteScalar() |> unbox<int64>
 
 let private openFrame operationId reference =
-    frame
-        "operation.execute"
-        {|
-            kind = "CASE"
-            operationId = operationId
-            expectedRevision = 0
-            target =
-                {|
-                    kind = "REFERENCE"
-                    caseReference = reference
-                |}
-            act =
-                {|
-                    kind = CaseActKind.token CaseActKind.Open
-                    values =
-                        {|
-                            incidentDate = "2026-09-01"
-                            incidentNotificationDate = "2026-09-02"
-                            incidentCountry = "LV"
-                            claimantName = "Restore claimant"
-                            insurerName = "Restore insurer"
-                            claimedAmount = "10"
-                            claimedCurrency = "EUR"
-                        |}
-                |}
-        |}
+    let registration =
+        ClaimCore.TestSupport.Inputs.registrationWith
+            [
+                BusinessField.IncidentDate, "2026-09-01"
+                BusinessField.IncidentNotificationDate, "2026-09-02"
+                BusinessField.IncidentCountry, "LV"
+                BusinessField.ClaimantName, "Restore claimant"
+                BusinessField.InsurerName, "Restore insurer"
+                BusinessField.ClaimedAmount, "10"
+                BusinessField.ClaimedCurrency, "EUR"
+            ]
+            ClaimCore.TestSupport.Inputs.registration
+
+    frame "operation.execute" (caseSubmission operationId reference 0L (CaseAct.Open registration))
 
 let private bearer
     (fixture: PublishedFixture.Fixture)

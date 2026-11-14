@@ -340,7 +340,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       if (drafts.length === 1) {
         return Promise.resolve(response("operation.preview", "REJECTED", conflict));
       }
-      if (input.kind !== "CASE") {
+      if (input.binding.kind !== "CASE") {
         throw new Error("Expected the retained case draft.");
       }
       const task = taskForCommand(input);
@@ -461,14 +461,9 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   await screen.findByRole("dialog");
   expect(drafts).toHaveLength(2);
   expect(drafts[1]).toMatchObject({
-    kind: "CASE",
-    expectedRevision: 54,
-    act: {
-      kind: "case.amendRegistration",
-      values: {
-        claimantName: "My retained draft",
-      },
-    },
+    task: "case.amendRegistration",
+    binding: { kind: "CASE", expectedRevision: 54 },
+    inputs: { "field:claimantName": "My retained draft" },
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(

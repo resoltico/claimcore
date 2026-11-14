@@ -1,10 +1,12 @@
+import { selectedActor, applyPeople } from "./people-setup";
+import { prefixedInputs } from "../tests/support/submission-inputs";
 import { type RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft } from "./case-workflow";
 import { workRequest } from "./work-workflow";
-import { applyPeople } from "./people-setup";
+
 import { goToView } from "./workspace-navigation";
 import { operationId } from "../src/operation/operationId";
 const expectWorklistReady = async (
@@ -102,50 +104,37 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     subject: `handover-${randomUUID()}`,
   };
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: actor,
-    target: principal,
-    act: {
-      kind: "people.register",
-      profile: {
-        displayName: "Incoming handler",
-        contact: null,
-      },
+    task: "people.register",
+    binding: { kind: "PEOPLE" },
+    inputs: {
+      "input:profile.displayName": "Incoming handler",
+      "input:profile.contact": null,
+      ...prefixedInputs("input:principal.", principal),
     },
   });
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: operationId(),
-    target: principal,
-    act: {
-      kind: "people.grant",
-      role: "CASE_HANDLER",
-      scope: {
-        kind: "INSTALLATION",
-      },
-    },
+    task: "people.grant",
+    binding: { kind: "PEOPLE", actorId: await selectedActor(page, principal) },
+    inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
   });
   const references = [`HAND-A-${randomUUID()}`, `HAND-B-${randomUUID()}`] as const;
   for (const reference of references) {
     await goToView(page, "cases");
     await openCase(page, reference);
     const assigned = await workRequest(page, "operation.execute", {
-      kind: "WORK",
       operationId: operationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
-      },
-      expectedRevision: 0,
-      act: {
-        kind: "work.update",
-        values: {
-          responsibleActor: {
-            kind: "SET",
-            value: owner,
-          },
+      task: "work.update",
+      binding: {
+        kind: "WORK",
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
         },
+        expectedRevision: 0,
       },
+      inputs: { "field:responsibleActor": owner },
     });
     expect(assigned.outcome.kind).toBe("ACCEPTED");
   }
@@ -196,28 +185,20 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   await reviewDraft(page);
   const reviewed = await preview;
   expect(reviewed.request().postDataJSON()).toMatchObject({
-    kind: "WORK",
-    expectedRevision: 1,
-    act: {
-      kind: "work.update",
-      values: {
-        responsibleActor: {
-          kind: "SET",
-          value: actor,
-        },
-      },
-    },
+    task: "work.update",
+    binding: { kind: "WORK", expectedRevision: 1 },
+    inputs: { "field:responsibleActor": actor },
   });
   const operationPreviewRequest = reviewed
     .request()
     .postDataJSON() as RequestByEndpoint["operation.preview"];
-  if (operationPreviewRequest.kind !== "WORK") {
+  if (operationPreviewRequest.binding.kind !== "WORK") {
     throw new Error("Expected a typed work review");
   }
-  expect(operationPreviewRequest.act).toEqual({
-    kind: "work.update",
-    values: {
-      responsibleActor: {
+  expect({ task: operationPreviewRequest.task, inputs: operationPreviewRequest.inputs }).toEqual({
+    task: "work.update",
+    inputs: {
+      "field:responsibleActor": {
         kind: "SET",
         value: actor,
       },
@@ -260,19 +241,17 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     }),
   ).toBeVisible();
   const concurrent = await workRequest(page, "operation.execute", {
-    kind: "WORK",
     operationId: operationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: references[1],
-    },
-    expectedRevision: 1,
-    act: {
-      kind: "work.update",
-      values: {
-        handlingSummary: "Changed while the row was displayed",
+    task: "work.update",
+    binding: {
+      kind: "WORK",
+      target: {
+        kind: "REFERENCE",
+        caseReference: references[1],
       },
+      expectedRevision: 1,
     },
+    inputs: { "field:handlingSummary": "Changed while the row was displayed" },
   });
   expect(concurrent.outcome.kind).toBe("ACCEPTED");
   const writtenBeforeReview = writes;

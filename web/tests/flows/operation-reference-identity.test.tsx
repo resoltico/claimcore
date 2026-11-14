@@ -18,11 +18,13 @@ const current: CurrentCase = caseDocumentInput({
 const prepared = () => previewReply();
 type SentDraft = {
   operationId: string;
-  target: { kind: "REFERENCE"; caseReference: string };
-  act: {
-    kind: string;
-    values?: Record<string, string>;
+  task: string;
+  binding: {
+    kind: "CASE";
+    target: { kind: "REFERENCE"; caseReference: string };
+    expectedRevision: number;
   };
+  inputs: Record<string, unknown>;
 };
 const sentDraft = (body: unknown): SentDraft => {
   if (typeof body !== "string") {
@@ -60,8 +62,6 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);
-  expect(draft.target).toEqual({ kind: "ID", caseId: current.context.caseId });
-  expect(draft.act).toEqual({
-    kind: "case.close",
-  });
+  expect(draft.binding.target).toEqual({ kind: "ID", caseId: current.context.caseId });
+  expect({ task: draft.task, inputs: draft.inputs }).toEqual({ task: "case.close", inputs: {} });
 });

@@ -1,9 +1,10 @@
+import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
-import { applyPeople, syntheticPrincipals } from "./people-setup";
+
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {
   seedPresentation,
@@ -23,14 +24,17 @@ test.beforeAll(async ({ browser, baseURL }) => {
 const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   await applyPeople(page, {
-    kind: "PEOPLE",
     operationId: mintOperationId(),
-    target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
-    act: {
-      kind: active ? "people.grant" : "people.revoke",
-      role: "OWNER",
-      scope: { kind: "INSTALLATION" },
+    task: active ? "people.grant" : "people.revoke",
+    binding: {
+      kind: "PEOPLE",
+      actorId: await selectedActor(page, {
+        kind: "HUMAN",
+        issuer: source.issuer,
+        subject: source.stewardSubject,
+      }),
     },
+    inputs: { "input:role": "OWNER", "input:scope": "INSTALLATION" },
   });
 };
 const prepareAdmission = async (page: Page, issuer: string, subject: string) => {

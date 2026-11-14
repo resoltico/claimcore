@@ -31,9 +31,7 @@ const isAttempt = (value: Record<string, unknown>): boolean =>
   typeof value["act"] === "string" &&
   taskDefinitions.some(
     (task) =>
-      task.kind === "OPERATION" &&
-      task.subject === value["subject"] &&
-      task.wireAct === value["act"],
+      task.kind === "OPERATION" && task.subject === value["subject"] && task.id === value["act"],
   );
 
 export const isRecoveryRecord = (value: unknown): value is RecoveryRecord =>

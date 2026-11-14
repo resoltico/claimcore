@@ -1,3 +1,4 @@
+import { prefixedInputs } from "../tests/support/submission-inputs";
 import { type ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
@@ -366,18 +367,23 @@ for (const language of ["en", "lv", "ar"] as const) {
       const prefix = "الملخص\n\n";
       const text = `${prefix}${"😀".repeat(600 - Array.from(prefix).length)}`;
       const opened = await workRequest(page, "operation.execute", {
-        kind: "CASE",
         operationId: caseId,
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
+        task: "case.open",
+        binding: {
+          kind: "CASE",
+          target: {
+            kind: "REFERENCE",
+            caseReference: reference,
+          },
+          expectedRevision: 0,
         },
-        expectedRevision: 0,
-        act: {
-          kind: "case.open",
-          values: registration({
-            incidentDescription: text,
-          }),
+        inputs: {
+          ...prefixedInputs(
+            "field:",
+            registration({
+              incidentDescription: text,
+            }),
+          ),
         },
       });
       expect(opened.outcome.kind).toBe("ACCEPTED");
@@ -461,35 +467,34 @@ test("paid description correction preserves payment, then a closed case accepts 
     [
       1,
       {
-        kind: "case.decide",
-        values: {
-          paymentDecisionDate: "2026-09-03",
-          payableAmount: "500",
-          payableCurrency: "EUR",
+        task: "case.decide",
+        inputs: {
+          "field:paymentDecisionDate": "2026-09-03",
+          "field:payableAmount": "500",
+          "field:payableCurrency": "EUR",
         },
       },
     ],
     [
       2,
       {
-        kind: "case.recordPayment",
-        values: {
-          paymentDate: "2026-09-04",
-          paidAmount: "500",
-          paidCurrency: "EUR",
+        task: "case.recordPayment",
+        inputs: {
+          "field:paymentDate": "2026-09-04",
+          "field:paidAmount": "500",
+          "field:paidCurrency": "EUR",
         },
       },
     ],
   ] as const) {
     const seeded = await workRequest(page, "operation.execute", {
-      kind: "CASE",
       operationId: mintOperationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
+      ...act,
+      binding: {
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: reference },
+        expectedRevision: revision,
       },
-      expectedRevision: revision,
-      act,
     });
     expect(seeded.outcome.kind).toBe("ACCEPTED");
   }
@@ -522,16 +527,17 @@ test("paid description correction preserves payment, then a closed case accepts 
   });
   await recordReviewed(page);
   const closed = await workRequest(page, "operation.execute", {
-    kind: "CASE",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
+      expectedRevision: 4,
     },
-    expectedRevision: 4,
-    act: {
-      kind: "case.close",
-    },
+    inputs: {},
   });
   expect(closed.outcome.kind).toBe("ACCEPTED");
   await page.reload();
@@ -653,11 +659,9 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
   const reply = await advisory;
   const input: unknown = reply.request().postDataJSON();
   expect(input).toMatchObject({
-    kind: "REMINDER",
-    act: {
-      kind: "reminder.create",
-      action: "first\nsecond",
-    },
+    task: "reminder.create",
+    binding: { kind: "REMINDER" },
+    inputs: { "input:reminderAction": "first\nsecond" },
   });
   const operationPreviewReply = (await reply.json()) as ResponseFor<"operation.preview", "HUMAN">;
   if (operationPreviewReply.representation !== "HUMAN") {
@@ -711,18 +715,20 @@ test("a reminder revision change after compound preview refuses both effects wit
   const reviewed = await reviewDraft(page);
   const frozenBytes = (await previewed).request().postData();
   const concurrent = await workRequest(page, "operation.execute", {
-    kind: "REMINDER",
     operationId: mintOperationId(),
-    target: {
-      kind: "REFERENCE",
-      caseReference: reference,
-    },
-    act: {
-      kind: "reminder.update",
+    task: "reminder.update",
+    binding: {
+      kind: "REMINDER",
+      target: {
+        kind: "REFERENCE",
+        caseReference: reference,
+      },
       reminderId: initial.operationId,
       expectedRevision: 1,
-      action: "Changed by another session",
-      dueDate: "2026-11-10",
+    },
+    inputs: {
+      "input:reminderAction": "Changed by another session",
+      "input:reminderDueDate": "2026-11-10",
     },
   });
   expect(concurrent.outcome.kind).toBe("ACCEPTED");
@@ -738,12 +744,9 @@ test("a reminder revision change after compound preview refuses both effects wit
   const frozen: unknown = response.request().postDataJSON();
   expect(frozen).toMatchObject({
     operationId: reviewed.operationId,
-    kind: "REMINDER",
-    act: {
-      kind: "reminder.completeAndPlanNext",
-      reminderId: initial.operationId,
-      expectedRevision: 1,
-    },
+    task: "reminder.completeAndPlanNext",
+    binding: { kind: "REMINDER", reminderId: initial.operationId, expectedRevision: 1 },
+    inputs: {},
   });
   const operationExecuteReply = (await response.json()) as ResponseFor<
     "operation.execute",
@@ -841,17 +844,16 @@ test("published reminder rows show server timing in case and queue views across 
   ];
   for (const [index, dueDate] of ["0001-01-01", businessDate, "9999-12-31"].entries()) {
     const accepted = await workRequest(page, "operation.execute", {
-      kind: "REMINDER",
       operationId: mintOperationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
+      task: "reminder.create",
+      binding: {
+        kind: "REMINDER",
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
+        },
       },
-      act: {
-        kind: "reminder.create",
-        action: actions[index]!,
-        dueDate,
-      },
+      inputs: { "input:reminderAction": actions[index]!, "input:reminderDueDate": dueDate },
     });
     expect(accepted.outcome.kind).toBe("ACCEPTED");
   }
@@ -901,17 +903,17 @@ test("published reminder rows show server timing in case and queue views across 
     const steward = await stewardContext.newPage();
     await openAuthenticated(steward, "Cases", stewardCookies);
     const voided = await workRequest(steward, "operation.execute", {
-      kind: "CASE",
       operationId: mintOperationId(),
-      target: {
-        kind: "REFERENCE",
-        caseReference: reference,
+      task: "case.void",
+      binding: {
+        kind: "CASE",
+        target: {
+          kind: "REFERENCE",
+          caseReference: reference,
+        },
+        expectedRevision: 1,
       },
-      expectedRevision: 1,
-      act: {
-        kind: "case.void",
-        reason: "Synthetic timing test entry error",
-      },
+      inputs: { "input:reason": "Synthetic timing test entry error" },
     });
     expect(voided.outcome.kind).toBe("ACCEPTED");
   } finally {

@@ -29,6 +29,7 @@ const correction = (registrationChoice: string, decisionChoice: string) => {
     operationEntry({ subject: "CASE", kind: "case.correct" }),
     values,
     bindingFor(),
+    firstId,
   ).command;
 };
 
@@ -47,16 +48,13 @@ it("correction checks detect changed payloads and retain independent literal exp
     throw new Error("Independent replacement oracle is missing.");
   }
   const actual = correction("UPDATE", "KEEP");
-  if (actual.kind !== "CASE" || actual.act.kind !== "case.correct") {
+  if (actual.binding.kind !== "CASE" || actual.task !== "case.correct") {
     throw new Error("Expected correction.");
   }
   const wrong = { ...authored.registration, claimantName: "Wrong authored value" };
   const changed = {
     ...actual,
-    act: {
-      ...actual.act,
-      groups: { ...actual.act.groups, registration: { kind: "UPDATE" as const, values: wrong } },
-    },
+    inputs: { ...actual.inputs, "field:claimantName": "Wrong authored value" },
   };
   expect(() => {
     expectCorrection(changed, literal[2], authored);
@@ -64,17 +62,12 @@ it("correction checks detect changed payloads and retain independent literal exp
   expect(() => {
     expectCorrection(changed, literal[2], { ...authored, registration: wrong });
   }).toThrow();
-  const omitted = JSON.parse(literal[2]) as {
-    act: { groups: { registration: { values: Record<string, string> } } };
-  };
-  Reflect.deleteProperty(omitted.act.groups.registration.values, "claimantName");
+  const omitted = JSON.parse(literal[2]) as { inputs: Record<string, unknown> };
+  Reflect.deleteProperty(omitted.inputs, "field:claimantName");
   const omissionLiteral = JSON.stringify(omitted);
   expectCorrection(actual, omissionLiteral, authored);
-  const missing = { ...actual, act: structuredClone(actual.act) };
-  if (missing.act.groups.registration.kind !== "UPDATE") {
-    throw new Error("Expected replacement.");
-  }
-  Reflect.deleteProperty(missing.act.groups.registration.values, "claimantName");
+  const missing = { ...actual, inputs: structuredClone(actual.inputs) };
+  Reflect.deleteProperty(missing.inputs, "field:claimantName");
   expect(() => {
     expectCorrection(missing, omissionLiteral, authored);
   }).toThrow();
@@ -87,11 +80,14 @@ it("takes the selected entry from identity while request constants derive from t
     kind: "PEOPLE",
     "act.kind": "people.disable",
   };
-  expect(assembleOperation(entry, values, bindingFor()).command).toEqual({
-    kind: "CASE",
+  expect(assembleOperation(entry, values, bindingFor(), firstId).command).toEqual({
     operationId: firstId,
-    target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
-    expectedRevision: 4,
-    act: { kind: "case.close" },
+    task: "case.close",
+    binding: {
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
+      expectedRevision: 4,
+    },
+    inputs: {},
   });
 });

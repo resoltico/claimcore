@@ -4,16 +4,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import { render } from "../../../support/presentation-test-support";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
-const first = {
-  kind: "SERVICE",
-  issuer: "https://issuer.example/",
-  subject: "service-a",
-} as const;
-const second = {
-  kind: "HUMAN",
-  issuer: "https://issuer.example/",
-  subject: "person-b",
-} as const;
+const first = "10000000-0000-7000-8000-000000000001";
+const second = "10000000-0000-7000-8000-000000000002";
 const fixture = () => {
   const bodies: string[] = [];
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, options) =>
@@ -108,7 +100,7 @@ const fixture = () => {
   };
 };
 afterEach(() => vi.unstubAllGlobals());
-it("binds a Core principal atomically outside editable inputs and retains it across action resets", async () => {
+it("binds a Core actor atomically outside editable inputs and retains it across action resets", async () => {
   const f = fixture();
   await act(() =>
     Promise.try(() => {
@@ -122,16 +114,16 @@ it("binds a Core principal atomically outside editable inputs and retains it acr
         },
         {
           kind: "PEOPLE",
-          principal: first,
+          actorId: first,
         },
       );
     }),
   );
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: first,
+    actorId: first,
   });
-  expect(f.model().values).toEqual({});
+  expect(f.model().values["input:principal.subject"]).toBe("bait");
   expect(f.model().contextChanged).toBe(false);
   await act(() =>
     Promise.try(() => {
@@ -140,7 +132,7 @@ it("binds a Core principal atomically outside editable inputs and retains it acr
   );
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: first,
+    actorId: first,
   });
   await act(() =>
     Promise.try(() => {
@@ -152,11 +144,9 @@ it("binds a Core principal atomically outside editable inputs and retains it acr
     expect(f.model().phase).toBe("REVIEWING");
   });
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
-    kind: "PEOPLE",
-    target: first,
-    act: {
-      kind: "people.enable",
-    },
+    task: "people.enable",
+    binding: { kind: "PEOPLE", actorId: first },
+    inputs: {},
   });
 });
 it("an explicit target reset clears consent and allocates the next identity only at its new preview", async () => {
@@ -169,7 +159,7 @@ it("an explicit target reset clears consent and allocates the next identity only
         {},
         {
           kind: "PEOPLE",
-          principal: first,
+          actorId: first,
         },
       );
     }),
@@ -193,7 +183,7 @@ it("an explicit target reset clears consent and allocates the next identity only
         {},
         {
           kind: "PEOPLE",
-          principal: second,
+          actorId: second,
         },
       );
     }),
@@ -203,7 +193,7 @@ it("an explicit target reset clears consent and allocates the next identity only
   expect(f.model().prepared).toBeNull();
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
-    principal: second,
+    actorId: second,
   });
   await act(() => old.execute());
   expect(f.fetch).toHaveBeenCalledTimes(1);
@@ -212,7 +202,7 @@ it("an explicit target reset clears consent and allocates the next identity only
     expect(f.model().phase).toBe("REVIEWING");
   });
   expect(JSON.parse(f.bodies[1]!)).toMatchObject({
-    target: second,
+    binding: { actorId: second },
   });
   expect(operationRequest(f.bodies[1]).operationId).not.toBe(
     operationRequest(f.bodies[0]).operationId,

@@ -1,15 +1,17 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 7,
-    "act": {
-      "kind": "case.reinstate",
-      "reason": "Synthetic correction checked"
+    "task": "case.reinstate",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 7
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
+    "inputs": {
+      "input:reason": "Synthetic correction checked"
     }
   }
 }

@@ -68,11 +68,14 @@ let private authoritativeIdentityAdmission () =
             Expect.equal
                 (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (payload sample)
                  |> Result.mapError _.Reason
-                 |> Result.bind (function
-                     | OperationInput.People request ->
-                         ClaimCore.Domain.People.parse request
-                         |> Result.mapError (fun _ -> "invalid principal")
-                     | _ -> Error "Expected people request")
+                 |> Result.bind (
+                     Submissions.command
+                     >> function
+                         | OperationInput.People request ->
+                             ClaimCore.Domain.People.parse request
+                             |> Result.mapError (fun _ -> "invalid principal")
+                         | _ -> Error "Expected people request"
+                 )
                  |> Result.isOk)
                 (expected.GetBoolean())
                 ("Unchanged authoritative identity admission: " + text "id" sample)
@@ -182,7 +185,7 @@ let private reminderRevisionAdmission () =
     Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "0")
     |> targeted
 
-    Grammar.reminderIntent (arguments "0") |> targeted
+    Grammar.draft (arguments "0") |> targeted
 
     Expect.isOk
         (Grammar.prepare

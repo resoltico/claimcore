@@ -19,6 +19,7 @@
     <Compile Include="Codecs/HostReplies.fs" />
     <Compile Include="Codecs/WireMembers.fs" />
     <Compile Include="Codecs/RequestCodecs.fs" />
+    <Compile Include="Codecs/OperationSubmissionCodecs.fs" />
     <Compile Include="Catalog/Metadata.fs" />
     <Compile Include="Codecs/ResponseScalars.fs" />
     <Compile Include="Codecs/CaseFieldCodecs.fs" />

@@ -8,8 +8,9 @@ open ClaimCore.Presentation
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module internal ReviewDocumentParts =
     /// The server computes presentation once from authoritative typed review facts.
-    let ofCore input review =
-        let described = ReviewScreen.operationReview input review
+    let describe operationIdentity input review =
+        let described =
+            ReviewScreen.operationReview (operationIdentity |> Option.map fst) input review
 
         let parent =
             match review with
@@ -32,13 +33,13 @@ module internal ReviewDocumentParts =
             | _ -> []
 
         let action =
-            input
-            |> Option.map (fun input ->
+            operationIdentity
+            |> Option.map (fun (act, _) ->
                 ScreenEntries.value
                     "act"
                     "label.action"
                     Prominence.Primary
-                    (ScreenEntries.code ActKind.vocabulary (ActKind.ofInput input)))
+                    (ScreenEntries.code ActKind.vocabulary act))
             |> Option.toList
 
         let identity =
@@ -98,13 +99,13 @@ module internal ReviewDocumentParts =
         let sections = described.Effects
 
         let operationIdentity =
-            input
-            |> Option.map (fun input ->
+            operationIdentity
+            |> Option.map (fun (_, operationId: System.Guid) ->
                 ScreenEntries.value
                     "operationId"
                     "field.operationId.label"
                     Prominence.Detail
-                    (PresentedValue.Identifier((OperationInput.operationId input).ToString("D"))))
+                    (PresentedValue.Identifier(operationId.ToString("D"))))
             |> Option.toList
 
         let details =

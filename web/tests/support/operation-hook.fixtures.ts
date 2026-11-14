@@ -29,21 +29,23 @@ export const preview = (
 ): ApiResult<ServiceResponse<"operation.preview">> => {
   const { input } = prepared;
   if (
-    input.kind !== "CASE" ||
-    (input.act.kind !== "case.open" && input.act.kind !== "case.close")
+    input.binding.kind !== "CASE" ||
+    (input.task !== "case.open" && input.task !== "case.close")
   ) {
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
-  const source = input.act.kind === "case.open" ? openReview : closeReview;
+  const source = input.task === "case.open" ? openReview : closeReview;
   let { caseId } = current.context;
-  if (input.target.kind === "ID") {
-    ({ caseId } = input.target);
+  if (input.binding.target.kind === "ID") {
+    ({ caseId } = input.binding.target);
   }
-  if (input.act.kind === "case.open") {
+  if (input.task === "case.open") {
     caseId = input.operationId;
   }
   const reference =
-    input.target.kind === "REFERENCE" ? input.target.caseReference : "CASE-SERIALIZATION";
+    input.binding.target.kind === "REFERENCE"
+      ? input.binding.target.caseReference
+      : "CASE-SERIALIZATION";
   return {
     kind: "outcome",
     status: 200,
@@ -61,7 +63,7 @@ export const preview = (
               target: {
                 kind: "CASE",
                 caseId,
-                beforeRevision: input.act.kind === "case.open" ? null : input.expectedRevision,
+                beforeRevision: input.task === "case.open" ? null : input.binding.expectedRevision,
               },
               confirmation: { kind: "CASE_REFERENCE", reference },
             },

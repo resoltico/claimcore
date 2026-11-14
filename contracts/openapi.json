@@ -260,7 +260,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperationInput"
+                "$ref": "#/components/schemas/OperationSubmission"
               }
             }
           }
@@ -372,7 +372,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OperationInput"
+                "$ref": "#/components/schemas/OperationSubmission"
               }
             }
           }
@@ -3569,239 +3569,6 @@
           "directRoles",
           "installationRoles",
           "effective"
-        ]
-      },
-      "CaseAct": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseAct.case.open"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.amendRegistration"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.correct"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.decide"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.withdrawDecision"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.recordPayment"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.removePayment"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.close"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.reopen"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.void"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.reinstate"
-          },
-          {
-            "$ref": "#/components/schemas/CaseAct.case.erase"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "case.open": "#/components/schemas/CaseAct.case.open",
-            "case.amendRegistration": "#/components/schemas/CaseAct.case.amendRegistration",
-            "case.correct": "#/components/schemas/CaseAct.case.correct",
-            "case.decide": "#/components/schemas/CaseAct.case.decide",
-            "case.withdrawDecision": "#/components/schemas/CaseAct.case.withdrawDecision",
-            "case.recordPayment": "#/components/schemas/CaseAct.case.recordPayment",
-            "case.removePayment": "#/components/schemas/CaseAct.case.removePayment",
-            "case.close": "#/components/schemas/CaseAct.case.close",
-            "case.reopen": "#/components/schemas/CaseAct.case.reopen",
-            "case.void": "#/components/schemas/CaseAct.case.void",
-            "case.reinstate": "#/components/schemas/CaseAct.case.reinstate",
-            "case.erase": "#/components/schemas/CaseAct.case.erase"
-          }
-        }
-      },
-      "CaseAct.case.amendRegistration": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.amendRegistration"
-          },
-          "values": {
-            "$ref": "#/components/schemas/RegistrationUpdate"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "CaseAct.case.close": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.close"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "CaseAct.case.correct": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.correct"
-          },
-          "groups": {
-            "$ref": "#/components/schemas/Correction"
-          }
-        },
-        "required": [
-          "kind",
-          "groups"
-        ]
-      },
-      "CaseAct.case.decide": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.decide"
-          },
-          "values": {
-            "$ref": "#/components/schemas/Decision"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "CaseAct.case.erase": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.erase"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "CaseAct.case.open": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.open"
-          },
-          "values": {
-            "$ref": "#/components/schemas/Registration"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "CaseAct.case.recordPayment": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.recordPayment"
-          },
-          "values": {
-            "$ref": "#/components/schemas/Payment"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "CaseAct.case.reinstate": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.reinstate"
-          },
-          "reason": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "reason"
-        ]
-      },
-      "CaseAct.case.removePayment": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.removePayment"
-          },
-          "paymentId": {
-            "$ref": "#/components/schemas/Uuid"
-          }
-        },
-        "required": [
-          "kind",
-          "paymentId"
-        ]
-      },
-      "CaseAct.case.reopen": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.reopen"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "CaseAct.case.void": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.void"
-          },
-          "reason": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "reason"
-        ]
-      },
-      "CaseAct.case.withdrawDecision": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "case.withdrawDecision"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "CaseActAvailabilityReason": {
@@ -7211,26 +6978,6 @@
           "handlingSummary"
         ]
       },
-      "CaseWorkUpdate": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "responsibleActor": {
-            "$ref": "#/components/schemas/ResponsibleActorChange"
-          },
-          "handlingSummary": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": []
-      },
       "CaseWorkView": {
         "type": "object",
         "additionalProperties": false,
@@ -7763,22 +7510,6 @@
           "representation"
         ]
       },
-      "Correction": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "registration": {
-            "$ref": "#/components/schemas/RegistrationGroup"
-          },
-          "decision": {
-            "$ref": "#/components/schemas/DecisionGroup"
-          }
-        },
-        "required": [
-          "registration",
-          "decision"
-        ]
-      },
       "CorrectionAdvice": {
         "type": "object",
         "additionalProperties": false,
@@ -8036,7 +7767,7 @@
               "$ref": "#/components/schemas/InputIssue"
             },
             "minItems": 1,
-            "maxItems": 151
+            "maxItems": 199
           }
         },
         "required": [
@@ -8307,83 +8038,6 @@
           "payableAmount",
           "payableCurrency"
         ]
-      },
-      "DecisionGroup": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/DecisionGroup.KEEP"
-          },
-          {
-            "$ref": "#/components/schemas/DecisionGroup.UPDATE"
-          },
-          {
-            "$ref": "#/components/schemas/DecisionGroup.CLEAR"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "KEEP": "#/components/schemas/DecisionGroup.KEEP",
-            "UPDATE": "#/components/schemas/DecisionGroup.UPDATE",
-            "CLEAR": "#/components/schemas/DecisionGroup.CLEAR"
-          }
-        }
-      },
-      "DecisionGroup.CLEAR": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CLEAR"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "DecisionGroup.KEEP": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "KEEP"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "DecisionGroup.UPDATE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "UPDATE"
-          },
-          "values": {
-            "$ref": "#/components/schemas/DecisionUpdate"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "DecisionUpdate": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "paymentDecisionDate": {
-            "type": "string"
-          },
-          "payableAmount": {
-            "type": "string"
-          },
-          "payableCurrency": {
-            "type": "string"
-          }
-        },
-        "required": []
       },
       "DisplayName": {
         "oneOf": [
@@ -9925,7 +9579,7 @@
                   "$ref": "#/components/schemas/TaskInputId"
                 },
                 "minItems": 0,
-                "maxItems": 63
+                "maxItems": 62
               },
               "correction": {
                 "oneOf": [
@@ -12511,7 +12165,7 @@
               "$ref": "#/components/schemas/HumanInputIssue"
             },
             "minItems": 1,
-            "maxItems": 151
+            "maxItems": 199
           }
         },
         "required": [
@@ -12605,7 +12259,7 @@
                   "$ref": "#/components/schemas/TaskInputId"
                 },
                 "minItems": 0,
-                "maxItems": 63
+                "maxItems": 62
               },
               "consequence": {
                 "enum": [
@@ -12932,6 +12586,8 @@
           "field:paidCurrency",
           "field:responsibleActor",
           "field:handlingSummary",
+          "group:registration",
+          "group:decision",
           "group:payment",
           "input:operationId",
           "input:expectedRevision",
@@ -12944,6 +12600,8 @@
           "input:directorySearch",
           "input:grants",
           "input:role",
+          "input:scope",
+          "input:caseId",
           "input:limit",
           "input:cursor",
           "input:text",
@@ -13267,7 +12925,7 @@
               "$ref": "#/components/schemas/TaskInputId"
             },
             "minItems": 0,
-            "maxItems": 63
+            "maxItems": 62
           },
           "correction": {
             "oneOf": [
@@ -14654,7 +14312,7 @@
               "$ref": "#/components/schemas/TaskInputId"
             },
             "minItems": 0,
-            "maxItems": 63
+            "maxItems": 62
           },
           "consequence": {
             "enum": [
@@ -15091,55 +14749,6 @@
           "text"
         ]
       },
-      "NoteAct": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/NoteAct.note.add"
-          },
-          {
-            "$ref": "#/components/schemas/NoteAct.note.remove"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "note.add": "#/components/schemas/NoteAct.note.add",
-            "note.remove": "#/components/schemas/NoteAct.note.remove"
-          }
-        }
-      },
-      "NoteAct.note.add": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "note.add"
-          },
-          "text": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "text"
-        ]
-      },
-      "NoteAct.note.remove": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "note.remove"
-          },
-          "noteId": {
-            "$ref": "#/components/schemas/Uuid"
-          }
-        },
-        "required": [
-          "kind",
-          "noteId"
-        ]
-      },
       "NoteDisclosure": {
         "oneOf": [
           {
@@ -15281,6 +14890,598 @@
           "kind"
         ]
       },
+      "OperationBinding.case.amendRegistration": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.close": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.correct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.decide": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.erase": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.open": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.recordPayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.reinstate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.removePayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "paymentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision",
+          "paymentId"
+        ]
+      },
+      "OperationBinding.case.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.void": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.case.withdrawDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.note.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ]
+      },
+      "OperationBinding.note.remove": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "noteId"
+        ]
+      },
+      "OperationBinding.people.admit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "OperationBinding.people.disable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.people.enable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.people.eraseProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.people.grant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.people.register": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "OperationBinding.people.revoke": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.people.setProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
+      "OperationBinding.reminder.cancel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.reminder.complete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.reminder.completeAndPlanNext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.reminder.create": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ]
+      },
+      "OperationBinding.reminder.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.reminder.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "OperationBinding.work.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
       "OperationGetReply": {
         "oneOf": [
           {
@@ -15343,166 +15544,1083 @@
           "operationId"
         ]
       },
-      "OperationInput": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/OperationInput.NOTE"
-          },
-          {
-            "$ref": "#/components/schemas/OperationInput.CASE"
-          },
-          {
-            "$ref": "#/components/schemas/OperationInput.PEOPLE"
-          },
-          {
-            "$ref": "#/components/schemas/OperationInput.WORK"
-          },
-          {
-            "$ref": "#/components/schemas/OperationInput.REMINDER"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "NOTE": "#/components/schemas/OperationInput.NOTE",
-            "CASE": "#/components/schemas/OperationInput.CASE",
-            "PEOPLE": "#/components/schemas/OperationInput.PEOPLE",
-            "WORK": "#/components/schemas/OperationInput.WORK",
-            "REMINDER": "#/components/schemas/OperationInput.REMINDER"
-          }
-        }
-      },
-      "OperationInput.CASE": {
+      "OperationInputs.case.amendRegistration": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "CASE"
+          "field:incidentDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
+          "field:incidentNotificationDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
+          "field:incidentCountry": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "field:incidentDescription": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "act": {
-            "$ref": "#/components/schemas/CaseAct"
+          "field:policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimantName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
-        "required": [
-          "kind",
-          "operationId",
-          "target",
-          "expectedRevision",
-          "act"
-        ]
+        "required": []
       },
-      "OperationInput.NOTE": {
+      "OperationInputs.case.close": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.case.correct": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "NOTE"
+          "group:registration": {
+            "oneOf": [
+              {
+                "enum": [
+                  "KEEP",
+                  "UPDATE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
+          "group:decision": {
+            "oneOf": [
+              {
+                "enum": [
+                  "KEEP",
+                  "UPDATE",
+                  "CLEAR"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
+          "field:incidentDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "act": {
-            "$ref": "#/components/schemas/NoteAct"
+          "field:incidentNotificationDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:incidentCountry": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:incidentDescription": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimantName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:paymentDecisionDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:payableAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:payableCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "kind",
-          "operationId",
-          "target",
-          "act"
+          "group:registration",
+          "group:decision"
         ]
       },
-      "OperationInput.PEOPLE": {
+      "OperationInputs.case.decide": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "PEOPLE"
+          "field:paymentDecisionDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
+          "field:payableAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "target": {
-            "$ref": "#/components/schemas/PrincipalInput"
-          },
-          "act": {
-            "$ref": "#/components/schemas/PeopleAct"
+          "field:payableCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "kind",
-          "operationId",
-          "target",
-          "act"
+          "field:paymentDecisionDate",
+          "field:payableAmount",
+          "field:payableCurrency"
         ]
       },
-      "OperationInput.REMINDER": {
+      "OperationInputs.case.erase": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.case.open": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "REMINDER"
+          "field:incidentDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
+          "field:incidentNotificationDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
+          "field:incidentCountry": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "act": {
-            "$ref": "#/components/schemas/ReminderAct"
+          "field:incidentDescription": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimantName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:insurerName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:claimedCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "kind",
-          "operationId",
-          "target",
-          "act"
+          "field:incidentDate",
+          "field:incidentNotificationDate",
+          "field:incidentCountry",
+          "field:claimantName",
+          "field:insurerName",
+          "field:claimedAmount",
+          "field:claimedCurrency"
         ]
       },
-      "OperationInput.WORK": {
+      "OperationInputs.case.recordPayment": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "WORK"
+          "field:paymentDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
+          "field:paidAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "act": {
-            "$ref": "#/components/schemas/WorkAct"
+          "field:paidCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "kind",
-          "operationId",
-          "target",
-          "expectedRevision",
-          "act"
+          "field:paymentDate",
+          "field:paidAmount",
+          "field:paidCurrency"
         ]
+      },
+      "OperationInputs.case.reinstate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reason": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reason"
+        ]
+      },
+      "OperationInputs.case.removePayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.case.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.case.void": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reason": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reason"
+        ]
+      },
+      "OperationInputs.case.withdrawDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.note.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:noteText": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:noteText"
+        ]
+      },
+      "OperationInputs.note.remove": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.people.admit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:principal.kind": {
+            "oneOf": [
+              {
+                "enum": [
+                  "HUMAN",
+                  "SERVICE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:principal.issuer": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:principal.subject": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:profile.displayName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:profile.contact": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:grants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "input:role": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "OWNER",
+                        "CASE_READER",
+                        "CASE_REGISTRAR",
+                        "CASE_HANDLER",
+                        "PAYMENT_RECORDER",
+                        "DATA_STEWARD",
+                        "AUDITOR"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "input:scope": {
+                  "oneOf": [
+                    {
+                      "enum": [
+                        "INSTALLATION",
+                        "CASE"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "field:caseReference": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "input:caseId": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "input:role",
+                "input:scope"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 48
+          }
+        },
+        "required": [
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject",
+          "input:profile.displayName",
+          "input:grants"
+        ]
+      },
+      "OperationInputs.people.disable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.people.enable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.people.eraseProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.people.grant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:role": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OWNER",
+                  "CASE_READER",
+                  "CASE_REGISTRAR",
+                  "CASE_HANDLER",
+                  "PAYMENT_RECORDER",
+                  "DATA_STEWARD",
+                  "AUDITOR"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:scope": {
+            "oneOf": [
+              {
+                "enum": [
+                  "INSTALLATION",
+                  "CASE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:caseReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:caseId": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:role",
+          "input:scope"
+        ]
+      },
+      "OperationInputs.people.register": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:principal.kind": {
+            "oneOf": [
+              {
+                "enum": [
+                  "HUMAN",
+                  "SERVICE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:principal.issuer": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:principal.subject": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:profile.displayName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:profile.contact": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject",
+          "input:profile.displayName"
+        ]
+      },
+      "OperationInputs.people.revoke": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:role": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OWNER",
+                  "CASE_READER",
+                  "CASE_REGISTRAR",
+                  "CASE_HANDLER",
+                  "PAYMENT_RECORDER",
+                  "DATA_STEWARD",
+                  "AUDITOR"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:scope": {
+            "oneOf": [
+              {
+                "enum": [
+                  "INSTALLATION",
+                  "CASE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:caseReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:caseId": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:role",
+          "input:scope"
+        ]
+      },
+      "OperationInputs.people.setProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:profile.displayName": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:profile.contact": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:profile.displayName"
+        ]
+      },
+      "OperationInputs.reminder.cancel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.reminder.complete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "OperationInputs.reminder.completeAndPlanNext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reminderAction": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:reminderDueDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reminderAction",
+          "input:reminderDueDate"
+        ]
+      },
+      "OperationInputs.reminder.create": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reminderAction": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:reminderDueDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reminderAction",
+          "input:reminderDueDate"
+        ]
+      },
+      "OperationInputs.reminder.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reminderDueDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reminderDueDate"
+        ]
+      },
+      "OperationInputs.reminder.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "input:reminderAction": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input:reminderDueDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input:reminderAction",
+          "input:reminderDueDate"
+        ]
+      },
+      "OperationInputs.work.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field:responsibleActor": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:handlingSummary": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": []
       },
       "OperationLookupResult": {
         "oneOf": [
@@ -15889,24 +17007,825 @@
           "context"
         ]
       },
-      "Payment": {
+      "OperationSubmission": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.open"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.amendRegistration"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.correct"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.decide"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.withdrawDecision"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.recordPayment"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.removePayment"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.close"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.reopen"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.void"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.reinstate"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.erase"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.register"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.grant"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.revoke"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.enable"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.disable"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.setProfile"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.eraseProfile"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.people.admit"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.work.update"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.note.add"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.note.remove"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.create"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.update"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.complete"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.cancel"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.reopen"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.reminder.completeAndPlanNext"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "task",
+          "mapping": {
+            "case.open": "#/components/schemas/OperationSubmission.case.open",
+            "case.amendRegistration": "#/components/schemas/OperationSubmission.case.amendRegistration",
+            "case.correct": "#/components/schemas/OperationSubmission.case.correct",
+            "case.decide": "#/components/schemas/OperationSubmission.case.decide",
+            "case.withdrawDecision": "#/components/schemas/OperationSubmission.case.withdrawDecision",
+            "case.recordPayment": "#/components/schemas/OperationSubmission.case.recordPayment",
+            "case.removePayment": "#/components/schemas/OperationSubmission.case.removePayment",
+            "case.close": "#/components/schemas/OperationSubmission.case.close",
+            "case.reopen": "#/components/schemas/OperationSubmission.case.reopen",
+            "case.void": "#/components/schemas/OperationSubmission.case.void",
+            "case.reinstate": "#/components/schemas/OperationSubmission.case.reinstate",
+            "case.erase": "#/components/schemas/OperationSubmission.case.erase",
+            "people.register": "#/components/schemas/OperationSubmission.people.register",
+            "people.grant": "#/components/schemas/OperationSubmission.people.grant",
+            "people.revoke": "#/components/schemas/OperationSubmission.people.revoke",
+            "people.enable": "#/components/schemas/OperationSubmission.people.enable",
+            "people.disable": "#/components/schemas/OperationSubmission.people.disable",
+            "people.setProfile": "#/components/schemas/OperationSubmission.people.setProfile",
+            "people.eraseProfile": "#/components/schemas/OperationSubmission.people.eraseProfile",
+            "people.admit": "#/components/schemas/OperationSubmission.people.admit",
+            "work.update": "#/components/schemas/OperationSubmission.work.update",
+            "note.add": "#/components/schemas/OperationSubmission.note.add",
+            "note.remove": "#/components/schemas/OperationSubmission.note.remove",
+            "reminder.create": "#/components/schemas/OperationSubmission.reminder.create",
+            "reminder.update": "#/components/schemas/OperationSubmission.reminder.update",
+            "reminder.complete": "#/components/schemas/OperationSubmission.reminder.complete",
+            "reminder.cancel": "#/components/schemas/OperationSubmission.reminder.cancel",
+            "reminder.reopen": "#/components/schemas/OperationSubmission.reminder.reopen",
+            "reminder.completeAndPlanNext": "#/components/schemas/OperationSubmission.reminder.completeAndPlanNext"
+          }
+        }
+      },
+      "OperationSubmission.case.amendRegistration": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "paymentDate": {
-            "type": "string"
+          "task": {
+            "const": "case.amendRegistration"
           },
-          "paidAmount": {
-            "type": "string"
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
           },
-          "paidCurrency": {
-            "type": "string"
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.amendRegistration"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.amendRegistration"
           }
         },
         "required": [
-          "paymentDate",
-          "paidAmount",
-          "paidCurrency"
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.close": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.close"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.close"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.close"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.correct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.correct"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.correct"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.correct"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.decide": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.decide"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.decide"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.decide"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.erase": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.erase"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.erase"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.erase"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.open": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.open"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.open"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.open"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.recordPayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.recordPayment"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.recordPayment"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.recordPayment"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.reinstate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.reinstate"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.reinstate"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.reinstate"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.removePayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.removePayment"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.removePayment"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.removePayment"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.reopen"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.reopen"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.reopen"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.void": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.void"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.void"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.void"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.withdrawDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.withdrawDecision"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.case.withdrawDecision"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.withdrawDecision"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.note.add": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "note.add"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.note.add"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.note.add"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.note.remove": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "note.remove"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.note.remove"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.note.remove"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.admit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.admit"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.admit"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.admit"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.disable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.disable"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.disable"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.disable"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.enable": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.enable"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.enable"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.enable"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.eraseProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.eraseProfile"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.eraseProfile"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.eraseProfile"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.grant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.grant"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.grant"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.grant"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.register": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.register"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.register"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.register"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.revoke": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.revoke"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.revoke"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.revoke"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.people.setProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "people.setProfile"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.people.setProfile"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.people.setProfile"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.cancel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.cancel"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.cancel"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.cancel"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.complete": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.complete"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.complete"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.complete"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.completeAndPlanNext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.completeAndPlanNext"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.completeAndPlanNext"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.completeAndPlanNext"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.create": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.create"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.create"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.create"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.reopen": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.reopen"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.reopen"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.reopen"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.reminder.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "reminder.update"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.reminder.update"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.reminder.update"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.work.update": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "work.update"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/OperationBinding.work.update"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.work.update"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
         ]
       },
       "PaymentCollectionDifference": {
@@ -16109,196 +18028,6 @@
           "remaining"
         ]
       },
-      "PeopleAct": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.admit"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.register"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.setProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.eraseProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.grant"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.revoke"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.enable"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleAct.people.disable"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "people.admit": "#/components/schemas/PeopleAct.people.admit",
-            "people.register": "#/components/schemas/PeopleAct.people.register",
-            "people.setProfile": "#/components/schemas/PeopleAct.people.setProfile",
-            "people.eraseProfile": "#/components/schemas/PeopleAct.people.eraseProfile",
-            "people.grant": "#/components/schemas/PeopleAct.people.grant",
-            "people.revoke": "#/components/schemas/PeopleAct.people.revoke",
-            "people.enable": "#/components/schemas/PeopleAct.people.enable",
-            "people.disable": "#/components/schemas/PeopleAct.people.disable"
-          }
-        }
-      },
-      "PeopleAct.people.admit": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.admit"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/ActorProfileInput"
-          },
-          "grants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PeopleGrantInput"
-            },
-            "minItems": 1,
-            "maxItems": 48
-          }
-        },
-        "required": [
-          "kind",
-          "profile",
-          "grants"
-        ]
-      },
-      "PeopleAct.people.disable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.disable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleAct.people.enable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.enable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleAct.people.eraseProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.eraseProfile"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleAct.people.grant": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.grant"
-          },
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/Scope"
-          }
-        },
-        "required": [
-          "kind",
-          "role",
-          "scope"
-        ]
-      },
-      "PeopleAct.people.register": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.register"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/ActorProfileInput"
-          }
-        },
-        "required": [
-          "kind",
-          "profile"
-        ]
-      },
-      "PeopleAct.people.revoke": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.revoke"
-          },
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/Scope"
-          }
-        },
-        "required": [
-          "kind",
-          "role",
-          "scope"
-        ]
-      },
-      "PeopleAct.people.setProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.setProfile"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/ActorProfileInput"
-          }
-        },
-        "required": [
-          "kind",
-          "profile"
-        ]
-      },
       "PeopleGrant": {
         "type": "object",
         "additionalProperties": false,
@@ -16316,30 +18045,6 @@
           },
           "scope": {
             "$ref": "#/components/schemas/GrantScope"
-          }
-        },
-        "required": [
-          "role",
-          "scope"
-        ]
-      },
-      "PeopleGrantInput": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/Scope"
           }
         },
         "required": [
@@ -19172,29 +20877,6 @@
           "subject"
         ]
       },
-      "PrincipalInput": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "enum": [
-              "HUMAN",
-              "SERVICE"
-            ]
-          },
-          "issuer": {
-            "type": "string"
-          },
-          "subject": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "issuer",
-          "subject"
-        ]
-      },
       "ProgressCount": {
         "type": "object",
         "additionalProperties": false,
@@ -20193,109 +21875,6 @@
           "claimedCurrency"
         ]
       },
-      "RegistrationGroup": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/RegistrationGroup.KEEP"
-          },
-          {
-            "$ref": "#/components/schemas/RegistrationGroup.UPDATE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "KEEP": "#/components/schemas/RegistrationGroup.KEEP",
-            "UPDATE": "#/components/schemas/RegistrationGroup.UPDATE"
-          }
-        }
-      },
-      "RegistrationGroup.KEEP": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "KEEP"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "RegistrationGroup.UPDATE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "UPDATE"
-          },
-          "values": {
-            "$ref": "#/components/schemas/RegistrationUpdate"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
-      },
-      "RegistrationUpdate": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "incidentDate": {
-            "type": "string"
-          },
-          "incidentNotificationDate": {
-            "type": "string"
-          },
-          "incidentCountry": {
-            "type": "string"
-          },
-          "incidentDescription": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "policyNumber": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "insurerClaimReference": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "claimantName": {
-            "type": "string"
-          },
-          "insurerName": {
-            "type": "string"
-          },
-          "claimedAmount": {
-            "type": "string"
-          },
-          "claimedCurrency": {
-            "type": "string"
-          }
-        },
-        "required": []
-      },
       "RelatedDate": {
         "type": "object",
         "additionalProperties": false,
@@ -20380,189 +21959,6 @@
           "action",
           "dueDate",
           "state"
-        ]
-      },
-      "ReminderAct": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.create"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.update"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.complete"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.cancel"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.reopen"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderAct.reminder.completeAndPlanNext"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "reminder.create": "#/components/schemas/ReminderAct.reminder.create",
-            "reminder.update": "#/components/schemas/ReminderAct.reminder.update",
-            "reminder.complete": "#/components/schemas/ReminderAct.reminder.complete",
-            "reminder.cancel": "#/components/schemas/ReminderAct.reminder.cancel",
-            "reminder.reopen": "#/components/schemas/ReminderAct.reminder.reopen",
-            "reminder.completeAndPlanNext": "#/components/schemas/ReminderAct.reminder.completeAndPlanNext"
-          }
-        }
-      },
-      "ReminderAct.reminder.cancel": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.cancel"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "ReminderAct.reminder.complete": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.complete"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "ReminderAct.reminder.completeAndPlanNext": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.completeAndPlanNext"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "action": {
-            "type": "string"
-          },
-          "dueDate": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "reminderId",
-          "expectedRevision",
-          "action",
-          "dueDate"
-        ]
-      },
-      "ReminderAct.reminder.create": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.create"
-          },
-          "action": {
-            "type": "string"
-          },
-          "dueDate": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "action",
-          "dueDate"
-        ]
-      },
-      "ReminderAct.reminder.reopen": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.reopen"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "dueDate": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "reminderId",
-          "expectedRevision",
-          "dueDate"
-        ]
-      },
-      "ReminderAct.reminder.update": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "reminder.update"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "action": {
-            "type": "string"
-          },
-          "dueDate": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "reminderId",
-          "expectedRevision",
-          "action",
-          "dueDate"
         ]
       },
       "ReminderActionChange": {
@@ -21626,51 +23022,6 @@
           "after"
         ]
       },
-      "ResponsibleActorChange": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ResponsibleActorChange.CLEAR"
-          },
-          {
-            "$ref": "#/components/schemas/ResponsibleActorChange.SET"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "CLEAR": "#/components/schemas/ResponsibleActorChange.CLEAR",
-            "SET": "#/components/schemas/ResponsibleActorChange.SET"
-          }
-        }
-      },
-      "ResponsibleActorChange.CLEAR": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CLEAR"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "ResponsibleActorChange.SET": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "SET"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "value"
-        ]
-      },
       "ReviewPresentation": {
         "type": "object",
         "additionalProperties": false,
@@ -21892,51 +23243,6 @@
           "businessDate",
           "timeZone",
           "observedAt"
-        ]
-      },
-      "Scope": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/Scope.INSTALLATION"
-          },
-          {
-            "$ref": "#/components/schemas/Scope.CASE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "INSTALLATION": "#/components/schemas/Scope.INSTALLATION",
-            "CASE": "#/components/schemas/Scope.CASE"
-          }
-        }
-      },
-      "Scope.CASE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          }
-        },
-        "required": [
-          "kind",
-          "target"
-        ]
-      },
-      "Scope.INSTALLATION": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "INSTALLATION"
-          }
-        },
-        "required": [
-          "kind"
         ]
       },
       "Screen": {
@@ -22267,8 +23573,7 @@
           "input:due",
           "input:reminderState",
           "input:reminderDue",
-          "input:includeInactive",
-          "input:responsibleActorAction"
+          "input:includeInactive"
         ]
       },
       "TaskRowOrdinal": {
@@ -23260,35 +24565,6 @@
         "format": "uuid",
         "minLength": 36,
         "maxLength": 36
-      },
-      "WorkAct": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/WorkAct.work.update"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "work.update": "#/components/schemas/WorkAct.work.update"
-          }
-        }
-      },
-      "WorkAct.work.update": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "work.update"
-          },
-          "values": {
-            "$ref": "#/components/schemas/CaseWorkUpdate"
-          }
-        },
-        "required": [
-          "kind",
-          "values"
-        ]
       },
       "WorkDateBasis": {
         "type": "object",

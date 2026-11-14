@@ -131,7 +131,7 @@ let contentGuards =
                 "\"actorId\":\"recorder\"", "\"actorId\":\"other-recorder\""
                 "Current recorder", "Different current recorder"
                 "\"revision\":3", "\"revision\":4"
-                "SET_PROFILE", "ERASE_PROFILE"
+                "people.setProfile", "people.eraseProfile"
                 "1.2345", "1.2340"
                 "literal\\\\nparagraph", "literal\\nparagraph"
                 "\"operationId\":", "\"unexpected\":\"must remain visible\",\"operationId\":"

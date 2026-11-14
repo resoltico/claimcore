@@ -103,16 +103,17 @@ it("keeps concurrent HUMAN and DATA observations distinct through the actual req
   ]);
 });
 const operationInput = {
-  kind: "CASE",
   operationId: "019aa6a0-0000-7000-8000-000000000001",
-  target: {
-    kind: "REFERENCE",
-    caseReference: "SYNTHETIC-CASE",
+  task: "case.close",
+  binding: {
+    kind: "CASE",
+    target: {
+      kind: "REFERENCE",
+      caseReference: "SYNTHETIC-CASE",
+    },
+    expectedRevision: 1,
   },
-  expectedRevision: 1,
-  act: {
-    kind: "case.close",
-  },
+  inputs: {},
 } as const;
 const operationReview = {
   representation: "HUMAN",

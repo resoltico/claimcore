@@ -65,7 +65,9 @@ or document does not authorize a later write.
 ## Submit a change
 
 Start with the task's help and the current target. Use the offered versions and identities, and author
-only the fields that the task declares. The exact operation request is specified by OpenAPI; use
+only the fields that the task declares. Send `{operationId, task, binding, inputs}` with verbatim input
+tokens. Omit Update inputs to keep values; use `null` only where `clearable` permits it. Existing-person
+changes select an actor ID. The exact operation request is specified by OpenAPI; use
 `claimcore schema operation.preview request` or `claimcore schema operation.execute request` to inspect it.
 
 ```sh

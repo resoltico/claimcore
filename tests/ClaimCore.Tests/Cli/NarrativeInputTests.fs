@@ -41,7 +41,11 @@ let tests =
                                 arguments
                             |> accepted
 
-                        match Frames.value Api.operationExecute prepared.Invocation with
+                        match
+                            (Frames.value Api.operationExecute
+                             >> Option.map ClaimCore.TestSupport.Submissions.command)
+                                prepared.Invocation
+                        with
                         | Some(OperationInput.Note { Act = AuthoredNoteAct.AddNote text }) ->
                             Expect.equal
                                 text
@@ -84,7 +88,11 @@ let tests =
                                 arguments
                             |> accepted
 
-                        match Frames.value Api.operationExecute prepared.Invocation with
+                        match
+                            (Frames.value Api.operationExecute
+                             >> Option.map ClaimCore.TestSupport.Submissions.command)
+                                prepared.Invocation
+                        with
                         | Some(OperationInput.Work {
                                                        Act = WorkAct.UpdateWork value
                                                        ExpectedRevision = 2L
@@ -143,7 +151,11 @@ let tests =
 
                 let prepared = prepare (prefix @ [ "--clear-handling-summary" ]) |> accepted
 
-                match Frames.value Api.operationExecute prepared.Invocation with
+                match
+                    (Frames.value Api.operationExecute
+                     >> Option.map ClaimCore.TestSupport.Submissions.command)
+                        prepared.Invocation
+                with
                 | Some(OperationInput.Work { Act = WorkAct.UpdateWork value }) ->
                     Expect.equal value.Summary WorkValue.Clear "Null clear is authored"
                 | _ -> failtest "Expected work clear"

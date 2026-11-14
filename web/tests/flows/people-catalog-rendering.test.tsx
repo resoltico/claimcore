@@ -16,12 +16,7 @@ import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { peopleReview, peopleAcceptance } from "../support/people-operation.fixtures";
 import { input, response, type Dispatch } from "../support/catalog-transport.fixtures";
 afterEach(() => vi.unstubAllGlobals());
-type PeopleInput = Extract<
-  RequestByEndpoint["operation.execute"],
-  {
-    kind: "PEOPLE";
-  }
->;
+type PeopleInput = Extract<RequestByEndpoint["operation.execute"], { binding: { kind: "PEOPLE" } }>;
 const peopleActs = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "PEOPLE"
     ? [
@@ -38,12 +33,20 @@ const peopleReceipt = (request: PeopleInput) => {
   }
   return value.value.outcome.document;
 };
-const PeopleBinding = () => {
+const PeopleBinding = ({
+  initialKind = "people.register",
+}: {
+  initialKind?: PeopleInput["task"];
+}) => {
   const credential = useCredential();
   const [recorded, setRecorded] = useState<HumanReceiptDocument | null>(null);
   const model = useOperation({
     subject: "PEOPLE",
-    kind: "people.register",
+    kind: initialKind,
+    binding: ["people.register", "people.admit"].includes(initialKind)
+      ? { kind: "PEOPLE" }
+      : { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+    prefill: { "input:principal.kind": "HUMAN" },
     current: null,
     credential,
     onLockChange: () => undefined,
@@ -79,8 +82,8 @@ const peopleTransport = (calls: Dispatch<PeopleInput>[]) =>
     ) {
       throw new Error("Unexpected people endpoint.");
     }
-    const operationExecuteRequest = JSON.parse(init.body) as RequestByEndpoint["operation.execute"];
-    if (operationExecuteRequest.kind !== "PEOPLE") {
+    const operationExecuteRequest = JSON.parse(init.body) as PeopleInput;
+    if (operationExecuteRequest.binding.kind !== "PEOPLE") {
       throw new Error("Production people form did not produce a complete request.");
     }
     calls.push({
@@ -102,7 +105,7 @@ const peopleTransport = (calls: Dispatch<PeopleInput>[]) =>
       }),
     );
   });
-const authorPeople = async (kind: PeopleInput["act"]["kind"]) => {
+const authorPeople = async (kind: PeopleInput["task"]) => {
   const user = userEvent.setup();
   const control = await screen.findByRole("combobox", {
     name: "Access change",
@@ -112,8 +115,10 @@ const authorPeople = async (kind: PeopleInput["act"]["kind"]) => {
     expect(optionValues(control)).toHaveLength(8);
   });
   await chooseOption(user, control, kind);
-  input("input:principal.issuer", "https://issuer.example/");
-  input("input:principal.subject", "synthetic-catalogue-human");
+  if (kind === "people.register" || kind === "people.admit") {
+    input("input:principal.issuer", "https://issuer.example/");
+    input("input:principal.subject", "synthetic-catalogue-human");
+  }
   if (kind === "people.register" || kind === "people.setProfile" || kind === "people.admit") {
     input("input:profile.displayName", "Synthetic profile name");
   }
@@ -138,7 +143,7 @@ it.each(peopleActs)(
     expect(peopleActs).toHaveLength(8);
     const calls: Dispatch<PeopleInput>[] = [];
     vi.stubGlobal("fetch", peopleTransport(calls));
-    render(<PeopleBinding />);
+    render(<PeopleBinding initialKind={act.kind} />);
     await authorPeople(act.kind);
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));
@@ -160,26 +165,26 @@ it.each(peopleActs)(
     await screen.findByText("People receipt accepted", {
       exact: true,
     });
-    expect(calls[0]!.input.act.kind).toBe(act.kind);
-    expect(calls[0]!.input.target).toEqual({
-      kind: "HUMAN",
-      issuer: "https://issuer.example/",
-      subject: "synthetic-catalogue-human",
-    });
-    if (
-      calls[0]!.input.act.kind === "people.grant" ||
-      calls[0]!.input.act.kind === "people.revoke"
-    ) {
-      expect(calls[0]!.input.act).toMatchObject({
-        role: "CASE_READER",
-        scope: {
-          kind: "INSTALLATION",
-        },
+    expect(calls[0]!.input.task).toBe(act.kind);
+    if (calls[0]!.input.task === "people.register" || calls[0]!.input.task === "people.admit") {
+      expect(calls[0]!.input.inputs).toMatchObject({
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "https://issuer.example/",
+        "input:principal.subject": "synthetic-catalogue-human",
+      });
+    } else {
+      expect(calls[0]!.input.binding).toHaveProperty("actorId");
+    }
+    if (calls[0]!.input.task === "people.grant" || calls[0]!.input.task === "people.revoke") {
+      expect(calls[0]!.input.inputs).toMatchObject({
+        "input:role": "CASE_READER",
+        "input:scope": "INSTALLATION",
       });
     }
-    if (calls[0]!.input.act.kind === "people.enable") {
-      expect(calls[0]!.input.act).toEqual({
-        kind: "people.enable",
+    if (calls[0]!.input.task === "people.enable") {
+      expect({ task: calls[0]!.input.task, inputs: calls[0]!.input.inputs }).toEqual({
+        task: "people.enable",
+        inputs: {},
       });
     }
   },
@@ -187,7 +192,7 @@ it.each(peopleActs)(
 it("requires an explicit role and disables service-incompatible roles from catalog admission", async () => {
   const calls: Dispatch<PeopleInput>[] = [];
   vi.stubGlobal("fetch", peopleTransport(calls));
-  render(<PeopleBinding />);
+  render(<PeopleBinding initialKind="people.admit" />);
   const user = userEvent.setup();
   const control = await screen.findByRole("combobox", {
     name: "Access change",
@@ -201,7 +206,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
     screen.getByRole("combobox", {
       name: "Access change",
     }),
-    "people.grant",
+    "people.admit",
   );
   const group = screen.getByRole("group", {
     name: "Role",
@@ -210,14 +215,14 @@ it("requires an explicit role and disables service-incompatible roles from catal
   const owner = screen.getByRole("radio", {
     name: "Owner",
   });
-  await user.click(owner);
-  expect(owner).toBeChecked();
+  expect(owner).not.toBeDisabled();
   await user.click(
     screen.getByRole("radio", {
       name: "Service account",
     }),
   );
   expect(owner).toBeDisabled();
+  await user.click(owner);
   expect(group.querySelector("input:checked")).toBeNull();
   expect(
     screen.getByRole("radio", {
@@ -230,7 +235,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
 it("disallows new case-scoped Owner grants and preserves revocation choices", async () => {
   const calls: Dispatch<PeopleInput>[] = [];
   vi.stubGlobal("fetch", peopleTransport(calls));
-  render(<PeopleBinding />);
+  render(<PeopleBinding initialKind="people.grant" />);
   await authorPeople("people.grant");
   const user = userEvent.setup();
   await user.click(

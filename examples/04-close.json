@@ -1,14 +1,15 @@
 {
   "endpoint": "operation.execute",
   "input": {
-    "kind": "CASE",
-    "expectedRevision": 3,
-    "act": {
-      "kind": "case.close"
+    "task": "case.close",
+    "binding": {
+      "kind": "CASE",
+      "target": {
+        "kind": "REFERENCE",
+        "caseReference": "DEMO-0001"
+      },
+      "expectedRevision": 3
     },
-    "target": {
-      "kind": "REFERENCE",
-      "caseReference": "DEMO-0001"
-    }
+    "inputs": {}
   }
 }

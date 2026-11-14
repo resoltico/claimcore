@@ -141,6 +141,8 @@ let all () : IEndpointInput list =
                     | OperationInput.Reminder input ->
                         OperationInput.Reminder { input with OperationId = fresh }
 
+                let value = Submissions.ofCommand (Some targetId) value
+
                 if preview then
                     EndpointValues.input Api.operationPreview value
                 else

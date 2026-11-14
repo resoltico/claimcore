@@ -22,14 +22,16 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   }
   return [
     ["operationId", input.operationId],
-    ["act", input.act.kind],
-    ...(input.kind === "CASE" && model.disclosureCurrent
+    ["act", input.task],
+    ...(input.binding.kind === "CASE" && model.disclosureCurrent
       ? ([
           [
-            input.target.kind === "REFERENCE" ? "caseReference" : "caseId",
-            input.target.kind === "REFERENCE" ? input.target.caseReference : input.target.caseId,
+            input.binding.target.kind === "REFERENCE" ? "caseReference" : "caseId",
+            input.binding.target.kind === "REFERENCE"
+              ? input.binding.target.caseReference
+              : input.binding.target.caseId,
           ],
-          ["expectedRevision", String(input.expectedRevision)],
+          ["expectedRevision", String(input.binding.expectedRevision)],
         ] as const)
       : []),
   ];

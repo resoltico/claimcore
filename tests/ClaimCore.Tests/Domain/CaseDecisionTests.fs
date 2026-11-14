@@ -223,7 +223,8 @@ let private bounds () =
         "A format-valid record at the bound yields CORE_INTERNAL_ERROR"
 
 let private opening =
-    RequestCodecs.operationInput.Write(
+    (OperationSubmissionCodecs.submission.Write
+     << ClaimCore.TestSupport.Submissions.ofCommand None) (
         ClaimCore.TestSupport.Inputs.caseOperation
             {
                 OperationId = id 10
@@ -253,9 +254,12 @@ let private decodeWire (text: string) =
         Limits.MaximumRequestBytes
         Api.operationExecute.Input
         (Text.Encoding.UTF8.GetBytes text)
-    |> Result.map (function
-        | OperationInput.Case value -> Inputs.referencedCase value
-        | _ -> failtest "Expected a case execution request")
+    |> Result.map (
+        Submissions.command
+        >> function
+            | OperationInput.Case value -> Inputs.referencedCase value
+            | _ -> failtest "Expected a case execution request"
+    )
     |> Result.defaultWith (fun _ -> failtest "Synthetic raw request must decode")
 
 let private wireSpelling () =

@@ -1,7 +1,8 @@
+import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expect, test, type Page } from "@playwright/test";
-import { applyPeople, syntheticPrincipals } from "./people-setup";
+
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { login, sessionToken } from "./session-helpers";
@@ -13,14 +14,17 @@ const ownerGrants = async (page: Page, active: boolean) => {
   try {
     for (const role of ownerRoles) {
       await applyPeople(page, {
-        kind: "PEOPLE",
         operationId: mintOperationId(),
-        target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-        act: {
-          kind: active ? "people.grant" : "people.revoke",
-          role,
-          scope: { kind: "INSTALLATION" },
+        task: active ? "people.grant" : "people.revoke",
+        binding: {
+          kind: "PEOPLE",
+          actorId: await selectedActor(page, {
+            kind: "HUMAN",
+            issuer: source.issuer,
+            subject: source.ownerSubject,
+          }),
         },
+        inputs: { "input:role": role, "input:scope": "INSTALLATION" },
       });
       changed.push(role);
     }
@@ -28,10 +32,17 @@ const ownerGrants = async (page: Page, active: boolean) => {
     if (!active) {
       for (const role of changed.reverse()) {
         await applyPeople(page, {
-          kind: "PEOPLE",
           operationId: mintOperationId(),
-          target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-          act: { kind: "people.grant", role, scope: { kind: "INSTALLATION" } },
+          task: "people.grant",
+          binding: {
+            kind: "PEOPLE",
+            actorId: await selectedActor(page, {
+              kind: "HUMAN",
+              issuer: source.issuer,
+              subject: source.ownerSubject,
+            }),
+          },
+          inputs: { "input:role": role, "input:scope": "INSTALLATION" },
         });
       }
     }
@@ -63,12 +74,12 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases"
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
   });
-  const enable = (enabled: boolean) =>
+  const enable = async (enabled: boolean) =>
     applyPeople(page, {
-      kind: "PEOPLE",
       operationId: mintOperationId(),
-      target: fixture.principal,
-      act: { kind: enabled ? "people.enable" : "people.disable" },
+      task: enabled ? "people.enable" : "people.disable",
+      binding: { kind: "PEOPLE", actorId: await selectedActor(page, fixture.principal) },
+      inputs: {},
     });
   let disabledConfirmed = false;
   try {

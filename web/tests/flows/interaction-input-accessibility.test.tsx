@@ -79,7 +79,7 @@ it.each(["en", "lv", "ar"] as const)(
         binding={{
           kind: "CASE",
           target: { kind: "REFERENCE", caseReference: "CASE-1" },
-          revision: 1,
+          expectedRevision: 1,
         }}
         task={operationEntry({ subject: "CASE", kind: "case.correct" })}
         values={initialOperationValues("CASE", "case.correct", null)}

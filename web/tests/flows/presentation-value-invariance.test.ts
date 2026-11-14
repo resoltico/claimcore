@@ -54,10 +54,8 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
         "field:claimedAmount": values.claimedAmount,
         "field:incidentDate": values.incidentDate,
       },
-      {
-        kind: "NEW_CASE",
-        operationId,
-      },
+      { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+      operationId,
     ).command;
     const frozen = prepareRequest("operation.execute", source).input;
     const bytes = JSON.stringify(frozen);

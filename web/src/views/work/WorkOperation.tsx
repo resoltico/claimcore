@@ -1,8 +1,8 @@
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
-import type { TaskId } from "@contracts/client";
+import { type TaskId, type OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
-import type { TaskBindingSource } from "../../operation/taskForm";
+
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
 import { useOperation } from "../../hooks/operation/useOperation";
@@ -18,7 +18,7 @@ type Props = {
   targetIdentity?: string;
   completionAnchor?: string | undefined;
   prefill?: FormValues;
-  binding?: TaskBindingSource | undefined;
+  binding?: OperationBinding | undefined;
   tasks?: ReadonlyArray<TaskId> | undefined;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt, operationId: string) => void;

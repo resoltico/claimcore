@@ -1,6 +1,6 @@
 import type {
   HumanReview,
-  OperationInput,
+  OperationSubmission,
   ResponseFor,
   ReviewPresentation,
   Screen,
@@ -10,7 +10,7 @@ import { taskForCommand } from "../../src/protocol/taskCatalog";
 
 /** Borrow only declared task bindings; the caller independently authors displayed facts and target. */
 export const humanReviewEnvelope = (
-  command: OperationInput,
+  command: OperationSubmission,
   binding: Pick<HumanReview["document"]["context"], "target" | "confirmation">,
   basis: WorkDateBasis,
   screen: Screen,

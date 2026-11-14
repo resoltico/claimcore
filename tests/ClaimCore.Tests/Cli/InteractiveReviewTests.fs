@@ -124,7 +124,9 @@ let private harness language answer scenario =
                 let acceptedOpen =
                     calls
                     |> Seq.tryPick (fun call ->
-                        Frames.value Api.operationExecute call
+                        (Frames.value Api.operationExecute
+                         >> Option.map ClaimCore.TestSupport.Submissions.command)
+                            call
                         |> Option.bind (function
                             | OperationInput.Case request when
                                 CaseAct.kind request.Act = CaseActKind.Open
@@ -173,7 +175,10 @@ let private harness language answer scenario =
                     Api.operationPreview.Output
                     (RepresentationReply.Human(
                         HumanReplies.preview
-                            (Frames.value Api.operationPreview frame |> Option.get)
+                            ((Frames.value Api.operationPreview
+                              >> Option.map ClaimCore.TestSupport.Submissions.command)
+                                frame
+                             |> Option.get)
                             {
                                 OperationId = operationId ()
                                 Outcome =
@@ -186,7 +191,11 @@ let private harness language answer scenario =
                                     else
                                         let supplied =
                                             match
-                                                Frames.value Api.operationPreview frame, review
+                                                (Frames.value Api.operationPreview
+                                                 >> Option.map
+                                                     ClaimCore.TestSupport.Submissions.command)
+                                                    frame,
+                                                review
                                             with
                                             | Some(OperationInput.Case request),
                                               OperationReview.Case value when
@@ -214,7 +223,11 @@ let private harness language answer scenario =
                     ))
             | "operation.execute" ->
                 let act =
-                    match Frames.value Api.operationExecute frame with
+                    match
+                        (Frames.value Api.operationExecute
+                         >> Option.map ClaimCore.TestSupport.Submissions.command)
+                            frame
+                    with
                     | Some(OperationInput.Case input) -> CaseAct.kind input.Act
                     | _ -> failtest "Expected reviewed case operation"
 
@@ -319,7 +332,11 @@ let private endpoints (harness: Harness) =
     harness.Calls |> Seq.map (Frames.endpoint >> _.Token) |> Seq.toList
 
 let private caseInput frame =
-    match Api.operationExecute.Input.Read "$" (Frames.input frame) |> Fixtures.accepted with
+    match
+        Api.operationExecute.Input.Read "$" (Frames.input frame)
+        |> Fixtures.accepted
+        |> Submissions.command
+    with
     | OperationInput.Case request -> request
     | _ -> failtest "Expected a case request"
 
@@ -752,14 +769,21 @@ let reminderReviewDetails =
                                              |> RepresentationReply.Human)
                                     | "operation.preview" ->
                                         let input =
-                                            Frames.value Api.operationPreview frame |> Option.get
+                                            (Frames.value Api.operationPreview
+                                             >> Option.map
+                                                 ClaimCore.TestSupport.Submissions.command)
+                                                frame
+                                            |> Option.get
 
                                         response
                                             frame
                                             Api.operationPreview
                                             (RepresentationReply.Human(
                                                 HumanReplies.preview
-                                                    (Frames.value Api.operationPreview frame
+                                                    ((Frames.value Api.operationPreview
+                                                      >> Option.map
+                                                          ClaimCore.TestSupport.Submissions.command)
+                                                        frame
                                                      |> Option.get)
                                                     {
                                                         OperationId =
@@ -772,7 +796,11 @@ let reminderReviewDetails =
                                             ))
                                     | "operation.execute" ->
                                         let input =
-                                            Frames.value Api.operationExecute frame |> Option.get
+                                            (Frames.value Api.operationExecute
+                                             >> Option.map
+                                                 ClaimCore.TestSupport.Submissions.command)
+                                                frame
+                                            |> Option.get
 
                                         let receipt =
                                             { CliReplyFixtures.receipt with
@@ -930,7 +958,11 @@ let reminderReviewDetails =
                                     "Execution uses the exact reviewed request"
 
                                 if compound then
-                                    match Frames.value Api.operationExecute executions.Head with
+                                    match
+                                        (Frames.value Api.operationExecute
+                                         >> Option.map ClaimCore.TestSupport.Submissions.command)
+                                            executions.Head
+                                    with
                                     | Some(OperationInput.Reminder {
                                                                        Act = ReminderAct.CompleteAndPlanNext(_,
                                                                                                              revision,

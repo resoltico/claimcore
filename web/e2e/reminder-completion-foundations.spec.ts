@@ -437,13 +437,14 @@ for (const { language, accent, mode, mobile } of contexts) {
         .request()
         .postDataJSON() as RequestByEndpoint["operation.preview"];
       if (
-        operationPreviewRequest.kind !== "REMINDER" ||
-        operationPreviewRequest.act.kind !== "reminder.complete"
+        operationPreviewRequest.binding.kind !== "REMINDER" ||
+        operationPreviewRequest.task !== "reminder.complete"
       ) {
         throw new Error("Expected one frozen reminder completion preview.");
       }
-      expect(operationPreviewRequest.act).toEqual({
-        kind: "reminder.complete",
+      expect(operationPreviewRequest.binding).toEqual({
+        kind: "REMINDER",
+        target: operationPreviewRequest.binding.target,
         reminderId: reminders[0]!.reminderId,
         expectedRevision: 3,
       });
@@ -455,7 +456,7 @@ for (const { language, accent, mode, mobile } of contexts) {
             kind: "REMINDER",
             caseId: current.context.caseId,
             existing: {
-              reminderId: operationPreviewRequest.act.reminderId,
+              reminderId: operationPreviewRequest.binding.reminderId,
               revision: 3,
             },
           },

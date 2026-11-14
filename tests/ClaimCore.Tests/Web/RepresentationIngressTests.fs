@@ -125,7 +125,7 @@ let tests =
                         Task.FromResult(
                             RepresentationReply.Data
                                 {
-                                    ExecuteReply.OperationId = OperationInput.operationId input
+                                    ExecuteReply.OperationId = input.OperationId
                                     Outcome = ExecuteResult.OutcomeUnknown
                                 }
                         ))

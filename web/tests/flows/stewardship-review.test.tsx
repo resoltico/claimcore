@@ -25,7 +25,7 @@ const stubReview = (
       const operationPreviewRequest = JSON.parse(
         requestText(options?.body),
       ) as RequestByEndpoint["operation.preview"];
-      if (operationPreviewRequest.kind !== "CASE" || operationPreviewRequest.act.kind !== act) {
+      if (operationPreviewRequest.binding.kind !== "CASE" || operationPreviewRequest.task !== act) {
         throw new Error("Typed stewardship command required");
       }
       const task = taskForCommand(operationPreviewRequest);
@@ -43,7 +43,7 @@ const stubReview = (
                       content: {
                         kind: "ENTRIES",
                         entries: [
-                          ...("reason" in operationPreviewRequest.act
+                          ...("input:reason" in operationPreviewRequest.inputs
                             ? [
                                 {
                                   key: "reason",
@@ -51,7 +51,7 @@ const stubReview = (
                                   prominence: "PRIMARY",
                                   value: {
                                     kind: "TEXT",
-                                    value: operationPreviewRequest.act.reason,
+                                    value: operationPreviewRequest.inputs["input:reason"],
                                   },
                                 },
                               ]
@@ -81,7 +81,7 @@ const stubReview = (
                   target: {
                     kind: "CASE",
                     caseId: "20000000-0000-4000-8000-000000000001",
-                    beforeRevision: operationPreviewRequest.expectedRevision,
+                    beforeRevision: operationPreviewRequest.binding.expectedRevision,
                   },
                   consequence: task.consequence,
                   confirmation: {

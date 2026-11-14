@@ -5,7 +5,7 @@ import { useEndpointCache } from "../EndpointProvider";
 import { operationId as mintOperationId } from "../../operation/operationId";
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
-import { rebasedTaskBinding } from "../../operation/operationConflict";
+import { rebasedOperationBinding } from "../../operation/operationConflict";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -31,7 +31,7 @@ import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest } from "../../protocol/preparedRequest";
 import type { FormValues, FormValue } from "../../protocol/forms";
-import { TaskInputError, type TaskBindingSource } from "../../operation/taskForm";
+import type { OperationBinding } from "@contracts/client";
 import { initialOperationValues, assembleOperation } from "../../operation/operationForm";
 import { operationEntry } from "../../protocol/operationCatalog";
 import {
@@ -48,7 +48,7 @@ import type { Notice } from "../../protocol/notices";
 type Options = {
   subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE";
   prefill?: FormValues;
-  binding?: TaskBindingSource;
+  binding?: OperationBinding;
   targetIdentity?: string;
   kind: string;
   current: CurrentCase | null;
@@ -71,15 +71,15 @@ const targetKey = (options: Options): string =>
     options.subject,
     options.current?.context.caseId ?? null,
     options.targetIdentity ?? null,
-    options.binding?.kind === "PEOPLE" ? (options.binding.principal ?? null) : null,
+    options.binding !== undefined && "actorId" in options.binding ? options.binding.actorId : null,
   ]);
 type PeopleBinding = Extract<
-  TaskBindingSource,
+  OperationBinding,
   {
     kind: "PEOPLE";
   }
 >;
-const initialBinding = (options: Options): TaskBindingSource => {
+const initialBinding = (options: Options): OperationBinding => {
   if (options.binding !== undefined) {
     return options.binding;
   }
@@ -91,7 +91,9 @@ const initialBinding = (options: Options): TaskBindingSource => {
   const { current } = options;
   if (options.subject === "CASE" && current === null) {
     return {
-      kind: "NEW_CASE",
+      kind: "CASE",
+      target: { kind: "REFERENCE", caseReference: "" },
+      expectedRevision: 0,
     };
   }
   if (current === null) {
@@ -106,13 +108,13 @@ const initialBinding = (options: Options): TaskBindingSource => {
       return {
         kind: "CASE",
         target,
-        revision: current.context.revision,
+        expectedRevision: current.context.revision,
       };
     case "WORK":
       return {
         kind: "WORK",
         target,
-        workRevision: current.context.workRevision,
+        expectedRevision: current.context.workRevision,
       };
     case "NOTE":
       return {
@@ -130,7 +132,7 @@ const fresh = (
   options: Options,
   kind = options.kind,
   prefill: FormValues = {},
-  binding?: TaskBindingSource,
+  binding?: OperationBinding,
 ): OperationState => {
   const selectedBinding = binding ?? initialBinding(options);
   const values = {
@@ -471,8 +473,8 @@ const executeOwnedAttempt = async (
       format: 2,
       attemptId: effect.identity.id,
       operationId,
-      subject: executing.source.prepared.input.kind,
-      act: executing.source.prepared.input.act.kind,
+      subject: executing.source.prepared.input.binding.kind,
+      act: executing.source.prepared.input.task,
     };
     context.attempts.set(operationId, record);
   }
@@ -682,13 +684,15 @@ const prepareValues = (
   state: OperationState,
   options: Options,
   values: FormValues,
-  binding: TaskBindingSource = state.draft.binding,
+  binding: OperationBinding = state.draft.binding,
 ): LocalSource => {
   const task = operationEntry(state.draft.entry);
-  const submission = assembleOperation(task, options.normalizeValues?.(values, task) ?? values, {
-    ...binding,
-    operationId: mintOperationId(),
-  });
+  const submission = assembleOperation(
+    task,
+    options.normalizeValues?.(values, task) ?? values,
+    binding,
+    mintOperationId(),
+  );
   return {
     prepared: prepareRequest("operation.execute", submission.command),
     submittedRows: submission.submittedRows,
@@ -715,7 +719,7 @@ const reviewLatestDraft = (
       state,
       options,
       values,
-      rebasedTaskBinding(conflict.source.prepared.input, conflict.latest.revision),
+      rebasedOperationBinding(conflict.source.prepared.input, conflict.latest.revision),
     );
     dispatch({
       type: "REVIEW_LATEST",
@@ -725,14 +729,14 @@ const reviewLatestDraft = (
       values,
       source,
     });
-  } catch (error) {
+  } catch {
     dispatch({
       type: "REFUSE",
       notice: {
         kind: "local",
         reason: "invalidInput",
       },
-      target: error instanceof TaskInputError ? error.input : null,
+      target: null,
       uncertain: false,
       disclosure: false,
     });
@@ -752,14 +756,14 @@ const previewDraft = (
       identity: identity(options, state.disclosed.context.generation),
       generation: state.draft.generation,
     });
-  } catch (error) {
+  } catch {
     dispatch({
       type: "REFUSE",
       notice: {
         kind: "local",
         reason: "invalidInput",
       },
-      target: error instanceof TaskInputError ? error.input : null,
+      target: null,
       uncertain: false,
       disclosure: false,
     });

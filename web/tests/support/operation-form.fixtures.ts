@@ -1,5 +1,5 @@
 import type { CurrentCase } from "../../src/protocol/types";
-import type { TaskBinding } from "../../src/operation/taskForm";
+import type { OperationBinding } from "@contracts/client";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
 import { type FormValues } from "../../src/protocol/forms";
@@ -42,20 +42,20 @@ export const current: CurrentCase = {
   },
   disclosure: "CURRENT",
 };
-export const bindingFor = (kind = "case.close"): TaskBinding =>
+export const bindingFor = (kind = "case.close"): OperationBinding =>
   kind === "case.open"
     ? {
-        kind: "NEW_CASE",
-        operationId: firstId,
+        kind: "CASE",
+        target: { kind: "REFERENCE", caseReference: "" },
+        expectedRevision: 0,
       }
     : {
         kind: "CASE",
-        operationId: firstId,
         target: {
           kind: "REFERENCE",
           caseReference: "CASE-SERIALIZATION",
         },
-        revision: current.context.revision,
+        expectedRevision: current.context.revision,
       };
 export const valuesFor = (kind = "case.close") => initialOperationValues("CASE", kind, current);
 export const requestFor = (values: FormValues, kind = "case.close") =>
@@ -66,6 +66,7 @@ export const requestFor = (values: FormValues, kind = "case.close") =>
     }),
     values,
     bindingFor(kind),
+    firstId,
   ).command;
 export const preparedFor = (kind = "case.close") =>
   prepareRequest("operation.execute", requestFor(valuesFor(kind), kind));

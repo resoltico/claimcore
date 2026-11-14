@@ -12,12 +12,16 @@ open ReceiptObservations
 let private verbArguments verb (bytes: byte array) =
     use source = JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
     let input = source.RootElement.GetProperty "input"
-    let act = input.GetProperty "act"
+    let binding = input.GetProperty "binding"
 
     let flag (value: JsonProperty) =
         let name =
             System.Text.RegularExpressions.Regex
-                .Replace(value.Name, "([a-z0-9])([A-Z])", "$1-$2")
+                .Replace(
+                    value.Name.Substring(value.Name.IndexOf(':') + 1),
+                    "([a-z0-9])([A-Z])",
+                    "$1-$2"
+                )
                 .ToLowerInvariant()
 
         [ "--" + name; value.Value.GetString() |> nonNull ]
@@ -25,26 +29,19 @@ let private verbArguments verb (bytes: byte array) =
     let values (element: JsonElement) =
         element.EnumerateObject() |> Seq.collect flag |> Seq.toList
 
-    let details =
-        let mutable element = Unchecked.defaultof<JsonElement>
-
-        if act.TryGetProperty("values", &element) then
-            values element
-        elif act.TryGetProperty("reason", &element) then
-            [ "--reason"; element.GetString() |> nonNull ]
-        else
-            []
+    let details = values (input.GetProperty "inputs")
 
     let revision =
         if verb = "open" then
             []
         else
-            [ "--expected-revision"; input.GetProperty("expectedRevision").GetRawText() ]
+            [ "--expected-revision"; binding.GetProperty("expectedRevision").GetRawText() ]
 
     [
         "case"
         verb
-        input.GetProperty("target").GetProperty("caseReference").GetString() |> nonNull
+        binding.GetProperty("target").GetProperty("caseReference").GetString()
+        |> nonNull
     ]
     @ (match input.TryGetProperty "operationId" with
        | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
@@ -469,33 +466,15 @@ let private supplementary fixture =
                 BusinessField.ClaimedAmount, "1.0000"
             ]
             ClaimCore.TestSupport.Inputs.registration
-        |> ClaimCore.Json.Codec.encode ClaimCore.Wire.RequestCodecs.registration
 
-    use registration = JsonDocument.Parse values
-
-    let input =
-        {|
-            kind = "CASE"
-            operationId = id ()
-            target =
-                {|
-                    kind = "REFERENCE"
-                    caseReference = reference
-                |}
-            expectedRevision = 0L
-            act =
-                {|
-                    kind = CaseActKind.token CaseActKind.Open
-                    values = registration.RootElement
-
-                |}
-        |}
+    let operation = id ()
+    let input = caseSubmission operation reference 0L (CaseAct.Open values)
 
     automation fixture "operation.preview" input 0 |> require "REVIEWED" |> ignore
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"
 
     sameRecordedReceipt fixture "supplementary-observation" receipt (fun () ->
-        lookupReceipt fixture input.operationId)
+        lookupReceipt fixture operation)
     |> ignore
 
     let replay =

@@ -17,7 +17,7 @@ claimcore call < examples/05-reopen.json
 claimcore call < examples/06-revise-decision.json
 ```
 
-Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Human verbs use the same typed inputs; after step
+Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Structured calls carry the task, binding and declared input-token map. Human verbs use the same contract; after step
 three, inspect the next frame offline with:
 
 ```sh

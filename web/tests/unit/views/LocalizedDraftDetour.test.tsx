@@ -139,14 +139,12 @@ it.each([
       expect(bodies).toHaveLength(1);
     });
     expect(bodies[0]).toMatchObject({
-      kind: "CASE",
-      act: {
-        kind: "case.open",
-        values: {
-          incidentDate: "2026-08-17",
-          claimedAmount: normalized,
-          claimedCurrency: "EUR",
-        },
+      task: "case.open",
+      binding: { kind: "CASE" },
+      inputs: {
+        "field:incidentDate": "2026-08-17",
+        "field:claimedAmount": normalized,
+        "field:claimedCurrency": "EUR",
       },
     });
   },

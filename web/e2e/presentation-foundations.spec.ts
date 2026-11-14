@@ -1355,8 +1355,8 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       .request()
       .postDataJSON() as RequestByEndpoint["operation.preview"];
     if (
-      operationPreviewRequest.kind !== "PEOPLE" ||
-      operationPreviewRequest.act.kind !== "people.admit"
+      operationPreviewRequest.binding.kind !== "PEOPLE" ||
+      operationPreviewRequest.task !== "people.admit"
     ) {
       throw new Error("Expected the browser's real registration preview request.");
     }
@@ -1610,7 +1610,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     const operationPreviewRequest = route
       .request()
       .postDataJSON() as RequestByEndpoint["operation.preview"];
-    if (operationPreviewRequest.kind !== "CASE") {
+    if (operationPreviewRequest.binding.kind !== "CASE") {
       throw new Error("Expected the browser case preview frame.");
     }
     drafts.push(operationPreviewRequest);
@@ -1890,13 +1890,13 @@ for (const reviewLanguage of ["en", "ar"] as const) {
         .request()
         .postDataJSON() as RequestByEndpoint["operation.preview"];
       if (
-        operationPreviewRequest.kind !== "PEOPLE" ||
-        operationPreviewRequest.act.kind !== "people.admit"
+        operationPreviewRequest.binding.kind !== "PEOPLE" ||
+        operationPreviewRequest.task !== "people.admit"
       ) {
         throw new Error("Expected actual atomic admission.");
       }
       previews += 1;
-      expect(operationPreviewRequest.act.grants).toEqual([
+      expect(operationPreviewRequest.inputs["input:grants"]).toEqual([
         {
           role: "OWNER",
           scope: {

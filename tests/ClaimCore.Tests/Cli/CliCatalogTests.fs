@@ -123,7 +123,9 @@ let private replacement () =
     let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
 
     let request =
-        RequestCodecs.operationInput.Read "$" (Frames.input frame) |> Fixtures.accepted
+        OperationSubmissionCodecs.submission.Read "$" (Frames.input frame)
+        |> Fixtures.accepted
+        |> ClaimCore.TestSupport.Submissions.command
 
     match request with
     | OperationInput.Case {

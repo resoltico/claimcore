@@ -1,8 +1,9 @@
+import { prefixedInputs } from "../tests/support/submission-inputs";
 import { type ResponseFor, endpoints, type OperationReceipt } from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import type { CaseFields, OperationDraft } from "../src/protocol/types";
+import type { CaseFields, CaseSubmission } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";
@@ -22,7 +23,8 @@ type CaseDataReceipt = OperationReceipt & {
 };
 type SeedStep = Readonly<{
   operationId?: string;
-  act: OperationDraft["act"];
+  task: CaseSubmission["task"];
+  inputs: CaseSubmission["inputs"];
   fields: CaseFields;
 }>;
 const setupRegistration = {
@@ -75,37 +77,30 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
   };
   const steps: SeedStep[] = [
     {
-      act: {
-        kind: "case.open",
-        values: setupRegistration,
-      },
+      task: "case.open",
+      inputs: { ...prefixedInputs("field:", setupRegistration) },
       fields: opened,
     },
     {
-      act: {
-        kind: "case.decide",
-        values: setupDecision,
-      },
+      task: "case.decide",
+      inputs: { ...prefixedInputs("field:", setupDecision) },
       fields: decided,
     },
     {
       operationId: paymentId,
-      act: {
-        kind: "case.recordPayment",
-        values: {
-          paymentDate: "2026-09-05",
-          paidAmount: "300.25",
-          paidCurrency: "EUR",
-        },
+      task: "case.recordPayment",
+      inputs: {
+        "field:paymentDate": "2026-09-05",
+        "field:paidAmount": "300.25",
+        "field:paidCurrency": "EUR",
       },
       fields: paid,
     },
   ];
   if (status === "CLOSED") {
     steps.push({
-      act: {
-        kind: "case.close",
-      },
+      task: "case.close",
+      inputs: {},
       fields: {
         ...paid,
         status: "CLOSED",
@@ -117,7 +112,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
 const acceptSetup = async (
   page: Page,
   token: string,
-  request: OperationDraft,
+  request: CaseSubmission,
   fields: CaseFields,
 ): Promise<CaseDataReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
@@ -150,16 +145,16 @@ const acceptSetup = async (
     ...outcome.data,
     subject: outcome.data.subject,
   };
-  const revision = request.expectedRevision + 1;
+  const revision = request.binding.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  if (request.target.kind !== "REFERENCE") {
+  if (request.binding.target.kind !== "REFERENCE") {
     throw new Error("Reference fixture positive control");
   }
-  expect(receipt.subject.caseReference).toBe(request.target.caseReference);
-  expect(receipt.subject.act).toBe(request.act.kind);
+  expect(receipt.subject.caseReference).toBe(request.binding.target.caseReference);
+  expect(receipt.subject.act).toBe(request.task);
   expect(receipt.subject.revision).toBe(revision);
   const recordedFields = (() => {
-    switch (request.act.kind) {
+    switch (request.task) {
       case "case.open":
         return [
           "incidentDate",
@@ -191,7 +186,7 @@ const acceptSetup = async (
       fields,
     },
     payment:
-      request.act.kind === "case.recordPayment"
+      request.task === "case.recordPayment"
         ? {
             kind: "RECORDED",
             entry: {
@@ -213,15 +208,15 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       page,
       token,
       {
-        kind: "CASE",
         operationId: step.operationId ?? mintOperationId(),
-        target: {
-          kind: "REFERENCE",
-          caseReference: reference,
+        task: step.task,
+        binding: {
+          kind: "CASE",
+          target: { kind: "REFERENCE", caseReference: reference },
+          expectedRevision: revision,
         },
-        expectedRevision: revision,
-        act: step.act,
-      },
+        inputs: step.inputs,
+      } as CaseSubmission,
       step.fields,
     );
     const { recordedBy: acceptedActor } = receipt;

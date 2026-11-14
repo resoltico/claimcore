@@ -43,9 +43,13 @@ let frame endpoint =
                 }
 
         if endpoint = "operation.execute" then
-            Frames.create Api.operationExecute input
+            (Frames.create Api.operationExecute
+             << ClaimCore.TestSupport.Submissions.ofCommand None)
+                input
         else
-            Frames.create Api.operationPreview input
+            (Frames.create Api.operationPreview
+             << ClaimCore.TestSupport.Submissions.ofCommand None)
+                input
     | EndpointId.Actor((ActorEndpoint.Query _ | ActorEndpoint.Command _) as actor) ->
         let task =
             match actor with
@@ -68,7 +72,10 @@ let peopleFrame () =
         [
             "endpoint", ClaimCore.Json.JsonValue.String "operation.execute"
             "input",
-            Api.operationExecute.Input.Write(OperationInput.People CliReplyFixtures.peopleRequest)
+            (Api.operationExecute.Input.Write
+             << ClaimCore.TestSupport.Submissions.ofCommand None) (
+                OperationInput.People CliReplyFixtures.peopleRequest
+            )
         ]
     |> WireWriter.bytes
     |> Frames.admit

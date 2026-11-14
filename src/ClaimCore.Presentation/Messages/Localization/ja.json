@@ -895,10 +895,6 @@
     "text": "リマインダービュー",
     "source": "7c0dac288f81"
   },
-  "input.responsibleActorAction.label": {
-    "text": "担当の変更",
-    "source": "88568adf4439"
-  },
   "input.scope.label": {
     "text": "役割の適用範囲",
     "source": "d6417785a41b"
@@ -1790,14 +1786,6 @@
   "input.includeInactive.rule": {
     "text": "終了または無効化した案件の業務を明示的に含めます。未完了のリマインダーの日付と状態は維持されます。",
     "source": "c8addb209dac"
-  },
-  "input.responsibleActorAction.rule": {
-    "text": "setまたはclearを選択してください。省略すると現在の担当アカウントを維持します。",
-    "source": "8ce2f605d741"
-  },
-  "input.responsibleActorAction.hint": {
-    "text": "この案件の担当者を設定または解除します。",
-    "source": "d788923ffdfd"
   },
   "group.registration.rule": {
     "text": "登録情報を維持するか、選択した情報を更新します。省略した情報は変更されず、金額と通貨は同時に指定します。",

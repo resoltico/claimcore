@@ -283,11 +283,12 @@ let internal lifecycle fixture =
     task {
         let! owner = caseWorker fixture
         let authored = List.item 1 (malformedWrites fixture)
-        let wire = Codec.encode Api.operationExecute.Input authored
+        let submission = Submissions.ofCommand None authored
+        let wire = Codec.encode Api.operationExecute.Input submission
 
         Expect.equal
             (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input wire)
-            (Ok authored)
+            (Ok submission)
             "The malformed profile is valid transport syntax and reaches Application admission"
 
         let disabled = principal "disabled-input-caller"

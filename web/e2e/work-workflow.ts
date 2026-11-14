@@ -60,15 +60,17 @@ export const reviewReminderCompletion = async (
     const operationPreviewReply = payload as ResponseFor<"operation.preview", "HUMAN">;
     if (
       delivered.status() !== 200 ||
-      operationPreviewRequest.kind !== "REMINDER" ||
-      operationPreviewRequest.act.kind !== "reminder.complete" ||
+      operationPreviewRequest.binding.kind !== "REMINDER" ||
+      operationPreviewRequest.task !== "reminder.complete" ||
       operationPreviewReply.representation !== "HUMAN" ||
       operationPreviewReply.outcome.kind !== "REVIEWED"
     ) {
       throw new Error("E2E_REMINDER_COMPLETION_REVIEW_UNAVAILABLE");
     }
     expect(operationPreviewReply.operationId).toBe(operationPreviewRequest.operationId);
-    expect(originId).toBe(`reminder-${operationPreviewRequest.act.reminderId}-reminder.complete`);
+    expect(originId).toBe(
+      `reminder-${operationPreviewRequest.binding.reminderId}-reminder.complete`,
+    );
     await expect(page.locator(`[id="${originId}"]`)).toHaveCount(1);
     await expect(workConfirmButton(page)).toHaveCount(1);
     await expect(workConfirmButton(page)).toBeVisible();
@@ -118,8 +120,9 @@ export const selectReminderAction = async (
 const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, payload: unknown) => {
   const operationExecuteRequest = input as RequestByEndpoint["operation.execute"];
   if (
-    (operationExecuteRequest.kind !== "WORK" && operationExecuteRequest.kind !== "REMINDER") ||
-    operationExecuteRequest.kind !== family
+    (operationExecuteRequest.binding.kind !== "WORK" &&
+      operationExecuteRequest.binding.kind !== "REMINDER") ||
+    operationExecuteRequest.binding.kind !== family
   ) {
     throw new Error("E2E_WORK_SUBMIT_INPUT_MISMATCH");
   }
@@ -204,7 +207,9 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   );
   expect(envelope).toBe(input.operationId);
   const labelId =
-    input.kind === "WORK" ? "task.work.update.label" : (`task.${input.act.kind}.label` as const);
+    input.binding.kind === "WORK"
+      ? "task.work.update.label"
+      : (`task.${input.task}.label` as const);
   expect(label).toBe(ui(language, labelId));
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const current = page.locator(".case-detail");

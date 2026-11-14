@@ -72,7 +72,6 @@ const review: HumanReview = {
         "input:expectedWorkRevision",
         "field:responsibleActor",
         "field:handlingSummary",
-        "input:responsibleActorAction",
       ],
       consequence: "ROUTINE",
       confirmation: {
@@ -284,21 +283,16 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
     expect(rebase).toBeEnabled();
   });
   expect(JSON.parse(previews[0]!.bytes)).toMatchObject({
-    kind: "WORK",
-    target: {
-      kind: "ID",
-      caseId,
-    },
-    expectedRevision: 3,
-    act: {
-      kind: "work.update",
-      values: {
-        responsibleActor: {
-          kind: "SET",
-          value: actorId,
-        },
+    task: "work.update",
+    binding: {
+      kind: "WORK",
+      target: {
+        kind: "ID",
+        caseId,
       },
+      expectedRevision: 3,
     },
+    inputs: { "field:responsibleActor": actorId },
   });
   expect(executions).toEqual([]);
   await userEvent.click(rebase);
@@ -308,21 +302,16 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
   expect(previews).toHaveLength(2);
   expect(previews[1]!.operationId).not.toBe(previews[0]!.operationId);
   expect(JSON.parse(previews[1]!.bytes)).toMatchObject({
-    kind: "WORK",
-    target: {
-      kind: "ID",
-      caseId,
-    },
-    expectedRevision: 12,
-    act: {
-      kind: "work.update",
-      values: {
-        responsibleActor: {
-          kind: "SET",
-          value: actorId,
-        },
+    task: "work.update",
+    binding: {
+      kind: "WORK",
+      target: {
+        kind: "ID",
+        caseId,
       },
+      expectedRevision: 12,
     },
+    inputs: { "field:responsibleActor": actorId },
   });
   expect(executions).toEqual([]);
   await userEvent.click(
