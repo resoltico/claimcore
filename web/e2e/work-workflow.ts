@@ -252,8 +252,12 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
     }
   }
-  await expect(current.locator(".entries-view [data-entry='responsible']")).toBeVisible();
-  await expect(current.locator(".entries-view [data-entry='handlingSummary']")).toBeVisible();
+  await expect(
+    current.locator(".case-work .entries-view [data-entry='responsible']"),
+  ).toBeVisible();
+  await expect(
+    current.locator(".case-work .entries-view [data-entry='handlingSummary']"),
+  ).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
   return {

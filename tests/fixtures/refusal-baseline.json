@@ -2,6 +2,26 @@
   "source": "Hand-authored actionable refusal and input-issue witnesses. Current entry payments and notes use their declared fields; retained state and boundary witnesses remain independent of generated declarations.",
   "observations": [
     {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseId",
+          "code": "CASE_ID_REQUIRED"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "caseReference",
+          "code": "CASE_SELECTION_INVALID"
+        }
+      ]
+    },
+    {
       "code": "RESOURCE_UNAVAILABLE",
       "action": "AskForAccess",
       "target": null

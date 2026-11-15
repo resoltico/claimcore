@@ -23,7 +23,9 @@ test("offers public terms and the published build source before sign-in @engine"
     expect(await license.text()).toContain("GNU AFFERO GENERAL PUBLIC LICENSE");
     const commercial = await context.request.get("/LICENSE-COMMERCIAL.md");
     expect(commercial.status()).toBe(200);
-    expect(await commercial.text()).toContain("This file grants no commercial exception");
+    expect((await commercial.text()).replace(/\s+/g, " ")).toContain(
+      "This file grants no exception, sublicense, warranty or waiver of AGPL obligations or third-party terms.",
+    );
     const source = await context.request.get("/SOURCE.tar.gz");
     expect(source.status()).toBe(200);
     const archive = gunzipSync(await source.body());
