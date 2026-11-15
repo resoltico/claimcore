@@ -11,7 +11,7 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
-import { BusinessValue } from "../../src/components/BusinessValue";
+import { PresentedValue } from "../../src/components/PresentedValue";
 import { CopyValue } from "../../src/components/CopyValue";
 import { definition, fields } from "../support/service-ui.fixtures";
 const languages = ["en", "lv", "ar", "en-XA"] as const;
@@ -231,7 +231,7 @@ it.each(languages)(
   },
 );
 it.each(languages)(
-  "keeps before/after words outside business direction and exact clipboard fallback in %s",
+  "keeps business direction isolated and exact clipboard fallback in %s",
   async (language) => {
     preferences(language);
     const user = userEvent.setup();
@@ -243,10 +243,9 @@ it.each(languages)(
       },
     });
     const { value, points } = values[0]!;
-    const field = definition.catalog.fields.find((item) => item.name === "claimantName")!;
     const view = render(
       <>
-        <BusinessValue value={value} field={field} context="ui.after" />
+        <PresentedValue value={{ kind: "TEXT", value }} timeZone="Etc/UTC" />
         <CopyValue value={value} label="synthetic reference" />
       </>,
     );

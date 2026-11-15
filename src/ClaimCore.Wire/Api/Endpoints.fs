@@ -63,7 +63,7 @@ type Endpoint<'In, 'Out> =
         Effect: EndpointEffect
         Input: Codec<'In>
         Output: Codec<'Out>
-        Classify: 'Out -> ReplyClass
+        Classify: 'Out -> ReplyKind
         Correlation: OperationEcho<'In, 'Out> option
         Unavailable: 'In -> 'Out
     }
@@ -81,7 +81,7 @@ type IEndpointOutputVisitor<'result> =
     abstract Visit<'input, 'output> : Endpoint<'input, 'output> * 'output -> 'result
 
 type IEndpointOutput =
-    abstract Class: ReplyClass
+    abstract Class: ReplyKind
     abstract Accept<'result> : IEndpointOutputVisitor<'result> -> 'result
 
 module EndpointValues =
@@ -170,7 +170,7 @@ type Route =
         ValidateOutput: JsonValue -> Result<unit, Problem>
         NormalizeInput: JsonValue -> Result<JsonValue, Problem>
         NormalizeOutput: JsonValue -> Result<JsonValue, Problem>
-        ClassifyOutput: JsonValue -> Result<ReplyClass, Problem>
+        ClassifyOutput: JsonValue -> Result<ReplyKind, Problem>
     }
 
     member this.Token = EndpointIds.token this.Id

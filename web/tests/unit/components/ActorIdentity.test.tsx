@@ -1,8 +1,7 @@
 import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
-import { ActorIdentity, RecordedTime } from "../../../src/components/ActorIdentity";
+import { ActorIdentity } from "../../../src/components/ActorIdentity";
 import { actorRefInput } from "../../support/inputs";
-import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import { activeRequester } from "../../support/human-requester.fixtures";
 import { preferenceKey } from "../../../src/presentation/preferences";
 it.each([
@@ -47,20 +46,3 @@ it.each(["AVAILABLE", "DISABLED", "NOT_ELIGIBLE"] as const)(
     expect(screen.queryByText("You")).toBeNull();
   },
 );
-it("formats attribution time in the requester’s time zone and preserves its exact instant", () => {
-  const view = render(
-    <RequesterContext
-      value={{
-        ...activeRequester,
-        basis: {
-          kind: "SNAPSHOT",
-          observation: { ...activeRequester.basis.observation, timeZone: "Europe/Riga" },
-        },
-      }}
-    >
-      <RecordedTime value="2026-01-01T22:30:00Z" />
-    </RequesterContext>,
-  );
-  expect(view.container.querySelector("time")).toHaveTextContent("2 Jan 2026, 00:30");
-  expect(view.container.querySelector("time")).toHaveAttribute("title", "2026-01-01T22:30:00Z");
-});

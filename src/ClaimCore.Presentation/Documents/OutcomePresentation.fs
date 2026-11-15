@@ -1,41 +1,17 @@
 namespace ClaimCore.Presentation
 
-open ClaimCore.CommandLine
-
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
-[<RequireQualifiedAccess>]
-type ReplyKind =
-    | Succeeded
-    | Reviewed
-    | Accepted
-    | AlreadyAccepted
-    | NotAccepted
-    | Pending
-    | Rejected
-    | Failed
-    | OutcomeUnknown
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ReplyKind =
-    let vocabulary =
-        Vocabulary.ofUnion<ReplyKind> "replyKind" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-
-type ReplyClass = { Kind: ReplyKind; ExitCode: ExitCode }
-type ClassifiedReply = { Wire: JsonValue; Class: ReplyClass }
+type ClassifiedReply = { Wire: JsonValue; Class: ReplyKind }
 
 module OutcomePresentation =
-    let private classification kind exitCode = { Kind = kind; ExitCode = exitCode }
-
     let classify outcome =
         Outcome.fold
-            (fun _ -> classification ReplyKind.Succeeded ExitCode.Success)
-            (fun _ -> classification ReplyKind.Rejected ExitCode.Rejected)
-            (fun _ -> classification ReplyKind.Failed ExitCode.Failed)
+            (fun _ -> ReplyKind.Succeeded)
+            (fun _ -> ReplyKind.Rejected)
+            (fun _ -> ReplyKind.Failed)
             outcome
 
     let recommendedAction outcome =
@@ -47,28 +23,21 @@ module OutcomePresentation =
 
     let classifyPreview (reply: PreviewReply) =
         match reply.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed _) ->
-            classification ReplyKind.Reviewed ExitCode.Success
-        | Outcome.Succeeded(Previewed.AlreadyAccepted _) ->
-            classification ReplyKind.AlreadyAccepted ExitCode.Success
+        | Outcome.Succeeded(Previewed.Reviewed _) -> ReplyKind.Reviewed
+        | Outcome.Succeeded(Previewed.AlreadyAccepted _) -> ReplyKind.AlreadyAccepted
         | outcome -> classify outcome
 
     let classifyExecute =
         function
-        | ExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
-        | ExecuteResult.AlreadyAccepted _ ->
-            classification ReplyKind.AlreadyAccepted ExitCode.Success
-        | ExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | ExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
-        | ExecuteResult.OutcomeUnknown ->
-            classification ReplyKind.OutcomeUnknown ExitCode.OutcomeUnknown
+        | ExecuteResult.Accepted _ -> ReplyKind.Accepted
+        | ExecuteResult.AlreadyAccepted _ -> ReplyKind.AlreadyAccepted
+        | ExecuteResult.Rejected _ -> ReplyKind.Rejected
+        | ExecuteResult.Failed _ -> ReplyKind.Failed
+        | ExecuteResult.OutcomeUnknown -> ReplyKind.OutcomeUnknown
 
     let classifyOperationGet =
         function
-        | Outcome.Succeeded(OperationLookupResult.Accepted _) ->
-            classification ReplyKind.Accepted ExitCode.Success
-        | Outcome.Succeeded(OperationLookupResult.Pending _) ->
-            classification ReplyKind.Pending ExitCode.OutcomeUnknown
-        | Outcome.Succeeded(OperationLookupResult.NotAccepted) ->
-            classification ReplyKind.NotAccepted ExitCode.Rejected
+        | Outcome.Succeeded(OperationLookupResult.Accepted _) -> ReplyKind.Accepted
+        | Outcome.Succeeded(OperationLookupResult.Pending _) -> ReplyKind.Pending
+        | Outcome.Succeeded(OperationLookupResult.NotAccepted) -> ReplyKind.NotAccepted
         | outcome -> classify outcome

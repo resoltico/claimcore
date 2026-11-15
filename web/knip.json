@@ -1,17 +1,19 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "project": [
-    "src/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}!",
     "tests/**/*.{ts,tsx}",
     "e2e/**/*.{ts,tsx,mjs}",
     "scripts/**/*.mjs",
     "../contracts/*.ts"
   ],
   "entry": [
+    "index.html!",
     "e2e/cli-pkce-driver.mjs",
     "e2e/deployment-qualification.mjs",
     "../contracts/*.ts",
     "src/protocol/schema.ts",
     "e2e/published-session-driver.mjs"
-  ]
+  ],
+  "ignoreExportsUsedInFile": true
 }

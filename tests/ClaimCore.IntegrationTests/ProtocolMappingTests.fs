@@ -116,7 +116,7 @@ let private mappedExamples () =
 
             Expect.equal
                 kind
-                (Some(JsonValue.String(ReplyKind.token reply.Class.Kind)))
+                (Some(JsonValue.String(ReplyKind.token reply.Class)))
                 "Typed classification agrees with the actual server outcome"
 
             assertServerIdentity endpoint input reply.Wire

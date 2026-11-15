@@ -296,7 +296,6 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.18.0, )",
-          "ClaimCore.CommandLine": "[0.18.0, )",
           "ClaimCore.Domain": "[0.18.0, )",
           "ClaimCore.Json": "[0.18.0, )",
           "FSharp.Core": "[11.0.101, )"
@@ -335,7 +334,6 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application.Contracts": "[0.18.0, )",
-          "ClaimCore.CommandLine": "[0.18.0, )",
           "ClaimCore.Domain": "[0.18.0, )",
           "ClaimCore.Json": "[0.18.0, )",
           "ClaimCore.Presentation": "[0.18.0, )",

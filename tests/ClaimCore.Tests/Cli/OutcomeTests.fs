@@ -1,4 +1,4 @@
-module ClaimCore.Tests.OutcomeTests
+module ClaimCore.Tests.Cli.OutcomeTests
 
 open ClaimCore.CommandLine
 
@@ -24,7 +24,9 @@ let tests =
                         Outcome.Failed CoreFault.StoreUnavailable, 3, RecommendedAction.RetrySafe
                     ] do
                     Expect.equal
-                        ((OutcomePresentation.classify outcome).ExitCode |> ExitCode.value)
+                        (OutcomePresentation.classify outcome
+                         |> ClaimCore.Cli.ReplyExitCode.ofKind
+                         |> ExitCode.value)
                         number
                         "Public exit commitment"
 
@@ -51,7 +53,8 @@ let tests =
                         "Unknown delivery is never encoded as a known failure"
 
                     Expect.equal
-                        ((OutcomePresentation.classifyExecute value.Outcome).ExitCode
+                        (OutcomePresentation.classifyExecute value.Outcome
+                         |> ClaimCore.Cli.ReplyExitCode.ofKind
                          |> ExitCode.value)
                         4
                         "Unknown delivery keeps its recovery exit"
@@ -60,7 +63,7 @@ let tests =
                         ((OutcomePresentation.classifyExecute (
                             ExecuteResult.Failed CoreFault.StoreUnavailable
                          ))
-                             .ExitCode
+                         |> ClaimCore.Cli.ReplyExitCode.ofKind
                          |> ExitCode.value)
                         3
                         "A known failure has a different exit")

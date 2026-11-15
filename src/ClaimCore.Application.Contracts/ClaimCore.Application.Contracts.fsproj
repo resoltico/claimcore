@@ -8,6 +8,7 @@
     <Compile Include="Faults.fs" />
     <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />
+    <Compile Include="ReplyKind.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Requester.fs" />

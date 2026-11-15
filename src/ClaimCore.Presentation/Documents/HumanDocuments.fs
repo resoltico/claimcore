@@ -1,6 +1,5 @@
 namespace ClaimCore.Presentation
 
-open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -823,18 +822,6 @@ module HumanReadDocuments =
 module HumanReadReply =
     let classify (reply: HumanReadReply) =
         match reply.Outcome with
-        | HumanReadOutcome.Succeeded _ ->
-            {
-                Kind = ReplyKind.Succeeded
-                ExitCode = ExitCode.Success
-            }
-        | HumanReadOutcome.Rejected _ ->
-            {
-                Kind = ReplyKind.Rejected
-                ExitCode = ExitCode.Rejected
-            }
-        | HumanReadOutcome.Failed _ ->
-            {
-                Kind = ReplyKind.Failed
-                ExitCode = ExitCode.Failed
-            }
+        | HumanReadOutcome.Succeeded _ -> ReplyKind.Succeeded
+        | HumanReadOutcome.Rejected _ -> ReplyKind.Rejected
+        | HumanReadOutcome.Failed _ -> ReplyKind.Failed

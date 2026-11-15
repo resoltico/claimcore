@@ -5,7 +5,7 @@ import { renderCatalogKey } from "../presentation/messages";
 import { moneyWithScale } from "../presentation/format";
 import { productMetadata } from "../protocol/productMetadata";
 import { ActorIdentity } from "./ActorIdentity";
-import { CharacterWarning } from "./BusinessValue";
+import { CharacterWarning } from "./CharacterWarning";
 import { StateChip } from "./StateChip";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";

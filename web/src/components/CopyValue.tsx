@@ -1,4 +1,4 @@
-import { CharacterWarning } from "./BusinessValue";
+import { CharacterWarning } from "./CharacterWarning";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ButtonControl as Button } from "../ui/ButtonControl";
 import { usePresentation } from "../presentation/context";

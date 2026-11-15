@@ -10,23 +10,16 @@ type PostgresReference =
 type ClockCall =
     static member Read() = DateTimeOffset.UtcNow
 
-type ProtocolFromDomain =
-    static member ProtocolDirect() = ReplyCodecs.execute.Schema
 
 type JsonSerializerCall =
     static member Write() =
         System.Text.Json.JsonSerializer.Serialize("control")
 
-type JsonFromDomain =
-    static member JsonDirect() = ClaimCore.Json.JsonValue.Null
 
 type ApplicationInternalsFromWeb =
     static member InternalsDirect() =
         ClaimCore.Application.LedgerEntries.position Sequence.zero (Array.zeroCreate 32)
 
-type RecordFormatFromDomain =
-    static member RecordDirect() =
-        typeof<ClaimCore.RecordFormat.DecodeProblem>
 
 type DirectEnumeration =
     static member Read() =

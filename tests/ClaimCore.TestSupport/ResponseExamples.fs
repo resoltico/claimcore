@@ -539,7 +539,7 @@ let unavailable representation (endpoint: Endpoint<'input, 'output>) input =
             |> List.find (fun value ->
                 let wire = endpoint.Output.Write value
 
-                (endpoint.Classify value).Kind = ReplyKind.Failed
+                (endpoint.Classify value) = ReplyKind.Failed
                 && JsonValue.tryMember "representation" wire = Some(JsonValue.String "HUMAN"))
 
         let wire = endpoint.Output.Write failed

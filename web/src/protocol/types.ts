@@ -7,12 +7,10 @@ import type {
   HumanReceiptDocument,
   Screen,
   WorkDateBasis,
-  RequestByEndpoint,
   ResponseByEndpoint,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
-export type { CaseFields } from "@contracts/client";
 export type PersonDocument = HumanReadDocument_people_grants;
 export type OperationReceipt = HumanReceiptDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
@@ -31,10 +29,6 @@ export type FieldCatalogEntry = (
   readonly scalar: NonNullable<CatalogDocument["inputFields"][number]["scalar"]>;
   readonly valueKind?: CatalogDocument["fields"][number]["valueKind"];
 };
-export type CaseSubmission = Extract<
-  RequestByEndpoint["operation.execute"],
-  { binding: { kind: "CASE" } }
->;
 export type ServiceResponse<
   K extends keyof ResponseByEndpoint,
   R extends Representation = "HUMAN",

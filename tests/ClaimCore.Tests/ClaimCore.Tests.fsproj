@@ -18,6 +18,7 @@
     <Compile Include="Architecture/NegativeFixtures.fs" />
     <Compile Include="Architecture/ApiRules.fs" />
     <Compile Include="Architecture/ArchitectureTests.fs" />
+    <Compile Include="Publication/PublicationTests.fs" />
     <Compile Include="Json/CodecDefinitionTests.fs" />
     <Compile Include="Json/StructuralAdmissionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
@@ -42,7 +43,7 @@
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Application/OperationReplayTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
-    <Compile Include="Domain/OutcomeTests.fs" />
+    <Compile Include="Cli/OutcomeTests.fs" />
     <Compile Include="Domain/InputIdentityTests.fs" />
     <Compile Include="Domain/OperationLifetimeTests.fs" />
     <Compile Include="Domain/InputAccumulationTests.fs" />

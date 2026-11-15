@@ -143,7 +143,7 @@ module internal RecoveryCommand =
 
                                         let outcome =
                                             match response.Frame.Result with
-                                            | FrameResult.Reply value -> Some value.Class.Kind
+                                            | FrameResult.Reply value -> Some value.Class
                                             | _ -> None
 
                                         match outcome with

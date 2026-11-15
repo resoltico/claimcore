@@ -182,7 +182,7 @@ module private FrameInvocation =
                         else
                             let refused =
                                 match reply.Frame.Result with
-                                | FrameResult.Reply value -> value.Class.Kind = ReplyKind.Rejected
+                                | FrameResult.Reply value -> value.Class = ReplyKind.Rejected
                                 | FrameResult.HostFailure failure ->
                                     failure.Phase = Some ExecutionPhase.NotStarted
                                 | FrameResult.LocalFailure _ -> false

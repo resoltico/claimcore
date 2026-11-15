@@ -32,7 +32,7 @@ import {
   type HumanReadDocument_context,
 } from "@contracts/client";
 import { actorRefInput } from "../tests/support/inputs";
-import { contrastRatio } from "../src/theme/contrast";
+import { contrastRatio } from "../tests/support/themeContrast";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 const presentationBasis = {

@@ -39,7 +39,7 @@ let private call (host: Host) (endpoint: Endpoint<'Input, 'Output>) input antifo
             |> Result.defaultWith (fun _ -> failtest "Invalid server reply")
 
         Expect.equal
-            classification.Kind
+            classification
             expected
             "The observed outcome belongs to the real acceptance call"
     }

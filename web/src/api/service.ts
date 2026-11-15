@@ -19,7 +19,7 @@ import { admitBytes } from "../protocol/schema";
 import { isHostFailure, isObject } from "../protocol/client";
 export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
-export { isMutationUncertain, resultNotice } from "./outcomes";
+export { resultNotice } from "./outcomes";
 const responseLimit = strictByteProfile.maximumResponseBytes;
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (

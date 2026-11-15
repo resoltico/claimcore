@@ -3,7 +3,7 @@ namespace ClaimCore.Cli
 open ClaimCore.CommandLine
 
 open ClaimCore.Wire
-open ClaimCore.Presentation
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 /// An admitted wire reply retains its endpoint-owned classification and original member order.
@@ -18,9 +18,22 @@ type ServiceReply =
     member this.Class = this.Typed.Class
     member this.Endpoint = this.Route.Id
 
+module ReplyExitCode =
+    let ofKind =
+        function
+        | ReplyKind.Succeeded
+        | ReplyKind.Reviewed
+        | ReplyKind.Accepted
+        | ReplyKind.AlreadyAccepted -> ExitCode.Success
+        | ReplyKind.NotAccepted
+        | ReplyKind.Rejected -> ExitCode.Rejected
+        | ReplyKind.Failed -> ExitCode.Failed
+        | ReplyKind.Pending
+        | ReplyKind.OutcomeUnknown -> ExitCode.OutcomeUnknown
+
 module ServiceReply =
     let json (reply: ServiceReply) = reply.Wire
-    let exitCode (reply: ServiceReply) = reply.Class.ExitCode
+    let exitCode (reply: ServiceReply) = ReplyExitCode.ofKind reply.Class
 
     let value endpoint (reply: ServiceReply) =
         EndpointValues.tryOutput endpoint reply.Typed

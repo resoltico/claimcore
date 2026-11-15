@@ -56,8 +56,8 @@ module internal RequestLog =
     let reply classification context =
         entry context
         |> Option.iter (fun value ->
-            value.Outcome <- ReplyKind.token classification.Kind
-            value.MetricResult <- WebMetrics.result classification.Kind)
+            value.Outcome <- ReplyKind.token classification
+            value.MetricResult <- WebMetrics.result classification)
 
     let operation id context =
         OperationId.create id

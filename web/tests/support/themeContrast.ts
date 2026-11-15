@@ -1,5 +1,5 @@
-import tokens from "./tokens.json" with { type: "json" };
-import pairs from "./contrast-pairs.json" with { type: "json" };
+import tokens from "../../src/theme/tokens.json" with { type: "json" };
+import pairs from "../../src/theme/contrast-pairs.json" with { type: "json" };
 
 type Mode = "light" | "dark";
 const primitiveColors = (): Readonly<Record<string, string>> => {

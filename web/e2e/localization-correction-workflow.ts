@@ -3,7 +3,11 @@ import { type ResponseFor, endpoints, type OperationReceipt } from "@contracts/c
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import type { CaseFields, CaseSubmission } from "../src/protocol/types";
+import type { CaseFields, RequestByEndpoint } from "@contracts/client";
+type CaseSubmission = Extract<
+  RequestByEndpoint["operation.execute"],
+  { binding: { kind: "CASE" } }
+>;
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";

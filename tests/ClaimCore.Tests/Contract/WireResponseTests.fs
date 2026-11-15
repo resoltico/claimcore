@@ -79,12 +79,12 @@ let private examples () =
                 |> nonNull
 
             Expect.equal
-                (ReplyKind.token classification.Kind)
+                (ReplyKind.token classification)
                 kind
                 "Endpoint-owned classification agrees with the independent wire outcome"
 
             Expect.equal
-                (ExitCode.value classification.ExitCode)
+                (classification |> ClaimCore.Cli.ReplyExitCode.ofKind |> ExitCode.value)
                 (expectedExit kind)
                 "Every wire outcome retains its declared exit meaning"
 

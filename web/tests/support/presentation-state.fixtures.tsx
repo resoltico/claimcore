@@ -1,10 +1,15 @@
+import type { RequestByEndpoint } from "@contracts/client";
+type CaseSubmission = Extract<
+  RequestByEndpoint["operation.execute"],
+  { binding: { kind: "CASE" } }
+>;
 import { caseSubject, caseDocumentInput } from "./case-document.fixtures";
 import { operationAffordance } from "./affordances.fixtures";
 
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { CaseSubmission, CurrentCase } from "../../src/api/service";
+import type { CurrentCase } from "../../src/api/service";
 import { SettingsWorkspace } from "../../src/views/SettingsWorkspace";
 import { useRoute } from "../../src/routing/useRoute";
 import type userEvent from "@testing-library/user-event";

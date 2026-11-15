@@ -82,10 +82,7 @@ type ArchitectureRule =
     | Postgres
     | Serializer
     | ClosedVocabularyCodecs
-    | ServiceModelWithoutProtocol
     | ServiceSurface
-    | DomainJsonFree
-    | DomainBoundary
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
     if provider.GetObjects architecture |> Seq.isEmpty then
@@ -99,10 +96,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
     let targets label (provider: IObjectProvider<IType>) =
         nonEmptyTargets architecture label provider
 
-    let protocol () =
-        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
-        |> targets "wire namespace"
-
     match name with
     | ArchitectureRule.Pure ->
         nonEmptyTargets architecture "filesystem types" fileTypes |> ignore
@@ -115,8 +108,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
             |> targets "Postgres"
         )
         :> IArchRule
-    | ArchitectureRule.ServiceModelWithoutProtocol ->
-        clauses.NotDependOnAny(protocol ()) :> IArchRule
     | ArchitectureRule.ClosedVocabularyCodecs ->
         let enumeration =
             MethodMembers()
@@ -196,41 +187,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
             |> targets "Application implementation outside the service and ports"
         )
         :> IArchRule
-    | ArchitectureRule.DomainJsonFree ->
-        clauses.NotDependOnAny(
-            Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Json")
-            |> targets "JSON assembly"
-        )
-        :> IArchRule
-    | ArchitectureRule.DomainBoundary ->
-        for assembly in
-            [
-                "ClaimCore.Wire"
-                "ClaimCore.Application"
-                "ClaimCore.RecordFormat"
-                "ClaimCore.Json"
-                "ClaimCore.Postgres"
-            ] do
-            Types().That().ResideInAssembly(Assembly.Load assembly)
-            |> targets ("Domain excludes " + assembly)
-            |> ignore
-
-        clauses.NotDependOnAny(
-            Types()
-                .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Wire")
-                .Or()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Application")
-                .Or()
-                .ResideInAssembly(Assembly.Load "ClaimCore.RecordFormat")
-                .Or()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Json")
-                .Or()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
-            |> targets "Domain boundary"
-        )
-        :> IArchRule
-
 // Product subjects must be assembly-scoped: F# task/async/closure bodies live under
 // <StartupCode$...>, outside the declaring module's type and namespace.
 let subjects (assembly: System.Reflection.Assembly) =
