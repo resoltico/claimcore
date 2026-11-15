@@ -3,6 +3,7 @@
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <Compile Include="Catalog/TaskConsequences.fs" />
     <Compile Include="Catalog/Acts.fs" />
     <Compile Include="Messages/DiagnosticMetadata.fs" />
     <Compile Include="Catalog/Prominence.fs" />
@@ -10,7 +11,6 @@
     <Compile Include="Documents/ReplyPresentation.fs" />
     <Compile Include="Documents/Values.fs" />
     <Compile Include="Documents/OutcomePresentation.fs" />
-    <Compile Include="Catalog/Consequence.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
     <Compile Include="Catalog/TaskInputPresentation.fs" />
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />

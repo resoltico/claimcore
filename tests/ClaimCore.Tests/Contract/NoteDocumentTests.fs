@@ -70,7 +70,7 @@ let tests =
 
                         Expect.equal
                             action.Task
-                            (TaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
+                            (ApplicationTaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
                             "The removal task is supplied by Core"
 
                         Expect.equal

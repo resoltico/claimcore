@@ -85,7 +85,7 @@ const SelectedReminder = ({
     <WorkOperation
       current={parent}
       subject="REMINDER"
-      kind={task.act}
+      kind={task.id}
       targetIdentity={"reminderId" in binding ? binding.reminderId : action.task}
       {...(kind !== "reminder.complete" || selection.anchor === null
         ? {}

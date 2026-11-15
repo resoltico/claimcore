@@ -121,7 +121,7 @@ module CatalogValidation =
         let required =
             Set.union
                 (presentationIds ())
-                (TaskId.all
+                (ApplicationTaskId.all
                  |> List.choose TaskRouting.act
                  |> List.map PresentationKeys.consequence
                  |> Set.ofList)

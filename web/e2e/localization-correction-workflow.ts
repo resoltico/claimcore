@@ -151,10 +151,16 @@ const acceptSetup = async (
   };
   const revision = request.binding.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
-  if (request.binding.target.kind !== "REFERENCE") {
-    throw new Error("Reference fixture positive control");
-  }
-  expect(receipt.subject.caseReference).toBe(request.binding.target.caseReference);
+  const reference = (() => {
+    if (request.task === "case.open") {
+      return request.inputs["field:caseReference"];
+    }
+    return "target" in request.binding && request.binding.target.kind === "REFERENCE"
+      ? request.binding.target.caseReference
+      : null;
+  })();
+  expect(reference).not.toBeNull();
+  expect(receipt.subject.caseReference).toBe(reference);
   expect(receipt.subject.act).toBe(request.task);
   expect(receipt.subject.revision).toBe(revision);
   const recordedFields = (() => {

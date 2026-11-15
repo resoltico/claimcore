@@ -209,7 +209,7 @@ module HumanCaseDocument =
                     value.Advice.Acts
                     |> List.filter ((<>) CaseActKind.RemovePayment)
                     |> List.map (fun kind ->
-                        let task = TaskId.Operation(ActKind.Case kind)
+                        let task = ApplicationTaskId.Operation(ActKind.Case kind)
 
                         let registration =
                             if
@@ -466,17 +466,16 @@ module HumanReadDocuments =
     let private installationOffer issuer =
         function
         | InstallationOffer.Open ->
-            let task = TaskId.Operation(ActKind.Case CaseActKind.Open)
+            let task = ApplicationTaskId.Operation(ActKind.Case CaseActKind.Open)
 
             TaskAffordances.offered
                 task
-                (OperationBinding.Case(CaseSelector.Reference "", 0L, None, None))
+                (OperationBinding.CaseNew 0L)
                 Map.empty
-                (TaskAffordances.input (InputTarget.Field BusinessField.CaseReference)
-                 :: TaskAffordances.authored task)
+                (TaskAffordances.authored task)
                 Map.empty
         | InstallationOffer.PeopleAct kind ->
-            let task = TaskId.Operation(ActKind.People kind)
+            let task = ApplicationTaskId.Operation(ActKind.People kind)
 
             let seeds =
                 [
@@ -734,7 +733,7 @@ module HumanReadDocuments =
         let actions =
             value.Offers
             |> List.map (fun kind ->
-                let task = TaskId.Operation(ActKind.People kind)
+                let task = ApplicationTaskId.Operation(ActKind.People kind)
 
                 let seeds =
                     if kind = PeopleActKind.SetProfile then
@@ -746,7 +745,7 @@ module HumanReadDocuments =
 
                 let seeds =
                     if kind = PeopleActKind.Grant || kind = PeopleActKind.Revoke then
-                        seeds |> Map.add TaskInputId.Scope (TaskAffordances.text "INSTALLATION")
+                        seeds |> Map.add TaskInputId.Scope TaskAffordances.initialGrantScope
                     else
                         seeds
 

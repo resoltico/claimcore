@@ -49,7 +49,16 @@ let ofCommand actorId command =
         | OperationInput.Case request ->
             let payment, values =
                 match request.Act with
-                | CaseAct.Open value -> None, fields (RegistrationInput.values value)
+                | CaseAct.Open value ->
+                    let reference =
+                        match request.Target with
+                        | CaseSelector.Reference reference -> reference
+                        | CaseSelector.Id _ ->
+                            invalidArg (nameof request) "Creation needs a reference."
+
+                    None,
+                    text (field BusinessField.CaseReference) reference
+                    :: fields (RegistrationInput.values value)
                 | CaseAct.Decide value -> None, fields (DecisionInput.values value)
                 | CaseAct.RecordPayment value -> None, fields (PaymentInput.values value)
                 | CaseAct.AmendRegistration value ->
@@ -81,12 +90,15 @@ let ofCommand actorId command =
                 | CaseAct.Bare _ -> None, []
 
             ActKind.Case(CaseAct.kind request.Act),
-            OperationBinding.Case(
-                request.Target,
-                request.ExpectedRevision,
-                payment,
-                request.ExpectedFamilySequence
-            ),
+            (if CaseAct.kind request.Act = CaseActKind.Open then
+                 OperationBinding.CaseNew request.ExpectedRevision
+             else
+                 OperationBinding.Case(
+                     request.Target,
+                     request.ExpectedRevision,
+                     payment,
+                     request.ExpectedFamilySequence
+                 )),
             values
         | OperationInput.Work request ->
             let (WorkAct.UpdateWork value) = request.Act

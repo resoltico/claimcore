@@ -94,7 +94,7 @@ let tests =
 
                 Expect.equal
                     action.Task
-                    (TaskId.Operation(ActKind.People PeopleActKind.SetProfile))
+                    (ApplicationTaskId.Operation(ActKind.People PeopleActKind.SetProfile))
                     "Core task"
 
                 Expect.equal
@@ -118,7 +118,7 @@ let tests =
 
                 Expect.equal
                     (value.Actions |> List.filter _.Primary |> List.map _.Task)
-                    [ TaskId.Operation(ActKind.People PeopleActKind.Grant) ]
+                    [ ApplicationTaskId.Operation(ActKind.People PeopleActKind.Grant) ]
                     "Grant has the Core preference")
             testCase
                 "revocation controls belong to granted rows and retain permission boundaries"

@@ -10,7 +10,7 @@
     <Compile Include="BuildIdentity.fs" />
     <Compile Include="Api/Operations.fs" />
     <Compile Include="Api/Representation.fs" />
-    <Compile Include="Catalog/Reads.fs" />
+    <Compile Include="Catalog/EndpointInputs.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
     <Compile Include="Vocabulary/ProtocolFailures.fs" />

@@ -13,6 +13,7 @@ type SubmissionValue =
 
 [<RequireQualifiedAccess>]
 type OperationBinding<'revision> =
+    | CaseNew of expectedRevision: 'revision
     | Case of
         target: CaseSelector *
         expectedRevision: 'revision *
@@ -137,7 +138,7 @@ module OperationSubmission =
             | Some issues -> Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues))
             | None -> errors |> List.tryHead |> Option.map Error |> Option.defaultValue (Ok())
 
-    let rec private validate (declaration: TaskDeclaration) values =
+    let rec private validate (declaration: ApplicationTaskDeclaration) values =
         let allowed =
             declaration.Inputs
             |> List.filter (fun input -> input.Source = InputSource.Authored)
@@ -197,7 +198,7 @@ module OperationSubmission =
     and private validateRow (collection: TaskCollectionDeclaration) row =
         let declaration =
             {
-                Task = TaskId.Operation(ActKind.People PeopleActKind.Admit)
+                Task = ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit)
                 Inputs = collection.Inputs
                 Collections = []
             }
@@ -440,7 +441,8 @@ module OperationSubmission =
         act
 
     let private assembleDeclared (submission: SubmissionEnvelope<int64, Guid>) =
-        let declaration = TaskDeclarations.describe (TaskId.Operation submission.Task)
+        let declaration =
+            TaskDeclarations.describe (ApplicationTaskId.Operation submission.Task)
 
         validate declaration submission.Inputs
         |> bind (fun () ->
@@ -448,7 +450,23 @@ module OperationSubmission =
             let command input = Ok(SubmittedOperation.Command input)
 
             match submission.Task, submission.Binding with
-            | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) ->
+            | ActKind.Case CaseActKind.Open, OperationBinding.CaseNew expected ->
+                map2
+                    (fun reference act ->
+                        OperationInput.Case
+                            {
+                                OperationId = submission.OperationId
+                                Target = CaseSelector.Reference reference
+                                ExpectedRevision = expected
+                                ExpectedFamilySequence = None
+                                Act = act
+                            }
+                        |> SubmittedOperation.Command)
+                    (text values (field BusinessField.CaseReference))
+                    (caseAct values CaseActKind.Open)
+            | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) when
+                kind <> CaseActKind.Open
+                ->
                 let act =
                     match kind, payment with
                     | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
@@ -586,12 +604,31 @@ module OperationSubmission =
         if draft.Task = ActKind.People PeopleActKind.ProvisionOwner then
             Error SubmissionProblem.Shape
         else
-            validate (TaskDeclarations.describe (TaskId.Operation draft.Task)) draft.Inputs
+            validate
+                (TaskDeclarations.describe (ApplicationTaskId.Operation draft.Task))
+                draft.Inputs
             |> bind (fun () ->
                 let values = draft.Inputs
 
                 match draft.Task, draft.Binding with
-                | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) ->
+                | ActKind.Case CaseActKind.Open, OperationBinding.CaseNew expected ->
+                    map2
+                        (fun reference act -> reference, act)
+                        (text values (field BusinessField.CaseReference))
+                        (caseAct values CaseActKind.Open)
+                    |> bind (fun (reference, act) ->
+                        syntax (
+                            AuthoredIntent.Case(
+                                draft.OperationId,
+                                Some reference,
+                                expected,
+                                None,
+                                act
+                            )
+                        ))
+                | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) when
+                    kind <> CaseActKind.Open
+                    ->
                     let act =
                         match kind, payment with
                         | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
@@ -677,6 +714,7 @@ module OperationSubmission =
     let completeDraft (draft: SubmissionEnvelope<int64 option, Guid option>) =
         let binding =
             match draft.Binding with
+            | OperationBinding.CaseNew(Some revision) -> Some(OperationBinding.CaseNew revision)
             | OperationBinding.Case(target, Some revision, payment, family) ->
                 Some(OperationBinding.Case(target, revision, payment, family))
             | OperationBinding.Work(target, Some revision) ->

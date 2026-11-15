@@ -61,15 +61,8 @@ export const assembleTask = (
   const declaration = operationTask(task);
   const collection = authoredCollections(declaration, values);
   const inputs = { ...authoredScalars(declaration, values), ...collection.inputs };
-  const selected =
-    binding.kind === "CASE" && task === "case.open"
-      ? {
-          ...binding,
-          target: { kind: "REFERENCE", caseReference: values["field:caseReference"] ?? "" },
-        }
-      : binding;
   // Acquisition builds a declared envelope; Core performs closed admission and business validation.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generic declaration acquisition preserves tokens; Core owns admission of the envelope.
-  const command = { operationId, task, binding: selected, inputs } as OperationSubmission;
+  const command = { operationId, task, binding, inputs } as OperationSubmission;
   return { command, submittedRows: collection.submittedRows };
 };

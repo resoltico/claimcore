@@ -103,7 +103,7 @@ let tests =
                     Expect.throws
                         (fun () ->
                             Affordance.create
-                                (TaskId.Operation(ActKind.People PeopleActKind.Admit))
+                                (ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
                                 (OperationBinding.People(None, 0L))
                                 seed
                                 []

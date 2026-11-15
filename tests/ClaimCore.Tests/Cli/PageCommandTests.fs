@@ -1,4 +1,4 @@
-module ClaimCore.Tests.CaseListCommandTests
+module ClaimCore.Tests.PageCommandTests
 
 open ClaimCore.Wire.Export
 
@@ -9,6 +9,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Json
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -137,11 +138,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
         }
 
     let code =
-        CaseListCommand.runWith
-            { Width = 4096; BoldHeader = false }
-            io
-            pending
-            CancellationToken.None
+        PageCommand.runWith { Width = 4096; BoldHeader = false } io pending CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code, output.ToArray(), errors.ToArray(), List.ofSeq calls
@@ -159,11 +156,120 @@ let private parseCsv (bytes: byte array) =
 
     List.ofSeq rows
 
+let private declaredPages () =
+    let replace path value document =
+        let rec update path document =
+            match path, document with
+            | [], _ -> value
+            | name :: rest, JsonValue.Object fields when
+                fields |> List.exists (fun (key, _) -> key = name)
+                ->
+                JsonValue.Object(
+                    fields
+                    |> List.map (fun (key, child) ->
+                        key, if key = name then update rest child else child)
+                )
+            | _ -> failtest "A paged response fixture requires the declared continuation path."
+
+        update path document
+
+    for declaration in EndpointDeclarations.queries |> List.filter _.Paged do
+        let entry =
+            CommandGrammar.operations
+            |> List.find (fun entry -> ApplicationTaskId.key entry = declaration.Id)
+
+        let operands =
+            CommandGrammar.inputs entry
+            |> List.choose (fun input ->
+                if input.Argument <> CommandArgument.Operand then
+                    None
+                else
+                    match input.Name with
+                    | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
+                        Some "PAGE-FIXTURE"
+                    | TaskInputId.ActorId -> Some "10000000-0000-4000-8000-000000000099"
+                    | _ -> failtest "The paging fixture needs an independently supplied operand.")
+
+        let prepared =
+            Grammar.prepare
+                (fun () -> failtest "A read never allocates an operation ID")
+                (CommandGrammar.words entry @ operands @ [ "--all"; "--format"; "json" ])
+            |> Result.defaultWith (fun errors -> failtestf "%A" errors)
+
+        let example =
+            ResponseExamples.replies ()
+            |> List.tryPick (fun output ->
+                output.Accept
+                    { new IEndpointOutputVisitor<JsonValue option> with
+                        member _.Visit<'input, 'output>
+                            (endpoint: Endpoint<'input, 'output>, value)
+                            =
+                            let wire = endpoint.Output.Write value
+
+                            if
+                                endpoint.Token = declaration.Id
+                                && endpoint.Classify value = ReplyKind.Succeeded
+                                && JsonValue.tryMember "representation" wire =
+                                    Some(JsonValue.String "DATA")
+                            then
+                                Some wire
+                            else
+                                None
+                    })
+            |> Option.defaultWith (fun () ->
+                failtest ("A typed DATA fixture is required: " + declaration.Id))
+
+        let calls = ResizeArray<JsonValue>()
+
+        let io: ReadPageIO =
+            {
+                Exchange =
+                    fun frame _ ->
+                        calls.Add(Frames.input frame)
+
+                        let cursor =
+                            if calls.Count = 1 then
+                                JsonValue.String "second-page"
+                            else
+                                JsonValue.Null
+
+                        let reply = replace [ "outcome"; "data"; "nextCursor" ] cursor example
+                        CliReply.result frame reply |> Fixtures.accepted |> Task.FromResult
+                Deliver = fun _ _ -> ()
+                Output = ignore
+                Errors = ignore
+            }
+
+        let code =
+            PageCommand.run io prepared CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        Expect.equal code 0 "Every declared page uses the common traversal"
+        Expect.equal calls.Count 2 "The returned continuation is followed exactly once"
+
+        Expect.equal
+            (JsonValue.tryMember "cursor" calls[1])
+            (Some(JsonValue.String "second-page"))
+            "The cursor reaches the next typed request"
+
+        let filters =
+            function
+            | JsonValue.Object fields -> fields |> List.filter (fun (key, _) -> key <> "cursor")
+            | _ -> failtest "An object request is required"
+
+        Expect.equal
+            (filters calls[1])
+            (filters calls[0])
+            "Traversal preserves every other request member"
+
 [<Tests>]
 let tests =
     testList
-        "case-list export and traversal"
+        "paged export and traversal"
         [
+            testCase
+                "all declared paged queries traverse their actual typed reply grammar"
+                declaredPages
             testCase "case list labels composite headline as state" (fun () ->
                 let entries = CaseListScreen.caseSummary (row "STATE-1") |> List.collect _.Entries
                 let headline = entries |> List.find (fun entry -> entry.Key = "headline")
@@ -687,7 +793,7 @@ let tests =
                     [
                         [ "case"; "get"; "x"; "--all" ]
                         [ "case"; "get"; "x"; "--format"; "csv" ]
-                        [ "people"; "list"; "--all" ]
+                        [ "people"; "list"; "--format"; "csv" ]
                     ] do
                     Expect.isError
                         (Grammar.prepare (fun () -> "unused") args)

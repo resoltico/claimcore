@@ -16,79 +16,97 @@ module TaskMetadata =
                 source = InputSource.token value.Source
                 clearable = value.Clearable
                 atom = string value.Atom |> _.ToUpperInvariant()
+                multiple = value.Multiple
+                retention = InputRetention.token value.Retention
+                choicesFrom = value.ChoicesFrom
+                choicesWhen =
+                    value.ChoicesWhen
+                    |> Option.map (fun choices ->
+                        {|
+                            input = TaskInputId.token choices.Input
+                            value = choices.Value
+                            choices = choices.Choices
+                        |})
                 choices =
                     TaskChoiceId.ofInput value.Input
                     |> Option.map TaskChoiceId.tokens
                     |> Option.defaultValue []
             |}
 
-        TaskDeclarations.all
-        |> List.map (fun task ->
-            let kind, subject, act, endpoint, label, consequence =
-                match task.Task with
-                | TaskId.Operation act ->
-                    "OPERATION",
-                    Some(ActSubject.token (ActKind.subject act)),
-                    Some(ActKind.token act),
-                    ActorEndpoint.token (ActorEndpoint.Operation OperationEndpoint.Execute),
-                    Vocabulary.messageKey ActKind.vocabulary act "label",
-                    Some(Vocabulary.token Consequence.vocabulary (Consequence.ofAct act))
-                | TaskId.Query query ->
-                    let endpoint = ActorEndpoint.Query query
+        let atom (value: InputValue) : obj | null =
+            match value with
+            | InputValue.Text value -> box value
+            | InputValue.Integer value -> box value
+            | InputValue.Boolean value -> box value
+            | InputValue.Null -> null
 
-                    "QUERY",
-                    None,
-                    None,
-                    ActorEndpoint.token endpoint,
-                    Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
-                    None
-
-                | TaskId.Command command ->
-                    let endpoint = ActorEndpoint.Command command
-
-                    "COMMAND",
-                    None,
-                    None,
-                    ActorEndpoint.token endpoint,
-                    Vocabulary.messageKey ActorEndpoint.vocabulary endpoint "label",
-                    None
+        let definition id kind subject endpoint consequence creates paged csv inputs collections =
+            let prefix = if kind = "OPERATION" then "task." else "endpoint."
 
             {|
-                id = TaskId.key task.Task
+                id = id
                 kind = kind
                 subject = subject
-                act = act
                 endpoint = endpoint
-                labelId = label
-                meaningId =
-                    match task.Task with
-                    | TaskId.Operation act ->
-                        Vocabulary.messageKey ActKind.vocabulary act "meaning"
-                    | TaskId.Query query ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Query query)
-                            "meaning"
-                    | TaskId.Command command ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Command command)
-                            "meaning"
+                labelId = prefix + id + ".label"
+                meaningId = prefix + id + ".meaning"
                 consequence = consequence
-                inputs = task.Inputs |> List.map input
+                creates = creates
+                paged = paged
+                csv = csv
+                inputs = inputs |> List.map input
                 collections =
-                    task.Collections
-                    |> List.map (fun collection ->
+                    collections
+                    |> List.map (fun (collection: TaskCollectionDeclaration) ->
                         {|
                             id = TaskCollectionId.key collection.Collection
                             input =
                                 TaskInputId.token (TaskCollectionId.input collection.Collection)
                             minimumRows = TaskCollectionId.minimumRows collection.Collection
                             maximumRows = TaskCollectionId.maximumRows collection.Collection
+                            defaults =
+                                TaskCollectionId.defaultValues collection.Collection
+                                |> Map.toList
+                                |> List.map (fun (input, value) ->
+                                    TaskInputId.token input, atom value)
+                                |> Map.ofList
                             inputs = collection.Inputs |> List.map input
                         |})
-            |})
-        |> JsonSerializer.Serialize
+            |}
+
+        let operations =
+            ClaimCore.Domain.Tasks.Registry.clientDeclarations
+            |> List.map (fun declaration ->
+                definition
+                    (TaskId.token declaration.Id)
+                    "OPERATION"
+                    (Some(ActSubject.token declaration.Target))
+                    (ActorEndpoint.token (ActorEndpoint.Operation OperationEndpoint.Execute))
+                    (Some(Vocabulary.token Consequence.vocabulary declaration.Consequence))
+                    declaration.Creates
+                    false
+                    false
+                    declaration.Inputs
+                    declaration.Collections)
+
+        let endpoints =
+            EndpointDeclarations.all
+            |> List.map (fun declaration ->
+                definition
+                    declaration.Id
+                    (match declaration.Kind with
+                     | EndpointKind.Query -> "QUERY"
+                     | EndpointKind.Command -> "COMMAND")
+                    None
+                    declaration.Id
+                    None
+                    false
+                    declaration.Paged
+                    declaration.Csv
+                    declaration.Inputs
+                    [])
+
+        operations @ endpoints |> JsonSerializer.Serialize
 
     let internal inputPresentationSource () =
         TaskInputId.all

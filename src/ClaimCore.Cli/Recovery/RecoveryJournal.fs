@@ -85,12 +85,12 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
-        && (TaskId.all
+        && (ApplicationTaskId.all
             |> List.exists (function
-                | TaskId.Operation kind ->
+                | ApplicationTaskId.Operation kind ->
                     ActKind.subject kind = record.Subject && ActKind.token kind = record.Act
-                | TaskId.Query _
-                | TaskId.Command _ -> false))
+                | ApplicationTaskId.Query _
+                | ApplicationTaskId.Command _ -> false))
 
 
 

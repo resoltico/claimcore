@@ -182,20 +182,20 @@ module internal ViewText =
 
     let render language screen = renderSelected false language screen
 
-    let renderDocument includeDetails language (document: HumanDocument) =
+    let renderDocumentWithHeader
+        options
+        includeHeader
+        includeDetails
+        language
+        (document: HumanDocument)
+        =
         let zone =
             match document.Basis with
             | ObservationBasis.Snapshot basis -> basis.TimeZoneId
             | ObservationBasis.Unavailable -> "UTC"
 
         let body =
-            renderWithHeader
-                zone
-                true
-                includeDetails
-                (TextTable.environment ())
-                language
-                document.Screen
+            renderWithHeader zone includeHeader includeDetails options language document.Screen
 
         let actions =
             document.Actions
@@ -203,14 +203,14 @@ module internal ViewText =
             |> List.map (fun action ->
                 let key =
                     match action.Task with
-                    | TaskId.Operation task ->
+                    | ApplicationTaskId.Operation task ->
                         Vocabulary.messageKey ActKind.vocabulary task "label"
-                    | TaskId.Command command ->
+                    | ApplicationTaskId.Command command ->
                         Vocabulary.messageKey
                             ActorEndpoint.vocabulary
                             (ActorEndpoint.Command command)
                             "label"
-                    | TaskId.Query query ->
+                    | ApplicationTaskId.Query query ->
                         Vocabulary.messageKey
                             ActorEndpoint.vocabulary
                             (ActorEndpoint.Query query)
@@ -223,3 +223,6 @@ module internal ViewText =
                []
            else
                [ String.concat ", " actions ])
+
+    let renderDocument includeDetails language document =
+        renderDocumentWithHeader (TextTable.environment ()) true includeDetails language document

@@ -142,7 +142,7 @@ let tests =
 
                 let task =
                     TaskDeclarations.describe (
-                        TaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
+                        ApplicationTaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
                     )
 
                 let summary =

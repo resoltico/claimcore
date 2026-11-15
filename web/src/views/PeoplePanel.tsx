@@ -177,7 +177,7 @@ const usePeopleWorkspace = (disclosure: Disclosure, target: PeopleTarget) => {
         context.value?.actions.some(
           (action) => action.task === task.id && action.blocked === null,
         ) === true
-          ? [task.act]
+          ? [task.id]
           : [],
       ),
     [context.value],

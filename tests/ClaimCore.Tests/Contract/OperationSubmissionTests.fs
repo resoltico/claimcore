@@ -25,6 +25,44 @@ let tests =
         "declared operation submissions"
         [
             testCase
+                "creation reference is authored and an existing binding needs a positive revision"
+                (fun () ->
+                    let created =
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:incidentNotificationDate":"2026-01-02","field:incidentCountry":"LV","field:claimantName":"Claimant","field:insurerName":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
+
+                    let submitted = decode created |> accepted
+
+                    match submitted.Operation with
+                    | Ok(SubmittedOperation.Command(OperationInput.Case request)) ->
+                        Expect.equal
+                            request.Target
+                            (CaseSelector.Reference "MAP-NEW")
+                            "The authored input selects the creation reference"
+
+                        Expect.equal request.ExpectedRevision 0L "The creation basis stays zero"
+                    | other -> failtestf "Expected a creation command: %A" other
+
+                    let misplaced =
+                        created.Replace(
+                            """"expectedRevision":0""",
+                            """"target":{"kind":"REFERENCE","caseReference":"OTHER"},"expectedRevision":0"""
+                        )
+
+                    Expect.isError
+                        (decode misplaced)
+                        "A former binding target is refused even when every new input is present"
+
+                    Expect.isOk
+                        (decode (amend ""))
+                        "The existing-target positive control admits its reviewed revision"
+
+                    Expect.isError
+                        (decode (
+                            (amend "")
+                                .Replace(""""expectedRevision":1""", """"expectedRevision":0""")
+                        ))
+                        "Existing targets cannot use a creation revision")
+            testCase
                 "well-typed grant target authoring yields precise issues while transport types remain closed"
                 (fun () ->
                     let grant values =

@@ -57,7 +57,7 @@ module internal InteractiveReview =
         | _ -> false
 
     let private operation arguments =
-        (TaskId.all |> List.filter (TaskRouting.act >> Option.isSome))
+        (ApplicationTaskId.all |> List.filter (TaskRouting.act >> Option.isSome))
         |> List.tryFind (fun entry ->
             let words = CommandGrammar.words entry
 
@@ -221,16 +221,12 @@ module internal InteractiveReview =
                     |> Option.exists (fun supplied ->
                         normalize input supplied = normalize input value))
 
-        action.Task = TaskId.Operation draft.Input.Task && sameSelection && sameGrant
+        action.Task = ApplicationTaskId.Operation draft.Input.Task
+        && sameSelection
+        && sameGrant
 
     let private complete newId (draft: InteractiveDraft) (action: Affordance) =
-        let binding =
-            match draft.Input.Task, draft.Input.Binding, action.Binding with
-            | ActKind.Case CaseActKind.Open,
-              OperationBinding.Case(target, _, _, _),
-              OperationBinding.Case(_, revision, payment, family) ->
-                OperationBinding.Case(target, revision, payment, family)
-            | _ -> action.Binding
+        let binding = action.Binding
 
         let fixedInputs =
             action.Seeds
@@ -388,6 +384,7 @@ module internal InteractiveReview =
                 { Target = target }
                 (fun request _ -> request)
                 token
+        | OperationBinding.CaseNew _
         | OperationBinding.People(None, _) -> Task.FromResult(unavailable console draft)
 
     let private runValidated newId console transport (draft: InteractiveDraft) token =
@@ -408,7 +405,7 @@ module internal InteractiveReview =
                                             } ->
                     match draft.Input.Binding with
                     | OperationBinding.People(None, _)
-                    | OperationBinding.Case(_, Some 0L, _, _) ->
+                    | OperationBinding.CaseNew _ ->
                         return!
                             reviewDocument newId console transport draft installation document token
                     | _ -> return! readTarget newId console transport draft installation token

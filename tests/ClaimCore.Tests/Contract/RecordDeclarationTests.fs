@@ -124,7 +124,8 @@ let private actGroups () =
             CaseActKind.Decide, RecordGroup.Decision
             CaseActKind.RecordPayment, RecordGroup.Payment
         ] do
-        let task = TaskDeclarations.describe (TaskId.Operation(ActKind.Case kind))
+        let task =
+            TaskDeclarations.describe (ApplicationTaskId.Operation(ActKind.Case kind))
 
         Expect.equal
             (fields task.Inputs)
@@ -132,7 +133,7 @@ let private actGroups () =
             "Semantic task inputs retain the authoritative business field order"
 
     let correction =
-        TaskDeclarations.describe (TaskId.Operation(ActKind.Case CaseActKind.Correct))
+        TaskDeclarations.describe (ApplicationTaskId.Operation(ActKind.Case CaseActKind.Correct))
 
     for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
         let expected = expected group

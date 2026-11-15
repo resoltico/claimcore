@@ -3,6 +3,7 @@ import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
   CaseGetRequest,
+  CaseSelector,
   HumanReview,
   HumanRejection,
   OperationSubmission,
@@ -31,7 +32,7 @@ export type LocalSource = {
 };
 export type ConflictSource = LocalSource & {
   prepared: PreparedRequest<"operation.execute"> & {
-    input: Exclude<OperationSubmission, { binding: { kind: "PEOPLE" } }>;
+    input: Extract<OperationSubmission, { binding: { target: CaseSelector } }>;
   };
 };
 export type ConflictObservation = {

@@ -39,7 +39,7 @@ const acts = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "CASE"
     ? [
         {
-          kind: task.act,
+          kind: task.id,
         },
       ]
     : [],
@@ -310,10 +310,8 @@ const caseTransport = (calls: Dispatch<CaseInput>[]) =>
 const assertAuthoredCase = (request: CaseInput) => {
   switch (request.task) {
     case "case.open":
-      expect(request.binding.target).toEqual({
-        kind: "REFERENCE",
-        caseReference: caseFields.caseReference,
-      });
+      expect(request.binding).toEqual({ kind: "CASE", expectedRevision: 0 });
+      expect(request.inputs["field:caseReference"]).toBe(caseFields.caseReference);
       expect(request.inputs["field:claimantName"]).toBe(caseFields.registration.claimantName);
       break;
     case "case.amendRegistration":

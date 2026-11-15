@@ -108,14 +108,14 @@ it("keeps a UUID-shaped authored case reference as a reference", () => {
   const value = assembleTask(
     "case.open",
     { "field:caseReference": operationId },
-    { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+    { kind: "CASE", expectedRevision: 0 },
     operationId,
   );
   expect(value.command.binding).toEqual({
     kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: operationId },
     expectedRevision: 0,
   });
+  expect(value.command.inputs).toEqual({ "field:caseReference": operationId });
 });
 
 it("submits untouched required text controls as empty text for Core field advice", () => {

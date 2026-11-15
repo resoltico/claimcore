@@ -207,7 +207,7 @@ let tests =
 [<Tests>]
 let creationBasis =
     testCase "case creation never acquires an authored expected revision" (fun () ->
-        let task = TaskId.Operation(ActKind.Case CaseActKind.Open)
+        let task = ApplicationTaskId.Operation(ActKind.Case CaseActKind.Open)
 
         let revision =
             CommandGrammar.inputs task

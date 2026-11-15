@@ -13,7 +13,7 @@ import type {
   RevisionConflictSnapshot,
 } from "./operationTypes";
 const caseBound = (source: LocalSource): source is ConflictSource =>
-  source.prepared.input.binding.kind !== "PEOPLE";
+  "target" in source.prepared.input.binding;
 export const conflictFromRefusal = (
   action: Extract<OperationAction, { type: "REFUSE" }>,
   source: LocalSource | null,
@@ -57,7 +57,7 @@ export const rebasedOperationBinding = (
       expectedFamilySequence: current.binding.expectedFamilySequence,
     };
   }
-  return binding.kind !== "PEOPLE" && "expectedRevision" in binding
+  return "target" in binding && "expectedRevision" in binding
     ? { ...binding, expectedRevision: revision }
     : binding;
 };
@@ -73,8 +73,8 @@ export const sameConflictTarget = (
   const left = before.binding;
   const right = after.binding;
   if (
-    left.kind === "PEOPLE" ||
-    right.kind === "PEOPLE" ||
+    !("target" in left) ||
+    !("target" in right) ||
     left.kind !== right.kind ||
     before.task !== after.task ||
     !sameSelector(left.target, right.target)

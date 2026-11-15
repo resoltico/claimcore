@@ -1,6 +1,4 @@
-namespace ClaimCore.Application.Contracts
-
-open ClaimCore.Domain
+namespace ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type InputSource =
@@ -110,6 +108,14 @@ module TaskInputId =
         |> List.distinct
 
 
+/// Absence is a missing map member; an explicit null remains a distinct submitted value.
+[<RequireQualifiedAccess>]
+type InputValue =
+    | Text of string
+    | Integer of int64
+    | Boolean of bool
+    | Null
+
 /// Collection identity is independent of transport members and UI-local row keys.
 [<RequireQualifiedAccess>]
 type TaskCollectionId = | PeopleGrants
@@ -130,6 +136,13 @@ module TaskCollectionId =
     let maximumRows =
         function
         | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
+
+    /// Acquisition defaults are explicit submitted values; they never bypass task admission.
+    let defaultValues =
+        function
+        | TaskCollectionId.PeopleGrants ->
+            Map.ofList
+                [ TaskInputId.Scope, InputValue.Text(ScopeKind.token ScopeKind.Installation) ]
 
 /// Submitted ordinals correlate responses with an immutable client-owned row map.
 type TaskRowTarget =

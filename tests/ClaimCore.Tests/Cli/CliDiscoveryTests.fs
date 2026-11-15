@@ -205,15 +205,13 @@ let suggestionScope =
 
 [<Tests>]
 let historyTraversal =
-    testCase
-        "CLI history help does not advertise traversal the people CSV path cannot perform"
-        (fun () ->
-            let code, help = inspect [ "people"; "history"; "--help" ]
-            Expect.equal code 0 "People history has grammar-derived help"
+    testCase "CLI history help advertises its declared traversal capability" (fun () ->
+        let code, help = inspect [ "people"; "history"; "--help" ]
+        Expect.equal code 0 "People history has grammar-derived help"
 
-            Expect.isFalse
-                (help.Contains "--all")
-                "The current people exporter returns one page with a cursor")
+        Expect.isTrue
+            (help.Contains "--all")
+            "The common pager traverses the declared people history pages")
 
 [<Tests>]
 let assignedLanguage =

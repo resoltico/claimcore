@@ -25,7 +25,7 @@ export const taskForAct = (
 ): OperationTaskDefinition => {
   const task = taskDefinitions.find(
     (candidate): candidate is OperationTaskDefinition =>
-      candidate.kind === "OPERATION" && candidate.subject === subject && candidate.act === act,
+      candidate.kind === "OPERATION" && candidate.subject === subject && candidate.id === act,
   );
   if (task === undefined) {
     throw new Error("Unknown operation action.");

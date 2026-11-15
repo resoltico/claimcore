@@ -150,7 +150,10 @@ module HumanDocumentCodecs =
             })
         |> field "subject" _.Subject subject
         |> field "screen" _.Screen PresentationCodecs.view
-        |> field "actions" _.Actions (list TaskId.all.Length PresentationCodecs.affordance)
+        |> field
+            "actions"
+            _.Actions
+            (list ApplicationTaskId.all.Length PresentationCodecs.affordance)
         |> field
             "links"
             _.Links
@@ -276,17 +279,20 @@ module HumanDocumentCodecs =
             ]
 
     let readReplyFor query =
-        let name = "HumanReadReply_" + TaskId.key query
+        let name = "HumanReadReply_" + ApplicationTaskId.key query
 
         let token =
             match query with
-            | TaskId.Query(QueryTaskId.CaseGet | QueryTaskId.CasePayments) -> "CASE"
-            | TaskId.Query QueryTaskId.Context -> "REQUESTER"
-            | TaskId.Query QueryTaskId.PeopleGrants -> "PERSON"
+            | ApplicationTaskId.Query(QueryTaskId.CaseGet | QueryTaskId.CasePayments) -> "CASE"
+            | ApplicationTaskId.Query QueryTaskId.Context -> "REQUESTER"
+            | ApplicationTaskId.Query QueryTaskId.PeopleGrants -> "PERSON"
             | _ -> "LIST"
 
         let document =
-            documentFor (selectedSubject token) basis ("HumanReadDocument_" + TaskId.key query)
+            documentFor
+                (selectedSubject token)
+                basis
+                ("HumanReadDocument_" + ApplicationTaskId.key query)
 
         let outcome =
             tagged

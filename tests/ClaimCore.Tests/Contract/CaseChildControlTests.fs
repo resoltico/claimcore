@@ -96,7 +96,7 @@ let tests =
 
                 Expect.equal
                     payment.Task
-                    (TaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+                    (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
                     "Only the offered row task"
 
                 Expect.equal
@@ -113,7 +113,7 @@ let tests =
 
                 Expect.equal
                     reminder.Task
-                    (TaskId.Operation(ActKind.Reminder ReminderActKind.Complete))
+                    (ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Complete))
                     "The selected reminder offers completion"
 
                 Expect.isEmpty reminder.Seeds "Completion needs no editable action or date"
@@ -141,7 +141,10 @@ let tests =
                     let record =
                         offered.Actions
                         |> List.find (fun action ->
-                            action.Task = TaskId.Operation(ActKind.Case CaseActKind.RecordPayment)
+                            action.Task =
+                                ApplicationTaskId.Operation(
+                                    ActKind.Case CaseActKind.RecordPayment
+                                )
                             && action.Blocked.IsNone)
 
                     Expect.equal

@@ -120,13 +120,10 @@
         "task": "case.open",
         "binding": {
           "kind": "CASE",
-          "target": {
-            "kind": "REFERENCE",
-            "caseReference": "x"
-          },
           "expectedRevision": 0
         },
         "inputs": {
+          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:incidentNotificationDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -156,13 +153,10 @@
         "task": "case.open",
         "binding": {
           "kind": "CASE",
-          "target": {
-            "kind": "REFERENCE",
-            "caseReference": "x"
-          },
           "expectedRevision": 0
         },
         "inputs": {
+          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:incidentNotificationDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -291,7 +285,7 @@
             "kind": "REFERENCE",
             "caseReference": "x"
           },
-          "expectedRevision": 0
+          "expectedRevision": 1
         },
         "inputs": {
           "group:registration": "UPDATE",
@@ -415,7 +409,7 @@
             "kind": "REFERENCE",
             "caseReference": "x"
           },
-          "expectedRevision": 0
+          "expectedRevision": 1
         },
         "inputs": {
           "group:registration": "UPDATE",

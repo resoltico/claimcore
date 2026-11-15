@@ -30,9 +30,9 @@ let everyMutation =
                 TaskDeclarations.all
                 |> List.choose (fun declaration ->
                     match declaration.Task with
-                    | TaskId.Operation kind -> Some kind
-                    | TaskId.Query _
-                    | TaskId.Command _ -> None)
+                    | ApplicationTaskId.Operation kind -> Some kind
+                    | ApplicationTaskId.Query _
+                    | ApplicationTaskId.Command _ -> None)
 
             Expect.isNonEmpty kinds "The actual human task inventory is exercised"
 
@@ -45,7 +45,7 @@ let everyMutation =
 
                 Expect.isOk
                     (RecoveryJournal.save root.FullName identity)
-                    (TaskId.key (TaskId.Operation kind))
+                    (ApplicationTaskId.key (ApplicationTaskId.Operation kind))
 
                 let read =
                     RecoveryJournal.list root.FullName identity.Scope

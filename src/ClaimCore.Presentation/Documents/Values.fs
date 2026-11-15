@@ -86,7 +86,7 @@ type HumanAdvice =
 /// Ready selection and authored controls share one declaration-owned shape.
 type Affordance =
     {
-        Task: TaskId
+        Task: ApplicationTaskId
         Binding: OperationBinding<int64>
         Seeds: Map<TaskInputId, SubmissionValue>
         Editable: TaskInputId list
@@ -99,6 +99,7 @@ module Affordance =
     let valid value =
         let subject =
             match value.Binding with
+            | OperationBinding.CaseNew _
             | OperationBinding.Case _ -> ActSubject.Case
             | OperationBinding.Work _ -> ActSubject.Work
             | OperationBinding.Note _ -> ActSubject.Note
@@ -107,9 +108,10 @@ module Affordance =
 
         let matches =
             match value.Task with
-            | TaskId.Operation task -> ActKind.subject task = subject
-            | TaskId.Command CommandTaskId.PeopleRequestsDismiss -> subject = ActSubject.People
-            | TaskId.Query _ -> false
+            | ApplicationTaskId.Operation task -> ActKind.subject task = subject
+            | ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss ->
+                subject = ActSubject.People
+            | ApplicationTaskId.Query _ -> false
 
         match
             TaskDeclarations.all

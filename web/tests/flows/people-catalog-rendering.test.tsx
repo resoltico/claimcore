@@ -22,7 +22,7 @@ const peopleActs = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "PEOPLE"
     ? [
         {
-          kind: task.act,
+          kind: task.id,
         },
       ]
     : [],

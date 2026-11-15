@@ -14,7 +14,6 @@ export const activeRequester: ActiveRequester = {
   actions: [
     operationAffordance("case.open", {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "" },
       expectedRevision: 0,
     }),
   ],
@@ -54,7 +53,6 @@ export const installationActions = (tasks: ReadonlyArray<string>, issuer: string
       return [
         operationAffordance(task, {
           kind: "CASE",
-          target: { kind: "REFERENCE", caseReference: "" },
           expectedRevision: 0,
         }),
       ];

@@ -65,9 +65,7 @@
     <Compile Include="Text/ReplyText.fs" />
     <Compile Include="Recovery/RecoveryCommand.fs" />
     <Compile Include="Delivery/ReadPageIO.fs" />
-    <Compile Include="Delivery/CaseListCommand.fs" />
-    <Compile Include="Delivery/PeopleHistoryCommand.fs" />
-    <Compile Include="Delivery/WorkListCommand.fs" />
+    <Compile Include="Delivery/PageCommand.fs" />
     <Compile Include="Delivery/WorkRefresh.fs" />
     <Compile Include="Delivery/InteractiveReview.fs" />
     <Compile Include="Text/TextInputs.fs" />

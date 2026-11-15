@@ -209,7 +209,7 @@ let private actorRead
                     (RepresentationReply.Human(HumanReplies.read describe outcome))
     ]
 
-let private replies () : IEndpointOutput list =
+let internal replies () : IEndpointOutput list =
     [
         yield!
             hostRead

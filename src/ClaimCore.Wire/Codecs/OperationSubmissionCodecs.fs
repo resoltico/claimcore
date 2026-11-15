@@ -56,7 +56,7 @@ module OperationSubmissionCodecs =
             scalar input)
         |> fieldMapWithPresence
 
-    let private inputs (declaration: TaskDeclaration) =
+    let private inputs (declaration: ApplicationTaskDeclaration) =
         let members =
             declaration.Inputs
             |> List.filter (fun input -> input.Source = InputSource.Authored)
@@ -85,7 +85,7 @@ module OperationSubmissionCodecs =
         fieldMapWithPresence (members @ collections)
 
     /// Prefill is partial, including collection rows that the user has not completed yet.
-    let seedInputs (declaration: TaskDeclaration) =
+    let seedInputs (declaration: ApplicationTaskDeclaration) =
         let members =
             declaration.Inputs
             |> List.map (fun input ->
@@ -166,22 +166,43 @@ module OperationSubmissionCodecs =
         let version = integer 0L Revision.Maximum
         let positiveVersion = integer 1L Revision.Maximum
 
+        let declaration =
+            ActKind.token kind
+            |> TaskId.ofLiteral
+            |> ClaimCore.Domain.Tasks.Registry.findDeclaration
+            |> Option.defaultWith (fun () -> invalidArg (nameof kind) "The task is not declared.")
+
+        let binds input =
+            declaration.Inputs
+            |> List.exists (fun item ->
+                item.Input = TaskInputId.Target input && item.Source = InputSource.Binding)
+
         let built =
-            match kind with
-            | ActKind.Case CaseActKind.RemovePayment ->
+            match declaration.Target with
+            | ActSubject.Case when declaration.Creates ->
+                record OperationBinding.CaseNew
+                |> fixedField "kind" "CASE"
+                |> field
+                    "expectedRevision"
+                    (function
+                    | OperationBinding.CaseNew revision -> revision
+                    | _ -> invalidOp "New case binding required.")
+                    (integer 0L 0L)
+                |> build
+            | ActSubject.Case when binds InputTarget.PaymentId ->
                 record (fun target revision payment ->
                     OperationBinding.Case(target, revision, Some payment, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision version
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> field "paymentId" paymentId uuid
                 |> build
-            | ActKind.Case CaseActKind.Erase ->
+            | ActSubject.Case when declaration.ReviewsFamilySequence ->
                 record (fun target revision family ->
                     OperationBinding.Case(target, revision, None, Some family))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision version
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> field
                     "expectedFamilySequence"
                     (function
@@ -189,38 +210,35 @@ module OperationSubmissionCodecs =
                     | _ -> invalidOp "Erasure basis required.")
                     (integer 1L Sequence.Maximum)
                 |> build
-            | ActKind.Case task ->
+            | ActSubject.Case ->
                 record (fun target revision -> OperationBinding.Case(target, revision, None, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field
-                    "expectedRevision"
-                    caseRevision
-                    (if task = CaseActKind.Open then integer 0L 0L else version)
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> build
-            | ActKind.Work _ ->
+            | ActSubject.Work ->
                 record (fun target revision -> OperationBinding.Work(target, revision))
                 |> fixedField "kind" "WORK"
                 |> field "target" workTarget RequestCodecs.caseSelector
                 |> field "expectedRevision" workRevision version
                 |> build
-            | ActKind.Note NoteActKind.AddNote ->
+            | ActSubject.Note when declaration.Creates ->
                 record (fun target -> OperationBinding.Note(target, None))
                 |> fixedField "kind" "NOTE"
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> build
-            | ActKind.Note NoteActKind.RemoveNote ->
+            | ActSubject.Note ->
                 record (fun target note -> OperationBinding.Note(target, Some note))
                 |> fixedField "kind" "NOTE"
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> field "noteId" noteId uuid
                 |> build
-            | ActKind.Reminder ReminderActKind.Create ->
+            | ActSubject.Reminder when declaration.Creates ->
                 record (fun target -> OperationBinding.Reminder(target, None))
                 |> fixedField "kind" "REMINDER"
                 |> field "target" reminderTarget RequestCodecs.caseSelector
                 |> build
-            | ActKind.Reminder _ ->
+            | ActSubject.Reminder ->
                 record (fun target id revision ->
                     OperationBinding.Reminder(target, Some(id, revision)))
                 |> fixedField "kind" "REMINDER"
@@ -228,7 +246,7 @@ module OperationSubmissionCodecs =
                 |> field "reminderId" (reminderCurrent >> fst) uuid
                 |> field "expectedRevision" (reminderCurrent >> snd) positiveVersion
                 |> build
-            | ActKind.People(PeopleActKind.Register | PeopleActKind.Admit) ->
+            | ActSubject.People when declaration.Creates ->
                 record (fun revision -> OperationBinding.People(None, revision))
                 |> fixedField "kind" "PEOPLE"
                 |> field
@@ -238,7 +256,7 @@ module OperationSubmissionCodecs =
                     | _ -> invalidOp "People binding required.")
                     (integer 0L 0L)
                 |> build
-            | ActKind.People _ ->
+            | ActSubject.People ->
                 record (fun actor revision -> OperationBinding.People(Some actor, revision))
                 |> fixedField "kind" "PEOPLE"
                 |> field "actorId" actorId uuid
@@ -254,10 +272,10 @@ module OperationSubmissionCodecs =
 
     let submission =
         let variants =
-            TaskId.all
+            ApplicationTaskId.all
             |> List.choose (function
-                | TaskId.Operation kind ->
-                    let declaration = TaskDeclarations.describe (TaskId.Operation kind)
+                | ApplicationTaskId.Operation kind ->
+                    let declaration = TaskDeclarations.describe (ApplicationTaskId.Operation kind)
 
                     let fields =
                         record (fun operation binding values -> operation, binding, values)

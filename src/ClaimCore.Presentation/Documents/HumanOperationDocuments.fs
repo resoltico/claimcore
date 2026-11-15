@@ -22,12 +22,12 @@ module HumanReviewDocument =
             ReviewDocumentParts.describe (Some(act, operationId)) authored review
 
         let action =
-            TaskAffordances.offered (TaskId.Operation act) binding seeds [] Map.empty
+            TaskAffordances.offered (ApplicationTaskId.Operation act) binding seeds [] Map.empty
 
         {
             HumanReview.Document =
                 HumanDocument.create
-                    (DocumentSubject.Review(confirmation, Consequence.ofAct act))
+                    (DocumentSubject.Review(confirmation, TaskConsequences.ofAct act))
                     screen
                     [ { action with Primary = true } ]
                     []
@@ -62,12 +62,17 @@ module HumanReviewDocument =
                     | CaseAct.RemovePayment id -> Some id
                     | _ -> None
 
-                OperationBinding.Case(
-                    value.Target,
-                    value.ExpectedRevision,
-                    payment,
-                    value.ExpectedFamilySequence
-                )
+                if
+                    (TaskConsequences.declaration (ActKind.Case(CaseAct.kind value.Act))).Creates
+                then
+                    OperationBinding.CaseNew value.ExpectedRevision
+                else
+                    OperationBinding.Case(
+                        value.Target,
+                        value.ExpectedRevision,
+                        payment,
+                        value.ExpectedFamilySequence
+                    )
             | OperationInput.Work value ->
                 OperationBinding.Work(value.Target, value.ExpectedRevision)
             | OperationInput.Note value ->

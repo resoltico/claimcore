@@ -245,9 +245,9 @@ let private checkDiscriminators (root: JsonElement) =
             "OperationReview", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
             "OperationSubmission",
             "task",
-            (TaskId.all
+            (ApplicationTaskId.all
              |> List.choose (function
-                 | TaskId.Operation act -> Some(ActKind.token act)
+                 | ApplicationTaskId.Operation act -> Some(ActKind.token act)
                  | _ -> None))
         ] do
         let union = schemas.GetProperty name

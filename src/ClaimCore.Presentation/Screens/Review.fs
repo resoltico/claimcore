@@ -350,7 +350,7 @@ module ReviewScreen =
             act
             |> Option.toList
             |> List.collect (fun kind ->
-                match Consequence.ofAct kind with
+                match TaskConsequences.ofAct kind with
                 | Consequence.Routine -> []
                 | _ ->
                     [

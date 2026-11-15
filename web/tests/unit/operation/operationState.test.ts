@@ -731,13 +731,10 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         task: "case.open",
         binding: {
           kind: "CASE",
-          target: {
-            kind: "REFERENCE",
-            caseReference: "OWN-REF",
-          },
           expectedRevision: 0,
         },
         inputs: {
+          "field:caseReference": "OWN-REF",
           "field:incidentDate": "2026-09-01",
           "field:incidentNotificationDate": "2026-09-02",
           "field:incidentCountry": "LV",
@@ -753,14 +750,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       ...closeReview,
       document: {
         ...closeReview.document,
-        actions: [
-          operationAffordance(
-            "case.open",
-            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-            {},
-            [],
-          ),
-        ],
+        actions: [operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, [])],
       },
     };
     let operation: OperationPhase;

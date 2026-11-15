@@ -102,315 +102,40 @@ module TaskChoiceId =
         | TaskInputId.ResponsibleActorFilter
         | TaskInputId.IncludeInactive -> None
 
-[<RequireQualifiedAccess>]
-type TaskInputMode =
-    | Required
-    | Optional
-    | Update
-
-module TaskInputMode =
-    let vocabulary =
-        Vocabulary.ofUnion<TaskInputMode> "inputMode" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-
-[<RequireQualifiedAccess>]
-type TaskAtom =
-    | Text
-    | Integer
-    | Boolean
-
-/// Value rules remain with the referenced Domain input. This declaration owns task selection only.
-type TaskInputDeclaration =
+type ApplicationTaskDeclaration =
     {
-        Input: TaskInputId
-        Mode: TaskInputMode
-        Source: InputSource
-        Clearable: bool
-        Atom: TaskAtom
-    }
-
-type TaskCollectionDeclaration =
-    {
-        Collection: TaskCollectionId
-        Inputs: TaskInputDeclaration list
-    }
-
-type TaskDeclaration =
-    {
-        Task: TaskId
+        Task: ApplicationTaskId
         Inputs: TaskInputDeclaration list
         Collections: TaskCollectionDeclaration list
     }
 
 module TaskDeclarations =
-    let private definition mode input =
-        let source =
-            match input with
-            | TaskInputId.Target InputTarget.OperationId -> InputSource.OperationIdentity
-            | TaskInputId.Target(InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision) ->
-                InputSource.ExpectedRevision
-            | _ -> InputSource.Authored
-
-        {
-            Input = input
-            Mode = mode
-            Source = source
-            Clearable = false
-            Atom =
-                if
-                    source = InputSource.ExpectedRevision
-                    || input = TaskInputId.Target InputTarget.Limit
-                then
-                    TaskAtom.Integer
-                elif input = TaskInputId.IncludeInactive then
-                    TaskAtom.Boolean
-                else
-                    TaskAtom.Text
-        }
-
-    let private required input = definition TaskInputMode.Required input
-    let private optional input = definition TaskInputMode.Optional input
-    let private target input = TaskInputId.Target input
-    let private field input = target (InputTarget.Field input)
-    let private operation = required (target InputTarget.OperationId)
-    let private caseTarget = required (field BusinessField.CaseReference)
-    let private revision = required (target InputTarget.ExpectedRevision)
-
-    let private page =
-        [ optional (target InputTarget.Cursor); optional (target InputTarget.Limit) ]
-
-    let private principal =
-        [
-            InputTarget.PrincipalKind
-            InputTarget.PrincipalIssuer
-            InputTarget.PrincipalSubject
-        ]
-        |> List.map (target >> required)
-
-    let private profile =
-        [
-            required (target InputTarget.ProfileDisplayName)
-            optional (target InputTarget.ProfileContact)
-        ]
-
-    let private grant =
-        [
-            required (target InputTarget.Role)
-            required TaskInputId.Scope
-            optional (field BusinessField.CaseReference)
-            optional TaskInputId.CaseId
-        ]
-
-    let private group mode group =
-        BusinessField.ofGroup group
-        |> List.map (fun input ->
-            let selected =
-                if
-                    mode = TaskInputMode.Required && (BusinessField.describe input).AllowsAbsence
-                then
-                    TaskInputMode.Optional
-                else
-                    mode
-
-            { definition selected (field input) with
-                Clearable =
-                    mode = TaskInputMode.Update && (BusinessField.describe input).AllowsAbsence
-            })
-
-    let private worklist =
-        [
-            TaskInputId.Lifecycle
-            TaskInputId.Status
-            TaskInputId.Progress
-            TaskInputId.CaseView
-            TaskInputId.ResponsibleActorFilter
-            TaskInputId.Assignment
-            TaskInputId.Due
-            TaskInputId.Order
-            target InputTarget.Text
-        ]
-        |> List.map optional
-
     let describe task =
-        let inputs, collections =
-            match task with
-            | TaskId.Operation(ActKind.Case kind) ->
-                let values =
-                    match kind with
-                    | CaseActKind.Open -> group TaskInputMode.Required RecordGroup.Registration
-                    | CaseActKind.AmendRegistration ->
-                        group TaskInputMode.Update RecordGroup.Registration
-                    | CaseActKind.Decide -> group TaskInputMode.Required RecordGroup.Decision
-                    | CaseActKind.RecordPayment -> group TaskInputMode.Required RecordGroup.Payment
-                    | CaseActKind.RemovePayment -> [ required (target InputTarget.PaymentId) ]
-                    | CaseActKind.Correct ->
-                        [
-                            required (target (InputTarget.Group RecordGroup.Registration))
-                            required (target (InputTarget.Group RecordGroup.Decision))
-                        ]
-                        @ group TaskInputMode.Update RecordGroup.Registration
-                        @ group TaskInputMode.Update RecordGroup.Decision
-                    | CaseActKind.Void
-                    | CaseActKind.Reinstate -> [ required (target InputTarget.Reason) ]
-                    | CaseActKind.WithdrawDecision
-                    | CaseActKind.Close
-                    | CaseActKind.Reopen -> []
-                    | CaseActKind.Erase -> [ required (target InputTarget.ExpectedFamilySequence) ]
+        match task with
+        | ApplicationTaskId.Operation act ->
+            let declaration =
+                ActKind.token act
+                |> TaskId.ofLiteral
+                |> ClaimCore.Domain.Tasks.Registry.findDeclaration
+                |> Option.defaultWith (fun () ->
+                    invalidArg (nameof task) "The operation is not declared.")
 
-                operation :: caseTarget :: revision :: values, []
-            | TaskId.Operation(ActKind.People kind) ->
-                let values, collections =
-                    match kind with
-                    | PeopleActKind.Register
-                    | PeopleActKind.SetProfile -> profile, []
-                    | PeopleActKind.Admit ->
-                        profile,
-                        [
-                            {
-                                Collection = TaskCollectionId.PeopleGrants
-                                Inputs = grant
-                            }
-                        ]
-                    | PeopleActKind.Grant
-                    | PeopleActKind.Revoke -> grant, []
-                    | PeopleActKind.Enable
-                    | PeopleActKind.Disable
-                    | PeopleActKind.EraseProfile -> [], []
-                    | PeopleActKind.ProvisionOwner ->
-                        invalidArg (nameof task) "Owner provisioning is an operator task."
+            {
+                Task = task
+                Inputs = declaration.Inputs
+                Collections = declaration.Collections
+            }
+        | ApplicationTaskId.Query _
+        | ApplicationTaskId.Command _ ->
+            let declaration =
+                EndpointDeclarations.find (ApplicationTaskId.key task)
+                |> Option.defaultWith (fun () ->
+                    invalidArg (nameof task) "The endpoint is not declared.")
 
-                let identity =
-                    if kind = PeopleActKind.Register || kind = PeopleActKind.Admit then
-                        principal
-                    else
-                        [ required TaskInputId.ActorId; revision ]
+            {
+                Task = task
+                Inputs = declaration.Inputs
+                Collections = []
+            }
 
-                operation :: (identity @ values), collections
-            | TaskId.Operation(ActKind.Work WorkActKind.UpdateWork) ->
-                [
-                    operation
-                    caseTarget
-                    required (target InputTarget.ExpectedWorkRevision)
-                    optional (field BusinessField.ResponsibleActor)
-                    optional (field BusinessField.HandlingSummary)
-                ],
-                []
-            | TaskId.Operation(ActKind.Note kind) ->
-                let input =
-                    match kind with
-                    | NoteActKind.AddNote -> InputTarget.NoteText
-                    | NoteActKind.RemoveNote -> InputTarget.NoteId
-
-                [ operation; caseTarget; required (target input) ], []
-            | TaskId.Operation(ActKind.Reminder kind) ->
-                let identity =
-                    [
-                        required (target InputTarget.ReminderId)
-                        required (target InputTarget.ExpectedReminderRevision)
-                    ]
-
-                let plan =
-                    [
-                        required (target InputTarget.ReminderAction)
-                        required (target InputTarget.ReminderDueDate)
-                    ]
-
-                let values =
-                    match kind with
-                    | ReminderActKind.Create -> plan
-                    | ReminderActKind.Update
-                    | ReminderActKind.CompleteAndPlanNext -> identity @ plan
-                    | ReminderActKind.Reopen ->
-                        identity @ [ required (target InputTarget.ReminderDueDate) ]
-                    | ReminderActKind.Complete
-                    | ReminderActKind.Cancel -> identity
-
-                operation :: caseTarget :: values, []
-            | TaskId.Command CommandTaskId.PeopleRequestsDismiss -> principal, []
-            | TaskId.Query query ->
-                let values =
-                    match query with
-                    | QueryTaskId.CaseGet -> [ caseTarget ]
-                    | QueryTaskId.CaseAssignees
-                    | QueryTaskId.CaseNotes
-                    | QueryTaskId.CasePayments -> caseTarget :: page
-                    | QueryTaskId.CaseTimeline ->
-                        caseTarget :: optional TaskInputId.TimelineFilter :: page
-                    | QueryTaskId.CaseList -> worklist @ page
-                    | QueryTaskId.CaseSummary -> worklist
-                    | QueryTaskId.ReminderList ->
-                        [
-                            optional TaskInputId.ReminderView
-                            optional (field BusinessField.CaseReference)
-                            optional TaskInputId.ReminderState
-                            optional TaskInputId.ReminderDue
-                            optional TaskInputId.Assignment
-                            optional (target InputTarget.Text)
-                            optional TaskInputId.IncludeInactive
-                        ]
-                        @ page
-                    | QueryTaskId.ReminderGet ->
-                        [ caseTarget; required (target InputTarget.ReminderId) ]
-                    | QueryTaskId.OperationGet -> [ required (target InputTarget.OperationId) ]
-                    | QueryTaskId.PeopleList ->
-                        [
-                            optional (target InputTarget.DirectorySearch)
-                            optional TaskInputId.RoleFilter
-                        ]
-                        @ page
-                    | QueryTaskId.PeopleGrants -> required TaskInputId.ActorId :: page
-                    | QueryTaskId.PeopleHistory -> optional TaskInputId.ActorId :: page
-                    | QueryTaskId.PeopleRequests -> page
-                    | QueryTaskId.WorkViews
-                    | QueryTaskId.Context -> []
-
-                values, []
-
-        {
-            Task = task
-            Inputs =
-                match task with
-                | TaskId.Query _
-                | TaskId.Command _ ->
-                    inputs
-                    |> List.map (fun input ->
-                        { input with
-                            Source = InputSource.Authored
-                        })
-                | TaskId.Operation kind ->
-                    inputs
-                    |> List.map (fun input ->
-                        let binding =
-                            match kind, input.Input with
-                            | (ActKind.Case _ | ActKind.Work _ | ActKind.Note _ | ActKind.Reminder _),
-                              TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
-                                true
-                            | ActKind.Case _, TaskInputId.Target InputTarget.PaymentId
-                            | ActKind.Note _, TaskInputId.Target InputTarget.NoteId
-                            | ActKind.Reminder _, TaskInputId.Target InputTarget.ReminderId
-                            | ActKind.People _, TaskInputId.ActorId -> true
-                            | _ -> false
-
-                        let clearable =
-                            match kind, input.Input with
-                            | ActKind.Work _,
-                              TaskInputId.Target(InputTarget.Field(BusinessField.ResponsibleActor | BusinessField.HandlingSummary)) ->
-                                true
-                            | ActKind.People PeopleActKind.SetProfile,
-                              TaskInputId.Target InputTarget.ProfileContact -> true
-                            | _ -> input.Clearable
-
-                        { input with
-                            Source = (if binding then InputSource.Binding else input.Source)
-                            Clearable = clearable
-                            Mode =
-                                if kind = ActKind.Work WorkActKind.UpdateWork && clearable then
-                                    TaskInputMode.Update
-                                else
-                                    input.Mode
-                        })
-            Collections = collections
-        }
-
-    let all = TaskId.all |> List.map describe
+    let all = ApplicationTaskId.all |> List.map describe

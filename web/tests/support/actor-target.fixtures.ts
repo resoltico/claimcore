@@ -195,7 +195,7 @@ export const grantsFor = (document = firstPerson): ApiResult<ServiceResponse<"pe
 });
 export const setupActorTargets = (
   offered: ReadonlyArray<
-    Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"] | "case.open"
+    Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["id"] | "case.open"
   > = [
     "people.register",
     "people.admit",

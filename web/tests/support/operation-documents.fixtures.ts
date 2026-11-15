@@ -76,14 +76,7 @@ export const openReview: HumanReview = {
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
       consequence: "ROUTINE",
     },
-    actions: [
-      operationAffordance(
-        "case.open",
-        { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-        {},
-        [],
-      ),
-    ],
+    actions: [operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, [])],
     links: [],
     history: null,
     nextCursor: null,

@@ -57,8 +57,8 @@ let tests =
             Expect.equal
                 (controls |> List.map _.Task)
                 [
-                    TaskId.Operation(ActKind.Reminder ReminderActKind.Update)
-                    TaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
+                    ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Update)
+                    ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
                 ]
                 "Literal offered task set"
 

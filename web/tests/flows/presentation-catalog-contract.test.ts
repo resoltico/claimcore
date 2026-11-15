@@ -22,8 +22,8 @@ it("resolves business meaning through catalog message identities", () => {
   for (const task of taskDefinitions.filter(
     (item) => item.kind === "OPERATION" && item.subject === "CASE",
   )) {
-    expect(p.actLabel(task.act)).toBe(renderCatalogKey(defaults, task.labelId));
-    expect(p.actMeaning(task.act)).toBe(renderCatalogKey(defaults, task.meaningId));
+    expect(p.actLabel(task.id)).toBe(renderCatalogKey(defaults, task.labelId));
+    expect(p.actMeaning(task.id)).toBe(renderCatalogKey(defaults, task.meaningId));
   }
   for (const group of taskInputDefinitions.filter((input) => input.kind === "GROUP")) {
     expect(renderCatalogKey(defaults, group.labelId)).not.toBe(

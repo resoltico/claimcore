@@ -100,13 +100,7 @@ const queueDefinitionAndList = () => {
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,
@@ -245,7 +239,6 @@ it("returns an accepted open operation to Dashboard through its committed transi
                 "case.open",
                 {
                   kind: "CASE",
-                  target: { kind: "REFERENCE", caseReference: "" },
                   expectedRevision: 0,
                 },
                 {},

@@ -54,8 +54,8 @@ let frame endpoint =
     | EndpointId.Actor((ActorEndpoint.Query _ | ActorEndpoint.Command _) as actor) ->
         let task =
             match actor with
-            | ActorEndpoint.Query query -> TaskId.Query query
-            | ActorEndpoint.Command command -> TaskId.Command command
+            | ActorEndpoint.Query query -> ApplicationTaskId.Query query
+            | ActorEndpoint.Command command -> ApplicationTaskId.Command command
             | ActorEndpoint.Operation _ -> failtest "Expected an endpoint task"
 
         CliExamples.queryArguments task

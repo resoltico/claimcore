@@ -60,5 +60,12 @@
     <Compile Include="CaseSearch.fs" />
     <Compile Include="CaseIndex.fs" />
     <Compile Include="CaseFamily.fs" />
+    <Compile Include="Inputs/TaskInputs.fs" />
+    <Compile Include="Inputs/Declarations.fs" />
+    <Compile Include="Inputs/InputMap.fs" />
+    <Compile Include="Tasks/BindingTarget.fs" />
+    <Compile Include="Tasks/Consequence.fs" />
+    <Compile Include="Tasks/Task.fs" />
+    <Compile Include="Tasks/Registry.fs" />
   </ItemGroup>
 </Project>

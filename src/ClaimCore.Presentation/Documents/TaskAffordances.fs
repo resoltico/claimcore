@@ -45,28 +45,31 @@ module TaskAffordances =
         Affordance.create task binding seeds editable choices false None
 
     let caseAction kind id revision family seeds editable choices =
-        let task = TaskId.Operation(ActKind.Case kind)
+        let task = ApplicationTaskId.Operation(ActKind.Case kind)
 
         offered
             task
-            (OperationBinding.Case(
-                CaseSelector.Id id,
-                (if kind = CaseActKind.Open then
-                     0L
-                 else
-                     Revision.value revision),
-                None,
-                (if kind = CaseActKind.Erase then
-                     Some(Sequence.value family)
-                 else
-                     None)
-            ))
+            (if (TaskConsequences.declaration (ActKind.Case kind)).Creates then
+                 OperationBinding.CaseNew 0L
+             else
+                 OperationBinding.Case(
+                     CaseSelector.Id id,
+                     (if kind = CaseActKind.Open then
+                          0L
+                      else
+                          Revision.value revision),
+                     None,
+                     (if kind = CaseActKind.Erase then
+                          Some(Sequence.value family)
+                      else
+                          None)
+                 ))
             seeds
             editable
             choices
 
     let noteAdd id =
-        let task = TaskId.Operation(ActKind.Note NoteActKind.AddNote)
+        let task = ApplicationTaskId.Operation(ActKind.Note NoteActKind.AddNote)
 
         offered
             task
@@ -79,7 +82,7 @@ module TaskAffordances =
         if item.CanRemove then
             [
                 offered
-                    (TaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
+                    (ApplicationTaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
                     (OperationBinding.Note(CaseSelector.Id id, Some(NoteId.value item.NoteId)))
                     Map.empty
                     []
@@ -90,7 +93,7 @@ module TaskAffordances =
 
     let paymentRemoveEntry id revision entry =
         offered
-            (TaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+            (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
             (OperationBinding.Case(
                 CaseSelector.Id id,
                 Revision.value revision,
@@ -105,7 +108,7 @@ module TaskAffordances =
         if item.CanRemove then
             [
                 offered
-                    (TaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+                    (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
                     (OperationBinding.Case(
                         CaseSelector.Id id,
                         Revision.value revision,
@@ -122,7 +125,7 @@ module TaskAffordances =
     let reminder (value: ReminderReadModel) =
         value.Acts
         |> List.map (fun kind ->
-            let task = TaskId.Operation(ActKind.Reminder kind)
+            let task = ApplicationTaskId.Operation(ActKind.Reminder kind)
 
             let seeds =
                 [
@@ -147,7 +150,7 @@ module TaskAffordances =
             offered task binding seeds (authored task) Map.empty)
 
     let reminderCreate id =
-        let task = TaskId.Operation(ActKind.Reminder ReminderActKind.Create)
+        let task = ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Create)
 
         offered
             task
@@ -158,7 +161,7 @@ module TaskAffordances =
 
     let work id revision seeds editable =
         offered
-            (TaskId.Operation(ActKind.Work WorkActKind.UpdateWork))
+            (ApplicationTaskId.Operation(ActKind.Work WorkActKind.UpdateWork))
             (OperationBinding.Work(CaseSelector.Id id, Revision.value revision))
             seeds
             editable
@@ -166,14 +169,28 @@ module TaskAffordances =
 
     let person kind actor revision seeds editable choices =
         offered
-            (TaskId.Operation(ActKind.People kind))
+            (ApplicationTaskId.Operation(ActKind.People kind))
             (OperationBinding.People(Some(ActorId.value actor), Revision.value revision))
             seeds
             editable
             choices
 
+    let collectionDefaults collection =
+        TaskCollectionId.defaultValues collection
+        |> Map.map (fun _ value ->
+            match value with
+            | InputValue.Text value -> SubmissionValue.Text value
+            | InputValue.Integer value -> SubmissionValue.Integer value
+            | InputValue.Boolean value -> SubmissionValue.Boolean value
+            | InputValue.Null -> SubmissionValue.Clear)
+
+    let initialGrantScope =
+        (collectionDefaults TaskCollectionId.PeopleGrants)[TaskInputId.Scope]
+
     let initialGrantRows =
-        SubmissionValue.Rows [ Map.ofList [ TaskInputId.Scope, text "INSTALLATION" ] ]
+        collectionDefaults TaskCollectionId.PeopleGrants
+        |> List.replicate (TaskCollectionId.minimumRows TaskCollectionId.PeopleGrants)
+        |> SubmissionValue.Rows
 
     let grantSeeds role scope =
         [
@@ -181,7 +198,7 @@ module TaskAffordances =
             TaskInputId.Scope,
             text (
                 match scope with
-                | GrantScope.Installation -> "INSTALLATION"
+                | GrantScope.Installation -> ScopeKind.token ScopeKind.Installation
                 | _ -> "CASE"
             )
             match scope with
@@ -244,7 +261,7 @@ module TaskAffordances =
 
         let admit =
             offered
-                (TaskId.Operation(ActKind.People PeopleActKind.Admit))
+                (ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
                 (OperationBinding.People(None, 0L))
                 seeds
                 [
@@ -256,7 +273,7 @@ module TaskAffordances =
 
         let dismiss =
             offered
-                (TaskId.Command CommandTaskId.PeopleRequestsDismiss)
+                (ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss)
                 (OperationBinding.People(None, 0L))
                 (principal value.Principal)
                 []

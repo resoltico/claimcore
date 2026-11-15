@@ -77,7 +77,7 @@ it.each([
         actions: [
           operationAffordance(
             "case.open",
-            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            { kind: "CASE", expectedRevision: 0 },
             {},
             undefined,
             {},
@@ -144,7 +144,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
         actions: [
           operationAffordance(
             "case.open",
-            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            { kind: "CASE", expectedRevision: 0 },
             {},
             undefined,
             {},

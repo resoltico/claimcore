@@ -24,7 +24,7 @@ module internal TaskArguments =
         operands
         (problems: ResizeArray<UsageError>)
         =
-        let task = TaskId.Operation kind
+        let task = ApplicationTaskId.Operation kind
         let declarations = CommandGrammar.inputs task
         let mutable remaining = operands
 
@@ -175,20 +175,17 @@ module internal TaskArguments =
         let binding =
             match ActKind.subject kind with
             | ActSubject.Case ->
-                let initial =
-                    match kind with
-                    | ActKind.Case kind -> (CaseActKind.describe kind).Revision = RevisionInput.New
-                    | _ -> false
+                let declaration = TaskRouting.operationDeclaration kind
 
-                OperationBinding.Case(
-                    selection (),
-                    (if initial then
-                         Some 0L
-                     else
-                         revision InputTarget.ExpectedRevision),
-                    uuid (target InputTarget.PaymentId),
-                    revision InputTarget.ExpectedFamilySequence
-                )
+                if declaration.Creates then
+                    OperationBinding.CaseNew(Some 0L)
+                else
+                    OperationBinding.Case(
+                        selection (),
+                        revision InputTarget.ExpectedRevision,
+                        uuid (target InputTarget.PaymentId),
+                        revision InputTarget.ExpectedFamilySequence
+                    )
             | ActSubject.Work ->
                 OperationBinding.Work(selection (), revision InputTarget.ExpectedWorkRevision)
             | ActSubject.Note ->
@@ -345,6 +342,7 @@ module internal TaskArguments =
 
         let binding =
             match draft.Binding with
+            | OperationBinding.CaseNew revision -> version revision
             | OperationBinding.Case(target, revision, payment, family) ->
                 selected target
                 :: (version revision

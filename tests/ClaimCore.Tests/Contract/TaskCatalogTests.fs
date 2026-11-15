@@ -71,9 +71,9 @@ let tests =
                 "every actor operation and endpoint has one semantic task with no provisioning command"
                 (fun () ->
                     let acts =
-                        TaskId.all
+                        ApplicationTaskId.all
                         |> List.choose (function
-                            | TaskId.Operation act -> Some act
+                            | ApplicationTaskId.Operation act -> Some act
                             | _ -> None)
 
                     let expected =
@@ -92,7 +92,8 @@ let tests =
 
                     let endpoints =
                         Api.operationPreview.Token
-                        :: (TaskId.all |> List.map (TaskRouting.endpoint >> ActorEndpoint.token))
+                        :: (ApplicationTaskId.all
+                            |> List.map (TaskRouting.endpoint >> ActorEndpoint.token))
                         |> Set.ofList
 
                     let expected =
@@ -153,7 +154,7 @@ let tests =
                 "clearable metadata describes updates rather than creation-time absence"
                 (fun () ->
                     let inputs act =
-                        (TaskDeclarations.describe (TaskId.Operation act)).Inputs
+                        (TaskDeclarations.describe (ApplicationTaskId.Operation act)).Inputs
 
                     for act in
                         [

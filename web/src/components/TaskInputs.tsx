@@ -104,7 +104,7 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
   }
-  if (input.id !== "input:role" || !["people.grant", "people.admit"].includes(props.task.act)) {
+  if (input.id !== "input:role" || !["people.grant", "people.admit"].includes(props.task.id)) {
     return null;
   }
   if (props.binding.kind === "PEOPLE" && "actorId" in props.binding) {
@@ -206,7 +206,7 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
       disabled: props.disabled,
       error,
       onChange: (value: string) => {
-        if (props.task.id === "case.open" && input.mode === "OPTIONAL" && value === "") {
+        if (props.task.creates && input.mode === "OPTIONAL" && value === "") {
           props.onFieldsChange({}, [input.id]);
         } else {
           props.onChange(input.id, value);
@@ -274,14 +274,9 @@ const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?:
               );
             }}
           />
-          {p.text(
-            props.task.id === "case.open" || input.id === "input:profile.contact"
-              ? "ui.recordOptionalFact"
-              : "ui.changeFact",
-            {
-              field: title,
-            },
-          )}
+          {p.text(input.mode === "OPTIONAL" ? "ui.recordOptionalFact" : "ui.changeFact", {
+            field: title,
+          })}
         </label>
       </legend>
       {selected && clear ? (
@@ -315,23 +310,12 @@ const peopleInputBound = (input: Input, props: Props): boolean => {
     ["input:principal.kind", "input:principal.issuer", "input:principal.subject"].includes(input.id)
   );
 };
-const boundInput = (input: Input, props: Props): boolean => {
-  const caseReferenceBound =
-    input.id === "field:caseReference" &&
-    props.task.subject !== "PEOPLE" &&
-    props.task.id !== "case.open";
-  return (
-    caseReferenceBound ||
-    ["input:noteId", "input:reminderId", "input:paymentId"].includes(input.id) ||
-    peopleInputBound(input, props)
-  );
-};
+const boundInput = (input: Input, props: Props): boolean =>
+  input.source === "BINDING" || peopleInputBound(input, props);
 const permitted = (input: Input, props: Props): boolean => {
   const editable =
     props.affordance === undefined ? undefined : new Set<string>(props.affordance.editable);
-  const authored =
-    input.source === "AUTHORED" ||
-    (props.task.id === "case.open" && input.id === "field:caseReference");
+  const authored = input.source === "AUTHORED";
   const scoped =
     input.id !== "field:caseReference" ||
     props.task.subject !== "PEOPLE" ||
@@ -444,7 +428,7 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
       field?.pairs === null || field?.pairs === undefined
         ? undefined
         : inputs.find((candidate) => taskInput(candidate.id).key === field.pairs);
-    const selectable = props.task.id !== "case.open" && selectsValue(input, props.task.subject);
+    const selectable = !props.task.creates && selectsValue(input, props.task.subject);
     if (
       selectable &&
       field?.scalar.kind === "CURRENCY" &&

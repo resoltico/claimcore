@@ -80,7 +80,7 @@ let tests =
 
                 for act, expected in acts do
                     Expect.equal
-                        (Consequence.ofAct act)
+                        (TaskConsequences.ofAct act)
                         expected
                         "Classification follows the adopted consequence policy")
             testCase "every query has an explicit routine consequence" (fun () ->
@@ -99,14 +99,14 @@ let tests =
 
                 for query, expected in queries do
                     Expect.equal
-                        (TaskRouting.consequence (TaskId.Query query))
+                        (TaskRouting.consequence (ApplicationTaskId.Query query))
                         expected
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "the actual CLI consumes Core operation consequences for every task" (fun () ->
                 for act, expected in acts do
                     if act <> ActKind.People PeopleActKind.ProvisionOwner then
                         Expect.equal
-                            (TaskRouting.consequence (TaskId.Operation act))
+                            (TaskRouting.consequence (ApplicationTaskId.Operation act))
                             expected
                             "CLI confirmation cannot downgrade Core consequence")
             testCase "consequence wire vocabulary is closed and stable" (fun () ->

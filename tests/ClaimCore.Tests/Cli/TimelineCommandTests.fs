@@ -111,7 +111,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
         }
 
     let code =
-        WorkListCommand.run io prepared CancellationToken.None
+        PageCommand.run io prepared CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code,

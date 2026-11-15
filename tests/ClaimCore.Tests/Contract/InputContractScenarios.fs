@@ -59,11 +59,18 @@ let internal integerLexemes () =
     let wire =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (
-                { caseRequest registration with
-                    Act = AuthoredCaseAct.Bare BareAct.Close
+            (OperationInput.Work
+                {
+                    OperationId = id
+                    Target = CaseSelector.Reference "INTEGER-LEXEMES"
+                    ExpectedRevision = 0L
+                    Act =
+                        WorkAct.UpdateWork
+                            {
+                                Responsible = WorkValue.Keep
+                                Summary = WorkValue.Set "Wire integer boundaries"
+                            }
                 }
-             )
              |> Submissions.ofCommand None)
         |> Encoding.UTF8.GetString
 

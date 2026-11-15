@@ -53,7 +53,8 @@ let tests =
                     let admit =
                         actions original
                         |> List.find (fun action ->
-                            action.Task = TaskId.Operation(ActKind.People PeopleActKind.Admit))
+                            action.Task =
+                                ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
 
                     Expect.equal
                         admit.Binding
@@ -113,7 +114,8 @@ let tests =
                 let dismiss =
                     actions (document None)
                     |> List.find (fun action ->
-                        action.Task = TaskId.Command CommandTaskId.PeopleRequestsDismiss)
+                        action.Task =
+                            ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss)
 
                 Expect.equal
                     dismiss.Seeds

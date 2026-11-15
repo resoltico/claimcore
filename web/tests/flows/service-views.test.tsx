@@ -87,13 +87,7 @@ const queueListPages = () => {
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,
@@ -136,13 +130,7 @@ const queueListPages = () => {
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,
@@ -174,13 +162,7 @@ const queueListPages = () => {
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,
@@ -408,13 +390,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,
@@ -457,13 +433,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,

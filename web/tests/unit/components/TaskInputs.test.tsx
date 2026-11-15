@@ -277,7 +277,7 @@ const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
       operationAffordance(
         id === "case.open" ? "case.open" : "people.admit",
         id === "case.open"
-          ? { kind: "CASE", target, expectedRevision: 0 }
+          ? { kind: "CASE", expectedRevision: 0 }
           : { kind: "PEOPLE", expectedRevision: 0 },
         id === "people.admit" ? { "input:principal.kind": "HUMAN" } : {},
       ),

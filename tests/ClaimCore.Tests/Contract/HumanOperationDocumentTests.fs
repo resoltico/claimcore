@@ -194,7 +194,7 @@ let tests =
 
                     Expect.equal
                         action.Task
-                        (TaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
+                        (ApplicationTaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
                         "Task"
 
                     Expect.equal

@@ -2,14 +2,6 @@ namespace ClaimCore.Application.Contracts
 
 open ClaimCore.Domain
 
-[<RequireQualifiedAccess>]
-type ActSubject =
-    | Case
-    | People
-    | Work
-    | Reminder
-    | Note
-
 /// The complete act vocabulary combines the disjoint case and people subjects.
 [<RequireQualifiedAccess>]
 type ActKind =
@@ -18,13 +10,6 @@ type ActKind =
     | Work of WorkActKind
     | Reminder of ReminderActKind
     | Note of NoteActKind
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ActSubject =
-    let vocabulary =
-        Vocabulary.ofUnion<ActSubject> "subject" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActKind =
@@ -122,25 +107,3 @@ module CommandTaskId =
     let key =
         function
         | CommandTaskId.PeopleRequestsDismiss -> "people.requests.dismiss"
-
-[<RequireQualifiedAccess>]
-type TaskId =
-    | Operation of ActKind
-    | Query of QueryTaskId
-    | Command of CommandTaskId
-
-module TaskId =
-    let ofOperation input = TaskId.Operation(ActKind.ofInput input)
-
-    let key =
-        function
-        | TaskId.Operation act -> ActKind.token act
-        | TaskId.Query query -> QueryTaskId.key query
-        | TaskId.Command command -> CommandTaskId.key command
-
-    let all =
-        (ActKind.all
-         |> List.filter ((<>) (ActKind.People PeopleActKind.ProvisionOwner))
-         |> List.map TaskId.Operation)
-        @ (QueryTaskId.all |> List.map TaskId.Query)
-        @ (CommandTaskId.all |> List.map TaskId.Command)

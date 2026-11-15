@@ -30,7 +30,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
 const stewardAct = async (
   page: Page,
   reference: string,
-  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   reason?: string,
 ) => {
   const p = createPresenter({
@@ -314,7 +314,7 @@ const openActor = async (page: Page, actorId: string, name: string) => {
 const beginActorAct = async (
   page: Page,
   name: string,
-  kind: Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["id"],
   language: Language,
 ) => {
   const p = createPresenter({

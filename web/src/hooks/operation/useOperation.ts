@@ -91,7 +91,6 @@ const initialBinding = (options: Options): OperationBinding => {
   if (options.subject === "CASE" && current === null) {
     return {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "" },
       expectedRevision: 0,
     };
   }

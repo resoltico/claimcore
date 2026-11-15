@@ -506,14 +506,15 @@ module PresentationCodecs =
             |> List.choose (fun declaration ->
                 let binding =
                     match declaration.Task with
-                    | TaskId.Operation task -> Some(OperationSubmissionCodecs.binding task)
-                    | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
+                    | ApplicationTaskId.Operation task ->
+                        Some(OperationSubmissionCodecs.binding task)
+                    | ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss ->
                         Some(
                             record (OperationBinding.People(None, 0L))
                             |> fixedField "kind" "PEOPLE"
                             |> build
                         )
-                    | TaskId.Query _ -> None
+                    | ApplicationTaskId.Query _ -> None
 
                 binding
                 |> Option.map (fun binding ->
@@ -552,7 +553,7 @@ module PresentationCodecs =
                         |> fieldMapWithPresence
 
                     variant
-                        (TaskId.key declaration.Task)
+                        (ApplicationTaskId.key declaration.Task)
                         id
                         (fun value -> if value.Task = declaration.Task then Some value else None)
                         (record (fun binding seeds editable choices primary blocked ->
@@ -577,7 +578,7 @@ module PresentationCodecs =
 
         taggedOn "task" "Affordance" variants
 
-    let private actions = list TaskId.all.Length affordance
+    let private actions = list ApplicationTaskId.all.Length affordance
 
     let entry =
         (record (fun key label prominence value recorded ->

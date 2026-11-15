@@ -62,15 +62,13 @@ const metadata = (
     case "act":
       definition = taskDefinitions.find(
         (candidate) =>
-          candidate.kind === "OPERATION" && candidate.subject === "CASE" && candidate.act === name,
+          candidate.kind === "OPERATION" && candidate.subject === "CASE" && candidate.id === name,
       );
       break;
     case "people":
       definition = taskDefinitions.find(
         (candidate) =>
-          candidate.kind === "OPERATION" &&
-          candidate.subject === "PEOPLE" &&
-          candidate.act === name,
+          candidate.kind === "OPERATION" && candidate.subject === "PEOPLE" && candidate.id === name,
       );
       break;
   }

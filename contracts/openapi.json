@@ -3376,16 +3376,16 @@
             "$ref": "#/components/schemas/Affordance.case.removePayment"
           },
           {
-            "$ref": "#/components/schemas/Affordance.case.close"
-          },
-          {
-            "$ref": "#/components/schemas/Affordance.case.reopen"
-          },
-          {
             "$ref": "#/components/schemas/Affordance.case.void"
           },
           {
             "$ref": "#/components/schemas/Affordance.case.reinstate"
+          },
+          {
+            "$ref": "#/components/schemas/Affordance.case.close"
+          },
+          {
+            "$ref": "#/components/schemas/Affordance.case.reopen"
           },
           {
             "$ref": "#/components/schemas/Affordance.case.erase"
@@ -3455,10 +3455,10 @@
             "case.withdrawDecision": "#/components/schemas/Affordance.case.withdrawDecision",
             "case.recordPayment": "#/components/schemas/Affordance.case.recordPayment",
             "case.removePayment": "#/components/schemas/Affordance.case.removePayment",
-            "case.close": "#/components/schemas/Affordance.case.close",
-            "case.reopen": "#/components/schemas/Affordance.case.reopen",
             "case.void": "#/components/schemas/Affordance.case.void",
             "case.reinstate": "#/components/schemas/Affordance.case.reinstate",
+            "case.close": "#/components/schemas/Affordance.case.close",
+            "case.reopen": "#/components/schemas/Affordance.case.reopen",
             "case.erase": "#/components/schemas/Affordance.case.erase",
             "people.register": "#/components/schemas/Affordance.people.register",
             "people.grant": "#/components/schemas/Affordance.people.grant",
@@ -16837,7 +16837,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -16859,7 +16859,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -16881,7 +16881,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -16903,7 +16903,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -16925,7 +16925,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "expectedFamilySequence": {
@@ -16948,9 +16948,6 @@
           "kind": {
             "const": "CASE"
           },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
           "expectedRevision": {
             "type": "integer",
             "minimum": 0,
@@ -16959,7 +16956,6 @@
         },
         "required": [
           "kind",
-          "target",
           "expectedRevision"
         ]
       },
@@ -16975,7 +16971,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -16997,7 +16993,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -17019,7 +17015,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "paymentId": {
@@ -17045,7 +17041,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -17067,7 +17063,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -17089,7 +17085,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -17864,6 +17860,16 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "field:caseReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "field:incidentDate": {
             "oneOf": [
               {
@@ -17966,6 +17972,7 @@
           }
         },
         "required": [
+          "field:caseReference",
           "field:incidentDate",
           "field:incidentNotificationDate",
           "field:incidentCountry",
@@ -19020,16 +19027,16 @@
             "$ref": "#/components/schemas/OperationSubmission.case.removePayment"
           },
           {
-            "$ref": "#/components/schemas/OperationSubmission.case.close"
-          },
-          {
-            "$ref": "#/components/schemas/OperationSubmission.case.reopen"
-          },
-          {
             "$ref": "#/components/schemas/OperationSubmission.case.void"
           },
           {
             "$ref": "#/components/schemas/OperationSubmission.case.reinstate"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.close"
+          },
+          {
+            "$ref": "#/components/schemas/OperationSubmission.case.reopen"
           },
           {
             "$ref": "#/components/schemas/OperationSubmission.case.erase"
@@ -19096,10 +19103,10 @@
             "case.withdrawDecision": "#/components/schemas/OperationSubmission.case.withdrawDecision",
             "case.recordPayment": "#/components/schemas/OperationSubmission.case.recordPayment",
             "case.removePayment": "#/components/schemas/OperationSubmission.case.removePayment",
-            "case.close": "#/components/schemas/OperationSubmission.case.close",
-            "case.reopen": "#/components/schemas/OperationSubmission.case.reopen",
             "case.void": "#/components/schemas/OperationSubmission.case.void",
             "case.reinstate": "#/components/schemas/OperationSubmission.case.reinstate",
+            "case.close": "#/components/schemas/OperationSubmission.case.close",
+            "case.reopen": "#/components/schemas/OperationSubmission.case.reopen",
             "case.erase": "#/components/schemas/OperationSubmission.case.erase",
             "people.register": "#/components/schemas/OperationSubmission.people.register",
             "people.grant": "#/components/schemas/OperationSubmission.people.grant",

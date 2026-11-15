@@ -16,6 +16,7 @@ import { Dialog } from "../../ui/Dialog";
 import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
+import { operationTask, taskInput } from "../../protocol/taskCatalog";
 const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string, string]> => {
   const input = model.prepared?.input;
   if (input === undefined) {
@@ -24,7 +25,18 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   return [
     ["operationId", input.operationId],
     ["act", input.task],
-    ...(input.binding.kind === "CASE" && model.disclosureCurrent
+    ...(model.disclosureCurrent
+      ? operationTask(input.task).inputs.flatMap((declaration): [string, string][] => {
+          const metadata = taskInput(declaration.id);
+          const value: unknown = Object.entries(input.inputs).find(
+            ([key]) => key === declaration.id,
+          )?.[1];
+          return metadata.key === "caseReference" && typeof value === "string"
+            ? [[metadata.key, value]]
+            : [];
+        })
+      : []),
+    ...(input.binding.kind === "CASE" && "target" in input.binding && model.disclosureCurrent
       ? ([
           [
             input.binding.target.kind === "REFERENCE" ? "caseReference" : "caseId",

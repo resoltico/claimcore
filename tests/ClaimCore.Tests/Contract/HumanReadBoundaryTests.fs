@@ -186,7 +186,9 @@ let tests =
                             Sequence.zero
                             (RegistrationInput.values bait |> TaskAffordances.fields)
                             (TaskAffordances.authored (
-                                TaskId.Operation(ActKind.Case CaseActKind.AmendRegistration)
+                                ApplicationTaskId.Operation(
+                                    ActKind.Case CaseActKind.AmendRegistration
+                                )
                             ))
                             Map.empty
 

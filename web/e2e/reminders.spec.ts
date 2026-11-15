@@ -377,13 +377,10 @@ for (const language of ["en", "lv", "ar"] as const) {
         task: "case.open",
         binding: {
           kind: "CASE",
-          target: {
-            kind: "REFERENCE",
-            caseReference: reference,
-          },
           expectedRevision: 0,
         },
         inputs: {
+          "field:caseReference": reference,
           ...prefixedInputs(
             "field:",
             registration({
