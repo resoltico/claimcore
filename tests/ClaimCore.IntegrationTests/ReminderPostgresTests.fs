@@ -841,7 +841,8 @@ let private currentLookup database =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 603)
                         reader
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

@@ -191,6 +191,8 @@ module RetainedOperation =
                 {
                     OperationId = OperationId.value root.Header.OperationId
                     CaseReference = CaseReference.format scope.Reference
+                    ExpectedFamilySequence =
+                        scope.ExpectedFamilySequence |> Option.map Sequence.value
                     ExpectedRevision = Revision.value scope.ExpectedRevision
                     Act = CaseAct.Bare BareAct.Erase
                 }

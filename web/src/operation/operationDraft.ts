@@ -1,3 +1,4 @@
+import { grantScope, grantTarget, withGrantTarget, isGrantTarget } from "./grantTargetDraft";
 import type { OperationAffordance } from "./affordances";
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { roleAdmitted } from "./roleAvailability";
@@ -9,15 +10,25 @@ import type { OperationBinding } from "@contracts/client";
 
 /** Selecting installation scope removes the case selection from the authored grant. */
 export const editGrantInput = (values: FormValues, input: string, value: FormValue): FormValues => {
-  const edited = { ...values, [input]: value };
-  if (input === "input:scope" && value === "CASE") {
-    edited["field:caseReference"] ??= "";
+  if (input === "input:scope") {
+    if (isGrantTarget(value)) {
+      return withGrantTarget(values, value);
+    }
+    if (value === "INSTALLATION" || value === "CASE") {
+      return withGrantTarget(values, {
+        kind: "GRANT_TARGET",
+        selection:
+          value === "INSTALLATION" ? { kind: "INSTALLATION" } : { kind: "REFERENCE", text: "" },
+      });
+    }
   }
-  if (input === "input:scope" && value !== "CASE") {
-    delete edited["field:caseReference"];
-    delete edited["input:caseId"];
+  if ((input === "input:caseId" || input === "field:caseReference") && typeof value === "string") {
+    return withGrantTarget(values, {
+      kind: "GRANT_TARGET",
+      selection: { kind: input === "input:caseId" ? "ID" : "REFERENCE", text: value },
+    });
   }
-  return edited;
+  return { ...values, [input]: value };
 };
 
 export const createDraft = (
@@ -28,7 +39,10 @@ export const createDraft = (
   owner: OwnerScope | null,
   affordance: OperationAffordance | null,
 ): OperationDraft => {
-  const values = { ...authored };
+  const values =
+    entry.subject === "PEOPLE" && ["people.grant", "people.revoke"].includes(entry.kind)
+      ? withGrantTarget(authored, grantTarget(authored))
+      : { ...authored };
   return {
     owner,
     affordance,
@@ -55,7 +69,7 @@ const clearsRoleSelection = (draft: OperationDraft, action: Edit): boolean => {
   const values = { ...draft.values, [action.path]: action.value };
   const role = values["input:role"];
   const principal = values["input:principal.kind"];
-  const scope = values["input:scope"];
+  const scope = grantScope(values);
   return (
     typeof role === "string" &&
     typeof principal === "string" &&
@@ -72,7 +86,9 @@ export const editDraft = (draft: OperationDraft, action: Edit): OperationDraft =
     dateEntries,
     generation: draft.generation + 1,
     values: {
-      ...editGrantInput(draft.values, action.path, action.value),
+      ...(draft.entry.subject === "PEOPLE"
+        ? editGrantInput(draft.values, action.path, action.value)
+        : { ...draft.values, [action.path]: action.value }),
       ...(clearsRoleSelection(draft, action) ? { "input:role": "" } : {}),
     },
   };

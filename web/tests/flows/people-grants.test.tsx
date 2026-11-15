@@ -87,7 +87,7 @@ const grants = (
                 actions: [
                   operationAffordance(
                     "people.revoke",
-                    { kind: "PEOPLE", actorId },
+                    { kind: "PEOPLE", actorId, expectedRevision: 1 },
                     {
                       "input:role": "CASE_READER",
                       "input:scope": "CASE",
@@ -118,9 +118,28 @@ const grants = (
     },
     subject: { kind: "PERSON", actorId },
     actions: [
-      operationAffordance("people.grant", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
-      operationAffordance("people.revoke", { kind: "PEOPLE", actorId }, {}, undefined, {}),
-      operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}),
+      operationAffordance(
+        "people.grant",
+        { kind: "PEOPLE", actorId, expectedRevision: 1 },
+        {},
+        undefined,
+        {},
+        true,
+      ),
+      operationAffordance(
+        "people.revoke",
+        { kind: "PEOPLE", actorId, expectedRevision: 1 },
+        {},
+        undefined,
+        {},
+      ),
+      operationAffordance(
+        "people.enable",
+        { kind: "PEOPLE", actorId, expectedRevision: 1 },
+        {},
+        undefined,
+        {},
+      ),
     ],
     links: [],
     history: null,
@@ -618,7 +637,7 @@ it("binds a repeated page-local grant key to the selected page's case scope", as
   expect(revoke).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.revoke",
-      binding: { kind: "PEOPLE", actorId: first },
+      binding: { kind: "PEOPLE", expectedRevision: 1, actorId: first },
       seeds: {
         "input:role": "CASE_READER",
         "input:scope": "CASE",

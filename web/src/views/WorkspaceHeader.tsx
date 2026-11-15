@@ -130,7 +130,14 @@ const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null })
   return (
     <details className="account-menu">
       <summary title={p.text("ui.account")}>
-        <div className="account-identity">
+        <span className="account-summary-avatar" aria-hidden="true">
+          <Icon name="person" />
+        </span>
+        <span className="account-summary-name">{p.text("ui.account")}</span>
+        <Icon name="chevron-down" />
+      </summary>
+      <div className="account-menu-items">
+        <div className="account-expanded-identity">
           {identity === undefined ? (
             p.text("ui.account")
           ) : (
@@ -142,9 +149,6 @@ const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null })
             </div>
           )}
         </div>
-        <Icon name="chevron-down" />
-      </summary>
-      <div className="account-menu-items">
         <a
           href="/settings"
           aria-disabled={locked || undefined}

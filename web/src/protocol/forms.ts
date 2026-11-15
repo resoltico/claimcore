@@ -11,8 +11,19 @@ export type FormCollection = Readonly<{
   kind: "COLLECTION";
   rows: ReadonlyArray<Readonly<{ key: string; values: FormValues }>>;
 }>;
+export type GrantTargetDraft = Readonly<{
+  kind: "GRANT_TARGET";
+  selection: { kind: "INSTALLATION" } | { kind: "REFERENCE" | "ID"; text: string };
+}>;
 export type FormValue =
-  null | string | number | boolean | ReadonlyArray<string> | LocalizedAmount | FormCollection;
+  | null
+  | string
+  | number
+  | boolean
+  | ReadonlyArray<string>
+  | LocalizedAmount
+  | FormCollection
+  | GrantTargetDraft;
 export type FormValues = Readonly<Record<string, FormValue>>;
 export const isLocalizedAmount = (value: FormValue | undefined): value is LocalizedAmount =>
   typeof value === "object" &&
@@ -25,5 +36,8 @@ export const formValueText = (value: FormValue | undefined): string => {
   if (isLocalizedAmount(value)) {
     return value.text;
   }
-  return isFormCollection(value) ? "" : String(value ?? "");
+  if (Array.isArray(value)) {
+    return value.join(",");
+  }
+  return typeof value === "object" && value !== null ? "" : String(value ?? "");
 };

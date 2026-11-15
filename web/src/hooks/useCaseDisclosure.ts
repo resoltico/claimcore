@@ -1,3 +1,4 @@
+import { isDisclosureRefused } from "../api/outcomes";
 import { useMemo } from "react";
 import type { CaseSelector } from "@contracts/client";
 import { useEndpoint } from "./useEndpoint";
@@ -9,6 +10,9 @@ export const useCaseDisclosure = (target: CaseSelector) => {
   );
   return {
     value,
+    denied:
+      query.value?.outcome.kind === "REJECTED" ||
+      (query.result !== null && isDisclosureRefused(query.result)),
     screen: value?.screen ?? null,
     historyAccess: value?.history ?? "NONE",
     message: query.message,

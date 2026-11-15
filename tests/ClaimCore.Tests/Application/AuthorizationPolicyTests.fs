@@ -264,6 +264,7 @@ let private scopedAdvice () =
             Queries.caseRecord
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
                 (AccessView.ofActor (Some access))
+                (Sequence.create 1L |> Option.get)
                 (Inputs.workView record.Snapshot.State)
                 (Inputs.stageDisplay record.Snapshot.State)
                 Inputs.workBasis.ObservedAt
@@ -355,6 +356,7 @@ let private noUsableCorrectionOffer () =
         Queries.caseRecord
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
             (AccessView.ofActor (Some access))
+            (Sequence.create 1L |> Option.get)
             (Inputs.workView record.Snapshot.State)
             (Inputs.stageDisplay record.Snapshot.State)
             Inputs.workBasis.ObservedAt
@@ -452,6 +454,7 @@ let denialDisclosure =
 
             let input: UnvalidatedCaseRequest =
                 {
+                    ExpectedFamilySequence = None
                     OperationId = Guid.Parse "70000000-0000-7000-8000-000000000893"
                     CaseReference = "DENIAL-DISCLOSURE"
                     ExpectedRevision = 1L

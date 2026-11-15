@@ -428,6 +428,7 @@ type IReadTx =
     abstract AccessCases: PrincipalKey * CaseId list -> Task<AccessView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract CaseState: CaseId -> Task<CaseSubjectState option>
+    abstract CaseFamilySequence: CaseId -> Task<Sequence>
     abstract CaseFamily: CaseId -> Task<CaseFamilyState option>
     abstract PendingReminderDue: CaseId * ReminderId option -> Task<CalendarDate list>
 
@@ -468,6 +469,7 @@ type IReadTx =
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
     abstract ActorPrincipal: ActorId -> Task<PrincipalKey option>
+    abstract PeopleRevision: PrincipalKey -> Task<Revision option>
     abstract PeopleState: PrincipalKey -> Task<PeopleSubjectState option>
     abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>

@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople } from "./people-setup";
 import type { ResponseFor } from "@contracts/client";
 import { randomUUID } from "node:crypto";
@@ -204,7 +205,7 @@ test("preserves historical profile contact and distinguishes global and case rol
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.register",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": target.kind,
       "input:principal.issuer": target.issuer,
@@ -217,7 +218,7 @@ test("preserves historical profile contact and distinguishes global and case rol
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.setProfile",
-    binding: { kind: "PEOPLE", actorId },
+    binding: await reviewedPeopleBinding(page, actorId),
     inputs: {
       "input:profile.displayName": subject,
       "input:profile.contact": "current-browser-only@example.test",
@@ -226,13 +227,13 @@ test("preserves historical profile contact and distinguishes global and case rol
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId },
+    binding: await reviewedPeopleBinding(page, actorId),
     inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
   });
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId },
+    binding: await reviewedPeopleBinding(page, actorId),
     inputs: {
       "input:role": "CASE_HANDLER",
       "input:scope": "CASE",

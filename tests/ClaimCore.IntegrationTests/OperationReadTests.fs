@@ -350,6 +350,7 @@ let private profileReplayBeforeAdmission () =
                                 header
                                 (CommandSkeleton.People
                                     {
+                                        ExpectedRevision = Revision.first
                                         TargetActorId = target
                                         Principal = fixture.Owner
                                         Act = PeopleAct.SetProfile 0
@@ -365,6 +366,7 @@ let private profileReplayBeforeAdmission () =
                         let rows =
                             PeopleSubject.rows
                                 { person with
+                                    Revision = Revision.successor person.Revision
                                     Actor =
                                         { person.Actor with
                                             Profile = Some profile

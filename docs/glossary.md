@@ -23,7 +23,7 @@ missing or stale translations. All translations are AI-assisted; native-speaker 
 | Spanish (es) | AI-assisted; human review pending |
 | German (de) | AI-assisted; human review pending |
 
-Korean 청구 건 (case) and 후속 조치 (reminder) are candidates needing native confirmation.
+Current Korean catalog terms are 청구 건 (case) and 후속 조치 (reminder); native-speaker review is unverified.
 Latvian uses versija for entity version, Datu pārvaldnieks for Data steward and Lietu apstrādātājs for
 Case handler. Arabic uses ملف for a case and مرجع الملف for its reference; the prohibited legal-case
 term is not used. Chinese uses 案件; German uses Wiedervorlage and nächster Schritt; Spanish erasure
@@ -32,8 +32,8 @@ uses Suprimir. Grammar-dependent labels remain separate even when English wordin
 Intentional identical-language cognates are Spanish Cursor, Auditor, Total and Roles; German Cursor,
 Name, Person, Code and Version. Automated catalog checks and screenshots establish structure and
 rendering, not linguistic approval. Human review records should identify the language, English source
-and contexts reviewed. [Workspace examples](workspace-examples.md) show synthetic case work,
-review and RTL layouts; executable localization journeys cover expanded text.
+and contexts reviewed. Executable localization journeys cover case work, reviews, RTL layouts
+and expanded text.
 
 ## People, access and tasks
 

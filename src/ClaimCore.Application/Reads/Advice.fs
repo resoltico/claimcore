@@ -73,6 +73,7 @@ module internal Advice =
     let caseRecord
         (services: ServiceContext)
         actor
+        familySequence
         (work: CaseWorkView)
         stages
         changedAt
@@ -127,6 +128,7 @@ module internal Advice =
                             CaseWorkPolicy.canAssign principal actor false record.Snapshot
                     }
 
+                FamilySequence = familySequence
                 Snapshot = record.Snapshot
                 LatestPayments = latestPayments
                 Stages = stages

@@ -28,7 +28,11 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest (id database.Fixture 4) reader (PeopleAct.Disable)
+                    reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 4)
+                        reader
+                        (PeopleAct.Disable)
                 ))
                 (token))
 
@@ -95,7 +99,11 @@ let internal lastOwner (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest (id database.Fixture 20) database.Fixture.Owner (PeopleAct.Enable)
+                    reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 20)
+                        database.Fixture.Owner
+                        (PeopleAct.Enable)
                 ))
                 (token))
 

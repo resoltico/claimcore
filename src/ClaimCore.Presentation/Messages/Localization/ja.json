@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "この案件の情報、作業、リマインダーをClaimCoreから完全に消去します。案件番号と変更一覧は残ります。外部に保存されたコピーには影響しません。",
-    "source": "8705b2ea28a6"
+    "text": "この案件の現在および保持されている詳細、支払、作業、リマインダー、メモを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "プロフィールを消去",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "確認した案件の版",
-    "source": "8f3d37032769"
+    "text": "確認済みのバージョン",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "確認した業務の版",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "確認した案件の版です。",
-    "source": "8965c7efb1dc"
+    "text": "確認した対象のバージョンを使用してください。アカウント作成にはゼロが必要です。",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "変更前に最新の案件を確認してください。",
-    "source": "de14cae9e98d"
+    "text": "変更する前に対象の最新の状態を確認してください。",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "この変更が必要な理由。",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "ClaimCoreから案件の詳細、業務、リマインダーを完全に削除します。案件番号と変更の記録は残ります。",
-    "source": "e774df6acd21"
+    "text": "現在および保持されている案件の詳細、支払、作業、リマインダー、メモを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "アカウントを登録しました。",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "案件の状態",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "空でない案件 UUID を入力してください。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "案件の範囲には参照番号か ID のいずれかを指定し、すべての案件にはどちらも指定しないでください。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "空でない案件 UUID を入力してください。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "案件の範囲には参照番号か ID のいずれかを指定し、すべての案件にはどちらも指定しないでください。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "確認後にこのアカウントが変更されました。再試行する前に最新のアカウントを確認してください。",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "消去の確認後に、この案件またはその作業、メモ、リマインダー、支払が変更されました。案件全体を再確認してください。",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "消去する前に、案件とそのすべての作業、メモ、リマインダー、支払を確認してください。",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "確認済みの案件全体のバージョン",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "消去対象として確認した案件について、case.get が返したファミリーシーケンスを使用してください。",
+    "source": "8d258a9cf42b"
   }
 }

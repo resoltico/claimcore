@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
@@ -16,14 +17,14 @@ const ownerGrants = async (page: Page, active: boolean) => {
       await applyPeople(page, {
         operationId: mintOperationId(),
         task: active ? "people.grant" : "people.revoke",
-        binding: {
-          kind: "PEOPLE",
-          actorId: await selectedActor(page, {
+        binding: await reviewedPeopleBinding(
+          page,
+          await selectedActor(page, {
             kind: "HUMAN",
             issuer: source.issuer,
             subject: source.ownerSubject,
           }),
-        },
+        ),
         inputs: { "input:role": role, "input:scope": "INSTALLATION" },
       });
       changed.push(role);
@@ -34,14 +35,14 @@ const ownerGrants = async (page: Page, active: boolean) => {
         await applyPeople(page, {
           operationId: mintOperationId(),
           task: "people.grant",
-          binding: {
-            kind: "PEOPLE",
-            actorId: await selectedActor(page, {
+          binding: await reviewedPeopleBinding(
+            page,
+            await selectedActor(page, {
               kind: "HUMAN",
               issuer: source.issuer,
               subject: source.ownerSubject,
             }),
-          },
+          ),
           inputs: { "input:role": role, "input:scope": "INSTALLATION" },
         });
       }
@@ -78,7 +79,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases"
     applyPeople(page, {
       operationId: mintOperationId(),
       task: enabled ? "people.enable" : "people.disable",
-      binding: { kind: "PEOPLE", actorId: await selectedActor(page, fixture.principal) },
+      binding: await reviewedPeopleBinding(page, await selectedActor(page, fixture.principal)),
       inputs: {},
     });
   let disabledConfirmed = false;

@@ -53,6 +53,7 @@ let private peopleReview () =
     let input =
         OperationInput.People
             {
+                ExpectedRevision = 1L
                 OperationId = OperationId.value ResponseExamples.receipt.OperationId
                 Target =
                     {
@@ -198,7 +199,7 @@ let tests =
 
                     Expect.equal
                         action.Binding
-                        (OperationBinding.People(Some(ActorId.value actor.ActorId)))
+                        (OperationBinding.People(Some(ActorId.value actor.ActorId), 1L))
                         "Target"
 
                     let wire = HumanDocumentCodecs.reviewDocument.Write result

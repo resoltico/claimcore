@@ -5,10 +5,6 @@ open System.Threading
 open Npgsql
 open ClaimCore.Application.Contracts
 
-/// Rebuild is an owner operation, but it still requires explicit register-write maintenance.
-type MaintenanceRequiredException() =
-    inherit InvalidOperationException("Enter register maintenance before rebuilding projections.")
-
 module internal RegisterMaintenanceStore =
     let read connection token =
         task {

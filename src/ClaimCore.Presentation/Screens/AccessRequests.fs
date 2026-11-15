@@ -63,7 +63,10 @@ module AccessRequestsScreen =
             rows
 
     let view (reply: AccessRequestPage) =
-        page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
+        if reply.Items.IsEmpty then
+            Screen.create []
+        else
+            page reply.Basis reply.Items.Length reply.NextCursor (rows reply.Items)
 
     let dismissed () =
         Screen.create

@@ -88,7 +88,7 @@ module internal SessionRows =
         && instant < expiry
         && (instant - activity).TotalSeconds < idle
 
-    let withRow source key token action =
+    let withRow source installation key token action =
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -96,6 +96,8 @@ module internal SessionRows =
             (fun connection transaction ->
                 task {
                     let! _ = Transactions.configure connection Transactions.timeouts token
+                    do! Baseline.requireExpected installation connection token
+                    FailureDiagnostics.phase FailurePhase.Session
                     let! rows = lockRow connection key token
                     // This must remain a separate statement after FOR UPDATE has acquired the row.
                     let! instant = now connection token
@@ -120,6 +122,8 @@ module internal SessionRows =
                         | [] -> Task.FromResult(SessionChanges.unchanged None)
                         | _ -> invalidOp "A session key must identify at most one row."
 
+                    token.ThrowIfCancellationRequested()
+                    FailureDiagnostics.phase FailurePhase.Commit
                     do! transaction.CommitAsync token
                     return result
                 })
@@ -134,7 +138,7 @@ module internal SessionRows =
             token
 
 [<Sealed>]
-type internal SessionStore(source: NpgsqlDataSource) =
+type internal SessionStore(source: NpgsqlDataSource, installation: Installation) =
     interface ISessionStore with
         member _.Create(payload, expiry, idle, absolute, token) =
             SessionRows.admitPayload payload
@@ -149,6 +153,8 @@ type internal SessionStore(source: NpgsqlDataSource) =
                 (fun connection transaction ->
                     task {
                         let! _ = Transactions.configure connection Transactions.timeouts token
+                        do! Baseline.requireExpected installation connection token
+                        FailureDiagnostics.phase FailurePhase.Session
 
                         let! _ =
                             DatabaseSession.execute
@@ -193,6 +199,8 @@ type internal SessionStore(source: NpgsqlDataSource) =
                                 |]
                                 token
 
+                        token.ThrowIfCancellationRequested()
+                        FailureDiagnostics.phase FailurePhase.Commit
                         do! transaction.CommitAsync token
 
                         return
@@ -203,7 +211,7 @@ type internal SessionStore(source: NpgsqlDataSource) =
                     })
 
         member _.Retrieve(key, token) =
-            SessionRows.withRow source key token (fun connection instant row ->
+            SessionRows.withRow source installation key token (fun connection instant row ->
                 task {
                     let! _ =
                         DatabaseSession.execute
@@ -220,7 +228,7 @@ type internal SessionStore(source: NpgsqlDataSource) =
                 SessionRows.admitPayload payload
 
                 let! changes =
-                    SessionRows.withRow source key token (fun connection _ _ ->
+                    SessionRows.withRow source installation key token (fun connection _ _ ->
                         task {
                             let! _ =
                                 DatabaseSession.execute
@@ -243,7 +251,11 @@ type internal SessionStore(source: NpgsqlDataSource) =
                 (fun connection transaction ->
                     task {
                         let! _ = Transactions.configure connection Transactions.timeouts token
+                        do! Baseline.requireExpected installation connection token
+                        FailureDiagnostics.phase FailurePhase.Session
                         let! removed = SessionRows.remove connection key token
+                        token.ThrowIfCancellationRequested()
+                        FailureDiagnostics.phase FailurePhase.Commit
                         do! transaction.CommitAsync token
 
                         return

@@ -107,14 +107,15 @@ module internal Persistence =
                             )
                             DatabaseSession.parameter row.DisplayNameSearch
                             DatabaseSession.parameter row.ContactSearch
+                            box (Revision.value row.Revision)
                         |]
                     ]
 
             let sql =
                 if creating then
-                    "INSERT INTO claimcore.actors(actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+                    "INSERT INTO claimcore.actors(actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
                 else
-                    "UPDATE claimcore.actors SET enabled=$5,display_name=$6,contact=$7,display_name_search=$8,contact_search=$9 WHERE actor_id=$1 AND principal_kind=$2 AND issuer=$3 AND subject=$4"
+                    "UPDATE claimcore.actors SET enabled=$5,display_name=$6,contact=$7,display_name_search=$8,contact_search=$9,revision=$10 WHERE actor_id=$1 AND principal_kind=$2 AND issuer=$3 AND subject=$4"
 
             let! changed = DatabaseSession.execute connection sql parameters token
 

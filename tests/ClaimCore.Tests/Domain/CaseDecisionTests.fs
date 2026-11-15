@@ -171,6 +171,7 @@ let private affordanceExecution () =
             CaseActKind.Close
             current.CaseId
             current.Snapshot.Revision
+            Sequence.zero
             Map.empty
             []
             Map.empty
@@ -302,6 +303,7 @@ let private opening =
      << ClaimCore.TestSupport.Submissions.ofCommand None) (
         ClaimCore.TestSupport.Inputs.caseOperation
             {
+                ExpectedFamilySequence = None
                 OperationId = id 10
                 CaseReference = "UNIT-001"
                 ExpectedRevision = 0L

@@ -50,6 +50,14 @@ Help/version are offline. Owner failures use a separate bounded envelope,
 paths, connection strings or provider messages. Syntax omissions still return structured usage. An
 application Owner alone grants no case access.
 
+Administration registers SIGINT/SIGTERM handling before database I/O on Unix and console cancellation
+on supported platforms. It awaits work and cleanup. Cancellation known before COMMIT is definite;
+lost confirmation after COMMIT dispatch remains `OUTCOME_UNKNOWN`. Confirmed commit success survives
+later cancellation or cleanup faults. Inspect status/checkpoint evidence before another uncertain
+administrative change. SIGKILL, power loss and forced termination cannot guarantee graceful cleanup or
+an output reply. Stdout remains one JSON reply; storage diagnostics use stderr.
+
+
 | Fault | Operator action |
 | --- | --- |
 | `CONNECTION_FILE_REQUIRED`, `CONNECTION_FILE_REFUSED`, `CONNECTION_FILE_INVALID` | Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to an absolute private file containing a nonempty UTF-8 connection string; check permissions. |
@@ -209,9 +217,19 @@ without forcibly disposing an active provider. `RUNTIME_DRAIN_BOUND_EXPIRED` and
 `RUNTIME_TEARDOWN_FAILED` are explicit shutdown failures; an earlier primary failure keeps precedence.
 Late drain remains awaitable, and a failed close never reports successful drain.
 
+Every runtime read, write, Context, session and housekeeping transaction checks its admitted
+installation ID and canonical business zone before accessing installation data. Retargeting future
+connections to a different installation fails closed; readiness becomes false. This tuple does not
+detect an older restore or a clone retaining the same ID and zone, or protect against trusted-owner
+schema surgery. Checkpoints, traffic isolation and restore admission remain required.
+
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
 idle. The server publishes the `ClaimCore` meter and bounded storage-failure diagnostics. Request metrics
-use endpoint/result labels; diagnostic records exclude submitted values, credentials and provider text.
+use endpoint/result labels. Production storage diagnostics are bounded `storageFailure` records with
+`phase`, `classification`, a distinct internal `attempt` GUID and an internal request/command
+`correlation` GUID where available. Request logs share that correlation. Primary failures and cleanup
+failures are distinct; diagnostics cannot replace confirmed outcomes or commit uncertainty. Records
+exclude submitted values, credentials, SQL, provider messages, paths and incoming correlation strings.
 Process counters reset on restart and are not a ledger inventory. Verification results include elapsed
 invocation time, which is an observation rather than a response-time guarantee.
 
@@ -273,6 +291,12 @@ eight queued reads and one active write. Queued reads wait at most five seconds;
 them. Caller-supplied IDs/headers cannot choose another admission identity. Completed identities leave
 no partition-cache entry.
 
+Ordinary cookie authentication has two active slots and an eight-request FIFO. Each acquisition waits
+at most two seconds, cancelled by client disconnect, host stop or disposal. The wait deadline ends on
+promotion; active provider cleanup still owns its permit. Bearer and interactive authentication each
+have separate two-slot budgets with immediate refusal. Authentication capacity is released before
+actor work or actor-post reacquisition. Queue exhaustion or expiry returns overload, never a sign-out.
+
 The browser dispatches directly and cancels obsolete reads. A 429 produces a busy notice; reads are not
 automatically retried. `Retry-After: 1` is a hint, not a larger admission allowance.
 
@@ -289,7 +313,7 @@ settle an earlier uncertain change. Check that change separately.
 ## Browser preferences and assets
 
 Settings owns language, regional format, green/blue accent and light/dark/system preferences, including
-the sign-in dialog. Format 3 uses `claimcore.presentation.v3`. Invalid records use defaults; invalid
+the sign-in dialog. Preferences use `claimcore.presentation.v3`. Invalid records use defaults; invalid
 individual values fall back. Direction, contrast and forced-colour preferences remain effective.
 These choices do not alter facts, business dates or rights.
 

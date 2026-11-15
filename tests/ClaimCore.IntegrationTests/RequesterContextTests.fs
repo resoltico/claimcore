@@ -86,7 +86,8 @@ let private lifecycle (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 710)
                         human
                         (PeopleAct.Register Inputs.ownerProfile)
@@ -219,7 +220,8 @@ let private lockRace (database: PostgresFixture.Database) =
             Service.execute
                 (core fixture fixture.Owner)
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 711)
                         target
                         (PeopleAct.Register Inputs.ownerProfile)
@@ -285,7 +287,8 @@ let private administration (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 720)
                         audit
                         (PeopleAct.Register Inputs.ownerProfile)

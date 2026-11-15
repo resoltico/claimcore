@@ -85,7 +85,7 @@ let private instantOrdering (database: PostgresFixture.Database) =
 
 let private waiter (database: PostgresFixture.Database) settings =
     let store =
-        LedgerStore(database.RuntimeSource, database.Fixture.InstallationId, settings) :> IStore
+        LedgerStore(database.RuntimeSource, database.Installation, settings) :> IStore
 
     let result =
         store.Write(
@@ -394,6 +394,7 @@ let tests =
                                 }
                                 (CommandSkeleton.People
                                     {
+                                        ExpectedRevision = Revision.first
                                         TargetActorId = target
                                         Principal = principal
                                         Act = PeopleAct.Enable

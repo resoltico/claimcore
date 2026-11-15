@@ -160,7 +160,7 @@ npm --prefix web run test:unit -- tests/unit/presentation/presenter.test.ts
 
 Use `bash eng/verify.sh --fast` at coherent checkpoints. For final qualification, use CI on the delivered
 commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and manual dispatch run Linux x64,
-Linux musl, macOS ARM64 and all three engines. Dispatch the full set on a substantial PR before review.
+Linux musl, macOS ARM64 and all three engines. Use the automatic full main-push result for a release candidate; do not dispatch a duplicate matrix.
 Deployment, schema and database-host changes also run `bash eng/compose-restart-smoke.sh` in the separate
 [Compose restart workflow](../.github/workflows/compose.yml) (weekly as well); it is outside the Gate, so check it.
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
@@ -228,8 +228,9 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
-Playwright is pinned to 1.64.1 because stable 1.65.0 has an
-[upstream Firefox crash](https://github.com/microsoft/playwright/issues/43967) during accessibility scans.
+Playwright is pinned to 1.64.1 because the current 1.65.1 Firefox build crashes when accessible-name
+references are read across execution worlds; see the [upstream issue](https://github.com/microsoft/playwright/issues/43967).
+Review the browser build and its regression reproduction before changing this pin.
 Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and disclosure controls intact.
 
 ## Source releases

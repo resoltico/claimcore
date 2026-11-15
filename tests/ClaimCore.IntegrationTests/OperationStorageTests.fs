@@ -52,6 +52,11 @@ let private storage () =
             let command =
                 CommandSkeleton.People
                     {
+                        ExpectedRevision =
+                            if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                                Revision.first
+                            else
+                                Revision.zero
                         TargetActorId = target
                         Principal = principal
                         Act = act
@@ -326,6 +331,11 @@ let private storage () =
             let input =
                 Case.parse
                     {
+                        ExpectedFamilySequence =
+                            if CaseAct.kind act = CaseActKind.Erase then
+                                Some 1L
+                            else
+                                None
                         OperationId = OperationId.value identity
                         CaseReference = "CASE-MARKERS"
                         ExpectedRevision =
@@ -348,6 +358,7 @@ let private storage () =
             let command =
                 CommandSkeleton.Case
                     {
+                        ExpectedFamilySequence = input.ExpectedFamilySequence
                         CaseId = decided.After.CaseId
                         Reference = decided.After.Reference
                         ExpectedRevision = input.ExpectedRevision

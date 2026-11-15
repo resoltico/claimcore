@@ -15,6 +15,7 @@ module internal Queries =
     let caseRecord
         (services: ServiceContext)
         actor
+        familySequence
         work
         stages
         changedAt
@@ -22,7 +23,16 @@ module internal Queries =
         payments
         record
         =
-        Advice.caseRecord services actor work stages changedAt recordedBy payments record
+        Advice.caseRecord
+            services
+            actor
+            familySequence
+            work
+            stages
+            changedAt
+            recordedBy
+            payments
+            record
 
     let caseResult
         (services: ServiceContext)
@@ -40,9 +50,19 @@ module internal Queries =
         else
             match view.Case with
             | Some record ->
-                caseRecord services view.Actor work stages changedAt recordedBy payments record
+                caseRecord
+                    services
+                    view.Actor
+                    view.FamilySequence
+                    work
+                    stages
+                    changedAt
+                    recordedBy
+                    payments
+                    record
                 |> Result.map (fun model ->
                     { model with
+                        FamilySequence = view.FamilySequence
                         Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
                         Work =
                             if view.Maintenance.Active then

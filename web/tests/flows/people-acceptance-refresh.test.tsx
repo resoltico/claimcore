@@ -91,7 +91,7 @@ const existing: HumanReadDocument_people_grants = {
   actions: [
     operationAffordance(
       "people.disable",
-      { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000001" },
       {},
       undefined,
       {},
@@ -256,7 +256,7 @@ it.each(["context", "listing"] as const)(
     const [next] = vi.mocked(service.preview).mock.calls.at(-1)!;
     expect(next.input).toMatchObject({
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       inputs: { "input:principal.subject": "synthetic-next" },
     });
     expect(next.input.operationId).not.toBe(prepared.input.operationId);

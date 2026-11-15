@@ -41,12 +41,19 @@ let private lifetime (database: PostgresFixture.Database) key =
 
 let private lifecycle (database: PostgresFixture.Database) =
     task {
-        let first = SessionStore(database.RuntimeSource) :> ISessionStore
-        let second = SessionStore(database.RuntimeSource) :> ISessionStore
+        let first =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+        let second =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! key = create first
         let! read = (second.Retrieve(key, token) |> SessionResults.value)
         Expect.equal read (Some payload) "Another instance reads the committed session"
-        let restarted = SessionStore(database.RuntimeSource) :> ISessionStore
+
+        let restarted =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! restored = (restarted.Retrieve(key, token) |> SessionResults.value)
         Expect.equal restored read "A newly constructed instance needs no startup load"
         let! beforeRenewal = lifetime database key
@@ -68,7 +75,9 @@ let private lifecycle (database: PostgresFixture.Database) =
 
 let private deadlines (database: PostgresFixture.Database) =
     task {
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! key = create store
 
         do!
@@ -104,7 +113,9 @@ let private deadlines (database: PostgresFixture.Database) =
 
 let private deadlineAfterLock (database: PostgresFixture.Database) =
     task {
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! key = create store
 
         do!
@@ -160,8 +171,12 @@ let private exactDeadline () =
 
 let private logoutRace (database: PostgresFixture.Database) =
     task {
-        let first = SessionStore(database.RuntimeSource) :> ISessionStore
-        let second = SessionStore(database.RuntimeSource) :> ISessionStore
+        let first =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+        let second =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! key = create first
         use! connection = database.OwnerSource.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -186,7 +201,9 @@ let private logoutRace (database: PostgresFixture.Database) =
 
 let private independentRows (database: PostgresFixture.Database) =
     task {
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! blockedKey = create store
         let! otherKey = create store
         use! connection = database.OwnerSource.OpenConnectionAsync()
@@ -233,7 +250,9 @@ let private independentRows (database: PostgresFixture.Database) =
 
 let private boundedWait (database: PostgresFixture.Database) =
     task {
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let! key = create store
         use! connection = database.OwnerSource.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
@@ -289,7 +308,9 @@ let private capacity (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800 FROM generate_series(1,10000) n"
                 [||]
 
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
         let mutable refused = false
 
         try
@@ -325,7 +346,7 @@ let private storeFailure (database: PostgresFixture.Database) =
         use source =
             Npgsql.NpgsqlDataSource.Create(database.Container.GetConnectionString())
 
-        let store = SessionStore(source) :> ISessionStore
+        let store = SessionStore(source, database.Installation) :> ISessionStore
         let! key = create store
         source.Dispose()
         let mutable failed = false

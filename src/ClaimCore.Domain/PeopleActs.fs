@@ -62,6 +62,7 @@ type AuthoredPeopleAct = PeopleAct<AuthoredGrant, ActorProfileInput>
 type PeopleRequest =
     {
         OperationId: Guid
+        ExpectedRevision: int64
         Target: PrincipalInput
         Act: AuthoredPeopleAct
     }

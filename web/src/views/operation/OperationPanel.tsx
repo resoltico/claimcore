@@ -1,3 +1,4 @@
+import { useReviewEntry } from "./useReviewEntry";
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
 import type { HumanReadDocument_people_grants } from "@contracts/client";
@@ -402,12 +403,47 @@ const OperationFooter = ({
   }
   return <OperationFormActions {...props} formId={formId} preview={preview} onClose={close} />;
 };
+const FreshPrecondition = ({ model }: { model: OperationModel }) => {
+  const p = usePresentation();
+  const changed = ["diagnostic.FAMILY_CHANGED", "diagnostic.ACTOR_CHANGED"].includes(
+    model.rejection?.advice.message.messageId ?? "",
+  );
+  return changed ? (
+    <button
+      type="button"
+      disabled={model.busy || model.revalidating || model.priorUncertain}
+      onClick={model.refreshPrecondition}
+    >
+      {p.text("ui.conflict.reviewLatest")}
+    </button>
+  ) : null;
+};
+const operationVisible = (
+  model: OperationModel,
+  paused: boolean,
+  open: boolean,
+  disclosureAvailable: boolean,
+) =>
+  !paused &&
+  open &&
+  model.pendingDiscard === null &&
+  (disclosureAvailable || model.priorUncertain) &&
+  model.ownerVerified &&
+  model.phase !== "ACCEPTED";
+const reviewVisible = (model: OperationModel, visible: boolean, offered: ReadonlyArray<string>) =>
+  visible && model.review !== null && model.notice === null && offered.includes(model.entry.kind);
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true, open = true } = props;
   const p = usePresentation();
   const formId = useId();
   const preview = usePreviewReturnFocus(model);
   const settings = useSettingsDetour();
+  const visible = operationVisible(model, settings?.paused === true, open, disclosureAvailable);
+  const reviewEntry = useReviewEntry(
+    model.reviewIdentity ?? null,
+    reviewVisible(model, visible, props.offered),
+    model.phase === "EDITING",
+  );
   const selection = useFieldSelection(JSON.stringify([model.task.id, model.bindingSource]));
   const steps = props.completionAnchor === undefined ? <OperationSteps model={model} /> : null;
   const close = () => {
@@ -418,6 +454,7 @@ export const OperationPanel = (props: Props) => {
       <OperationReview model={model} paused={!props.offered.includes(model.entry.kind)}>
         {(review) => (
           <Dialog
+            {...reviewEntry}
             title={renderCatalogKey(p, model.task.labelId)}
             identity={
               <>
@@ -476,6 +513,7 @@ export const OperationPanel = (props: Props) => {
             }
           >
             <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
+            <FreshPrecondition model={model} />
           </Dialog>
         )}
       </OperationReview>

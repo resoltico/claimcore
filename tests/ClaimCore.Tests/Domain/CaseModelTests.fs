@@ -18,6 +18,11 @@ let private registration =
 
 let private request revision act =
     {
+        ExpectedFamilySequence =
+            if CaseAct.kind act = CaseActKind.Erase then
+                Some 1L
+            else
+                None
         OperationId = Guid.Parse "20000000-0000-7000-8000-000000000001"
         CaseReference = "Demo-1"
         ExpectedRevision = revision

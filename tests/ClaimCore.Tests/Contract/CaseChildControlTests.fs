@@ -104,7 +104,8 @@ let tests =
                     (OperationBinding.Case(
                         CaseSelector.Id value.Snapshot.CaseId,
                         Revision.value value.Snapshot.Revision,
-                        Some(OperationId.value ResponseExamples.receipt.OperationId)
+                        Some(OperationId.value ResponseExamples.receipt.OperationId),
+                        None
                     ))
                     "Payment identity and version stay together"
 

@@ -1,3 +1,5 @@
+import { formValueText } from "../../../src/protocol/forms";
+import { createDraft } from "../../../src/operation/operationDraft";
 import { initialAffordanceValues } from "../../../src/operation/affordances";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
@@ -67,7 +69,7 @@ it("freezes submitted row ordinals separately from the business map", () => {
       "input:principal.subject": "person",
       "input:profile.displayName": "Person",
     },
-    { kind: "PEOPLE" },
+    { kind: "PEOPLE", expectedRevision: 0 },
     operationId,
   );
   expect(value.submittedRows.peopleGrants).toEqual(["row-a", "row-b"]);
@@ -97,7 +99,7 @@ it("rejects duplicate local row keys before correlating diagnostics", () => {
     assembleTask(
       "people.admit",
       { peopleGrants: { kind: "COLLECTION", rows } },
-      { kind: "PEOPLE" },
+      { kind: "PEOPLE", expectedRevision: 0 },
       operationId,
     ),
   ).toThrow("row keys must be unique");
@@ -119,7 +121,7 @@ it("keeps a UUID-shaped authored case reference as a reference", () => {
 it("submits untouched required text controls as empty text for Core field advice", () => {
   const action = operationAffordance(
     "people.register",
-    { kind: "PEOPLE" },
+    { kind: "PEOPLE", expectedRevision: 0 },
     {
       "input:principal.kind": "HUMAN",
       "input:principal.issuer": "https://issuer.example/",
@@ -134,4 +136,80 @@ it("submits untouched required text controls as empty text for Core field advice
     "input:principal.subject": "",
     "input:profile.displayName": "",
   });
+});
+
+it("serializes exactly one active raw grant target, retaining blank and malformed text", () => {
+  const binding = { kind: "PEOPLE", actorId: operationId, expectedRevision: 3 } as const;
+  for (const [selection, expected] of [
+    [{ kind: "INSTALLATION" }, { "input:scope": "INSTALLATION" }],
+    [
+      { kind: "REFERENCE", text: operationId },
+      { "input:scope": "CASE", "field:caseReference": operationId },
+    ],
+    [
+      { kind: "REFERENCE", text: "" },
+      { "input:scope": "CASE", "field:caseReference": "" },
+    ],
+    [
+      { kind: "ID", text: "bad-id" },
+      { "input:scope": "CASE", "input:caseId": "bad-id" },
+    ],
+    [
+      { kind: "ID", text: "" },
+      { "input:scope": "CASE", "input:caseId": "" },
+    ],
+  ] as const) {
+    const value = assembleTask(
+      "people.grant",
+      {
+        "input:role": "CASE_READER",
+        "input:scope": { kind: "GRANT_TARGET", selection },
+        "input:caseId": "inactive-id",
+        "field:caseReference": "inactive-reference",
+      },
+      binding,
+      operationId,
+    );
+    expect(value.command.inputs).toEqual({ "input:role": "CASE_READER", ...expected });
+    expect(value.command.binding).toEqual(binding);
+  }
+});
+
+it("preserves the exact fixed Core-seeded ID target, role, actor and reviewed version", () => {
+  const binding = { kind: "PEOPLE", actorId: operationId, expectedRevision: 9 } as const;
+  const action = operationAffordance(
+    "people.revoke",
+    binding,
+    { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": target.caseId },
+    [],
+  );
+  const draft = createDraft(
+    { subject: "PEOPLE", kind: "people.revoke" },
+    operationId,
+    binding,
+    initialAffordanceValues(action),
+    null,
+    action,
+  );
+  expect(draft.values["input:scope"]).toEqual({
+    kind: "GRANT_TARGET",
+    selection: { kind: "ID", text: target.caseId },
+  });
+  const value = assembleTask("people.revoke", draft.values, draft.binding, operationId);
+  expect(value.command).toEqual({
+    operationId,
+    task: "people.revoke",
+    binding,
+    inputs: { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": target.caseId },
+  });
+  expect(action.editable).toEqual([]);
+});
+
+it("keeps existing scalar-list text while structured grant drafts stay outside scalar controls", () => {
+  expect(formValueText(["first", "second"])).toBe("first,second");
+  expect(formValueText(null)).toBe("");
+  expect(formValueText(undefined)).toBe("");
+  expect(
+    formValueText({ kind: "GRANT_TARGET", selection: { kind: "REFERENCE", text: "PRIVATE" } }),
+  ).toBe("");
 });

@@ -325,7 +325,9 @@ let private runAsync (ct: CancellationToken) =
     }
 
 let private run () =
-    use lifetime = new WebProcessLifetime()
+    use _diagnostics = StorageFailureLog.attach Console.Error
+    use _correlation = ClaimCore.Postgres.StorageDiagnostics.correlate (Guid.NewGuid())
+    use lifetime = new ProcessLifetime()
 
     try
         runAsync lifetime.Token |> _.GetAwaiter().GetResult()

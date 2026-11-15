@@ -34,7 +34,8 @@
               "timeZone": "Etc/UTC"
             },
             "offers": [],
-            "profileSeed": null
+            "profileSeed": null,
+            "revision": 1
           }
         },
         "representation": "DATA"
@@ -461,7 +462,8 @@
               "count": 0,
               "canAdd": false
             },
-            "latestPayments": []
+            "latestPayments": [],
+            "familySequence": 1
           }
         },
         "representation": "DATA"

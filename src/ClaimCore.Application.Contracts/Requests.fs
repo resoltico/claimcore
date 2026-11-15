@@ -19,6 +19,7 @@ type ScopedGrant = Grant<GrantScope>
 
 type CaseOperationRequest =
     {
+        ExpectedFamilySequence: int64 option
         OperationId: Guid
         Target: CaseSelector
         ExpectedRevision: int64

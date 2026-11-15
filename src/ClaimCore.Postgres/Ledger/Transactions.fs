@@ -68,6 +68,8 @@ module internal Transactions =
 
     let private providerFailure commitStarted (error: exn) =
         match error with
+        | :? InstallationConfigurationException -> StoreFailure.SchemaMismatch
+        | :? OperatorFaultException -> StoreFailure.SchemaMismatch
         | :? RecordCorruptException -> StoreFailure.Integrity
         | :? OperationCanceledException when not commitStarted -> StoreFailure.Cancelled
         | :? OperationCanceledException -> StoreFailure.CommitOutcomeUnknown
@@ -99,7 +101,6 @@ module internal Transactions =
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
     let private transact source settings (token: CancellationToken) action =
         task {
-            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
             let mutable commitStarted = false
 
             try
@@ -122,7 +123,6 @@ module internal Transactions =
                                 return Ok result
                             })
             with error ->
-                FailureDiagnostics.report error
                 return Error(failure commitStarted error)
         }
 
@@ -131,7 +131,6 @@ module internal Transactions =
 
     let read source token action =
         task {
-            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
 
             try
                 let! value =
@@ -152,6 +151,5 @@ module internal Transactions =
 
                 return Ok value
             with error ->
-                FailureDiagnostics.report error
                 return Error(failure false error)
         }

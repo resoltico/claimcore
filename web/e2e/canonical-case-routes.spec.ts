@@ -112,5 +112,11 @@ test("case inspection restores the live work query, selected row focus and scrol
   await expect(page).toHaveURL(url);
   await expect(page.locator(`[id="${id}"]`)).toBeFocused();
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(position);
-  expect(await page.evaluate((): unknown => history.state)).toBeNull();
+  expect(await page.evaluate((): unknown => history.state)).toEqual({
+    claimcoreNavigation: {
+      group: expect.any(String),
+      index: expect.any(Number),
+      key: expect.any(String),
+    },
+  });
 });

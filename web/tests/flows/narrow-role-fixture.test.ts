@@ -1,6 +1,15 @@
 // @vitest-environment node
 import { expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("../../e2e/people-revision", () => ({
+  reviewedPeopleBinding: vi.fn().mockImplementation((_page, actorId: string) =>
+    Promise.resolve({
+      kind: "PEOPLE",
+      actorId,
+      expectedRevision: 1,
+    }),
+  ),
+}));
 vi.mock("../../e2e/session-helpers", () => ({ openAuthenticated: vi.fn() }));
 vi.mock("../../e2e/case-workflow", () => ({
   openCase: vi.fn(),

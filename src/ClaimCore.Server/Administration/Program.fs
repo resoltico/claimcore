@@ -13,6 +13,10 @@ open ClaimCore.Postgres
 open ClaimCore.HostSecurity
 
 let main arguments =
+    use _diagnostics = ClaimCore.Server.StorageFailureLog.attach Console.Error
+    use _correlation = StorageDiagnostics.correlate (Guid.NewGuid())
+    use lifetime = new ClaimCore.Server.ProcessLifetime()
+
     let bytes, code, deliveryUnknown =
         try
             BuildIdentity.requireCompatibleAssembly typeof<Administration>.Assembly
@@ -23,7 +27,7 @@ let main arguments =
             | Error(CommandInputFailure.Operator fault) ->
                 let bytes, code = Replies.operatorFault fault in bytes, code, false
             | Ok command ->
-                let bytes, code = Execution.run command |> _.GetAwaiter().GetResult()
+                let bytes, code = Execution.run lifetime.Token command |> _.GetAwaiter().GetResult()
 
                 let mutates =
                     match command with

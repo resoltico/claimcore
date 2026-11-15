@@ -55,7 +55,7 @@ it("prefills a deep-linked actor from disclosed identity rather than a stale lis
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
   });
 });
 it("uses an offered alternative instead of inventing GRANT on actor detail", async () => {
@@ -120,7 +120,7 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
   const [next] = preview.mock.calls[1]!;
   expect(next.input).toMatchObject({
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
   });
   expect(next.input.operationId).not.toBe(previous.input.operationId);
 });
@@ -175,7 +175,7 @@ it("changing acts retains the bound actor identity after discard consent", async
   });
   expect(preview.mock.calls[1]![0].input).toMatchObject({
     task: "people.disable",
-    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
   });
 });
 it("ignores a late actor disclosure when a different actor is selected", async () => {
@@ -203,7 +203,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
     expect(preview).toHaveBeenCalledOnce();
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
-    binding: { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
   });
 });
 it("waits for fresh actor disclosure after availability loss and never restores refused prefills", async () => {
@@ -283,7 +283,7 @@ it("opens one named person panel and prefills profile edits only from its curren
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     task: "people.setProfile",
-    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
     inputs: { "input:profile.displayName": "Updated first", "input:profile.contact": null },
   });
 });
@@ -329,7 +329,7 @@ it("opens a row revocation with the exact supplied principal, role and case hand
                     actions: [
                       operationAffordance(
                         "people.revoke",
-                        { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+                        { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
                         {
                           "input:role": "CASE_READER",
                           "input:scope": "CASE",
@@ -362,7 +362,7 @@ it("opens a row revocation with the exact supplied principal, role and case hand
   });
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     task: "people.revoke",
-    binding: { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
     inputs: {
       "input:role": "CASE_READER",
       "input:scope": "CASE",

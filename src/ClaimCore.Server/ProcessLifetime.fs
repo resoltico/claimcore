@@ -6,7 +6,7 @@ open System.Threading
 
 /// Stop is registered before startup I/O; signal callbacks never run request callbacks inline.
 [<Sealed>]
-type internal WebProcessLifetime() =
+type internal ProcessLifetime() =
     let cancellation = new CancellationTokenSource()
 
     let stop () =

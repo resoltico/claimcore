@@ -17,6 +17,7 @@ type CatalogFieldProps = {
   field: FieldCatalogEntry;
   value: string;
   inputName?: string;
+  description?: string;
   error?: Notice | undefined;
   disabled?: boolean;
   onChange: (value: string) => void;
@@ -75,6 +76,7 @@ export const CatalogField = ({
   field,
   value,
   inputName,
+  description,
   error,
   disabled = false,
   onChange,
@@ -103,7 +105,7 @@ export const CatalogField = ({
       </div>
       <ScalarControl field={field} name={name} />
       <Text slot="description" className="field-description">
-        <small>{p.hint(field)}</small>
+        <small>{description ?? p.hint(field)}</small>
         <ScalarCounter field={field} value={value} />
         {field.valueKind === "COUNTRY" ? <CountryHint code={value} field={field} /> : null}
       </Text>

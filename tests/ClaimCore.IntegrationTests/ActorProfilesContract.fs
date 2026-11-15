@@ -33,7 +33,10 @@ let private operation fixture id =
     }
 
 let private execute owner operation target act =
-    Service.execute owner (OperationInput.People(Inputs.peopleRequest operation target act)) token
+    Service.execute
+        owner
+        (OperationInput.People(reviewedPeopleRequest owner.Store operation target act))
+        token
 
 let private self owner =
     task {

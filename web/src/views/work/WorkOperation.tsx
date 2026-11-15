@@ -1,3 +1,4 @@
+import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useCallback, useEffect, useRef, useLayoutEffect, useEffectEvent } from "react";
@@ -12,6 +13,7 @@ import { useEndpointCache } from "../../hooks/EndpointProvider";
 import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
+  noteIntent?: NoteIntent | undefined;
   affordance?: OperationAffordance;
   current: CurrentCase;
   disclosureAvailable: boolean;
@@ -30,6 +32,7 @@ type Props = {
 /** Reuses the same frozen review, journal-before-send, retry and scoped disclosure coordinator. */
 export const WorkOperation = ({
   current,
+  noteIntent,
   disclosureAvailable,
   subject,
   kind,
@@ -43,6 +46,7 @@ export const WorkOperation = ({
   onLockChange,
   onDisclosureRefused,
 }: Props) => {
+  const { bind: bindNote } = useInlineNoteDraft();
   const credential = useCredential();
   const anchor = useRef<HTMLElement | null>(
     completionAnchor === undefined ? null : document.getElementById(completionAnchor),
@@ -72,6 +76,11 @@ export const WorkOperation = ({
     onLockChange,
     onDisclosureRefused,
   });
+  useLayoutEffect(() => {
+    if (noteIntent !== undefined && model.prepared?.input.task === "note.add") {
+      bindNote(noteIntent, model.prepared.input.operationId);
+    }
+  }, [bindNote, noteIntent, model.prepared]);
   const observed = model.currentCase;
   const allowed = model.affordance?.blocked === null;
   const authored = model.task.inputs.filter((input) => input.source === "AUTHORED");

@@ -21,6 +21,7 @@ type CaseCommandSkeleton =
         Reference: CaseReference
         ExpectedRevision: Revision
         Act: CaseActKind
+        ExpectedFamilySequence: Sequence option
         SelectedPayment: OperationId option
     }
 
@@ -30,6 +31,7 @@ module CaseCommandSkeleton =
 
 type PeopleCommandSkeleton =
     {
+        ExpectedRevision: Revision
         TargetActorId: ActorId
         Principal: PrincipalKey
         // Profile values are replaced by a compartment ordinal, not a dummy private profile.
@@ -137,6 +139,9 @@ module OperationStructure =
              && (command.ExpectedRevision <> Revision.zero
                  || command.CaseId <> CaseId.ofOperationId header.OperationId))
             || (not opening && command.ExpectedRevision < Revision.first)
+            || ((command.Act = CaseActKind.Erase) <> command.ExpectedFamilySequence.IsSome)
+            || (command.ExpectedFamilySequence
+                |> Option.exists (fun value -> value <= Sequence.zero || value >= header.Sequence))
             || (removing <> command.SelectedPayment.IsSome)
         then
             Error OperationStructureProblem.Command
@@ -184,7 +189,11 @@ module OperationStructure =
 
         let duplicateGrants grants = List.distinct grants <> grants
 
-        if registering && target <> ActorId.ofOperationId header.OperationId then
+        if
+            (registering && command.ExpectedRevision <> Revision.zero)
+            || (not registering && command.ExpectedRevision = Revision.zero)
+            || (registering && target <> ActorId.ofOperationId header.OperationId)
+        then
             Error OperationStructureProblem.Command
         else
             match command.Act with

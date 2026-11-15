@@ -12,6 +12,7 @@ type CaseCommand =
     member Reference: CaseReference
     member Act: ValidCaseAct
     member OperationId: OperationId
+    member ExpectedFamilySequence: Sequence option
     member ExpectedRevision: Revision
 
 [<NoComparison>]

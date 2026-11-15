@@ -21,6 +21,7 @@ let private accepted result =
 /// Test input adapters preserve authored domain groups while selecting a reference explicitly.
 let caseRequest (input: UnvalidatedCaseRequest) : CaseOperationRequest =
     {
+        ExpectedFamilySequence = input.ExpectedFamilySequence
         OperationId = input.OperationId
         Target = CaseSelector.Reference input.CaseReference
         ExpectedRevision = input.ExpectedRevision
@@ -34,6 +35,7 @@ let referencedCase (input: CaseOperationRequest) : UnvalidatedCaseRequest =
     match input.Target with
     | CaseSelector.Reference reference ->
         {
+            ExpectedFamilySequence = input.ExpectedFamilySequence
             OperationId = input.OperationId
             CaseReference = reference
             ExpectedRevision = input.ExpectedRevision
@@ -332,6 +334,11 @@ let peopleRequest operationId target act : ClaimCore.Domain.PeopleRequest =
     | _ ->
         {
             OperationId = operationId
+            ExpectedRevision =
+                if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                    1L
+                else
+                    0L
             Target = PrincipalKey.toInput target
             Act = act
         }

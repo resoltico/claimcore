@@ -98,7 +98,6 @@ let private completeVocabulary () =
                  | InputTarget.Role
                  | InputTarget.PrincipalKind
                  | InputTarget.Scope
-                 | InputTarget.CaseId
                  | InputTarget.Group RecordGroup.Registration
                  | InputTarget.Group RecordGroup.Decision -> false
                  | _ -> true)

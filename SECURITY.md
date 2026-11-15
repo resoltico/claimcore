@@ -12,8 +12,8 @@ details, affected components and reproductions out of that issue.
 ## Understand the trust boundary
 
 OIDC identifies human/service principals; current scoped ClaimCore grants authorize work. Browser POSTs require
-antiforgery. The browser and actor CLI have no database credentials. Owner administration is a separate
-executable with its own credential. Current permissions and receipt disclosure are decided within the authoritative view.
+antiforgery. The browser and actor CLI have no database credentials. Owner administration uses the same
+`claimcore-server` executable with a separate database-owner credential; the serving process uses runtime credentials. Current permissions and receipt disclosure are decided within the authoritative view.
 
 The IdP, service host, database owner and backup operator remain trusted. Hashes detect inconsistency against
 trusted retained evidence; they cannot establish independent freshness or defeat an administrator rewriting all

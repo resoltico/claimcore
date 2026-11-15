@@ -119,7 +119,9 @@ const peopleReview: HumanReview = {
       },
       consequence: "ROUTINE",
     },
-    actions: [operationAffordance("people.grant", { kind: "PEOPLE", actorId }, {}, [])],
+    actions: [
+      operationAffordance("people.grant", { kind: "PEOPLE", actorId, expectedRevision: 1 }, {}, []),
+    ],
     links: [],
     history: null,
     nextCursor: null,

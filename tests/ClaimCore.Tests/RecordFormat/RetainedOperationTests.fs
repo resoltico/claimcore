@@ -38,6 +38,11 @@ let private decide number act (before: CaseSnapshot option) =
     let command =
         Case.parse
             {
+                ExpectedFamilySequence =
+                    if CaseAct.kind act = CaseActKind.Erase then
+                        Some 1L
+                    else
+                        None
                 OperationId = guid number
                 CaseReference = "PRIVATE-1"
                 ExpectedRevision =
@@ -59,6 +64,7 @@ let private caseOperation number (command: CaseCommand) (decision: CaseDecision)
     let scope =
         CommandSkeleton.Case
             {
+                ExpectedFamilySequence = command.ExpectedFamilySequence
                 CaseId = decision.After.CaseId
                 Reference = decision.After.Reference
                 ExpectedRevision = command.ExpectedRevision
@@ -271,6 +277,7 @@ let tests =
                     let scope =
                         CommandSkeleton.Case
                             {
+                                ExpectedFamilySequence = Some(Sequence.create 1L |> Option.get)
                                 CaseId = parent
                                 Reference = erased.After.Reference
                                 ExpectedRevision = command.ExpectedRevision
@@ -349,6 +356,7 @@ let tests =
                     let command =
                         CommandSkeleton.People
                             {
+                                ExpectedRevision = Revision.zero
                                 TargetActorId = target
                                 Principal = principal
                                 Act = PeopleAct.Admit { Profile = 0; Grants = grants }
@@ -385,6 +393,7 @@ let tests =
                     let publicCommand =
                         CommandSkeleton.People
                             {
+                                ExpectedRevision = Revision.first
                                 TargetActorId = target
                                 Principal = principal
                                 Act = PeopleAct.EraseProfile
@@ -549,6 +558,7 @@ let tests =
                     let scope =
                         CommandSkeleton.Case
                             {
+                                ExpectedFamilySequence = None
                                 CaseId = parent
                                 Reference = decision.After.Reference
                                 ExpectedRevision = Revision.zero
@@ -642,6 +652,11 @@ let caseAndReminderMatrix =
             let command =
                 Case.parse
                     {
+                        ExpectedFamilySequence =
+                            if CaseAct.kind act = CaseActKind.Erase then
+                                Some 1L
+                            else
+                                None
                         OperationId = guid 30
                         CaseReference = "PRIVATE-1"
                         ExpectedRevision =

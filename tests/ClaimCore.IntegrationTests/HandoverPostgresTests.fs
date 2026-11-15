@@ -40,7 +40,8 @@ let private handover (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 100)
                         principal
                         (PeopleAct.Register Inputs.actorProfile)

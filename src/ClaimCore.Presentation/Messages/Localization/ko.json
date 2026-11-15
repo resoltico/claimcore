@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "이 청구 건의 정보, 업무 및 후속 조치를 ClaimCore에서 영구 삭제합니다. 청구 건 참조와 변경 목록은 남습니다. 다른 곳의 사본에는 영향을 주지 않습니다.",
-    "source": "8705b2ea28a6"
+    "text": "이 청구 건의 현재 및 보관된 세부 정보, 지급, 작업, 후속 조치, 메모를 영구 삭제합니다. 참조 번호와 변경 기록은 남습니다. 다른 곳에 있는 사본에는 영향을 주지 않습니다.",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "프로필 영구 삭제",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "검토한 청구 건 버전",
-    "source": "8f3d37032769"
+    "text": "검토한 버전",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "검토한 업무 버전",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "검토한 청구 건 버전입니다.",
-    "source": "8965c7efb1dc"
+    "text": "검토한 대상 버전을 사용하세요. 계정 생성에는 0이 필요합니다.",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "변경하기 전에 최신 청구 건을 확인하세요.",
-    "source": "de14cae9e98d"
+    "text": "변경하기 전에 대상의 최신 상태를 검토하세요.",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "이 변경이 필요한 이유입니다.",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "ClaimCore에서 청구 건 상세 정보, 업무 및 후속 조치를 영구 삭제합니다. 참조번호와 변경 이력은 유지됩니다.",
-    "source": "e774df6acd21"
+    "text": "현재 및 보관된 청구 건 세부 정보, 지급, 작업, 후속 조치, 메모를 영구 삭제합니다. 참조 번호와 변경 기록은 남습니다. 다른 곳에 있는 사본에는 영향을 주지 않습니다.",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "계정이 등록되었습니다.",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "청구 건 상태",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "비어 있지 않은 청구 건 UUID를 입력하세요.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "청구 건 범위에는 참조 번호 또는 ID 중 하나를 선택하고, 모든 청구 건에는 둘 다 사용하지 마세요.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "비어 있지 않은 청구 건 UUID를 입력하세요.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "청구 건 범위에는 참조 번호 또는 ID 중 하나를 선택하고, 모든 청구 건에는 둘 다 사용하지 마세요.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "검토 후 이 계정이 변경되었습니다. 다시 시도하기 전에 최신 계정을 검토하세요.",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "삭제 검토 후 이 청구 건 또는 작업, 메모, 후속 조치, 지급이 변경되었습니다. 청구 건 전체를 다시 검토하세요.",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "삭제하기 전에 청구 건과 모든 작업, 메모, 후속 조치, 지급을 검토하세요.",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "검토한 청구 건 전체 버전",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "삭제를 위해 검토한 청구 건에 대해 case.get이 제공한 가족 시퀀스를 사용하세요.",
+    "source": "8d258a9cf42b"
   }
 }

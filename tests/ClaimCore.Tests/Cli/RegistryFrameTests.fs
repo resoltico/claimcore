@@ -22,7 +22,7 @@ let private accepted value =
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private source =
-    """{"endpoint":"operation.execute","input":{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"synthetic","input:profile.displayName":"Authored"}}}"""
+    """{"endpoint":"operation.execute","input":{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"synthetic","input:profile.displayName":"Authored"}}}"""
 
 let private frozen () =
     let original = bytes source

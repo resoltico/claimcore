@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
@@ -36,7 +37,7 @@ const setGrant = async (
   applyPeople(page, {
     operationId: mintOperationId(),
     task: active ? "people.grant" : "people.revoke",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, fixture.principal) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, fixture.principal)),
     inputs: {
       "input:role": role,
       "input:scope": scoped ? "CASE" : "INSTALLATION",

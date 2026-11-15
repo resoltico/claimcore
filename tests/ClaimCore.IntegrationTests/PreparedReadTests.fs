@@ -79,7 +79,8 @@ let private freshness (database: PostgresFixture.Database) =
                 Service.execute
                     admin
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            database.Fixture.Store
                             (id database.Fixture operation)
                             who
                             (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -200,7 +201,11 @@ let private freshness (database: PostgresFixture.Database) =
             Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest (id database.Fixture 140) human PeopleAct.Disable
+                    reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 140)
+                        human
+                        PeopleAct.Disable
                 ))
                 token
 
@@ -342,7 +347,7 @@ let private cancellation (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
 
         let store =
-            LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> IStore
+            LedgerStore(source, database.Installation, Transactions.timeouts) :> IStore
 
         let core =
             Service.create

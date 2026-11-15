@@ -1,3 +1,4 @@
+import { grantFields } from "./grantTargetDraft";
 import type {
   OperationBinding,
   OperationSubmission,
@@ -13,6 +14,7 @@ export type TaskSubmission = {
 };
 
 const authoredScalars = (declaration: OperationTaskDefinition, values: FormValues) => {
+  values = grantFields(values);
   const inputs: Record<string, unknown> = {};
   for (const input of declaration.inputs) {
     const metadata = taskInput(input.id);
@@ -41,8 +43,8 @@ const authoredCollections = (declaration: OperationTaskDefinition, values: FormV
       inputs[collection.input] = value.rows.map((row) =>
         Object.fromEntries(
           collection.inputs
-            .filter((input) => Object.hasOwn(row.values, input.id))
-            .map((input) => [input.id, row.values[input.id]]),
+            .filter((input) => Object.hasOwn(grantFields(row.values), input.id))
+            .map((input) => [input.id, grantFields(row.values)[input.id]]),
         ),
       );
     }

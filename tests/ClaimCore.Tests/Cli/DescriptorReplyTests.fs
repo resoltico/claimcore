@@ -74,6 +74,7 @@ let private peopleReview () =
         (OperationInput.People
             { CliReplyFixtures.peopleRequest with
                 OperationId = reply.OperationId
+                ExpectedRevision = 1L
                 Act =
                     PeopleAct.Grant
                         {
@@ -186,6 +187,7 @@ let tests =
                                         HumanReadDocuments.grants
                                         (Outcome.Succeeded
                                             {
+                                                Revision = Revision.first
                                                 Basis = Inputs.workBasis
                                                 Actor = account
                                                 Offers = []
@@ -569,6 +571,7 @@ let emptyGrantPageDetails =
 
         let page: PeopleGrantPage =
             {
+                Revision = Revision.first
                 Basis = Inputs.workBasis
                 Actor = target
                 Offers = []

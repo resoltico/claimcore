@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Neatgriezeniski dzēst šīs lietas informāciju, apstrādes datus un atgādinājumus no ClaimCore. Lietas atsauce un izmaiņu saraksts paliek saglabāti. Citur glabātās kopijas netiek ietekmētas.",
-    "source": "8705b2ea28a6"
+    "text": "Neatgriezeniski dzēst šīs lietas pašreizējos un saglabātos datus, maksājumus, darbu, atgādinājumus un piezīmes. Atsauce un izmaiņu reģistrs paliek. Citur glabātās kopijas netiek skartas.",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "Dzēst profilu",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "Pārskatītā lietas versija",
-    "source": "8f3d37032769"
+    "text": "Pārskatītā versija",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "Pārskatītā darba versija",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "Lietas versija, kuru pārskatījāt.",
-    "source": "8965c7efb1dc"
+    "text": "Izmantojiet pārskatītā objekta versiju. Konta izveidei nepieciešama nulle.",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "Pirms izmaiņām pārskatiet jaunāko lietas informāciju.",
-    "source": "de14cae9e98d"
+    "text": "Pirms izmaiņām pārskatiet objekta jaunāko stāvokli.",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "Kāpēc šīs izmaiņas ir vajadzīgas.",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Tas neatgriezeniski dzēš lietas datus, darba informāciju un atgādinājumus no ClaimCore. Atsauce un izmaiņu reģistrs saglabājas.",
-    "source": "e774df6acd21"
+    "text": "Tiks neatgriezeniski dzēsti lietas pašreizējie un saglabātie dati, maksājumi, darbs, atgādinājumi un piezīmes. Atsauce un izmaiņu reģistrs paliek. Citur glabātās kopijas netiek skartas.",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "Konts reģistrēts.",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "Lietas stāvoklis",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "Šis konts kopš pārskatīšanas ir mainījies. Pirms atkārtota mēģinājuma pārskatiet jaunāko konta stāvokli.",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "Kopš dzēšanas pārskatīšanas ir mainījusies lieta, tās darbs, piezīmes, atgādinājumi vai maksājumi. Pārskatiet visu lietu vēlreiz.",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "Pārskatītā lietas kopuma versija",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "Izmantojiet case.get norādīto kopuma secību lietai, kuru pārskatījāt dzēšanai.",
+    "source": "8d258a9cf42b"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "Pirms dzēšanas pārskatiet lietu un visu tās darbu, piezīmes, atgādinājumus un maksājumus.",
+    "source": "930c5b2e0f56"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "Ievadiet netukšu lietas UUID.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "Vienas lietas tvērumam izvēlieties atsauci vai ID; visu lietu tvērumam nelietojiet nevienu.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "Ievadiet netukšu lietas UUID.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "Vienas lietas tvērumam izvēlieties atsauci vai ID; visu lietu tvērumam nelietojiet nevienu.",
+    "source": "8cd27490b35d"
   }
 }

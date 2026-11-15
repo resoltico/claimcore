@@ -8,6 +8,9 @@ import { current } from "../../../support/presentation-state.fixtures";
 import type { FormValues } from "../../../../src/protocol/forms";
 import { initialAffordanceValues } from "../../../../src/operation/affordances";
 import type { OperationAffordance } from "../../../../src/operation/affordances";
+vi.mock("../../../../src/views/case/InlineNoteDraft", () => ({
+  useInlineNoteDraft: () => ({ bind: () => undefined }),
+}));
 const state = vi.hoisted(() => ({
   preview: vi.fn(),
   options: vi.fn<(options: { prefill?: FormValues }) => void>(),

@@ -9,6 +9,7 @@ type AuthoredInput =
         operationId: Guid *
         reference: string option *
         expectedRevision: int64 *
+        expectedFamilySequence: int64 option *
         AuthoredCaseAct
     | Work of operationId: Guid * expectedRevision: int64 * CaseWorkInput
     | Note of operationId: Guid * AuthoredNoteAct
@@ -22,6 +23,7 @@ type AuthoredIntent =
         operationId: Guid option *
         reference: string option *
         expectedRevision: int64 option *
+        expectedFamilySequence: int64 option *
         act: AuthoredCaseAct
     | Work of
         operationId: Guid option *
@@ -33,7 +35,11 @@ type AuthoredIntent =
         reference: string option *
         act: ReminderAct<int64 option>
     | Note of operationId: Guid option * reference: string option * act: AuthoredNoteAct
-    | People of operationId: Guid option * target: PrincipalInput * act: AuthoredPeopleAct
+    | People of
+        operationId: Guid option *
+        target: PrincipalInput *
+        expectedRevision: int64 option *
+        act: AuthoredPeopleAct
 
 module Validation =
     let private at target parse raw =
@@ -88,7 +94,7 @@ module Validation =
             Admission.collect [ reminderId id; revisionCheck expected; payload ]
 
     /// Validate the authored draft before any read, without fabricating an ID, revision or clock.
-    let syntaxIntent input =
+    let private syntaxIntentWith requireMetadata input =
         let supplied check =
             Option.map check >> Option.defaultValue (Ok())
 
@@ -99,8 +105,8 @@ module Validation =
 
         let result =
             match input with
-            | AuthoredIntent.Case(id, reference, expected, act) ->
-                RequestValidation.syntaxIntent id reference expected act
+            | AuthoredIntent.Case(id, reference, expected, family, act) ->
+                RequestValidation.syntaxIntent requireMetadata id reference expected family act
             | AuthoredIntent.Work(id, target, expected, work) ->
                 Admission.collect
                     [
@@ -123,11 +129,14 @@ module Validation =
                         supplied reference target
                         NoteInput.admit act |> Result.map ignore
                     ]
-            | AuthoredIntent.People(id, target, act) -> People.syntaxIntent id target act
+            | AuthoredIntent.People(id, target, expected, act) ->
+                People.syntaxIntent id target expected act
 
         match InputValidation.ordered result with
         | Error(Refusal.InvalidInput issues) -> Some issues
         | _ -> None
+
+    let syntaxIntent input = syntaxIntentWith false input
 
     /// Complete requests use the same authored syntax owner with their real supplied metadata.
     let syntax input =
@@ -142,12 +151,17 @@ module Validation =
                 ReminderAct.CompleteAndPlanNext(id, Some expected, plan)
 
         match input with
-        | AuthoredInput.Case(id, reference, expected, act) ->
-            AuthoredIntent.Case(Some id, reference, Some expected, act)
+        | AuthoredInput.Case(id, reference, expected, family, act) ->
+            AuthoredIntent.Case(Some id, reference, Some expected, family, act)
         | AuthoredInput.Work(id, expected, work) ->
             AuthoredIntent.Work(Some id, None, Some expected, work)
         | AuthoredInput.Reminder(id, act) -> AuthoredIntent.Reminder(Some id, None, reminder act)
         | AuthoredInput.Note(id, act) -> AuthoredIntent.Note(Some id, None, act)
         | AuthoredInput.People request ->
-            AuthoredIntent.People(Some request.OperationId, request.Target, request.Act)
-        |> syntaxIntent
+            AuthoredIntent.People(
+                Some request.OperationId,
+                request.Target,
+                Some request.ExpectedRevision,
+                request.Act
+            )
+        |> syntaxIntentWith true

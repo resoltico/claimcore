@@ -6,16 +6,6 @@ open ClaimCore.Application.Contracts
 /// Reviews describe admitted domain changes, independently of physical effect sequencing.
 module internal PeopleReviews =
     let describe services (view: PeopleExecutionFacts) (proposal: PeopleSubjectEffect) =
-        let profile = view.Target.Actor |> Option.bind _.Profile
-
-        let before: PeopleState =
-            {
-                Enabled = view.Target.Actor |> Option.exists _.Enabled
-                Profile = profile
-                Grants = []
-                Access = []
-            }
-
         let scopeView =
             function
             | Scope.Installation -> GrantScope.Installation
@@ -70,155 +60,33 @@ module internal PeopleReviews =
             | PeopleChange.Revoked(_, Scope.Case id) -> Scope.Case id, scopeView (Scope.Case id)
             | _ -> Scope.Installation, GrantScope.Installation
 
-        let before, after =
+        let beforeAccess = view.State |> Option.map PeopleSubject.access
+        let proposed = AccessView.ofActor (Some proposal.After)
+
+        // Select review facts from Domain states; this does not compute a second transition.
+        let relevantGrant (grant: ActorGrant) =
             match proposal.Change with
-            | PeopleChange.Registered profile ->
-                before,
-                { before with
-                    Enabled = true
-                    Profile = Some profile
-                }
-            | PeopleChange.OwnerProvisioned(profile, roles) ->
-                before,
-                { before with
-                    Enabled = true
-                    Profile = Some profile
-                    Grants =
-                        [
-                            {
-                                Role = Role.Owner
-                                Scope = GrantScope.Installation
-                            }
-                            for role in roles do
-                                {
-                                    Role = role
-                                    Scope = GrantScope.Installation
-                                }
-                        ]
-                }
-            | PeopleChange.Admitted(profile, grants) ->
-                before,
-                { before with
-                    Enabled = true
-                    Profile = Some profile
-                    Grants = List.map grantView grants
-                }
-            | PeopleChange.ProfileSet profile -> before, { before with Profile = Some profile }
-            | PeopleChange.ProfileErased -> before, { before with Profile = None }
-            | PeopleChange.Enabled -> before, { before with Enabled = true }
-            | PeopleChange.Disabled -> before, { before with Enabled = false }
-            | PeopleChange.Granted(role, _)
-            | PeopleChange.Revoked(role, _) ->
-                let roles =
-                    match resource with
-                    | Scope.Installation -> view.Target.Installation
-                    | Scope.Case id -> Map.tryFind id view.Target.Cases |> Option.defaultValue []
+            | PeopleChange.Registered _
+            | PeopleChange.Admitted _
+            | PeopleChange.OwnerProvisioned _ -> true
+            | PeopleChange.Granted(role, scope)
+            | PeopleChange.Revoked(role, scope) -> grant.Role = role && grant.Scope = scope
+            | _ -> false
 
-                let grant =
-                    {
-                        ScopedGrant.Role = role
-                        Scope = scope
-                    }
+        let project (value: ActorAccess option) : PeopleState =
+            {
+                Enabled = value |> Option.exists (fun value -> value.Actor.Enabled)
+                Profile = value |> Option.bind (fun value -> value.Actor.Profile)
+                Grants =
+                    value
+                    |> Option.map (fun value ->
+                        value.Grants |> List.filter relevantGrant |> List.map grantView)
+                    |> Option.defaultValue []
+                Access = []
+            }
 
-                let before =
-                    { before with
-                        Grants = (if List.contains role roles then [ grant ] else [])
-                    }
-
-                let grants =
-                    match proposal.Change with
-                    | PeopleChange.Granted _ -> [ grant ]
-                    | _ -> []
-
-                before, { before with Grants = grants }
-
-        let proposed =
-            match proposal.Change with
-            | PeopleChange.Registered profile
-            | PeopleChange.OwnerProvisioned(profile, _) ->
-                let grants =
-                    match proposal.Change with
-                    | PeopleChange.OwnerProvisioned(_, roles) ->
-                        [
-                            {
-                                ActorGrant.Role = Role.Owner
-                                Scope = Scope.Installation
-                            }
-                            for role in roles do
-                                {
-                                    ActorGrant.Role = role
-                                    Scope = Scope.Installation
-                                }
-                        ]
-                    | _ -> []
-
-                AccessView.ofActor (
-                    Some
-                        {
-                            Actor =
-                                {
-                                    ActorId = proposal.After.Actor.ActorId
-                                    Principal = proposal.After.Actor.Principal
-                                    Enabled = true
-                                    Profile = Some profile
-                                }
-                            Grants = grants
-                        }
-                )
-            | PeopleChange.Admitted(profile, grants) ->
-                AccessView.ofActor (
-                    Some
-                        {
-                            Actor =
-                                {
-                                    ActorId = proposal.After.Actor.ActorId
-                                    Principal = proposal.After.Actor.Principal
-                                    Enabled = true
-                                    Profile = Some profile
-                                }
-                            Grants = grants
-                        }
-                )
-            | PeopleChange.ProfileSet profile ->
-                { view.Target with
-                    Actor =
-                        view.Target.Actor
-                        |> Option.map (fun actor -> { actor with Profile = Some profile })
-                }
-            | PeopleChange.ProfileErased ->
-                { view.Target with
-                    Actor =
-                        view.Target.Actor |> Option.map (fun actor -> { actor with Profile = None })
-                }
-            | PeopleChange.Enabled
-            | PeopleChange.Disabled ->
-                { view.Target with
-                    Actor =
-                        view.Target.Actor
-                        |> Option.map (fun actor -> { actor with Enabled = after.Enabled })
-                }
-            | PeopleChange.Granted(role, _)
-            | PeopleChange.Revoked(role, _) ->
-                let update roles =
-                    match proposal.Change with
-                    | PeopleChange.Granted _ -> role :: (List.filter ((<>) role) roles)
-                    | _ -> List.filter ((<>) role) roles
-
-                match resource with
-                | Scope.Installation ->
-                    { view.Target with
-                        Installation = update view.Target.Installation
-                    }
-                | Scope.Case id ->
-                    { view.Target with
-                        Cases =
-                            Map.add
-                                id
-                                (Map.tryFind id view.Target.Cases
-                                 |> Option.defaultValue []
-                                 |> update)
-                                view.Target.Cases
-                    }
+        let before = project beforeAccess
+        let after = project (Some proposal.After)
 
         let access (target: AccessView) =
             target.Actor
@@ -235,7 +103,7 @@ module internal PeopleReviews =
             AccessScope = scope
             Before =
                 { before with
-                    Access = access view.Target
+                    Access = access (AccessView.ofActor beforeAccess)
                 }
             After = { after with Access = access proposed }
         }

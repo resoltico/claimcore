@@ -43,6 +43,7 @@ let private current =
 
 let private caseReply =
     {
+        FamilySequence = Sequence.create 1L |> Option.get
         LatestPayments = []
         Mine = false
         Work = Inputs.workView current.State

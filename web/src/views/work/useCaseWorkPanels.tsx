@@ -1,3 +1,5 @@
+import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
+import { RoutedReminder } from "./SelectedReminder";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
@@ -16,6 +18,7 @@ import { CaseWork } from "../case/CaseWork";
 
 type ReminderState = "PENDING" | "COMPLETED" | "CANCELLED";
 type Editor = {
+  noteIntent?: NoteIntent;
   action: OperationAffordance;
   subject: "WORK" | "REMINDER" | "NOTE";
   kind: string;
@@ -26,17 +29,22 @@ type Editor = {
   anchor?: string;
   origin?: string;
 };
+const editorOrigin = (next: Editor) =>
+  next.origin ?? (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
 export const useCaseWorkPanels = ({
   current,
   onChanged,
   onLockChange,
   disclosureAvailable,
+  authoringAvailable = disclosureAvailable,
 }: {
   current: CurrentCase;
   disclosureAvailable: boolean;
+  authoringAvailable?: boolean;
   onChanged: () => void;
   onLockChange: MutationLockChange;
 }) => {
+  const noteDraft = useInlineNoteDraft();
   const [browsing, setBrowsing] = useState(false);
   const [state, setState] = useState<ReminderState>("PENDING");
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -58,9 +66,7 @@ export const useCaseWorkPanels = ({
   );
   const filter = useMemo(() => ({ state, includeInactive: true }), [state]);
   const open = (next: Editor) => {
-    returnFocus.current =
-      next.origin ??
-      (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
+    returnFocus.current = editorOrigin(next);
     recorded.clear();
     setEditor({
       ...next,
@@ -73,7 +79,10 @@ export const useCaseWorkPanels = ({
     setEditor(null);
     focusPending.current = true;
   };
-  const accepted = (_receipt: OperationReceipt, operationId: string) => {
+  const accepted = (_receipt: OperationReceipt, operationId: string, noteIntent?: NoteIntent) => {
+    if (noteIntent !== undefined) {
+      noteDraft.accepted(noteIntent);
+    }
     recorded.accept(operationId);
     setRefresh((value) => value + 1);
     setEditor(null);
@@ -147,41 +156,55 @@ export const useCaseWorkPanels = ({
       ...(originId === undefined ? {} : { origin: originId }),
     });
   };
-  const nextActions = disclosureAvailable ? (
-    <CaseNextActions
-      current={current}
-      canCreate={editor === null && reminderCreate !== undefined}
-      onCreate={() => {
-        if (reminderCreate !== undefined) {
-          open({
-            subject: "REMINDER",
-            kind: reminderCreate.task,
-            identity: "create",
-            prefill: {},
-            action: reminderCreate,
-          });
-        }
-      }}
-      onReminder={onReminder}
-      state={state}
-      setState={setState}
-      browsing={browsing}
-      setBrowsing={setBrowsing}
-      refresh={refresh}
-      target={target}
-      filter={filter}
-      onChanged={onChanged}
-      onRefresh={() => {
-        setRefresh((value) => value + 1);
-        onChanged();
-      }}
-    />
-  ) : null;
+  // Parent refresh masks the exact read without remounting its refusal-notification latch.
+  const nextActions = (
+    <>
+      <RoutedReminder
+        enabled={disclosureAvailable}
+        target={target}
+        observation={current.basis.observation.observedAt}
+        refresh={refresh}
+        onAct={onReminder}
+        onDisclosureRefused={onChanged}
+      />
+      {disclosureAvailable ? (
+        <CaseNextActions
+          current={current}
+          canCreate={editor === null && reminderCreate !== undefined}
+          onCreate={() => {
+            if (reminderCreate !== undefined) {
+              open({
+                subject: "REMINDER",
+                kind: reminderCreate.task,
+                identity: "create",
+                prefill: {},
+                action: reminderCreate,
+              });
+            }
+          }}
+          onReminder={onReminder}
+          state={state}
+          setState={setState}
+          browsing={browsing}
+          setBrowsing={setBrowsing}
+          refresh={refresh}
+          target={target}
+          filter={filter}
+          onChanged={onChanged}
+          onRefresh={() => {
+            setRefresh((value) => value + 1);
+            onChanged();
+          }}
+        />
+      ) : null}
+    </>
+  );
   const operation =
     editor === null ? null : (
       <WorkOperation
         key={`${editor.subject}:${editor.kind}:${editor.identity}`}
         current={current}
+        noteIntent={editor.noteIntent}
         subject={editor.subject}
         kind={editor.kind}
         targetIdentity={editor.identity}
@@ -191,19 +214,23 @@ export const useCaseWorkPanels = ({
         binding={editor.binding}
         tasks={editor.tasks}
         onClose={close}
-        onRecorded={accepted}
+        onRecorded={(receipt, id) => {
+          accepted(receipt, id, editor.noteIntent);
+        }}
         onLockChange={onLockChange}
         onDisclosureRefused={onChanged}
         disclosureAvailable={disclosureAvailable}
       />
     );
-  const notes = disclosureAvailable ? (
+  const notes = (
     <CaseNotes
-      key={refresh}
+      refresh={refresh}
       current={current}
+      disclosureAvailable={disclosureAvailable}
+      authoringAvailable={authoringAvailable}
       editing={editor !== null}
-      onAdd={(text) => {
-        if (noteAdd === undefined) {
+      onAdd={(intent) => {
+        if (!disclosureAvailable || noteAdd === undefined) {
           return;
         }
         open({
@@ -211,7 +238,8 @@ export const useCaseWorkPanels = ({
           action: noteAdd,
           kind: "note.add",
           identity: "add",
-          prefill: { "input:noteText": text },
+          noteIntent: intent,
+          prefill: { "input:noteText": intent.text },
         });
       }}
       onRemove={(action) => {
@@ -226,6 +254,6 @@ export const useCaseWorkPanels = ({
       }}
       onDisclosureRefused={onChanged}
     />
-  ) : null;
+  );
   return { work, nextActions, notes, operation };
 };

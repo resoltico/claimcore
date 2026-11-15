@@ -1517,12 +1517,9 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await expect(checkAccess).toBeEnabled();
   hasAccess = true;
   await checkAccess.click();
-  await page
-    .getByRole("button", {
-      name: "Continue current request",
-      exact: true,
-    })
-    .click();
+  // Restoring the same requester reveals the retained request without submitting it.
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  expect(bytes).toHaveLength(1);
   await page
     .getByRole("button", {
       name: "Send again",

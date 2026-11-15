@@ -57,6 +57,7 @@ type PeopleGrantPage =
     {
         Basis: WorkDateBasis
         Actor: ActorReviewItem
+        Revision: Revision
         Offers: PeopleActKind list
         ProfileSeed: ActorProfileInput option
         Items: GrantReadModel list

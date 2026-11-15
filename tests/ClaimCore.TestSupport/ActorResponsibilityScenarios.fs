@@ -114,6 +114,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                     admin
                     (Inputs.caseOperation
                         {
+                            ExpectedFamilySequence = None
                             OperationId = opening
                             CaseReference = reference
                             ExpectedRevision = 0L
@@ -144,6 +145,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 admin
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence = None
                         OperationId = operation ()
                         CaseReference = "RESP-B"
                         ExpectedRevision = 1L
@@ -155,6 +157,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 admin
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence = None
                         OperationId = operation ()
                         CaseReference = "RESP-C"
                         ExpectedRevision = 1L
@@ -167,6 +170,12 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 admin
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence =
+                            Some(
+                                reviewedFamilySequence
+                                    fixture.Store
+                                    (CaseSelector.Reference "RESP-D")
+                            )
                         OperationId = operation ()
                         CaseReference = "RESP-D"
                         ExpectedRevision = 1L

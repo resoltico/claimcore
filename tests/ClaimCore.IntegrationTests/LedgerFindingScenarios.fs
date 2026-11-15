@@ -318,7 +318,11 @@ let internal owner (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest (id database.Fixture 31) reader PeopleAct.Enable
+                    reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 31)
+                        reader
+                        PeopleAct.Enable
                 ))
                 token
 

@@ -114,17 +114,17 @@ module OperationSubmissionCodecs =
 
     let private caseTarget =
         function
-        | OperationBinding.Case(target, _, _) -> target
+        | OperationBinding.Case(target, _, _, _) -> target
         | _ -> invalidOp "Case binding required."
 
     let private caseRevision =
         function
-        | OperationBinding.Case(_, revision, _) -> revision
+        | OperationBinding.Case(_, revision, _, _) -> revision
         | _ -> invalidOp "Case binding required."
 
     let private paymentId =
         function
-        | OperationBinding.Case(_, _, payment) -> selected "Payment selection required." payment
+        | OperationBinding.Case(_, _, payment, _) -> selected "Payment selection required." payment
         | _ -> invalidOp "Case binding required."
 
     let private workTarget =
@@ -159,7 +159,7 @@ module OperationSubmissionCodecs =
 
     let private actorId =
         function
-        | OperationBinding.People actor -> selected "Actor selection required." actor
+        | OperationBinding.People(actor, _) -> selected "Actor selection required." actor
         | _ -> invalidOp "People binding required."
 
     let binding kind =
@@ -170,14 +170,27 @@ module OperationSubmissionCodecs =
             match kind with
             | ActKind.Case CaseActKind.RemovePayment ->
                 record (fun target revision payment ->
-                    OperationBinding.Case(target, revision, Some payment))
+                    OperationBinding.Case(target, revision, Some payment, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
                 |> field "expectedRevision" caseRevision version
                 |> field "paymentId" paymentId uuid
                 |> build
+            | ActKind.Case CaseActKind.Erase ->
+                record (fun target revision family ->
+                    OperationBinding.Case(target, revision, None, Some family))
+                |> fixedField "kind" "CASE"
+                |> field "target" caseTarget RequestCodecs.caseSelector
+                |> field "expectedRevision" caseRevision version
+                |> field
+                    "expectedFamilySequence"
+                    (function
+                    | OperationBinding.Case(_, _, _, Some family) -> family
+                    | _ -> invalidOp "Erasure basis required.")
+                    (integer 1L Sequence.Maximum)
+                |> build
             | ActKind.Case task ->
-                record (fun target revision -> OperationBinding.Case(target, revision, None))
+                record (fun target revision -> OperationBinding.Case(target, revision, None, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
                 |> field
@@ -216,11 +229,25 @@ module OperationSubmissionCodecs =
                 |> field "expectedRevision" (reminderCurrent >> snd) positiveVersion
                 |> build
             | ActKind.People(PeopleActKind.Register | PeopleActKind.Admit) ->
-                record (OperationBinding.People None) |> fixedField "kind" "PEOPLE" |> build
+                record (fun revision -> OperationBinding.People(None, revision))
+                |> fixedField "kind" "PEOPLE"
+                |> field
+                    "expectedRevision"
+                    (function
+                    | OperationBinding.People(_, revision) -> revision
+                    | _ -> invalidOp "People binding required.")
+                    (integer 0L 0L)
+                |> build
             | ActKind.People _ ->
-                record (Some >> OperationBinding.People)
+                record (fun actor revision -> OperationBinding.People(Some actor, revision))
                 |> fixedField "kind" "PEOPLE"
                 |> field "actorId" actorId uuid
+                |> field
+                    "expectedRevision"
+                    (function
+                    | OperationBinding.People(_, revision) -> revision
+                    | _ -> invalidOp "People binding required.")
+                    positiveVersion
                 |> build
 
         built |> named ("OperationBinding." + ActKind.token kind)

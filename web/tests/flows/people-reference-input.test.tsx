@@ -50,7 +50,7 @@ const PeopleForm = ({ kind }: { kind: "people.grant" | "people.revoke" }) => {
     kind,
     affordance: operationAffordance(
       kind,
-      { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000001" },
       { "input:scope": "INSTALLATION" },
     ),
     current: null,
@@ -124,7 +124,7 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
   return reference;
 };
 const expectReferenceDescription = (reference: HTMLElement, locale: Locale, invalid: boolean) => {
-  const hint = locale.field["field.caseReference.hint"];
+  const hint = locale.field["ui.existingCaseSelectionHint"];
   const description = reference
     .getAttribute("aria-describedby")!
     .split(" ")
@@ -188,7 +188,11 @@ it.each(
     expect(preview).toHaveBeenCalledOnce();
     expect(preview.mock.calls[0]![0].input).toMatchObject({
       task: active ? "people.grant" : "people.revoke",
-      binding: { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      binding: {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: "10000000-0000-4000-8000-000000000001",
+      },
       inputs: { "input:scope": "CASE", "field:caseReference": "bad reference" },
     });
     expect(reference).toHaveAttribute("aria-invalid", "true");

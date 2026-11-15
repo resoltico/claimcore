@@ -10,11 +10,13 @@ type PeopleCommand =
         {
             Id: OperationId
             Principal: PrincipalKey
+            Expected: Revision
             Action: ValidPeopleAct
         }
 
     member this.OperationId = this.Id
     member this.Target = this.Principal
+    member this.ExpectedRevision = this.Expected
     member this.Act = this.Action
 
 [<RequireQualifiedAccess>]
@@ -137,15 +139,31 @@ module People =
         |> fun result -> Admission.map2 (fun value () -> value) result (grantCount act)
         |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
 
+    let reviewedRevision act value =
+        Revision.create value
+        |> Option.filter (fun revision ->
+            if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                revision > Revision.zero
+            else
+                revision = Revision.zero)
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(
+                Refusal.invalidInput (InputTarget.ExpectedRevision, Violation.ExpectedRevisionRange)
+            )
+        )
+
     let private prepareWith profile (request: PeopleRequest) =
-        match request.Act with
-        | PeopleAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | act ->
+        match request.Act, reviewedRevision request.Act request.ExpectedRevision with
+        | _, Error refusal -> Error refusal
+        | PeopleAct.ProvisionOwner _, _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | act, Ok expected ->
             Admission.map2
                 (fun id (principal, action) ->
                     {
                         Id = id
                         Principal = principal
+                        Expected = expected
                         Action = action
                     })
                 (operationIdentity request.OperationId)
@@ -161,19 +179,22 @@ module People =
         |> Result.map ignore
 
     /// Authored action checks do not require selected actor identity or service state.
-    let syntaxAction operationId act =
+    let syntaxAction operationId expected act =
         Admission.collect
             [
                 operationId
                 |> Option.map (operationIdentity >> Result.map ignore)
                 |> Option.defaultValue (Ok())
                 PeopleAct.traverse Ok prepareProfile act |> Result.map ignore
+                expected
+                |> Option.map (reviewedRevision act >> Result.map ignore)
+                |> Option.defaultValue (Ok())
                 grantCount act
                 scopeReference act
             ]
         |> InputValidation.ordered
 
-    let syntaxIntent operationId target act =
+    let syntaxIntent operationId target expected act =
         match act with
         | PeopleAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | _ ->
@@ -181,6 +202,9 @@ module People =
                 [
                     operationId
                     |> Option.map (operationIdentity >> Result.map ignore)
+                    |> Option.defaultValue (Ok())
+                    expected
+                    |> Option.map (reviewedRevision act >> Result.map ignore)
                     |> Option.defaultValue (Ok())
                     parsedPayload prepareProfile target act |> Result.map ignore
                 ]
@@ -204,6 +228,7 @@ module People =
                 {
                     Id = id
                     Principal = target
+                    Expected = Revision.zero
                     Action = PeopleAct.ProvisionOwner(profile, roles)
                 })
             (Admission.map2
@@ -465,13 +490,14 @@ module People =
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     /// Stored typed inputs obey permanent structure; current profile assertion policy is not re-parsed.
-    let restoreCommand operation principal (act: ValidPeopleAct) =
+    let restoreCommand operation expected principal (act: ValidPeopleAct) =
         grantCount act
         |> Result.bind (fun () -> scopeReference act)
         |> Result.map (fun () ->
             {
                 Id = operation
                 Principal = principal
+                Expected = expected
                 Action = act
             })
 
@@ -481,6 +507,7 @@ module People =
         (facts: PeopleFacts)
         target
         operation
+        expected
         principal
         (act: PeopleAct<AuthoredGrant, ActorProfile option>)
         =
@@ -548,6 +575,6 @@ module People =
                 | Some value -> Ok value
                 | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable))
                 act
-            |> Result.bind (restoreCommand operation principal)
+            |> Result.bind (restoreCommand operation expected principal)
             |> Result.bind (fun command -> decide facts command)
             |> Result.map (applyChange target principal facts.TargetActor)

@@ -39,6 +39,7 @@ let private registration =
 
 let private request reference =
     {
+        ExpectedFamilySequence = None
         OperationId = operationId
         CaseReference = reference
         ExpectedRevision = 0L

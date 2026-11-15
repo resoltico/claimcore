@@ -66,7 +66,7 @@ export const ActorOperation = ({
                 (kind) => model.entry.kind !== "people.admit" || kind === "people.admit",
               )
         }
-        disclosureAvailable={available}
+        disclosureAvailable={available && target.selectionCurrent}
         open={open}
         onClose={onClose}
       />

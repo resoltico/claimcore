@@ -212,6 +212,7 @@ let tests =
 
                 let reply: CaseReadModel =
                     {
+                        FamilySequence = Sequence.create 1L |> Option.get
                         Snapshot =
                             {
                                 CaseId =

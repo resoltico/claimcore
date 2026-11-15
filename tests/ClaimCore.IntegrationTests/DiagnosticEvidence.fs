@@ -336,7 +336,9 @@ let internal peopleEvidence fixture actor =
         let send n target act =
             (Service.execute
                 (actor: ServiceContext)
-                (OperationInput.People(peopleRequest (id fixture n) target act))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture n) target act
+                ))
                 (ct))
 
         let! registered =
@@ -400,7 +402,8 @@ let internal identityEvidence fixture actor =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 35)
                         reader
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -421,7 +424,70 @@ let internal identityEvidence fixture actor =
                 true
 
         acceptedPeople granted
-        return [ refused conflict; refused revision ], reader
+
+        let stalePerson =
+            reviewedPeopleRequest fixture.Store (id fixture 900101) reader PeopleAct.Enable
+
+        let! changedProfile =
+            Service.execute
+                actor
+                (OperationInput.People(
+                    reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 900102)
+                        reader
+                        (PeopleAct.SetProfile Inputs.actorProfile)
+                ))
+                ct
+
+        acceptedPeople changedProfile
+        let! actorChanged = Service.execute actor (OperationInput.People stalePerson) ct
+
+        let! steward =
+            grant
+                actor
+                (id fixture 900103)
+                owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople steward
+        let erase = request fixture 900104 "REACH-1" 1L (CaseAct.Bare BareAct.Erase)
+
+        let! child =
+            Service.execute
+                actor
+                (OperationInput.Note
+                    {
+                        OperationId = id fixture 900105
+                        Target = CaseSelector.Reference "REACH-1"
+                        Act = AuthoredNoteAct.AddNote "Family review witness"
+                    })
+                ct
+
+        accepted child |> ignore
+        let! familyChanged = execute actor erase
+
+        let! invalidFamily =
+            execute
+                actor
+                { erase with
+                    OperationId = id fixture 900106
+                    ExpectedFamilySequence = Some 0L
+                }
+
+        return
+            [
+                refused conflict
+                refused revision
+                refused actorChanged
+                refused familyChanged
+                refused invalidFamily
+            ],
+            reader
     }
 
 let internal principalEvidence fixture (actor: ServiceContext) =
@@ -438,6 +504,7 @@ let internal principalEvidence fixture (actor: ServiceContext) =
                 ] do
             let request: ClaimCore.Domain.PeopleRequest =
                 {
+                    ExpectedRevision = 0L
                     OperationId = id fixture (60 + index)
                     Target =
                         {
@@ -493,7 +560,8 @@ let private profileAndDirectoryEvidence fixture actor =
                     Service.execute
                         actor
                         (OperationInput.People(
-                            peopleRequest
+                            reviewedPeopleRequest
+                                fixture.Store
                                 (id fixture (600 + index * 2 + (if contact then 1 else 0)))
                                 target
                                 (PeopleAct.Register profile)
@@ -527,7 +595,8 @@ let private profileAndDirectoryEvidence fixture actor =
                 Service.execute
                     actor
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            fixture.Store
                             (id fixture (650 + index))
                             target
                             (PeopleAct.Admit

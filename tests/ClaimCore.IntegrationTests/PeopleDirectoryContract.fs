@@ -26,7 +26,8 @@ let private register fixture owner operation principal =
     Service.execute
         owner
         (OperationInput.People(
-            Inputs.peopleRequest
+            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                fixture.Store
                 (id fixture operation)
                 principal
                 (PeopleAct.Register Inputs.actorProfile)
@@ -157,7 +158,11 @@ let internal summaries fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id fixture 1015) person PeopleAct.Disable
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 1015)
+                        person
+                        PeopleAct.Disable
                 ))
                 token
 
@@ -178,7 +183,11 @@ let internal summaries fixture =
             Service.preview
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id fixture 1016) person PeopleAct.Enable
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 1016)
+                        person
+                        PeopleAct.Enable
                 ))
                 token
 

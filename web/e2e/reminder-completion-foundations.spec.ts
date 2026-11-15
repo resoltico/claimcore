@@ -184,6 +184,7 @@ const current = {
           {
             kind: "CASE",
             target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedFamilySequence: 10,
             expectedRevision: 3,
           },
           {},

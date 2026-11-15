@@ -36,7 +36,7 @@ credentials, customer records or database backups in source publications. The ar
 is a delivery aid, not a determination that every deployment meets every license obligation.
 
 Upstream: https://github.com/resoltico/claimcore.
-For the pending separate commercial route, see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
+For separate commercial licensing availability, see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
 
 ## Contribution terms
 

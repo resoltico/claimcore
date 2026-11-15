@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Text
 open System.Text.Json
+open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
 open CliCalls
@@ -47,6 +48,13 @@ let private verbArguments verb (bytes: byte array) =
        | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
        | _ -> [])
     @ revision
+    @ (if verb = "erase" then
+           [
+               "--expected-family-sequence"
+               binding.GetProperty("expectedFamilySequence").GetRawText()
+           ]
+       else
+           [])
     @ details
 
 let private assertDryRun (fixture: PublishedFixture.Fixture) arguments expected =
@@ -210,6 +218,7 @@ let private erasedView (tombstone: JsonElement) =
             "caseReference"
             "changedAt"
             "disposition"
+            "familySequence"
             "headline"
             "latestPayments"
             "mine"
@@ -222,6 +231,11 @@ let private erasedView (tombstone: JsonElement) =
             "work"
         ]
         "Erased views contain retained identity, empty work and current read advice"
+
+    Expect.isGreaterThan
+        (tombstone.GetProperty("familySequence").GetInt64())
+        0L
+        "Public family provenance survives private erasure"
 
     Expect.equal
         (tombstone.GetProperty("headline").GetString())
@@ -320,7 +334,36 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
     |> ignore
 
     for file, act in [ "08-reinstate.json", "reinstate"; "09-erase.json", "erase" ] do
-        let bytes = File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
+        let original = File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
+
+        let bytes =
+            if act = "erase" then
+                let observed =
+                    human
+                        fixture
+                        "synthetic-steward"
+                        "case.get"
+                        {|
+                            target =
+                                {|
+                                    kind = "REFERENCE"
+                                    caseReference = "DEMO-0001"
+                                |}
+                        |}
+                        0
+                    |> require "SUCCEEDED"
+
+                let document = JsonNode.Parse(ReadOnlySpan<byte> original) |> nonNull
+                let input = document["input"] |> nonNull
+                let binding = input["binding"] |> nonNull
+
+                binding["expectedFamilySequence"] <-
+                    JsonValue.Create(observed.GetProperty("familySequence").GetInt64())
+
+                Encoding.UTF8.GetBytes(document.ToJsonString())
+            else
+                original
+
         let arguments = verbArguments act bytes
         assertDryRun fixture arguments bytes
 
@@ -468,7 +511,7 @@ let private supplementary fixture =
             ClaimCore.TestSupport.Inputs.registration
 
     let operation = id ()
-    let input = caseSubmission operation reference 0L (CaseAct.Open values)
+    let input = caseSubmission operation reference 0L None (CaseAct.Open values)
 
     automation fixture "operation.preview" input 0 |> require "REVIEWED" |> ignore
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"

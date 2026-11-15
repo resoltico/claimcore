@@ -17,19 +17,7 @@ let private principal subject =
     |> Result.defaultWith (string >> failtest)
 
 let private people fixture number target act =
-    let kind, issuer, subject = PrincipalKey.parts target
-
-    OperationInput.People
-        {
-            OperationId = id fixture number
-            Target =
-                {
-                    Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                }
-            Act = act
-        }
+    OperationInput.People(reviewedPeopleRequest fixture.Store (id fixture number) target act)
 
 let private execute service input =
     task {
@@ -119,6 +107,7 @@ let private scenario (database: PostgresFixture.Database) =
                 owner
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence = None
                         OperationId = id fixture 7
                         CaseReference = "PG-NAMED-WORK"
                         ExpectedRevision = 0L
@@ -342,6 +331,12 @@ let private scenario (database: PostgresFixture.Database) =
                 owner
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence =
+                            Some(
+                                reviewedFamilySequence
+                                    fixture.Store
+                                    (CaseSelector.Reference "PG-NAMED-WORK")
+                            )
                         OperationId = id fixture 18
                         CaseReference = "PG-NAMED-WORK"
                         ExpectedRevision = 1L

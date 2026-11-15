@@ -79,7 +79,9 @@ const RequestFeedback = ({
           <NoticeView value={notice} />
         </p>
       )}
-      {!loading && message === null && empty ? <p>{p.text("ui.requests.empty")}</p> : null}
+      {!loading && message === null && notice === null && empty ? (
+        <p>{p.text("ui.requests.empty")}</p>
+      ) : null}
     </>
   );
 };
@@ -162,7 +164,7 @@ const AvailableRequests = ({
         dismissed={dismissed}
         message={page.message}
         notice={notice}
-        empty={page.items.length === 0}
+        empty={page.page !== null && page.cursor === null && page.items.length === 0}
       />
       {page.pages.map((observed) => (
         <ScreenView

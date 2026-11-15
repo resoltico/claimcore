@@ -89,7 +89,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-owner\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-owner\"}}",
       "serverIdentityValid": true
     },
     {
@@ -97,7 +97,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\" \"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\" \"}}",
       "serverIdentityValid": false
     },
     {
@@ -105,7 +105,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"\"}}",
       "serverIdentityValid": false
     },
     {
@@ -113,7 +113,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"Rīga العربية 🙂\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"Rīga العربية 🙂\"}}",
       "serverIdentityValid": true
     },
     {
@@ -121,7 +121,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
       "serverIdentityValid": false
     },
     {
@@ -129,7 +129,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
       "serverIdentityValid": false
     },
     {
@@ -137,7 +137,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://ISSUER.example/\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://ISSUER.example/\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -145,7 +145,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -153,7 +153,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/?tenant=x\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/?tenant=x\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -161,7 +161,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -197,7 +197,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-service\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-service\"}}",
       "serverIdentityValid": true
     },
     {
@@ -205,7 +205,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"ROBOT\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-subject\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"ROBOT\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"synthetic-subject\"}}",
       "serverIdentityValid": false
     },
     {
@@ -213,7 +213,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://user@issuer.example/\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://user@issuer.example/\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -221,7 +221,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/#fragment\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/#fragment\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -229,7 +229,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": true
     },
     {
@@ -237,7 +237,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"input:principal.subject\":\"synthetic\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"input:principal.subject\":\"synthetic\"}}",
       "serverIdentityValid": false
     },
     {
@@ -245,7 +245,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
       "serverIdentityValid": true
     },
     {
@@ -253,7 +253,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
       "serverIdentityValid": true
     },
     {
@@ -261,7 +261,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
       "serverIdentityValid": true
     },
     {
@@ -269,7 +269,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"HUMAN\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
       "serverIdentityValid": false
     },
     {
@@ -277,7 +277,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
       "serverIdentityValid": true
     },
     {
@@ -285,7 +285,7 @@
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
-      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\"},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
+      "text": "{\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"task\":\"people.register\",\"binding\":{\"kind\":\"PEOPLE\",\"expectedRevision\":0},\"inputs\":{\"input:profile.displayName\":\"Authored fixture account\",\"input:principal.kind\":\"SERVICE\",\"input:principal.issuer\":\"https://issuer.example/\",\"input:principal.subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"}}",
       "serverIdentityValid": false
     },
     {

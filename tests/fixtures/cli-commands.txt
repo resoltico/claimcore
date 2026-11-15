@@ -11,13 +11,13 @@ case close R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-5555
 case reopen R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
 case void R-1 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
 case reinstate R-1 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
-case erase R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+case erase R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --expected-family-sequence 1
 people register --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
-people grant 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
-people grant 10000000-0000-4000-8000-000000000001 --role CASE_READER --case-reference R-1 --operation-id 11111111-2222-7333-8444-555555555555
-people revoke 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555
-people enable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
-people disable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
+people grant 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
+people grant 10000000-0000-4000-8000-000000000001 --role CASE_READER --case-reference R-1 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
+people revoke 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
+people enable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
+people disable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 case get R-1
 case list
 case list --limit 5 --cursor abc
@@ -49,8 +49,8 @@ case timeline CASE-001 --filter work --limit 2
 case timeline R-1
 case timeline R-1 --filter facts --limit 5 --all
 case timeline R-1 --filter work --cursor abc --limit 1
-people set-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
-people erase-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
+people set-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored --expected-revision 1
+people erase-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --limit 1
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all
 people requests

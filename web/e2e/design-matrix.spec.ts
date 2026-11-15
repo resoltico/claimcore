@@ -32,7 +32,14 @@ const recordFrame = async (run: Run, frame: string) => {
   try {
     await checkFrame(run.page, run.dimension, frame, run.info);
   } catch (error) {
-    await run.page.screenshot({ path: run.info.outputPath(`failed-${frame}.png`), fullPage: true });
+    try {
+      await run.page.screenshot({
+        path: run.info.outputPath(`failed-${frame}.png`),
+        fullPage: true,
+      });
+    } catch {
+      // A closed/timed-out page must not replace the original failed check with a capture error.
+    }
     throw error;
   }
   await captureFrame(run.page, run.info, run.dimension, frame);

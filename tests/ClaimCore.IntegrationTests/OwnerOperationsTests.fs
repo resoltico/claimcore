@@ -25,7 +25,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 3 "Fresh installations use adopted format three"
+        Expect.equal initial.InstallationFormat 4 "Fresh installations use adopted format four"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -110,7 +110,8 @@ let private actionState (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 12)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -183,7 +184,8 @@ let private actionState (database: PostgresFixture.Database) =
             (context.Runtime.Basis.BusinessDate, "Etc/UTC")
             "Replay observation uses the installation business calendar"
 
-        let sessions = SessionStore(database.RuntimeSource) :> ISessionStore
+        let sessions =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! session =
             sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
@@ -237,7 +239,8 @@ let private rebuildMode (database: PostgresFixture.Database) =
 
 let private pruning (database: PostgresFixture.Database) =
     task {
-        let sessions = SessionStore(database.RuntimeSource) :> ISessionStore
+        let sessions =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! live =
             sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
@@ -255,7 +258,7 @@ let private pruning (database: PostgresFixture.Database) =
             (8L, 7L)
             "Independent live and expired population"
 
-        let! report = Housekeeping.prune database.OwnerSource 2 token
+        let! report = Housekeeping.prune database.OwnerSource database.Installation 2 token
 
         Expect.equal report.SessionsDeleted 2L "Housekeeping deletes only the bounded locked batch"
         Expect.equal report.AccessRequestsDeleted 0L "No access hints were expired"
@@ -373,7 +376,8 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
 
 let private pruneConcurrency (database: PostgresFixture.Database) =
     task {
-        let sessions = SessionStore(database.RuntimeSource) :> ISessionStore
+        let sessions =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! live =
             sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
@@ -384,8 +388,8 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
                 "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800 FROM generate_series(1,8) n"
                 [||]
 
-        let first = Housekeeping.prune database.OwnerSource 4 token
-        let second = Housekeeping.prune database.OwnerSource 4 token
+        let first = Housekeeping.prune database.OwnerSource database.Installation 4 token
+        let second = Housekeeping.prune database.OwnerSource database.Installation 4 token
         let renewal = sessions.Renew(live.Value, [| 2uy |], token)
         let logout = sessions.Remove(live.Value, SessionEndReason.Logout, token)
         let! batches = Task.WhenAll(first, second)

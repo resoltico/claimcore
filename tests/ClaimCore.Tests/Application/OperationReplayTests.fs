@@ -29,7 +29,7 @@ let private profile name =
 let private nonce number () =
     Array.init 32 (fun index -> byte ((number + index) % 256))
 
-let private people number (head: LedgerPosition) executor target act saved =
+let private people number (head: LedgerPosition) executor target expected act saved =
     let header =
         {
             OperationHeader.InstallationId = installation
@@ -45,6 +45,7 @@ let private people number (head: LedgerPosition) executor target act saved =
         header
         (CommandSkeleton.People
             {
+                ExpectedRevision = Revision.create expected |> Option.get
                 TargetActorId = actor target
                 Principal = principal target
                 Act = act
@@ -73,6 +74,7 @@ let private owner () =
         LedgerPosition.genesis
         (actor 1)
         1
+        0L
         (PeopleAct.ProvisionOwner(0, People.initialOwnerRoles))
         (Some(profile "Owner"))
 
@@ -146,6 +148,7 @@ let tests =
                             initial.Head
                             (actor 1)
                             2
+                            0L
                             (PeopleAct.Admit { Profile = 0; Grants = grants })
                             (Some(profile "Removed profile"))
 
@@ -164,7 +167,8 @@ let tests =
                         (Replay.erasure beforeErase)
                         "Unexplained private loss remains corruption"
 
-                    let erase = people 3 beforeErase.Head (actor 1) 2 PeopleAct.EraseProfile None
+                    let erase =
+                        people 3 beforeErase.Head (actor 1) 2 1L PeopleAct.EraseProfile None
 
                     let after = append beforeErase erase
 
@@ -178,6 +182,7 @@ let tests =
                             after.Head
                             (actor 1)
                             2
+                            2L
                             (PeopleAct.SetProfile 0)
                             (Some(profile "Later profile"))
 
@@ -214,6 +219,7 @@ let tests =
                         initial.Head
                         (actor 2)
                         2
+                        0L
                         (PeopleAct.Admit { Profile = 0; Grants = grants })
                         (Some(profile "Untrusted new owner"))
                     |> erased
@@ -238,11 +244,12 @@ let tests =
                             initial.Head
                             (actor 1)
                             2
+                            0L
                             (PeopleAct.Register 0)
                             (Some(profile "Still available"))
 
                     let before = append initial registered
-                    let erase = people 3 before.Head (actor 1) 2 PeopleAct.EraseProfile None
+                    let erase = people 3 before.Head (actor 1) 2 1L PeopleAct.EraseProfile None
 
                     match Replay.append installation None before erase with
                     | Error finding ->
@@ -267,6 +274,11 @@ let erasedPayments =
                 let input =
                     Case.parse
                         {
+                            ExpectedFamilySequence =
+                                if CaseAct.kind act = CaseActKind.Erase then
+                                    Some(Sequence.value head.Sequence)
+                                else
+                                    None
                             OperationId = OperationId.value (operation number)
                             CaseReference = "REPLAY-PAYMENTS"
                             ExpectedRevision =
@@ -289,6 +301,7 @@ let erasedPayments =
                 let scope =
                     CommandSkeleton.Case
                         {
+                            ExpectedFamilySequence = input.ExpectedFamilySequence
                             CaseId = decision.After.CaseId
                             Reference = decision.After.Reference
                             ExpectedRevision = input.ExpectedRevision

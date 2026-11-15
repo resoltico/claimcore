@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, goToView } from "./workspace-navigation";
@@ -26,14 +27,14 @@ const ownerGrant = async (page: Page, active: boolean) => {
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: active ? "people.grant" : "people.revoke",
-    binding: {
-      kind: "PEOPLE",
-      actorId: await selectedActor(page, {
+    binding: await reviewedPeopleBinding(
+      page,
+      await selectedActor(page, {
         kind: "HUMAN",
         issuer: source.issuer,
         subject: source.stewardSubject,
       }),
-    },
+    ),
     inputs: { "input:role": "OWNER", "input:scope": "INSTALLATION" },
   });
 };
@@ -54,7 +55,7 @@ const prepareAdmission = async (page: Page, issuer: string, subject: string) => 
     expect(JSON.parse(captured.bytes.toString("utf8"))).toEqual({
       operationId: identity.operationId,
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       inputs: {
         "input:principal.kind": "SERVICE",
         "input:principal.issuer": issuer,

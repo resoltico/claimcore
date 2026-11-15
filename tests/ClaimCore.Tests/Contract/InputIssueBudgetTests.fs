@@ -15,6 +15,7 @@ let tests =
         (fun () ->
             let request: PeopleRequest =
                 {
+                    ExpectedRevision = 0L
                     OperationId = Guid.Empty
                     Target =
                         {

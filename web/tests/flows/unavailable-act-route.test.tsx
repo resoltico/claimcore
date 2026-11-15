@@ -26,7 +26,12 @@ const mount = (value: CurrentCase, act: string) => {
       setLocked={vi.fn()}
       committed={vi.fn()}
       refresh={0}
-      caseNavigation={{ selectCase: vi.fn(), openCase: vi.fn(), backToCases: vi.fn() }}
+      caseNavigation={{
+        linkNavigation: vi.fn(),
+        selectCase: vi.fn(),
+        openCase: vi.fn(),
+        backToCases: vi.fn(),
+      }}
     />,
   );
   return { view, get, preview, execute };

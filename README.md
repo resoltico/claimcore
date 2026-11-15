@@ -41,6 +41,18 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 | Build, change and verify source | [Contributing](docs/contributing.md) |
 | Understand terms and language status | [Glossary](docs/glossary.md) |
 
+## Scope comparison
+
+| Need | ClaimCore provides | Operator or external responsibility |
+| --- | --- | --- |
+| Record case handling | Facts, responsibility, notes, reminders, payment decisions and entries | Coverage adjudication and real-world verification |
+| Control access | OIDC principals, scoped roles and current authorization on reads and writes | Identity-provider membership and account security |
+| Coordinate changes | Reviewed versions, atomic acceptance and exact-operation recovery | Resolving business conflicts and uncertain external actions |
+| Inspect recorded work | Retained changes, verification and independently retained checkpoints | Evidence custody and protection against a trusted administrator rewriting it |
+| Remove private contents | Case/profile erasure within the live installation | Retention and disposal of backups, exports and other copies |
+| Run the service | HTTPS server, CLI and a local evaluation Compose setup | Production deployment, monitoring, certificates and backups |
+| Handle money | Payment decisions and assertions of actual payments | Transfers, refunds, banking and accounting integrations |
+
 ## Languages
 
 English is the source. The interface also offers Latvian, Arabic, Korean, Japanese, Simplified Chinese,
@@ -48,13 +60,8 @@ Traditional Chinese, Spanish and German. Language and regional formats are indep
 RTL. Release qualification requires current translations in every offered language. Translations are
 AI-assisted and await human linguistic review; see the [language status](docs/glossary.md#language-review).
 
-See the current [English workspace](docs/images/foundations/case-workspace-light.png),
-[Arabic RTL payment cards](docs/images/foundations/payment-cards-ar.png) and the
-[workspace examples](docs/workspace-examples.md).
-
-
 Use [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTING.md) for reports and changes.
 The owner reviews and merges work; releases distribute source through
 [GitHub Releases](https://github.com/resoltico/claimcore/releases).
-Original code and documentation use [AGPL-3.0-only](LICENSE). See [licensing, source and contribution terms](PROJECT-NOTICE.md) and the [pending commercial route](LICENSE-COMMERCIAL.md). Third-party terms remain separate.
+Original code and documentation use [AGPL-3.0-only](LICENSE). See [licensing, source and contribution terms](PROJECT-NOTICE.md) and the [commercial licensing status](LICENSE-COMMERCIAL.md). Third-party terms remain separate.
 [CHANGELOG.md](CHANGELOG.md) owns release summaries.

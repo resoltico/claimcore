@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "محو تفاصيل هذا الملف وأعماله وتذكيراته نهائيًا من ClaimCore. يبقى مرجع الملف وقائمة التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
-    "source": "8705b2ea28a6"
+    "text": "احذف نهائيًا التفاصيل والمدفوعات والأعمال والتذكيرات والملاحظات الحالية والمحفوظة لهذا الملف. يبقى المرجع وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "محو الملف الشخصي",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "إصدار الملف الذي راجعته",
-    "source": "8f3d37032769"
+    "text": "الإصدار الذي تمت مراجعته",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "إصدار العمل الذي راجعته",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "إصدار الملف الذي راجعته.",
-    "source": "8965c7efb1dc"
+    "text": "استخدم إصدار العنصر الذي راجعته. يتطلب إنشاء الحساب صفرًا.",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "راجع أحدث بيانات الملف قبل تغييره.",
-    "source": "de14cae9e98d"
+    "text": "راجع أحدث حالة للعنصر قبل تغييره.",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "لماذا يلزم هذا التغيير.",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "يؤدي هذا إلى محو تفاصيل الملف وعمله وتذكيراته نهائيًا من ClaimCore. ويبقى المرجع وسجل التغييرات.",
-    "source": "e774df6acd21"
+    "text": "سيؤدي هذا إلى حذف تفاصيل الملف ومدفوعاته وأعماله وتذكيراته وملاحظاته الحالية والمحفوظة نهائيًا. يبقى المرجع وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "سُجّل الحساب.",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "حالة المطالبة",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "تغير هذا الحساب منذ مراجعتك. راجع أحدث حالة للحساب قبل المحاولة مجددًا.",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "تغيرت هذا الملف أو أعمالها أو ملاحظاتها أو تذكيراتها أو مدفوعاتها منذ مراجعة المحو. راجع الملف كاملًا مجددًا.",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "إصدار الملف الكامل الذي تمت مراجعته",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "استخدم تسلسل الملف الكامل الذي يوفره case.get للملف التي راجعتها للمحو.",
+    "source": "8d258a9cf42b"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "راجع الملف وجميع أعمالها وملاحظاتها وتذكيراتها ومدفوعاتها قبل المحو.",
+    "source": "930c5b2e0f56"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "أدخل UUID غير فارغ للملف.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "اختر مرجع ملف واحدًا أو معرّفه لنطاق ملف؛ ولا تستخدم أيًا منهما لجميع الملفات.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "أدخل UUID غير فارغ للملف.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "اختر مرجع ملف واحدًا أو معرّفه لنطاق ملف؛ ولا تستخدم أيًا منهما لجميع الملفات.",
+    "source": "8cd27490b35d"
   }
 }

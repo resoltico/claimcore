@@ -509,7 +509,7 @@ module PresentationCodecs =
                     | TaskId.Operation task -> Some(OperationSubmissionCodecs.binding task)
                     | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
                         Some(
-                            record (OperationBinding.People None)
+                            record (OperationBinding.People(None, 0L))
                             |> fixedField "kind" "PEOPLE"
                             |> build
                         )

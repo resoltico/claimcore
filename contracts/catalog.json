@@ -452,6 +452,13 @@
       "scalar": null
     },
     {
+      "name": "expectedFamilySequence",
+      "labelId": "field.expectedFamilySequence.label",
+      "hintId": "field.expectedFamilySequence.hint",
+      "ruleId": "field.expectedFamilySequence.rule",
+      "scalar": null
+    },
+    {
       "name": "reason",
       "labelId": "field.reason.label",
       "hintId": "field.reason.hint",
@@ -1640,5 +1647,5 @@
       "minorUnits": 2
     }
   ],
-  "productVersion": "0.17.0"
+  "productVersion": "0.18.0"
 }

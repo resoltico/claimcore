@@ -50,7 +50,7 @@ let private lockedRenewal (database: PostgresFixture.Database) =
                 [||]
                 token
 
-        let! batch = Housekeeping.prune database.RuntimeSource 2 token
+        let! batch = Housekeeping.prune database.RuntimeSource database.Installation 2 token
 
         Expect.equal
             (batch.SessionsDeleted, batch.AccessRequestsDeleted)
@@ -65,7 +65,7 @@ let private lockedRenewal (database: PostgresFixture.Database) =
                 token
 
         do! transaction.CommitAsync token
-        let! next = Housekeeping.prune database.RuntimeSource 2 token
+        let! next = Housekeeping.prune database.RuntimeSource database.Installation 2 token
 
         Expect.equal
             (next.SessionsDeleted, next.AccessRequestsDeleted)
@@ -100,8 +100,8 @@ let private concurrentHosts (database: PostgresFixture.Database) =
 
         let! batches =
             Task.WhenAll(
-                Housekeeping.prune database.RuntimeSource 4 token,
-                Housekeeping.prune database.RuntimeSource 4 token
+                Housekeeping.prune database.RuntimeSource database.Installation 4 token,
+                Housekeeping.prune database.RuntimeSource database.Installation 4 token
             )
 
         Expect.equal

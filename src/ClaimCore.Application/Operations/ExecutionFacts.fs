@@ -16,6 +16,7 @@ type internal CaseFacts =
         ExistingOperation: RetainedOperation option
         Case: StoredCase option
         State: CaseSubjectState option
+        FamilySequence: Sequence
         Family: CaseFamilyState option
         Work: StoredWork option
         PendingReminderDue: CalendarDate list
@@ -81,6 +82,12 @@ module internal ExecutionFacts =
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! record = findCase tx selector
+
+            let! familySequence =
+                match record with
+                | Some record -> tx.CaseFamilySequence record.CaseId
+                | None -> System.Threading.Tasks.Task.FromResult Sequence.zero
+
             let! maintenance = tx.Maintenance()
             let! frontier = tx.ExpiredBefore()
 
@@ -127,6 +134,7 @@ module internal ExecutionFacts =
                     ExistingOperation = existing
                     Case = record
                     State = state
+                    FamilySequence = familySequence
                     Family = family
                     Work = work
                     PendingReminderDue = pendingDue

@@ -373,22 +373,28 @@ module internal VerificationRows =
                         let profiles =
                             expected
                             |> Map.map (fun id row ->
-                                id, row.Actor.Profile, row.DisplayNameSearch, row.ContactSearch)
+                                id,
+                                row.Actor.Profile,
+                                row.DisplayNameSearch,
+                                row.ContactSearch,
+                                row.Revision)
 
                         return!
                             compareRows
                                 connection
                                 VerificationFinding.PeopleProfileProjection
-                                (fun (id, _, _, _) -> id)
+                                (fun (id, _, _, _, _) -> id)
                                 profiles
-                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search FROM claimcore.actors ORDER BY actor_id"
+                                "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision FROM claimcore.actors ORDER BY actor_id"
                                 (fun row ->
                                     let actor = Projections.actorRow row
 
                                     actor.ActorId,
                                     actor.Profile,
                                     DatabaseSession.optional<string> 7 row,
-                                    DatabaseSession.optional<string> 8 row)
+                                    DatabaseSession.optional<string> 8 row,
+                                    (DatabaseSession.value<int64> 9 row
+                                     |> DatabaseSession.admitted Revision.create))
                                 token
         }
 

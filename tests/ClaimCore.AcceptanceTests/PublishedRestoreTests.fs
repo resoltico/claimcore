@@ -60,7 +60,9 @@ let private openFrame operationId reference =
             ]
             ClaimCore.TestSupport.Inputs.registration
 
-    frame "operation.execute" (caseSubmission operationId reference 0L (CaseAct.Open registration))
+    frame
+        "operation.execute"
+        (caseSubmission operationId reference 0L None (CaseAct.Open registration))
 
 let private bearer
     (fixture: PublishedFixture.Fixture)

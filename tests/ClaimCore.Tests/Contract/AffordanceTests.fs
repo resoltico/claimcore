@@ -11,7 +11,14 @@ let private parent =
     CaseId.create (Guid.Parse "10000000-0000-4000-8000-000000000001") |> Option.get
 
 let private action () =
-    TaskAffordances.caseAction CaseActKind.Close parent Revision.first Map.empty [] Map.empty
+    TaskAffordances.caseAction
+        CaseActKind.Close
+        parent
+        Revision.first
+        Sequence.zero
+        Map.empty
+        []
+        Map.empty
 
 let private row key actions =
     {
@@ -53,7 +60,7 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 value.Task
-                                (OperationBinding.People None)
+                                (OperationBinding.People(None, 0L))
                                 Map.empty
                                 []
                                 Map.empty
@@ -97,7 +104,7 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 (TaskId.Operation(ActKind.People PeopleActKind.Admit))
-                                (OperationBinding.People None)
+                                (OperationBinding.People(None, 0L))
                                 seed
                                 []
                                 Map.empty

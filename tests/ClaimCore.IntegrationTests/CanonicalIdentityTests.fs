@@ -108,7 +108,8 @@ let private peoplePairs (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 901)
                         target
                         (PeopleAct.Register Inputs.actorProfile)
@@ -129,7 +130,8 @@ let private peoplePairs (database: PostgresFixture.Database) =
                 9321, PeopleAct.Revoke, PeopleActKind.Revoke
             ] do
             let left =
-                peopleRequest
+                reviewedPeopleRequest
+                    database.Fixture.Store
                     (id database.Fixture number)
                     target
                     (act (grant "Canonical-Reference"))
@@ -203,7 +205,8 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 920)
                         outsider
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -361,7 +364,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
 
         let disable =
             sprintf
-                """{"operationId":"%s","task":"people.disable","binding":{"kind":"PEOPLE","actorId":"%s"},"inputs":{}}"""
+                """{"operationId":"%s","task":"people.disable","binding":{"kind":"PEOPLE","actorId":"%s","expectedRevision":1},"inputs":{}}"""
                 ((id database.Fixture 9403).ToString("D"))
                 (selected.ToString("D"))
             |> decode

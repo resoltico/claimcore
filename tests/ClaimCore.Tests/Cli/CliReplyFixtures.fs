@@ -13,6 +13,7 @@ let id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
 let peopleRequest: PeopleRequest =
     {
+        ExpectedRevision = 0L
         OperationId = id
         Target =
             {

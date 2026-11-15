@@ -33,6 +33,7 @@ let entriesEvidence () =
                 actor
                 (OperationInput.Case
                     {
+                        ExpectedFamilySequence = None
                         OperationId = next ()
                         Target = target
                         ExpectedRevision = revision
@@ -60,6 +61,31 @@ let entriesEvidence () =
                         BusinessField.PaidCurrency, currency
                     ]
             )
+
+        // Raw authoring errors are admitted refusals, not malformed transport or typed grants.
+        for selection in [ [ TaskInputId.CaseId, SubmissionValue.Text "not-a-case-id" ]; [] ] do
+            let envelope =
+                {
+                    SubmissionEnvelope.OperationId = next ()
+                    Task = ActKind.People PeopleActKind.Grant
+                    Binding = OperationBinding.People(Some(id fixture 7998), 1L)
+                    Inputs =
+                        Map.ofList (
+                            [
+                                TaskInputId.Target InputTarget.Role,
+                                SubmissionValue.Text "CASE_READER"
+                                TaskInputId.Scope, SubmissionValue.Text "CASE"
+                            ]
+                            @ selection
+                        )
+                }
+
+            let submission =
+                OperationSubmission.admit envelope
+                |> Result.defaultWith (fun () -> failtest "Well-typed grant authoring is admitted")
+
+            let! reply = Service.executeSubmission actor submission ct
+            results.Add(refused reply)
 
         let! opened = case 0L (AuthoredCaseAct.Open registration)
         accepted opened |> ignore
@@ -183,6 +209,7 @@ let technicalCountEvidence () =
 
     let request =
         {
+            ExpectedFamilySequence = None
             OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
             CaseReference = "TECHNICAL-COUNT"
             ExpectedRevision = 1L

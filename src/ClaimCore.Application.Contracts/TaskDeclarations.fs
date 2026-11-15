@@ -96,7 +96,7 @@ module TaskChoiceId =
             Some TaskChoiceId.DecisionCorrection
         | TaskInputId.Target(InputTarget.Group RecordGroup.Payment)
         | TaskInputId.Target(InputTarget.Field _)
-        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
+        | TaskInputId.Target(InputTarget.OperationId | InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.Reason | InputTarget.PrincipalIssuer | InputTarget.PrincipalSubject | InputTarget.CaseId | InputTarget.ProfileDisplayName | InputTarget.ProfileContact | InputTarget.DirectorySearch | InputTarget.Grants | InputTarget.Limit | InputTarget.Cursor | InputTarget.Text | InputTarget.ReminderId | InputTarget.NoteId | InputTarget.NoteText | InputTarget.PaymentId | InputTarget.ReminderAction | InputTarget.ReminderDueDate)
         | TaskInputId.ActorId
         | TaskInputId.CaseId
         | TaskInputId.ResponsibleActorFilter
@@ -148,7 +148,7 @@ module TaskDeclarations =
         let source =
             match input with
             | TaskInputId.Target InputTarget.OperationId -> InputSource.OperationIdentity
-            | TaskInputId.Target(InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision) ->
+            | TaskInputId.Target(InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision) ->
                 InputSource.ExpectedRevision
             | _ -> InputSource.Authored
 
@@ -255,8 +255,8 @@ module TaskDeclarations =
                     | CaseActKind.Reinstate -> [ required (target InputTarget.Reason) ]
                     | CaseActKind.WithdrawDecision
                     | CaseActKind.Close
-                    | CaseActKind.Reopen
-                    | CaseActKind.Erase -> []
+                    | CaseActKind.Reopen -> []
+                    | CaseActKind.Erase -> [ required (target InputTarget.ExpectedFamilySequence) ]
 
                 operation :: caseTarget :: revision :: values, []
             | TaskId.Operation(ActKind.People kind) ->
@@ -284,7 +284,7 @@ module TaskDeclarations =
                     if kind = PeopleActKind.Register || kind = PeopleActKind.Admit then
                         principal
                     else
-                        [ required TaskInputId.ActorId ]
+                        [ required TaskInputId.ActorId; revision ]
 
                 operation :: (identity @ values), collections
             | TaskId.Operation(ActKind.Work WorkActKind.UpdateWork) ->

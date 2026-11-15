@@ -27,7 +27,7 @@ it.each([
   { retained: false, interrupt: false },
   { retained: true, interrupt: true },
 ])(
-  "returns to the exact work query with row availability=$retained and user override=$interrupt and leaves history state empty",
+  "returns to the exact work query with row availability=$retained and user override=$interrupt and retains only public history entry metadata",
   async ({ retained, interrupt }) => {
     stubDashboardContext();
     const page = (includeRow: boolean) =>
@@ -149,6 +149,15 @@ it.each([
       });
       expect(scroll).not.toHaveBeenCalled();
     }
-    expect(history.state).toBeNull();
+    const historyValue: unknown = history.state;
+    if (typeof historyValue !== "object" || historyValue === null) {
+      throw new Error("Expected managed history metadata");
+    }
+    expect(Object.keys(historyValue)).toEqual(["claimcoreNavigation"]);
+    const metadata: unknown = Reflect.get(historyValue, "claimcoreNavigation");
+    if (typeof metadata !== "object" || metadata === null) {
+      throw new Error("Expected entry identity");
+    }
+    expect(Object.keys(metadata).sort()).toEqual(["group", "index", "key"]);
   },
 );

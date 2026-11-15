@@ -42,8 +42,22 @@ let private canaryLog () =
 
         Expect.equal
             (names entry.RootElement)
-            (set [ "endpoint"; "outcome"; "status"; "durationMs"; "actorId"; "operationId" ])
+            (set
+                [
+                    "endpoint"
+                    "outcome"
+                    "status"
+                    "durationMs"
+                    "actorId"
+                    "operationId"
+                    "correlation"
+                ])
             "Closed field set"
+
+        Expect.notEqual
+            (entry.RootElement.GetProperty("correlation").GetGuid())
+            Guid.Empty
+            "Internal request correlation"
 
         Expect.isFalse (host.Log.Contains canary) "No case reference"
         host.ClearLog()

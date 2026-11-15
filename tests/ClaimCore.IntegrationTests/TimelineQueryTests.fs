@@ -188,7 +188,8 @@ let tests =
                     execute
                         owner
                         (OperationInput.People(
-                            peopleRequest
+                            reviewedPeopleRequest
+                                fixture.Store
                                 (id fixture 99210)
                                 principal
                                 (PeopleAct.Register Inputs.actorProfile)
@@ -283,7 +284,11 @@ let tests =
                     execute
                         owner
                         (OperationInput.People(
-                            peopleRequest (id fixture 99215) principal PeopleAct.Disable
+                            reviewedPeopleRequest
+                                fixture.Store
+                                (id fixture 99215)
+                                principal
+                                PeopleAct.Disable
                         ))
 
                 disabled |> ignore

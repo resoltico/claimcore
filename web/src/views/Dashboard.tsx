@@ -1,3 +1,5 @@
+import { InlineNoteDraftProvider, InlineNoteRecovery } from "./case/InlineNoteDraft";
+import { LinkNavigationContext } from "../routing/LinkNavigationContext";
 import type { Link, HumanReadDocument_context, TaskId } from "@contracts/client";
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
@@ -32,7 +34,7 @@ import { NoticeView, Message } from "../presentation/Message";
 import { useRoute } from "../routing/useRoute";
 import { type Route, casePath } from "../routing/routes";
 
-import { navigate, takeRouteFocus } from "../routing/navigation";
+import { navigate, takeRouteFocus, setRouteFocusOwner } from "../routing/navigation";
 const category = (route: Route): "cases" | "people" | "recovery" | "peopleHistory" | "settings" => {
   switch (route.screen) {
     case "people":
@@ -307,14 +309,25 @@ type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "peopleAvai
   noViews: boolean;
   tasks: ReadonlyArray<TaskId>;
   known: boolean;
+  checking: boolean;
 };
-const WorkspaceArea = ({ views, noViews, tasks, known, ...routing }: WorkspaceRouteProps) => {
+const WorkspaceArea = ({
+  views,
+  noViews,
+  tasks,
+  known,
+  checking,
+  ...routing
+}: WorkspaceRouteProps) => {
   const active = category(routing.route);
   return (
     <WorkspaceContents
       key={active}
       advertised={routing.route.screen === "missing" || availableRoute(routing.route, views, tasks)}
-      retainOperation={["people", "caseAct", "newCase"].includes(routing.route.screen)}
+      retainOperation={
+        ["people", "caseAct", "newCase"].includes(routing.route.screen) ||
+        (routing.route.screen === "case" && checking)
+      }
       noViews={routing.route.screen === "home" && noViews}
       known={known}
       fallback={<WorkspaceUnavailable route={routing.route} />}
@@ -323,6 +336,7 @@ const WorkspaceArea = ({ views, noViews, tasks, known, ...routing }: WorkspaceRo
         {...routing}
         peopleAvailable={views.includes("people.list")}
         caseAvailable={views.includes("case.list")}
+        caseAuthoringAvailable={views.includes("case.list") || checking}
       />
     </WorkspaceContents>
   );
@@ -503,13 +517,20 @@ export const Dashboard = () => {
   const cache = useEndpointCache();
   const { owner, session } = useVerifiedWorkspaceOwner(actorContext);
   const ownerIdentity = owner === null ? null : `${owner.installationId}:${owner.actorId}`;
+  const focusScope = ownerIdentity === null ? null : `${session.epoch}:${ownerIdentity}`;
+  useLayoutEffect(() => {
+    setRouteFocusOwner(focusScope);
+    return () => {
+      setRouteFocusOwner(null);
+    };
+  }, [focusScope]);
   const lockOwner = matchingLockOwner(owner, session, requester);
   const requesterRefused = context.result !== null && isDisclosureRefused(context.result);
   const feedback = useAcceptanceFeedback(lockOwner, requester, requesterRefused);
   const caseNavigation = useCaseNavigation(feedback.owner);
   const { locked, change: setLocked } = useWorkspaceMutationLock(lockOwner);
   const [refresh, setRefresh] = useState(0);
-  const content = useRouteHeading(route, ownerIdentity, !context.loading);
+  const content = useRouteHeading(route, focusScope, !context.loading);
   const businessDate = useBusinessDate(actorContext);
   const tasks = requesterTasks(actorContext);
   const committed = (receipt: CaseLinkedReceipt, operationId: string) => {
@@ -522,64 +543,70 @@ export const Dashboard = () => {
   };
   const inactive = requester !== null && requester.subject.state !== "ACTIVE" ? requester : null;
   return (
-    <RequesterContext value={actorContext}>
-      <WorkspacePresence
-        inactive={inactive}
-        retained={retainInactiveWorkspace(requester, owner, session)}
-        locked={locked}
-        onCheck={context.reload}
-        feedback={{ message: context.message, loading: context.loading }}
-      >
-        <RecoveryProvider identity={requesterRefused ? null : lockOwner}>
-          <WorkspaceViewsProvider>
-            <div className="workspace-shell">
-              <WorkspaceHeader
-                route={route}
-                presentation={presentation}
-                openCase={caseNavigation.openCase}
-                active={route.screen === "reminders" ? "reminders" : active}
-                views={views}
-                tasks={tasks}
-                locked={locked}
-              />
-              <main className="app-shell">
-                <AcceptedToast
+    <InlineNoteDraftProvider owner={lockOwner}>
+      <RequesterContext value={actorContext}>
+        <WorkspacePresence
+          inactive={inactive}
+          retained={retainInactiveWorkspace(requester, owner, session)}
+          locked={locked}
+          onCheck={context.reload}
+          feedback={{ message: context.message, loading: context.loading }}
+        >
+          <RecoveryProvider identity={requesterRefused ? null : lockOwner}>
+            <InlineNoteRecovery />
+            <WorkspaceViewsProvider>
+              <div className="workspace-shell">
+                <WorkspaceHeader
                   route={route}
-                  receipt={feedback.receipt}
-                  close={() => {
-                    feedback.clear();
-                  }}
+                  presentation={presentation}
+                  openCase={caseNavigation.openCase}
+                  active={route.screen === "reminders" ? "reminders" : active}
+                  views={views}
+                  tasks={tasks}
+                  locked={locked}
                 />
-                <RecoveryBanner />
-                {businessDate.changedDate === null ? null : (
-                  <BusinessDateNotice
-                    date={businessDate.changedDate}
-                    refresh={businessDate.refresh}
-                  />
-                )}
-                <WorkspaceStatus context={context} />
-                {presentation === null ? null : (
-                  <ScreenView view={presentation} roles={["NOTICE"]} />
-                )}
-                <div ref={content}>
-                  <WorkspaceRoute
-                    key={ownerIdentity}
+                <main className="app-shell">
+                  <AcceptedToast
                     route={route}
-                    caseNavigation={caseNavigation}
-                    views={views}
-                    noViews={noViews}
-                    tasks={tasks}
-                    known={actorContext !== null}
-                    setLocked={setLocked}
-                    committed={committed}
-                    refresh={refresh}
+                    receipt={feedback.receipt}
+                    close={() => {
+                      feedback.clear();
+                    }}
                   />
-                </div>
-              </main>
-            </div>
-          </WorkspaceViewsProvider>
-        </RecoveryProvider>
-      </WorkspacePresence>
-    </RequesterContext>
+                  <RecoveryBanner />
+                  {businessDate.changedDate === null ? null : (
+                    <BusinessDateNotice
+                      date={businessDate.changedDate}
+                      refresh={businessDate.refresh}
+                    />
+                  )}
+                  <WorkspaceStatus context={context} />
+                  {presentation === null ? null : (
+                    <ScreenView view={presentation} roles={["NOTICE"]} />
+                  )}
+                  <div ref={content}>
+                    <LinkNavigationContext value={caseNavigation.linkNavigation}>
+                      <WorkspaceRoute
+                        key={ownerIdentity}
+                        route={route}
+                        caseNavigation={caseNavigation}
+                        views={views}
+                        noViews={noViews}
+                        tasks={tasks}
+                        known={actorContext !== null}
+                        checking={context.loading}
+                        setLocked={setLocked}
+                        committed={committed}
+                        refresh={refresh}
+                      />
+                    </LinkNavigationContext>
+                  </div>
+                </main>
+              </div>
+            </WorkspaceViewsProvider>
+          </RecoveryProvider>
+        </WorkspacePresence>
+      </RequesterContext>
+    </InlineNoteDraftProvider>
   );
 };

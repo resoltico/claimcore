@@ -16,11 +16,7 @@ import {
 } from "./operationDisclosure";
 import { sameOwnerScope } from "../protocol/ownerScope";
 import { editDraft, editDraftFields, captureDraftDate, clearDraftDates } from "./operationDraft";
-import {
-  conflictFromRefusal,
-  sameConflictTarget,
-  rebasedOperationBinding,
-} from "./operationConflict";
+import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
 import { operationEntry } from "../protocol/operationCatalog";
 import { taskForAct } from "../protocol/taskCatalog";
 import { inputErrors } from "./inputErrors";
@@ -253,7 +249,7 @@ const reviewLatest = (
       draft: {
         ...state.draft,
         values: action.values,
-        binding: rebasedOperationBinding(action.source.prepared.input, snapshot.latest.revision),
+        binding: action.source.prepared.input.binding,
         generation: state.draft.generation + 1,
       },
       disclosed: {
@@ -892,6 +888,7 @@ export const operationView = (state: OperationState) => {
     priorUncertain: uncertain(phase),
     prepared: source?.prepared ?? null,
     review,
+    reviewIdentity: review === null ? null : (state.disclosed.review?.identity ?? null),
     receipt: phase.kind === "ACCEPTED" ? state.disclosed.receipt : null,
     confirmed: phaseConfirmed(phase),
   };

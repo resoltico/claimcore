@@ -83,7 +83,7 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
     body: JSON.stringify({
       operationId: mintOperationId(),
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       inputs: {
         "input:principal.kind": "HUMAN",
         "input:principal.issuer": issuer,
@@ -215,7 +215,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         inputMessage(language, "field.caseReference.label"),
       );
       await expect(reference).toHaveAccessibleDescription(
-        `${inputMessage(language, "field.caseReference.hint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+        `${inputMessage(language, "ui.existingCaseSelectionHint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
       );
       await reference.fill("Synthetic reference");
       await expect(reference).not.toHaveAttribute("aria-invalid");

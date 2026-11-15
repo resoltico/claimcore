@@ -27,7 +27,7 @@ reference, even when it looks like a UUID. Choose each role and case combination
 initial assignments fit in one admission. `claimcore help` lists the complete
 options. When configured, the CLI profile supplies an omitted issuer; the sent request still contains it.
 
-**Register** remains a separate option for an account that should initially have no roles. Adding or
+Use **Register account** for an account that should initially have no roles. Adding or
 registering someone does not change their sign-in-provider membership.
 
 ## Handle access requests
@@ -43,6 +43,14 @@ can make a new request. Human and service identities with the same issuer and su
 Someone registered without roles sees **No roles assigned**. A disabled account sees **Account disabled**.
 After an owner changes access, **Check access** refreshes the person's own access state. These pages do
 not use Recovery as a substitute for access.
+
+For a case-specific role, choose reference or ID and enter only that target. Switching the selection
+replaces the active target; blank or malformed active text is retained for a precise correction. An
+existing seeded grant keeps its supplied target. All-cases roles send neither selector.
+
+The directory uses the full available width; person details and changes open in drawers. Empty access
+requests omit their table. No-pending status requires all collected pages to be empty with no further
+page; a failed or incomplete read does not establish that there are no requests.
 
 ## Find a person and review access
 
@@ -68,9 +76,13 @@ an actor ID.
 
 ## Change a profile or roles
 
-Open the person and choose **Edit profile**, **Grant**, **Revoke**, **Enable** or **Disable** as offered.
+Open the person and choose **Update profile**, **Grant role**, **Revoke role**, **Enable account** or
+**Disable account** as offered.
 Review the target and exact role assignments before recording. Changing the selected person does not
-retarget an existing draft or an uncertain change.
+retarget an existing draft or an uncertain change. Each existing-person change freezes the account
+version you reviewed. A concurrent profile or access change requires a fresh review; it cannot silently
+restore access or erase a newer profile. Every accepted logical change, including a deliberate grant
+reaffirmation, advances the account version once. Exact accepted retries do not advance it.
 
 A disabled account cannot perform protected work. Existing case assignments and recorded changes stay
 recorded; cases may need another responsible person. Keep at least one enabled human owner.

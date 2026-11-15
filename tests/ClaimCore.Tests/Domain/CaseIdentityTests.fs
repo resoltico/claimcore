@@ -16,6 +16,7 @@ let tests =
                 (DateOnly(2026, 9, 7))
                 Map.empty
                 {
+                    ExpectedFamilySequence = None
                     OperationId = id
                     CaseReference = "Immutable-Reference"
                     ExpectedRevision = 0L
@@ -38,6 +39,7 @@ let tests =
                 (DateOnly(2026, 9, 7))
                 Map.empty
                 {
+                    ExpectedFamilySequence = None
                     OperationId = second
                     CaseReference = "immutable-reference"
                     ExpectedRevision = 1L

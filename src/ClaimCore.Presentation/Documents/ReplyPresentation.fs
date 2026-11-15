@@ -21,6 +21,7 @@ module Refusals =
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
         | CaseRefusal.CorrectionRequiresExistingValue
         | CaseRefusal.DecisionHasPayments -> RecommendedAction.CorrectInput
+        | CaseRefusal.FamilyChanged
         | CaseRefusal.PaymentNotFound -> RecommendedAction.ReviewLatest
         | CaseRefusal.AssigneeUnavailable
         | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
@@ -41,7 +42,7 @@ module Refusals =
             RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
-        | Refusal.People(PeopleRefusal.LastOwner | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
+        | Refusal.People(PeopleRefusal.ActorChanged | PeopleRefusal.LastOwner | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
             RecommendedAction.ReviewLatest
 
     let actualRevision =

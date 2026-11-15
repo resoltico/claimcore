@@ -139,7 +139,11 @@ let private principalRefusals fixture =
                 {|
                     operationId = id ()
                     task = "people.register"
-                    binding = {| kind = "PEOPLE" |}
+                    binding =
+                        {|
+                            kind = "PEOPLE"
+                            expectedRevision = 0L
+                        |}
                     inputs =
                         dict
                             [

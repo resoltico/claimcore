@@ -179,6 +179,91 @@ let private replaceRoot connection root =
         return ()
     }
 
+/// Rehash retained public closure without inventing unavailable private content. This supplies
+/// tampered inputs; each caller independently specifies the semantic finding it must detect.
+let rehashed (header: OperationHeader) command effects (compartments: Compartment list) =
+    let u32 (value: int) =
+        let bytes = Array.zeroCreate<byte> 4
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(bytes, value)
+        bytes
+
+    let i64 (value: int64) =
+        let bytes = Array.zeroCreate<byte> 8
+        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(bytes, value)
+        bytes
+
+    let frame bytes =
+        Array.append (u32 (Array.length bytes)) bytes
+
+    let descriptorBytes (value: CompartmentDescriptor) =
+        let kind, id =
+            match value.Owner with
+            | CompartmentOwner.Case id -> 1uy, CaseId.value id
+            | CompartmentOwner.ActorProfile id -> 2uy, ActorId.value id
+
+        let purpose =
+            match value.Purpose with
+            | CompartmentPurpose.Case -> 1uy
+            | CompartmentPurpose.Work -> 2uy
+            | CompartmentPurpose.Note -> 3uy
+            | CompartmentPurpose.Reminder -> 4uy
+            | CompartmentPurpose.Profile -> 5uy
+
+        Array.concat
+            [
+                [| kind |]
+                id.ToByteArray(true)
+                [| purpose |]
+                u32 value.Ordinal
+                u32 value.Effects.Length
+                value.Effects |> List.map u32 |> Array.concat
+            ]
+
+    let commandBytes =
+        OperationPublicCodecs.command.Write command
+        |> ClaimCore.Json.CanonicalWriter.bytes
+
+    let effectRows =
+        effects
+        |> List.mapi (fun index effect ->
+            index,
+            (OperationPublicCodecs.effect.Write effect
+             |> ClaimCore.Json.CanonicalWriter.bytes))
+
+    let bytes =
+        Array.concat
+            [
+                frame (System.Text.Encoding.UTF8.GetBytes "ClaimCore.Operation")
+                u32 InstallationFormat.Current
+                header.InstallationId.ToByteArray(true)
+                i64 (Sequence.value header.Sequence)
+                EntryHash.toBytes header.PreviousHash
+                (OperationId.value header.OperationId).ToByteArray(true)
+                (ActorId.value header.ActorId).ToByteArray(true)
+                i64 header.RecordedAt.UtcTicks
+                match header.BusinessDate with
+                | None -> [| 0uy |]
+                | Some date -> Array.append [| 1uy |] (u32 date.DayNumber)
+                frame commandBytes
+                u32 effects.Length
+                effectRows
+                |> List.map (fun (index, bytes) -> Array.append (u32 index) (frame bytes))
+                |> Array.concat
+                u32 compartments.Length
+                compartments
+                |> List.map (fun value ->
+                    Array.append (frame (descriptorBytes value.Descriptor)) value.Commitment)
+                |> Array.concat
+            ]
+
+    let hash =
+        System.Security.Cryptography.SHA256.HashData bytes
+        |> EntryHash.ofBytes
+        |> Option.get
+
+    OperationRoot.restore header commandBytes effectRows compartments hash
+    |> Result.defaultWith (fun error -> failtestf "Retained root rehash: %A" error)
+
 /// Tamper only an owned fixture, proving the live guard first. Rehash subsequent roots so
 /// a broken link cannot conceal the independently expected semantic replay failure.
 let rewrite
@@ -241,12 +326,11 @@ let rewrite
                 }
 
             let rewritten =
-                OperationRoot.append
+                rehashed
                     header
                     root.Structure.Command
                     root.Structure.Effects
                     root.Structure.Compartments
-                |> Result.defaultWith (fun error -> failtestf "Synthetic root rewrite: %A" error)
 
             do! replaceRoot connection rewritten
             previous <- Some rewritten.Hash

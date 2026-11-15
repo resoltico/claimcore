@@ -101,6 +101,9 @@ module internal RequestLog =
 
     let middleware (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {
+            let correlation = Guid.NewGuid()
+            use _correlation = ClaimCore.Postgres.StorageDiagnostics.correlate correlation
+
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =
                     Api.all
@@ -121,6 +124,7 @@ module internal RequestLog =
                     let line =
                         JsonSerializer.Serialize
                             {|
+                                correlation = correlation
                                 endpoint = value.Endpoint
                                 outcome = value.Outcome
                                 status = context.Response.StatusCode

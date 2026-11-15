@@ -57,7 +57,7 @@ let private replay
 
 let private proxyCore (database: PostgresFixture.Database) source =
     let store =
-        LedgerStore(source, database.Fixture.InstallationId, Transactions.timeouts) :> IStore
+        LedgerStore(source, database.Installation, Transactions.timeouts) :> IStore
 
     let actor =
         Service.create
@@ -173,7 +173,8 @@ let private lostPeople drop landed (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let request =
-            peopleRequest
+            reviewedPeopleRequest
+                database.Fixture.Store
                 (id database.Fixture 145)
                 target
                 (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -374,6 +375,18 @@ let tests =
                                     BuildIdentity.current.Version
                                 )
 
+                            let correlation = Guid.NewGuid()
+
+                            let events =
+                                Collections.Concurrent.ConcurrentQueue<FailureDiagnostic>()
+
+                            use _subscription =
+                                StorageDiagnostics.subscribe (fun evidence ->
+                                    if evidence.RequestCorrelation = Some correlation then
+                                        events.Enqueue evidence)
+
+                            use _request = StorageDiagnostics.correlate correlation
+
                             let mutable unknown = false
 
                             try
@@ -387,6 +400,25 @@ let tests =
                                 ()
                             with :? AdministrationOutcomeUnknownException ->
                                 unknown <- true
+
+                            let primary =
+                                events.ToArray()
+                                |> Array.filter (fun value -> value.Phase <> FailurePhase.Cleanup)
+
+                            Expect.hasLength
+                                primary
+                                1
+                                "Owner COMMIT emits one primary event before uncertainty wrapping"
+
+                            Expect.equal
+                                primary[0].Phase
+                                FailurePhase.Commit
+                                "Original COMMIT phase survives public wrapping"
+
+                            Expect.isTrue
+                                (primary[0].Classification = FailureClass.Provider
+                                 || primary[0].Classification = FailureClass.InputOutput)
+                                "Original provider/transport class is not replaced with INTERNAL"
 
                             if drop = CommitProxy.Drop.AfterCommitFatal then
                                 Expect.equal

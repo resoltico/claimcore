@@ -1,7 +1,7 @@
 import { useSettingsDetour } from "./SettingsDetourContext";
 import { useCallback, useEffect, useRef } from "react";
 import type { OperationModel } from "./operation/useOperation";
-import { setNavigationBlocker } from "../routing/navigation";
+import { cancelPendingNavigation, setNavigationBlocker } from "../routing/navigation";
 /** The existing discard/recovery dialog owns consent even for top-level navigation. */
 export const useOperationNavigation = (
   model: OperationModel,
@@ -12,6 +12,13 @@ export const useOperationNavigation = (
   const { dirty, priorUncertain, requestDiscard, phase, prepared } = model;
   const pending = useRef<(() => void) | null>(null);
   const release = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      pending.current = null;
+      cancelPendingNavigation(true);
+    },
+    [],
+  );
   useEffect(() => {
     if (phase === "ACCEPTED" || (!dirty && !priorUncertain && prepared === null)) {
       return;
@@ -36,6 +43,9 @@ export const useOperationNavigation = (
   }, [dirty, priorUncertain, requestDiscard, phase, scope, prepared, settings]);
   useEffect(() => {
     if (model.pendingDiscard === null) {
+      if (pending.current !== null) {
+        cancelPendingNavigation();
+      }
       pending.current = null;
     }
   }, [model.pendingDiscard]);

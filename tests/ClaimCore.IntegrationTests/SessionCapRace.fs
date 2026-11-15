@@ -78,7 +78,8 @@ let run (database: PostgresFixture.Database) =
                 [||]
                 token
 
-        let store = SessionStore(database.RuntimeSource) :> ISessionStore
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let creation =
             store.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)

@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "从 ClaimCore 永久删除此案件的信息、工作和提醒。案件编号和更改列表仍会保留。其他位置保存的副本不受影响。",
-    "source": "8705b2ea28a6"
+    "text": "永久删除此案件当前及保留的详情、付款、工作、提醒和备注。案件编号和变更记录将保留。其他位置的副本不受影响。",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "永久删除账户资料",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "已审阅的案件版本",
-    "source": "8f3d37032769"
+    "text": "已审阅的版本",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "已审阅的工作版本",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "您查看的案件版本。",
-    "source": "8965c7efb1dc"
+    "text": "请使用你审阅过的对象版本。创建账户时必须为零。",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "更改前先查阅最新案件。",
-    "source": "de14cae9e98d"
+    "text": "更改前请审阅对象的最新状态。",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "需要进行此更改的原因。",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "这会从 ClaimCore 中永久删除案件详细资料、工作和提醒。编号和更改记录会保留。",
-    "source": "e774df6acd21"
+    "text": "这将永久删除当前及保留的案件详情、付款、工作、提醒和备注。案件编号和变更记录将保留。其他位置的副本不受影响。",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "已注册账户。",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "案件状态",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "请输入非空的案件 UUID。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "单个案件范围请选择案件编号或 ID；所有案件范围请勿填写这两项。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "请输入非空的案件 UUID。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "单个案件范围请选择案件编号或 ID；所有案件范围请勿填写这两项。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "此账户在你审阅后发生了变化。请审阅最新账户后重试。",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "此案件或其工作、备注、提醒、付款在擦除审阅后发生了变化。请重新审阅完整案件。",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "擦除前请审阅案件及其全部工作、备注、提醒和付款。",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "已审阅的完整案件版本",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "请使用 case.get 为你审阅并准备擦除的案件提供的系列序号。",
+    "source": "8d258a9cf42b"
   }
 }

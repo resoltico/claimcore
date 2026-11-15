@@ -129,7 +129,8 @@ let internal assignedReader fixture (actor: ServiceContext) =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 15)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -160,7 +161,8 @@ let internal registerReader fixture (owner: ServiceContext) target =
             (Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 2)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

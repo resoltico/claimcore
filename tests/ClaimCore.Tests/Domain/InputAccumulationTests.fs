@@ -26,6 +26,7 @@ let private request mask : UnvalidatedCaseRequest =
     let original = Inputs.registration
 
     {
+        ExpectedFamilySequence = None
         OperationId =
             if invalid 0 then
                 Guid.Empty
@@ -191,6 +192,7 @@ let phase2 =
 
 let private opening reference replacements =
     {
+        ExpectedFamilySequence = None
         OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
         CaseReference = reference
         ExpectedRevision = 0L
@@ -368,6 +370,7 @@ let oneRound =
                             input.OperationId,
                             Some input.CaseReference,
                             input.ExpectedRevision,
+                            input.ExpectedFamilySequence,
                             input.Act
                         )
                     )

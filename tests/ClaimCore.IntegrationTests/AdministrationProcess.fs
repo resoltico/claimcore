@@ -108,6 +108,54 @@ let publishConfiguration configuration directory =
 let publish directory =
     publishConfiguration "Release" directory
 
+/// Admit only the production diagnostic allowlist; no provider text or arbitrary fields survive.
+let requireDiagnostics (errors: string) =
+    for line in errors.Split('\n', StringSplitOptions.RemoveEmptyEntries) do
+        use diagnostic = JsonDocument.Parse line
+        let value = diagnostic.RootElement
+
+        Expect.equal
+            (value.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
+            (set [ "kind"; "attempt"; "correlation"; "phase"; "classification" ])
+            "Closed safe diagnostic fields"
+
+        Expect.equal (value.GetProperty("kind").GetString()) "storageFailure" "Diagnostic channel"
+
+        let guid (name: string) =
+            let text = value.GetProperty(name).GetString() |> nonNull
+            let parsed = Guid.ParseExact(text, "D")
+            Expect.notEqual parsed Guid.Empty "Internally generated correlation"
+
+        guid "attempt"
+        guid "correlation"
+
+        Expect.contains
+            [
+                "Open"
+                "Read"
+                "Head"
+                "Append"
+                "Projection"
+                "Commit"
+                "Session"
+                "Housekeeping"
+                "Cleanup"
+            ]
+            (value.GetProperty("phase").GetString() |> nonNull)
+            "Bounded phase"
+
+        Expect.contains
+            [
+                "Cancelled"
+                "Timeout"
+                "Provider"
+                "InputOutput"
+                "Installation"
+                "Internal"
+            ]
+            (value.GetProperty("classification").GetString() |> nonNull)
+            "Bounded class"
+
 let invoke binary connectionFile arguments expected =
     task {
         let config = start (binary :: arguments)
@@ -122,7 +170,10 @@ let invoke binary connectionFile arguments expected =
              + ". Public reply: "
              + output)
 
-        Expect.equal errors.Length 0 "No provider/private detail on stderr"
+        if expected = 0 then
+            Expect.equal errors.Length 0 "Successful commands remain quiet"
+        else
+            requireDiagnostics errors
 
         Expect.equal
             (output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length)

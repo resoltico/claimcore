@@ -64,7 +64,8 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
             ]
         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
-    let close = caseSubmission (id ()) reference 1L (CaseAct.AmendRegistration update)
+    let close =
+        caseSubmission (id ()) reference 1L None (CaseAct.AmendRegistration update)
 
     automation fixture "operation.execute" close 0 |> require "ACCEPTED" |> ignore
     let refused = automation fixture "operation.execute" pending 2 |> require "REJECTED"
@@ -141,7 +142,11 @@ let private directoryDetails fixture reference =
         {|
             operationId = id ()
             task = "people.register"
-            binding = {| kind = "PEOPLE" |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    expectedRevision = 0L
+                |}
             inputs =
                 dict
                     [
@@ -159,7 +164,12 @@ let private directoryDetails fixture reference =
         {|
             operationId = id ()
             task = "people.setProfile"
-            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    actorId = actorId
+                    expectedRevision = reviewedActorRevision fixture actorId
+                |}
             inputs =
                 dict
                     [
@@ -192,7 +202,12 @@ let private directoryDetails fixture reference =
         {|
             operationId = id ()
             task = "people.grant"
-            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    actorId = actorId
+                    expectedRevision = reviewedActorRevision fixture actorId
+                |}
             inputs = dict [ "input:role", "CASE_READER"; "input:scope", "INSTALLATION" ]
         |}
 
@@ -200,7 +215,12 @@ let private directoryDetails fixture reference =
         {|
             operationId = id ()
             task = "people.grant"
-            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    actorId = actorId
+                    expectedRevision = reviewedActorRevision fixture actorId
+                |}
             inputs =
                 dict
                     [

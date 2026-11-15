@@ -77,7 +77,7 @@ export const firstPerson: HumanReadDocument_people_grants = {
   actions: [
     operationAffordance(
       "people.grant",
-      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
       { "input:scope": "INSTALLATION" },
       undefined,
       {},
@@ -85,18 +85,27 @@ export const firstPerson: HumanReadDocument_people_grants = {
     ),
     operationAffordance(
       "people.revoke",
-      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
       { "input:scope": "INSTALLATION" },
     ),
-    operationAffordance("people.enable", { kind: "PEOPLE", actorId: firstActor.actor.actorId }),
-    operationAffordance("people.disable", { kind: "PEOPLE", actorId: firstActor.actor.actorId }),
+    operationAffordance("people.enable", {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: firstActor.actor.actorId,
+    }),
+    operationAffordance("people.disable", {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: firstActor.actor.actorId,
+    }),
     operationAffordance(
       "people.setProfile",
-      { kind: "PEOPLE", actorId: firstActor.actor.actorId },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
       { "input:profile.displayName": "server-first" },
     ),
     operationAffordance("people.eraseProfile", {
       kind: "PEOPLE",
+      expectedRevision: 1,
       actorId: firstActor.actor.actorId,
     }),
   ],
@@ -150,21 +159,30 @@ export const secondPerson: HumanReadDocument_people_grants = {
   actions: [
     operationAffordance(
       "people.grant",
-      { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
       { "input:scope": "INSTALLATION" },
       undefined,
       {},
       true,
     ),
-    operationAffordance("people.enable", { kind: "PEOPLE", actorId: secondActor.actor.actorId }),
-    operationAffordance("people.disable", { kind: "PEOPLE", actorId: secondActor.actor.actorId }),
+    operationAffordance("people.enable", {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: secondActor.actor.actorId,
+    }),
+    operationAffordance("people.disable", {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: secondActor.actor.actorId,
+    }),
     operationAffordance(
       "people.setProfile",
-      { kind: "PEOPLE", actorId: secondActor.actor.actorId },
+      { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
       { "input:profile.displayName": "server-second" },
     ),
     operationAffordance("people.eraseProfile", {
       kind: "PEOPLE",
+      expectedRevision: 1,
       actorId: secondActor.actor.actorId,
     }),
   ],
@@ -310,7 +328,7 @@ export const setupActorTargets = (
                 : [
                     operationAffordance(
                       action.task,
-                      { kind: "PEOPLE", actorId: person.subject.actorId },
+                      { kind: "PEOPLE", expectedRevision: 1, actorId: person.subject.actorId },
                       action.seeds,
                       action.editable,
                       action.choices,

@@ -86,7 +86,8 @@ let private duplicateHistory (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 930)
                         principal
                         (PeopleAct.Admit

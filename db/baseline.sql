@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 3),
+    installation_format smallint NOT NULL CHECK (installation_format = 4),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -67,7 +67,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=3),
+    installation_format smallint NOT NULL CHECK (installation_format=4),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid NOT NULL CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
@@ -171,11 +171,13 @@ RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
 DECLARE family text:=command->>'kind'; action text; target uuid; revision bigint; result jsonb; item jsonb; i integer;
 BEGIN
     IF family='CASE' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','reference','expectedRevision','act','selectedPayment','compartment']) THEN RAISE EXCEPTION 'invalid case command shape' USING ERRCODE='CC004'; END IF;
+        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','reference','expectedRevision','expectedFamilySequence','act','selectedPayment','compartment']) THEN RAISE EXCEPTION 'invalid case command shape' USING ERRCODE='CC004'; END IF;
         target:=(command->>'caseId')::uuid; revision:=(command->>'expectedRevision')::bigint; action:=command->>'act';
         IF action NOT IN ('case.open','case.amendRegistration','case.correct','case.decide','case.withdrawDecision','case.recordPayment','case.removePayment','case.close','case.reopen','case.void','case.reinstate','case.erase')
            OR revision IS NULL OR revision<0 OR revision>=9007199254740991 OR (action='case.open' AND (revision<>0 OR target<>operation)) OR (action<>'case.open' AND revision=0)
            OR (command->>'reference') COLLATE "C" !~ '^[!-~]{1,80}$'
+           OR ((action='case.erase')<>(command->'expectedFamilySequence'<>'null'::jsonb))
+           OR (action='case.erase' AND ((command->>'expectedFamilySequence')::bigint NOT BETWEEN 1 AND root_sequence-1))
            OR (action='case.removePayment')<>(command->'selectedPayment'<>'null'::jsonb)
            OR command->'compartment' IS DISTINCT FROM (CASE WHEN action='case.erase' THEN 'null'::jsonb ELSE '0'::jsonb END)
         THEN RAISE EXCEPTION 'invalid case command structure' USING ERRCODE='CC004'; END IF;
@@ -208,10 +210,12 @@ BEGIN
         END IF;
         RETURN result;
     ELSIF family='PEOPLE' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','targetActorId','principal','act']) OR NOT claimcore.json_shape(command->'principal',ARRAY['kind','issuer','subject'])
+        IF NOT claimcore.json_shape(command,ARRAY['kind','expectedRevision','targetActorId','principal','act']) OR NOT claimcore.json_shape(command->'principal',ARRAY['kind','issuer','subject'])
            OR command->'principal'->>'kind' NOT IN ('HUMAN','SERVICE') OR jsonb_typeof(command->'principal'->'issuer')<>'string' OR jsonb_typeof(command->'principal'->'subject')<>'string'
         THEN RAISE EXCEPTION 'invalid people command shape' USING ERRCODE='CC004'; END IF;
         target:=(command->>'targetActorId')::uuid; action:=command->'act'->>'kind'; item:=command->'act';
+        revision:=(command->>'expectedRevision')::bigint;
+        IF revision IS NULL OR revision<0 OR revision>=9007199254740991 OR ((action IN ('people.register','people.admit','people.provisionOwner'))<>(revision=0)) THEN RAISE EXCEPTION 'invalid people revision' USING ERRCODE='CC004'; END IF;
         IF action IN ('people.register','people.admit','people.provisionOwner') THEN
             IF target<>operation OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid registered actor identity' USING ERRCODE='CC004'; END IF;
             result:=jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind',CASE WHEN action='people.provisionOwner' THEN action ELSE 'people.register' END,'principal',command->'principal')),
@@ -332,7 +336,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; expected jsonb; supplied jsonb; item
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>3 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>4 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
     expected:=claimcore.operation_effects(p_command,p_operation,p_actor,p_sequence);
     IF jsonb_array_length(p_effects)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation effects' USING ERRCODE='CC004'; END IF;
     FOR n IN 0..jsonb_array_length(expected)-1 LOOP
@@ -465,6 +469,7 @@ CREATE INDEX case_payments_current_order ON claimcore.case_payments(case_id,acce
 CREATE INDEX case_payments_current_dates ON claimcore.case_payments(case_id,payment_date,payment_id) WHERE NOT removed AND payment_date IS NOT NULL;
 
 CREATE TABLE claimcore.actors (
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     -- The operation ID of the people entry that registered the actor.
     actor_id uuid PRIMARY KEY CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     principal_kind text NOT NULL CHECK (principal_kind ~ '^[A-Z][A-Z_]{0,39}$'),

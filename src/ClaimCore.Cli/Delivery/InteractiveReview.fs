@@ -77,6 +77,7 @@ module internal InteractiveReview =
             || hasOption "--expected-revision" arguments
             || hasOption "--expected-work-revision" arguments
             || hasOption "--expected-reminder-revision" arguments
+            || hasOption "--expected-family-sequence" arguments
             || hasOption "--dry-run" arguments
             || hasOption "--confirm" arguments
         then
@@ -188,12 +189,14 @@ module internal InteractiveReview =
     let private selected (draft: InteractiveDraft) (action: Affordance) =
         let sameSelection =
             match draft.Input.Binding, action.Binding with
-            | OperationBinding.Case(_, _, Some expected), OperationBinding.Case(_, _, Some actual) ->
-                expected = actual
+            | OperationBinding.Case(_, _, Some expected, _),
+              OperationBinding.Case(_, _, Some actual, _) -> expected = actual
             | OperationBinding.Note(_, Some expected), OperationBinding.Note(_, Some actual) ->
                 expected = actual
             | OperationBinding.Reminder(_, Some(expected, _)),
               OperationBinding.Reminder(_, Some(actual, _)) -> expected = actual
+            | OperationBinding.People(Some expected, _), OperationBinding.People(Some actual, _) ->
+                expected = actual
             | _ -> true
 
         let sameGrant =
@@ -224,9 +227,9 @@ module internal InteractiveReview =
         let binding =
             match draft.Input.Task, draft.Input.Binding, action.Binding with
             | ActKind.Case CaseActKind.Open,
-              OperationBinding.Case(target, _, _),
-              OperationBinding.Case(_, revision, payment) ->
-                OperationBinding.Case(target, revision, payment)
+              OperationBinding.Case(target, _, _, _),
+              OperationBinding.Case(_, revision, payment, family) ->
+                OperationBinding.Case(target, revision, payment, family)
             | _ -> action.Binding
 
         let fixedInputs =
@@ -306,7 +309,7 @@ module internal InteractiveReview =
 
     let private readTarget newId console transport (draft: InteractiveDraft) installation token =
         match draft.Input.Binding with
-        | OperationBinding.People(Some actor) ->
+        | OperationBinding.People(Some actor, _) ->
             readPages
                 newId
                 console
@@ -324,7 +327,7 @@ module internal InteractiveReview =
                         GrantsRequest.AfterCursor = Some cursor
                     })
                 token
-        | OperationBinding.Case(target, _, Some _) ->
+        | OperationBinding.Case(target, _, Some _, _) ->
             readPages
                 newId
                 console
@@ -371,7 +374,7 @@ module internal InteractiveReview =
                 { Target = target; ReminderId = id }
                 (fun request _ -> request)
                 token
-        | OperationBinding.Case(target, _, _)
+        | OperationBinding.Case(target, _, _, _)
         | OperationBinding.Work(target, _)
         | OperationBinding.Note(target, _)
         | OperationBinding.Reminder(target, _) ->
@@ -385,7 +388,7 @@ module internal InteractiveReview =
                 { Target = target }
                 (fun request _ -> request)
                 token
-        | OperationBinding.People None -> Task.FromResult(unavailable console draft)
+        | OperationBinding.People(None, _) -> Task.FromResult(unavailable console draft)
 
     let private runValidated newId console transport (draft: InteractiveDraft) token =
         task {
@@ -404,8 +407,8 @@ module internal InteractiveReview =
                                                 InstallationId = Some installation
                                             } ->
                     match draft.Input.Binding with
-                    | OperationBinding.People None
-                    | OperationBinding.Case(_, Some 0L, _) ->
+                    | OperationBinding.People(None, _)
+                    | OperationBinding.Case(_, Some 0L, _, _) ->
                         return!
                             reviewDocument newId console transport draft installation document token
                     | _ -> return! readTarget newId console transport draft installation token

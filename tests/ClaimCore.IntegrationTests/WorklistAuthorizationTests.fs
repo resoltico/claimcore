@@ -55,6 +55,7 @@ let tests =
                     (core adminPrincipal)
                     (ClaimCore.TestSupport.Inputs.caseOperation
                         {
+                            ExpectedFamilySequence = None
                             OperationId = operationId (3 + index)
                             CaseReference = reference
                             ExpectedRevision = 0L

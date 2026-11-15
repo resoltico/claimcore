@@ -322,7 +322,8 @@ let internal assignmentExcludesForbiddenRoles fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 100)
                         service
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

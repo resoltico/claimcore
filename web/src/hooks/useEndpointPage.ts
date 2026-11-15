@@ -164,7 +164,7 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   const current = useCallback(() => activeOwner.current === owner, [owner]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [message, setMessage] = useState<Notice | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [pages, setPages] = useState<P[]>([]);
   const items = useMemo(() => pages.flatMap((page) => page.items), [pages]);
   const views = useMemo<PresentedPage[]>(

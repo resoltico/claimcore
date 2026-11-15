@@ -18,14 +18,13 @@ type IRuntime =
 
 type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
 
-    member _.Store =
-        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> IStore
+    member _.Store = LedgerStore(source, installation, Transactions.timeouts) :> IStore
 
     interface IRuntime with
         member _.Housekeep token =
-            Housekeeping.prune source Housekeeping.DefaultBatch token
+            Housekeeping.prune source installation Housekeeping.DefaultBatch token
 
-        member _.Sessions = SessionStore(source) :> ISessionStore
+        member _.Sessions = SessionStore(source, installation) :> ISessionStore
         member _.Installation = installation
 
         member _.Ready token =
@@ -34,7 +33,10 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
                     return!
                         DatabaseSession.read source token (fun connection ->
                             task {
-                                let! _ = Baseline.require connection token
+                                let! _ =
+                                    Transactions.configure connection Transactions.timeouts token
+
+                                do! Baseline.requireExpected installation connection token
                                 return true
                             })
                 with _ ->
@@ -131,7 +133,15 @@ module internal LedgerAdministration =
                     let! head, observed = Transactions.head connection token
 
                     let store =
-                        LedgerStore(source, installationId, Transactions.timeouts) :> IStore
+                        LedgerStore(
+                            source,
+                            {
+                                InstallationId = installationId
+                                BusinessTimeZone = timeZone
+                            },
+                            Transactions.timeouts
+                        )
+                        :> IStore
 
                     let zone = TimeZoneInfo.FindSystemTimeZoneById timeZone
 

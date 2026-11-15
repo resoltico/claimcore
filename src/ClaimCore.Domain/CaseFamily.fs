@@ -16,6 +16,12 @@ type CaseFamilyRows =
     }
 
 module CaseFamily =
+    let reviewedSequence expected actual =
+        if expected = Some actual then
+            Ok()
+        else
+            Error(Refusal.Case CaseRefusal.FamilyChanged)
+
     let onCaseCreated id : CaseFamilyState =
         {
             Work = Some(WorkSubject.initial id)

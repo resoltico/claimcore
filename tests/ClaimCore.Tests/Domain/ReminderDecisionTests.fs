@@ -28,6 +28,7 @@ let private next = plan "Review received photographs" "2026-11-10"
 let private parent () =
     Case.parse
         {
+            ExpectedFamilySequence = None
             OperationId = OperationId.value (operation 1)
             CaseReference = "REMINDER-QA"
             ExpectedRevision = 0L

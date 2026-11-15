@@ -569,7 +569,8 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
   );
   const route = useContentRoute();
   const actorSelection = route.screen === "people" ? route.actorId : "";
-  const selection = `${actorSelection}:${state.disclosure.revision}:${props.disclosureAvailable ?? true}`;
+  // Keep authoring through requester refresh; current disclosure separately masks the panel.
+  const selection = `${actorSelection}:${state.disclosure.revision}`;
   const [editor, setEditor] = useState({ selection, active: false });
   if (editor.selection !== selection) {
     setEditor({ selection, active: false });

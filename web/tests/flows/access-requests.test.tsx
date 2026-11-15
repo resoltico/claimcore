@@ -71,7 +71,7 @@ const succeeded = (
               actions: [
                 operationAffordance(
                   "people.admit",
-                  { kind: "PEOPLE" },
+                  { kind: "PEOPLE", expectedRevision: 0 },
                   {
                     "input:principal.kind": item.principal.kind,
                     "input:principal.issuer": item.principal.issuer,
@@ -146,7 +146,7 @@ it("pages with the actual cursor and binds admission to the exact principal and 
   expect(onAdmit).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       seeds: {
         "input:principal.kind": "SERVICE",
         "input:principal.issuer": request.principal.issuer,

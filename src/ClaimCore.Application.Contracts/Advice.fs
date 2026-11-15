@@ -224,6 +224,7 @@ type CaseNotesPage =
 
 type CaseReadModel =
     {
+        FamilySequence: Sequence
         Snapshot: CaseSnapshot
         LatestPayments: PaymentEntry list
         Advice: CaseAdvice

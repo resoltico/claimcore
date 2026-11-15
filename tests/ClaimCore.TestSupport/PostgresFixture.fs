@@ -49,6 +49,12 @@ type internal Database =
         Fixture: Fixture
     }
 
+    member this.Installation =
+        {
+            InstallationId = this.Fixture.InstallationId
+            BusinessTimeZone = this.Fixture.Calendar.TimeZoneId
+        }
+
 let private container () =
     let value =
         (new PostgreSqlBuilder(ClaimCore.TestSupport.PostgresBaseline.image ()))
@@ -93,7 +99,16 @@ let private admittedDatabase
 
     let fixture =
         {
-            Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
+            Store =
+                LedgerStore(
+                    runtime,
+                    {
+                        InstallationId = installationId
+                        BusinessTimeZone = timeZone
+                    },
+                    Transactions.timeouts
+                )
+                :> IStore
             OperationIds = OperationIds.Scope()
             InstallationId = installationId
             Owner = owner

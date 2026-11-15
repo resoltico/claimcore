@@ -151,6 +151,7 @@ let internal inspectOperation fixture principal operation token =
 
                         return
                             {
+                                FamilySequence = Sequence.create 1L |> Option.get
                                 Maintenance = maintenance
                                 State = None
                                 Family = None
@@ -192,8 +193,51 @@ let internal inspectPeople fixture principal token =
 let internal id (fixture: Fixture) n = fixture.OperationIds.Id n
 
 
+/// Fixture acquisition freezes reviewed metadata at construction, never during execution or retry.
+let private readFixture (store: IStore) work =
+    store.Read
+        {
+            Work = work
+            CancellationToken = CancellationToken.None
+        }
+    |> _.GetAwaiter().GetResult()
+    |> Result.defaultWith (fun failure -> failtestf "Fixture review failed: %A" failure)
+
+let internal reviewedFamilySequence store target =
+    readFixture store (fun tx ->
+        task {
+            let! current =
+                match target with
+                | CaseSelector.Id id -> tx.FindCase id
+                | CaseSelector.Reference reference -> tx.FindCaseByReference reference
+
+            match current with
+            | Some current ->
+                let! position = tx.CaseFamilySequence current.CaseId
+                return Sequence.value position
+            | None -> return 1L // Syntactically valid wrong-target negative controls still reach disclosure policy.
+        })
+
+let internal reviewedPeopleRequest store operation target act =
+    let expected =
+        if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+            readFixture store (fun tx -> tx.PeopleRevision target)
+            |> Option.map Revision.value
+            |> Option.defaultValue 1L
+        else
+            0L
+
+    { Inputs.peopleRequest operation target act with
+        ExpectedRevision = expected
+    }
+
 let internal request fixture n reference revision act : UnvalidatedCaseRequest =
     {
+        ExpectedFamilySequence =
+            if CaseAct.kind act = CaseActKind.Erase then
+                Some(reviewedFamilySequence fixture.Store (CaseSelector.Reference reference))
+            else
+                None
         OperationId = id fixture n
         CaseReference = reference
         ExpectedRevision = revision
@@ -202,6 +246,11 @@ let internal request fixture n reference revision act : UnvalidatedCaseRequest =
 
 let internal actRequest fixture n reference revision act : UnvalidatedCaseRequest =
     {
+        ExpectedFamilySequence =
+            if CaseAct.kind act = CaseActKind.Erase then
+                Some(reviewedFamilySequence fixture.Store (CaseSelector.Reference reference))
+            else
+                None
         OperationId = id fixture n
         CaseReference = reference
         ExpectedRevision = revision
@@ -293,15 +342,30 @@ let internal bootstrap fixture =
     }
 
 let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGrant) active =
-    (Service.execute
-        actor
-        (OperationInput.People(
-            peopleRequest
-                operationId
-                target
-                ((if active then PeopleAct.Grant else PeopleAct.Revoke) grant)
-        ))
-        (CancellationToken.None))
+    task {
+        let! observed =
+            actor.Store.Read
+                {
+                    Work = (fun tx -> tx.PeopleState target)
+                    CancellationToken = CancellationToken.None
+                }
+
+        let expected =
+            observed
+            |> Result.defaultWith (fun error -> failtestf "Setup review failed: %A" error)
+            |> Option.map (_.Revision >> Revision.value)
+            |> Option.defaultValue 0L
+
+        let input =
+            { peopleRequest
+                  operationId
+                  target
+                  ((if active then PeopleAct.Grant else PeopleAct.Revoke) grant) with
+                ExpectedRevision = expected
+            }
+
+        return! Service.execute actor (OperationInput.People input) CancellationToken.None
+    }
 
 let internal caseWorker fixture =
     task {

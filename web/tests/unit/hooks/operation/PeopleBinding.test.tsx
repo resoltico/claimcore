@@ -80,8 +80,16 @@ const fixture = () => {
       kind: "people.enable",
       current: null,
       affordances: [
-        operationAffordance("people.enable", { kind: "PEOPLE", actorId: first }),
-        operationAffordance("people.disable", { kind: "PEOPLE", actorId: first }),
+        operationAffordance("people.enable", {
+          kind: "PEOPLE",
+          expectedRevision: 1,
+          actorId: first,
+        }),
+        operationAffordance("people.disable", {
+          kind: "PEOPLE",
+          expectedRevision: 1,
+          actorId: first,
+        }),
       ],
       credential: "token",
       onLockChange: vi.fn(),
@@ -116,6 +124,7 @@ it("binds a Core actor atomically outside editable inputs and retains it across 
         },
         {
           kind: "PEOPLE",
+          expectedRevision: 1,
           actorId: first,
         },
       );
@@ -123,6 +132,7 @@ it("binds a Core actor atomically outside editable inputs and retains it across 
   );
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: first,
   });
   expect(f.model().values["input:principal.subject"]).toBe("bait");
@@ -134,6 +144,7 @@ it("binds a Core actor atomically outside editable inputs and retains it across 
   );
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: first,
   });
   await act(() =>
@@ -147,7 +158,7 @@ it("binds a Core actor atomically outside editable inputs and retains it across 
   });
   expect(JSON.parse(f.bodies[0]!)).toMatchObject({
     task: "people.enable",
-    binding: { kind: "PEOPLE", actorId: first },
+    binding: { kind: "PEOPLE", expectedRevision: 1, actorId: first },
     inputs: {},
   });
 });
@@ -161,6 +172,7 @@ it("an explicit target reset clears consent and allocates the next identity only
         {},
         {
           kind: "PEOPLE",
+          expectedRevision: 1,
           actorId: first,
         },
       );
@@ -185,6 +197,7 @@ it("an explicit target reset clears consent and allocates the next identity only
         {},
         {
           kind: "PEOPLE",
+          expectedRevision: 1,
           actorId: second,
         },
       );
@@ -195,6 +208,7 @@ it("an explicit target reset clears consent and allocates the next identity only
   expect(f.model().prepared).toBeNull();
   expect(f.model().bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: second,
   });
   await act(() => old.execute());

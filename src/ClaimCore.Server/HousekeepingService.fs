@@ -23,10 +23,8 @@ type internal HousekeepingService(work: CancellationToken -> Task<unit>, clock: 
                         do! work token
                     with
                     | :? OperationCanceledException when token.IsCancellationRequested -> ()
-                    | _ ->
-                        Console.Error.WriteLine(
-                            "ClaimCore housekeeping failed; the next scheduled batch will retry."
-                        )
+                    // Storage owns the primary sanitized event; the scheduled loop only retries.
+                    | _ -> ()
             with :? OperationCanceledException when token.IsCancellationRequested ->
                 ()
         }

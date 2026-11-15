@@ -137,7 +137,8 @@ let internal lifecycle fixture =
             ]
 
         let operation =
-            Inputs.peopleRequest
+            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                fixture.Store
                 (id fixture 740)
                 target
                 (PeopleAct.Admit { Profile = profile; Grants = grants })

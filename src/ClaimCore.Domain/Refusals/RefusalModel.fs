@@ -63,6 +63,7 @@ module InputIssues =
 type CaseRefusal =
     | WorkNoChanges
     | AssigneeUnavailable
+    | FamilyChanged
     | CaseAlreadyExists
     | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
@@ -75,6 +76,7 @@ type PeopleRefusal =
     | LastOwner
     | ActorAlreadyRegistered
     | ActorUnknown
+    | ActorChanged
     | HumanPrincipalRequired
     | RoleScopeNotApplicable
 

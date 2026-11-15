@@ -43,7 +43,8 @@ let private caller (database: PostgresFixture.Database) =
             (Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 20)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

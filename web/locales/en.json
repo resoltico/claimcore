@@ -203,5 +203,7 @@
   "ui.morePayments": "More payments",
   "ui.paymentsShown": "Shown: {shown} of {total}",
   "ui.showAllPayments": "Show all payments",
-  "ui.resourceUnavailable": "This item is unavailable."
+  "ui.resourceUnavailable": "This item is unavailable.",
+  "ui.caseSelection": "Select case by",
+  "ui.existingCaseSelectionHint": "Choose an existing case by its reference or ID."
 }

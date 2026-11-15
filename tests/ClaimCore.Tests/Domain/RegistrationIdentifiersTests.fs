@@ -16,6 +16,11 @@ let private today = DateOnly(2026, 9, 7)
 let private run number revision act previous =
     Case.parse
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
             CaseReference = "IDENTIFIERS"
             ExpectedRevision = revision

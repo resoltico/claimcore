@@ -13,10 +13,11 @@ open System.Text
 open System.Text.Json
 open Expecto
 
-let caseSubmission (operation: string) reference revision act =
+let caseSubmission (operation: string) reference revision family act =
     let command =
         Inputs.caseOperation
             {
+                ExpectedFamilySequence = family
                 OperationId = Guid.Parse operation
                 CaseReference = reference
                 ExpectedRevision = revision
@@ -251,18 +252,29 @@ let selectedActorId
 
     find None
 
-let private grantFrame actorId role =
+let private grantFrame actorId revision role =
     frame
         "operation.execute"
         {|
             operationId = id ()
             task = "people.grant"
-            binding = {| kind = "PEOPLE"; actorId = actorId |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    actorId = actorId
+                    expectedRevision = revision
+                |}
             inputs = dict [ "input:role", role; "input:scope", "INSTALLATION" ]
         |}
 
+let reviewedActorRevision fixture actorId =
+    human fixture "synthetic-owner" "people.grants" {| actorId = actorId; limit = 1 |} 0
+    |> require "SUCCEEDED"
+    |> fun value -> value.GetProperty("revision").GetInt64()
+
 let setGrant fixture target role active =
     let actorId = selectedActorId fixture target
+    let revision = reviewedActorRevision fixture actorId
 
     let source =
         frame
@@ -270,7 +282,12 @@ let setGrant fixture target role active =
             {|
                 operationId = id ()
                 task = (if active then "people.grant" else "people.revoke")
-                binding = {| kind = "PEOPLE"; actorId = actorId |}
+                binding =
+                    {|
+                        kind = "PEOPLE"
+                        actorId = actorId
+                        expectedRevision = revision
+                    |}
                 inputs = dict [ "input:role", role; "input:scope", "INSTALLATION" ]
             |}
 
@@ -299,7 +316,11 @@ let private setupFrames (fixture: PublishedFixture.Fixture) =
                 {|
                     operationId = operation
                     task = "people.register"
-                    binding = {| kind = "PEOPLE" |}
+                    binding =
+                        {|
+                            kind = "PEOPLE"
+                            expectedRevision = 0L
+                        |}
                     inputs =
                         dict
                             [
@@ -309,7 +330,8 @@ let private setupFrames (fixture: PublishedFixture.Fixture) =
                                 "input:profile.displayName", box displayName
                             ]
                 |}
-            :: (roles |> List.map (grantFrame operation)))
+            :: (roles
+                |> List.mapi (fun index role -> grantFrame operation (int64 index + 1L) role)))
 
     registrations
 

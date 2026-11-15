@@ -1,3 +1,4 @@
+import { noHorizontalOverflow } from "./layout-support";
 import {
   acceptedSubject,
   recordWorkReview,
@@ -15,9 +16,9 @@ import { chooseChoice } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
-import { casePath } from "../src/routing/routes";
+import { casePath, referencePath } from "../src/routing/routes";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft, startOpen, recordReviewed, startAct } from "./case-workflow";
 import { fillBusinessField } from "./typed-entry";
@@ -926,5 +927,172 @@ test("published reminder rows show server timing in case and queue views across 
     .all()) {
     await expect(item).toContainText(ui("ar", "due.INACTIVE.label"));
     await expect(item).toContainText(ui("ar", "reminderState.PENDING.label"));
+  }
+});
+
+test("@engine exact reminder URLs retain completed selection and UUID-shaped references across reload", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const reference = randomUUID();
+  await openCase(page, reference);
+  const first = await plan(page, "Exact completed reminder", "2026-01-01");
+  const second = await plan(page, "Another pending reminder", "2026-01-02");
+  const target = { kind: "REFERENCE" as const, caseReference: reference };
+  const completed = await workRequest(page, "operation.execute", {
+    operationId: mintOperationId(),
+    task: "reminder.complete",
+    binding: { kind: "REMINDER", target, reminderId: first.operationId, expectedRevision: 1 },
+    inputs: {},
+  });
+  expect(completed.outcome.kind).toBe("ACCEPTED");
+  const earlierId = mintOperationId();
+  const earlier = await workRequest(page, "operation.execute", {
+    operationId: earlierId,
+    task: "reminder.create",
+    binding: { kind: "REMINDER", target },
+    inputs: {
+      "input:reminderAction": "Earlier completed reminder",
+      "input:reminderDueDate": "2025-01-01",
+    },
+  });
+  expect(earlier.outcome.kind).toBe("ACCEPTED");
+  const earlierCompleted = await workRequest(page, "operation.execute", {
+    operationId: mintOperationId(),
+    task: "reminder.complete",
+    binding: { kind: "REMINDER", target, reminderId: earlierId, expectedRevision: 1 },
+    inputs: {},
+  });
+  expect(earlierCompleted.outcome.kind).toBe("ACCEPTED");
+  const firstPage = await workRequest(page, "reminder.list", {
+    target,
+    state: "COMPLETED",
+    limit: 1,
+  });
+  if (firstPage.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected independently observed first reminder page");
+  }
+  expect(firstPage.outcome.data.items.map((item) => item.reminder.reminderId)).toEqual([earlierId]);
+  expect(firstPage.outcome.data.nextCursor).not.toBeNull();
+  // The selected terminal resource is demonstrably beyond that first page; the UI must read it directly.
+
+  await page.goto(`${referencePath(reference)}/reminders/${first.operationId}`);
+  await expectCaseReadsSettled(page);
+  const selected = page.locator(".selected-reminder");
+  await expect(selected).toContainText("Exact completed reminder");
+  await expect(selected).toContainText("Completed");
+  await expect(selected).not.toContainText("Another pending reminder");
+  await page.reload();
+  await expectCaseReadsSettled(page);
+  await expect(selected).toContainText("Exact completed reminder");
+  const reopen = selected.getByRole("button", { name: /^Reopen reminder/u });
+  await reopen.click();
+  const drawer = page.getByRole("dialog");
+  await expect(
+    drawer.getByRole("button", { name: "Return to editing", exact: true }),
+  ).toBeVisible();
+  await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
+  await page
+    .getByRole("dialog", { name: "Discard these draft changes?" })
+    .getByRole("button", { name: "Discard and leave", exact: true })
+    .click();
+  await expect(reopen).toBeFocused();
+  await reopen.click();
+  const dispatched = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/operation.execute",
+  );
+  await recordWorkReview(page, "REMINDER");
+  expect((await dispatched).postDataJSON()).toMatchObject({
+    task: "reminder.reopen",
+    binding: { kind: "REMINDER", reminderId: first.operationId, expectedRevision: 2 },
+  });
+  await expectCaseReadsSettled(page);
+  await expect(selected.getByRole("button", { name: /^Complete reminder/u })).toBeVisible();
+
+  await page.goto(`${referencePath(reference)}/reminders/${second.operationId}`);
+  await expectCaseReadsSettled(page);
+  await expect(selected).toContainText("Another pending reminder");
+  await expect(selected).not.toContainText("Exact completed reminder");
+  await page.setViewportSize({ width: 360, height: 760 });
+  await selectLanguage(page, "ar");
+  await expectCaseReadsSettled(page);
+  await expect(selected.locator('[data-act="reminder.complete"]')).toContainText(
+    ui("ar", "task.reminder.complete.label"),
+  );
+  await noHorizontalOverflow(page, "narrow");
+  await expectAccessible(page);
+});
+
+test("@engine returns from an exact reminder to its filtered queue scroll and clicked focus", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 500 });
+  await openAuthenticated(page);
+  const reference = `QUEUE-RETURN-${randomUUID()}`;
+  await openCase(page, reference);
+  let last = "";
+  for (let index = 0; index < 12; index += 1) {
+    last = mintOperationId();
+    const reply = await workRequest(page, "operation.execute", {
+      operationId: last,
+      task: "reminder.create",
+      binding: { kind: "REMINDER", target: { kind: "REFERENCE", caseReference: reference } },
+      inputs: {
+        "input:reminderAction": `${reference} row ${index}`,
+        "input:reminderDueDate": "2026-01-01",
+      },
+    });
+    expect(reply.outcome.kind).toBe("ACCEPTED");
+  }
+  await page.goto(`/reminders?view=PENDING&q=${encodeURIComponent(reference)}`);
+  const queue = page.url();
+  const link = page.locator(`[id="reminder-link-${last}"]`);
+  await expect(link).toBeVisible();
+  await link.scrollIntoViewIfNeeded();
+  await link.focus();
+  const position = await page.evaluate(() => scrollY);
+  expect(position).toBeGreaterThan(0);
+  await link.click();
+  await expect(page).toHaveURL(new RegExp(`/reminders/${last}$`, "u"));
+  await expectCaseReadsSettled(page);
+  await expect(page.locator(".selected-reminder")).toContainText(`${reference} row 11`);
+  await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+  await expect(page).toHaveURL(queue);
+  await expect(link).toBeFocused();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(position);
+});
+
+test("@engine exact missing and wrong-parent reminders settle without parent refresh loops", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const first = `FOREIGN-${randomUUID()}`;
+  await openCase(page, first);
+  const foreign = await plan(page, "Private foreign reminder", "2026-01-01");
+  const parent = `READABLE-${randomUUID()}`;
+  await page.goto("/cases");
+  await openCase(page, parent);
+  for (const id of [foreign.operationId, randomUUID()]) {
+    const calls = { parent: 0, reminder: 0 };
+    const count = (request: Request) => {
+      const path = new URL(request.url()).pathname;
+      if (path === "/api/case.get") {
+        calls.parent += 1;
+      }
+      if (path === "/api/reminder.get") {
+        calls.reminder += 1;
+      }
+    };
+    page.on("request", count);
+    await page.goto(`${referencePath(parent)}/reminders/${id}`);
+    const selected = page.locator(".selected-reminder");
+    await expect(selected.getByRole("alert")).toBeVisible();
+    await expect.poll(() => calls).toEqual({ parent: 2, reminder: 2 });
+    // A bounded quiet interval catches the former parent-loading/remount cycle.
+    await page.waitForTimeout(250);
+    expect(calls).toEqual({ parent: 2, reminder: 2 });
+    await expect(selected).not.toContainText("Private foreign reminder");
+    await expect(selected.getByRole("button")).toHaveCount(0);
+    page.off("request", count);
   }
 });

@@ -5,7 +5,7 @@ export type Route =
   | { screen: "reminders"; query: string }
   | { screen: "settings" }
   | { screen: "newCase" }
-  | { screen: "case"; target: CaseSelector }
+  | { screen: "case"; target: CaseSelector; reminderId?: string }
   | { screen: "caseAct"; target: CaseSelector; act: string; paymentId?: string }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
@@ -72,6 +72,9 @@ const caseRoute = (segments: string[], query: string): Route => {
   }
   if (segments.length === 3) {
     return { screen: "case", target };
+  }
+  if (segments[3] === "reminders" && segments[4] !== "") {
+    return { screen: "case", target, reminderId: decodeURIComponent(segments[4]!) };
   }
   if (segments[3] !== "acts") {
     return { screen: "missing" };

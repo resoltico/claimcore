@@ -1,3 +1,4 @@
+import { useInlineNoteDraft, type NoteIntent } from "./InlineNoteDraft";
 import type { OperationAffordance } from "../../operation/affordances";
 import type { RegionRow, HumanResponseByEndpoint, Screen } from "@contracts/client";
 import { Actions } from "../../ui/regions/Actions";
@@ -189,23 +190,84 @@ const AllNotes = ({
     </>
   );
 };
+const useCaseNoteComposer = (current: CurrentCase) => {
+  const { draft, observe, edit, capture } = useInlineNoteDraft();
+  const { caseId } = current.subject;
+  const identity = current.screen.regions.find((item) => item.role === "IDENTITY")?.content;
+  const referenceValue =
+    identity?.kind === "ENTRIES"
+      ? identity.entries.find((entry) => entry.key === "caseReference")?.value
+      : undefined;
+  const reference = referenceValue?.kind === "REFERENCE" ? referenceValue.value : null;
+  useLayoutEffect(() => {
+    observe(caseId, reference);
+  }, [observe, caseId, reference]);
+  const text = draft?.caseId === caseId ? draft.text : "";
+  return { text, edit, capture, caseId };
+};
+const NoteDisclosure = ({
+  current,
+  editing,
+  onRemove,
+  onDisclosureRefused,
+}: {
+  current: CurrentCase;
+  editing: boolean;
+  onRemove: (action: OperationAffordance) => void;
+  onDisclosureRefused: () => void;
+}) => {
+  const p = usePresentation();
+  const [expanded, setExpanded] = useState(false);
+  return expanded ? (
+    <AllNotes
+      current={current}
+      onDisclosureRefused={onDisclosureRefused}
+      {...(editing ? {} : { onRemove })}
+    />
+  ) : (
+    <>
+      <NoteRows
+        view={current.screen}
+        zone={current.basis.observation.timeZone}
+        {...(editing ? {} : { onRemove })}
+      />
+      <NotesShown view={current.screen} shown={noteCounts(current.screen).shown} />
+      {(noteCounts(current.screen).total ?? 0) > noteCounts(current.screen).shown ? (
+        <Button
+          variant="secondary"
+          onPress={() => {
+            setExpanded(true);
+          }}
+        >
+          {p.text("ui.showAllNotes")}
+        </Button>
+      ) : null}
+    </>
+  );
+};
+
 export const CaseNotes = ({
   current,
   editing,
   onAdd,
   onRemove,
   onDisclosureRefused,
+  disclosureAvailable = true,
+  authoringAvailable = disclosureAvailable,
+  refresh = 0,
 }: {
+  disclosureAvailable?: boolean;
+  authoringAvailable?: boolean;
+  refresh?: number;
   current: CurrentCase;
   editing: boolean;
-  onAdd: (text: string) => void;
+  onAdd: (intent: NoteIntent) => void;
   onRemove: (action: OperationAffordance) => void;
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
   const id = useId();
-  const [text, setText] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const { text, edit, capture, caseId } = useCaseNoteComposer(current);
   const region = current.screen.regions.find((item) => item.role === "NOTES");
   if (region === undefined) {
     return null;
@@ -218,7 +280,7 @@ export const CaseNotes = ({
     >
       <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
       {current.actions.some((action) => action.task === "note.add" && action.blocked === null) ? (
-        <div className="note-composer">
+        <div className="note-composer" hidden={!authoringAvailable} inert={!authoringAvailable}>
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea
             id={`${id}-text`}
@@ -226,46 +288,32 @@ export const CaseNotes = ({
             placeholder={p.text("ui.notePlaceholder")}
             disabled={editing}
             onChange={(event) => {
-              setText(event.target.value);
+              edit(caseId, event.target.value);
             }}
           />
           <Button
             variant="secondary"
-            isDisabled={editing || text.length === 0}
+            isDisabled={editing || !disclosureAvailable || text.length === 0}
             onPress={() => {
-              onAdd(text);
+              const intent = capture(caseId);
+              if (intent !== null) {
+                onAdd(intent);
+              }
             }}
           >
             {p.text("task.note.add.label")}
           </Button>
         </div>
       ) : null}
-      {expanded ? (
-        <AllNotes
+      {disclosureAvailable ? (
+        <NoteDisclosure
+          key={refresh}
           current={current}
+          editing={editing}
+          onRemove={onRemove}
           onDisclosureRefused={onDisclosureRefused}
-          {...(editing ? {} : { onRemove })}
         />
-      ) : (
-        <>
-          <NoteRows
-            view={current.screen}
-            zone={current.basis.observation.timeZone}
-            {...(editing ? {} : { onRemove })}
-          />
-          <NotesShown view={current.screen} shown={noteCounts(current.screen).shown} />
-          {(noteCounts(current.screen).total ?? 0) > noteCounts(current.screen).shown ? (
-            <Button
-              variant="secondary"
-              onPress={() => {
-                setExpanded(true);
-              }}
-            >
-              {p.text("ui.showAllNotes")}
-            </Button>
-          ) : null}
-        </>
-      )}
+      ) : null}
     </section>
   );
 };

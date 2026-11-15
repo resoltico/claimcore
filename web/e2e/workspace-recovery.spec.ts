@@ -111,7 +111,7 @@ test("people refusal preserves authored input through Settings and needs a fresh
     body: JSON.stringify({
       operationId: mintOperationId(),
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       inputs: {
         "input:principal.kind": "HUMAN",
         "input:principal.issuer": "",
@@ -216,7 +216,7 @@ test("people refusal preserves authored input through Settings and needs a fresh
   expect(refused).toEqual({
     operationId: operationId(refused),
     task: "people.admit",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": "HUMAN",
       "input:principal.issuer": source.issuer,
@@ -258,7 +258,7 @@ test("people refusal preserves authored input through Settings and needs a fresh
   expect(corrected).toEqual({
     operationId: operationId(corrected),
     task: "people.admit",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": "HUMAN",
       "input:principal.issuer": source.issuer,

@@ -63,7 +63,8 @@ let internal lookup fixture =
                 Service.execute
                     owner
                     (OperationInput.People(
-                        Inputs.peopleRequest
+                        ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                            fixture.Store
                             (id fixture (1100 + index))
                             principal
                             (PeopleAct.Register profile)
@@ -162,7 +163,11 @@ let internal lookup fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id fixture 1120) person PeopleAct.EraseProfile
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 1120)
+                        person
+                        PeopleAct.EraseProfile
                 ))
                 token
 
@@ -178,7 +183,8 @@ let internal lookup fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 1121)
                         person
                         (PeopleAct.SetProfile
@@ -223,7 +229,8 @@ let internal contactAndRole fixture =
                     Service.execute
                         owner
                         (OperationInput.People(
-                            Inputs.peopleRequest
+                            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                                fixture.Store
                                 (id fixture operation)
                                 principal
                                 (PeopleAct.Register
@@ -330,7 +337,11 @@ let internal contactAndRole fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id fixture 1146) first PeopleAct.EraseProfile
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 1146)
+                        first
+                        PeopleAct.EraseProfile
                 ))
                 token
 
@@ -353,7 +364,8 @@ let internal contactAndRole fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 1147)
                         first
                         (PeopleAct.SetProfile

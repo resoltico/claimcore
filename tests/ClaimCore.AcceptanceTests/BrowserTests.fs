@@ -234,13 +234,25 @@ let private run engine =
             0
             ("Playwright " + engine + sources + "; private evidence: " + output)
 
+        use report =
+            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
+
+        let stats = report.RootElement.GetProperty("stats")
+        let count (field: string) = stats.GetProperty(field).GetInt32()
+        Expect.isGreaterThan (count "expected") 0 "Selected browser scope is nonempty"
+        Expect.equal (count "skipped") 0 "Selected browser scope contains no skipped checks"
+        Expect.equal (count "unexpected") 0 "Every selected browser check passed"
+        Expect.equal (count "flaky") 0 "Browser evidence does not hide a failed attempt"
+
+        printfn
+            "Published browser %s: %d passed; zero skipped, unexpected or flaky."
+            engine
+            (count "expected")
+
         if
             engine = "chromium"
             && (specification |> Option.forall (fun value -> value.Contains("unicode-parity")))
         then
-            use report =
-                JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
-
             if includesUnicode report.RootElement then
                 BrowserReadback.qualify fixture output
 

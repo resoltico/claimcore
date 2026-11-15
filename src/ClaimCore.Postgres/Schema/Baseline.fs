@@ -9,9 +9,12 @@ open Npgsql
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 
-/// The baseline exists, but its immutable installation tuple cannot be admitted.
-type internal InstallationConfigurationException() =
-    inherit InvalidOperationException("The installation configuration is invalid.")
+/// Immutable installation configuration read by installation checks.
+type Installation =
+    {
+        InstallationId: Guid
+        BusinessTimeZone: string
+    }
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
@@ -130,6 +133,15 @@ module internal Baseline =
                 raise (InstallationConfigurationException())
 
             return id, timeZone
+        }
+
+    /// Assert the admitted tuple in the transaction that will access installation data.
+    let requireExpected (expected: Installation) connection token =
+        task {
+            let! id, zone = require connection token
+
+            if id <> expected.InstallationId || zone <> expected.BusinessTimeZone then
+                raise (InstallationConfigurationException())
         }
 
     let private install connection timeZone token =

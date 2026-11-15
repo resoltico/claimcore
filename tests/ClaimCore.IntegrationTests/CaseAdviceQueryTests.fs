@@ -72,6 +72,11 @@ let tests =
                         (core principal)
                         (Inputs.caseOperation
                             {
+                                ExpectedFamilySequence =
+                                    if CaseAct.kind act = CaseActKind.Erase then
+                                        Some 1L
+                                    else
+                                        None
                                 OperationId = id n
                                 CaseReference = "ADVICE-1"
                                 ExpectedRevision = revision

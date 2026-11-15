@@ -43,6 +43,11 @@ let private sendOn date number act (previous: Scenario option) =
         date
         before
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = operation number
             CaseReference = "PAYMENTS"
             ExpectedRevision =

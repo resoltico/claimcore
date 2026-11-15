@@ -109,7 +109,10 @@ let tests =
                 let dependencies = ServiceCollection()
                 dependencies.AddSingleton<IAuthenticationService>(authentication) |> ignore
                 dependencies.AddSingleton<IAntiforgery>(antiforgery) |> ignore
-                dependencies.AddSingleton<AuthenticationAdmission>() |> ignore
+
+                dependencies.AddSingleton<AuthenticationAdmission>(fun _ ->
+                    new AuthenticationAdmission(System.Threading.CancellationToken.None))
+                |> ignore
 
                 dependencies.AddSingleton<PrincipalAdmission>(fun _ -> new PrincipalAdmission(1, 0))
                 |> ignore

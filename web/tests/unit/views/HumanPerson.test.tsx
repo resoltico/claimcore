@@ -62,7 +62,7 @@ const document: HumanReadDocument_people_grants = {
               actions: [
                 operationAffordance(
                   "people.revoke",
-                  { kind: "PEOPLE", actorId },
+                  { kind: "PEOPLE", actorId, expectedRevision: 1 },
                   {
                     "input:role": "CASE_READER",
                     "input:scope": "CASE",
@@ -84,7 +84,15 @@ const document: HumanReadDocument_people_grants = {
     ],
   },
   subject: { kind: "PERSON", actorId },
-  actions: [operationAffordance("people.revoke", { kind: "PEOPLE", actorId }, {}, undefined, {})],
+  actions: [
+    operationAffordance(
+      "people.revoke",
+      { kind: "PEOPLE", actorId, expectedRevision: 1 },
+      {},
+      undefined,
+      {},
+    ),
+  ],
   links: [
     {
       rel: "VIEW",

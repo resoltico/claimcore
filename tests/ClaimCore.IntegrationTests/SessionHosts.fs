@@ -80,7 +80,7 @@ let private host directory (database: PostgresFixture.Database) =
         SessionKeys.configure
             (SessionKeys.admit directory)
             (TimeSpan.FromMinutes 30.)
-            (SessionStore(database.RuntimeSource))
+            (SessionStore(database.RuntimeSource, database.Installation))
             builder.Services
 
         AuthMiddleware.configure

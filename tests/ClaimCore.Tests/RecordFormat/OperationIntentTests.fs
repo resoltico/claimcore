@@ -27,6 +27,7 @@ let private command amount =
 
     Case.parse
         {
+            ExpectedFamilySequence = None
             OperationId = guid 2
             CaseReference = "CASE-ONE"
             ExpectedRevision = 1L
@@ -36,6 +37,7 @@ let private command amount =
 
 let private scope reference act =
     {
+        ExpectedFamilySequence = None
         CaseCommandSkeleton.CaseId = parent
         Reference = reference
         ExpectedRevision = Revision.first
@@ -102,6 +104,7 @@ let tests =
                 let opening =
                     Case.parse
                         {
+                            ExpectedFamilySequence = None
                             OperationId = guid 1
                             CaseReference = "CASE-ONE"
                             ExpectedRevision = 0L
@@ -117,6 +120,7 @@ let tests =
                 let close =
                     Case.parse
                         {
+                            ExpectedFamilySequence = None
                             OperationId = guid 2
                             CaseReference = "CASE-ONE"
                             ExpectedRevision = 1L

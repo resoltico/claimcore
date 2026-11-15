@@ -219,6 +219,7 @@ module Service =
                             People.prepare
                                 {
                                     OperationId = input.OperationId
+                                    ExpectedRevision = input.ExpectedRevision
                                     Target = PrincipalKey.toInput principal
                                     Act = input.Act
                                 }

@@ -76,6 +76,7 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
   }).toPass({ timeout: 15000 });
   for (const panel of [
     current.locator(".reminder-list"),
+    current.locator(".selected-reminder"),
     current.locator(".case-timeline-panel"),
   ]) {
     if ((await panel.count()) > 0) {

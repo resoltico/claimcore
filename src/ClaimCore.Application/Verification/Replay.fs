@@ -714,6 +714,7 @@ module Replay =
     type Scan =
         {
             Head: LedgerPosition
+            Families: Map<CaseId, Sequence>
             Cases: Map<CaseId, CaseHistory>
             Work: Map<CaseId, WorkHistory>
             Reminders: Map<ReminderId, ReminderHistory>
@@ -831,6 +832,7 @@ module Replay =
                 | Ok act ->
                     People.restoreCommand
                         operation.OperationId
+                        scope.ExpectedRevision
                         scope.Principal
                         (PeopleAct.map authored id act)
                     |> Result.mapError finding
@@ -847,16 +849,21 @@ module Replay =
                 |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
 
             let erased () =
-                PeopleSubject.applyErased
-                    context
-                    dependencies
-                    provenance
-                    before
-                    scope.TargetActorId
-                    operation.OperationId
-                    scope.Principal
-                    (PeopleAct.map authored (fun _ -> None) scope.Act)
-                |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
+                let actual = before |> Option.map _.Revision |> Option.defaultValue Revision.zero
+
+                if actual <> scope.ExpectedRevision then
+                    Error(divergence at VerificationFinding.PeopleFold)
+                else
+                    PeopleSubject.applyErased
+                        context
+                        dependencies
+                        provenance
+                        before
+                        scope.TargetActorId
+                        operation.OperationId
+                        scope.Principal
+                        (PeopleAct.map authored (fun _ -> None) scope.Act)
+                    |> Result.mapError (fun _ -> divergence at VerificationFinding.PeopleFold)
 
             let! after =
                 SubjectReplay.run
@@ -1022,6 +1029,32 @@ module Replay =
                      && nonces
                         |> List.forall (fun nonce -> not (Set.contains nonce state.AvailableNonces)))
 
+            do!
+                match root.Structure.Command with
+                | CommandSkeleton.Case scope when scope.Act = CaseActKind.Erase ->
+                    require
+                        at
+                        VerificationFinding.StateSequence
+                        (scope.ExpectedFamilySequence = Map.tryFind scope.CaseId state.Families)
+                | _ -> Ok()
+
+            let families =
+                StoredEffect.ofOperation operation
+                |> List.fold
+                    (fun families entry ->
+                        let parent =
+                            match entry.Subject with
+                            | EntryTarget.Case(id, _, _, _) -> Some id
+                            | EntryTarget.Work value -> Some value.CaseId
+                            | EntryTarget.Reminder value -> Some value.CaseId
+                            | EntryTarget.Note value -> Some value.CaseId
+                            | EntryTarget.People _ -> None
+
+                        match parent with
+                        | Some id -> Map.add id root.Header.Sequence families
+                        | None -> families)
+                    state.Families
+
             let! people =
                 match root.Structure.Command with
                 | CommandSkeleton.People scope -> replayPeople state operation scope
@@ -1145,6 +1178,7 @@ module Replay =
 
             return
                 { next with
+                    Families = families
                     Head = root.Position
                     People = people
                     Accepted = Map.add operation.OperationId operation.ActorId state.Accepted
@@ -1156,6 +1190,7 @@ module Replay =
     let initial (expected: LedgerPosition option) =
         {
             Head = LedgerPosition.genesis
+            Families = Map.empty
             Cases = Map.empty
             Work = Map.empty
             Reminders = Map.empty

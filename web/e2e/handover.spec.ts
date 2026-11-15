@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople } from "./people-setup";
 import { prefixedInputs } from "../tests/support/submission-inputs";
 import type { RequestByEndpoint } from "@contracts/client";
@@ -106,7 +107,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   await applyPeople(page, {
     operationId: actor,
     task: "people.register",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:profile.displayName": "Incoming handler",
       ...prefixedInputs("input:principal.", principal),
@@ -115,7 +116,7 @@ test("reassigns a filtered list row with its work revision and refuses stale han
   await applyPeople(page, {
     operationId: operationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, principal) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, principal)),
     inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
   });
   const references = [`HAND-A-${randomUUID()}`, `HAND-B-${randomUUID()}`] as const;

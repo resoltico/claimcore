@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Suprimir permanentemente de ClaimCore los datos, el trabajo y los recordatorios de este expediente. Se conservan la referencia y la lista de cambios. Las copias externas no se ven afectadas.",
-    "source": "8705b2ea28a6"
+    "text": "Eliminar permanentemente los detalles actuales y conservados, pagos, trabajo, recordatorios y notas de este expediente. Se conservan la referencia y el registro de cambios. No afecta a las copias guardadas en otros lugares.",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "Suprimir perfil",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "Versión revisada del expediente",
-    "source": "8f3d37032769"
+    "text": "Versión revisada",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "Versión revisada de la tramitación",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "La versión del expediente que revisaste.",
-    "source": "8965c7efb1dc"
+    "text": "Usa la versión que revisaste. La creación de cuentas requiere cero.",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "Consulta la última versión del expediente antes de modificarlo.",
-    "source": "de14cae9e98d"
+    "text": "Revisa el estado actual antes de modificarlo.",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "Por qué es necesario este cambio.",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Esto suprime permanentemente de ClaimCore los datos del expediente, su tramitación y sus recordatorios. Se conservan la referencia y el registro de cambios.",
-    "source": "e774df6acd21"
+    "text": "Esto elimina permanentemente los detalles actuales y conservados, pagos, trabajo, recordatorios y notas del expediente. Se conservan la referencia y el registro de cambios. No afecta a las copias guardadas en otros lugares.",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "Cuenta registrada.",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "Estado del caso",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "Introduce un UUID de expediente no vacío.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "Elige una referencia o ID para un expediente; no uses ninguno para todos los expedientes.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "Introduce un UUID de expediente no vacío.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "Elige una referencia o ID para un expediente; no uses ninguno para todos los expedientes.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "Esta cuenta cambió desde tu revisión. Revisa la cuenta actual antes de intentarlo de nuevo.",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "Este expediente o su trabajo, notas, recordatorios o pagos cambiaron desde tu revisión de borrado. Revisa de nuevo el expediente completo.",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "Antes de borrar, revisa el expediente y todo su trabajo, notas, recordatorios y pagos.",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "Versión revisada del expediente completo",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "Usa la secuencia de familia suministrada por case.get para el expediente que revisaste para borrar.",
+    "source": "8d258a9cf42b"
   }
 }

@@ -76,6 +76,7 @@ let private scalarAdmission () =
          << ClaimCore.TestSupport.Submissions.ofCommand None) (
             ClaimCore.TestSupport.Inputs.caseOperation
                 {
+                    ExpectedFamilySequence = None
                     OperationId = Guid.Parse id
                     CaseReference = ""
                     ExpectedRevision = 0L
@@ -140,7 +141,7 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        """{"operationId":"00000000-0000-0000-0000-000000000000","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":0},"inputs":{}}"""
+        """{"operationId":"00000000-0000-0000-0000-000000000000","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"expectedFamilySequence":1},"inputs":{}}"""
 
     Expect.isOk
         (admit
