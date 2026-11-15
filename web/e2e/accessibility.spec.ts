@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -48,6 +49,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await review.getByRole("button", { name: "Open a case", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#case-detail-title")).toBeVisible();
+  await expectCaseReadsSettled(page);
   await progress("a11y-receipt");
   await expectAccessible(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();

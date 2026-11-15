@@ -19,7 +19,8 @@ let private serviceCases fixture (admin: ServiceContext) principal =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 400)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

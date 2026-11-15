@@ -9,6 +9,7 @@ module InputTarget =
         function
         | InputTarget.Field field -> BusinessField.key field
         | InputTarget.OperationId -> "operationId"
+        | InputTarget.ExpectedFamilySequence -> "expectedFamilySequence"
         | InputTarget.ExpectedRevision -> "expectedRevision"
         | InputTarget.Group group -> RecordGroup.token group
         | InputTarget.Reason -> "reason"

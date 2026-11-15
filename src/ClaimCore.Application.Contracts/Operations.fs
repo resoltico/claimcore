@@ -34,6 +34,7 @@ module OperationInput =
                     request.OperationId,
                     reference request.Target,
                     request.ExpectedRevision,
+                    request.ExpectedFamilySequence,
                     request.Act
                 ),
                 None

@@ -1,8 +1,11 @@
+import { SessionContext } from "../../../src/session/SessionContext";
 import type { RegionRow, HumanReadDocument_case_list, ResponseFor } from "@contracts/client";
 
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
 
 import { act } from "@testing-library/react";
+import { useLayoutEffect } from "react";
+import { useEndpointCache } from "../../../src/hooks/EndpointProvider";
 import { expect, it, vi } from "vitest";
 import { useEndpoint } from "../../../src/hooks/useEndpoint";
 import { useBusinessDate } from "../../../src/hooks/useBusinessDate";
@@ -155,3 +158,169 @@ it("refreshes completed paginated rows on focus and business-date invalidation w
     vi.unstubAllGlobals();
   }
 });
+
+it("finishes activation before refreshing, coalesces resume signals and cancels obsolete scope work", () => {
+  const frames = new Map<number, FrameRequestCallback>();
+  let sequence = 0;
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+    frames.set(++sequence, callback);
+    return sequence;
+  });
+  vi.stubGlobal("cancelAnimationFrame", (key: number) => {
+    frames.delete(key);
+  });
+  const control: { invalidate?: ReturnType<typeof vi.spyOn> } = {};
+  const FocusProbe = ({ available = true }: { available?: boolean }) => {
+    const cache = useEndpointCache();
+    useBusinessDate(available ? requester : null);
+    useLayoutEffect(() => {
+      control.invalidate = vi.spyOn(cache!, "invalidate");
+    }, [cache]);
+    return null;
+  };
+  const paint = () => {
+    const [next] = [...frames.entries()];
+    if (next !== undefined) {
+      const [id, callback] = next;
+      frames.delete(id);
+      act(() => {
+        callback(0);
+      });
+    }
+  };
+  try {
+    const view = render(<FocusProbe />);
+    fireEvent.focus(window);
+    fireEvent(globalThis.document, new Event("visibilitychange"));
+    expect(frames.size).toBe(1);
+    expect(control.invalidate).not.toHaveBeenCalled();
+    paint();
+    expect(control.invalidate).not.toHaveBeenCalled();
+    paint();
+    expect(control.invalidate).toHaveBeenCalledOnce();
+    fireEvent.focus(window);
+    view.rerender(<FocusProbe available={false} />);
+    expect(frames.size).toBe(0);
+    paint();
+    expect(control.invalidate).toHaveBeenCalledOnce();
+  } finally {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  }
+});
+
+it.each([0, 1])(
+  "keeps a queued refresh when a same-owner document replaces frame %i",
+  (painted) => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let sequence = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(++sequence, callback);
+      return sequence;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (key: number) => {
+      frames.delete(key);
+    });
+    const control: { invalidate?: ReturnType<typeof vi.spyOn> } = {};
+    const FocusProbe = ({ source }: { source: typeof requester }) => {
+      const cache = useEndpointCache();
+      useBusinessDate(source);
+      useLayoutEffect(() => {
+        control.invalidate = vi.spyOn(cache!, "invalidate");
+      }, [cache]);
+      return null;
+    };
+    const paint = () => {
+      const [next] = [...frames.entries()];
+      if (next !== undefined) {
+        const [id, callback] = next;
+        frames.delete(id);
+        act(() => {
+          callback(0);
+        });
+      }
+    };
+    try {
+      const view = render(<FocusProbe source={requester} />);
+      fireEvent.focus(window);
+      if (painted === 1) {
+        paint();
+      }
+      view.rerender(<FocusProbe source={{ ...requester, screen: { ...requester.screen } }} />);
+      expect(frames.size).toBe(1);
+      paint();
+      if (painted === 0) {
+        paint();
+      }
+      expect(control.invalidate).toHaveBeenCalledOnce();
+    } finally {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  },
+);
+
+it.each(["credential", "epoch", "actor", "installation"])(
+  "cancels queued refresh for a replaced %s scope",
+  (part) => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let sequence = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(++sequence, callback);
+      return sequence;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (key: number) => {
+      frames.delete(key);
+    });
+    const control: { invalidate?: ReturnType<typeof vi.spyOn> } = {};
+    const FocusProbe = ({ source }: { source: typeof requester }) => {
+      const cache = useEndpointCache();
+      useBusinessDate(source);
+      useLayoutEffect(() => {
+        control.invalidate = vi.spyOn(cache!, "invalidate");
+      }, [cache]);
+      return null;
+    };
+    const baseSession = {
+      state: { kind: "authenticated" as const, token: "token", epoch: 0 },
+      logout: () => Promise.resolve(),
+      refresh: () => Promise.resolve(),
+    };
+    const replacedSession = {
+      ...baseSession,
+      state: {
+        ...baseSession.state,
+        token: part === "credential" ? "different-token" : "token",
+        epoch: part === "epoch" ? 1 : 0,
+      },
+    };
+    const replaced = {
+      ...requester,
+      subject: {
+        ...requester.subject,
+        actorId: part === "actor" ? "different-actor" : requester.subject.actorId,
+        installationId:
+          part === "installation" ? "different-installation" : requester.subject.installationId,
+      },
+    };
+    try {
+      const view = render(
+        <SessionContext value={baseSession}>
+          <FocusProbe source={requester} />
+        </SessionContext>,
+      );
+      fireEvent.focus(window);
+      expect(frames.size).toBe(1);
+      view.rerender(
+        <SessionContext value={replacedSession}>
+          <FocusProbe source={part === "actor" || part === "installation" ? replaced : requester} />
+        </SessionContext>,
+      );
+      expect(frames.size).toBe(0);
+      expect(control.invalidate).not.toHaveBeenCalled();
+    } finally {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    }
+  },
+);

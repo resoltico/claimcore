@@ -323,6 +323,7 @@ module HumanCaseDocument =
                                 kind
                                 value.Snapshot.CaseId
                                 value.Snapshot.Revision
+                                value.FamilySequence
                                 seeds
                                 editable
                                 choices
@@ -340,6 +341,7 @@ module HumanCaseDocument =
                                 blocked.Act
                                 value.Snapshot.CaseId
                                 value.Snapshot.Revision
+                                value.FamilySequence
                                 Map.empty
                                 []
                                 Map.empty
@@ -469,7 +471,7 @@ module HumanReadDocuments =
 
             TaskAffordances.offered
                 task
-                (OperationBinding.Case(CaseSelector.Reference "", 0L, None))
+                (OperationBinding.Case(CaseSelector.Reference "", 0L, None, None))
                 Map.empty
                 (TaskAffordances.input (InputTarget.Field BusinessField.CaseReference)
                  :: TaskAffordances.authored task)
@@ -492,7 +494,7 @@ module HumanReadDocuments =
 
             TaskAffordances.offered
                 task
-                (OperationBinding.People None)
+                (OperationBinding.People(None, 0L))
                 seeds
                 (TaskAffordances.authored task)
                 Map.empty
@@ -764,7 +766,13 @@ module HumanReadDocuments =
                         Map.empty
 
                 let action =
-                    TaskAffordances.person kind actor seeds (TaskAffordances.authored task) choices
+                    TaskAffordances.person
+                        kind
+                        actor
+                        value.Revision
+                        seeds
+                        (TaskAffordances.authored task)
+                        choices
 
                 { action with
                     Primary = primary = Some kind

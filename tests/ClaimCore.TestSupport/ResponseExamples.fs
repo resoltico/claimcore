@@ -75,6 +75,7 @@ let peopleReceipt =
 
 let caseRead: CaseReadModel =
     {
+        FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
         LatestPayments = []
         Advice = Inputs.caseAdvice snapshot.State
@@ -118,6 +119,7 @@ let private directoryActor: ActorReviewItem =
 let previewInput =
     OperationInput.Case
         {
+            ExpectedFamilySequence = None
             OperationId = id
             Target = CaseSelector.Id snapshot.CaseId
             ExpectedRevision = 1L
@@ -419,6 +421,7 @@ let private replies () : IEndpointOutput list =
                     {
                         Basis = basis
                         Actor = directoryActor
+                        Revision = Revision.first
                         Offers = []
                         ProfileSeed = None
                         Items = []

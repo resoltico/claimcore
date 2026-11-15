@@ -20,7 +20,7 @@ open ClaimCore.TestSupport.TestServerFixture
 
 let private peopleBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"operationId":"{operationId}","task":"people.register","binding":{{"kind":"PEOPLE"}},"inputs":{{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example.test/realm","input:principal.subject":"person","input:profile.displayName":"Host transport person"}}}}"""
+        $"""{{"operationId":"{operationId}","task":"people.register","binding":{{"kind":"PEOPLE","expectedRevision":0}},"inputs":{{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example.test/realm","input:principal.subject":"person","input:profile.displayName":"Host transport person"}}}}"""
     )
 
 let private body name =
@@ -536,7 +536,11 @@ let private principalAdmission () =
                 {|
                     operationId = operationId
                     task = "people.register"
-                    binding = {| kind = "PEOPLE" |}
+                    binding =
+                        {|
+                            kind = "PEOPLE"
+                            expectedRevision = 0L
+                        |}
                     inputs =
                         Map.ofList["input:principal.kind", kind
                                    "input:principal.issuer", issuer

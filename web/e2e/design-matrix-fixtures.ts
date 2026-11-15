@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { prefixedInputs } from "../tests/support/submission-inputs";
 import {
@@ -57,21 +58,32 @@ type CaseSubmission = Extract<
   RequestByEndpoint["operation.execute"],
   { binding: { kind: "CASE" } }
 >;
-const caseAct = (
+const caseAct = async (
   page: Page,
   reference: string,
   revision: number,
   authored: Pick<CaseSubmission, "task" | "inputs">,
-) =>
-  execute(page, {
+) => {
+  const target = { kind: "REFERENCE" as const, caseReference: reference };
+  let family: number | undefined;
+  if (authored.task === "case.erase") {
+    const observed = await request(page, "case.get", { target });
+    if (observed.outcome.kind !== "SUCCEEDED") {
+      throw new Error("E2E_MATRIX_ERASURE_REVIEW_UNAVAILABLE");
+    }
+    family = observed.outcome.data.familySequence;
+  }
+  return execute(page, {
     ...authored,
     operationId: mintOperationId(),
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: reference },
+      target,
       expectedRevision: revision,
+      ...(family === undefined ? {} : { expectedFamilySequence: family }),
     },
   } as CaseSubmission);
+};
 const workAct = (
   page: Page,
   reference: string,
@@ -404,7 +416,7 @@ const ownerStewardship = async (page: Page) => {
     applyPeople(page, {
       operationId: mintOperationId(),
       task: active ? "people.grant" : "people.revoke",
-      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
       inputs: { "input:role": "DATA_STEWARD", "input:scope": "INSTALLATION" },
     });
   return {
@@ -553,7 +565,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   const registered = await execute(page, {
     operationId: mintOperationId(),
     task: "people.register",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:profile.displayName": "Synthetic matrix account",
       ...prefixedInputs("input:principal.", target),
@@ -565,7 +577,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
     inputs: {
       "input:role": "CASE_READER",
       "input:scope": "CASE",
@@ -613,7 +625,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   const registered = await execute(page, {
     operationId: mintOperationId(),
     task: "people.register",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:profile.displayName": "Synthetic matrix account",
       ...prefixedInputs("input:principal.", target),
@@ -629,7 +641,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
     inputs: {
       "input:role": "CASE_HANDLER",
       "input:scope": "CASE",
@@ -643,7 +655,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "people.disable",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
     inputs: {},
   });
   const current = await request(page, "case.get", {

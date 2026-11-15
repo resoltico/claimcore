@@ -52,7 +52,9 @@ let internal peopleChanges fixture =
         let! disabled =
             (Service.execute
                 owner
-                (OperationInput.People(peopleRequest (id fixture 5) target (PeopleAct.Disable)))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture 5) target (PeopleAct.Disable)
+                ))
                 (CancellationToken.None))
 
         acceptedPeople disabled
@@ -75,7 +77,8 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 30)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -282,7 +285,8 @@ let internal scopedWorker fixture =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 20)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -412,7 +416,8 @@ let internal scopedPeople fixture =
             Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 430)
                         roleless
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -434,7 +439,9 @@ let internal scopedPeople fixture =
             let! changed =
                 Service.execute
                     admin
-                    (OperationInput.People(peopleRequest (id fixture operation) principal act))
+                    (OperationInput.People(
+                        reviewedPeopleRequest fixture.Store (id fixture operation) principal act
+                    ))
                     CancellationToken.None
 
             acceptedPeople changed
@@ -460,7 +467,8 @@ let internal scopedPeople fixture =
             Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 440)
                         service
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

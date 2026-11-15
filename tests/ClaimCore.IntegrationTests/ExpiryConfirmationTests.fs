@@ -47,6 +47,7 @@ let private lookup service identity cancellation =
 let private openCase identity reference =
     Inputs.caseOperation
         {
+            ExpectedFamilySequence = None
             OperationId = identity
             CaseReference = reference
             ExpectedRevision = 0L
@@ -69,6 +70,12 @@ let private confirmed () =
                 service
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence =
+                            Some(
+                                reviewedFamilySequence
+                                    fixture.Store
+                                    (CaseSelector.Reference "EXPIRY-ERASED")
+                            )
                         OperationId = Guid.CreateVersion7()
                         CaseReference = "EXPIRY-ERASED"
                         ExpectedRevision = 1L

@@ -46,6 +46,7 @@ type InputTarget =
     | Field of BusinessField
     | OperationId
     | ExpectedRevision
+    | ExpectedFamilySequence
     | Group of RecordGroup
     | Reason
     | PrincipalKind

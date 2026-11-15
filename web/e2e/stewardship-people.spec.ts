@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { observedAccess, acceptedSubject } from "./work-workflow";
 import { syntheticPrincipals } from "./people-setup";
 import type { ResponseFor, OperationTaskDefinition } from "@contracts/client";
@@ -66,7 +67,7 @@ const stewardAct = async (
   const action = dialog.locator("button[data-confirm-operation]");
   if (kind === "case.erase") {
     await expect(dialog).toContainText(
-      "This permanently removes the case details, work and reminders from ClaimCore.",
+      "This permanently removes current and retained case details, payments, work, reminders and notes.",
     );
     const challenge = dialog.getByRole("textbox", {
       name: "Case reference (exact)",
@@ -351,10 +352,7 @@ const assertHumanOnlyBoundary = async (page: Page, actorId: string) => {
     body: JSON.stringify({
       operationId: mintOperationId(),
       task: "people.grant",
-      binding: {
-        kind: "PEOPLE",
-        actorId,
-      },
+      binding: await reviewedPeopleBinding(page, actorId),
       inputs: { "input:role": "OWNER", "input:scope": "INSTALLATION" },
     }),
   });
@@ -426,10 +424,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
     body: JSON.stringify({
       operationId: mintOperationId(),
       task: "people.grant",
-      binding: {
-        kind: "PEOPLE",
-        actorId: randomUUID(),
-      },
+      binding: { kind: "PEOPLE", actorId: randomUUID(), expectedRevision: 1 },
       inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
     }),
   });

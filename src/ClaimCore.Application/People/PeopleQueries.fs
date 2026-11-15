@@ -222,104 +222,121 @@ module internal PeopleQueries =
                                                     return
                                                         Outcome.Failed CoreFault.StoreIntegrityError
                                                 | Some target ->
-                                                    let! maintenance = tx.Maintenance()
+                                                    let! owned = tx.PeopleRevision target.Principal
 
-                                                    let offers =
-                                                        Advice.actorOffers
-                                                            services.Principal
-                                                            viewer
-                                                            maintenance
-
-                                                    let profileSeed =
-                                                        if
-                                                            List.contains
-                                                                PeopleActKind.SetProfile
-                                                                offers
-                                                        then
-                                                            target.Profile
-                                                            |> Option.map ActorProfile.authored
-                                                        else
-                                                            None
-
-                                                    let! page =
-                                                        tx.GrantPage
-                                                            {
-                                                                ActorId = actorId
-                                                                AfterGrant = after
-                                                                Limit = request.Limit
-                                                            }
-
-                                                    if
-                                                        page.Items.Length > Paging.MaximumPageSize
-                                                    then
+                                                    match owned with
+                                                    | None ->
                                                         return
                                                             Outcome.Failed
                                                                 CoreFault.StoreIntegrityError
-                                                    else
-                                                        let! targets =
-                                                            reviewedActors
-                                                                services
-                                                                tx
+                                                    | Some revision ->
+                                                        let! maintenance = tx.Maintenance()
+
+                                                        let offers =
+                                                            Advice.actorOffers
+                                                                services.Principal
                                                                 viewer
-                                                                [ target ]
+                                                                maintenance
 
-                                                        let! authors =
-                                                            tx.ActorRefs(
+                                                        let profileSeed =
+                                                            if
+                                                                List.contains
+                                                                    PeopleActKind.SetProfile
+                                                                    offers
+                                                            then
+                                                                target.Profile
+                                                                |> Option.map ActorProfile.authored
+                                                            else
+                                                                None
+
+                                                        let! page =
+                                                            tx.GrantPage
+                                                                {
+                                                                    ActorId = actorId
+                                                                    AfterGrant = after
+                                                                    Limit = request.Limit
+                                                                }
+
+                                                        if
+                                                            page.Items.Length >
+                                                                Paging.MaximumPageSize
+                                                        then
+                                                            return
+                                                                Outcome.Failed
+                                                                    CoreFault.StoreIntegrityError
+                                                        else
+                                                            let! targets =
+                                                                reviewedActors
+                                                                    services
+                                                                    tx
+                                                                    viewer
+                                                                    [ target ]
+
+                                                            let! authors =
+                                                                tx.ActorRefs(
+                                                                    page.Items
+                                                                    |> List.map _.GrantedBy
+                                                                    |> List.distinct
+                                                                )
+
+                                                            let items =
                                                                 page.Items
-                                                                |> List.map _.GrantedBy
-                                                                |> List.distinct
-                                                            )
-
-                                                        let items =
-                                                            page.Items
-                                                            |> List.map (fun row ->
-                                                                Map.tryFind row.GrantedBy authors
-                                                                |> Option.map (fun author ->
-                                                                    {
-                                                                        GrantReadModel.Role =
-                                                                            row.Grant.Role
-                                                                        Scope = row.Grant.Scope
-                                                                        GrantedAt = row.GrantedAt
-                                                                        GrantedBy = author
-                                                                    })
-                                                                |> Option.map Ok
-                                                                |> Option.defaultValue (
-                                                                    Error
-                                                                        CoreFault
-                                                                            .StoreIntegrityError
-                                                                ))
-                                                            |> QueryResults.collect
-
-                                                        return
-                                                            targets
-                                                            |> Result.bind (fun targets ->
-                                                                items
-                                                                |> Result.map (fun items ->
-                                                                    Outcome.Succeeded
+                                                                |> List.map (fun row ->
+                                                                    Map.tryFind
+                                                                        row.GrantedBy
+                                                                        authors
+                                                                    |> Option.map (fun author ->
                                                                         {
-                                                                            PeopleGrantPage.Basis =
-                                                                                ServiceContext
-                                                                                    .basis
-                                                                                    services
-                                                                                    tx.ObservedAt
-                                                                            Actor =
-                                                                                List.exactlyOne
-                                                                                    targets
-                                                                            Offers = offers
-                                                                            ProfileSeed =
-                                                                                profileSeed
-                                                                            Items = items
-                                                                            NextCursor =
-                                                                                page.Next
-                                                                                |> Option.map (
-                                                                                    Cursors
-                                                                                        .encodeGrants
+                                                                            GrantReadModel.Role =
+                                                                                row.Grant.Role
+                                                                            Scope =
+                                                                                row.Grant.Scope
+                                                                            GrantedAt =
+                                                                                row.GrantedAt
+                                                                            GrantedBy = author
+                                                                        })
+                                                                    |> Option.map Ok
+                                                                    |> Option.defaultValue (
+                                                                        Error
+                                                                            CoreFault
+                                                                                .StoreIntegrityError
+                                                                    ))
+                                                                |> QueryResults.collect
+
+                                                            return
+                                                                targets
+                                                                |> Result.bind (fun targets ->
+                                                                    items
+                                                                    |> Result.map (fun items ->
+                                                                        Outcome.Succeeded
+                                                                            {
+                                                                                PeopleGrantPage.Basis =
+                                                                                    ServiceContext
+                                                                                        .basis
                                                                                         services
-                                                                                            .InstallationId
-                                                                                        actorId
-                                                                                )
-                                                                        }))
-                                                            |> Result.defaultWith Outcome.Failed
+                                                                                        tx
+                                                                                            .ObservedAt
+                                                                                Actor =
+                                                                                    List
+                                                                                        .exactlyOne
+                                                                                        targets
+                                                                                Revision =
+                                                                                    revision
+                                                                                Offers = offers
+                                                                                ProfileSeed =
+                                                                                    profileSeed
+                                                                                Items = items
+                                                                                NextCursor =
+                                                                                    page.Next
+                                                                                    |> Option.map (
+                                                                                        Cursors
+                                                                                            .encodeGrants
+                                                                                            services
+                                                                                                .InstallationId
+                                                                                            actorId
+                                                                                    )
+                                                                            }))
+                                                                |> Result.defaultWith Outcome.Failed
                                         }
                                 CancellationToken = token
                             }

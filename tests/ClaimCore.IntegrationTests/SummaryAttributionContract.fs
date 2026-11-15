@@ -27,7 +27,8 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 88000)
                         other
                         (PeopleAct.Register
@@ -182,7 +183,11 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id fixture 88010) other PeopleAct.EraseProfile
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 88010)
+                        other
+                        PeopleAct.EraseProfile
                 ))
                 token
 

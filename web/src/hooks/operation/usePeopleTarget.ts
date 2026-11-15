@@ -1,3 +1,5 @@
+import { grantFields } from "../../operation/grantTargetDraft";
+import { useEndpointCache } from "../EndpointProvider";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Principal } from "@contracts/client";
 import type { PersonDocument } from "../../protocol/types";
@@ -54,7 +56,7 @@ const useActorDisclosure = (revision: number, available: boolean) => {
     },
     [key, actorId],
   );
-  return { source, epoch, actorId, observe };
+  return { source, epoch, actorId, observe, selectionCurrent: actorId === null || source !== null };
 };
 const admissionIsBound = (model: OperationModel, principal: Principal | null) =>
   principal !== null &&
@@ -83,13 +85,81 @@ const discardAction = (
 const adopt = (model: OperationModel, action: OperationAffordance) => {
   model.discard(false, action.task, initialAffordanceValues(action), action.binding, action);
 };
+const matchesFixedInputs = (
+  selected: OperationAffordance | undefined,
+  candidate: OperationAffordance,
+  values: Parameters<typeof grantFields>[0],
+) => {
+  const authored = grantFields(values);
+  const seeds = initialAffordanceValues(candidate);
+  const editable = new Set<string>(candidate.editable);
+  const fixed =
+    selected === undefined
+      ? []
+      : Object.keys(initialAffordanceValues(selected)).filter(
+          (key) => !new Set<string>(selected.editable).has(key),
+        );
+  return (
+    fixed.every(
+      (key) => !editable.has(key) && Object.hasOwn(seeds, key) && seeds[key] === authored[key],
+    ) && Object.entries(seeds).every(([key, value]) => editable.has(key) || authored[key] === value)
+  );
+};
+const sameFreshTarget = (
+  model: OperationModel,
+  request: { source: Snapshot; task: string; prepared: OperationModel["prepared"] },
+) =>
+  !model.priorUncertain &&
+  boundActor(model) === request.source.document.subject.actorId &&
+  model.entry.kind === request.task &&
+  model.prepared === request.prepared;
 export const usePeopleTarget = (
   model: OperationModel,
   revision: number,
   available: boolean,
   admissionPrincipal: Principal | null = null,
 ) => {
-  const { source, epoch, actorId, observe } = useActorDisclosure(revision, available);
+  const { source, epoch, actorId, observe, selectionCurrent } = useActorDisclosure(
+    revision,
+    available,
+  );
+  const cache = useEndpointCache();
+  const freshReview = useRef<{
+    epoch: string;
+    source: Snapshot;
+    task: string;
+    prepared: OperationModel["prepared"];
+  } | null>(null);
+  useEffect(() => {
+    const request = freshReview.current;
+    if (request === null) {
+      return;
+    }
+    if (request.epoch !== epoch || actorId !== request.source.document.subject.actorId) {
+      freshReview.current = null;
+      return;
+    }
+    if (!available) {
+      return;
+    }
+    if (!sameFreshTarget(model, request)) {
+      freshReview.current = null;
+      return;
+    }
+    if (!available || source === null || source.document === request.source.document) {
+      return;
+    }
+    freshReview.current = null;
+    const action = source.actions.find(
+      (candidate) =>
+        candidate.task === model.entry.kind &&
+        candidate.blocked === null &&
+        matchesFixedInputs(model.affordance, candidate, model.values),
+    );
+    if (action !== undefined) {
+      model.discard(false, action.task, model.values, action.binding, action);
+    }
+  }, [available, epoch, actorId, model, source]);
   const [intent, setIntent] = useState<Intent | null>(null);
   const admissionBound = admissionIsBound(model, admissionPrincipal);
   const actorBound =
@@ -112,7 +182,7 @@ export const usePeopleTarget = (
     } else if (source === null && seeded.current !== null && model.phase !== "ACCEPTED") {
       seeded.current = null;
       if (boundActor(model) !== undefined) {
-        model.discard(false, "people.admit", {}, { kind: "PEOPLE" });
+        model.discard(false, "people.admit", {}, { kind: "PEOPLE", expectedRevision: 0 });
       }
     }
   }, [model, source, primary, fixed]);
@@ -146,9 +216,20 @@ export const usePeopleTarget = (
     model.requestDiscard(kind);
   };
   return {
-    model: { ...model, discard, requestDiscard },
+    model: {
+      ...model,
+      discard,
+      requestDiscard,
+      refreshPrecondition: () => {
+        if (source !== null && actorBound && available && !model.busy && !model.priorUncertain) {
+          freshReview.current = { epoch, source, task: model.entry.kind, prepared: model.prepared };
+          cache?.invalidate();
+        }
+      },
+    },
     begin,
     admissionBound,
+    selectionCurrent,
     observe,
     offered: source?.actions.map((action) => action.task) ?? [],
     actions: source === null ? [] : source.document.actions,

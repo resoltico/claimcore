@@ -101,6 +101,12 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
 
         let erase =
             {
+                ExpectedFamilySequence =
+                    Some(
+                        reviewedFamilySequence
+                            database.Fixture.Store
+                            (CaseSelector.Reference "GRANT-1")
+                    )
                 OperationId = id database.Fixture 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
@@ -125,7 +131,8 @@ let private prepare (database: PostgresFixture.Database) =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 200)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -171,7 +178,11 @@ let private prepare (database: PostgresFixture.Database) =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest (id database.Fixture 603) target (PeopleAct.Disable)
+                    reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 603)
+                        target
+                        (PeopleAct.Disable)
                 ))
                 (token))
 
@@ -258,7 +269,8 @@ let private callerRevocation (database: PostgresFixture.Database) =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 620)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -459,7 +471,9 @@ let private changeTarget fixture (admin: ServiceContext) =
         let! enabled =
             (Service.execute
                 admin
-                (OperationInput.People(peopleRequest (id fixture 630) target (PeopleAct.Enable)))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture 630) target (PeopleAct.Enable)
+                ))
                 (token))
 
         acceptedPeople enabled

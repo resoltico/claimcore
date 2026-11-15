@@ -193,7 +193,17 @@ module internal DatabaseSession =
 
     let transaction (source: NpgsqlDataSource) isolation token action =
         task {
-            let! connection = source.OpenConnectionAsync(token)
+            use _diagnostic = FailureDiagnostics.scope FailurePhase.Open
+
+            let! connection =
+                task {
+                    try
+                        return! source.OpenConnectionAsync(token)
+                    with error ->
+                        FailureDiagnostics.report error
+                        return raise error
+                }
+
             let mutable transaction: NpgsqlTransaction option = None
 
             let! outcome =
@@ -204,6 +214,8 @@ module internal DatabaseSession =
                         let! result = action connection started
                         return Ok result
                     with error ->
+                        FailureDiagnostics.report error
+
                         return
                             Error(
                                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture error
@@ -225,6 +237,7 @@ module internal DatabaseSession =
 
     let read source token action =
         transaction source Data.IsolationLevel.RepeatableRead token (fun connection _ ->
+            FailureDiagnostics.phase FailurePhase.Read
             action connection)
 
     let commitUncertain (error: PostgresException) =
@@ -236,15 +249,16 @@ module internal DatabaseSession =
     let commit (transaction: NpgsqlTransaction) (token: CancellationToken) =
         task {
             token.ThrowIfCancellationRequested()
+            FailureDiagnostics.phase FailurePhase.Commit
 
             try
                 do! transaction.CommitAsync(token)
             with
             | :? PostgresException as error when commitUncertain error ->
+                FailureDiagnostics.reportAt FailurePhase.Commit error
                 return raise (AdministrationOutcomeUnknownException())
             | :? PostgresException as error -> return raise error
-            | :? NpgsqlException
-            | :? OperationCanceledException
-            | :? TimeoutException
-            | :? IO.IOException -> return raise (AdministrationOutcomeUnknownException())
+            | (:? NpgsqlException | :? OperationCanceledException | :? TimeoutException | :? IO.IOException) as error ->
+                FailureDiagnostics.reportAt FailurePhase.Commit error
+                return raise (AdministrationOutcomeUnknownException())
         }

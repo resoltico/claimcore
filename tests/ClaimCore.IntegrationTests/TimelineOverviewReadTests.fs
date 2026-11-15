@@ -50,29 +50,28 @@ let private execute core input =
     | ExecuteResult.Accepted receipt -> receipt
     | other -> failtestf "Expected accepted fixture: %A" other
 
-let private case ids number revision act =
+let private case (core: ServiceContext) ids number revision act =
     Inputs.caseOperation
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some(
+                        StoreFixtures.reviewedFamilySequence
+                            core.Store
+                            (CaseSelector.Reference "TIMELINE-OVERVIEW")
+                    )
+                else
+                    None
             OperationId = id ids number
             CaseReference = "TIMELINE-OVERVIEW"
             ExpectedRevision = revision
             Act = act
         }
 
-let private people ids number (person: Actor) act =
-    let kind, issuer, subject = PrincipalKey.parts person.Principal
-
-    OperationInput.People
-        {
-            OperationId = id ids number
-            Target =
-                {
-                    Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                }
-            Act = act
-        }
+let private people (core: ServiceContext) ids number (person: Actor) act =
+    OperationInput.People(
+        StoreFixtures.reviewedPeopleRequest core.Store (id ids number) person.Principal act
+    )
 
 let private page core filter cursor limit : CaseTimelinePage =
     match
@@ -153,6 +152,7 @@ let private fixture () =
             execute
                 core
                 (people
+                    core
                     ids
                     number
                     person
@@ -169,6 +169,7 @@ let private fixture () =
             execute
                 core
                 (people
+                    core
                     ids
                     number
                     person
@@ -180,7 +181,7 @@ let private fixture () =
             |> ignore
 
         let receipt =
-            execute core (case ids 10 0L (AuthoredCaseAct.Open Inputs.registration))
+            execute core (case core ids 10 0L (AuthoredCaseAct.Open Inputs.registration))
 
         let parent =
             match receipt.Subject with
@@ -190,6 +191,7 @@ let private fixture () =
         execute
             core
             (people
+                core
                 ids
                 1004
                 reader
@@ -200,7 +202,8 @@ let private fixture () =
                     }))
         |> ignore
 
-        execute core (case ids 11 1L (AuthoredCaseAct.Decide Inputs.decision)) |> ignore
+        execute core (case core ids 11 1L (AuthoredCaseAct.Decide Inputs.decision))
+        |> ignore
 
         for number, action, due in
             [
@@ -751,6 +754,7 @@ let tests =
                     execute
                         core
                         (people
+                            core
                             ids
                             20
                             assigned
@@ -796,7 +800,7 @@ let tests =
                         (bytes.Contains("Current renamed assignee", StringComparison.Ordinal))
                         "Assignment context is not a summary-permission escape"
 
-                    execute core (people ids 21 assigned PeopleAct.EraseProfile) |> ignore
+                    execute core (people core ids 21 assigned PeopleAct.EraseProfile) |> ignore
 
                     match (collect core None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->
@@ -818,10 +822,12 @@ let tests =
 
                     let stewardCore = service database steward
 
-                    execute stewardCore (case ids 30 2L (AuthoredCaseAct.Void "Retained reason"))
+                    execute
+                        stewardCore
+                        (case core ids 30 2L (AuthoredCaseAct.Void "Retained reason"))
                     |> ignore
 
-                    execute stewardCore (case ids 31 3L (AuthoredCaseAct.Bare BareAct.Erase))
+                    execute stewardCore (case core ids 31 3L (AuthoredCaseAct.Bare BareAct.Erase))
                     |> ignore
 
                     let erased = collect core None

@@ -146,6 +146,7 @@ let private withProbe check =
                 current
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence = None
                         OperationId = operationId (index + 3)
                         CaseReference = reference
                         ExpectedRevision = 0L
@@ -372,6 +373,16 @@ let tests =
                                 core
                                 (Inputs.caseOperation
                                     {
+                                        ExpectedFamilySequence =
+                                            if CaseAct.kind act = CaseActKind.Erase then
+                                                Some(
+                                                    ClaimCore.TestSupport.StoreFixtures
+                                                        .reviewedFamilySequence
+                                                        core.Store
+                                                        (CaseSelector.Reference "Match-1")
+                                                )
+                                            else
+                                                None
                                         OperationId = operationId operation
                                         CaseReference = "Match-1"
                                         ExpectedRevision = revision

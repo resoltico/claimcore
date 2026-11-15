@@ -114,7 +114,11 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
   const input: OperationSubmission = {
     operationId,
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: "10000000-0000-7000-8000-000000000001" },
+    binding: {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: "10000000-0000-7000-8000-000000000001",
+    },
     inputs: {
       "input:role": "CASE_READER",
       "input:scope": kind,
@@ -133,7 +137,7 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
       actions: [
         operationAffordance(
           "people.grant",
-          { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000099" },
+          { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000099" },
           {},
           [],
         ),
@@ -257,6 +261,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     binding: {
       kind: "CASE",
       target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      expectedFamilySequence: 4,
       expectedRevision: 1,
     },
     inputs: {},
@@ -276,6 +281,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
           {
             kind: "CASE",
             target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            expectedFamilySequence: 4,
             expectedRevision: 1,
           },
           {},
@@ -299,7 +305,11 @@ it("shows Core profile changes rather than recomputing proposed values from auth
   const input: OperationSubmission = {
     operationId,
     task: "people.setProfile",
-    binding: { kind: "PEOPLE", actorId: "10000000-0000-7000-8000-000000000001" },
+    binding: {
+      kind: "PEOPLE",
+      expectedRevision: 1,
+      actorId: "10000000-0000-7000-8000-000000000001",
+    },
     inputs: {
       "input:profile.displayName": "Requested name",
       "input:profile.contact": "Requested contact",
@@ -317,7 +327,7 @@ it("shows Core profile changes rather than recomputing proposed values from auth
       actions: [
         operationAffordance(
           "people.setProfile",
-          { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000099" },
+          { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000099" },
           {},
           [],
         ),

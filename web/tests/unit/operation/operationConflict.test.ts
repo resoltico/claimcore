@@ -1,3 +1,4 @@
+import { operationAffordance } from "../../support/affordances.fixtures";
 import { expect, it } from "vitest";
 import { operationReducer, operationView } from "../../../src/operation/operationState";
 import { rebasedOperationBinding } from "../../../src/operation/operationConflict";
@@ -56,7 +57,7 @@ it("rebinds the declared revision without putting executable identity or authori
     inputs: { "field:claimedAmount": "1234.56", "field:claimedCurrency": "EUR" },
   });
   const { bytes } = command;
-  const binding = rebasedOperationBinding(command.input, 8);
+  const binding = rebasedOperationBinding(command.input, 8, []);
   expect(binding).toEqual({
     kind: "CASE",
     target: {
@@ -204,4 +205,30 @@ it("refuses implicit preview and re-preparation for a different case target", ()
       },
     }),
   ).toBe(observed);
+});
+
+it("refreshes both erasure preconditions from the supplied current action after a root revision conflict", () => {
+  const target = { kind: "REFERENCE" as const, caseReference: "CASE-SERIALIZATION" };
+  const old = prepareRequest("operation.execute", {
+    operationId: secondId,
+    task: "case.erase",
+    binding: { kind: "CASE", target, expectedRevision: 4, expectedFamilySequence: 12 },
+    inputs: {},
+  });
+  const fresh = operationAffordance(
+    "case.erase",
+    { kind: "CASE", target, expectedRevision: 8, expectedFamilySequence: 25 },
+    {},
+    [],
+  );
+  expect(rebasedOperationBinding(old.input, 8, [fresh])).toEqual({
+    kind: "CASE",
+    target,
+    expectedRevision: 8,
+    expectedFamilySequence: 25,
+  });
+  expect(old.input.binding).toMatchObject({ expectedRevision: 4, expectedFamilySequence: 12 });
+  expect(() => {
+    rebasedOperationBinding(old.input, 8, []);
+  }).toThrow("A fresh erasure action is required.");
 });

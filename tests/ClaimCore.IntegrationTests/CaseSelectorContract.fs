@@ -22,6 +22,7 @@ let identities (fixture: Fixture) =
 
         let openInput: CaseOperationRequest =
             {
+                ExpectedFamilySequence = None
                 OperationId = id fixture 610
                 Target = CaseSelector.Reference reference
                 ExpectedRevision = 0L
@@ -87,6 +88,7 @@ let identities (fixture: Fixture) =
 
         let close: CaseOperationRequest =
             {
+                ExpectedFamilySequence = None
                 OperationId = id fixture 611
                 Target = CaseSelector.Id expected
                 ExpectedRevision = 1L
@@ -249,6 +251,8 @@ let identities (fixture: Fixture) =
                 (OperationInput.Case
                     { close with
                         OperationId = id fixture 622
+                        ExpectedFamilySequence =
+                            Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expected))
                         ExpectedRevision = 3L
                         Act = AuthoredCaseAct.Bare BareAct.Erase
                     })
@@ -342,7 +346,8 @@ let grantScopes (fixture: Fixture) =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 631)
                         reader
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -363,7 +368,9 @@ let grantScopes (fixture: Fixture) =
                 Scope = GrantScope.Case(expectedId, reference)
             }
 
-        let input = peopleRequest (id fixture 632) reader (PeopleAct.Grant authored)
+        let input =
+            reviewedPeopleRequest fixture.Store (id fixture 632) reader (PeopleAct.Grant authored)
+
         let! preview = Service.preview actor (OperationInput.People input) token
 
         match preview.Outcome with
@@ -483,6 +490,7 @@ let grantScopes (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     {
+                        ExpectedFamilySequence = None
                         OperationId = id fixture 636
                         Target = CaseSelector.Id expectedId
                         ExpectedRevision = 1L
@@ -497,6 +505,8 @@ let grantScopes (fixture: Fixture) =
                 actor
                 (OperationInput.Case
                     {
+                        ExpectedFamilySequence =
+                            Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expectedId))
                         OperationId = id fixture 637
                         Target = CaseSelector.Id expectedId
                         ExpectedRevision = 2L

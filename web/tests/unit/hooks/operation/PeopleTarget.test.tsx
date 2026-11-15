@@ -19,7 +19,14 @@ const person = (actorId: string, _subject: string): PersonDocument => ({
   },
   subject: { kind: "PERSON", actorId },
   actions: [
-    operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
+    operationAffordance(
+      "people.enable",
+      { kind: "PEOPLE", actorId, expectedRevision: 1 },
+      {},
+      undefined,
+      {},
+      true,
+    ),
   ],
   links: [],
   history: null,
@@ -63,7 +70,12 @@ const fixture = () => {
               consequence: "ROUTINE",
             },
             actions: [
-              operationAffordance("people.enable", { kind: "PEOPLE", actorId: firstId }, {}, []),
+              operationAffordance(
+                "people.enable",
+                { kind: "PEOPLE", expectedRevision: 1, actorId: firstId },
+                {},
+                [],
+              ),
             ],
             links: [],
             history: null,
@@ -97,7 +109,7 @@ const fixture = () => {
     ),
   );
   let current: PeopleTarget | undefined;
-  const Harness = () => {
+  const Harness = ({ available = true }: { available?: boolean }) => {
     const model = useOperation({
       subject: "PEOPLE",
       kind: "people.admit",
@@ -105,11 +117,11 @@ const fixture = () => {
       credential: "token",
       onLockChange: vi.fn(),
     });
-    current = usePeopleTarget(model, 0, true);
+    current = usePeopleTarget(model, 0, available);
     return null;
   };
   navigate(`/people/${firstId}`, true);
-  render(<Harness />);
+  const view = render(<Harness />);
   const target = () => {
     if (current === undefined) {
       throw new Error("No target");
@@ -118,6 +130,9 @@ const fixture = () => {
   };
   return {
     target,
+    availability: (available: boolean) => {
+      view.rerender(<Harness available={available} />);
+    },
     bodies,
   };
 };
@@ -147,6 +162,7 @@ it("keeps a retained request on person A until explicit discard consent binds th
   expect(f.target().person).toBeNull();
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: firstId,
   });
   await act(() =>
@@ -164,6 +180,7 @@ it("keeps a retained request on person A until explicit discard consent binds th
   );
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: secondId,
   });
   expect(f.target().model.prepared).toBeNull();
@@ -204,7 +221,7 @@ it("uses the permitted profile seed rather than saved account presentation and i
     actions: [
       operationAffordance(
         "people.setProfile",
-        { kind: "PEOPLE", actorId: firstId },
+        { kind: "PEOPLE", expectedRevision: 1, actorId: firstId },
         {
           "input:profile.displayName": "Core editable profile seed",
           "input:profile.contact": "contact@example.test",
@@ -231,7 +248,174 @@ it("uses the permitted profile seed rather than saved account presentation and i
   });
   expect(f.target().model.bindingSource).toEqual({
     kind: "PEOPLE",
+    expectedRevision: 1,
     actorId: firstId,
   });
   expect(f.bodies).toEqual([]);
 });
+
+it("requires explicit latest review before replacing a People revision and keeps authored values without dispatch", async () => {
+  const f = fixture();
+  const profile = (revision: number): PersonDocument => ({
+    ...first,
+    actions: [
+      operationAffordance(
+        "people.setProfile",
+        { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
+        { "input:profile.displayName": "Current saved name" },
+        undefined,
+        {},
+        true,
+      ),
+    ],
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile(1));
+    }),
+  );
+  await waitFor(() => {
+    expect(f.target().model.entry.kind).toBe("people.setProfile");
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.target().model.edit("input:profile.displayName", "Authored name");
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile(2));
+    }),
+  );
+  expect(f.target().model.bindingSource).toMatchObject({ expectedRevision: 1 });
+  await act(() =>
+    Promise.try(() => {
+      f.target().model.refreshPrecondition();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile(2));
+    }),
+  );
+  await waitFor(() => {
+    expect(f.target().model.bindingSource).toMatchObject({ expectedRevision: 2 });
+  });
+  expect(f.target().model.values["input:profile.displayName"]).toBe("Authored name");
+  expect(f.bodies).toEqual([]);
+});
+
+it("does not let a late fresh-review response retarget authored work to another selected actor", async () => {
+  const f = fixture();
+  const profile = (actorId: string, revision: number): PersonDocument => ({
+    ...person(actorId, "person"),
+    actions: [
+      operationAffordance(
+        "people.setProfile",
+        { kind: "PEOPLE", actorId, expectedRevision: revision },
+        { "input:profile.displayName": "Saved name" },
+        undefined,
+        {},
+        true,
+      ),
+    ],
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile(firstId, 1));
+    }),
+  );
+  await waitFor(() => {
+    expect(f.target().model.entry.kind).toBe("people.setProfile");
+  });
+  await act(() =>
+    Promise.try(() => {
+      f.target().model.edit("input:profile.displayName", "Only for person A");
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.target().model.refreshPrecondition();
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      navigate(`/people/${secondId}`, true);
+    }),
+  );
+  await act(() =>
+    Promise.try(() => {
+      f.target().observe(profile(secondId, 2));
+    }),
+  );
+  expect(f.target().model.bindingSource).toMatchObject({ actorId: firstId, expectedRevision: 1 });
+  expect(f.target().model.values["input:profile.displayName"]).toBe("Only for person A");
+  expect(f.bodies).toEqual([]);
+});
+
+it.each([
+  { "input:scope": "INSTALLATION" },
+  { "input:scope": "CASE", "field:caseReference": "FIXED-CASE" },
+  { "input:scope": "CASE", "input:caseId": secondId },
+])(
+  "fresh explicit review keeps a noneditable grant target and advances only its reviewed binding: %j",
+  async (selection) => {
+    const f = fixture();
+    const profile = (revision: number): PersonDocument => ({
+      ...first,
+      actions: [
+        operationAffordance("people.revoke", {
+          kind: "PEOPLE",
+          actorId: firstId,
+          expectedRevision: revision,
+        }),
+        operationAffordance(
+          "people.revoke",
+          { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
+          { "input:role": "CASE_READER", ...selection },
+          [],
+          {},
+          true,
+        ),
+      ],
+    });
+    await act(() =>
+      Promise.try(() => {
+        f.target().observe(profile(1));
+      }),
+    );
+    await waitFor(() => {
+      expect(f.target().model.entry.kind).toBe("people.revoke");
+    });
+    await act(() => f.target().model.preview());
+    await waitFor(() => {
+      expect(f.bodies).toHaveLength(1);
+    });
+    const target = f.target().model.values["input:scope"];
+    await act(() =>
+      Promise.try(() => {
+        f.target().observe(profile(2));
+      }),
+    );
+    expect(f.target().model.bindingSource).toMatchObject({ expectedRevision: 1 });
+    await act(() =>
+      Promise.try(() => {
+        f.target().model.refreshPrecondition();
+      }),
+    );
+    f.availability(false);
+    f.availability(true);
+    await act(() =>
+      Promise.try(() => {
+        f.target().observe(profile(2));
+      }),
+    );
+    await waitFor(() => {
+      expect(f.target().model.bindingSource).toMatchObject({ expectedRevision: 2 });
+    });
+    expect(f.target().model.values["input:scope"]).toEqual(target);
+    expect(f.target().model.affordance?.editable).toEqual([]);
+    expect(f.target().model.values["input:role"]).toBe("CASE_READER");
+    expect(f.bodies).toHaveLength(1);
+  },
+);

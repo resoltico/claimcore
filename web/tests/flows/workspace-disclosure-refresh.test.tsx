@@ -483,3 +483,80 @@ it.each(["actor", "installation"] as const)(
     expect(execute).toHaveBeenCalledOnce();
   },
 );
+
+it("retains exact inline notes through full Dashboard context loading and a replaced case disclosure", async () => {
+  const initial = contextFor(["CASES", "OPERATIONS"], ["case.open"]);
+  const delayed = deferred<ApiResult<ServiceResponse<"context">>>();
+  const metadata = mockEndpoint("context")
+    .mockResolvedValueOnce(initial)
+    .mockReturnValueOnce(delayed.promise)
+    .mockResolvedValue(initial);
+  const visible = caseDocumentInput(
+    {
+      subject: { ...caseSubject, caseId: current.subject.caseId },
+      actions: [
+        operationAffordance("note.add", {
+          kind: "NOTE",
+          target: { kind: "ID", caseId: current.subject.caseId },
+        }),
+      ],
+      history: "NONE",
+    },
+    {
+      regions: [
+        ...caseIdentityScreen.regions,
+        {
+          role: "NOTES",
+          titleId: "section.notes.label",
+          content: {
+            kind: "TABLE",
+            columns: [
+              {
+                key: "noteText",
+                labelId: "field.noteText.label",
+                prominence: "PRIMARY",
+                isMoney: false,
+              },
+            ],
+            rows: [
+              { key: "server-note", values: [{ kind: "NARRATIVE", value: "SERVER_NOTE_CANARY" }] },
+            ],
+          },
+        },
+      ],
+    },
+  );
+  const reads = mockEndpoint("case.get").mockResolvedValue(
+    outcome(humanReadReply("case.get", visible)),
+  );
+  const user = userEvent.setup();
+  navigate(referencePath("CASE-1"), true);
+  render(
+    <>
+      <Dashboard />
+      <RefreshDisclosure />
+    </>,
+  );
+  await screen.findByText("SERVER_NOTE_CANARY");
+  const composer = await screen.findByRole("textbox", { name: "Note" });
+  await user.type(composer, "Retained exact{Enter}ثانٍ");
+  await user.click(screen.getByRole("button", { name: "Refresh disclosure" }));
+  await waitFor(() => {
+    expect(metadata).toHaveBeenCalledTimes(2);
+  });
+  expect(screen.getByRole("textbox", { name: "Note" })).toBe(composer);
+  expect(document.body).not.toHaveTextContent("SERVER_NOTE_CANARY");
+  expect(screen.getByRole("button", { name: "Add note" })).toBeDisabled();
+  composer.focus();
+  await user.keyboard(" continued");
+  await act(async () => {
+    delayed.finish(initial);
+    await delayed.promise;
+  });
+  expect(await screen.findByRole("textbox", { name: "Note" })).toBe(composer);
+  expect(composer).toHaveFocus();
+  expect(composer).toHaveValue("Retained exact\nثانٍ continued");
+  await waitFor(() => {
+    expect(reads.mock.calls.length).toBeGreaterThan(1);
+  });
+});

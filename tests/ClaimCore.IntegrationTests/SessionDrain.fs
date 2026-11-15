@@ -70,7 +70,8 @@ let private closedAdmission (runtime: ClaimCore.Server.Composition.IRuntime) key
 
 let run (database: PostgresFixture.Database) =
     task {
-        let storage = SessionStore(database.RuntimeSource) :> ISessionStore
+        let storage =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let create () =
             (storage.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)

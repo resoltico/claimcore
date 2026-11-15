@@ -40,6 +40,7 @@ let private authoredIntent =
                         OperationBinding.Case(
                             CaseSelector.Reference "SPELLED-Target",
                             revision,
+                            None,
                             None
                         )
                     Inputs =

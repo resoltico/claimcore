@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "從 ClaimCore 永久刪除此案件的資訊、工作和提醒。案件編號和更改列表仍會保留。其他位置保存的副本不受影響。",
-    "source": "8705b2ea28a6"
+    "text": "永久刪除此案件目前及保留的詳情、付款、工作、提醒和備註。案件編號和變更記錄將保留。其他位置的副本不受影響。",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "永久刪除帳戶資料",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "已審閱的案件版本",
-    "source": "8f3d37032769"
+    "text": "已審閱的版本",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "已審閱的工作版本",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "您查看的案件版本。",
-    "source": "8965c7efb1dc"
+    "text": "請使用你審閱過的對象版本。建立帳戶時必須為零。",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "更改前先查閱最新案件。",
-    "source": "de14cae9e98d"
+    "text": "變更前請審閱對象的最新狀態。",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "需要進行此更改的原因。",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "這會從 ClaimCore 中永久刪除案件詳細資料、工作和提醒。編號和更改記錄會保留。",
-    "source": "e774df6acd21"
+    "text": "這將永久刪除目前及保留的案件詳情、付款、工作、提醒和備註。案件編號和變更記錄將保留。其他位置的副本不受影響。",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "已註冊帳戶。",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "案件狀態",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "請輸入非空的案件 UUID。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "單一案件範圍請選擇案件編號或 ID；所有案件範圍請勿填寫這兩項。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "請輸入非空的案件 UUID。",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "單一案件範圍請選擇案件編號或 ID；所有案件範圍請勿填寫這兩項。",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "此帳戶在你審閱後發生了變化。請審閱最新帳戶後重試。",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "此案件或其工作、備註、提醒、付款在抹除審閱後發生了變化。請重新審閱完整案件。",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "抹除前請審閱案件及其全部工作、備註、提醒和付款。",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "已審閱的完整案件版本",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "請使用 case.get 為你審閱並準備抹除的案件提供的系列序號。",
+    "source": "8d258a9cf42b"
   }
 }

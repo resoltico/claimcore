@@ -352,7 +352,7 @@ let private peoplePreviewInvocation verb =
                         "synthetic-subject"
                     ]
                 else
-                    [ "10000000-0000-7000-8000-000000000001" ])
+                    [ "10000000-0000-7000-8000-000000000001"; "--expected-revision"; "1" ])
              @ [ "--preview" ])
             @ role
             @ (if verb = "register" then [ "--name"; "Authored" ] else [])
@@ -492,6 +492,7 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
                  OperationInput.People
                      { CliReplyFixtures.peopleRequest with
                          OperationId = value.OperationId
+                         ExpectedRevision = value.ExpectedRevision
                          Act = value.Act
                      }
              | _ -> ClaimCore.TestSupport.Submissions.command submission))

@@ -107,6 +107,7 @@ let private initialization (database: PostgresFixture.Database) =
                 service
                 (Inputs.caseOperation
                     {
+                        ExpectedFamilySequence = None
                         OperationId = Guid.CreateVersion7()
                         CaseReference = "INITIAL-OWNER"
                         ExpectedRevision = 0L

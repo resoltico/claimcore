@@ -42,6 +42,7 @@ module internal CaseOperations =
                 {
                     OperationId = request.OperationId
                     CaseReference = reference
+                    ExpectedFamilySequence = request.ExpectedFamilySequence
                     ExpectedRevision = request.ExpectedRevision
                     Act = request.Act
                 }
@@ -142,6 +143,14 @@ module internal CaseOperations =
             | Ok before ->
                 match CaseSubject.decide context view.State request with
                 | Error refusal -> Verdict.Refuse refusal
+                | Ok after when
+                    after.After.State = CaseState.Erased
+                    && CaseFamily.reviewedSequence
+                        request.ExpectedFamilySequence
+                        view.FamilySequence
+                       |> Result.isError
+                    ->
+                    Verdict.Refuse(Refusal.Case CaseRefusal.FamilyChanged)
                 | Ok after when after.After.State = CaseState.Erased ->
                     match view.Family with
                     | Some family when CaseFamily.validate after.After.CaseId family |> Result.isOk ->
@@ -217,6 +226,7 @@ module internal CaseOperations =
                     {
                         CaseId = id
                         Reference = snapshot.Reference
+                        ExpectedFamilySequence = request.ExpectedFamilySequence
                         ExpectedRevision = request.ExpectedRevision
                         Act = CaseAct.kind request.Act
                         SelectedPayment =
@@ -247,7 +257,8 @@ module internal CaseOperations =
 
         let scope =
             {
-                CaseCommandSkeleton.CaseId = id
+                CaseCommandSkeleton.ExpectedFamilySequence = command.ExpectedFamilySequence
+                CaseId = id
                 Reference = command.Reference
                 ExpectedRevision = command.ExpectedRevision
                 Act = CaseAct.kind command.Act

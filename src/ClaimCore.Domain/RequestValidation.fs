@@ -35,8 +35,13 @@ module internal RequestValidation =
                 Reference: Result<CaseReference, Refusal>
                 Identity: Result<OperationId, Refusal>
                 Revision: Result<Revision, Refusal>
+                Family: Result<Sequence option, Refusal>
                 Act: PreparedAct
-                Syntax: Result<CaseReference * OperationId * Revision * ValidCaseAct, Refusal>
+                Syntax:
+                    Result<
+                        CaseReference * OperationId * Revision * Sequence option * ValidCaseAct,
+                        Refusal
+                     >
             }
 
     let private reference value =
@@ -155,16 +160,45 @@ module internal RequestValidation =
                 (fun value -> value.Build context)
                 act
 
-    let private parts id reference revision act =
+    let private parts id reference revision family act =
+        let parsed =
+            Admission.map2
+                (fun (id, reference) (revision, act) -> reference, id, revision, act)
+                (Admission.map2 (fun id reference -> id, reference) id reference)
+                (Admission.map2 (fun revision act -> revision, act) revision act)
+
         Admission.map2
-            (fun (id, reference) (revision, act) -> reference, id, revision, act)
-            (Admission.map2 (fun id reference -> id, reference) id reference)
-            (Admission.map2 (fun revision act -> revision, act) revision act)
+            (fun (reference, id, revision, act) family -> reference, id, revision, family, act)
+            parsed
+            family
+
+    let family required act value =
+        let invalid () =
+            Error(
+                Refusal.invalidInput (
+                    InputTarget.ExpectedFamilySequence,
+                    Violation.ExpectedRevisionRange
+                )
+            )
+
+        match act, value with
+        | CaseAct.Bare BareAct.Erase, Some value ->
+            Sequence.create value
+            |> Option.filter ((<) Sequence.zero)
+            |> Option.map (Some >> Ok)
+            |> Option.defaultWith invalid
+        | CaseAct.Bare BareAct.Erase, None when required -> invalid ()
+        | _, None -> Ok None
+        | _ -> invalid ()
 
     let prepare (request: UnvalidatedCaseRequest) =
         let id = identity request.OperationId
         let reference = reference request.CaseReference
+
+        let family = family true request.Act request.ExpectedFamilySequence
+
         let revision = expected request.ExpectedRevision
+
         let act = prepareAct request.Act
 
         {
@@ -172,10 +206,11 @@ module internal RequestValidation =
             Reference = reference
             Identity = id
             Revision = revision
+            Family = family
             Act = act
             Syntax =
                 buildAct { Field = (fun _ -> Ok); Reason = Ok } act
-                |> parts id reference revision
+                |> parts id reference revision family
         }
 
     let source prepared = prepared.Source
@@ -183,7 +218,7 @@ module internal RequestValidation =
 
     let admitWith admit admitReason prepared =
         buildAct { Field = admit; Reason = admitReason } prepared.Act
-        |> parts prepared.Identity prepared.Reference prepared.Revision
+        |> parts prepared.Identity prepared.Reference prepared.Revision prepared.Family
 
     let private chronologyAct act =
         let assertions =
@@ -224,7 +259,14 @@ module internal RequestValidation =
         >> Result.mapError (fun violation -> Refusal.invalidInput (InputTarget.Reason, violation))
 
     /// Only supplied metadata participates; authored values retain their own independent checks.
-    let syntaxIntent operationId authoredReference expectedRevision input =
+    let syntaxIntent
+        requireFamily
+        operationId
+        authoredReference
+        expectedRevision
+        expectedFamily
+        input
+        =
         let supplied check =
             Option.map (check >> Result.map ignore) >> Option.defaultValue (Ok())
 
@@ -236,6 +278,7 @@ module internal RequestValidation =
                 supplied identity operationId
                 supplied reference authoredReference
                 supplied expected expectedRevision
+                family requireFamily input expectedFamily |> Result.map ignore
                 buildAct
                     {
                         Field = syntaxAdmission

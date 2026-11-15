@@ -17,6 +17,11 @@ let id number = OperationIds.numberedAt instant number
 
 let request number reference revision act : UnvalidatedCaseRequest =
     {
+        ExpectedFamilySequence =
+            if CaseAct.kind act = CaseActKind.Erase then
+                Some 1L
+            else
+                None
         OperationId = id number
         CaseReference = reference
         ExpectedRevision = revision
@@ -106,6 +111,7 @@ let locked (people: AccessView) (current: StoredCase option) existing : LockedFa
         PayloadNonce = nonce
         Read =
             {
+                FamilySequence = Sequence.create 1L |> Option.get
                 State =
                     current
                     |> Option.map (fun record ->
@@ -288,6 +294,7 @@ let peopleView
                             |> Map.ofList
 
                         {
+                            Revision = Revision.first
                             PeopleSubjectState.Actor = actor
                             Grants = grants
                             ProfileErasure =
@@ -305,6 +312,11 @@ let peopleView
 let admitted n target act : PeopleCommand =
     People.parse
         {
+            ExpectedRevision =
+                if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                    1L
+                else
+                    0L
             OperationId = id n
             Target = PrincipalKey.toInput target
             Act = act

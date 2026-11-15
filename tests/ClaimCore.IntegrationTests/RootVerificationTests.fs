@@ -97,7 +97,8 @@ let private actors (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 20)
                         principal
                         (PeopleAct.Register Inputs.actorProfile)
@@ -110,7 +111,11 @@ let private actors (database: PostgresFixture.Database) =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest (id database.Fixture 21) principal PeopleAct.Disable
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
+                        (id database.Fixture 21)
+                        principal
+                        PeopleAct.Disable
                 ))
                 token
 

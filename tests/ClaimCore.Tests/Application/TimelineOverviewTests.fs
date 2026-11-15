@@ -287,6 +287,8 @@ let tests =
                         let command =
                             CaseFixtures.command
                                 {
+                                    ExpectedFamilySequence =
+                                        if kind = CaseActKind.Erase then Some 1L else None
                                     OperationId = id 4
                                     CaseReference = "OVERVIEW"
                                     ExpectedRevision = if kind = CaseActKind.Open then 0L else 1L

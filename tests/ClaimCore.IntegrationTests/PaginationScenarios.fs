@@ -50,7 +50,8 @@ let internal reader fixture (admin: ServiceContext) =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 20)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -117,7 +118,8 @@ let internal registerActors fixture (actor: ServiceContext) =
                 (Service.execute
                     actor
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            fixture.Store
                             (id fixture n)
                             target
                             (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

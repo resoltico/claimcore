@@ -210,6 +210,7 @@ let oneRound =
     testCase "case snapshot admission enriches syntax failures in the application path" (fun () ->
         let request: CaseOperationRequest =
             {
+                ExpectedFamilySequence = None
                 OperationId = id 479
                 Target = CaseSelector.Reference "BAD REF"
                 ExpectedRevision = 0L

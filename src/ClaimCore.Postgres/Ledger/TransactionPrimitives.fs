@@ -271,6 +271,20 @@ type private ReadTx
                             ))
             }
 
+        member _.CaseFamilySequence id =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT coalesce(max(operation_sequence),0) FROM claimcore.ledger_effects WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1"
+                        [| box (CaseId.value id) |]
+                        token
+
+                return
+                    DatabaseSession.value<int64> 0 rows.Head
+                    |> DatabaseSession.admitted Sequence.create
+            }
+
         member _.CaseFamily id =
             CaseFamilyStorage.load connection id token
 
@@ -447,6 +461,9 @@ type private ReadTx
                 | _ -> return raise (RecordCorruptException "Duplicate actor selection rows.")
             }
 
+        member _.PeopleRevision principal =
+            PeopleStateStorage.revision connection principal token
+
         member _.PeopleState principal =
             PeopleStateStorage.load connection principal token
 
@@ -534,7 +551,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.people connection projection token
 
-type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
+type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, settings) =
+    let installationId = installation.InstallationId
+
     static member InTransaction(connection, installationId, head, observedAt, token) =
         WriteTx(connection, installationId, head, observedAt, token) :> IWriteTx
 
@@ -542,6 +561,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
         member _.Context query =
             Transactions.write source settings query.CancellationToken (fun connection ->
                 task {
+                    do! Baseline.requireExpected installation connection query.CancellationToken
                     // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
                     // The following single access query must acquire a fresh snapshot after that wait.
                     let! _ =
@@ -589,7 +609,10 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
              })
             =
             Transactions.read source token (fun connection observedAt ->
-                work (ReadTx(connection, installationId, observedAt, token) :> IReadTx))
+                task {
+                    do! Baseline.requireExpected installation connection token
+                    return! work (ReadTx(connection, installationId, observedAt, token) :> IReadTx)
+                })
 
         member _.Write
             ({
@@ -599,6 +622,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             =
             Transactions.write source settings token (fun connection ->
                 task {
+                    do! Baseline.requireExpected installation connection token
                     let! head, observedAt = Transactions.head connection token
                     FailureDiagnostics.phase FailurePhase.Read
 

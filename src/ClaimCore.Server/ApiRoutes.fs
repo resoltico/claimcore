@@ -103,21 +103,26 @@ module internal ApiRoutes =
     let private admit (configuration: WebConfiguration) (context: HttpContext) =
         task {
             let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
-            use lease = budget.Acquire(context)
 
-            if not lease.IsAcquired then
-                return Error GateFailure.AdmissionRejected
-            else
-                match configuration.Oidc with
-                | None -> return Error GateFailure.SessionRejected
-                | Some oidc ->
-                    return!
-                        RequestGate.actorPost
-                            oidc
-                            configuration.Binding
-                            configuration.RequestGate.MaximumJsonBytes
-                            (context.RequestServices.GetRequiredService<IAntiforgery>())
-                            context
+            let! admitted =
+                budget.Run(
+                    context,
+                    fun _ ->
+                        task {
+                            match configuration.Oidc with
+                            | None -> return Error GateFailure.SessionRejected
+                            | Some oidc ->
+                                return!
+                                    RequestGate.actorPost
+                                        oidc
+                                        configuration.Binding
+                                        configuration.RequestGate.MaximumJsonBytes
+                                        (context.RequestServices.GetRequiredService<IAntiforgery>())
+                                        context
+                        }
+                )
+
+            return admitted |> Option.defaultValue (Error GateFailure.AdmissionRejected)
         }
 
     let private workload endpoint =

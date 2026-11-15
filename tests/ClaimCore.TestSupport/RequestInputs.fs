@@ -14,6 +14,7 @@ let all () : IEndpointInput list =
     let caseInput =
         Inputs.caseOperation
             {
+                ExpectedFamilySequence = None
                 OperationId = operation
                 CaseReference = "CASE-1"
                 ExpectedRevision = 0L
@@ -175,6 +176,7 @@ let all () : IEndpointInput list =
                     OperationInput.People
                         {
                             OperationId = operation
+                            ExpectedRevision = 0L
                             Target = principal
                             Act = PeopleAct.Register Inputs.actorProfile
                         }

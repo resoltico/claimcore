@@ -238,7 +238,8 @@ let internal malformedWrites fixture =
                 (PeopleAct.Register Inputs.actorProfile)
         )
         OperationInput.People(
-            peopleRequest
+            reviewedPeopleRequest
+                fixture.Store
                 (id fixture 80100)
                 (principal "new-person")
                 (PeopleAct.Register { DisplayName = ""; Contact = None })
@@ -299,7 +300,8 @@ let internal lifecycle fixture =
                 Service.execute
                     owner
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            fixture.Store
                             (id fixture (80010 + index))
                             target
                             (PeopleAct.Register Inputs.actorProfile)
@@ -311,7 +313,13 @@ let internal lifecycle fixture =
         let! turnedOff =
             Service.execute
                 owner
-                (OperationInput.People(peopleRequest (id fixture 80012) disabled PeopleAct.Disable))
+                (OperationInput.People(
+                    reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 80012)
+                        disabled
+                        PeopleAct.Disable
+                ))
                 token
 
         acceptedPeople turnedOff
@@ -397,7 +405,11 @@ let internal targetPrivacy fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest (id fixture 80300) reader (PeopleAct.Register Inputs.actorProfile)
+                    reviewedPeopleRequest
+                        fixture.Store
+                        (id fixture 80300)
+                        reader
+                        (PeopleAct.Register Inputs.actorProfile)
                 ))
                 token
 

@@ -59,7 +59,8 @@ let tests =
                         Service.execute
                             admin
                             (OperationInput.People(
-                                peopleRequest
+                                reviewedPeopleRequest
+                                    database.Fixture.Store
                                     (id database.Fixture number)
                                     target
                                     (PeopleAct.Register Inputs.actorProfile)
@@ -88,7 +89,11 @@ let tests =
                     Service.execute
                         admin
                         (OperationInput.People(
-                            peopleRequest (id database.Fixture 105) disabled PeopleAct.Disable
+                            reviewedPeopleRequest
+                                database.Fixture.Store
+                                (id database.Fixture 105)
+                                disabled
+                                PeopleAct.Disable
                         ))
                         token
                     |> Async.AwaitTask
@@ -247,7 +252,8 @@ let peoplePageBasis =
                         Service.preview
                             service
                             (OperationInput.People(
-                                peopleRequest
+                                reviewedPeopleRequest
+                                    database.Fixture.Store
                                     (id database.Fixture 120)
                                     fixture.Owner
                                     (PeopleAct.SetProfile

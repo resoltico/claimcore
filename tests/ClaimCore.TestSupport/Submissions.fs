@@ -81,7 +81,12 @@ let ofCommand actorId command =
                 | CaseAct.Bare _ -> None, []
 
             ActKind.Case(CaseAct.kind request.Act),
-            OperationBinding.Case(request.Target, request.ExpectedRevision, payment),
+            OperationBinding.Case(
+                request.Target,
+                request.ExpectedRevision,
+                payment,
+                request.ExpectedFamilySequence
+            ),
             values
         | OperationInput.Work request ->
             let (WorkAct.UpdateWork value) = request.Act
@@ -168,7 +173,9 @@ let ofCommand actorId command =
                             invalidOp "An existing actor fixture requires its actor ID.")
                     )
 
-            ActKind.People(PeopleAct.kind request.Act), OperationBinding.People actor, values
+            ActKind.People(PeopleAct.kind request.Act),
+            OperationBinding.People(actor, request.ExpectedRevision),
+            values
 
     OperationSubmission.admit
         {

@@ -32,6 +32,11 @@ let canonical input =
 let act value =
     command
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind value = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = System.Guid.Parse "10000000-0000-7000-8000-000000000001"
             CaseReference = "FIXTURE"
             ExpectedRevision = 0L

@@ -52,8 +52,8 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Angaben, Bearbeitungsdaten und Wiedervorlagen dieses Falls dauerhaft aus ClaimCore löschen. Die Fallreferenz und die Änderungsliste bleiben erhalten. Anderswo gespeicherte Kopien sind nicht betroffen.",
-    "source": "8705b2ea28a6"
+    "text": "Aktuelle und aufbewahrte Details, Zahlungen, Bearbeitung, Wiedervorlagen und Notizen dieses Falls dauerhaft entfernen. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
+    "source": "e9561f9fbf0b"
   },
   "task.people.eraseProfile.label": {
     "text": "Profil löschen",
@@ -648,8 +648,8 @@
     "source": "515d50bce7de"
   },
   "field.expectedRevision.label": {
-    "text": "Geprüfte Fallversion",
-    "source": "8f3d37032769"
+    "text": "Geprüfte Version",
+    "source": "7fad0956f33c"
   },
   "field.expectedWorkRevision.label": {
     "text": "Geprüfte Bearbeitungsversion",
@@ -1580,12 +1580,12 @@
     "source": "e8127247ede6"
   },
   "field.expectedRevision.rule": {
-    "text": "Die von Ihnen geprüfte Fallversion.",
-    "source": "8965c7efb1dc"
+    "text": "Verwenden Sie die geprüfte Version. Bei der Kontoerstellung ist null erforderlich.",
+    "source": "571e2d58954c"
   },
   "field.expectedRevision.hint": {
-    "text": "Prüfen Sie den neuesten Fallstand, bevor Sie ihn ändern.",
-    "source": "de14cae9e98d"
+    "text": "Prüfen Sie vor einer Änderung den aktuellen Stand.",
+    "source": "b34e81e4f1ba"
   },
   "field.reason.hint": {
     "text": "Warum diese Änderung erforderlich ist.",
@@ -1892,8 +1892,8 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Dadurch werden Fallangaben, Bearbeitung und Wiedervorlagen dauerhaft aus ClaimCore entfernt. Das Aktenzeichen und die Aufzeichnung der Änderungen bleiben erhalten.",
-    "source": "e774df6acd21"
+    "text": "Dies entfernt aktuelle und aufbewahrte Falldetails, Zahlungen, Bearbeitung, Wiedervorlagen und Notizen dauerhaft. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
+    "source": "0e447a932597"
   },
   "task.people.register.done": {
     "text": "Konto registriert.",
@@ -2686,5 +2686,41 @@
   "label.caseState": {
     "text": "Fallzustand",
     "source": "19cc1fc68f2a"
+  },
+  "diagnostic.CASE_ID_REQUIRED": {
+    "text": "Geben Sie eine nicht leere Fall-UUID ein.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID": {
+    "text": "Wählen Sie für einen Fall entweder Referenz oder ID; verwenden Sie bei allen Fällen keines von beiden.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.CASE_ID_REQUIRED.gui": {
+    "text": "Geben Sie eine nicht leere Fall-UUID ein.",
+    "source": "857bfe9e40a1"
+  },
+  "diagnostic.CASE_SELECTION_INVALID.gui": {
+    "text": "Wählen Sie für einen Fall entweder Referenz oder ID; verwenden Sie bei allen Fällen keines von beiden.",
+    "source": "8cd27490b35d"
+  },
+  "diagnostic.ACTOR_CHANGED": {
+    "text": "Dieses Konto wurde seit Ihrer Prüfung geändert. Prüfen Sie das aktuelle Konto vor einem erneuten Versuch.",
+    "source": "357d6749b470"
+  },
+  "diagnostic.FAMILY_CHANGED": {
+    "text": "Dieser Fall oder seine Bearbeitung, Notizen, Wiedervorlagen oder Zahlungen wurden seit Ihrer Löschprüfung geändert. Prüfen Sie den gesamten Fall erneut.",
+    "source": "14a2c7cc75ea"
+  },
+  "field.expectedFamilySequence.hint": {
+    "text": "Prüfen Sie vor dem Löschen den Fall samt Bearbeitung, Notizen, Wiedervorlagen und Zahlungen.",
+    "source": "930c5b2e0f56"
+  },
+  "field.expectedFamilySequence.label": {
+    "text": "Geprüfte Version des gesamten Falls",
+    "source": "07dc0be65cf6"
+  },
+  "field.expectedFamilySequence.rule": {
+    "text": "Verwenden Sie die von case.get gelieferte Familiensequenz des zur Löschung geprüften Falls.",
+    "source": "8d258a9cf42b"
   }
 }

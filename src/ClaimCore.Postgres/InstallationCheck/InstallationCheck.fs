@@ -7,13 +7,6 @@ open System.Net
 open Npgsql
 open ClaimCore.Application
 
-/// Immutable installation configuration read by installation checks.
-type Installation =
-    {
-        InstallationId: Guid
-        BusinessTimeZone: string
-    }
-
 exception internal InstallationRefusal of RuntimeOpenFault
 
 module internal InstallationCheck =

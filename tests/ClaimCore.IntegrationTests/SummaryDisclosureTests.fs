@@ -60,7 +60,8 @@ let private summaries () =
                 Service.execute
                     owner
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            database.Fixture.Store
                             (id database.Fixture 200)
                             reader
                             (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

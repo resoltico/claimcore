@@ -276,8 +276,10 @@ module ResponseCodecs =
                 notes
                 latestPayments
                 changedAt
-                recordedBy ->
+                recordedBy
+                family ->
                 {
+                    FamilySequence = family
                     Snapshot =
                         {
                             CaseId = id
@@ -321,6 +323,7 @@ module ResponseCodecs =
             (list PaymentPaging.PreviewLimit PaymentCodecs.entry)
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "familySequence" _.FamilySequence ResponseScalars.sequence
         |> build
         |> named "CaseView"
 
@@ -648,10 +651,11 @@ module ResponseCodecs =
         |> named "GrantReadModel"
 
     let grantsPage =
-        (record (fun basis v0 offers seed v1 v2 ->
+        (record (fun basis v0 revision offers seed v1 v2 ->
             {
                 Basis = basis
                 PeopleGrantPage.Actor = v0
+                Revision = revision
                 Offers = offers
                 ProfileSeed = seed
                 Items = v1
@@ -660,6 +664,7 @@ module ResponseCodecs =
         : Fields<PeopleGrantPage, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
+        |> field "revision" _.Revision positiveRevision
         |> field
             "offers"
             _.Offers

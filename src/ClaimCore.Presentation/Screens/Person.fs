@@ -98,6 +98,7 @@ module PersonScreen =
                                 TaskAffordances.person
                                     PeopleActKind.Revoke
                                     actor.Actor.ActorId
+                                    reply.Revision
                                     (TaskAffordances.grantSeeds row.Role row.Scope)
                                     []
                                     Map.empty

@@ -81,6 +81,7 @@ let private idleConfirmation () =
                                 HumanCaseDocument.ofCore
                                 (Outcome.Succeeded
                                     {
+                                        FamilySequence = Sequence.create 1L |> Option.get
                                         LatestPayments = []
                                         Mine = false
                                         Work = Inputs.workView CliReplyFixtures.snapshot.State

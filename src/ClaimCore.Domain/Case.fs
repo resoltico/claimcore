@@ -14,6 +14,7 @@ type CaseCommand =
             Source: UnvalidatedCaseRequest
             ParsedOperationId: OperationId
             ParsedExpectedRevision: Revision
+            ParsedExpectedFamilySequence: Sequence option
             ParsedReference: CaseReference
             ParsedAct: ValidCaseAct
         }
@@ -22,6 +23,9 @@ type CaseCommand =
     member this.Reference = this.ParsedReference
     member this.Act = this.ParsedAct
     member this.OperationId = this.ParsedOperationId
+
+    member this.ExpectedFamilySequence = this.ParsedExpectedFamilySequence
+
     member this.ExpectedRevision = this.ParsedExpectedRevision
 
 [<NoComparison>]
@@ -68,11 +72,12 @@ module private BusinessState =
         StateValidation.admit today None claim |> Result.map (fun () -> claim)
 
 module Case =
-    let private command request (reference, identity, revision, act) =
+    let private command request (reference, identity, revision, family, act) =
         {
             Source = request
             ParsedOperationId = identity
             ParsedExpectedRevision = revision
+            ParsedExpectedFamilySequence = family
             ParsedReference = reference
             ParsedAct = act
         }
@@ -103,7 +108,7 @@ module Case =
         // Retain the existing priority of revision conflicts over current admission.
         let revision =
             match current, RequestValidation.parsed prepared with
-            | Some current, Ok(_, _, expected, _) when
+            | Some current, Ok(_, _, expected, _, _) when
                 CaseAct.kind request.Act <> CaseActKind.Open
                 && current.Revision <> expected
                 && CaseState.lifecycle current.State <> Lifecycle.Erased

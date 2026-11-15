@@ -83,7 +83,7 @@ const malformedIssuerBoundary = async (page: Page, issuer: string, subject: stri
     body: JSON.stringify({
       operationId: mintOperationId(),
       task: "people.admit",
-      binding: { kind: "PEOPLE" },
+      binding: { kind: "PEOPLE", expectedRevision: 0 },
       inputs: {
         "input:principal.kind": "HUMAN",
         "input:principal.issuer": issuer,

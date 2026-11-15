@@ -16,7 +16,7 @@ module Housekeeping =
     let DefaultBatch = 128
     let MaximumBatch = 1000
 
-    let internal prune (source: NpgsqlDataSource) limit (token: CancellationToken) =
+    let internal prune (source: NpgsqlDataSource) installation limit (token: CancellationToken) =
         if limit < 1 || limit > MaximumBatch then
             invalidArg (nameof limit) "Use a bounded positive housekeeping batch."
 
@@ -26,8 +26,9 @@ module Housekeeping =
             token
             (fun connection transaction ->
                 task {
-                    let! _ = Baseline.require connection token
                     let! _ = Transactions.configure connection Transactions.timeouts token
+                    FailureDiagnostics.phase FailurePhase.Housekeeping
+                    do! Baseline.requireExpected installation connection token
                     let! instant = SessionRows.now connection token
 
                     let sessionsSql =

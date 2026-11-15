@@ -23,6 +23,8 @@ module internal OperationContentCodecs =
                 {
                     OperationId = OperationId.value operation
                     CaseReference = CaseReference.format scope.Reference
+                    ExpectedFamilySequence =
+                        scope.ExpectedFamilySequence |> Option.map Sequence.value
                     ExpectedRevision = Revision.value scope.ExpectedRevision
                     Act = act
                 }

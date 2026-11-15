@@ -154,7 +154,8 @@ module internal PeopleOperations =
             | PeopleAct.Revoke _ -> PeopleAct.Revoke(List.exactlyOne grants), None
 
         {
-            PeopleCommandSkeleton.TargetActorId = records.Head.TargetActorId
+            PeopleCommandSkeleton.ExpectedRevision = command.ExpectedRevision
+            TargetActorId = records.Head.TargetActorId
             Principal = command.Target
             Act = act
         },

@@ -11,6 +11,8 @@ type Violation =
     | ReferenceFormat
     | CountryFormat
     | PrincipalFormat
+    | CaseIdRequired
+    | CaseSelectionInvalid
     | ActorIdRequired
     | ReminderIdRequired
     | NoteIdRequired

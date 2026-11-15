@@ -3,6 +3,7 @@ import {
   type CaseSelector,
   type OperationTaskDefinition,
   type OperationBinding,
+  type Affordance,
 } from "@contracts/client";
 
 import type {
@@ -40,9 +41,25 @@ export const conflictFromRefusal = (
 export const rebasedOperationBinding = (
   input: OperationSubmission,
   revision: number,
+  currentActions: ReadonlyArray<Affordance>,
 ): OperationBinding => {
   const { binding } = input;
-  return "expectedRevision" in binding ? { ...binding, expectedRevision: revision } : binding;
+  if (input.task === "case.erase") {
+    const current = currentActions.find(
+      (action) => action.task === "case.erase" && action.blocked === null,
+    );
+    if (current?.task !== "case.erase") {
+      throw new Error("A fresh erasure action is required.");
+    }
+    return {
+      ...input.binding,
+      expectedRevision: current.binding.expectedRevision,
+      expectedFamilySequence: current.binding.expectedFamilySequence,
+    };
+  }
+  return binding.kind !== "PEOPLE" && "expectedRevision" in binding
+    ? { ...binding, expectedRevision: revision }
+    : binding;
 };
 const sameSelector = (left: CaseSelector, right: CaseSelector): boolean =>
   left.kind === "ID"

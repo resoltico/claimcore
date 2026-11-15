@@ -149,7 +149,8 @@ let tests =
                     Service.execute
                         owner
                         (OperationInput.People(
-                            peopleRequest
+                            reviewedPeopleRequest
+                                fixture.Store
                                 (id fixture 77102)
                                 registrar
                                 (PeopleAct.Register Inputs.actorProfile)

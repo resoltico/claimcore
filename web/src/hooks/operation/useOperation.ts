@@ -84,6 +84,7 @@ const initialBinding = (options: Options): OperationBinding => {
   if (options.subject === "PEOPLE") {
     return {
       kind: "PEOPLE",
+      expectedRevision: 0,
     };
   }
   const { current } = options;
@@ -740,7 +741,11 @@ const reviewLatestDraft = (
       state,
       options,
       values,
-      rebasedOperationBinding(conflict.source.prepared.input, conflict.latest.revision),
+      rebasedOperationBinding(
+        conflict.source.prepared.input,
+        conflict.latest.revision,
+        conflict.latest.current.actions,
+      ),
     );
     dispatch({
       type: "REVIEW_LATEST",
@@ -1094,6 +1099,32 @@ export const useOperation = (supplied: Options) => {
   const view = operationView(state);
   const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
   const controls = actions(state, dispatch, options, ownerVerified);
+  const requestedReview = useRef<{
+    context: typeof state.disclosed.context;
+    previous: typeof state.disclosed.caseObservation;
+  } | null>(null);
+  useEffect(() => {
+    const requested = requestedReview.current;
+    if (requested === null) {
+      return;
+    }
+    if (!ownerVerified || requested.context !== state.disclosed.context) {
+      requestedReview.current = null;
+      return;
+    }
+    const current = state.disclosed.caseObservation;
+    if (state.disclosed.read !== null || current === requested.previous) {
+      return;
+    }
+    requestedReview.current = null;
+    const offered = operationActions(current?.actions ?? []).find(
+      (action) => action.task === state.draft.entry.kind && action.blocked === null,
+    );
+    if (offered !== undefined) {
+      controls.discard(false, state.draft.entry.kind, state.draft.values, offered.binding, offered);
+    }
+  }, [controls, ownerVerified, state]);
+
   return {
     ...view,
     task: operationEntry(state.draft.entry),
@@ -1101,6 +1132,16 @@ export const useOperation = (supplied: Options) => {
     affordance: state.draft.affordance ?? suppliedAffordance(options, state.draft.entry.kind),
     ownerVerified,
     ...controls,
+    refreshPrecondition: () => {
+      if (!ownerVerified || view.busy || view.priorUncertain) {
+        return;
+      }
+      requestedReview.current = {
+        context: state.disclosed.context,
+        previous: state.disclosed.caseObservation,
+      };
+      controls.revalidateDisclosure();
+    },
     preview: () => (ownerVerified ? controls.preview() : Promise.resolve()),
     execute: () => (ownerVerified ? controls.execute() : Promise.resolve()),
     confirm: (value: boolean) => {

@@ -46,6 +46,15 @@ let private actualPayments () =
             let input =
                 OperationInput.Case
                     {
+                        ExpectedFamilySequence =
+                            if CaseAct.kind act = CaseActKind.Erase then
+                                Some(
+                                    ClaimCore.TestSupport.StoreFixtures.reviewedFamilySequence
+                                        fixture.Store
+                                        (CaseSelector.Reference "FIN-SERVICE-51")
+                                )
+                            else
+                                None
                         OperationId = identity
                         Target = CaseSelector.Reference "FIN-SERVICE-51"
                         ExpectedRevision = expected
@@ -124,6 +133,7 @@ let private actualPayments () =
                 actor
                 (OperationInput.Case
                     {
+                        ExpectedFamilySequence = None
                         OperationId = otherOperation
                         Target = CaseSelector.Reference "FIN-SERVICE-OTHER"
                         ExpectedRevision = 0L
@@ -405,6 +415,7 @@ let private lockedBounds () =
         let request identity act =
             OperationInput.Case
                 {
+                    ExpectedFamilySequence = None
                     OperationId = identity
                     Target = target
                     ExpectedRevision = revision

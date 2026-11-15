@@ -19,7 +19,7 @@ module internal DiagnosticText =
     let reference request =
         let target (input: OperationSubmission) =
             match input.Binding with
-            | OperationBinding.Case(target, _, _)
+            | OperationBinding.Case(target, _, _, _)
             | OperationBinding.Note(target, _)
             | OperationBinding.Work(target, _)
             | OperationBinding.Reminder(target, _) -> Some target

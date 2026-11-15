@@ -18,7 +18,7 @@ const preparedHook = async () => {
         ...recoveryOptions,
         subject: "PEOPLE",
         kind: "people.register",
-        affordance: operationAffordance("people.register", { kind: "PEOPLE" }),
+        affordance: operationAffordance("people.register", { kind: "PEOPLE", expectedRevision: 0 }),
         current: null,
         credential,
         onLockChange: vi.fn(),

@@ -1,3 +1,5 @@
+import { Select } from "../ui/Select";
+import { grantFields, grantScope, grantTarget } from "../operation/grantTargetDraft";
 import {
   initialCollectionRow,
   affordanceSeed,
@@ -75,7 +77,7 @@ const TaskInputHelp = ({
   error,
   control,
 }: {
-  metadata: ReturnType<typeof taskInput>;
+  metadata: { hintId: ReturnType<typeof taskInput>["hintId"] };
   error: Notice | undefined;
   control: string;
 }) => {
@@ -106,12 +108,12 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
     return null;
   }
   if (props.binding.kind === "PEOPLE" && "actorId" in props.binding) {
-    return roleScopeAdmitted(value, formValueText(props.values["input:scope"]) || "INSTALLATION")
+    return roleScopeAdmitted(value, grantScope(props.values) || "INSTALLATION")
       ? null
       : "ui.roleNotAvailableAtScope";
   }
   const principalKind = props.principalKind ?? formValueText(props.values["input:principal.kind"]);
-  const scope = formValueText(props.values["input:scope"]) || "INSTALLATION";
+  const scope = grantScope(props.values) || "INSTALLATION";
   if (roleAdmitted(value, principalKind, scope)) {
     return null;
   }
@@ -183,7 +185,10 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
 };
 const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) => {
   const p = usePresentation();
-  const metadata = taskInput(input.id);
+  const metadata =
+    props.task.subject === "PEOPLE" && input.id === "field:caseReference"
+      ? { ...taskInput(input.id), hintId: null }
+      : taskInput(input.id);
   const label = renderCatalogKey(p, metadata.labelId);
   const error = props.errors[errorKey];
   if (input.choices.length > 0) {
@@ -193,6 +198,9 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
   if (field !== undefined) {
     const common = {
       field,
+      ...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
+        ? { description: p.text("ui.existingCaseSelectionHint") }
+        : {}),
       inputName: errorKey,
       value: formValueText(props.values[input.id]),
       disabled: props.disabled,
@@ -327,7 +335,7 @@ const permitted = (input: Input, props: Props): boolean => {
   const scoped =
     input.id !== "field:caseReference" ||
     props.task.subject !== "PEOPLE" ||
-    (props.values["input:scope"] ?? "INSTALLATION") === "CASE";
+    grantScope(props.values) === "CASE";
   return (
     authored &&
     (editable === undefined || editable.has(input.id)) &&
@@ -346,6 +354,87 @@ const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean 
       (taskInput(input.id).kind === "FIELD" || input.id === "input:profile.contact"))
   );
 };
+const maySelectGrantTarget = (editable: ReadonlyArray<string> | undefined) =>
+  editable === undefined ||
+  editable.includes("input:caseId") ||
+  editable.includes("field:caseReference");
+const GrantTargetInput = ({
+  inputs,
+  errorKey,
+  editableTarget,
+  ...props
+}: Props & {
+  inputs: ReadonlyArray<Input>;
+  errorKey?: (id: TaskInputId) => string;
+  editableTarget?: ReadonlyArray<string>;
+}) => {
+  const p = usePresentation();
+  const raw = grantTarget(props.values);
+  const scope = inputs.find((input) => input.id === "input:scope");
+  const selected = raw.selection;
+  const active = inputs.find(
+    (input) => input.id === (selected.kind === "ID" ? "input:caseId" : "field:caseReference"),
+  );
+  const editable: ReadonlyArray<string> | undefined = editableTarget ?? props.affordance?.editable;
+  const maySelect = maySelectGrantTarget(editable);
+  const disabled = (id: TaskInputId) =>
+    props.disabled || (editable !== undefined && !editable.includes(id));
+  const key = (id: TaskInputId) => errorKey?.(id) ?? id;
+  const set = (selection: typeof raw.selection) => {
+    props.onChange("input:scope", { kind: "GRANT_TARGET", selection });
+  };
+  const fields = grantFields({ ...props.values, "input:scope": raw });
+  return (
+    <>
+      {scope === undefined ? null : (
+        <InputControl
+          {...props}
+          input={scope}
+          disabled={disabled(scope.id)}
+          values={fields}
+          errorKey={key(scope.id)}
+          onChange={(_id, value) => {
+            set(
+              value === "INSTALLATION" ? { kind: "INSTALLATION" } : { kind: "REFERENCE", text: "" },
+            );
+          }}
+        />
+      )}
+      {selected.kind === "INSTALLATION" ? null : (
+        <>
+          {maySelect ? (
+            <Select
+              label={p.text("ui.caseSelection")}
+              value={selected.kind}
+              disabled={props.disabled}
+              options={[
+                { value: "REFERENCE", label: p.fieldLabel("caseReference") },
+                { value: "ID", label: p.fieldLabel("caseId") },
+              ]}
+              onChange={(value) => {
+                set({ kind: value === "ID" ? "ID" : "REFERENCE", text: "" });
+              }}
+            />
+          ) : null}
+          {active === undefined ? null : (
+            <InputControl
+              {...props}
+              input={active}
+              disabled={disabled(active.id)}
+              values={fields}
+              errorKey={key(active.id)}
+              onChange={(_id, value) => {
+                set({ kind: selected.kind, text: formValueText(value) });
+              }}
+            />
+          )}
+        </>
+      )}
+    </>
+  );
+};
+const isGrantInput = (input: Input) =>
+  ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
 const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) => {
   const render = (input: Input) => {
     const field = productMetadata.catalog.fields.find(
@@ -380,7 +469,16 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
       <InputControl key={input.id} input={input} {...props} />
     );
   };
-  return inputs.map(render);
+  const grant =
+    props.task.subject === "PEOPLE" &&
+    props.task.inputs.some((input) => input.id === "input:scope") &&
+    inputs.some(isGrantInput);
+  return (
+    <>
+      {grant ? <GrantTargetInput {...props} inputs={props.task.inputs} /> : null}
+      {inputs.filter((input) => !grant || !isGrantInput(input)).map(render)}
+    </>
+  );
 };
 const GrantRows = ({
   collection,
@@ -398,12 +496,25 @@ const GrantRows = ({
       {rows.map((row, index) => (
         <fieldset key={row.key}>
           <legend>{p.text("ui.grantNumber", { number: p.integer(index + 1) })}</legend>
+          <GrantTargetInput
+            {...props}
+            inputs={collection.inputs}
+            editableTarget={collection.inputs.map((input) => input.id)}
+            values={row.values}
+            current={null}
+            errorKey={(id) => taskRowInputKey(collection.id, row.key, id)}
+            onChange={(id, nextValue) => {
+              update(
+                rows.map((previous) =>
+                  previous.key === row.key
+                    ? { ...previous, values: editGrantInput(previous.values, id, nextValue) }
+                    : previous,
+                ),
+              );
+            }}
+          />
           {collection.inputs
-            .filter(
-              (input) =>
-                input.id !== "field:caseReference" ||
-                (row.values["input:scope"] ?? "INSTALLATION") === "CASE",
-            )
+            .filter((input) => !isGrantInput(input))
             .map((input) => (
               <InputControl
                 key={input.id}

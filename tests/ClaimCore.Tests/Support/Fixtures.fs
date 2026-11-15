@@ -54,6 +54,11 @@ let decision = Inputs.decision
 
 let request revision act =
     {
+        ExpectedFamilySequence =
+            if CaseAct.kind act = CaseActKind.Erase then
+                Some 1L
+            else
+                None
         OperationId = Guid.Parse("20000000-0000-7000-8000-000000000001")
         CaseReference = "UNIT-001"
         ExpectedRevision = revision
@@ -94,10 +99,7 @@ let isInvalid result =
     | Error(CaseDecisionError.Refused(Refusal.InvalidInput _)) -> true
     | _ -> false
 
-let actRequest revision act =
-    { request revision (AuthoredCaseAct.Bare BareAct.Close) with
-        Act = act
-    }
+let actRequest revision act = request revision act
 
 let viewFields (snapshot: CaseSnapshot) =
     match snapshot.State with

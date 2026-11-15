@@ -44,7 +44,7 @@ module TaskAffordances =
     let offered task binding seeds editable choices =
         Affordance.create task binding seeds editable choices false None
 
-    let caseAction kind id revision seeds editable choices =
+    let caseAction kind id revision family seeds editable choices =
         let task = TaskId.Operation(ActKind.Case kind)
 
         offered
@@ -55,7 +55,11 @@ module TaskAffordances =
                      0L
                  else
                      Revision.value revision),
-                None
+                None,
+                (if kind = CaseActKind.Erase then
+                     Some(Sequence.value family)
+                 else
+                     None)
             ))
             seeds
             editable
@@ -90,7 +94,8 @@ module TaskAffordances =
             (OperationBinding.Case(
                 CaseSelector.Id id,
                 Revision.value revision,
-                Some(OperationId.value (PaymentEntry.id entry))
+                Some(OperationId.value (PaymentEntry.id entry)),
+                None
             ))
             Map.empty
             []
@@ -104,7 +109,8 @@ module TaskAffordances =
                     (OperationBinding.Case(
                         CaseSelector.Id id,
                         Revision.value revision,
-                        Some(OperationId.value (PaymentEntry.id item.Entry))
+                        Some(OperationId.value (PaymentEntry.id item.Entry)),
+                        None
                     ))
                     Map.empty
                     []
@@ -158,10 +164,10 @@ module TaskAffordances =
             editable
             Map.empty
 
-    let person kind actor seeds editable choices =
+    let person kind actor revision seeds editable choices =
         offered
             (TaskId.Operation(ActKind.People kind))
-            (OperationBinding.People(Some(ActorId.value actor)))
+            (OperationBinding.People(Some(ActorId.value actor), Revision.value revision))
             seeds
             editable
             choices
@@ -239,7 +245,7 @@ module TaskAffordances =
         let admit =
             offered
                 (TaskId.Operation(ActKind.People PeopleActKind.Admit))
-                (OperationBinding.People None)
+                (OperationBinding.People(None, 0L))
                 seeds
                 [
                     input InputTarget.ProfileDisplayName
@@ -251,7 +257,7 @@ module TaskAffordances =
         let dismiss =
             offered
                 (TaskId.Command CommandTaskId.PeopleRequestsDismiss)
-                (OperationBinding.People None)
+                (OperationBinding.People(None, 0L))
                 (principal value.Principal)
                 []
                 Map.empty

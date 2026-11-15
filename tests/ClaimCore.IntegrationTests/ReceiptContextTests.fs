@@ -25,7 +25,8 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 3)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

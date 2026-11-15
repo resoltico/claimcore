@@ -245,7 +245,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=3; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=3)"
+                    "UPDATE claimcore.installation SET installation_format=4; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=4)"
                     [||]
 
             do! sql "DELETE FROM claimcore.installation" [||]
@@ -253,7 +253,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(3,$1,'Etc/UTC')"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(4,$1,'Etc/UTC')"
                     [| box database.Fixture.InstallationId |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
@@ -277,6 +277,42 @@ let private publishedFaults () =
             let authentication = privateText "authentication" settings.ConnectionString
             do! fault authentication [ "status" ] "CONNECTION_REJECTED" ExitCode.Rejected
 
+            let probe = AdministrationProcess.start [ binary; "status" ]
+            probe.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- authentication
+
+            let! diagnosticExit, diagnosticReply, diagnosticErrors =
+                AdministrationProcess.execute probe |> Async.AwaitTask
+
+            Expect.equal
+                diagnosticExit
+                (ExitCode.value ExitCode.Rejected)
+                "Published startup refusal exit"
+
+            AdministrationProcess.requireDiagnostics diagnosticErrors
+            let lines = diagnosticErrors.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+
+            Expect.hasLength
+                lines
+                1
+                "Production owner sink emits the actual startup failure exactly once"
+
+            use diagnostic = JsonDocument.Parse lines[0]
+
+            Expect.equal
+                (diagnostic.RootElement.GetProperty("phase").GetString())
+                "Open"
+                "Original startup phase"
+
+            Expect.equal
+                (diagnostic.RootElement.GetProperty("classification").GetString())
+                "Provider"
+                "Original provider class"
+
+            for secret in [ "private-secret-sentinel"; directory; settings.ConnectionString ] do
+                Expect.isFalse
+                    ((diagnosticErrors + diagnosticReply).Contains secret)
+                    "Closed production fields exclude credentials paths and provider detail"
+
             use waiting = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0)
             waiting.Start()
             let port = (waiting.LocalEndpoint :?> System.Net.IPEndPoint).Port
@@ -294,6 +330,99 @@ let private publishedFaults () =
                 (result.GetProperty("kind").GetString())
                 "STATUS"
                 "Valid source still works after negative controls"
+
+            let proxySettings =
+                NpgsqlConnectionStringBuilder(database.Container.GetConnectionString())
+
+            let terminate backend =
+                task {
+                    use! owner = database.OwnerSource.OpenConnectionAsync()
+
+                    let! _ =
+                        DatabaseSession.execute
+                            owner
+                            "SELECT pg_terminate_backend($1)"
+                            [| box backend |]
+                            CancellationToken.None
+
+                    return ()
+                }
+
+            use proxy =
+                new CommitProxy.Proxy(
+                    nonNull proxySettings.Host,
+                    proxySettings.Port,
+                    CommitProxy.Drop.AfterCommitFatal,
+                    terminate = terminate
+                )
+
+            proxySettings.Host <- "127.0.0.1"
+            proxySettings.Port <- proxy.Port
+            proxySettings.SslMode <- SslMode.Disable
+            proxySettings.GssEncryptionMode <- GssEncryptionMode.Disable
+            proxySettings.Pooling <- false
+            let lostCommit = privateText "lost-commit" proxySettings.ConnectionString
+            let command = AdministrationProcess.start [ binary; "maintenance"; "on" ]
+            command.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- lostCommit
+
+            let! commitExit, commitReply, commitErrors =
+                AdministrationProcess.execute command |> Async.AwaitTask
+
+            Expect.equal
+                commitExit
+                (ExitCode.value ExitCode.OutcomeUnknown)
+                "Published owner preserves lost COMMIT acknowledgement"
+
+            Expect.equal
+                (commitReply.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length)
+                1
+                "Exactly one public owner reply"
+
+            use unknown = JsonDocument.Parse commitReply
+
+            Expect.equal
+                (unknown.RootElement.GetProperty("kind").GetString())
+                "OUTCOME_UNKNOWN"
+                "The published reply cannot claim definite failure"
+
+            AdministrationProcess.requireDiagnostics commitErrors
+
+            let events =
+                commitErrors.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map JsonDocument.Parse
+
+            try
+                let primary =
+                    events
+                    |> Array.filter (fun value ->
+                        value.RootElement.GetProperty("phase").GetString() <> "Cleanup")
+
+                Expect.hasLength primary 1 "One original published primary event"
+
+                Expect.equal
+                    (primary[0].RootElement.GetProperty("phase").GetString())
+                    "Commit"
+                    "COMMIT phase survives public uncertainty wrapping"
+
+                Expect.equal
+                    (primary[0].RootElement.GetProperty("classification").GetString())
+                    "Provider"
+                    "Original provider classification survives"
+
+                let! current =
+                    InstallationStatus.read database.OwnerSource CancellationToken.None
+                    |> Async.AwaitTask
+
+                Expect.isTrue
+                    current.Maintenance.Active
+                    "Independent state proves the mutation committed despite the missing reply"
+
+                Expect.equal
+                    proxy.FatalSqlState
+                    (Some "57P01")
+                    "A real provider fatal response was observed after COMMIT"
+            finally
+                events |> Array.iter _.Dispose()
 
             completed <- true
         finally

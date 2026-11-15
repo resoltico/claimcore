@@ -323,12 +323,14 @@ export const RoutedContent = ({
   refresh,
   peopleAvailable = true,
   caseAvailable = true,
+  caseAuthoringAvailable = caseAvailable,
   caseNavigation,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
   peopleAvailable?: boolean;
   caseAvailable?: boolean;
+  caseAuthoringAvailable?: boolean;
   caseNavigation: ReturnType<typeof useCaseNavigation>;
 }) => {
   const { selectCase, backToCases } = caseNavigation;
@@ -346,6 +348,8 @@ export const RoutedContent = ({
         <CaseDetail
           target={route.target}
           reloadSignal={refresh}
+          disclosureAvailable={caseAvailable}
+          authoringAvailable={caseAuthoringAvailable}
           definition={productMetadata.catalog}
           onBack={backToCases}
           onAct={selectAct}

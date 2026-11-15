@@ -70,9 +70,8 @@ let private pressableStylesheet () =
 
         use host = new Host(true, buildAssets = [ "react-aria-pressable.css", bytes ])
         let admission = host.Services.GetRequiredService<AuthenticationAdmission>()
-        use first = admission.Acquire(DefaultHttpContext())
-        use second = admission.Acquire(DefaultHttpContext())
-        Expect.isTrue (first.IsAcquired && second.IsAcquired) "Private authentication is saturated"
+        use! _first = holdAuthentication admission (DefaultHttpContext())
+        use! _second = holdAuthentication admission (DefaultHttpContext())
         use! response = host.Client.GetAsync "/react-aria-pressable.css"
 
         Expect.equal
@@ -103,9 +102,8 @@ let private independentAdmission () =
         let! login, _ = host.Login()
         Expect.equal login 200 "A cookie session is established before pressure"
         let admission = host.Services.GetRequiredService<AuthenticationAdmission>()
-        use first = admission.Acquire(DefaultHttpContext())
-        use second = admission.Acquire(DefaultHttpContext())
-        Expect.isTrue (first.IsAcquired && second.IsAcquired) "The cookie budget is fully held"
+        use! _first = holdAuthentication admission (DefaultHttpContext())
+        use! _second = holdAuthentication admission (DefaultHttpContext())
         let! busy, _ = host.Bootstrap()
         Expect.equal busy 429 "Private session work still respects authentication admission"
         use! busyResponse = host.Client.GetAsync "/api/session"

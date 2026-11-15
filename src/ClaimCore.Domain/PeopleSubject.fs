@@ -3,6 +3,7 @@ namespace ClaimCore.Domain
 /// Rights and their accepting positions have one owner; access views derive from this map.
 type PeopleSubjectState =
     {
+        Revision: Revision
         Actor: Actor
         Grants: Map<ActorGrant, EffectPosition>
         ProfileErasure: EffectPosition option
@@ -30,6 +31,7 @@ type PeopleSubjectProvenance =
 
 type PeopleSubjectRows =
     {
+        Revision: Revision
         Actor: Actor
         DisplayNameSearch: string option
         ContactSearch: string option
@@ -53,7 +55,7 @@ module PeopleSubject =
             Requester = context.Access
         }
 
-    let restore actor grants erasure =
+    let restore revision actor grants erasure =
         let validScope (grant: ActorGrant) =
             let scope =
                 match grant.Scope with
@@ -62,10 +64,14 @@ module PeopleSubject =
 
             Access.roleScopes grant.Role |> List.contains scope
 
-        if grants |> Map.forall (fun grant _ -> validScope grant) then
+        if
+            revision > Revision.zero
+            && grants |> Map.forall (fun grant _ -> validScope grant)
+        then
             Ok
                 {
-                    PeopleSubjectState.Actor = actor
+                    PeopleSubjectState.Revision = revision
+                    Actor = actor
                     Grants = grants
                     ProfileErasure = erasure
                 }
@@ -104,6 +110,17 @@ module PeopleSubject =
 
         DecisionContext.admit context command.OperationId permitted (fun () -> Ok())
         |> Result.bind (fun () -> admission)
+        |> Result.bind (fun () ->
+            let actual = state |> Option.map _.Revision |> Option.defaultValue Revision.zero
+            let existing = PeopleActKind.targetsExistingActor (PeopleAct.kind command.Act)
+
+            if
+                (existing && state.IsSome || not existing && state.IsNone)
+                && actual <> command.ExpectedRevision
+            then
+                Error(Refusal.People PeopleRefusal.ActorChanged)
+            else
+                Ok())
         |> Result.bind (fun () -> People.decide (facts context dependencies state) command)
         |> Result.map (fun change ->
             let target =
@@ -163,7 +180,11 @@ module PeopleSubject =
             Ok(
                 Some
                     {
-                        PeopleSubjectState.Actor = after.Actor
+                        PeopleSubjectState.Revision =
+                            state
+                            |> Option.map (fun value -> Revision.successor value.Revision)
+                            |> Option.defaultValue Revision.first
+                        Actor = after.Actor
                         Grants = grants
                         ProfileErasure =
                             if after.Actor.Profile.IsSome then
@@ -230,7 +251,9 @@ module PeopleSubject =
     let applyErased context dependencies provenance state target operation principal act =
         let currentFacts = facts context dependencies state
 
-        People.replayRetained currentFacts target operation principal act
+        let expected = state |> Option.map _.Revision |> Option.defaultValue Revision.zero
+
+        People.replayRetained currentFacts target operation expected principal act
         |> Result.bind (fun after ->
             grantedBy currentFacts act |> Result.map (fun grants -> grants, after))
         |> Result.mapError (fun _ -> RecordViolation.InvalidSubjectState)
@@ -251,6 +274,7 @@ module PeopleSubject =
 
             Some
                 {
+                    Revision = state.Revision
                     Actor = state.Actor
                     DisplayNameSearch = displayNameSearch
                     ContactSearch = contactSearch

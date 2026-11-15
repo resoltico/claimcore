@@ -179,6 +179,7 @@ let tests =
                             CaseActKind.AmendRegistration
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
+                            Sequence.zero
                             (RegistrationInput.values bait |> TaskAffordances.fields)
                             (TaskAffordances.authored (
                                 TaskId.Operation(ActKind.Case CaseActKind.AmendRegistration)
@@ -240,6 +241,7 @@ let tests =
                             CaseActKind.AmendRegistration
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
+                            Sequence.zero
                             (RegistrationInput.values Inputs.registration |> TaskAffordances.fields)
                             []
                             Map.empty
@@ -262,7 +264,7 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 action.Task
-                                (OperationBinding.People None)
+                                (OperationBinding.People(None, 0L))
                                 action.Seeds
                                 []
                                 Map.empty
@@ -276,6 +278,7 @@ let tests =
                     let input: OperationInput =
                         OperationInput.Case
                             {
+                                ExpectedFamilySequence = None
                                 OperationId =
                                     OperationId.value ResponseExamples.receipt.OperationId
                                 Target = CaseSelector.Reference "CASE-1"

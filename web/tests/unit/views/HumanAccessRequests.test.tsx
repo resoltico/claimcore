@@ -14,7 +14,7 @@ const principals = ["first", "second"].map((subject) => ({
 const handles = principals.map((principal) =>
   operationAffordance(
     "people.admit",
-    { kind: "PEOPLE" },
+    { kind: "PEOPLE", expectedRevision: 0 },
     {
       "input:principal.kind": principal.kind,
       "input:principal.issuer": principal.issuer,
@@ -131,4 +131,62 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
   });
   expect(fetch.mock.calls[1]![0]).toBe("/api/people.requests.dismiss");
   expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(principals[1]);
+});
+
+it("shows no-pending only after a successful terminal empty page", async () => {
+  let complete!: (response: Response) => void;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    ),
+  );
+  render(<AccessRequests available busy={false} onAdmit={vi.fn()} onDisclosureRefused={vi.fn()} />);
+  expect(screen.queryByText("No pending access requests.")).toBeNull();
+  await waitFor(() => {
+    expect(complete).toBeTypeOf("function");
+  });
+  complete(reply({ ...document, screen: { regions: [] } }));
+  await screen.findByText("No pending access requests.");
+  expect(screen.queryByRole("table")).toBeNull();
+});
+it("retains earlier rows after an empty continuation and never calls the aggregate empty", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(reply({ ...document, nextCursor: "opaque-next-page" }))
+    .mockResolvedValueOnce(reply({ ...document, screen: { regions: [] } }));
+  vi.stubGlobal("fetch", fetch);
+  render(<AccessRequests available busy={false} onAdmit={vi.fn()} onDisclosureRefused={vi.fn()} />);
+  await screen.findByText("Core second caption Ω");
+  await userEvent.click(screen.getByRole("button", { name: /more/iu }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  expect(screen.getByText("Core second caption Ω")).toBeVisible();
+  expect(screen.queryByText("No pending access requests.")).toBeNull();
+});
+it("does not turn a failed first read into no pending requests", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockRejectedValue(new TypeError("offline")),
+  );
+  render(<AccessRequests available busy={false} onAdmit={vi.fn()} onDisclosureRefused={vi.fn()} />);
+  await screen.findByRole("alert");
+  expect(screen.queryByText("No pending access requests.")).toBeNull();
+});
+it("does not claim global emptiness while an empty successful page has a continuation", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(
+        reply({ ...document, screen: { regions: [] }, nextCursor: "more-requests" }),
+      ),
+  );
+  render(<AccessRequests available busy={false} onAdmit={vi.fn()} onDisclosureRefused={vi.fn()} />);
+  await screen.findByRole("button", { name: /more/iu });
+  expect(screen.queryByText("No pending access requests.")).toBeNull();
 });

@@ -8,7 +8,8 @@ import { SectionsView } from "../SectionsView";
 import { RowDetails } from "./RowDetails";
 import { followLink } from "../../routing/followLink";
 import {} from "./table.css";
-import { useId } from "react";
+import { useId, useContext } from "react";
+import { LinkNavigationContext } from "../../routing/LinkNavigationContext";
 
 import { PresentedValue } from "../../components/PresentedValue";
 import { usePresentation } from "../../presentation/context";
@@ -52,10 +53,11 @@ export const Table = ({
   sectionLink?: RowLink;
 }) => {
   const p = usePresentation();
+  const inheritedNavigation = useContext(LinkNavigationContext);
   const tableId = useId();
   const sections = view.sections ?? [];
   const renderRow = (row: Extract<RegionContent, { kind: "TABLE" }>["rows"][number]) => {
-    const link = rowNavigation(row, view.columns, linkNavigation);
+    const link = rowNavigation(row, view.columns, linkNavigation ?? inheritedNavigation);
     return (
       <tr key={row.key}>
         {row.values.map((value, position) => (

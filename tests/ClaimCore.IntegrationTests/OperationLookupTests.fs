@@ -609,6 +609,7 @@ let tests =
                                 service
                                 (Inputs.caseOperation
                                     {
+                                        ExpectedFamilySequence = None
                                         OperationId = operation
                                         CaseReference = "HIDDEN-CONTENT"
                                         ExpectedRevision = 0L

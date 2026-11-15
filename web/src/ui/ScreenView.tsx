@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { LinkNavigationContext } from "../routing/LinkNavigationContext";
 import type { Region, Screen } from "@contracts/client";
 import { RegionView } from "./regions/RegionView";
 import type { RegionInteraction } from "./regions/interaction";
@@ -13,19 +15,25 @@ export const ScreenView = ({
   timeZone?: string;
   roles?: ReadonlyArray<Region["role"]>;
   embedded?: boolean;
-}) => (
-  <div className="screen-view">
-    {view.regions
-      .filter((region) => roles === undefined || roles.includes(region.role))
-      .map((region, index) => (
-        <RegionView
-          // oxlint-disable-next-line react/no-array-index-key -- FACTS regions can repeat, and regions own no input state.
-          key={`${region.role}:${index}`}
-          region={region}
-          embedded={embedded}
-          timeZone={timeZone}
-          {...interaction}
-        />
-      ))}
-  </div>
-);
+}) => {
+  const navigation = useContext(LinkNavigationContext);
+  return (
+    <div className="screen-view">
+      {view.regions
+        .filter((region) => roles === undefined || roles.includes(region.role))
+        .map((region, index) => (
+          <RegionView
+            // oxlint-disable-next-line react/no-array-index-key -- FACTS regions can repeat, and regions own no input state.
+            key={`${region.role}:${index}`}
+            region={region}
+            embedded={embedded}
+            timeZone={timeZone}
+            {...interaction}
+            {...(interaction.linkNavigation !== undefined || navigation === undefined
+              ? {}
+              : { linkNavigation: navigation })}
+          />
+        ))}
+    </div>
+  );
+};

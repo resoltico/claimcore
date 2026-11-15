@@ -63,7 +63,12 @@ const review: HumanReview = {
     actions: [
       operationAffordance(
         "case.erase",
-        { kind: "CASE", target: { kind: "ID", caseId }, expectedRevision: 7 },
+        {
+          kind: "CASE",
+          target: { kind: "ID", caseId },
+          expectedFamilySequence: 12,
+          expectedRevision: 7,
+        },
         {},
         [],
       ),
@@ -103,6 +108,7 @@ it("renders Core review content and requires its exact confirmation target while
           kind: "ID",
           caseId,
         },
+        expectedFamilySequence: 12,
         expectedRevision: 7,
       },
       inputs: {},
@@ -144,6 +150,7 @@ it("resets consent when a new Core review supplies a different target", async ()
           kind: "ID",
           caseId,
         },
+        expectedFamilySequence: 12,
         expectedRevision: 7,
       },
       inputs: {},

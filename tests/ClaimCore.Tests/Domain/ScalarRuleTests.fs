@@ -194,6 +194,7 @@ let permanentBoundaries =
             testCase "owner provisioning cannot enter ordinary authored admission" (fun () ->
                 let request =
                     {
+                        ExpectedRevision = 0L
                         PeopleRequest.OperationId =
                             Guid.Parse "90000000-0000-7000-8000-000000000001"
                         Target = Inputs.principal

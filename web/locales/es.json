@@ -818,5 +818,13 @@
   "ui.resourceUnavailable": {
     "text": "Este elemento no está disponible.",
     "source": "46275555e5f4"
+  },
+  "ui.caseSelection": {
+    "text": "Seleccionar expediente por",
+    "source": "c1020f56efc0"
+  },
+  "ui.existingCaseSelectionHint": {
+    "text": "Elige un expediente existente mediante su referencia o ID.",
+    "source": "bd52439b9b7f"
   }
 }

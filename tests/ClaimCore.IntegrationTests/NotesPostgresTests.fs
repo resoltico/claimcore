@@ -54,7 +54,8 @@ let private lifecycle database =
             Service.execute
                 owner
                 (OperationInput.People(
-                    Inputs.peopleRequest
+                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 100)
                         readerPrincipal
                         (PeopleAct.Register Inputs.actorProfile)

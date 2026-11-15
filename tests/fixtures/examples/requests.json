@@ -224,7 +224,8 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "task": "people.register",
         "binding": {
-          "kind": "PEOPLE"
+          "kind": "PEOPLE",
+          "expectedRevision": 0
         },
         "inputs": {
           "input:profile.displayName": "Authored fixture account",
@@ -317,7 +318,8 @@
         "operationId": "11111111-2222-7333-8444-555555555555",
         "task": "people.admit",
         "binding": {
-          "kind": "PEOPLE"
+          "kind": "PEOPLE",
+          "expectedRevision": 0
         },
         "inputs": {
           "input:profile.displayName": "Authored",

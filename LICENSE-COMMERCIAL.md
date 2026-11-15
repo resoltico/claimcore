@@ -1,8 +1,8 @@
-# Separate commercial licensing — terms pending
+# Commercial licensing
 
-ClaimCore's public license is AGPL-3.0-only; see LICENSE and PROJECT-NOTICE.md.
-A separate commercial licensing route is intended, but its terms have not been settled or
-published. This file grants no commercial exception, sublicense, warranty or waiver of AGPL
-obligations, and does not waive third-party terms. No pricing, contact process or contract is
-offered here. Continue under the public license unless and until the relevant rights holders
-execute a separate agreement. The AGPL itself permits commercial use.
+ClaimCore's public license is AGPL-3.0-only; see [LICENSE](LICENSE) and
+[PROJECT-NOTICE.md](PROJECT-NOTICE.md). The AGPL permits commercial use.
+
+No separate commercial terms, pricing, contact process or contract are offered here. This file grants
+no exception, sublicense, warranty or waiver of AGPL obligations or third-party terms. The public
+license governs unless the relevant rights holders execute a separate agreement.

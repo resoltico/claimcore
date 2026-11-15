@@ -818,5 +818,13 @@
   "ui.resourceUnavailable": {
     "text": "此項目無法使用。",
     "source": "46275555e5f4"
+  },
+  "ui.caseSelection": {
+    "text": "案件選擇方式",
+    "source": "c1020f56efc0"
+  },
+  "ui.existingCaseSelectionHint": {
+    "text": "使用編號或 ID 選擇現有案件。",
+    "source": "bd52439b9b7f"
   }
 }

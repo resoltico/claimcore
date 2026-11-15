@@ -127,7 +127,7 @@ const setup = (manage: boolean) => {
                     actions: [
                       operationAffordance(
                         "people.admit",
-                        { kind: "PEOPLE" },
+                        { kind: "PEOPLE", expectedRevision: 0 },
                         {
                           "input:principal.kind": request.principal.kind,
                           "input:principal.issuer": request.principal.issuer,
@@ -201,7 +201,7 @@ it("binds request admission identity while profile hints stay editable through r
   await waitForReviewConfirm();
   expect(preview.mock.calls[0]![0].input).toMatchObject({
     task: "people.admit",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": request.principal.kind,
       "input:principal.issuer": request.principal.issuer,
@@ -223,7 +223,7 @@ it("binds request admission identity while profile hints stay editable through r
   });
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   expect(execute.mock.calls[1]![0].input).toMatchObject({
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": request.principal.kind,
       "input:principal.issuer": request.principal.issuer,

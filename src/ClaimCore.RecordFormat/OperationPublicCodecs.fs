@@ -112,10 +112,11 @@ module OperationPublicCodecs =
             ]
 
     let private case =
-        (record (fun parent reference expected act selected content ->
+        (record (fun parent reference expected family act selected content ->
             let command =
                 {
-                    CaseCommandSkeleton.CaseId = parent
+                    CaseCommandSkeleton.ExpectedFamilySequence = family
+                    CaseId = parent
                     Reference = reference
                     ExpectedRevision = expected
                     Act = act
@@ -130,6 +131,13 @@ module OperationPublicCodecs =
         |> field "caseId" _.CaseId caseId
         |> field "reference" _.Reference reference
         |> field "expectedRevision" _.ExpectedRevision (revision 0L)
+        |> field
+            "expectedFamilySequence"
+            _.ExpectedFamilySequence
+            (nullable (
+                integer 1L SafeInteger.Maximum
+                |> map (Sequence.create >> Option.get) Sequence.value
+            ))
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "selectedPayment" _.SelectedPayment (nullable operationId)
         |> field "compartment" CaseCommandSkeleton.compartment (nullable ordinal)
@@ -137,13 +145,15 @@ module OperationPublicCodecs =
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let private people =
-        (record (fun target principal act ->
+        (record (fun expected target principal act ->
             {
-                PeopleCommandSkeleton.TargetActorId = target
+                PeopleCommandSkeleton.ExpectedRevision = expected
+                TargetActorId = target
                 Principal = principal
                 Act = act
             })
         : Fields<PeopleCommandSkeleton, _>)
+        |> field "expectedRevision" _.ExpectedRevision (revision 0L)
         |> field "targetActorId" _.TargetActorId actorId
         |> field "principal" _.Principal principal
         |> field "act" _.Act peopleAct

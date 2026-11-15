@@ -72,7 +72,8 @@ let internal assignmentAndDisclosure fixture =
                 Service.execute
                     owner
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            fixture.Store
                             (id fixture operation)
                             principal
                             (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -354,7 +355,8 @@ let internal assignmentAndDisclosure fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 13)
                         peopleOnly
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -492,7 +494,9 @@ let internal assignmentAndDisclosure fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.People(peopleRequest (id fixture 35) person PeopleAct.Disable))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture 35) person PeopleAct.Disable
+                ))
                 token
 
         acceptedPeople disabled

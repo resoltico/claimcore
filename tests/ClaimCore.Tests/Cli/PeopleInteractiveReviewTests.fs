@@ -22,6 +22,7 @@ let private command (submission: OperationSubmission) =
     | Ok(SubmittedOperation.ActorPeople value) ->
         OperationInput.People
             {
+                ExpectedRevision = value.ExpectedRevision
                 OperationId = value.OperationId
                 Target =
                     {
@@ -91,6 +92,7 @@ let private run words (answer: string option) =
                                         HumanReadDocuments.grants
                                         (Outcome.Succeeded
                                             {
+                                                Revision = Revision.first
                                                 Basis = Inputs.workBasis
                                                 Actor = person
                                                 Offers =
@@ -264,6 +266,35 @@ let tests =
     testList
         "interactive people and offline intent"
         [
+            testCase "explicit revision flags bypass interactive acquisition" (fun () ->
+                let console =
+                    {
+                        IsInteractive = true
+                        ReadLine = (fun () -> None)
+                        Write = ignore
+                    }
+
+                for words in
+                    [
+                        baseWords "disable" @ [ "--expected-revision"; "2" ]
+                        [ "case"; "erase"; "CASE-1"; "--expected-family-sequence"; "10" ]
+                    ] do
+                    Expect.isNone
+                        (InteractiveReview.prepare console words |> Fixtures.accepted)
+                        "Explicit preconditions use the ordinary automation grammar"
+
+                let prepared =
+                    Grammar.prepare
+                        (fun () -> operation.ToString("D"))
+                        (baseWords "disable" @ [ "--expected-revision"; "2" ])
+                    |> Fixtures.accepted
+
+                let input = Frames.value Api.operationExecute prepared.Invocation |> Option.get
+
+                Expect.equal
+                    input.Binding
+                    (OperationBinding.People(Some actor, 2L))
+                    "An explicit revision remains unchanged")
             testCase "ordinary people previews then executes identical ID and bytes" (fun () ->
                 let code, calls, text, ids =
                     run (baseWords "set-profile" @ [ "--name"; "Changed person" ]) (Some "yes")
@@ -351,7 +382,13 @@ let tests =
                 "supplied invalid intent metadata still fails without fabricating missing metadata"
                 (fun () ->
                     let valid =
-                        AuthoredIntent.Case(None, Some "R-1", None, CaseAct.Bare BareAct.Close)
+                        AuthoredIntent.Case(
+                            None,
+                            Some "R-1",
+                            None,
+                            None,
+                            CaseAct.Bare BareAct.Close
+                        )
 
                     Expect.equal
                         (Validation.syntaxIntent valid)
@@ -363,6 +400,7 @@ let tests =
                             Some Guid.Empty,
                             Some "R-1",
                             Some -1L,
+                            None,
                             CaseAct.Bare BareAct.Close
                         )
 

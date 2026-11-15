@@ -1,3 +1,4 @@
+import { reviewedPeopleBinding } from "./people-revision";
 import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup";
 import { type ResponseFor, type RequestByEndpoint } from "@contracts/client";
 import { randomUUID } from "node:crypto";
@@ -36,7 +37,7 @@ test("successful summary continuation removes previously loaded full history aft
   await applyPeople(page, {
     operationId: operationId(),
     task: "people.grant",
-    binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+    binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
     inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
   });
   try {
@@ -46,7 +47,7 @@ test("successful summary continuation removes previously loaded full history aft
     await applyPeople(page, {
       operationId: operationId(),
       task: "people.revoke",
-      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
       inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
     });
     const refreshed = page.waitForResponse(async (response) => {
@@ -95,13 +96,13 @@ test("successful summary continuation removes previously loaded full history aft
     await applyPeople(page, {
       operationId: operationId(),
       task: "people.grant",
-      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
       inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
     });
     await applyPeople(page, {
       operationId: operationId(),
       task: "people.revoke",
-      binding: { kind: "PEOPLE", actorId: await selectedActor(page, target) },
+      binding: await reviewedPeopleBinding(page, await selectedActor(page, target)),
       inputs: { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
     });
   }

@@ -185,7 +185,8 @@ let private qualify () =
                 Service.execute
                     actor
                     (OperationInput.People(
-                        peopleRequest
+                        reviewedPeopleRequest
+                            database.Fixture.Store
                             (id database.Fixture 10)
                             other
                             (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

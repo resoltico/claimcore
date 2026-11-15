@@ -1,3 +1,4 @@
+import { InlineNoteDraftProvider } from "../../src/views/case/InlineNoteDraft";
 import { WorkspaceViewsContext } from "../../src/views/WorkspaceViews";
 import { testWorkspaceViews } from "./view-counts.fixtures";
 import { JournalContext } from "../../src/recovery/JournalContext";
@@ -50,11 +51,13 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
           refresh: () => Promise.resolve(),
         }}
       >
-        <EndpointProvider>
-          <RequesterContext value={requester}>
-            <WorkspaceViewsContext value={testWorkspaceViews}>{children}</WorkspaceViewsContext>
-          </RequesterContext>
-        </EndpointProvider>
+        <InlineNoteDraftProvider owner={testWorkspaceIdentity}>
+          <EndpointProvider>
+            <RequesterContext value={requester}>
+              <WorkspaceViewsContext value={testWorkspaceViews}>{children}</WorkspaceViewsContext>
+            </RequesterContext>
+          </EndpointProvider>
+        </InlineNoteDraftProvider>
       </SessionContext>
     </PresentationProvider>
   </JournalContext>

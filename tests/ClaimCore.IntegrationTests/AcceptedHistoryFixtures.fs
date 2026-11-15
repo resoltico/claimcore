@@ -102,6 +102,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let scope =
             CommandSkeleton.Case
                 {
+                    ExpectedFamilySequence = None
                     CaseId = id
                     Reference = snapshot.Reference
                     ExpectedRevision = Revision.zero

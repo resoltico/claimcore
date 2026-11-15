@@ -1,6 +1,7 @@
+import { useContentRoute } from "../hooks/SettingsDetourContext";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { CaseSelector, HumanReadDocument_case_get, Screen } from "@contracts/client";
-import { useState, type ReactNode } from "react";
+import { useState, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -24,6 +25,8 @@ type CaseDetailProps = {
   target: CaseSelector;
   unavailableAct?: ActKind;
   reloadSignal: number;
+  disclosureAvailable?: boolean;
+  authoringAvailable?: boolean;
   definition: CatalogDocument;
   onBack: () => void;
   onMutationLockChange?: MutationLockChange;
@@ -63,6 +66,7 @@ const CurrentPresentation = ({
   onChanged,
   onMutationLockChange,
   disclosureAvailable,
+  authoringAvailable,
   timeline,
   recordDetails,
   onAct,
@@ -73,6 +77,7 @@ const CurrentPresentation = ({
   view: Screen | null;
   onChanged: () => void;
   disclosureAvailable: boolean;
+  authoringAvailable: boolean;
   onMutationLockChange: MutationLockChange;
   onAct: CaseDetailProps["onAct"];
 }) => {
@@ -81,6 +86,7 @@ const CurrentPresentation = ({
     onChanged,
     onLockChange: onMutationLockChange,
     disclosureAvailable,
+    authoringAvailable,
   });
   const facts =
     disclosureAvailable && view !== null ? (
@@ -123,13 +129,17 @@ const CaseHeader = ({
   state: HumanReadDocument_case_get | null;
 }) => {
   const p = usePresentation();
+  const route = useContentRoute();
+  const selectedReminder = route.screen === "case" && route.reminderId !== undefined;
   const current = asCurrentCase(state);
   const identity = state?.screen.regions.find((region) => region.role === "IDENTITY");
   const attention = state?.screen.regions.find((region) => region.role === "ATTENTION");
   return (
     <>
       <div className="case-back">
-        <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
+        <Button onPress={onBack}>
+          {p.text(selectedReminder ? "ui.returnToWorkspace" : "ui.backToCases")}
+        </Button>
       </div>
       <section className="case-header-card">
         <div className="case-heading">
@@ -221,26 +231,51 @@ const timelineDisclosure = (
   }
   return access === "FULL" ? "FULL" : "SUMMARY";
 };
-const CaseDisclosure = ({
-  target,
-  onBack,
-  onAct,
-  onMutationLockChange = ignoreMutationLock,
-  unavailableAct,
-}: CaseDetailProps) => {
-  const current = useCaseDisclosure(target);
-  const { historyAccess } = current;
-  const timelineSelection = useTimelineSelection(historyAccess);
-  const state = current.value;
-  const lookup = asCurrentCase(state);
-  const mounted = useRetainedCase(lookup);
+// Local authoring survives loading; a known denial stays masked until a fresh offer.
+const useRetainedNoteOffer = (value: HumanReadDocument_case_get | null, denied: boolean) => {
+  const offered =
+    value === null
+      ? null
+      : asCurrentCase(value)?.actions.some(
+          (action) => action.task === "note.add" && action.blocked === null,
+        ) === true;
+  const [retained, setRetained] = useState(false);
+  const eligible = denied ? false : (offered ?? retained);
+  if (eligible !== retained) {
+    setRetained(eligible);
+  }
+  return eligible;
+};
+const useCaseRefresh = (
+  reload: number,
+  available: boolean,
+  loading: boolean,
+  revalidate: () => void,
+) => {
+  const previous = useRef({ reload, available });
+  useLayoutEffect(() => {
+    const prior = previous.current;
+    previous.current = { reload, available };
+    if (prior.reload !== reload || (!prior.available && available && !loading)) {
+      revalidate();
+    }
+  }, [reload, available, loading, revalidate]);
+};
+const caseReadPresentation = (
+  state: HumanReadDocument_case_get | null,
+  available: boolean,
+  historyAccess: string,
+  target: CaseSelector,
+  timelineSelection: ReturnType<typeof useTimelineSelection>,
+  revalidate: () => void,
+) => {
   const timeline =
-    current.historyAccess === "NONE" ? null : (
+    historyAccess === "NONE" || !available ? null : (
       <CaseTimeline
         disclosure={timelineDisclosure(state, historyAccess)}
         target={target}
         selection={timelineSelection}
-        onDisclosureChanged={current.revalidate}
+        onDisclosureChanged={revalidate}
       />
     );
   const recordDetails =
@@ -251,6 +286,34 @@ const CaseDisclosure = ({
         timeZone={state.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
       />
     );
+  return { timeline, recordDetails };
+};
+const CaseDisclosure = ({
+  target,
+  onBack,
+  onAct,
+  onMutationLockChange = ignoreMutationLock,
+  unavailableAct,
+  reloadSignal,
+  disclosureAvailable = true,
+  authoringAvailable = disclosureAvailable,
+}: CaseDetailProps) => {
+  const current = useCaseDisclosure(target);
+  useCaseRefresh(reloadSignal, disclosureAvailable, current.loading, current.revalidate);
+  const retainedNoteOffer = useRetainedNoteOffer(current.value, current.denied);
+  const { historyAccess } = current;
+  const timelineSelection = useTimelineSelection(historyAccess);
+  const state = disclosureAvailable ? current.value : null;
+  const lookup = asCurrentCase(state);
+  const mounted = useRetainedCase(lookup);
+  const { timeline, recordDetails } = caseReadPresentation(
+    state,
+    disclosureAvailable,
+    historyAccess,
+    target,
+    timelineSelection,
+    current.revalidate,
+  );
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
@@ -280,6 +343,7 @@ const CaseDisclosure = ({
           timeline={timeline}
           recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
+          authoringAvailable={authoringAvailable && retainedNoteOffer}
           view={current.screen}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}
@@ -295,9 +359,6 @@ const CaseDisclosure = ({
 export const CaseDetail = (props: CaseDetailProps) => {
   const { state } = useSessionContext();
   return state.kind === "authenticated" ? (
-    <CaseDisclosure
-      key={JSON.stringify([state.epoch, state.token, props.target, props.reloadSignal])}
-      {...props}
-    />
+    <CaseDisclosure key={JSON.stringify([state.epoch, state.token, props.target])} {...props} />
   ) : null;
 };

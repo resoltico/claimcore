@@ -9,6 +9,8 @@ open ClaimCore.Domain
 module internal AdmissionPolicy =
     let ingress = 24
     let cookieAuthentication = 2
+    let queuedCookieAuthentication = 8
+    let authenticationQueueWait = TimeSpan.FromSeconds 2.
     let bearerAuthentication = 2
     let interactiveAuthentication = 2
     let sessions = 4

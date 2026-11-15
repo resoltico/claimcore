@@ -175,6 +175,11 @@ let private history (before: CaseSnapshot) (payments: PaymentEntry list) : CaseH
 let private request (before: CaseSnapshot option) act =
     Case.parse
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId =
                 if before.IsNone then
                     operation
@@ -247,6 +252,7 @@ let private storedEffect
     let scope =
         CommandSkeleton.Case
             {
+                ExpectedFamilySequence = command.ExpectedFamilySequence
                 CaseId = decision.After.CaseId
                 Reference = decision.After.Reference
                 ExpectedRevision = command.ExpectedRevision

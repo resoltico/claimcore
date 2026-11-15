@@ -198,7 +198,7 @@ let tests =
                 (fun () ->
                     let raw =
                         bytes
-                            """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example:bad/","input:principal.subject":"person","input:profile.displayName":"Person"}}"""
+                            """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.register","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example:bad/","input:principal.subject":"person","input:profile.displayName":"Person"}}"""
 
                     Expect.isOk
                         (Codec.validate 8192 OperationSubmissionCodecs.submission raw)

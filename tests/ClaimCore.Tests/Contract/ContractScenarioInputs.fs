@@ -103,6 +103,7 @@ let internal admitted codec value =
 
 let internal caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
     {
+        ExpectedFamilySequence = None
         OperationId = id
         CaseReference = "UNIT-001"
         ExpectedRevision = 0L

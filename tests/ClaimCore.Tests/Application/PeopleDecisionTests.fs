@@ -132,6 +132,7 @@ let private replay () =
     let changed =
         PeopleRequests.input
             (OperationId.value (request.OperationId))
+            1L
             request.Target
             PeopleAct.Disable
         |> Result.bind People.parse
@@ -564,11 +565,73 @@ let private reaffirmedGrant () =
         (PeopleSubject.apply { provenance with Granted = Map.empty } (Some state) effect)
         "A reaffirmed grant must retain its accepting position"
 
+let private reviewedRevision () =
+    let target = actor other (CaseFixtures.actorId (id 2)) [ Role.CaseReader ] []
+    let view = (peopleView worker target None).Read
+    let state = view.State |> Option.get
+
+    let context =
+        peopleContext (services installation calendar owner) SubjectExecutionMode.Preview view
+
+    let dependencies =
+        {
+            PeopleSubjectDependencies.TargetCases = Map.empty
+            EnabledHumanOwners = Some 2
+            ActorCount = Some 2
+        }
+
+    let first = admitted 610 other PeopleAct.Disable
+
+    let effect =
+        PeopleSubject.decide context dependencies (Some state) first
+        |> Result.defaultWith (fun error -> failtestf "First change: %A" error)
+
+    let provenance =
+        {
+            PeopleSubjectProvenance.Granted = Map.empty
+            ProfileErasure = None
+        }
+
+    let after =
+        PeopleSubject.apply provenance (Some state) effect
+        |> Result.defaultWith (fun error -> failtestf "Apply: %A" error)
+        |> Option.get
+
+    Expect.equal
+        (Revision.value after.Revision)
+        2L
+        "Exactly one advance per accepted logical change"
+
+    for act in
+        [
+            PeopleAct.Enable
+            PeopleAct.EraseProfile
+            PeopleAct.SetProfile Inputs.actorProfile
+        ] do
+        let stale = admitted 611 other act
+
+        Expect.equal
+            (PeopleSubject.decide context dependencies (Some after) stale)
+            (Error(Refusal.People PeopleRefusal.ActorChanged))
+            "A stale review neither restores access nor erases a newer profile"
+
+    let fresh =
+        PeopleRequests.input (System.Guid.CreateVersion7()) 2L other PeopleAct.Enable
+        |> Result.bind People.parse
+        |> Result.defaultWith (fun error -> failtestf "Fresh review: %A" error)
+
+    Expect.isOk
+        (PeopleSubject.decide context dependencies (Some after) fresh)
+        "An explicit fresh review can proceed"
+
 [<Tests>]
 let tests =
     testList
         "pure people decisions"
         [
+            testCase
+                "reviewed actor revisions prevent stale access and profile changes"
+                reviewedRevision
             testCase "grant reaffirmation retains exact provenance" reaffirmedGrant
             testCase
                 "access review explains scoped overlapping and dormant rights and permits obsolete grant cleanup"

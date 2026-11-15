@@ -44,6 +44,7 @@ let internal updateCase
     let scope =
         CommandSkeleton.Case
             {
+                ExpectedFamilySequence = command.ExpectedFamilySequence
                 CaseId = snapshot.CaseId
                 Reference = snapshot.Reference
                 ExpectedRevision = command.ExpectedRevision
@@ -113,7 +114,8 @@ let internal register fixture (actor: ServiceContext) n principal =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture n)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

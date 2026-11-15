@@ -33,6 +33,7 @@ let entriesEvidence () =
                 actor
                 (OperationInput.Case
                     {
+                        ExpectedFamilySequence = None
                         OperationId = next ()
                         Target = target
                         ExpectedRevision = revision
@@ -183,6 +184,7 @@ let technicalCountEvidence () =
 
     let request =
         {
+            ExpectedFamilySequence = None
             OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
             CaseReference = "TECHNICAL-COUNT"
             ExpectedRevision = 1L

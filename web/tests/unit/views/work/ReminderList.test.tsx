@@ -30,8 +30,11 @@ const row = (
   row: {
     key: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     link: {
-      endpoint: "case.get",
-      input: { target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000099" } },
+      endpoint: "reminder.get",
+      input: {
+        target: { kind: "ID", caseId: "00000000-0000-4000-8000-000000000099" },
+        reminderId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      },
     },
     values: [
       { kind: "REFERENCE", value: "TIMING-CASE" },
@@ -173,7 +176,10 @@ for (const [language, labels, pending] of [
         if (!scoped) {
           expect(
             within(item as HTMLElement).getByRole("link", { name: "TIMING-CASE" }),
-          ).toHaveAttribute("href", "/cases/id/00000000-0000-4000-8000-000000000099");
+          ).toHaveAttribute(
+            "href",
+            `/cases/id/00000000-0000-4000-8000-000000000099/reminders/00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+          );
         }
       }
       expect(view.container.querySelector("[data-region=DETAILS]")).toHaveTextContent("03/11/2026");

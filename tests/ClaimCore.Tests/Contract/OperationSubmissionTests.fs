@@ -25,6 +25,55 @@ let tests =
         "declared operation submissions"
         [
             testCase
+                "well-typed grant target authoring yields precise issues while transport types remain closed"
+                (fun () ->
+                    let grant values =
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.grant","binding":{"kind":"PEOPLE","actorId":"10000000-0000-4000-8000-000000000001","expectedRevision":1},"inputs":{"input:role":"CASE_READER",REPLACE}}"""
+                            .Replace("REPLACE", values)
+
+                    for values, target, violation in
+                        [
+                            "\"input:scope\":\"CASE\",\"input:caseId\":\"bad-id\"",
+                            InputTarget.CaseId,
+                            Violation.CaseIdRequired
+                            "\"input:scope\":\"CASE\",\"input:caseId\":\"\"",
+                            InputTarget.CaseId,
+                            Violation.CaseIdRequired
+                            "\"input:scope\":\"CASE\"",
+                            (InputTarget.Field BusinessField.CaseReference),
+                            Violation.CaseSelectionInvalid
+                            "\"input:scope\":\"CASE\",\"input:caseId\":\"10000000-0000-4000-8000-000000000001\",\"field:caseReference\":\"REF\"",
+                            (InputTarget.Field BusinessField.CaseReference),
+                            Violation.CaseSelectionInvalid
+                            "\"input:scope\":\"INSTALLATION\",\"field:caseReference\":\"REF\"",
+                            (InputTarget.Field BusinessField.CaseReference),
+                            Violation.CaseSelectionInvalid
+                        ] do
+                        match decode (grant values) |> accepted |> _.Operation with
+                        | Error(Refusal.InvalidInput issues) ->
+                            let issue = InputIssues.toList issues |> List.exactlyOne
+
+                            Expect.equal
+                                issue.Target
+                                target
+                                "The editor can link to the affected control"
+
+                            Expect.equal
+                                issue.Violation
+                                violation
+                                "An authoring error has a corrective meaning"
+                        | other -> failtestf "Expected authoring issue: %A" other
+
+                    for invalid in
+                        [
+                            "\"input:scope\":\"CASE\",\"input:caseId\":42"
+                            "\"input:scope\":\"CASE\",\"field:caseReference\":{}"
+                            "\"input:scope\":\"CASE\",\"unknown\":\"REF\""
+                        ] do
+                        Expect.isError
+                            (decode (grant invalid))
+                            "Structural errors remain transport refusals")
+            testCase
                 "unknown and foreign authored keys are refused by the closed task map"
                 (fun () ->
                     for key in [ "unknown"; "input:noteText" ] do
@@ -93,7 +142,7 @@ let tests =
                 Expect.equal first second "Map ordering is not authored intent")
             testCase "grant-row issues retain the submitted ordinal" (fun () ->
                 let text =
-                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":"CASE_READER","input:scope":"INSTALLATION"},{"input:role":null,"input:scope":"INSTALLATION"}]}}"""
+                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":"CASE_READER","input:scope":"INSTALLATION"},{"input:role":null,"input:scope":"INSTALLATION"}]}}"""
 
                 match decode text |> accepted |> fun submission -> submission.Operation with
                 | Error(Refusal.InvalidInput issues) ->
@@ -114,7 +163,8 @@ let tests =
                     {
                         SubmissionEnvelope.OperationId = None
                         Task = ActKind.Case CaseActKind.AmendRegistration
-                        Binding = OperationBinding.Case(CaseSelector.Reference "MAP-1", None, None)
+                        Binding =
+                            OperationBinding.Case(CaseSelector.Reference "MAP-1", None, None, None)
                         Inputs =
                             Map.ofList
                                 [
@@ -148,6 +198,7 @@ let tests =
                                 OperationBinding.Case(
                                     CaseSelector.Reference "MAP-1",
                                     Some 1L,
+                                    None,
                                     None
                                 )
                         })
@@ -181,7 +232,7 @@ let tests =
                 | other -> failtestf "%A" other)
             testCase "sibling declaration issues retain both submitted row ordinals" (fun () ->
                 let raw =
-                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":null,"input:scope":"INSTALLATION"},{"input:role":null,"input:scope":"INSTALLATION"}]}}"""
+                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":null,"input:scope":"INSTALLATION"},{"input:role":null,"input:scope":"INSTALLATION"}]}}"""
 
                 match (decode raw |> accepted).Operation with
                 | Error(Refusal.InvalidInput issues) ->
@@ -194,7 +245,7 @@ let tests =
                 | other -> failtestf "%A" other)
             testCase "semantic grant failures retain sibling ordinals in DATA and HUMAN" (fun () ->
                 let raw =
-                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE"},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":"CASE_READER","input:scope":"CASE","field:caseReference":""},{"input:role":"CASE_READER","input:scope":"CASE","field:caseReference":""}]}}"""
+                    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":"CASE_READER","input:scope":"CASE","field:caseReference":""},{"input:role":"CASE_READER","input:scope":"CASE","field:caseReference":""}]}}"""
 
                 let submission = decode raw |> accepted
 
@@ -237,4 +288,188 @@ let tests =
                      |> Option.map TaskRowTarget.ordinal)
                     (Some 47)
                     "The last supported row remains addressable")
+            testCase
+                "reviewed People and erasure preconditions are required exact integers"
+                (fun () ->
+                    let person expected =
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.disable","binding":{"kind":"PEOPLE","actorId":"10000000-0000-7000-8000-000000000001"""
+                        + "\""
+                        + expected
+                        + """},"inputs":{}}"""
+
+                    let erase expected =
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE-1"},"expectedRevision":1"""
+                        + expected
+                        + """},"inputs":{}}"""
+
+                    for value in
+                        [
+                            ""
+                            ",\"expectedRevision\":null"
+                            ",\"expectedRevision\":0"
+                            ",\"expectedRevision\":-1"
+                            ",\"expectedRevision\":9007199254740992"
+                            ",\"expectedRevision\":1.0"
+                        ] do
+                        Expect.isError
+                            (decode (person value))
+                            "Existing-person preconditions never mean current by omission"
+
+                    Expect.isOk
+                        (decode (person ",\"expectedRevision\":1"))
+                        "Independent reviewed account input"
+
+                    for value in
+                        [
+                            ""
+                            ",\"expectedFamilySequence\":null"
+                            ",\"expectedFamilySequence\":0"
+                            ",\"expectedFamilySequence\":9007199254740992"
+                            ",\"expectedFamilySequence\":1e0"
+                        ] do
+                        Expect.isError
+                            (decode (erase value))
+                            "Erasure requires a positive exact family sequence"
+
+                    Expect.isOk
+                        (decode (erase ",\"expectedFamilySequence\":2"))
+                        "Independent reviewed family input")
+            testCase
+                "typed offline APIs preserve supplied People and erasure preconditions"
+                (fun () ->
+                    let id = System.Guid.Parse "019aa6a0-0000-7000-8000-000000000001"
+
+                    let principal =
+                        {
+                            PrincipalInput.Kind = PrincipalKind.Human
+                            Issuer = "https://issuer.example/"
+                            Subject = "person"
+                        }
+
+                    let person revision =
+                        OperationInput.People
+                            {
+                                OperationId = id
+                                Target = principal
+                                ExpectedRevision = revision
+                                Act = PeopleAct.Enable
+                            }
+
+                    let case family act =
+                        OperationInput.Case
+                            {
+                                OperationId = id
+                                Target = CaseSelector.Reference "TYPED"
+                                ExpectedRevision = 1L
+                                ExpectedFamilySequence = family
+                                Act = act
+                            }
+
+                    let erase = CaseAct.Bare BareAct.Erase
+
+                    for value in [ -1L; 0L; 9007199254740992L ] do
+                        Expect.isSome
+                            (OperationInput.syntax (person value))
+                            "Invalid typed People metadata is not discarded"
+
+                        Expect.isSome
+                            (OperationInput.syntax (case (Some value) erase))
+                            "Invalid typed family metadata is not discarded"
+
+                        let envelope =
+                            {
+                                SubmissionEnvelope.OperationId = id
+                                Task = ActKind.People PeopleActKind.Enable
+                                Binding = OperationBinding.People(Some id, value)
+                                Inputs = Map.empty
+                            }
+
+                        let submitted =
+                            OperationSubmission.admit envelope
+                            |> Result.defaultWith (fun () -> failtest "Typed envelope")
+
+                        Expect.isSome
+                            (OperationSubmission.syntax submitted)
+                            "ActorPeople syntax checks reviewed revision"
+
+                        let personDraft =
+                            {
+                                SubmissionEnvelope.OperationId = None
+                                Task = ActKind.People PeopleActKind.Enable
+                                Binding = OperationBinding.People(Some id, Some value)
+                                Inputs = Map.empty
+                            }
+
+                        Expect.isSome
+                            (OperationSubmission.syntaxDraft personDraft
+                             |> Result.defaultWith (fun _ -> failtest "People draft syntax"))
+                            "Supplied draft People revision is checked"
+
+                        let draft =
+                            {
+                                SubmissionEnvelope.OperationId = None
+                                Task = ActKind.Case CaseActKind.Erase
+                                Binding =
+                                    OperationBinding.Case(
+                                        CaseSelector.Reference "TYPED",
+                                        None,
+                                        None,
+                                        Some value
+                                    )
+                                Inputs = Map.empty
+                            }
+
+                        Expect.isSome
+                            (OperationSubmission.syntaxDraft draft
+                             |> Result.defaultWith (fun _ -> failtest "Draft syntax"))
+                            "Supplied draft family metadata is checked"
+
+                    Expect.isNone (OperationInput.syntax (person 1L)) "Positive existing revision"
+
+                    Expect.isNone
+                        (OperationInput.syntax (case (Some 1L) erase))
+                        "Positive family basis"
+
+                    Expect.isSome
+                        (OperationInput.syntax (case None erase))
+                        "Complete erasure requires its basis"
+
+                    Expect.isSome
+                        (OperationInput.syntax (case (Some 1L) (CaseAct.Bare BareAct.Close)))
+                        "Family basis is erasure-only"
+
+                    let creation =
+                        OperationInput.People
+                            {
+                                OperationId = id
+                                Target = principal
+                                ExpectedRevision = 0L
+                                Act =
+                                    PeopleAct.Register
+                                        {
+                                            DisplayName = "Person"
+                                            Contact = None
+                                        }
+                            }
+
+                    Expect.isNone (OperationInput.syntax creation) "Creation zero remains valid"
+
+                    let draft =
+                        {
+                            SubmissionEnvelope.OperationId = None
+                            Task = ActKind.Case CaseActKind.Erase
+                            Binding =
+                                OperationBinding.Case(
+                                    CaseSelector.Reference "TYPED",
+                                    None,
+                                    None,
+                                    None
+                                )
+                            Inputs = Map.empty
+                        }
+
+                    Expect.equal
+                        (OperationSubmission.syntaxDraft draft)
+                        (Ok None)
+                        "Draft omission permits explicit acquisition")
         ]

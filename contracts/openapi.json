@@ -4229,6 +4229,18 @@
                     "type": "null"
                   }
                 ]
+              },
+              "input:expectedFamilySequence": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": []
@@ -4239,11 +4251,12 @@
               "enum": [
                 "field:caseReference",
                 "input:operationId",
-                "input:expectedRevision"
+                "input:expectedRevision",
+                "input:expectedFamilySequence"
               ]
             },
             "minItems": 0,
-            "maxItems": 3
+            "maxItems": 4
           },
           "choices": {
             "type": "object",
@@ -5500,6 +5513,18 @@
                     "type": "null"
                   }
                 ]
+              },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": []
@@ -5509,11 +5534,12 @@
             "items": {
               "enum": [
                 "input:operationId",
+                "input:expectedRevision",
                 "input:actorId"
               ]
             },
             "minItems": 0,
-            "maxItems": 2
+            "maxItems": 3
           },
           "choices": {
             "type": "object",
@@ -5578,6 +5604,18 @@
                     "type": "null"
                   }
                 ]
+              },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": []
@@ -5587,11 +5625,12 @@
             "items": {
               "enum": [
                 "input:operationId",
+                "input:expectedRevision",
                 "input:actorId"
               ]
             },
             "minItems": 0,
-            "maxItems": 2
+            "maxItems": 3
           },
           "choices": {
             "type": "object",
@@ -5656,6 +5695,18 @@
                     "type": "null"
                   }
                 ]
+              },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": []
@@ -5665,11 +5716,12 @@
             "items": {
               "enum": [
                 "input:operationId",
+                "input:expectedRevision",
                 "input:actorId"
               ]
             },
             "minItems": 0,
-            "maxItems": 2
+            "maxItems": 3
           },
           "choices": {
             "type": "object",
@@ -5729,6 +5781,18 @@
                 "oneOf": [
                   {
                     "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
                   },
                   {
                     "type": "null"
@@ -5795,6 +5859,7 @@
               "enum": [
                 "field:caseReference",
                 "input:operationId",
+                "input:expectedRevision",
                 "input:role",
                 "input:scope",
                 "input:actorId",
@@ -5802,7 +5867,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 6
+            "maxItems": 7
           },
           "choices": {
             "type": "object",
@@ -6146,6 +6211,18 @@
                   }
                 ]
               },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "input:role": {
                 "oneOf": [
                   {
@@ -6206,6 +6283,7 @@
               "enum": [
                 "field:caseReference",
                 "input:operationId",
+                "input:expectedRevision",
                 "input:role",
                 "input:scope",
                 "input:actorId",
@@ -6213,7 +6291,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 6
+            "maxItems": 7
           },
           "choices": {
             "type": "object",
@@ -6307,6 +6385,18 @@
                   }
                 ]
               },
+              "input:expectedRevision": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "input:profile.displayName": {
                 "oneOf": [
                   {
@@ -6335,13 +6425,14 @@
             "items": {
               "enum": [
                 "input:operationId",
+                "input:expectedRevision",
                 "input:profile.displayName",
                 "input:profile.contact",
                 "input:actorId"
               ]
             },
             "minItems": 0,
-            "maxItems": 4
+            "maxItems": 5
           },
           "choices": {
             "type": "object",
@@ -10644,6 +10735,11 @@
           },
           "recordedBy": {
             "$ref": "#/components/schemas/ActorRef"
+          },
+          "familySequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -10662,7 +10758,8 @@
           "notes",
           "latestPayments",
           "changedAt",
-          "recordedBy"
+          "recordedBy",
+          "familySequence"
         ]
       },
       "CaseViewCount": {
@@ -11397,10 +11494,12 @@
             "CORRECTION_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "FAMILY_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PAYMENT_NOT_FOUND": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "ACTOR_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "CASE_ALREADY_EXISTS": "#/components/schemas/DataRejection.CASE_ALREADY_EXISTS",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "DECISION_HAS_PAYMENTS": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -11423,10 +11522,12 @@
           "code": {
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
+              "FAMILY_CHANGED",
               "PAYMENT_NOT_FOUND",
               "LAST_OWNER",
               "ACTOR_ALREADY_REGISTERED",
-              "ACTOR_UNKNOWN"
+              "ACTOR_UNKNOWN",
+              "ACTOR_CHANGED"
             ]
           },
           "action": {
@@ -12554,6 +12655,11 @@
           "actor": {
             "$ref": "#/components/schemas/ActorReviewItem"
           },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
           "offers": {
             "type": "array",
             "items": {
@@ -12606,6 +12712,7 @@
         "required": [
           "basis",
           "actor",
+          "revision",
           "offers",
           "profileSeed",
           "items",
@@ -15532,6 +15639,8 @@
             "REFERENCE_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CASE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "CASE_SELECTION_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "REMINDER_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "NOTE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -15689,6 +15798,8 @@
               "REFERENCE_FORMAT",
               "COUNTRY_FORMAT",
               "PRINCIPAL_FORMAT",
+              "CASE_ID_REQUIRED",
+              "CASE_SELECTION_INVALID",
               "ACTOR_ID_REQUIRED",
               "REMINDER_ID_REQUIRED",
               "NOTE_ID_REQUIRED",
@@ -15796,6 +15907,7 @@
           "group:payment",
           "input:operationId",
           "input:expectedRevision",
+          "input:expectedFamilySequence",
           "input:reason",
           "input:principal.kind",
           "input:principal.issuer",
@@ -16815,12 +16927,18 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "expectedFamilySequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
           "target",
-          "expectedRevision"
+          "expectedRevision",
+          "expectedFamilySequence"
         ]
       },
       "OperationBinding.case.open": {
@@ -17023,10 +17141,16 @@
         "properties": {
           "kind": {
             "const": "PEOPLE"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0
           }
         },
         "required": [
-          "kind"
+          "kind",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.disable": {
@@ -17038,11 +17162,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.enable": {
@@ -17054,11 +17184,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.eraseProfile": {
@@ -17070,11 +17206,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.grant": {
@@ -17086,11 +17228,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.register": {
@@ -17099,10 +17247,16 @@
         "properties": {
           "kind": {
             "const": "PEOPLE"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0
           }
         },
         "required": [
-          "kind"
+          "kind",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.revoke": {
@@ -17114,11 +17268,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.people.setProfile": {
@@ -17130,11 +17290,17 @@
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "kind",
-          "actorId"
+          "actorId",
+          "expectedRevision"
         ]
       },
       "OperationBinding.reminder.cancel": {
@@ -25114,6 +25280,7 @@
           "group:payment",
           "input:operationId",
           "input:expectedRevision",
+          "input:expectedFamilySequence",
           "input:reason",
           "input:principal.kind",
           "input:principal.issuer",

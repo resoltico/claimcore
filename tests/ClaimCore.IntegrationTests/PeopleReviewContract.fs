@@ -93,7 +93,7 @@ let internal peopleReviewRefusals fixture =
                     },
                 (Refusal.People PeopleRefusal.LastOwner)
             ] do
-            let input = peopleRequest (id fixture index) fixture.Owner act
+            let input = reviewedPeopleRequest fixture.Store (id fixture index) fixture.Owner act
             let! preview, _ = peopleReview fixture fixture.Owner input
 
             Expect.equal
@@ -125,7 +125,8 @@ let internal peopleReadIsNotManage fixture =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 2)
                         auditor
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -147,7 +148,8 @@ let internal peopleReadIsNotManage fixture =
 
         acceptedPeople granted
 
-        let input = peopleRequest (id fixture 4) fixture.Owner (PeopleAct.Disable)
+        let input =
+            reviewedPeopleRequest fixture.Store (id fixture 4) fixture.Owner (PeopleAct.Disable)
 
         let! preview, view = peopleReview fixture auditor input
 
@@ -181,7 +183,8 @@ let internal peopleReviewReplay fixture =
             |> Result.defaultWith (string >> failtest)
 
         let input =
-            peopleRequest
+            reviewedPeopleRequest
+                fixture.Store
                 (id fixture 2)
                 target
                 (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -238,7 +241,9 @@ let internal peopleReviewReplay fixture =
             expectReceipt actual receipt "Accepted registration replays before fresh-state refusal."
         | other -> failtestf "Expected preview of retained acceptance: %A" other
 
-        let changed = peopleRequest (id fixture 2) target (PeopleAct.Disable)
+        let changed =
+            reviewedPeopleRequest fixture.Store (id fixture 2) target (PeopleAct.Disable)
+
         let! conflict, _ = peopleReview fixture fixture.Owner changed
 
         Expect.equal
@@ -269,7 +274,8 @@ let internal grantReviewTarget fixture =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 11)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -305,7 +311,8 @@ let internal grantReviewTarget fixture =
         acceptedPeople scoped
 
         let input =
-            peopleRequest
+            reviewedPeopleRequest
+                fixture.Store
                 (id fixture 14)
                 target
                 (PeopleAct.Revoke
@@ -417,7 +424,8 @@ let internal peopleReviewRechecks fixture =
             (Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 2)
                         other
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -439,7 +447,8 @@ let internal peopleReviewRechecks fixture =
 
         acceptedPeople granted
 
-        let input = peopleRequest (id fixture 4) fixture.Owner (PeopleAct.Disable)
+        let input =
+            reviewedPeopleRequest fixture.Store (id fixture 4) fixture.Owner (PeopleAct.Disable)
 
         let! preview, view = peopleReview fixture fixture.Owner input
         Expect.equal view.EnabledHumanOwners (Some 2) "The preview sees two enabled owners."
@@ -496,7 +505,8 @@ let internal meaningfulScopeAdmission fixture =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 21)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -541,7 +551,9 @@ let internal meaningfulScopeAdmission fixture =
         let! disabled =
             Service.execute
                 actor
-                (OperationInput.People(peopleRequest (id fixture 24) target PeopleAct.Disable))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture 24) target PeopleAct.Disable
+                ))
                 CancellationToken.None
 
         acceptedPeople disabled

@@ -26,6 +26,11 @@ let private command number (state: CaseSubjectState option) act =
         today
         (state |> Option.bind _.Snapshot)
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = OperationId.value (stamp number).OperationId
             CaseReference = CaseReference.format reference
             ExpectedRevision =

@@ -28,7 +28,9 @@ let private execute fixture actor number target act =
         let! reply =
             Service.execute
                 actor
-                (OperationInput.People(peopleRequest (id fixture number) target act))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture number) target act
+                ))
                 Threading.CancellationToken.None
 
         return accepted reply
@@ -289,6 +291,7 @@ let private changingHistory (fixture: Fixture) change =
 
                                         member _.CaseState id = tx.CaseState id
 
+                                        member _.CaseFamilySequence id = tx.CaseFamilySequence id
                                         member _.CaseFamily id = tx.CaseFamily id
 
                                         member _.PendingReminderDue(parent, excluded) =
@@ -355,6 +358,9 @@ let private changingHistory (fixture: Fixture) change =
                                         member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
                                         member _.ActorRefs ids = tx.ActorRefs ids
                                         member _.ActorPrincipal id = tx.ActorPrincipal id
+
+                                        member _.PeopleRevision principal =
+                                            tx.PeopleRevision principal
 
                                         member _.PeopleState principal = tx.PeopleState principal
 

@@ -9,15 +9,15 @@ open System.Threading
 open ClaimCore.Postgres
 
 module Execution =
-    let private perform (administration: Administration) command =
+    let private perform (administration: Administration) token command =
         task {
             match command with
             | Initialize(zone, owner) ->
-                let! id = administration.Initialize(zone, owner, CancellationToken.None)
+                let! id = administration.Initialize(zone, owner, token)
                 return Replies.initialized id
             | Verify expected ->
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
-                let! result = administration.Verify(expected, CancellationToken.None)
+                let! result = administration.Verify(expected, token)
 
                 return
                     Replies.verification
@@ -26,28 +26,27 @@ module Execution =
                         ))
                         result
             | Rebuild expected ->
-                let! result = administration.Rebuild(expected, CancellationToken.None)
+                let! result = administration.Rebuild(expected, token)
                 return Replies.rebuild result
             | AdmitRestoredInstallation checkpoint ->
-                let! result =
-                    administration.AdmitRestoredInstallation(checkpoint, CancellationToken.None)
+                let! result = administration.AdmitRestoredInstallation(checkpoint, token)
 
                 return Replies.restoreAdmission result
             | Status ->
-                let! status = administration.Status(CancellationToken.None)
+                let! status = administration.Status(token)
                 return Replies.status status
             | Maintenance change ->
-                let! result = administration.Maintenance(change, CancellationToken.None)
+                let! result = administration.Maintenance(change, token)
                 return Replies.maintenance result
             | Head ->
-                let! head = administration.Head(CancellationToken.None)
+                let! head = administration.Head(token)
 
                 return Replies.head head
             | Help
             | Version -> return invalidOp "Discovery does not open administration."
         }
 
-    let run command =
+    let run token command =
         task {
             match command with
             | Help -> return Replies.help ()
@@ -60,7 +59,7 @@ module Execution =
                         use administration =
                             new Administration(connection, BuildIdentity.current.Version)
 
-                        return! perform administration command
+                        return! perform administration token command
                     with error ->
                         return
                             match AdministrationFailures.classify error with

@@ -12,6 +12,7 @@ open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
+open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
@@ -27,27 +28,92 @@ type internal DynamicIngress() =
     interface IDisposable with
         member _.Dispose() = limiter.Dispose()
 
-type internal AuthenticationAdmission() =
-    let cookie = AdmissionLease.limiter AdmissionPolicy.cookieAuthentication 0
+type internal AuthenticationAdmission(stopping: CancellationToken) =
+    let cookie =
+        AdmissionLease.limiter
+            AdmissionPolicy.cookieAuthentication
+            AdmissionPolicy.queuedCookieAuthentication
+
     let bearer = AdmissionLease.limiter AdmissionPolicy.bearerAuthentication 0
     let interactive = AdmissionLease.limiter AdmissionPolicy.interactiveAuthentication 0
+    let closed = new CancellationTokenSource()
+    let closure = closed.Token
+    let mutable disposed = 0
 
-    member _.Acquire(context: HttpContext) =
-        let limiter =
-            if AuthMiddleware.interactiveRequest context.Request.Path then
-                interactive
-            elif RequestGate.credentialMode context = CredentialMode.Bearer then
-                bearer
-            else
-                cookie
+    member _.Run(context: HttpContext, action: IDisposable -> Task<'value>) =
+        task {
+            let queued =
+                not (AuthMiddleware.interactiveRequest context.Request.Path)
+                && RequestGate.credentialMode context <> CredentialMode.Bearer
 
-        limiter.AttemptAcquire 1
+            let limiter =
+                if AuthMiddleware.interactiveRequest context.Request.Path then
+                    interactive
+                elif queued then
+                    cookie
+                else
+                    bearer
+
+            let! acquired =
+                task {
+                    try
+                        if Volatile.Read(&disposed) <> 0 then
+                            return None
+                        else
+                            use deadline = new CancellationTokenSource()
+
+                            use waiting =
+                                CancellationTokenSource.CreateLinkedTokenSource(
+                                    [| context.RequestAborted; stopping; closure; deadline.Token |]
+                                )
+
+                            if queued then
+                                deadline.CancelAfter AdmissionPolicy.authenticationQueueWait
+
+                            let! lease =
+                                if queued then
+                                    limiter.AcquireAsync(1, waiting.Token).AsTask()
+                                else
+                                    Task.FromResult(limiter.AttemptAcquire 1)
+                            // The waiting deadline must never become an active provider-work deadline.
+                            deadline.CancelAfter Timeout.InfiniteTimeSpan
+
+                            if not lease.IsAcquired || waiting.IsCancellationRequested then
+                                lease.Dispose()
+                                return None
+                            else
+                                return Some lease
+                    with
+                    | :? OperationCanceledException
+                    | :? ObjectDisposedException -> return None
+                }
+
+            match acquired with
+            | None -> return None
+            | Some lease ->
+                use owner = AdmissionLease.once lease.Dispose
+
+                if
+                    context.RequestAborted.IsCancellationRequested
+                    || stopping.IsCancellationRequested
+                    || Volatile.Read(&disposed) <> 0
+                then
+                    return None
+                else
+                    let! value = action owner
+                    return Some value
+        }
 
     interface IDisposable with
         member _.Dispose() =
-            cookie.Dispose()
-            bearer.Dispose()
-            interactive.Dispose()
+            if Interlocked.Exchange(&disposed, 1) = 0 then
+                closed.Cancel()
+                cookie.Dispose()
+                bearer.Dispose()
+                interactive.Dispose()
+                closed.Dispose()
+                // Active owners retain their leases and existing provider cleanup lifetime.
+
 
 module internal RateLimits =
     let private busy context =
@@ -81,19 +147,23 @@ module internal RateLimits =
                     let budget =
                         context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
-                    let lease = budget.Acquire context
+                    let! result =
+                        budget.Run(
+                            context,
+                            fun owner ->
+                                task {
+                                    context.Items[capacityKey] <- owner
 
-                    if lease.IsAcquired then
-                        use owner = AdmissionLease.once (fun () -> lease.Dispose())
-                        context.Items[capacityKey] <- owner
+                                    try
+                                        do! next.Invoke context
+                                    finally
+                                        context.Items.Remove capacityKey |> ignore
+                                }
+                        )
 
-                        try
-                            do! next.Invoke context
-                        finally
-                            context.Items.Remove capacityKey |> ignore
-                    else
-                        lease.Dispose()
+                    if result.IsNone then
                         do! busy context
+
                 })
         )
         |> ignore
@@ -113,7 +183,13 @@ module internal RateLimits =
 
     let configure (limits: RequestGateLimits) (services: IServiceCollection) =
         services.AddSingleton<DynamicIngress>() |> ignore
-        services.AddSingleton<AuthenticationAdmission>() |> ignore
+
+        services.AddSingleton<AuthenticationAdmission>(fun provider ->
+            new AuthenticationAdmission(
+                provider.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping
+            ))
+        |> ignore
+
         services.AddScoped<RequestCapacity>() |> ignore
 
         services.AddSingleton<PrincipalAdmission>(fun _ ->

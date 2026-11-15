@@ -234,3 +234,23 @@
 .account-identity .account-roles {
   padding-inline-start: var(--space-3);
 }
+
+.account-summary-avatar {
+  display: none;
+}
+.account-summary-name,
+.account-expanded-identity {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.account-expanded-identity {
+  padding: var(--space-3);
+}
+.shell-count {
+  flex-shrink: 0;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+.account-menu-items {
+  max-inline-size: min(24rem, calc(100vw - 6rem));
+}

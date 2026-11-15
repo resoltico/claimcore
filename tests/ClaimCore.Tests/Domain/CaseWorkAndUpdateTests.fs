@@ -34,6 +34,11 @@ let private run operation revision act current =
 
     Case.parse
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = id operation
             CaseReference = "WORK-PARTIAL"
             ExpectedRevision = revision

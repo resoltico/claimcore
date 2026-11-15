@@ -63,7 +63,12 @@ module HumanReviewDocument =
                     | CaseAct.RemovePayment id -> Some id
                     | _ -> None
 
-                OperationBinding.Case(value.Target, value.ExpectedRevision, payment)
+                OperationBinding.Case(
+                    value.Target,
+                    value.ExpectedRevision,
+                    payment,
+                    value.ExpectedFamilySequence
+                )
             | OperationInput.Work value ->
                 OperationBinding.Work(value.Target, value.ExpectedRevision)
             | OperationInput.Note value ->
@@ -84,14 +89,14 @@ module HumanReviewDocument =
                     | ReminderAct.Reopen(id, revision, _) -> Some(id, revision)
 
                 OperationBinding.Reminder(value.Target, current)
-            | OperationInput.People _ ->
+            | OperationInput.People request ->
                 let actor =
                     match review with
                     | OperationReview.People value ->
                         value.Target |> Option.map (fun value -> ActorId.value value.Actor.ActorId)
                     | _ -> None
 
-                OperationBinding.People actor
+                OperationBinding.People(actor, request.ExpectedRevision)
 
         describe
             (ActKind.ofInput input)

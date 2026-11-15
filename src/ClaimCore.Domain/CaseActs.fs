@@ -610,6 +610,7 @@ type UnvalidatedCaseRequest =
     {
         OperationId: Guid
         CaseReference: string
+        ExpectedFamilySequence: int64 option
         ExpectedRevision: int64
         Act: AuthoredCaseAct
     }

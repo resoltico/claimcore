@@ -38,21 +38,35 @@ export const useBusinessDate = (requester: ActiveRequester | null) => {
     });
   }, [credential, date, requester, owner, cache]);
   useEffect(() => {
-    if (requester === null) {
+    if (owner === null) {
       return;
     }
+    let active = true;
+    let frame: number | null = null;
     const resumed = () => {
-      if (document.visibilityState === "visible") {
-        cache?.invalidate();
+      if (document.visibilityState === "visible" && frame === null) {
+        // Let browser activation and its first input finish before replacing read subtrees.
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            frame = null;
+            if (active && document.visibilityState === "visible") {
+              cache?.invalidate();
+            }
+          });
+        });
       }
     };
     window.addEventListener("focus", resumed);
     document.addEventListener("visibilitychange", resumed);
     return () => {
+      active = false;
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+      }
       window.removeEventListener("focus", resumed);
       document.removeEventListener("visibilitychange", resumed);
     };
-  }, [requester, cache]);
+  }, [owner, cache]);
   return {
     changedDate: change !== null && change.owner === owner ? change.date : null,
     refresh: () => {

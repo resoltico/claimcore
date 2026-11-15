@@ -39,7 +39,7 @@ let private effectText =
 let private command = CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note))
 let private effect = EffectDescriptor.NoteRemoved(parent, note)
 
-// Independent stdlib derivation: framed ASCII domain tag, format3, RFC4122 UUIDs,
+// Independent stdlib derivation: framed ASCII domain tag, format4, RFC4122 UUIDs,
 // i64BE sequence, prior hash, operation/executor UUIDs, i64BE UTC ticks,
 // optional business-date flag + u32BE zero-based Gregorian day, then framed canonical
 // command, effect count, each ordinal/framed descriptor, compartment count/descriptors/hashes.
@@ -51,7 +51,7 @@ let private prefix =
             [
                 "00000013"
                 "436c61696d436f72652e4f7065726174696f6e"
-                "00000003"
+                "00000004"
                 "00000000000040008000000000000001"
                 "000000000000002a"
                 "0000000000000000000000000000000000000000000000000000000000000000"
@@ -64,7 +64,7 @@ let private prefix =
     )
 
 let private digest =
-    Convert.FromHexString "014470a76e9cb310bf4901960457c5d235543edc667f5e00d45b398c4a00cfb0"
+    Convert.FromHexString "a3358f456c4e69a115d534270214b5b06628524cd4af93a41976bdea628637f5"
 
 let private expectedHash = EntryHash.ofBytes digest |> Option.get
 
@@ -124,6 +124,7 @@ let tests =
                     let command =
                         CommandSkeleton.Case
                             {
+                                ExpectedFamilySequence = None
                                 CaseId = parent
                                 Reference = CaseReference.parse "STRUCTURE-1" |> valid
                                 ExpectedRevision = Revision.create 4L |> Option.get
@@ -163,7 +164,7 @@ let tests =
                         OperationRoot.append header command [ effect ] [ compartment ] |> valid
 
                     let commandText =
-                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","compartment":0,"expectedRevision":4,"kind":"CASE","reference":"STRUCTURE-1","selectedPayment":"00000000-0000-7000-8000-000000000007"}"""
+                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","compartment":0,"expectedFamilySequence":null,"expectedRevision":4,"kind":"CASE","reference":"STRUCTURE-1","selectedPayment":"00000000-0000-7000-8000-000000000007"}"""
 
                     let effectText =
                         """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","creationReference":null,"kind":"CASE","payment":{"kind":"REMOVED","operationId":"00000000-0000-7000-8000-000000000007"},"revision":5}"""
@@ -174,13 +175,13 @@ let tests =
 
                     let commitment =
                         Convert.FromHexString
-                            "dd0bbf62770b0ac413b1ec2da4414ed06fd6147eb5703972aefe3ef7b9154d75"
+                            "787f3b9337181e82933691cc006e4fa9d53851284a83478f41b277a12b269329"
 
                     let bytes =
                         Array.concat
                             [
                                 prefix
-                                Convert.FromHexString "000000d2"
+                                Convert.FromHexString "000000f0"
                                 utf8 commandText
                                 Convert.FromHexString "0000000100000000000000d2"
                                 utf8 effectText
@@ -191,9 +192,9 @@ let tests =
 
                     let hash =
                         Convert.FromHexString
-                            "cecc8d84b86e43c050deed54a3d003a75a07dc344b36f623367cf2589f7871d1"
+                            "0cdc974e711a7f22f617d4d27aae0cb84c1d492ceb4876b90fc1dcf0209ebe17"
 
-                    Expect.equal bytes.Length 634 "Hand-counted salted root framing"
+                    Expect.equal bytes.Length 664 "Hand-counted salted root framing"
                     Expect.equal (SHA256.HashData bytes) hash "Independent salted root derivation"
 
                     Expect.equal
@@ -404,6 +405,11 @@ let publicCodecMatrix =
         let people act =
             CommandSkeleton.People
                 {
+                    ExpectedRevision =
+                        if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                            Revision.first
+                        else
+                            Revision.zero
                     TargetActorId = target
                     Principal = principal
                     Act = act
@@ -424,6 +430,11 @@ let publicCodecMatrix =
                         header,
                         CommandSkeleton.Case
                             {
+                                ExpectedFamilySequence =
+                                    if kind = CaseActKind.Erase then
+                                        Some Sequence.first
+                                    else
+                                        None
                                 CaseId = if opening then CaseId.ofOperationId operation else parent
                                 Reference = CaseReference.parse "STRUCTURE-1" |> valid
                                 ExpectedRevision =

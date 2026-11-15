@@ -52,8 +52,8 @@ identified as either missing or outside your access.
 
 ## Decide and record payment
 
-Choose **Decide** to record a decision date and payable amount with currency. A zero-payable decision is
-already Paid and needs no payment entry. Otherwise choose **Record payment**, enter its date and positive
+Choose **Record payment decision** to record a decision date and payable amount with currency. A zero-payable decision is
+already Paid and needs no payment entry. Otherwise choose **Record actual payment**, enter its date and positive
 amount, review and confirm. Keep accurate entries; removal is only for correcting an entry recorded in
 error. Payment counts are bounded by the exact-integer range; page size does not limit the case total.
 
@@ -62,9 +62,9 @@ decision date and no later than the business date. A partial payment leaves the 
 card shows payable, paid and remaining amounts, the latest three entries and total count. The paged
 `case.payments` read (CLI `case payments`) retrieves earlier current entries, 20 by default and at most 50 per page.
 Choose **Show all payments** in the workspace, then **More payments** to continue. Narrow layouts show
-the same supplied rows as cards; **Remove payment** remains attached to its current entry.
+the same supplied rows as cards; **Remove payment entry** remains attached to its current entry.
 
-Use an entry's **Remove payment** action to remove an assertion recorded in error. This does not refund
+Use an entry's **Remove payment entry** action to remove an assertion recorded in error. This does not refund
 or reverse a transfer. To correct an entry, remove it and record the right one. Earlier history remains
 until case erasure. Recording a payment does not close the case.
 
@@ -94,6 +94,13 @@ Write a note in the Notes composer and confirm **Add note**. Notes permit up to 
 values and 8,192 UTF-8 bytes, with LF line breaks. You can add or remove them on an active open or closed
 case when you have Read case and Manage case work. Voided or erased cases refuse note changes.
 
+Unsent inline text stays in memory for the same signed-in account and case through read refreshes,
+Settings, and unrelated reminder or financial changes. Leaving a dirty case asks for a decision.
+Cancelling a copied review keeps the inline text; only its own unchanged accepted note or explicit
+discard clears it. Signing out or changing the account/session clears it; it is never saved for restart.
+Same-case read refreshes preserve the active composer and caret while checking facts and access.
+An access refusal keeps the composer hidden until a fresh read permits adding notes.
+
 The workspace shows the latest three current notes and their count. **Show all notes** expands the list
 in place and pages through the rest. Removing a note removes it from the current list. Full history can
 still disclose its text until case erasure; summary history does not reveal note text.
@@ -115,31 +122,42 @@ changing other filters; returning to standard views restores their boundaries.
 An overdue plan still counts as a plan. A case can appear in both overdue and today action queues.
 Counts and loaded pages can change as others work; refresh for current results.
 
+Reminder links select the exact reminder within its parent case, including completed or cancelled
+reminders. Direct URLs and reloads read that reminder directly. A known return to the queue restores its
+filters, scroll and focus under the same workspace owner; direct entry falls back to the reminder queue.
+
 ## Close or reopen
 
-Choose **Close** when handling is finished. Neither a decision nor payment is required. **Reopen** resumes
-ordinary work. Reopen before ordinary financial editing of a closed case, or use **Correct** when offered.
+Choose **Close the case** when handling is finished. Neither a decision nor payment is required. **Reopen the case** resumes
+ordinary work. Reopen before ordinary financial editing of a closed case, or use **Correct case facts** when offered.
 
 ## Correct existing facts
 
-Choose **Correct** to revise selected registration and decision facts together. An open case needs an
+Choose **Correct case facts** to revise selected registration and decision facts together. An open case needs an
 existing decision; a closed case can be corrected with or without one. Unselected facts stay unchanged.
 Correction cannot invent a missing decision. Payment entries are changed separately, and retained entries
 continue to constrain any decision change. A refused correction records nothing.
 
 ## Case stewardship
 
-A Data steward can **Void**, **Reinstate** or **Erase** when offered. Void records an entry-error reason
+A Data steward can **Void case record**, **Reinstate case record** or **Erase case** when offered. Void records an entry-error reason
 and stops business work while preserving contents. Reinstate records a reason and resumes it.
 
 Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
 and notes. The reference remains reserved. Read the consequence and type the shown reference to confirm.
+Erasure also freezes the reviewed case-family sequence. Changes to any owned work, note, reminder or
+payment invalidate that review even when the case fact version stays unchanged. Review again explicitly
+before another attempt. Unrelated cases and account changes do not change this family sequence;
+current permission checks still apply.
 See [erasure limits](operating.md#erasure-limits) for backups and external copies.
 
 ## Review, confirmation and delivery
 
 Forms show short hints and precise rules in information tips. Language and regional formats are
 independent. A format change does not reinterpret an amount already entered. Input issues link to fields.
+
+A new visible review starts at the beginning and focuses its heading. Reading position stays with the
+same review through Settings and display changes; returning to edit restores the authoring position.
 
 Review the proposed changes and confirm once. An interactive CLI command can read an omitted version
 and freeze it for review; automation supplies its expected version. Technical versions appear under
@@ -149,3 +167,12 @@ The CLI never silently rebases.
 If delivery is uncertain, keep the original change identity. **Unconfirmed changes** checks it
 automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
 request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.
+
+
+Browser Back and Forward preserve managed history entries, including a Settings detour with an authored
+draft. Declining departure preserves the original Forward branch. Additional navigation while a guarded
+traversal is being restored or awaiting consent is ignored until that transition settles. Reload and
+cross-document departure request the browser's native warning while drafts, prepared or uncertain work,
+or delivery need protection. Browser activation and prompting rules apply; this does not persist drafts
+or guarantee protection against forced termination. Unknown history entries have no provable offset and
+are followed without rewriting the history stack.

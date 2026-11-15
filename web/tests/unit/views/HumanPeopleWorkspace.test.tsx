@@ -60,7 +60,14 @@ const person: HumanReadDocument_people_grants = {
   },
   subject: { kind: "PERSON", actorId },
   actions: [
-    operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, undefined, {}, true),
+    operationAffordance(
+      "people.enable",
+      { kind: "PEOPLE", actorId, expectedRevision: 1 },
+      {},
+      undefined,
+      {},
+      true,
+    ),
   ],
   links: [],
   history: null,
@@ -236,7 +243,14 @@ it("uses a bound person task and renders the current Core people outcome after a
               },
               consequence: "ROUTINE",
             },
-            actions: [operationAffordance("people.enable", { kind: "PEOPLE", actorId }, {}, [])],
+            actions: [
+              operationAffordance(
+                "people.enable",
+                { kind: "PEOPLE", actorId, expectedRevision: 1 },
+                {},
+                [],
+              ),
+            ],
             links: [],
             history: null,
             nextCursor: null,
@@ -291,7 +305,7 @@ it("uses a bound person task and renders the current Core people outcome after a
   expect(executions).toEqual(previews);
   expect(JSON.parse(executions[0]!)).toMatchObject({
     task: "people.enable",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 1 },
   });
   expect(lookups).toEqual([acceptedId]);
   expect(
@@ -360,7 +374,7 @@ it("binds a selected revocation to the Core case identity without editable role/
                 actions: [
                   operationAffordance(
                     "people.revoke",
-                    { kind: "PEOPLE", actorId },
+                    { kind: "PEOPLE", actorId, expectedRevision: 1 },
                     { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": caseId },
                     [],
                   ),
@@ -474,7 +488,7 @@ it("binds a selected revocation to the Core case identity without editable role/
   });
   expect(previews[0]).toMatchObject({
     task: "people.revoke",
-    binding: { kind: "PEOPLE", actorId },
+    binding: { kind: "PEOPLE", actorId, expectedRevision: 1 },
     inputs: { "input:role": "CASE_READER", "input:scope": "CASE", "input:caseId": caseId },
   });
 });
@@ -598,7 +612,7 @@ it("acquires admission inputs and ordered role rows through the actual semantic 
   });
   expect(previews[0]).toMatchObject({
     task: "people.admit",
-    binding: { kind: "PEOPLE" },
+    binding: { kind: "PEOPLE", expectedRevision: 0 },
     inputs: {
       "input:principal.kind": "HUMAN",
       "input:principal.issuer": "https://issuer.example/",

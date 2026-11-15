@@ -149,7 +149,10 @@ let run () =
 
         try
             let! _ = caseWorker database.Fixture
-            let storage = SessionStore(database.RuntimeSource) :> ISessionStore
+
+            let storage =
+                SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
             do! caseFlow database storage
 
             do!

@@ -818,5 +818,13 @@
   "ui.resourceUnavailable": {
     "text": "この項目は利用できません。",
     "source": "46275555e5f4"
+  },
+  "ui.caseSelection": {
+    "text": "案件の選択方法",
+    "source": "c1020f56efc0"
+  },
+  "ui.existingCaseSelectionHint": {
+    "text": "参照番号または ID で既存の案件を選択してください。",
+    "source": "bd52439b9b7f"
   }
 }

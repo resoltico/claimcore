@@ -818,5 +818,13 @@
   "ui.resourceUnavailable": {
     "text": "هذا العنصر غير متاح.",
     "source": "46275555e5f4"
+  },
+  "ui.caseSelection": {
+    "text": "تحديد الملف بواسطة",
+    "source": "c1020f56efc0"
+  },
+  "ui.existingCaseSelectionHint": {
+    "text": "اختر ملفًا موجودًا باستخدام مرجعه أو معرّفه.",
+    "source": "bd52439b9b7f"
   }
 }

@@ -36,6 +36,7 @@ let tests =
         let input =
             Inputs.caseOperation
                 {
+                    ExpectedFamilySequence = None
                     OperationId = operation
                     CaseReference = "ECHO-1"
                     ExpectedRevision = 0L

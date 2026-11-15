@@ -1,3 +1,4 @@
+import { chooseOption } from "../../support/choice-entry";
 import { prefixedInputs } from "../../support/submission-inputs";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { useState } from "react";
@@ -137,7 +138,7 @@ it("binds collection controls and errors to row keys and consumes Domain role ad
   render(
     <TaskInputs
       task={task}
-      binding={{ kind: "PEOPLE" }}
+      binding={{ kind: "PEOPLE", expectedRevision: 0 }}
       current={null}
       values={{
         "input:principal.kind": "SERVICE",
@@ -164,7 +165,7 @@ const representativeBinding = (
   id: OperationTaskId,
 ): Parameters<typeof TaskInputs>[0]["binding"] => {
   if (task.subject === "PEOPLE") {
-    return { kind: "PEOPLE" as const };
+    return { kind: "PEOPLE" as const, expectedRevision: 0 as const };
   }
   if (id === "case.open") {
     return { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 };
@@ -275,7 +276,9 @@ const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
     initialOperationValues(
       operationAffordance(
         id === "case.open" ? "case.open" : "people.admit",
-        id === "case.open" ? { kind: "CASE", target, expectedRevision: 0 } : { kind: "PEOPLE" },
+        id === "case.open"
+          ? { kind: "CASE", target, expectedRevision: 0 }
+          : { kind: "PEOPLE", expectedRevision: 0 },
         id === "people.admit" ? { "input:principal.kind": "HUMAN" } : {},
       ),
     ),
@@ -291,7 +294,7 @@ const AuthoredInputs = ({ id }: { id: "case.open" | "people.admit" }) => {
                 target: { kind: "REFERENCE", caseReference: "" },
                 expectedRevision: 0,
               }
-            : { kind: "PEOPLE" }
+            : { kind: "PEOPLE", expectedRevision: 0 }
         }
         current={null}
         values={values}
@@ -423,3 +426,44 @@ it.each([
     expect(fields).toHaveBeenCalledExactlyOnceWith(expected, []);
   },
 );
+
+it("switches a grant row exclusively between ID, reference and all cases without losing its row key", async () => {
+  const user = userEvent.setup();
+  render(<AuthoredInputs id="people.admit" />);
+  const row = screen.getByRole("group", { name: "Role 1" });
+  await user.click(within(row).getByRole("radio", { name: "One case" }));
+  const read = () => {
+    const parsed = JSON.parse(screen.getByTestId("authored-inputs").textContent ?? "null") as {
+      peopleGrants: { rows: { key: string; values: FormValues }[] };
+    };
+    return parsed.peopleGrants.rows[0]!;
+  };
+  const { key } = read();
+  const reference = within(row).getByRole("textbox", { name: "Case reference" });
+  await user.type(reference, "00000000-0000-4000-8000-000000000001");
+  await chooseOption(user, within(row).getByRole("combobox", { name: "Select case by" }), "ID");
+  expect(within(row).queryByRole("textbox", { name: "Case reference" })).toBeNull();
+  const idField = within(row).getByRole("textbox", { name: "Case ID" });
+  await user.type(idField, "bad-id");
+  expect(read().values["input:scope"]).toEqual({
+    kind: "GRANT_TARGET",
+    selection: { kind: "ID", text: "bad-id" },
+  });
+  await user.clear(idField);
+  expect(read().values["input:scope"]).toMatchObject({ selection: { text: "" } });
+  await chooseOption(
+    user,
+    within(row).getByRole("combobox", { name: "Select case by" }),
+    "REFERENCE",
+  );
+  expect(within(row).queryByRole("textbox", { name: "Case ID" })).toBeNull();
+  await user.type(within(row).getByRole("textbox", { name: "Case reference" }), "REF-ONLY");
+  await user.click(within(row).getByRole("radio", { name: "All cases" }));
+  expect(read().key).toBe(key);
+  expect(read().values["input:scope"]).toEqual({
+    kind: "GRANT_TARGET",
+    selection: { kind: "INSTALLATION" },
+  });
+  expect(read().values).not.toHaveProperty("input:caseId");
+  expect(read().values).not.toHaveProperty("field:caseReference");
+});

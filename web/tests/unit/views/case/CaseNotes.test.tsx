@@ -1,3 +1,6 @@
+import { act } from "@testing-library/react";
+import { CaseDetail } from "../../../../src/views/CaseDetail";
+import { definition } from "../../../support/service-ui.fixtures";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -141,7 +144,9 @@ it("keeps the composed text exact for shared review and obeys current permission
       name: "Add note",
     }),
   );
-  expect(add).toHaveBeenCalledWith("First\nSecond");
+  expect(add).toHaveBeenCalledWith(
+    expect.objectContaining({ text: "First\nSecond", caseId: view.subject.caseId }),
+  );
   result.rerender(
     <CaseNotes
       current={{
@@ -214,4 +219,91 @@ it("refreshes the case when the first expanded notes page reports erasure", asyn
     expect(refused).toHaveBeenCalled();
   });
   expect(screen.queryByText("Authoritative supplied note")).not.toBeInTheDocument();
+});
+
+it("keeps the authoring node, selection and newer text through case reload counters while masking rows", async () => {
+  const reply = () =>
+    new Response(
+      JSON.stringify({
+        representation: "HUMAN",
+        outcome: { kind: "SUCCEEDED", document: { ...view, history: "NONE" } },
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    );
+  let finish!: (response: Response) => void;
+  const pending = new Promise<Response>((resolve) => {
+    finish = resolve;
+  });
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(reply())
+    .mockReturnValueOnce(pending);
+  vi.stubGlobal("fetch", fetch);
+  const detail = (reloadSignal: number) => (
+    <CaseDetail
+      target={{ kind: "ID", caseId: view.subject.caseId }}
+      reloadSignal={reloadSignal}
+      definition={definition.catalog}
+      onBack={vi.fn()}
+      onAct={vi.fn()}
+    />
+  );
+  const result = render(detail(0));
+  const user = userEvent.setup();
+  const field = await screen.findByRole("textbox", { name: "Note" });
+  await user.type(field, "abcdef");
+  (field as HTMLTextAreaElement).setSelectionRange(2, 4);
+  result.rerender(detail(1));
+  expect(screen.getByRole("textbox", { name: "Note" })).toBe(field);
+  expect(field).toHaveFocus();
+  expect(document.body).not.toHaveTextContent("Authoritative supplied note");
+  expect(screen.getByRole("button", { name: "Add note" })).toBeDisabled();
+  await act(async () => {
+    finish(reply());
+    await pending;
+  });
+  expect(screen.getByRole("textbox", { name: "Note" })).toBe(field);
+  expect(field).toHaveFocus();
+  expect((field as HTMLTextAreaElement).selectionStart).toBe(2);
+  expect((field as HTMLTextAreaElement).selectionEnd).toBe(4);
+  expect(screen.getByRole("button", { name: "Add note" })).toBeEnabled();
+  await user.keyboard("Z");
+  expect(field).toHaveValue("abZef");
+  expect((field as HTMLTextAreaElement).selectionStart).toBe(3);
+  fetch.mockResolvedValueOnce(
+    new Response(
+      JSON.stringify({
+        representation: "HUMAN",
+        outcome: {
+          kind: "REJECTED",
+          rejection: {
+            kind: "REFUSED",
+            advice: {
+              message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+              action: "ASK_FOR_ACCESS",
+            },
+          },
+        },
+      }),
+      { headers: { "Content-Type": "application/json" } },
+    ),
+  );
+  result.rerender(detail(2));
+  await waitFor(() => {
+    expect(screen.queryByRole("textbox", { name: "Note" })).toBeNull();
+  });
+  let regrant!: (value: Response) => void;
+  const checking = new Promise<Response>((resolve) => {
+    regrant = resolve;
+  });
+  fetch.mockReturnValueOnce(checking);
+  result.rerender(detail(3));
+  expect(screen.queryByRole("textbox", { name: "Note" })).toBeNull();
+  await act(async () => {
+    regrant(reply());
+    await checking;
+  });
+  expect(await screen.findByRole("textbox", { name: "Note" })).toBe(field);
+  expect(field).toHaveValue("abZef");
+  expect(fetch.mock.calls.map((call) => call[0])).toEqual(Array(4).fill("/api/case.get"));
 });

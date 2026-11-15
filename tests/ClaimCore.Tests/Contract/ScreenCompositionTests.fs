@@ -281,7 +281,26 @@ let tests =
                 (fun () -> data Api.peopleGrants |> PersonScreen.view)
             matches "access history" [ RegionRole.Activity; RegionRole.Details ] (fun () ->
                 data Api.peopleHistory |> AccessHistoryScreen.view)
-            matches "access requests" [ RegionRole.Results; RegionRole.Details ] (fun () ->
+            testCase
+                "empty access requests omit local scaffolding without consuming pagination metadata"
+                (fun () ->
+                    let reply = data Api.peopleRequests
+                    let empty = { reply with Items = [] }
+
+                    Expect.isEmpty
+                        (AccessRequestsScreen.view empty).Regions
+                        "No empty table or page metadata chrome"
+
+                    Expect.equal
+                        empty.Basis
+                        reply.Basis
+                        "Presentation does not rewrite the read basis"
+
+                    Expect.equal
+                        empty.NextCursor
+                        reply.NextCursor
+                        "The HUMAN page retains its continuation")
+            matches "empty access requests" [] (fun () ->
                 data Api.peopleRequests |> AccessRequestsScreen.view)
             matches
                 "context"

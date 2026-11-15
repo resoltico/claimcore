@@ -21,7 +21,8 @@ let internal rolelessAuthorship fixture =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 10)
                         target
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -126,7 +127,9 @@ let internal rolelessAuthorship fixture =
         let! disabled =
             Service.execute
                 owner
-                (OperationInput.People(peopleRequest (id fixture 31) target PeopleAct.Disable))
+                (OperationInput.People(
+                    reviewedPeopleRequest fixture.Store (id fixture 31) target PeopleAct.Disable
+                ))
                 CancellationToken.None
 
         acceptedPeople disabled

@@ -416,6 +416,11 @@ let private ordering () =
                     installation
                     principal
                     {
+                        ExpectedRevision =
+                            if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
+                                1L
+                            else
+                                0L
                         OperationId = id 605
                         Target = PrincipalKey.toInput targetPrincipal
                         Act = act

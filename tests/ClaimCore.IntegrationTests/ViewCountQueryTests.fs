@@ -227,7 +227,8 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Database.Fixture.Store
                         (id fixture.Database.Fixture 5509)
                         scoped
                         (PeopleAct.Register Inputs.actorProfile)
@@ -253,7 +254,11 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.People(
-                    peopleRequest (id fixture.Database.Fixture 5510) scoped (PeopleAct.Grant grant)
+                    reviewedPeopleRequest
+                        fixture.Database.Fixture.Store
+                        (id fixture.Database.Fixture 5510)
+                        scoped
+                        (PeopleAct.Grant grant)
                 ))
 
         let scopedFixture =
@@ -298,7 +303,11 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.People(
-                    peopleRequest (id fixture.Database.Fixture 5511) scoped (PeopleAct.Revoke grant)
+                    reviewedPeopleRequest
+                        fixture.Database.Fixture.Store
+                        (id fixture.Database.Fixture 5511)
+                        scoped
+                        (PeopleAct.Revoke grant)
                 ))
 
         let service = scopedFixture.Service

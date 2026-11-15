@@ -148,7 +148,7 @@
     overflow-wrap: anywhere;
   }
   .people-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
   }
   .people-table {
@@ -272,7 +272,7 @@
     display: none;
   }
   .workspace-sidebar .shell-brand,
-  .workspace-sidebar .account-menu summary > span {
+  .workspace-sidebar .account-summary-name {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -298,6 +298,22 @@
   }
   .workspace-sidebar nav a:is(:hover, :focus-visible) .shell-link-label {
     visibility: visible;
+  }
+  .workspace-sidebar .account-summary-avatar {
+    display: inline-flex;
+  }
+  .workspace-sidebar .account-menu > summary {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .workspace-sidebar .account-menu > summary > .icon {
+    display: none;
+  }
+  .workspace-sidebar .shell-count {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block-start: 0;
+    padding-inline: var(--space-1);
   }
   .workspace-sidebar .account-menu[open] {
     position: relative;

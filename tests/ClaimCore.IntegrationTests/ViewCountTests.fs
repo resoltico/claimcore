@@ -60,6 +60,7 @@ let tests =
                     (core adminPrincipal)
                     (Inputs.caseOperation
                         {
+                            ExpectedFamilySequence = None
                             OperationId = id number
                             CaseReference = sprintf "COUNT-%d" number
                             ExpectedRevision = 0L

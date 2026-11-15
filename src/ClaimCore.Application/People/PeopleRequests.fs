@@ -106,19 +106,24 @@ module PeopleRequests =
         )
 
     /// Owner provisioning has a dedicated private host boundary, never an ordinary wire request.
-    let input operationId target (act: ValidPeopleAct) : Result<PeopleRequest, Refusal> =
+    let input operationId expected target (act: ValidPeopleAct) : Result<PeopleRequest, Refusal> =
         match act with
         | PeopleAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | _ ->
             Ok
                 {
                     OperationId = operationId
+                    ExpectedRevision = expected
                     Target = PrincipalKey.toInput target
                     Act = PeopleAct.map id ActorProfile.authored act
                 }
 
     let toInput (command: PeopleCommand) =
-        input (OperationId.value command.OperationId) command.Target command.Act
+        input
+            (OperationId.value command.OperationId)
+            (Revision.value command.ExpectedRevision)
+            command.Target
+            command.Act
 
     let internal targetCases (command: PeopleCommand) =
         let targets =

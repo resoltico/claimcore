@@ -48,7 +48,8 @@ let private setup (database: PostgresFixture.Database) =
             (Service.execute
                 admin
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        database.Fixture.Store
                         (id database.Fixture 3)
                         principal
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
@@ -147,6 +148,7 @@ type internal PausedPageStore
 
                                     member _.CaseState id = tx.CaseState id
 
+                                    member _.CaseFamilySequence id = tx.CaseFamilySequence id
                                     member _.CaseFamily id = tx.CaseFamily id
 
                                     member _.PendingReminderDue(parent, excluded) =
@@ -267,6 +269,7 @@ type internal PausedPageStore
                                     member _.ActorRefs ids = tx.ActorRefs ids
                                     member _.ActorPrincipal id = tx.ActorPrincipal id
 
+                                    member _.PeopleRevision principal = tx.PeopleRevision principal
                                     member _.PeopleState principal = tx.PeopleState principal
 
                                     member _.FindActor id = tx.FindActor id

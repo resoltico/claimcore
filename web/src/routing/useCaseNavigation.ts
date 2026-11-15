@@ -1,5 +1,6 @@
+import type { Link, CaseSelector } from "@contracts/client";
+import { coreLinkPath } from "./coreLinks";
 import { useState } from "react";
-import type { CaseSelector } from "@contracts/client";
 import { casePath, referencePath } from "./routes";
 import { navigate } from "./navigation";
 /** Return context belongs only to this verified case workspace, never browser history or a journal. */
@@ -21,6 +22,22 @@ export const useCaseNavigation = (owner: object | null) => {
     }
   };
   return {
+    linkNavigation: (link: Link) => {
+      if (link.endpoint !== "reminder.get") {
+        return undefined;
+      }
+      const path = coreLinkPath(link);
+      const focusId = `reminder-link-${link.input.reminderId}`;
+      return {
+        id: focusId,
+        follow: () => {
+          remember(focusId);
+          if (path !== undefined) {
+            navigate(path);
+          }
+        },
+      };
+    },
     selectCase: (target: CaseSelector) => {
       remember(target.kind === "ID" ? `case-${target.caseId}` : "case-lookup");
       navigate(
@@ -33,7 +50,12 @@ export const useCaseNavigation = (owner: object | null) => {
     },
     backToCases: () => {
       const owned = returnTo?.owner === owner ? returnTo : null;
-      navigate(owned?.url ?? "/cases", false, owned?.focusId, owned?.scrollY);
+      navigate(
+        owned?.url ?? (location.pathname.includes("/reminders/") ? "/reminders" : "/cases"),
+        false,
+        owned?.focusId,
+        owned?.scrollY,
+      );
     },
   };
 };

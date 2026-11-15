@@ -124,6 +124,7 @@ let internal retainedText () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
                         Mine = false
                         Work = Inputs.workView snapshot.State
@@ -199,7 +200,11 @@ let internal peopleWire kind issuer subject =
         {|
             operationId = id.ToString("D")
             task = "people.register"
-            binding = {| kind = "PEOPLE" |}
+            binding =
+                {|
+                    kind = "PEOPLE"
+                    expectedRevision = 0L
+                |}
             inputs =
                 Map.ofList
                     [

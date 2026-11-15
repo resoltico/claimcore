@@ -122,6 +122,7 @@ let private boundedPeople () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        Revision = Revision.first
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
                         Offers = []

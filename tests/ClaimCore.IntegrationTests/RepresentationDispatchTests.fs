@@ -102,6 +102,7 @@ let private dispatch () =
         let input =
             Inputs.caseOperation
                 {
+                    ExpectedFamilySequence = None
                     OperationId = identity
                     CaseReference = "REP-WRITE"
                     ExpectedRevision = 0L
@@ -163,6 +164,7 @@ let private dispatch () =
         let changed =
             Inputs.caseOperation
                 {
+                    ExpectedFamilySequence = None
                     OperationId = identity
                     CaseReference = "REP-CHANGED"
                     ExpectedRevision = 0L
@@ -234,7 +236,8 @@ let private dispatch () =
             Service.execute
                 owner
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 40001)
                         reader
                         (PeopleAct.Register

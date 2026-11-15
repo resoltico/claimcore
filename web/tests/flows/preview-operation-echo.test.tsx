@@ -33,6 +33,7 @@ const PeopleEditor = () => {
     kind: "people.grant",
     affordance: operationAffordance("people.grant", {
       kind: "PEOPLE",
+      expectedRevision: 1,
       actorId: "10000000-0000-4000-8000-000000000001",
     }),
     current: null,

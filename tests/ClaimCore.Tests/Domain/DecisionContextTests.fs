@@ -24,6 +24,7 @@ let private context =
 let private opening =
     CaseFixtures.command
         {
+            ExpectedFamilySequence = None
             OperationId = identity 1
             CaseReference = "CONTEXT-1"
             ExpectedRevision = 0L
@@ -301,6 +302,7 @@ let tests =
                     let command =
                         People.parse
                             {
+                                ExpectedRevision = 0L
                                 OperationId = identity 5
                                 Target = PrincipalKey.toInput principal
                                 Act = PeopleAct.Register Inputs.actorProfile

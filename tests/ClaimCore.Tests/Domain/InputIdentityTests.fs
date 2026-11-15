@@ -25,7 +25,7 @@ let tests =
         | Ok _ -> failtest "Undeclared principal kinds cannot reach Domain."
 
         let role =
-            """{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.grant","binding":{"kind":"PEOPLE","actorId":"10000000-0000-7000-8000-000000000002"},"inputs":{"input:role":"UNDECLARED","input:scope":"INSTALLATION"}}"""
+            """{"operationId":"10000000-0000-7000-8000-000000000001","task":"people.grant","binding":{"kind":"PEOPLE","actorId":"10000000-0000-7000-8000-000000000002","expectedRevision":1},"inputs":{"input:role":"UNDECLARED","input:scope":"INSTALLATION"}}"""
 
         match
             Codec.decode

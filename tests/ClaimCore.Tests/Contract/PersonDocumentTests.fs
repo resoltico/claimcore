@@ -35,6 +35,7 @@ let private actor =
 let private document offers seed =
     HumanReadDocuments.grants
         {
+            Revision = Revision.first
             Basis = Inputs.workBasis
             Actor = ActorReviewItem.ofActor [] actor
             Offers = offers
@@ -94,7 +95,7 @@ let tests =
 
                 Expect.equal
                     action.Binding
-                    (OperationBinding.People(Some(ActorId.value actorId)))
+                    (OperationBinding.People(Some(ActorId.value actorId), 1L))
                     "Selected account"
 
                 Expect.isFalse action.Seeds.IsEmpty "Permitted profile seed"
@@ -131,6 +132,7 @@ let tests =
                     let read offers =
                         HumanReadDocuments.grants
                             {
+                                Revision = Revision.first
                                 Basis = Inputs.workBasis
                                 Actor = ActorReviewItem.ofActor [] actor
                                 Offers = offers
@@ -151,7 +153,7 @@ let tests =
 
                     Expect.equal
                         general.Binding
-                        (OperationBinding.People(Some(ActorId.value actorId)))
+                        (OperationBinding.People(Some(ActorId.value actorId), 1L))
                         "General revocation binds the known account"
 
                     Expect.contains
@@ -170,7 +172,7 @@ let tests =
 
                     Expect.equal
                         control.Binding
-                        (OperationBinding.People(Some(ActorId.value actorId)))
+                        (OperationBinding.People(Some(ActorId.value actorId), 1L))
                         "Immutable selected account"
 
                     Expect.equal

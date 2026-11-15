@@ -52,6 +52,11 @@ let private content header ordinal owner purpose refs =
 let private caseCommand act selection =
     CommandSkeleton.Case
         {
+            ExpectedFamilySequence =
+                if act = CaseActKind.Erase then
+                    Some(Sequence.create 1L |> Option.get)
+                else
+                    None
             CaseId = parent 3
             Reference = reference
             ExpectedRevision = revision 4L
@@ -171,6 +176,7 @@ let tests =
                     let command =
                         CommandSkeleton.People
                             {
+                                ExpectedRevision = Revision.zero
                                 TargetActorId = target
                                 Principal = principal
                                 Act = PeopleAct.Admit { Profile = 0; Grants = grants }
@@ -415,6 +421,7 @@ let tests =
                     let creation =
                         CommandSkeleton.Case
                             {
+                                ExpectedFamilySequence = None
                                 CaseId = id
                                 Reference = reference
                                 ExpectedRevision = Revision.zero
@@ -483,6 +490,7 @@ let tests =
                     let command grants =
                         CommandSkeleton.People
                             {
+                                ExpectedRevision = Revision.zero
                                 TargetActorId = target
                                 Principal = principal
                                 Act = PeopleAct.Admit { Profile = 0; Grants = grants }
@@ -528,6 +536,7 @@ let tests =
                             )
                             CommandSkeleton.People
                                 {
+                                    ExpectedRevision = Revision.zero
                                     TargetActorId = target
                                     Principal = principal
                                     Act = PeopleAct.Register 1
@@ -549,6 +558,7 @@ let tests =
                     let owner =
                         CommandSkeleton.People
                             {
+                                ExpectedRevision = Revision.zero
                                 TargetActorId = target
                                 Principal = principal
                                 Act = PeopleAct.ProvisionOwner(0, roles)

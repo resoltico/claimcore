@@ -19,6 +19,11 @@ let tests =
 
             let requestIds _ reference revision act : UnvalidatedCaseRequest =
                 {
+                    ExpectedFamilySequence =
+                        if CaseAct.kind act = CaseActKind.Erase then
+                            Some 1L
+                        else
+                            None
                     OperationId = OperationIds.fresh ()
                     CaseReference = reference
                     ExpectedRevision = revision

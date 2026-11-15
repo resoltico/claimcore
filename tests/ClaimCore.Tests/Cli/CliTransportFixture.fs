@@ -36,6 +36,7 @@ let frame endpoint =
         let input =
             Inputs.caseOperation
                 {
+                    ExpectedFamilySequence = None
                     OperationId = CliReplyFixtures.id
                     CaseReference = "x"
                     ExpectedRevision = 0L

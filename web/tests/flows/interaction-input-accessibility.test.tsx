@@ -38,10 +38,10 @@ it.each(["en", "lv", "ar"] as const)(
     preferences(language);
     const user = userEvent.setup();
     const values = initialOperationValues(
-      operationAffordance("people.register", { kind: "PEOPLE" }),
+      operationAffordance("people.register", { kind: "PEOPLE", expectedRevision: 0 }),
     );
     const props = {
-      binding: { kind: "PEOPLE" as const },
+      binding: { kind: "PEOPLE" as const, expectedRevision: 0 as const },
       task: operationEntry({ subject: "PEOPLE", kind: "people.register" }),
       values,
       current: null,

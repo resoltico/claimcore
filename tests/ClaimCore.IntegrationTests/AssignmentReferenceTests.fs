@@ -28,6 +28,7 @@ let tests =
                                 admin
                                 (Inputs.caseOperation
                                     {
+                                        ExpectedFamilySequence = None
                                         OperationId = id number
                                         CaseReference = reference
                                         ExpectedRevision = 0L
@@ -98,7 +99,13 @@ let tests =
                 let! disabled =
                     Service.execute
                         admin
-                        (OperationInput.People(peopleRequest (id 10) bobPrincipal PeopleAct.Disable))
+                        (OperationInput.People(
+                            reviewedPeopleRequest
+                                database.Fixture.Store
+                                (id 10)
+                                bobPrincipal
+                                PeopleAct.Disable
+                        ))
                         token
                     |> Async.AwaitTask
 

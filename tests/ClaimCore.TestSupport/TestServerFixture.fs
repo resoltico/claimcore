@@ -403,3 +403,36 @@ type Host
             certificate.Dispose()
             sink.Dispose()
             Directory.Delete(assets, true)
+
+/// Hold a real async authentication owner without starting provider/core work.
+let internal holdAuthentication (admission: ClaimCore.Server.AuthenticationAdmission) context =
+    task {
+        let entered =
+            System.Threading.Tasks.TaskCompletionSource(
+                System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously
+            )
+
+        let release =
+            System.Threading.Tasks.TaskCompletionSource(
+                System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously
+            )
+
+        let work =
+            admission.Run(
+                context,
+                fun _ ->
+                    task {
+                        entered.SetResult()
+                        do! release.Task
+                    }
+            )
+
+        do! entered.Task.WaitAsync(System.TimeSpan.FromSeconds 3.)
+
+        return
+            { new System.IDisposable with
+                member _.Dispose() =
+                    release.TrySetResult() |> ignore
+                    work.GetAwaiter().GetResult() |> ignore
+            }
+    }

@@ -103,6 +103,7 @@ let internal queryCodecs () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
+                        FamilySequence = Sequence.create 1L |> Option.get
                         LatestPayments = []
                         Mine = false
                         Work = Inputs.workView view.State

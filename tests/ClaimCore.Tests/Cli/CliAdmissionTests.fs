@@ -76,8 +76,23 @@ let tests =
                 (fun () ->
                     for words, target in
                         [
-                            [ "case"; "erase"; "CASE-X"; "--expected-revision"; "7" ], "CASE-X"
-                            [ "people"; "erase-profile"; "10000000-0000-4000-8000-000000000001" ],
+                            [
+                                "case"
+                                "erase"
+                                "CASE-X"
+                                "--expected-revision"
+                                "7"
+                                "--expected-family-sequence"
+                                "12"
+                            ],
+                            "CASE-X"
+                            [
+                                "people"
+                                "erase-profile"
+                                "10000000-0000-4000-8000-000000000001"
+                                "--expected-revision"
+                                "1"
+                            ],
                             identity ()
                         ] do
                         let plain = Grammar.prepare identity words |> Fixtures.accepted
@@ -313,4 +328,29 @@ let tests =
                              | _ -> false))
                         "The entire compound token remains visible in usage errors"
                 | Ok _ -> failtest "Unknown roles must be refused")
+            testCase "dry-run rejects invalid reviewed People and family revisions" (fun () ->
+                for words in
+                    [
+                        [
+                            "case"
+                            "erase"
+                            "CASE-1"
+                            "--expected-revision"
+                            "1"
+                            "--expected-family-sequence"
+                            "0"
+                            "--dry-run"
+                        ]
+                        [
+                            "people"
+                            "disable"
+                            "10000000-0000-4000-8000-000000000001"
+                            "--expected-revision"
+                            "0"
+                            "--dry-run"
+                        ]
+                    ] do
+                    Expect.isError
+                        (Grammar.prepare identity words)
+                        "Dry-run must not emit an inadmissible precondition")
         ]

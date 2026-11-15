@@ -65,7 +65,7 @@ export const installationActions = (tasks: ReadonlyArray<string>, issuer: string
     return [
       operationAffordance(
         task,
-        { kind: "PEOPLE" },
+        { kind: "PEOPLE", expectedRevision: 0 },
         {
           "input:principal.kind": "HUMAN",
           ...(task === "people.admit"

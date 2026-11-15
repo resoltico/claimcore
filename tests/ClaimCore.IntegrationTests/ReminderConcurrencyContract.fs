@@ -388,15 +388,50 @@ let internal erasureRaces fixture =
                             Due = "2026-11-11"
                         }
 
+            let reviewed =
+                request fixture (number + 3) reference 1L (CaseAct.Bare BareAct.Erase)
+
             let! replies =
                 Task.WhenAll(
                     [|
-                        caseAct fixture actor (number + 3) reference 1L (CaseAct.Bare BareAct.Erase)
+                        Service.execute actor (Inputs.caseOperation reviewed) token
                         reminder fixture actor (number + 2) target act
                     |]
                 )
 
-            accepted replies[0] |> ignore
+            Expect.equal
+                (acceptedCount replies)
+                1
+                "Only one side of the frozen family-review race can accept"
+
+            match replies[0].Outcome, replies[1].Outcome with
+            | ExecuteResult.Accepted _,
+              ExecuteResult.Rejected(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)) -> ()
+            | ExecuteResult.Rejected(Refusal.Case CaseRefusal.FamilyChanged),
+              ExecuteResult.Accepted _ ->
+                let! retained = find fixture (number + 2)
+
+                Expect.isSome
+                    (Option.get retained).Snapshot
+                    "Stale erasure leaves the newly accepted private child intact"
+
+                let! refusedRoot =
+                    storeRead fixture (fun tx ->
+                        tx.FindOperation(OperationId.create reviewed.OperationId |> Option.get))
+
+                Expect.isNone refusedRoot "The stale erasure appended nothing"
+                // A separate explicit review/new operation, never an automatic retry of the stale bytes.
+                let fresh = request fixture (number + 4) reference 1L (CaseAct.Bare BareAct.Erase)
+
+                Expect.notEqual
+                    fresh.ExpectedFamilySequence
+                    reviewed.ExpectedFamilySequence
+                    "Fresh erasure observes the accepted child"
+
+                let! erased = Service.execute actor (Inputs.caseOperation fresh) token
+                accepted erased |> ignore
+            | other -> failtestf "Invalid erase/reminder ordering: %A" other
+
             let! child = find fixture (number + 2)
 
             match replies[1].Outcome with
@@ -444,7 +479,8 @@ let internal revocationAndCompound fixture =
             Service.execute
                 actor
                 (OperationInput.People(
-                    peopleRequest
+                    reviewedPeopleRequest
+                        fixture.Store
                         (id fixture 10)
                         person
                         (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)

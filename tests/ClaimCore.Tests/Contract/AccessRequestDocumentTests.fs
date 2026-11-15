@@ -57,7 +57,7 @@ let tests =
 
                     Expect.equal
                         admit.Binding
-                        (OperationBinding.People None)
+                        (OperationBinding.People(None, 0L))
                         "Admission selects an unregistered principal through authored inputs"
 
                     Expect.equal

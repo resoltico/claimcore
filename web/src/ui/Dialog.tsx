@@ -7,6 +7,8 @@ import { Modal, ModalOverlay } from "react-aria-components/Modal";
 import { Button } from "./Button";
 
 type Props = {
+  bodyRef?: (node: HTMLDivElement | null) => void;
+  headingRef?: (node: HTMLElement | null) => void;
   title: ReactNode;
   closeLabel: string;
   description?: string;
@@ -48,6 +50,8 @@ const DialogFooter = ({
 /** react-aria owns focus containment and restoration; dismissal remains an explicit caller policy. */
 export const Dialog = ({
   title,
+  bodyRef,
+  headingRef,
   closeLabel,
   description,
   children,
@@ -72,7 +76,13 @@ export const Dialog = ({
             <div className="ui-dialog-heading">
               <div className="ui-dialog-title-group">
                 {titleIcon}
-                <Heading id={titleId} slot="title" className="ui-dialog-title">
+                <Heading
+                  ref={headingRef}
+                  tabIndex={headingRef === undefined ? undefined : -1}
+                  id={titleId}
+                  slot="title"
+                  className="ui-dialog-title"
+                >
                   <bdi>{title}</bdi>
                 </Heading>
               </div>
@@ -82,6 +92,7 @@ export const Dialog = ({
             {description === undefined || anchorRef !== undefined ? null : <p>{description}</p>}
           </header>
           <div
+            ref={bodyRef}
             className="ui-dialog-body"
             role={scrollableBody ? "group" : undefined}
             tabIndex={scrollableBody ? 0 : undefined}

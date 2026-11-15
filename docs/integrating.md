@@ -7,7 +7,8 @@ current verbs and flags from task declarations; use these sources instead of cop
 
 Use matching server, browser and CLI builds. Regenerate integrations when the contract identity changes.
 The generated [TypeScript client](../contracts/client.ts) provides types, endpoint/task metadata and
-transport constants. It does not provide request or response validators. Native CLI decoding remains.
+transport constants. It does not provide request or response validators. The native CLI decodes complete
+replies with its codecs.
 
 ## Authenticate
 
@@ -67,8 +68,22 @@ or document does not authorize a later write.
 Start with the task's help and the current target. Use the offered versions and identities, and author
 only the fields that the task declares. Send `{operationId, task, binding, inputs}` with verbatim input
 tokens. Omit Update inputs to keep values; use `null` only where `clearable` permits it. Existing-person
-changes select an actor ID. The exact operation request is specified by OpenAPI; use
+changes select an actor ID and require `binding.expectedRevision`. Acquire the positive account
+`revision` from the DATA `people.grants` reply (or use the supplied HUMAN action binding). Creation
+uses an explicit zero revision. CLI automation supplies `--expected-revision`; interactive commands can
+acquire and freeze it for review.
+
+Case erasure additionally requires `binding.expectedFamilySequence`, acquired from DATA `case.get`'s
+`familySequence` or the supplied HUMAN erase action. CLI automation supplies
+`--expected-family-sequence`. Keep the case selection, installation, root version and family sequence
+from the same review. `ACTOR_CHANGED` and `FAMILY_CHANGED` require explicit fresh review, preserving
+authored input; never refresh and execute automatically. Exact accepted retries retain their original
+binding, including these preconditions. The exact operation request is specified by OpenAPI; use
 `claimcore schema operation.preview request` or `claimcore schema operation.execute request` to inspect it.
+
+Typed offline checks apply the same ranges and applicability rules to supplied preconditions.
+Draft syntax may omit metadata for later explicit acquisition; complete erasure input requires its
+family basis. Offline syntax does not establish current state, authorization or acceptance.
 
 ```sh
 claimcore help case record-payment

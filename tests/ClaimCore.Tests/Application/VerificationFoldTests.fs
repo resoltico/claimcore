@@ -67,6 +67,7 @@ let private root () =
         (header 1L id (CaseFixtures.actorId id) EntryHash.zero None)
         (CommandSkeleton.People
             {
+                ExpectedRevision = Revision.zero
                 TargetActorId = CaseFixtures.actorId id
                 Principal = human
                 Act = PeopleAct.ProvisionOwner(0, People.initialOwnerRoles)
@@ -94,6 +95,7 @@ let private caseRoot revision kind afterStatus =
     let command =
         Case.parse
             {
+                ExpectedFamilySequence = None
                 OperationId = id
                 CaseReference = "EFFECT-OPEN"
                 ExpectedRevision = revision
@@ -122,6 +124,7 @@ let private caseRoot revision kind afterStatus =
         (header 1L id (CaseFixtures.actorId id) EntryHash.zero (Some(DateOnly(2026, 9, 7))))
         (CommandSkeleton.Case
             {
+                ExpectedFamilySequence = None
                 CaseId = snapshot.CaseId
                 Reference = reference
                 ExpectedRevision = command.ExpectedRevision
@@ -165,6 +168,7 @@ let requestEffectAgreement =
                             [
                                 owner.ActorId,
                                 {
+                                    Revision = Revision.first
                                     PeopleSubjectState.Actor = executor.Actor
                                     Grants =
                                         executor.Grants
@@ -348,6 +352,7 @@ let private peopleChecks =
 
             let person =
                 {
+                    Revision = Revision.first
                     PeopleSubjectState.Actor = owner.Actor
                     Grants =
                         owner.Grants

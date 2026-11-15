@@ -31,6 +31,11 @@ let private run number revision act current =
 
     Case.parse
         {
+            ExpectedFamilySequence =
+                if CaseAct.kind act = CaseActKind.Erase then
+                    Some 1L
+                else
+                    None
             OperationId = Guid.Parse(sprintf "97000000-0000-7000-8000-%012d" number)
             CaseReference = "NARRATIVE-QA"
             ExpectedRevision = revision

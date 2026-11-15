@@ -48,8 +48,12 @@ const PeopleBinding = ({
       operationAffordance(
         kind,
         ["people.register", "people.admit"].includes(kind)
-          ? { kind: "PEOPLE" }
-          : { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+          ? { kind: "PEOPLE", expectedRevision: 0 }
+          : {
+              kind: "PEOPLE",
+              expectedRevision: 1,
+              actorId: "10000000-0000-4000-8000-000000000001",
+            },
         {
           "input:principal.kind": "HUMAN",
           ...(kind === "people.admit"
@@ -62,8 +66,8 @@ const PeopleBinding = ({
       ),
     ),
     binding: ["people.register", "people.admit"].includes(initialKind)
-      ? { kind: "PEOPLE" }
-      : { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001" },
+      ? { kind: "PEOPLE", expectedRevision: 0 }
+      : { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000001" },
     prefill: { "input:principal.kind": "HUMAN" },
     current: null,
     credential,

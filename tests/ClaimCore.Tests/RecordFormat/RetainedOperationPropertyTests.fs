@@ -44,6 +44,7 @@ let private opened name amount =
     let command =
         Case.parse
             {
+                ExpectedFamilySequence = None
                 OperationId = guid 1
                 CaseReference = "PROPERTY-1"
                 ExpectedRevision = 0L
@@ -56,6 +57,7 @@ let private opened name amount =
     let scope =
         CommandSkeleton.Case
             {
+                ExpectedFamilySequence = None
                 CaseId = parent
                 Reference = decision.After.Reference
                 ExpectedRevision = Revision.zero

@@ -114,8 +114,17 @@ module internal TaskArguments =
                                 | true, number when
                                     number
                                     >= (if
-                                            input.Name =
-                                                target InputTarget.ExpectedReminderRevision
+                                            List.contains
+                                                input.Name
+                                                [
+                                                    target InputTarget.ExpectedReminderRevision
+                                                    target InputTarget.ExpectedFamilySequence
+                                                ]
+                                            || (input.Name = target InputTarget.ExpectedRevision
+                                                && (match kind with
+                                                    | ActKind.People people ->
+                                                        PeopleActKind.targetsExistingActor people
+                                                    | _ -> false))
                                         then
                                             1L
                                         else
@@ -177,7 +186,8 @@ module internal TaskArguments =
                          Some 0L
                      else
                          revision InputTarget.ExpectedRevision),
-                    uuid (target InputTarget.PaymentId)
+                    uuid (target InputTarget.PaymentId),
+                    revision InputTarget.ExpectedFamilySequence
                 )
             | ActSubject.Work ->
                 OperationBinding.Work(selection (), revision InputTarget.ExpectedWorkRevision)
@@ -189,7 +199,20 @@ module internal TaskArguments =
                     uuid (target InputTarget.ReminderId)
                     |> Option.map (fun id -> id, revision InputTarget.ExpectedReminderRevision)
                 )
-            | ActSubject.People -> OperationBinding.People(uuid TaskInputId.ActorId)
+            | ActSubject.People ->
+                OperationBinding.People(
+                    uuid TaskInputId.ActorId,
+                    if
+                        PeopleActKind.targetsExistingActor (
+                            match kind with
+                            | ActKind.People kind -> kind
+                            | _ -> failwith "People task"
+                        )
+                    then
+                        revision InputTarget.ExpectedRevision
+                    else
+                        Some 0L
+                )
 
         let authored =
             declarations
@@ -322,8 +345,14 @@ module internal TaskArguments =
 
         let binding =
             match draft.Binding with
-            | OperationBinding.Case(target, revision, payment) ->
-                selected target :: (version revision @ id "paymentId" payment)
+            | OperationBinding.Case(target, revision, payment, family) ->
+                selected target
+                :: (version revision
+                    @ id "paymentId" payment
+                    @ (family
+                       |> Option.map (fun value ->
+                           "expectedFamilySequence", JsonValue.Integer value)
+                       |> Option.toList))
             | OperationBinding.Work(target, revision) -> selected target :: version revision
             | OperationBinding.Note(target, note) -> selected target :: id "noteId" note
             | OperationBinding.Reminder(target, current) ->
@@ -332,7 +361,7 @@ module internal TaskArguments =
                     |> Option.map (fun (reminder, revision) ->
                         id "reminderId" (Some reminder) @ version revision)
                     |> Option.defaultValue [])
-            | OperationBinding.People actor -> id "actorId" actor
+            | OperationBinding.People(actor, revision) -> id "actorId" actor @ version revision
 
         JsonValue.Object(
             id "operationId" draft.OperationId

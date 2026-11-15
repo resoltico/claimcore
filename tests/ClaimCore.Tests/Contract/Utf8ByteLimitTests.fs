@@ -99,6 +99,7 @@ let tests =
 
                     let authored: PeopleRequest =
                         {
+                            ExpectedRevision = 0L
                             OperationId = Guid.Parse "65f2c361-c10f-7bd9-bacf-54ce57716701"
                             Target =
                                 {

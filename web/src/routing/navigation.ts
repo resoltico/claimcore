@@ -1,18 +1,120 @@
 const listeners = new Set<() => void>();
 const navigationLocks = new Set<object>();
-let blocker: ((proceed: () => void, destination?: string) => boolean) | null = null;
+type DepartureGuard = (proceed: () => void, destination?: string) => boolean;
+const blockers = new Map<object, { guard: DepartureGuard; priority: number }>();
+let departureEpoch = 0;
+const permittedDeparture = (
+  proceed: () => void,
+  destination?: string,
+  visited = new Set<object>(),
+  epoch = departureEpoch,
+): boolean => {
+  if (epoch !== departureEpoch) {
+    return false;
+  }
+  const entry = [...blockers.entries()]
+    .reverse()
+    .sort((a, b) => b[1].priority - a[1].priority)
+    .find(([key]) => !visited.has(key));
+  if (entry === undefined) {
+    return true;
+  }
+  const [key, { guard }] = entry;
+  const next = () => permittedDeparture(proceed, destination, new Set([...visited, key]), epoch);
+  return (
+    guard(() => {
+      if (next()) {
+        proceed();
+      }
+    }, destination) && next()
+  );
+};
+
+type Entry = { group: string; index: number; key: string };
+type Traversal = {
+  replayDispatched: boolean;
+  origin: Entry;
+  target: Entry;
+  phase: "RESTORING" | "AWAITING" | "APPROVED" | "REPLAYING" | "CANCELLED";
+};
+const stateKey = "claimcoreNavigation";
+let pending: Traversal | null = null;
+const isHistoryObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const historyRecord = (): Record<string, unknown> => {
+  const state: unknown = window.history.state;
+  return isHistoryObject(state) ? state : {};
+};
+const entry = (): Entry | null => {
+  const value = historyRecord()[stateKey];
+  if (
+    isHistoryObject(value) &&
+    typeof value["group"] === "string" &&
+    typeof value["key"] === "string" &&
+    typeof value["index"] === "number" &&
+    Number.isSafeInteger(value["index"])
+  ) {
+    return { group: value["group"], key: value["key"], index: value["index"] };
+  }
+  return null;
+};
+const initialEntry = (): Entry => ({
+  group: crypto.randomUUID(),
+  index: 0,
+  key: crypto.randomUUID(),
+});
+const stamp = (value: Entry) => ({ ...historyRecord(), [stateKey]: value });
+let active: Entry | null = null;
+export const cancelPendingNavigation = (ownerChanged = false) => {
+  if (
+    pending !== null &&
+    (ownerChanged || (pending.phase !== "REPLAYING" && pending.phase !== "APPROVED"))
+  ) {
+    pending.phase = "CANCELLED";
+    // A queued go() cannot be unscheduled. Retain its cancellation until compensation arrives.
+    if (!pending.replayDispatched && entry()?.key === pending.origin.key) {
+      pending = null;
+    }
+  }
+};
 export const setNavigationBlocker = (
   next: (proceed: () => void, destination?: string) => boolean,
+  priority = 1,
 ) => {
-  blocker = next;
+  const key = {};
+  blockers.set(key, { guard: next, priority });
   return () => {
-    if (blocker === next) {
-      blocker = null;
-    }
+    blockers.delete(key);
+    queueMicrotask(() => {
+      if (blockers.size === 0) {
+        cancelPendingNavigation();
+      }
+    });
   };
 };
 type FocusRequest = { id: string | null; scrollY: number | null };
 let requestedFocus: FocusRequest | null = null;
+const positions = new Map<string, FocusRequest>();
+let focusOwner: string | null = null;
+/** Return focus is ephemeral and never crosses a verified workspace owner. */
+export const setRouteFocusOwner = (owner: string | null) => {
+  if (focusOwner !== owner) {
+    focusOwner = owner;
+    departureEpoch += 1;
+    positions.clear();
+    requestedFocus = null;
+    cancelPendingNavigation(true);
+  }
+};
+const rememberPosition = () => {
+  if (active !== null && focusOwner !== null) {
+    const element = document.activeElement;
+    positions.set(active.key, {
+      id: element instanceof HTMLElement && element.id !== "" ? element.id : null,
+      scrollY: window.scrollY,
+    });
+  }
+};
 export const takeRouteFocus = (): FocusRequest | null => {
   const target = requestedFocus;
   requestedFocus = null;
@@ -21,38 +123,111 @@ export const takeRouteFocus = (): FocusRequest | null => {
 let current =
   typeof window === "undefined" ? "/cases" : window.location.pathname + window.location.search;
 const publish = () => {
+  active = entry();
   current = window.location.pathname + window.location.search;
   listeners.forEach((listener) => {
     listener();
   });
 };
+const publishTraversal = () => {
+  const target = entry();
+  requestedFocus = target === null ? null : (positions.get(target.key) ?? null);
+  publish();
+};
 export const guardedDeparture = (proceed: () => void, destination?: string): boolean => {
-  if (navigationLocks.size > 0 || blocker?.(proceed, destination) === false) {
+  if (pending !== null || navigationLocks.size > 0 || !permittedDeparture(proceed, destination)) {
     return false;
   }
   proceed();
   return true;
 };
 const unload = (event: BeforeUnloadEvent) => {
-  if (navigationLocks.size > 0) {
+  if (navigationLocks.size > 0 || blockers.size > 0) {
     event.preventDefault();
   }
 };
+const replay = (transition: Traversal) => {
+  if (
+    pending !== transition ||
+    transition.phase === "CANCELLED" ||
+    transition.phase === "REPLAYING"
+  ) {
+    return;
+  }
+  transition.phase = "APPROVED";
+  const here = entry();
+  if (here?.key === transition.origin.key) {
+    transition.phase = "REPLAYING";
+    transition.replayDispatched = true;
+    window.history.go(transition.target.index - here.index);
+  }
+};
+const settleTraversal = (transition: Traversal, target: Entry | null) => {
+  if (
+    target?.group !== transition.origin.group ||
+    (target.index === transition.origin.index && target.key !== transition.origin.key)
+  ) {
+    pending = null;
+    publishTraversal();
+  } else if (transition.phase === "REPLAYING" && target.key === transition.target.key) {
+    pending = null;
+    publishTraversal();
+  } else if (target.key === transition.origin.key) {
+    switch (transition.phase) {
+      case "CANCELLED":
+        pending = null;
+        break;
+      case "APPROVED":
+        replay(transition);
+        break;
+      case "RESTORING":
+        transition.phase = "AWAITING";
+        break;
+      default:
+        break;
+    }
+  } else {
+    const destination = transition.phase === "REPLAYING" ? transition.target : transition.origin;
+    window.history.go(destination.index - target.index);
+  }
+};
 if (typeof window !== "undefined") {
+  active = entry() ?? initialEntry();
+  window.history.replaceState(stamp(active), "");
   window.addEventListener("beforeunload", unload);
   window.addEventListener("popstate", () => {
-    const target = window.location.pathname + window.location.search;
-    if (navigationLocks.size > 0 || blocker !== null) {
-      window.history.pushState(null, "", current);
-      if (navigationLocks.size === 0) {
-        guardedDeparture(() => {
-          window.history.replaceState(null, "", target);
-          publish();
-        }, target);
-      }
-    } else {
-      publish();
+    const target = entry();
+    const path = window.location.pathname + window.location.search;
+    if (pending !== null) {
+      settleTraversal(pending, target);
+      return;
     }
+    rememberPosition();
+    // Unknown entries have no provable delta. Never repair or truncate their history.
+    if (active === null || target?.group !== active.group || target.key === active.key) {
+      publishTraversal();
+      return;
+    }
+    const transition: Traversal = {
+      replayDispatched: false,
+      origin: active,
+      target,
+      phase: "RESTORING",
+    };
+    if (
+      navigationLocks.size === 0 &&
+      permittedDeparture(() => {
+        replay(transition);
+      }, path)
+    ) {
+      publishTraversal();
+      return;
+    }
+    pending = transition;
+    if (navigationLocks.size > 0) {
+      transition.phase = "CANCELLED";
+    }
+    window.history.go(active.index - target.index);
   });
 }
 export const subscribeRoute = (listener: () => void) => {
@@ -83,21 +258,25 @@ export const navigate = (
     return true;
   }
   return guardedDeparture(() => {
+    rememberPosition();
     requestedFocus = { id: focusId ?? null, scrollY: scrollY ?? null };
+    const origin = entry() ?? initialEntry();
+    const next = replace
+      ? origin
+      : { ...origin, index: origin.index + 1, key: crypto.randomUUID() };
     window.history[replace ? "replaceState" : "pushState"](
-      null,
+      stamp(next),
       "",
       target.pathname + target.search,
     );
     publish();
   }, target.pathname + target.search);
 };
-
-/** A refused or accepted disclosure changes the selected actor without leaving its authored operation. */
+/** A disclosure replacement retains the current entry identity and unrelated state. */
 export const replaceDisclosureRoute = (path: string): void => {
   const target = new URL(path, window.location.origin);
   if (target.origin === window.location.origin) {
-    window.history.replaceState(null, "", target.pathname + target.search);
+    window.history.replaceState(window.history.state, "", target.pathname + target.search);
     publish();
   }
 };

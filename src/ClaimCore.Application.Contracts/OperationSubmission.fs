@@ -13,11 +13,15 @@ type SubmissionValue =
 
 [<RequireQualifiedAccess>]
 type OperationBinding<'revision> =
-    | Case of target: CaseSelector * expectedRevision: 'revision * paymentId: Guid option
+    | Case of
+        target: CaseSelector *
+        expectedRevision: 'revision *
+        paymentId: Guid option *
+        expectedFamilySequence: int64 option
     | Work of target: CaseSelector * expectedRevision: 'revision
     | Note of target: CaseSelector * noteId: Guid option
     | Reminder of target: CaseSelector * current: (Guid * 'revision) option
-    | People of actorId: Guid option
+    | People of actorId: Guid option * expectedRevision: 'revision
 
 type SubmissionEnvelope<'revision, 'operation> =
     {
@@ -32,6 +36,7 @@ type ActorPeopleSubmission =
     {
         OperationId: Guid
         ActorId: Guid
+        ExpectedRevision: int64
         Act: AuthoredPeopleAct
     }
 
@@ -263,7 +268,9 @@ module OperationSubmission =
                         Map.containsKey (field BusinessField.CaseReference) values
                         || Map.containsKey TaskInputId.CaseId values
                     then
-                        Error SubmissionProblem.Shape
+                        Error(
+                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
+                        )
                     else
                         Ok GrantTarget.Installation
                 | "CASE" ->
@@ -278,8 +285,18 @@ module OperationSubmission =
                         | true, id ->
                             CaseId.create id
                             |> Option.map (GrantTarget.CaseId >> Ok)
-                            |> Option.defaultValue (Error SubmissionProblem.Shape)
-                        | _ -> Error SubmissionProblem.Shape
+                            |> Option.defaultValue (
+                                Error(issue TaskInputId.CaseId Violation.CaseIdRequired)
+                            )
+                        | _ -> Error(issue TaskInputId.CaseId Violation.CaseIdRequired)
+                    | Some(SubmissionValue.Text _), Some(SubmissionValue.Text _) ->
+                        Error(
+                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
+                        )
+                    | None, None ->
+                        Error(
+                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
+                        )
                     | _ -> Error SubmissionProblem.Shape
                 | _ -> Error SubmissionProblem.Shape)
 
@@ -431,7 +448,7 @@ module OperationSubmission =
             let command input = Ok(SubmittedOperation.Command input)
 
             match submission.Task, submission.Binding with
-            | ActKind.Case kind, OperationBinding.Case(selection, expected, payment) ->
+            | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) ->
                 let act =
                     match kind, payment with
                     | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
@@ -447,6 +464,7 @@ module OperationSubmission =
                                 OperationId = submission.OperationId
                                 Target = selection
                                 ExpectedRevision = expected
+                                ExpectedFamilySequence = family
                                 Act = act
                             }
                     ))
@@ -505,7 +523,7 @@ module OperationSubmission =
                                 Act = act
                             }
                     ))
-            | ActKind.People kind, OperationBinding.People actorId ->
+            | ActKind.People kind, OperationBinding.People(actorId, expected) ->
                 peopleAct values kind
                 |> bind (fun act ->
                     match kind, actorId with
@@ -516,6 +534,7 @@ module OperationSubmission =
                                 OperationInput.People
                                     {
                                         OperationId = submission.OperationId
+                                        ExpectedRevision = expected
                                         Target = target
                                         Act = act
                                     }
@@ -528,6 +547,7 @@ module OperationSubmission =
                                 {
                                     OperationId = submission.OperationId
                                     ActorId = actorId
+                                    ExpectedRevision = expected
                                     Act = act
                                 }
                         ))
@@ -571,7 +591,7 @@ module OperationSubmission =
                 let values = draft.Inputs
 
                 match draft.Task, draft.Binding with
-                | ActKind.Case kind, OperationBinding.Case(selection, expected, payment) ->
+                | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) ->
                     let act =
                         match kind, payment with
                         | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
@@ -586,6 +606,7 @@ module OperationSubmission =
                                 draft.OperationId,
                                 reference selection,
                                 expected,
+                                family,
                                 act
                             )
                         ))
@@ -625,21 +646,28 @@ module OperationSubmission =
                         syntax (
                             AuthoredIntent.Reminder(draft.OperationId, reference selection, act)
                         ))
-                | ActKind.People kind, OperationBinding.People actor ->
+                | ActKind.People kind, OperationBinding.People(actor, expected) ->
                     peopleAct values kind
                     |> bind (fun act ->
                         match kind, actor with
                         | (PeopleActKind.Register | PeopleActKind.Admit), None ->
                             principal values
                             |> bind (fun principal ->
-                                syntax (AuthoredIntent.People(draft.OperationId, principal, act)))
+                                syntax (
+                                    AuthoredIntent.People(
+                                        draft.OperationId,
+                                        principal,
+                                        expected,
+                                        act
+                                    )
+                                ))
                         | (PeopleActKind.Register | PeopleActKind.Admit), Some _
                         | _, None -> Error SubmissionProblem.Shape
                         | _, Some actor ->
                             if ActorId.create actor |> Option.isNone then
                                 Error SubmissionProblem.Shape
                             else
-                                let result = People.syntaxAction draft.OperationId act
+                                let result = People.syntaxAction draft.OperationId expected act
 
                                 match result with
                                 | Error(Refusal.InvalidInput issues) -> Ok(Some issues)
@@ -649,8 +677,8 @@ module OperationSubmission =
     let completeDraft (draft: SubmissionEnvelope<int64 option, Guid option>) =
         let binding =
             match draft.Binding with
-            | OperationBinding.Case(target, Some revision, payment) ->
-                Some(OperationBinding.Case(target, revision, payment))
+            | OperationBinding.Case(target, Some revision, payment, family) ->
+                Some(OperationBinding.Case(target, revision, payment, family))
             | OperationBinding.Work(target, Some revision) ->
                 Some(OperationBinding.Work(target, revision))
             | OperationBinding.Note(target, note) -> Some(OperationBinding.Note(target, note))
@@ -658,7 +686,8 @@ module OperationSubmission =
                 Some(OperationBinding.Reminder(target, None))
             | OperationBinding.Reminder(target, Some(id, Some revision)) ->
                 Some(OperationBinding.Reminder(target, Some(id, revision)))
-            | OperationBinding.People actor -> Some(OperationBinding.People actor)
+            | OperationBinding.People(actor, Some expected) ->
+                Some(OperationBinding.People(actor, expected))
             | _ -> None
 
         match draft.OperationId, binding with
@@ -678,7 +707,9 @@ module OperationSubmission =
         | Error(Refusal.InvalidInput issues) -> Some issues
         | Ok(SubmittedOperation.Command command) -> OperationInput.syntax command
         | Ok(SubmittedOperation.ActorPeople input) ->
-            match People.syntaxAction (Some input.OperationId) input.Act with
+            match
+                People.syntaxAction (Some input.OperationId) (Some input.ExpectedRevision) input.Act
+            with
             | Error(Refusal.InvalidInput issues) -> Some issues
             | _ -> None
         | _ -> None
