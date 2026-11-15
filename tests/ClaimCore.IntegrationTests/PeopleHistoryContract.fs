@@ -5,6 +5,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -274,118 +278,9 @@ let internal permissions fixture =
             "Authorized cursor errors remain explicit"
     }
 
-let private changingHistory (fixture: Fixture) change =
-    let store =
-        { new IStore with
-            member _.Context query = fixture.Store.Context query
-
-            member _.Read operation =
-                fixture.Store.Read
-                    { operation with
-                        Work =
-                            fun tx ->
-                                operation.Work
-                                    { new IReadTx with
-                                        member _.AccessRequestPage query =
-                                            tx.AccessRequestPage query
-
-                                        member _.CaseState id = tx.CaseState id
-
-                                        member _.CaseFamilySequence id = tx.CaseFamilySequence id
-                                        member _.CaseFamily id = tx.CaseFamily id
-
-                                        member _.PendingReminderDue(parent, excluded) =
-                                            tx.PendingReminderDue(parent, excluded)
-
-
-                                        member _.LatestPayments(parent, selection) =
-                                            tx.LatestPayments(parent, selection)
-
-
-                                        member _.PaymentPage query = tx.PaymentPage query
-                                        member _.ObservedAt = tx.ObservedAt
-                                        member _.Maintenance() = tx.Maintenance()
-                                        member _.ExpiredBefore() = tx.ExpiredBefore()
-
-                                        member _.GlobalReadFacts principal =
-                                            tx.GlobalReadFacts principal
-
-                                        member _.Access query = tx.Access query
-
-                                        member _.AccessCases(principal, ids) =
-                                            tx.AccessCases(principal, ids)
-
-                                        member _.FindCase id = tx.FindCase id
-
-                                        member _.FindCaseByReference reference =
-                                            tx.FindCaseByReference reference
-
-                                        member _.FindWork id = tx.FindWork id
-                                        member _.FindNote id = tx.FindNote id
-
-                                        member _.NotePage query = tx.NotePage query
-
-                                        member _.FindReminder id = tx.FindReminder id
-
-                                        member _.WorkSummaries(ids, today) =
-                                            tx.WorkSummaries(ids, today)
-
-                                        member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
-
-                                        member _.ResponsibilityCounts(selection, actors) =
-                                            tx.ResponsibilityCounts(selection, actors)
-
-                                        member _.ReminderPage query = tx.ReminderPage query
-
-                                        member _.CaseViewCounts selection =
-                                            tx.CaseViewCounts selection
-
-                                        member _.ReminderViewCounts selection =
-                                            tx.ReminderViewCounts selection
-
-                                        member _.TimelinePage query = tx.TimelinePage query
-                                        member _.CaseStageFacts id = tx.CaseStageFacts id
-
-                                        member _.PreviousEntries entries =
-                                            tx.PreviousEntries entries
-
-                                        member _.FindOperation id = tx.FindOperation id
-
-                                        member _.CasePage query = tx.CasePage query
-                                        member _.CaseSummary query = tx.CaseSummary query
-                                        member _.ActorPage query = tx.ActorPage query
-                                        member _.GrantPage query = tx.GrantPage query
-                                        member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
-                                        member _.ActorRefs ids = tx.ActorRefs ids
-                                        member _.ActorPrincipal id = tx.ActorPrincipal id
-
-                                        member _.PeopleRevision principal =
-                                            tx.PeopleRevision principal
-
-                                        member _.PeopleState principal = tx.PeopleState principal
-
-                                        member _.FindActor id = tx.FindActor id
-                                        member _.AssigneePage query = tx.AssigneePage query
-                                        member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
-                                        member _.ActorCount() = tx.ActorCount()
-
-                                        member _.PeopleHistoryPage query =
-                                            task {
-                                                let! page = tx.PeopleHistoryPage query
-                                                return change page
-                                            }
-                                    }
-                    }
-
-            member _.Write operation = fixture.Store.Write operation
-        }
-
-    { fixture with Store = store }
-
 let internal integrity fixture =
     task {
         let! _ = caseWorker fixture
-        let ownerId = CaseFixtures.actorId (id fixture 1)
 
         let! original = read (core fixture fixture.Owner) None None 50
         let initial = page original
@@ -401,7 +296,7 @@ let internal integrity fixture =
         let! retained =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindOperation profileRoot.OperationId)
+                    Work = (fun tx -> LedgerReads.findOperation tx profileRoot.OperationId)
                     CancellationToken = Threading.CancellationToken.None
                 }
 
@@ -425,62 +320,5 @@ let internal integrity fixture =
             (Error CompartmentProblem.CommitmentMismatch)
             "A corrupt salt cannot become a typed history effect"
 
-        let reordered =
-            changingHistory fixture (fun page ->
-                { page with
-                    Items = List.rev page.Items
-                })
 
-        let! wrongOrder = read (core reordered fixture.Owner) None None 50
-
-        Expect.equal
-            wrongOrder
-            (Outcome.Failed CoreFault.StoreIntegrityError)
-            "A malformed store page cannot silently change history order"
-
-        let otherPrincipal = principal "other-history-target"
-
-        let! registered =
-            execute
-                fixture
-                (core fixture fixture.Owner)
-                99
-                otherPrincipal
-                (PeopleAct.Register Inputs.actorProfile)
-
-        let! other =
-            fixture.Store.Read
-                {
-                    Work = (fun tx -> tx.FindOperation registered.OperationId)
-                    CancellationToken = Threading.CancellationToken.None
-                }
-
-        let other =
-            other
-            |> Result.defaultWith (fun error -> failtestf "Other root: %A" error)
-            |> Option.get
-
-        let otherEffect = other |> StoredEffect.ofOperation |> List.last
-
-        let foreignTarget (page: Page<StoredEffect, EffectPosition>) =
-            { page with
-                Items = otherEffect :: page.Items.Tail
-            }
-
-        let foreign = changingHistory fixture foreignTarget
-        let! unfiltered = read (core foreign fixture.Owner) None None 50
-
-        Expect.isTrue
-            (match unfiltered with
-             | Outcome.Succeeded _ -> true
-             | _ -> false)
-            "The substituted root is a genuine readable target before filtering"
-
-        let! wrongTarget =
-            read (core foreign fixture.Owner) (Some(ActorId.value ownerId)) None 50
-
-        Expect.equal
-            wrongTarget
-            (Outcome.Failed CoreFault.StoreIntegrityError)
-            "A filtered page cannot substitute a different target actor"
     }

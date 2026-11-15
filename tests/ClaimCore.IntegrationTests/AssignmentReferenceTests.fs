@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -115,7 +119,7 @@ let tests =
                 let! found =
                     database.Fixture.Store.Read
                         {
-                            Work = (fun tx -> tx.AssignedAccounts pairs)
+                            Work = (fun tx -> WorkReads.assignedAccounts tx pairs)
                             CancellationToken = token
                         }
                     |> Async.AwaitTask

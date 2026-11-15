@@ -7,7 +7,7 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Postgres
+open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type internal RequestMetricResult =

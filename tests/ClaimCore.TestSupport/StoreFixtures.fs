@@ -12,6 +12,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 [<NoEquality; NoComparison>]
 type internal Fixture =
@@ -146,8 +150,8 @@ let internal inspectOperation fixture principal operation token =
                         let! actor, entry, current =
                             ExecutionFacts.operation tx principal operation
 
-                        let! maintenance = tx.Maintenance()
-                        let! frontier = tx.ExpiredBefore()
+                        let! maintenance = RegisterReads.maintenance tx ()
+                        let! frontier = RegisterReads.expiredBefore tx ()
 
                         return
                             {
@@ -178,14 +182,7 @@ let internal inspectOperation fixture principal operation token =
 let internal inspectPeople fixture principal token =
     fixture.Store.Read(
         {
-            ReadOperation.Work =
-                (fun tx ->
-                    tx.Access(
-                        {
-                            AccessQuery.Principal = principal
-                            CaseId = None
-                        }
-                    ))
+            ReadOperation.Work = (fun tx -> AccessReads.access tx (principal) (None))
             CancellationToken = token
         }
     )
@@ -208,12 +205,12 @@ let internal reviewedFamilySequence store target =
         task {
             let! current =
                 match target with
-                | CaseSelector.Id id -> tx.FindCase id
-                | CaseSelector.Reference reference -> tx.FindCaseByReference reference
+                | CaseSelector.Id id -> FamilyReads.findCase tx id
+                | CaseSelector.Reference reference -> FamilyReads.findCaseByReference tx reference
 
             match current with
             | Some current ->
-                let! position = tx.CaseFamilySequence current.CaseId
+                let! position = FamilyReads.caseFamilySequence tx current.CaseId
                 return Sequence.value position
             | None -> return 1L // Syntactically valid wrong-target negative controls still reach disclosure policy.
         })
@@ -221,7 +218,7 @@ let internal reviewedFamilySequence store target =
 let internal reviewedPeopleRequest store operation target act =
     let expected =
         if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
-            readFixture store (fun tx -> tx.PeopleRevision target)
+            readFixture store (fun tx -> PeopleReads.peopleRevision tx target)
             |> Option.map Revision.value
             |> Option.defaultValue 1L
         else
@@ -346,7 +343,7 @@ let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGr
         let! observed =
             actor.Store.Read
                 {
-                    Work = (fun tx -> tx.PeopleState target)
+                    Work = (fun tx -> PeopleReads.peopleState tx target)
                     CancellationToken = CancellationToken.None
                 }
 

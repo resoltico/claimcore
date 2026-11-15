@@ -1,11 +1,17 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 /// View counts acquire current access and the date basis inside the same read snapshot.
 module internal ViewQueries =
-    let private selection (services: ServiceContext) (tx: IReadTx) actor =
+    let private selection (services: ServiceContext) (tx: ReadTx) actor =
         QueryResults.currentActor services.Principal actor
         |> Result.bind (fun _ ->
             match Access.visibility services.Principal actor, actor.Actor with
@@ -29,12 +35,7 @@ module internal ViewQueries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Access
-                                            {
-                                                Principal = services.Principal
-                                                CaseId = None
-                                            }
+                                    let! actor = AccessReads.access tx (services.Principal) (None)
 
                                     match selection services tx actor with
                                     | Error refusal -> return Outcome.Rejected refusal
@@ -53,8 +54,8 @@ module internal ViewQueries =
             services
             (fun tx selection ->
                 task {
-                    let! cases = tx.CaseViewCounts selection
-                    let! reminders = tx.ReminderViewCounts selection
+                    let! cases = WorkReads.caseViewCounts tx selection
+                    let! reminders = WorkReads.reminderViewCounts tx selection
 
                     return
                         {

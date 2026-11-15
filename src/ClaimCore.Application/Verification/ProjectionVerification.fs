@@ -1,9 +1,17 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Verification
 
-open ClaimCore.Application.VerificationChecks
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
+
+open ClaimCore.Application.Verification.VerificationChecks
 
 /// Typed owner products are compared without rebuilding any business rule.
-module ProjectionVerification =
+module internal ProjectionVerification =
     let column finding get expected actual =
         require None finding (get expected = get actual)
 

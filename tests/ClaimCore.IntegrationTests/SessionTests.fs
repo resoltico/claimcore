@@ -9,7 +9,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 let private token = CancellationToken.None
 let private payload = [| 1uy; 2uy; 3uy |]

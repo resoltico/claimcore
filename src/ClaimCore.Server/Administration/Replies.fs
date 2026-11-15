@@ -9,7 +9,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]

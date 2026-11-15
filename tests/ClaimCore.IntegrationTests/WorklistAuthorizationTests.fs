@@ -3,7 +3,11 @@ module ClaimCore.IntegrationTests.WorklistAuthorizationTests
 open System
 open System.Threading
 open System.Globalization
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -126,12 +130,7 @@ let tests =
             database.Fixture.Store.Read
                 {
                     Work =
-                        (fun tx ->
-                            tx.Access
-                                {
-                                    Principal = servicePrincipal
-                                    CaseId = Some corruptedCase
-                                })
+                        (fun tx -> AccessReads.access tx (servicePrincipal) (Some corruptedCase))
                     CancellationToken = CancellationToken.None
                 }
             |> fun pending -> pending.GetAwaiter().GetResult()

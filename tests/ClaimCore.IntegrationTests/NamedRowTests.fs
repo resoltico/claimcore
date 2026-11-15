@@ -1,7 +1,11 @@
 module ClaimCore.IntegrationTests.NamedRowTests
 
 open Expecto
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.VerificationSupport
 

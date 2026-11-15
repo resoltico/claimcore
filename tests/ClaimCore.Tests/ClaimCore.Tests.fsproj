@@ -240,7 +240,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TngTech.ArchUnitNET" />
-    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <PackageReference Include="Hedgehog" />
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="JsonSchema.Net" />

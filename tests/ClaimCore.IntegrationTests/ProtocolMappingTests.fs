@@ -7,6 +7,10 @@ open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open ClaimCore.Server.Composition
 open ClaimCore.Wire

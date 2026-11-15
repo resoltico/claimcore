@@ -9,8 +9,12 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -127,7 +131,7 @@ let private retarget () =
                 let! read =
                     store.Read
                         {
-                            Work = (fun tx -> tx.ActorCount())
+                            Work = (fun tx -> PeopleReads.actorCount tx ())
                             CancellationToken = token
                         }
 
@@ -298,7 +302,7 @@ let private retarget () =
                 let! zoneRead =
                     (Runtime.store runtimeB).Read
                         {
-                            Work = (fun tx -> tx.ActorCount())
+                            Work = (fun tx -> PeopleReads.actorCount tx ())
                             CancellationToken = token
                         }
 

@@ -8,11 +8,15 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None

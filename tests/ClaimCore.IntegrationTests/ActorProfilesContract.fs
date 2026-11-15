@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
@@ -24,7 +28,8 @@ let private read fixture action =
 
 let private operation fixture id =
     task {
-        let! result = read fixture (fun tx -> tx.FindOperation(CaseFixtures.operationId id))
+        let! result =
+            read fixture (fun tx -> LedgerReads.findOperation tx (CaseFixtures.operationId id))
 
         return
             result
@@ -164,7 +169,7 @@ let internal lifecycle fixture =
                     Work =
                         (fun tx ->
                             task {
-                                let! state = tx.PeopleState fixture.Owner
+                                let! state = PeopleReads.peopleState tx fixture.Owner
                                 let rows = state |> Option.bind PeopleSubject.rows |> Option.get
 
                                 do!
@@ -213,7 +218,8 @@ let internal lifecycle fixture =
 
         let! grants =
             read fixture (fun tx ->
-                tx.GrantPage
+                PeopleReads.grantPage
+                    tx
                     {
                         ActorId = ownerId
                         AfterGrant = None
@@ -375,11 +381,12 @@ let internal atomicWrites fixture =
                 "Every partial or complete group rolls back on failure"
 
             let! existing =
-                read fixture (fun tx -> tx.FindOperation(CaseFixtures.operationId operation))
+                read fixture (fun tx ->
+                    LedgerReads.findOperation tx (CaseFixtures.operationId operation))
 
             Expect.equal existing (Ok None) "No accepted root or effect remains"
 
-            let! actor = read fixture (fun tx -> tx.Access { Principal = target; CaseId = None })
+            let! actor = read fixture (fun tx -> AccessReads.access tx (target) (None))
 
             Expect.isNone ((actor |> required).Actor) "No profile-less registration remains"
 

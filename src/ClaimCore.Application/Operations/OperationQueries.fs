@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.RecordFormat
@@ -7,9 +13,9 @@ open ClaimCore.Application.Contracts
 
 /// Absence becomes final only after confirmation under the same head lock as execution.
 module internal OperationQueries =
-    let private receipt (services: ServiceContext) (tx: IReadTx) operation discloseForeign =
+    let private receipt (services: ServiceContext) (tx: ReadTx) operation discloseForeign =
         task {
-            let! entry = tx.FindOperation operation
+            let! entry = LedgerReads.findOperation tx operation
             let! caller = ExecutionFacts.people tx services.Principal []
 
             match caller.Actor with
@@ -42,7 +48,7 @@ module internal OperationQueries =
                     else
                         // Do not read or decode a hidden foreign case's content to establish own absence.
                         let! current = ExecutionFacts.receiptCurrent tx (Some entry)
-                        let! authors = tx.ActorRefs [ entry.ActorId ]
+                        let! authors = PeopleReads.actorRefs tx [ entry.ActorId ]
                         let! named = ReceiptReads.existing services tx actor current (Some entry)
 
                         return
@@ -77,7 +83,7 @@ module internal OperationQueries =
                                     | Outcome.Succeeded(Some accepted) ->
                                         return Verdict.Proceed accepted
                                     | Outcome.Succeeded None ->
-                                        let! frontier = tx.ExpiredBefore()
+                                        let! frontier = RegisterReads.expiredBefore tx ()
 
                                         if OperationLifetime.expiredBefore frontier operation then
                                             return Verdict.Proceed OperationLookupResult.NotAccepted
@@ -144,7 +150,7 @@ module internal OperationQueries =
                                 fun tx ->
                                     task {
                                         let! found = receipt services tx operation true
-                                        let! frontier = tx.ExpiredBefore()
+                                        let! frontier = RegisterReads.expiredBefore tx ()
                                         return tx.ObservedAt, frontier, found
                                     }
                             CancellationToken = token

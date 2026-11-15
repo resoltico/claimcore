@@ -3,11 +3,11 @@ namespace ClaimCore.Server
 open System
 open System.IO
 open System.Text.Json
-open ClaimCore.Postgres
+open ClaimCore.Application
 
 module internal StorageFailureLog =
     let attach (writer: TextWriter) =
-        StorageDiagnostics.subscribe (fun value ->
+        ClaimCore.Application.Runtime.subscribeFailures (fun value ->
             // Closed union tokens and internally generated GUIDs only. Never format exceptions.
             let line =
                 JsonSerializer.Serialize

@@ -62,13 +62,6 @@ let allowed =
             "ClaimCore.Domain"
             "ClaimCore.Application.Contracts"
             "ClaimCore.RecordFormat"
-        ]
-        "ClaimCore.Postgres",
-        [
-            "ClaimCore.Application.Contracts"
-            "ClaimCore.Application"
-            "ClaimCore.Domain"
-            "ClaimCore.RecordFormat"
             "ClaimCore.Json"
         ]
         "ClaimCore.HostSecurity", []
@@ -78,7 +71,6 @@ let allowed =
             "ClaimCore.RecordFormat"
             "ClaimCore.Application.Contracts"
             "ClaimCore.Application"
-            "ClaimCore.Postgres"
             "ClaimCore.Wire"
             "ClaimCore.Presentation"
             "ClaimCore.Domain"

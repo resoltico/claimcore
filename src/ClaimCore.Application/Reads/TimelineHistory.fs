@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open System.Security.Cryptography
@@ -95,7 +101,7 @@ module internal TimelineHistory =
 
     let entries
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         erased
         full
         (range: ChangeRange option)
@@ -109,7 +115,7 @@ module internal TimelineHistory =
             | Ok values ->
                 let! previous =
                     if full && not erased then
-                        tx.PreviousEntries page.Items
+                        LedgerReads.previousEntries tx page.Items
                     else
                         System.Threading.Tasks.Task.FromResult Map.empty
 
@@ -140,7 +146,8 @@ module internal TimelineHistory =
                             else
                                 []
 
-                        let! actors = tx.ActorRefs(authors @ responsibility |> List.distinct)
+                        let! actors =
+                            PeopleReads.actorRefs tx (authors @ responsibility |> List.distinct)
 
                         return
                             values

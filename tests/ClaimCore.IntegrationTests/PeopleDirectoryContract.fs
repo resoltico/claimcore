@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -254,8 +258,8 @@ let internal corruptAssignment fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! actor = tx.FindActor actorId
-                                let! state = tx.PeopleState actor.Value.Principal
+                                let! actor = PeopleReads.findActor tx actorId
+                                let! state = PeopleReads.peopleState tx actor.Value.Principal
                                 let rows = state |> Option.bind PeopleSubject.rows |> Option.get
 
                                 let grant =

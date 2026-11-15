@@ -1,11 +1,13 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 /// Authored requests expand to separate durable effects; names never enter identity or grant payloads.
-module PeopleRequests =
+module internal PeopleRequests =
     let canonical (record: PeopleEffectRecord) =
         let grant (value: RecordedGrant) =
             let scope =

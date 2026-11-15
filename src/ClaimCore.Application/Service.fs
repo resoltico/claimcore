@@ -1,5 +1,11 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
 open System
 open System.Threading
 open System.Threading.Tasks
@@ -11,13 +17,7 @@ module Service =
     /// Hosts add their instruments to the single application meter.
     let metrics = ApplicationMetrics.meter
 
-    /// Storage reports only elapsed head-lock time, with no provider or subject data.
-    let recordHeadWait elapsed = ApplicationMetrics.waited elapsed
-
-    /// Storage reports elapsed append time without leaking provider or subject data.
-    let recordAppend elapsed = ApplicationMetrics.appended elapsed
-
-    let create productVersion installationId store calendar principal =
+    let internal create productVersion installationId store calendar principal =
         if String.IsNullOrWhiteSpace productVersion then
             invalidArg (nameof productVersion) "Supply the host's compiled product version."
 
@@ -33,11 +33,27 @@ module Service =
             Principal = principal
         }
 
-    /// Hosts may decorate storage with request-scoped resource admission.
-    let mapStore transform (services: ServiceContext) =
+    /// Request-scoped storage decorators stay inside the application.
+    let internal mapStore transform (services: ServiceContext) =
         { services with
             Store = transform services.Store
         }
+
+    /// A lookup may require a head-locked absence confirmation; hosting owns its admission lease.
+    let withWriteAdmission (acquire: CancellationToken -> Task<IDisposable>) services =
+        mapStore
+            (fun store ->
+                { new IStore with
+                    member _.Context query = store.Context query
+                    member _.Read operation = store.Read operation
+
+                    member _.Write operation =
+                        task {
+                            use! _lease = acquire operation.CancellationToken
+                            return! store.Write operation
+                        }
+                })
+            services
 
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
@@ -191,16 +207,11 @@ module Service =
 
     let private resolveActorSubmission
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (input: ActorPeopleSubmission)
         =
         task {
-            let! actor =
-                tx.Access
-                    {
-                        Principal = services.Principal
-                        CaseId = None
-                    }
+            let! actor = AccessReads.access tx (services.Principal) (None)
 
             if
                 not (Access.can services.Principal actor Capability.ManageAccess Scope.Installation)
@@ -210,7 +221,7 @@ module Service =
                 match ActorId.create input.ActorId with
                 | None -> return Error(Refusal.Access AccessRefusal.ResourceUnavailable)
                 | Some id ->
-                    let! principal = tx.ActorPrincipal id
+                    let! principal = PeopleReads.actorPrincipal tx id
 
                     match principal with
                     | None -> return Error(Refusal.Access AccessRefusal.ResourceUnavailable)
@@ -355,10 +366,10 @@ module Service =
     let grants = Queries.grants
     let peopleHistory = Queries.peopleHistory
 
-    let provisionOwnerInTransaction services tx operationId profile roles =
+    let internal provisionOwnerInTransaction services tx operationId profile roles =
         PeopleOperations.provisionInTransaction services tx operationId profile roles
 
-    let provisionOwner services operationId profile roles token =
+    let internal provisionOwner services operationId profile roles token =
         PeopleOperations.provisionStore services operationId profile roles token
 
     let accessRequests = AccessRequestQueries.page

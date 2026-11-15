@@ -10,8 +10,12 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
@@ -74,7 +78,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
     |> Result.defaultWith (fun _ -> failtest "Historical fixture must obey permanent format")
     |> ignore
 
-    let decide (tx: IWriteTx) (view: CaseFacts) =
+    let decide (tx: WriteTx) (view: CaseFacts) =
         Expect.isNone view.Case "Fixture reference is fresh"
         Expect.isNone view.ExistingOperation "Fixture operation is fresh"
 

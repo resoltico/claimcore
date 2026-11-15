@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Execution
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
@@ -40,7 +46,10 @@ type internal OperationIdentityRequest =
         Existing: RetainedOperation option
     }
 
-module LedgerEntries =
+module internal LedgerEntries =
+    let entry (value: ValidatedEntry) = value.Entry
+    let entries (value: ValidatedOperation) = value.ValidatedEntries
+
     let internal content (value: ValidatedEntry) = value.Content
 
     let position sequence hash =

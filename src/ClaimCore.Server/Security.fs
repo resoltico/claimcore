@@ -5,7 +5,7 @@ open System.IO
 open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
-open ClaimCore.Postgres
+open ClaimCore.Application
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.DataProtection

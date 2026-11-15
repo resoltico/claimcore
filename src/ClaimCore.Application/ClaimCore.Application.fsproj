@@ -1,11 +1,57 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
+    <PackageReference Include="Npgsql" PrivateAssets="compile" />
+    <EmbeddedResource Include="../../db/baseline.sql" LogicalName="ClaimCore.Application.baseline.sql" />
+    <EmbeddedResource Include="../../db/postgresql-baseline.json" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CoreModels.fs" />
+    <Compile Include="RuntimeContracts.fs" />
     <Compile Include="Metrics.fs" />
     <Compile Include="People/PeopleRequests.fs" />
-    <Compile Include="LedgerStorePort.fs" />
+    <Compile Include="Storage/Models.fs" />
+    <Compile Include="Reads/CaseSelection.fs" />
+    <Compile Include="Storage/ReadTransaction.fs" />
+    <Compile Include="Storage/OperatorFaults.fs" />
+    <Compile Include="Storage/InstallationCheck/ServerSupport.fs" />
+    <Compile Include="Storage/FailureDiagnostics.fs" />
+    <Compile Include="Storage/DatabaseSession.fs" />
+    <Compile Include="Storage/ExpiryFrontierStorage.fs" />
+    <Compile Include="Storage/Ledger/OperationStorage.fs" />
+    <Compile Include="Storage/Schema/Baseline.fs" />
+    <Compile Include="Storage/InstallationCheck/InstallationCheck.fs" />
+    <Compile Include="Reads/Projections.fs" />
+    <Compile Include="Storage/Ledger/StoredEntries.fs" />
+    <Compile Include="Storage/CheckpointEvidence.fs" />
+    <Compile Include="Storage/AccessRequests.fs" />
+    <Compile Include="Reads/PeopleStateStorage.fs" />
+    <Compile Include="Reads/PaymentStorage.fs" />
+    <Compile Include="Storage/Ledger/Persistence.fs" />
+    <Compile Include="Storage/Ledger/Transactions.fs" />
+    <Compile Include="Storage/RegisterMaintenanceStore.fs" />
+    <Compile Include="Reads/CaseSelectionSql.fs" />
+    <Compile Include="Reads/ResponsibilityCountStorage.fs" />
+    <Compile Include="Reads/CaseSummaryQuery.fs" />
+    <Compile Include="Reads/ViewCountStorage.fs" />
+    <Compile Include="Reads/WorkStorage.fs" />
+    <Compile Include="Reads/NoteStorage.fs" />
+    <Compile Include="Reads/CaseFamilyStorage.fs" />
+    <Compile Include="Reads/TimelineStorage.fs" />
+    <Compile Include="Reads/TransactionPages.fs" />
+    <Compile Include="Reads/RegisterReads.fs" />
+    <Compile Include="Reads/AccessReads.fs" />
+    <Compile Include="Reads/FamilyReads.fs" />
+    <Compile Include="Reads/ReminderReads.fs" />
+    <Compile Include="Reads/PaymentReads.fs" />
+    <Compile Include="Reads/WorkReads.fs" />
+    <Compile Include="Reads/NoteReads.fs" />
+    <Compile Include="Reads/LedgerReads.fs" />
+    <Compile Include="Reads/PeopleReads.fs" />
+    <Compile Include="Storage/WriteTransaction.fs" />
+    <Compile Include="Storage/Store.fs" />
     <Compile Include="ServiceContext.fs" />
     <Compile Include="Work/CaseWorkReadModels.fs" />
     <Compile Include="Reads/QueryResults.fs" />
@@ -43,9 +89,15 @@
     <Compile Include="Verification/VerificationPayload.fs" />
     <Compile Include="Verification/Replay.fs" />
     <Compile Include="Verification/ProjectionVerification.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <Compile Include="Storage/Ledger/LedgerStore.fs" />
+    <Compile Include="Verification/VerificationRows.fs" />
+    <Compile Include="Verification/Verification.fs" />
+    <Compile Include="Verification/ProjectionRebuild.fs" />
+    <Compile Include="Storage/RestoreAdmission.fs" />
+    <Compile Include="Storage/SessionStore.fs" />
+    <Compile Include="Storage/Housekeeping.fs" />
+    <Compile Include="Storage/InstallationStatus.fs" />
+    <Compile Include="Runtime.fs" />
+    <Compile Include="Administration/Administration.fs" />
   </ItemGroup>
 </Project>

@@ -4,8 +4,13 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -67,7 +72,7 @@ let private peopleRevisions (database: PostgresFixture.Database) =
                 let! value =
                     fixture.Store.Read
                         {
-                            Work = (fun tx -> tx.PeopleState principal)
+                            Work = (fun tx -> PeopleReads.peopleState tx principal)
                             CancellationToken = token
                         }
 

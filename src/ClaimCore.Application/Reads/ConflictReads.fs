@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -8,7 +14,7 @@ open ClaimCore.RecordFormat
 module internal ConflictReads =
     let private explain
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (actor: AccessView)
         (parent: StoredCase option)
         entity
@@ -32,7 +38,8 @@ module internal ConflictReads =
                     }
 
                 let! page =
-                    tx.TimelinePage
+                    LedgerReads.timelinePage
+                        tx
                         {
                             CaseId = parent.CaseId
                             Filter = None

@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
@@ -35,14 +39,14 @@ let private profile =
 let private lookup fixture operation =
     fixture.Store.Read
         {
-            Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId operation))
+            Work = (fun tx -> LedgerReads.findOperation tx (CaseFixtures.operationId operation))
             CancellationToken = token
         }
 
 let private actor fixture target =
     fixture.Store.Read
         {
-            Work = (fun tx -> tx.Access { Principal = target; CaseId = None })
+            Work = (fun tx -> AccessReads.access tx (target) (None))
             CancellationToken = token
         }
 

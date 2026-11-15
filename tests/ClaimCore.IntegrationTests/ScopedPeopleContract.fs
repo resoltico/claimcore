@@ -11,6 +11,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport.StoreContractReads
@@ -350,7 +354,8 @@ let internal scopedPeople fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! facts = tx.GlobalReadFacts principal in return facts.People
+                                let! facts = AccessReads.globalReadFacts tx principal in
+                                return facts.People
                             }
                     CancellationToken = CancellationToken.None
                 }

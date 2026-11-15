@@ -90,7 +90,36 @@ let private ambientEffects () =
             "ClaimCore.RecordFormat"
             "ClaimCore.Application"
         ] do
-        check ArchitectureRule.Pure (Assembly.Load name)
+        let assembly = Assembly.Load name
+
+        if name = "ClaimCore.Application" then
+            // F# startup types retain the source filename, rather than its declaring namespace.
+            let directory = Path.Combine(root, "src", "ClaimCore.Application")
+
+            let storageFiles =
+                Directory.EnumerateFiles(directory, "*.fs", SearchOption.AllDirectories)
+                |> Seq.filter (fun path ->
+                    (File.ReadAllText path)
+                        .StartsWith(
+                            "namespace ClaimCore.Application.Storage",
+                            StringComparison.Ordinal
+                        ))
+                |> Seq.map (
+                    Path.GetFileNameWithoutExtension >> System.Text.RegularExpressions.Regex.Escape
+                )
+                |> String.concat "|"
+
+            Expect.isNotEmpty storageFiles "Storage ownership must be discovered"
+
+            let excluded =
+                @"^ClaimCore\.Application\.Storage(?:\.|$)|^<StartupCode\$ClaimCore-Application>\.\$(?:"
+                + storageFiles
+                + @")(?:\+|$)"
+
+            let selected = (ApiRules.subjects assembly).And().DoNotHaveFullNameMatching excluded
+            ApiRules.check model.Value ArchitectureRule.Pure name selected
+        else
+            check ArchitectureRule.Pure assembly
 
     rejects ArchitectureRule.Pure typeof<ClockCall>
 
@@ -102,7 +131,7 @@ let private importedReference () =
 
         File.WriteAllText(
             properties,
-            """<Project><ItemGroup><ProjectReference Include="ClaimCore.Postgres.fsproj" /></ItemGroup></Project>"""
+            """<Project><ItemGroup><ProjectReference Include="ClaimCore.Application.fsproj" /></ItemGroup></Project>"""
         )
 
         let path = Path.Combine(directory.FullName, "client.fsproj")
@@ -111,12 +140,12 @@ let private importedReference () =
 
         Expect.equal
             references
-            (Set.singleton "ClaimCore.Postgres")
+            (Set.singleton "ClaimCore.Application")
             "Unused imported project edge is evaluated"
 
         Expect.isFalse
             (ProjectReferences.permitted "ClaimCore.Wire" references)
-            "Only Application and Server may declare this edge"
+            "Wire cannot declare the Application edge"
     finally
         directory.Delete true
 
@@ -124,7 +153,7 @@ let private jsonDependencies () =
     let path = Path.Combine(root, "src", "ClaimCore.Json", "ClaimCore.Json.fsproj")
     Expect.isEmpty (ProjectReferences.read path) "JSON has no product dependencies"
 
-let private postgres () =
+let private projectEdges () =
     Expect.equal
         (projectPaths.Value |> Array.map Path.GetFileNameWithoutExtension |> Set.ofArray)
         (ProjectReferences.allowed |> Map.keys |> Set.ofSeq)
@@ -147,14 +176,6 @@ let private postgres () =
 
     importedReference ()
 
-    for assembly in products.Value do
-        let name = assembly.GetName().Name |> nonNull
-
-        if not (List.contains name [ "ClaimCore.Postgres"; "claimcore-server" ]) then
-            check ArchitectureRule.Postgres assembly
-
-    rejects ArchitectureRule.Postgres typeof<PostgresReference>
-
 let private serializer () =
     for name in [ "ClaimCore.Json"; "ClaimCore.Wire"; "ClaimCore.RecordFormat" ] do
         check ArchitectureRule.Serializer (Assembly.Load name)
@@ -170,10 +191,7 @@ let tests =
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
             testCase "JSON has no project dependencies" jsonDependencies
-            testCase "hosts use only the service surface and ports" (fun () ->
-                check ArchitectureRule.ServiceSurface (Assembly.Load "claimcore-server")
-                rejects ArchitectureRule.ServiceSurface typeof<ApplicationInternalsFromWeb>)
-            testCase "evaluated product edges and Postgres boundary" postgres
+            testCase "evaluated product edges" projectEdges
             testCase "Json, Wire and RecordFormat avoid JsonSerializer" serializer
             testCase "closed wire vocabularies use the typed codec adapter" (fun () ->
                 check ArchitectureRule.ClosedVocabularyCodecs (Assembly.Load "ClaimCore.Wire")

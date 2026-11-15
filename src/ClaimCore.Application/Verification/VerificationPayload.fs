@@ -1,4 +1,12 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Verification
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.RecordFormat

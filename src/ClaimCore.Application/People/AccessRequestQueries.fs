@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -17,12 +23,7 @@ module internal AccessRequestQueries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Access
-                                            {
-                                                Principal = services.Principal
-                                                CaseId = None
-                                            }
+                                    let! actor = AccessReads.access tx (services.Principal) (None)
 
                                     if
                                         not (
@@ -47,7 +48,8 @@ module internal AccessRequestQueries =
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok after ->
                                             let! result =
-                                                tx.AccessRequestPage
+                                                PeopleReads.accessRequestPage
+                                                    tx
                                                     {
                                                         After = after
                                                         ObservedAt = tx.ObservedAt
@@ -87,12 +89,7 @@ module internal AccessRequestQueries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Access
-                                            {
-                                                Principal = services.Principal
-                                                CaseId = None
-                                            }
+                                    let! actor = AccessReads.access tx (services.Principal) (None)
 
                                     if
                                         not (

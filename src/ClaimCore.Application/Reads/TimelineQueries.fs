@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -62,7 +68,8 @@ module internal TimelineQueries =
                                                     let range = position |> Option.bind _.Range
 
                                                     let! page =
-                                                        tx.TimelinePage
+                                                        LedgerReads.timelinePage
+                                                            tx
                                                             {
                                                                 CaseId = parent.CaseId
                                                                 Filter = request.Filter

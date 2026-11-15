@@ -181,7 +181,8 @@ let tests =
                             HasAssignedRoles = true
                         }
 
-                    let offers = ClaimCore.Application.Advice.installationOffers principal access
+                    let offers =
+                        ClaimCore.Application.Reads.Advice.installationOffers principal access
 
                     Expect.equal
                         offers

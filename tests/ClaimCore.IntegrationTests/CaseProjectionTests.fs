@@ -10,7 +10,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 let private installation = Guid.Parse "80000000-0000-4000-8000-000000000001"
@@ -368,7 +372,7 @@ let private storedRead (database: PostgresFixture.Database) =
 
     database.Fixture.Store.Read
         {
-            Work = (fun tx -> tx.FindCase id)
+            Work = (fun tx -> FamilyReads.findCase tx id)
             CancellationToken = VerificationSupport.token
         }
 

@@ -161,26 +161,13 @@ module internal ApiRoutes =
 
         | _ -> None
 
-    let private confirmationStore (admission: PrincipalAdmission) principal (store: IStore) =
-        { new IStore with
-            member _.Context query = store.Context query
-            member _.Read operation = store.Read operation
+    let private confirmationAdmission (admission: PrincipalAdmission) principal token =
+        task {
+            let! acquired = admission.Acquire(principal, RequestWorkload.Write, token)
 
-            member _.Write operation =
-                task {
-                    let! acquired =
-                        admission.Acquire(
-                            principal,
-                            RequestWorkload.Write,
-                            operation.CancellationToken
-                        )
-
-                    match acquired with
-                    | None -> return raise (WorkloadAdmissionRejectedException())
-                    | Some lease ->
-                        use _owned = lease
-                        return! store.Write operation
-                }
+            match acquired with
+            | None -> return raise (WorkloadAdmissionRejectedException())
+            | Some lease -> return lease
         }
 
     let handle (handler: ClaimCore.Server.Route) configuration withActor (context: HttpContext) =
@@ -259,8 +246,8 @@ module internal ApiRoutes =
                                         let core =
                                             match endpoint.Id with
                                             | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
-                                                Service.mapStore
-                                                    (confirmationStore
+                                                Service.withWriteAdmission
+                                                    (confirmationAdmission
                                                         admission
                                                         (AuthenticatedPrincipals.key principal))
                                                     core

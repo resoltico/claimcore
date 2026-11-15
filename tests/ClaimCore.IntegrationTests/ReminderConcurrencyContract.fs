@@ -6,6 +6,10 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
@@ -60,7 +64,7 @@ let private storeRead (fixture: Fixture) work =
 
 let private find fixture number =
     storeRead fixture (fun tx ->
-        tx.FindReminder(ReminderId.create (id fixture number) |> Option.get))
+        ReminderReads.findReminder tx (ReminderId.create (id fixture number) |> Option.get))
 
 let private opened fixture actor number reference =
     task {
@@ -417,7 +421,9 @@ let internal erasureRaces fixture =
 
                 let! refusedRoot =
                     storeRead fixture (fun tx ->
-                        tx.FindOperation(OperationId.create reviewed.OperationId |> Option.get))
+                        LedgerReads.findOperation
+                            tx
+                            (OperationId.create reviewed.OperationId |> Option.get))
 
                 Expect.isNone refusedRoot "The stale erasure appended nothing"
                 // A separate explicit review/new operation, never an automatic retry of the stale bytes.
@@ -442,9 +448,9 @@ let internal erasureRaces fixture =
 
                 let! entry =
                     storeRead fixture (fun tx ->
-                        tx.FindOperation(
-                            OperationId.create (id fixture (number + 2)) |> Option.get
-                        ))
+                        LedgerReads.findOperation
+                            tx
+                            (OperationId.create (id fixture (number + 2)) |> Option.get))
 
                 Expect.isTrue
                     ((Option.get entry).Root.Structure.Compartments

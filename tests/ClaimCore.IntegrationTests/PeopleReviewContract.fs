@@ -11,6 +11,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport.StoreContractReads
@@ -451,6 +455,7 @@ let internal peopleReviewRechecks fixture =
             reviewedPeopleRequest fixture.Store (id fixture 4) fixture.Owner (PeopleAct.Disable)
 
         let! preview, view = peopleReview fixture fixture.Owner input
+
         Expect.equal view.EnabledHumanOwners (Some 2) "The preview sees two enabled owners."
 
         match preview.Outcome with

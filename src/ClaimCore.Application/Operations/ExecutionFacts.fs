@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Execution
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.RecordFormat
@@ -47,28 +53,21 @@ module internal ExecutionFacts =
         | Some(EntryTarget.Note subject) -> Some subject.CaseId
         | _ -> None
 
-    let people (tx: IReadTx) principal caseIds =
+    let people (tx: ReadTx) principal caseIds =
         task {
             match List.distinct caseIds with
-            | [] ->
-                return!
-                    tx.Access(
-                        {
-                            AccessQuery.Principal = principal
-                            CaseId = None
-                        }
-                    )
-            | ids -> return! tx.AccessCases(principal, ids)
+            | [] -> return! AccessReads.access tx (principal) (None)
+            | ids -> return! AccessReads.accessCases tx (principal, ids)
         }
 
-    let findCase (tx: IReadTx) =
+    let findCase (tx: ReadTx) =
         function
-        | CaseSelector.Reference reference -> tx.FindCaseByReference reference
-        | CaseSelector.Id id -> tx.FindCase id
+        | CaseSelector.Reference reference -> FamilyReads.findCaseByReference tx reference
+        | CaseSelector.Id id -> FamilyReads.findCase tx id
 
     let case
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         operationId
         selector
         (paymentAct: AuthoredCaseAct option)
@@ -78,18 +77,18 @@ module internal ExecutionFacts =
         task {
             let! existing =
                 match operationId with
-                | Some id -> tx.FindOperation id
+                | Some id -> LedgerReads.findOperation tx id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! record = findCase tx selector
 
             let! familySequence =
                 match record with
-                | Some record -> tx.CaseFamilySequence record.CaseId
+                | Some record -> FamilyReads.caseFamilySequence tx record.CaseId
                 | None -> System.Threading.Tasks.Task.FromResult Sequence.zero
 
-            let! maintenance = tx.Maintenance()
-            let! frontier = tx.ExpiredBefore()
+            let! maintenance = RegisterReads.maintenance tx ()
+            let! frontier = RegisterReads.expiredBefore tx ()
 
             let! actor =
                 people
@@ -103,17 +102,17 @@ module internal ExecutionFacts =
                 | Some current, Some act when
                     existing.IsNone && Access.canAct principal actor (Scope.Case current.CaseId) act
                     ->
-                    tx.CaseState current.CaseId
+                    FamilyReads.caseState tx current.CaseId
                 | _ -> System.Threading.Tasks.Task.FromResult None
 
             let! work =
                 match state with
-                | Some state -> tx.FindWork state.CaseId
+                | Some state -> WorkReads.findWork tx state.CaseId
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! pendingDue =
                 match state with
-                | Some state -> tx.PendingReminderDue(state.CaseId, None)
+                | Some state -> ReminderReads.pendingReminderDue tx (state.CaseId, None)
                 | None -> System.Threading.Tasks.Task.FromResult []
 
             let! family =
@@ -121,7 +120,7 @@ module internal ExecutionFacts =
                 | Some parent, Some(CaseAct.Bare BareAct.Erase) when
                     parent.Lifecycle <> Lifecycle.Erased
                     ->
-                    tx.CaseFamily parent.CaseId
+                    FamilyReads.caseFamily tx parent.CaseId
                 | _ -> System.Threading.Tasks.Task.FromResult None
 
             return
@@ -143,7 +142,7 @@ module internal ExecutionFacts =
 
     let target
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         needed
         operationId
         targetPrincipal
@@ -152,7 +151,7 @@ module internal ExecutionFacts =
         let principal = services.Principal
 
         task {
-            let! existing = tx.FindOperation operationId
+            let! existing = LedgerReads.findOperation tx operationId
 
             let mutable records = Map.empty
 
@@ -172,24 +171,26 @@ module internal ExecutionFacts =
                     | None -> ()
                 | None -> ()
 
-            let! maintenance = tx.Maintenance()
-            let! frontier = tx.ExpiredBefore()
+            let! maintenance = RegisterReads.maintenance tx ()
+            let! frontier = RegisterReads.expiredBefore tx ()
             let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = people tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = people tx targetPrincipal ids
 
             let! targetRoles =
-                tx.ActorRoleSummaries(target.Actor |> Option.map _.ActorId |> Option.toList)
+                PeopleReads.actorRoleSummaries
+                    tx
+                    (target.Actor |> Option.map _.ActorId |> Option.toList)
 
             let! owners =
                 if List.contains PeopleFact.EnabledHumanOwners needed then
-                    task { let! count = tx.EnabledHumanOwners() in return Some count }
+                    task { let! count = PeopleReads.enabledHumanOwners tx () in return Some count }
                 else
                     System.Threading.Tasks.Task.FromResult None
 
             let! actors =
                 if List.contains PeopleFact.ActorCount needed then
-                    task { let! count = tx.ActorCount() in return Some count }
+                    task { let! count = PeopleReads.actorCount tx () in return Some count }
                 else
                     System.Threading.Tasks.Task.FromResult None
 
@@ -199,7 +200,7 @@ module internal ExecutionFacts =
                     && (List.contains PeopleFact.ActorCount needed
                         || Access.can principal actor Capability.ManageAccess Scope.Installation)
                 then
-                    tx.PeopleState targetPrincipal
+                    PeopleReads.peopleState tx targetPrincipal
                 else
                     System.Threading.Tasks.Task.FromResult None
 
@@ -219,14 +220,14 @@ module internal ExecutionFacts =
                 }
         }
 
-    let operationActor (tx: IReadTx) principal entry =
+    let operationActor (tx: ReadTx) principal entry =
         people tx principal (operationCase entry |> Option.toList)
 
-    let receiptCurrent (tx: IReadTx) entry =
+    let receiptCurrent (tx: ReadTx) entry =
         task {
             let! record =
                 match operationCase entry with
-                | Some id -> tx.FindCase id
+                | Some id -> FamilyReads.findCase tx id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! current =
@@ -236,14 +237,14 @@ module internal ExecutionFacts =
                         |> Option.map (fun operation -> (LedgerEntries.primary operation).Subject)
                     with
                     | Some(EntryTarget.Work subject) ->
-                        let! work = tx.FindWork subject.CaseId
+                        let! work = WorkReads.findWork tx subject.CaseId
                         return ReceiptCurrent.Work(record, work, Map.empty)
                     | Some(EntryTarget.Reminder subject) ->
                         let ids = subject.ReminderId :: (subject.NextReminderId |> Option.toList)
                         let mutable values = Map.empty
 
                         for id in ids do
-                            let! value = tx.FindReminder id
+                            let! value = ReminderReads.findReminder tx id
 
                             match value with
                             | Some value -> values <- Map.add id value values
@@ -251,7 +252,7 @@ module internal ExecutionFacts =
 
                         return ReceiptCurrent.Reminder(record, values)
                     | Some(EntryTarget.Note subject) ->
-                        let! note = tx.FindNote subject.NoteId
+                        let! note = NoteReads.findNote tx subject.NoteId
                         return ReceiptCurrent.Note(record, note |> Option.map _.Note)
                     | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
                     | _ -> return ReceiptCurrent.People None
@@ -260,17 +261,17 @@ module internal ExecutionFacts =
             return current
         }
 
-    let operation (tx: IReadTx) principal id =
+    let operation (tx: ReadTx) principal id =
         task {
-            let! entry = tx.FindOperation id
+            let! entry = LedgerReads.findOperation tx id
             let! actor = operationActor tx principal entry
             let! current = receiptCurrent tx entry
             return actor, entry, current
         }
 
-    let whenWritable (tx: IWriteTx) action =
+    let whenWritable (tx: WriteTx) action =
         task {
-            let! mode = tx.Maintenance()
+            let! mode = RegisterReads.maintenance tx ()
 
             if mode.Active then
                 return Verdict.Refuse Refusal.RegisterMaintenance
@@ -278,7 +279,7 @@ module internal ExecutionFacts =
                 return! action ()
         }
 
-    let persist (tx: IWriteTx) project verdict =
+    let persist (tx: WriteTx) project verdict =
         task {
             match verdict with
             | Verdict.Proceed(entry, projection, receipt) ->

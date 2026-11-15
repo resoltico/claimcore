@@ -32,7 +32,7 @@ Contract generation also validates
 semantic catalog structure, typed term namespaces, declared producer arguments and renderer/core wording ownership. Browser production builds use only app/protocol sources;
 the frontend verification stage still checks the whole TypeScript solution and runs all browser unit tests.
 [Durable byte examples](../tests/fixtures/durable-vectors.json) carry fixed expectations and
-derivation notes and hand-authored expected bytes. [SQL baseline identity](../src/ClaimCore.Postgres/Schema/Baseline.fs) derives from
+derivation notes and hand-authored expected bytes. [SQL baseline identity](../src/ClaimCore.Application/Storage/Schema/Baseline.fs) derives from
 exact embedded source bytes. The installation format is owned by [InstallationFormat.fs](../src/ClaimCore.RecordFormat/InstallationFormat.fs).
 
 See the [glossary](../docs/glossary.md) for project terminology.

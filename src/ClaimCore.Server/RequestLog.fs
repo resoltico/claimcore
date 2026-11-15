@@ -102,7 +102,7 @@ module internal RequestLog =
     let middleware (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             let correlation = Guid.NewGuid()
-            use _correlation = ClaimCore.Postgres.StorageDiagnostics.correlate correlation
+            use _correlation = ClaimCore.Application.Runtime.correlate correlation
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =

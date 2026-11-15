@@ -10,7 +10,12 @@ open System.Text.Json
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.VerificationSupport
 

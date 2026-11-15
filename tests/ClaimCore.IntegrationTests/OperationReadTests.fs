@@ -5,9 +5,14 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -63,7 +68,8 @@ let private runtime () =
 
         let first =
             read (fun tx ->
-                tx.PeopleHistoryPage
+                PeopleReads.peopleHistoryPage
+                    tx
                     {
                         TargetActorId = None
                         BeforePosition = None
@@ -77,7 +83,8 @@ let private runtime () =
 
         let second =
             read (fun tx ->
-                tx.PeopleHistoryPage
+                PeopleReads.peopleHistoryPage
+                    tx
                     {
                         TargetActorId = None
                         BeforePosition = first.Next
@@ -96,7 +103,8 @@ let private runtime () =
 
         let timeline =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -112,7 +120,8 @@ let private runtime () =
             opened.OperationId
             "Timeline binds actual retained root"
 
-        let retained = read (fun tx -> tx.FindOperation opened.OperationId) |> Option.get
+        let retained =
+            read (fun tx -> LedgerReads.findOperation tx opened.OperationId) |> Option.get
 
         Expect.equal
             retained.Root.Hash
@@ -152,7 +161,8 @@ let private runtime () =
 
         let notes =
             read (fun tx ->
-                tx.NotePage
+                NoteReads.notePage
+                    tx
                     {
                         CaseId = caseId
                         Before = None
@@ -198,7 +208,8 @@ let private runtime () =
 
         let compoundPage =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -211,7 +222,8 @@ let private runtime () =
 
         let primaryPage =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -227,7 +239,7 @@ let private runtime () =
             compound.OperationId
             "Both effects bind one root"
 
-        let predecessors = read (fun tx -> tx.PreviousEntries primaryPage.Items)
+        let predecessors = read (fun tx -> LedgerReads.previousEntries tx primaryPage.Items)
 
         Expect.equal
             predecessors.Count

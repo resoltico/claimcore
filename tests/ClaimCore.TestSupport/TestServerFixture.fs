@@ -25,6 +25,10 @@ open Microsoft.Extensions.DependencyInjection.Extensions
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open ClaimCore.TestSupport.HandlerStub
 
@@ -183,7 +187,7 @@ type Host
         ready: bool,
         ?forActor: PrincipalKey -> ServiceContext,
         ?installationId: Guid,
-        ?sessions: ClaimCore.Postgres.ISessionStore,
+        ?sessions: ClaimCore.Application.ISessionStore,
         ?buildAssets: (string * byte array) list
     ) =
     let assets = Directory.CreateTempSubdirectory("claimcore-host-").FullName

@@ -12,7 +12,12 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Server.Administration
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -221,7 +226,7 @@ let private commandPath () =
             use blocker = database.OwnerSource.OpenConnection()
             use gate = blocker.BeginTransaction()
 
-            ClaimCore.Postgres.DatabaseSession.rows
+            ClaimCore.Application.Storage.DatabaseSession.rows
                 blocker
                 "SELECT sequence FROM claimcore.ledger_head FOR UPDATE"
                 [||]
@@ -229,7 +234,7 @@ let private commandPath () =
             |> _.GetAwaiter().GetResult()
             |> ignore
 
-            ClaimCore.Postgres.DatabaseSession.execute
+            ClaimCore.Application.Storage.DatabaseSession.execute
                 blocker
                 "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions SELECT repeat('b',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600 FROM observed"
                 [||]
@@ -275,14 +280,14 @@ let private commandPath () =
                     "Actual restore commit survived stdout loss"
 
                 let remaining =
-                    ClaimCore.Postgres.DatabaseSession.rows
+                    ClaimCore.Application.Storage.DatabaseSession.rows
                         blocker
                         "SELECT count(*) FROM claimcore.sessions"
                         [||]
                         CancellationToken.None
                     |> _.GetAwaiter().GetResult()
                     |> List.exactlyOne
-                    |> ClaimCore.Postgres.DatabaseSession.value<int64> 0
+                    |> ClaimCore.Application.Storage.DatabaseSession.value<int64> 0
 
                 Expect.equal
                     remaining

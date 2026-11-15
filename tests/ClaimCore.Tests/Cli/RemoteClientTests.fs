@@ -18,6 +18,10 @@ open System.Text
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 let private validConfiguration () =
     match

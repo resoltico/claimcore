@@ -1,4 +1,12 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Verification
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.RecordFormat
 
@@ -6,7 +14,7 @@ open System
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
-open ClaimCore.Application.VerificationChecks
+open ClaimCore.Application.Verification.VerificationChecks
 
 module internal ReplayContext =
     let issue at =
@@ -32,7 +40,7 @@ module internal ReplayContext =
             recorded entry.Operation.Root.Header actor.Principal (AccessView.ofActor (Some actor)))
 
 
-type CaseHistory =
+type internal CaseHistory =
     {
         Status: CaseStatus
         Revision: Revision
@@ -46,7 +54,7 @@ type CaseHistory =
         ErasedAt: Sequence option
     }
 
-type WorkHistory =
+type internal WorkHistory =
     {
         Revision: Revision
         Snapshot: CaseWorkSnapshot option
@@ -58,7 +66,7 @@ type WorkHistory =
         PresentPayloadAt: Sequence option
     }
 
-type ReminderHistory =
+type internal ReminderHistory =
     {
         CaseId: CaseId
         Revision: Revision
@@ -71,7 +79,7 @@ type ReminderHistory =
     }
 
 /// Causal cross-entity reconstruction includes roots, structural erased identities and fixed pairs.
-type NoteHistory =
+type internal NoteHistory =
     {
         CaseId: CaseId
         Removed: bool
@@ -704,7 +712,7 @@ module internal SubjectReplay =
 
 
 /// Deterministic operation replay. Command access is fixed before any effect is applied.
-module Replay =
+module internal Replay =
     type ProfileHistory =
         {
             Missing: EffectPosition option

@@ -5,7 +5,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -24,16 +28,17 @@ let private corruptRead (read: unit -> Task<unit>) =
             "An unknown permanent token must raise RecordCorruptException on read"
     }
 
-let private readEntry fixture (tx: IReadTx) =
+let private readEntry fixture (tx: ReadTx) =
     task {
-        let! _ = tx.FindOperation(CaseFixtures.operationId (id fixture 10))
+        let! _ = LedgerReads.findOperation tx (CaseFixtures.operationId (id fixture 10))
         return ()
     }
 
-let private readGrants fixture (tx: IReadTx) =
+let private readGrants fixture (tx: ReadTx) =
     task {
         let! _ =
-            tx.GrantPage
+            PeopleReads.grantPage
+                tx
                 {
                     ActorId = CaseFixtures.actorId (id fixture 1)
                     AfterGrant = None
@@ -43,10 +48,11 @@ let private readGrants fixture (tx: IReadTx) =
         return ()
     }
 
-let private readActors (_: Fixture) (tx: IReadTx) =
+let private readActors (_: Fixture) (tx: ReadTx) =
     task {
         let! _ =
-            tx.ActorPage
+            PeopleReads.actorPage
+                tx
                 {
                     Role = None
                     Text = None

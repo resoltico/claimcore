@@ -79,10 +79,8 @@ let private forbiddenCalls =
 [<RequireQualifiedAccess>]
 type ArchitectureRule =
     | Pure
-    | Postgres
     | Serializer
     | ClosedVocabularyCodecs
-    | ServiceSurface
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
     if provider.GetObjects architecture |> Seq.isEmpty then
@@ -102,12 +100,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         nonEmptyTargets architecture "random types" randomTypes |> ignore
         nonEmptyTargets architecture "network types" networkTypes |> ignore
         clauses.NotCallAny(nonEmptyTargets architecture "ambient calls" forbiddenCalls) :> IArchRule
-    | ArchitectureRule.Postgres ->
-        clauses.NotDependOnAny(
-            Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Postgres")
-            |> targets "Postgres"
-        )
-        :> IArchRule
     | ArchitectureRule.ClosedVocabularyCodecs ->
         let enumeration =
             MethodMembers()
@@ -142,49 +134,6 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types().That().HaveFullName("System.Text.Json.JsonSerializer")
             |> targets "JsonSerializer"
-        )
-        :> IArchRule
-    | ArchitectureRule.ServiceSurface ->
-        let allowed =
-            [
-                "Service"
-                "ServiceContext"
-                "IStore"
-                "IReadTx"
-                "IWriteTx"
-                "IBusinessCalendar"
-                "RuntimeOpenFault"
-                "StoreFailure"
-                "Verdict"
-                "LedgerPosition"
-                "StoredCase"
-                "EntryTarget"
-                "StoredEntry"
-                "CaseProjection"
-                "EntryDraft"
-                "AccessQuery"
-                "CasePageQuery"
-                "ActorPageQuery"
-                "GrantPageQuery"
-                "Page"
-                "ReadOperation"
-                "ContextQuery"
-                "ContextFacts"
-                "WriteOperation"
-            ]
-            |> List.map System.Text.RegularExpressions.Regex.Escape
-            |> String.concat "|"
-
-        let permitted =
-            "^ClaimCore\\.Application\\.(" + allowed + ")(?:`[0-9]+)?(?:\\+.*)?$"
-
-        clauses.NotDependOnAny(
-            Types()
-                .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Application")
-                .And()
-                .DoNotHaveFullNameMatching(permitted)
-            |> targets "Application implementation outside the service and ports"
         )
         :> IArchRule
 // Product subjects must be assembly-scoped: F# task/async/closure bodies live under

@@ -8,8 +8,12 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -106,7 +110,7 @@ let private freshness (database: PostgresFixture.Database) =
         let facts who =
             database.Fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.GlobalReadFacts who)
+                    Work = (fun tx -> AccessReads.globalReadFacts tx who)
                     CancellationToken = token
                 }
 
@@ -155,7 +159,7 @@ let private freshness (database: PostgresFixture.Database) =
         let query date =
             database.Fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.WorkSummaries([ caseId ], date))
+                    Work = (fun tx -> WorkReads.workSummaries tx ([ caseId ], date))
                     CancellationToken = token
                 }
 

@@ -13,7 +13,11 @@ open System.Text
 open System.Text.RegularExpressions
 open Expecto
 open Npgsql
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private runFile (database: PostgresFixture.Database) user name =

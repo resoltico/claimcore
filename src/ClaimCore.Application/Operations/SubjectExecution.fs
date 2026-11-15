@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Execution
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application
 
 open System.Threading
 open System.Threading.Tasks
@@ -13,17 +19,17 @@ type internal SubjectExecutionMode =
 [<NoEquality; NoComparison>]
 type internal OperationRegistration<'input, 'facts, 'decision, 'rows> =
     {
-        Load: IReadTx -> 'input -> Task<'facts>
+        Load: ReadTx -> 'input -> Task<'facts>
         Context: SubjectExecutionMode -> 'facts -> DecisionContext
         Decide:
             SubjectExecutionMode
                 -> DecisionContext
-                -> IReadTx
+                -> ReadTx
                 -> 'input
                 -> 'facts
                 -> Task<Verdict<'decision>>
         Append: 'input -> 'facts -> 'decision -> LedgerAppend<'rows>
-        Project: IWriteTx -> 'rows -> Task<unit>
+        Project: WriteTx -> 'rows -> Task<unit>
         Review: 'input -> 'facts -> 'decision -> OperationReview
     }
 
@@ -60,7 +66,7 @@ module internal SubjectExecution =
         |> Verdict.bind (fun decision ->
             LedgerEnvelope.accept services actor write (append decision))
 
-    let inTransaction services registration input (tx: IWriteTx) =
+    let inTransaction services registration input (tx: WriteTx) =
         task {
             let write =
                 {

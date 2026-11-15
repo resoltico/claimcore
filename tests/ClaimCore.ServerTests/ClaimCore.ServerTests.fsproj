@@ -44,7 +44,6 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
 
     <ProjectReference Include="../../src/ClaimCore.Server/ClaimCore.Server.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
   <ItemGroup>

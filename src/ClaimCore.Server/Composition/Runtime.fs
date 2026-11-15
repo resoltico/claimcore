@@ -15,8 +15,8 @@ open ClaimCore.Server
 type internal IRuntime =
     inherit IDisposable
     abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
-    abstract Housekeep: CancellationToken -> Task<ClaimCore.Postgres.HousekeepingReport>
-    abstract Sessions: ClaimCore.Postgres.ISessionStore
+    abstract Housekeep: CancellationToken -> Task<ClaimCore.Application.HousekeepingReport>
+    abstract Sessions: ClaimCore.Application.ISessionStore
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
@@ -32,7 +32,7 @@ module internal ActorAccess =
                 return Some result
         }
 
-type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
+type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: IBusinessCalendar) =
     let capacity = AdmissionLease.limiter AdmissionPolicy.sessions 0
 
     let gate =
@@ -57,7 +57,7 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
         }
 
     let sessions =
-        { new ClaimCore.Postgres.ISessionStore with
+        { new ClaimCore.Application.ISessionStore with
             member _.Create(payload, expiry, idle, absolute, token) =
                 sessionAction (fun store -> store.Create(payload, expiry, idle, absolute, token))
 
@@ -76,10 +76,9 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
             ActorAccess.run
                 gate
                 (fun actor ->
-                    Service.create
+                    ClaimCore.Application.Runtime.service
+                        storage
                         BuildIdentity.current.Version
-                        storage.Installation.InstallationId
-                        (ClaimCore.Postgres.Runtime.store storage)
                         calendar
                         actor)
                 principal
@@ -114,7 +113,7 @@ module internal Runtime =
     let openConnection connectionString cancellationToken =
         task {
             let! opened =
-                ClaimCore.Postgres.Runtime.openConnection connectionString cancellationToken
+                ClaimCore.Application.Runtime.openConnection connectionString cancellationToken
 
             match opened with
             | Error error -> return Error error

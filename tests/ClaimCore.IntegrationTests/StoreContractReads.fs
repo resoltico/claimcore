@@ -11,6 +11,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 let internal withFixture factory run =
@@ -40,7 +44,7 @@ let internal caseTimeline fixture reference before limit =
             ReadOperation.Work =
                 (fun tx ->
                     task {
-                        let! current = tx.FindCaseByReference reference
+                        let! current = FamilyReads.findCaseByReference tx reference
 
                         let id =
                             current
@@ -49,15 +53,15 @@ let internal caseTimeline fixture reference before limit =
                                 failtest "Expected a case history target")
 
                         let! page =
-                            tx.TimelinePage(
-                                {
-                                    TimelinePageQuery.CaseId = id
+                            LedgerReads.timelinePage
+                                tx
+                                ({
+                                    TimelineStorage.PageQuery.CaseId = id
                                     Filter = Some TimelineFilter.Facts
                                     Range = None
                                     BeforePosition = before
                                     Limit = limit
-                                }
-                            )
+                                })
 
                         return
                             {
@@ -76,18 +80,13 @@ let internal casePage fixture principal visibility after limit =
             ReadOperation.Work =
                 (fun tx ->
                     task {
-                        let! actor =
-                            tx.Access(
-                                {
-                                    AccessQuery.Principal = principal
-                                    CaseId = None
-                                }
-                            )
+                        let! actor = AccessReads.access tx (principal) (None)
 
                         return!
-                            tx.CasePage(
-                                {
-                                    CasePageQuery.Selection =
+                            FamilyReads.casePage
+                                tx
+                                ({
+                                    TransactionPages.CaseQuery.Selection =
                                         {
                                             DateBasis = Inputs.workBasis
                                             Visibility = visibility
@@ -98,8 +97,7 @@ let internal casePage fixture principal visibility after limit =
                                         }
                                     AfterPosition = after
                                     Limit = limit
-                                }
-                            )
+                                })
                     })
             CancellationToken = CancellationToken.None
         }

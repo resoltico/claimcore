@@ -4,9 +4,13 @@ open System
 open System.Threading
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
-open ClaimCore.Postgres
+open ClaimCore.Application
 open Expecto
 
 let check expected actual message =
@@ -240,7 +244,9 @@ let private actualPayments () =
         let financial = CaseState.fields current.Snapshot.State |> Option.get |> _.Finance
         check 51L financial.PaymentCount "Fifty-one payments were not retained."
         check 51M (Amount.value financial.PaidAmount) "Paid total mismatch."
+
         check 3 current.LatestPayments.Length "Case latest slice is not bounded to three."
+
         let original, entry = first |> Option.get
 
         accepted

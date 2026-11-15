@@ -326,7 +326,7 @@ let private runAsync (ct: CancellationToken) =
 
 let private run () =
     use _diagnostics = StorageFailureLog.attach Console.Error
-    use _correlation = ClaimCore.Postgres.StorageDiagnostics.correlate (Guid.NewGuid())
+    use _correlation = ClaimCore.Application.Runtime.correlate (Guid.NewGuid())
     use lifetime = new ProcessLifetime()
 
     try

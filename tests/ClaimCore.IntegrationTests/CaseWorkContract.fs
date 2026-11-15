@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
@@ -935,7 +939,8 @@ let internal reminderTiming fixture =
                         fun tx ->
                             task {
                                 let! activity =
-                                    tx.TimelinePage
+                                    LedgerReads.timelinePage
+                                        tx
                                         {
                                             CaseId = caseId
                                             Filter = None
@@ -945,9 +950,9 @@ let internal reminderTiming fixture =
                                         }
 
                                 let! reminder =
-                                    tx.FindReminder(
-                                        ReminderId.create (id fixture 702) |> Option.get
-                                    )
+                                    ReminderReads.findReminder
+                                        tx
+                                        (ReminderId.create (id fixture 702) |> Option.get)
 
                                 return activity, reminder
                             }
@@ -1285,28 +1290,36 @@ let internal lifecycleAndErasure fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! work = tx.FindWork caseId
+                                let! work = WorkReads.findWork tx caseId
 
                                 let! a =
-                                    tx.FindReminder(ReminderId.create (id fixture 22) |> Option.get)
+                                    ReminderReads.findReminder
+                                        tx
+                                        (ReminderId.create (id fixture 22) |> Option.get)
 
                                 let! b =
-                                    tx.FindReminder(ReminderId.create (id fixture 23) |> Option.get)
+                                    ReminderReads.findReminder
+                                        tx
+                                        (ReminderId.create (id fixture 23) |> Option.get)
 
                                 let! c =
-                                    tx.FindReminder(ReminderId.create (id fixture 24) |> Option.get)
+                                    ReminderReads.findReminder
+                                        tx
+                                        (ReminderId.create (id fixture 24) |> Option.get)
 
                                 let! d =
-                                    tx.FindReminder(ReminderId.create (id fixture 31) |> Option.get)
+                                    ReminderReads.findReminder
+                                        tx
+                                        (ReminderId.create (id fixture 31) |> Option.get)
 
                                 let entries = ResizeArray<StoredEffect>()
 
                                 for operation in
                                     [ 20; 21; 22; 23; 24; 25; 26; 27; 28; 30; 31; 32; 34; 35 ] do
                                     let! entry =
-                                        tx.FindOperation(
-                                            OperationId.create (id fixture operation) |> Option.get
-                                        )
+                                        LedgerReads.findOperation
+                                            tx
+                                            (OperationId.create (id fixture operation) |> Option.get)
 
                                     entries.AddRange(StoredEffect.ofOperation (Option.get entry))
 

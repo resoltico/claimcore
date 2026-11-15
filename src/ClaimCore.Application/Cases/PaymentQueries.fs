@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -52,7 +58,7 @@ module internal PaymentQueries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok before ->
-                                                    let! work = tx.FindWork parent.CaseId
+                                                    let! work = WorkReads.findWork tx parent.CaseId
 
                                                     match work with
                                                     | Some work when
@@ -78,7 +84,8 @@ module internal PaymentQueries =
                                                                            >
                                                                     )
                                                             | _ ->
-                                                                tx.PaymentPage
+                                                                PaymentReads.paymentPage
+                                                                    tx
                                                                     {
                                                                         CaseId = parent.CaseId
                                                                         Before = before

@@ -1,5 +1,11 @@
 namespace ClaimCore.Application
 
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 

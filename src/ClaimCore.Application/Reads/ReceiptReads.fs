@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.RecordFormat
 open ClaimCore.Domain
@@ -6,14 +12,14 @@ open ClaimCore.Application.Contracts
 
 /// Current names are bounded, authorized and read from the same snapshot as receipt disclosure.
 module internal ReceiptReads =
-    let enrich (services: ServiceContext) (tx: IReadTx) actor current entries =
+    let enrich (services: ServiceContext) (tx: ReadTx) actor current entries =
         task {
             match current with
             | ReceiptCurrent.Work(parent, work, _) ->
                 let relations =
                     LedgerEntries.workRelations services.Principal actor parent work entries
 
-                let! accounts = tx.AssignedAccounts relations
+                let! accounts = WorkReads.assignedAccounts tx relations
                 return Ok(ReceiptCurrent.Work(parent, work, accounts))
             | ReceiptCurrent.People _ when
                 Access.can services.Principal actor Capability.ReadAccess Scope.Installation
@@ -21,14 +27,14 @@ module internal ReceiptReads =
                 let identities =
                     entries
                     |> List.choose (fun (entry: ValidatedEntry) ->
-                        match entry.Entry.Subject with
+                        match (LedgerEntries.entry entry).Subject with
                         | EntryTarget.People(target, _) -> Some target
                         | _ -> None)
                     |> List.distinct
 
                 match identities with
                 | [ identity ] ->
-                    let! actors = tx.ActorRefs [ identity ]
+                    let! actors = PeopleReads.actorRefs tx [ identity ]
 
                     match Map.tryFind identity actors with
                     | Some actor when actor.ActorId = identity ->
@@ -54,6 +60,6 @@ module internal ReceiptReads =
                 match LedgerEntries.validateOperation services.InstallationId operation with
                 | Error fault -> return Error fault
                 | Ok validated ->
-                    return! enrich services tx actor current validated.ValidatedEntries
+                    return! enrich services tx actor current (LedgerEntries.entries validated)
             | _ -> return Ok current
         }

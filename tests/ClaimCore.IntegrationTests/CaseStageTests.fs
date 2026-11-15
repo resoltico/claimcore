@@ -3,6 +3,10 @@ module ClaimCore.IntegrationTests.CaseStageTests
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.TestSupport
@@ -71,7 +75,7 @@ let tests =
                 use! connection = database.OwnerSource.OpenConnectionAsync()
 
                 let! date =
-                    ClaimCore.Postgres.DatabaseSession.rows
+                    ClaimCore.Application.Storage.DatabaseSession.rows
                         connection
                         "SELECT to_char(l.business_date,'YYYY-MM-DD') FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.case_revision=1"
                         [| box (CaseId.value receipt.CaseId) |]
@@ -79,7 +83,7 @@ let tests =
 
                 Expect.equal
                     (CalendarDate.format opening)
-                    (ClaimCore.Postgres.DatabaseSession.value<string> 0 date.Head)
+                    (ClaimCore.Application.Storage.DatabaseSession.value<string> 0 date.Head)
                     "Opening date is actual retained ledger metadata"
 
                 let! closed = write 78001 1L (AuthoredCaseAct.Bare BareAct.Close)

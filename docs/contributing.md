@@ -34,18 +34,17 @@ The table below defines project ownership. Supported contracts are documented in
 | Domain | Values, acts, transitions, access policy and business refusals |
 | Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
-| Application | Transactions, replay, operation lookup, projections and verification |
+| Application | Execution, reads, verification, storage and administration; PostgreSQL transactions and projections |
 | Presentation | Semantic regions, screen presenters, messages and language policy |
 | Wire | Endpoints, transport codecs, catalog, build and legal identity; references Presentation |
-| Postgres | Application ports, transactions, projections and database administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Server | Authentication, request gates, host bindings, static assets and owner administration |
 | Cli | HTTPS client, command grammar, local recovery and terminal rendering |
 | CommandLine | Shared exit codes, usage errors, help and version frames |
 
 The [evaluated edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns exact project
-references. Domain is independent of transport and JSON. Application and Postgres do not depend on Wire
-or Presentation. The published CLI excludes Application and Postgres. Product friendship is limited to tests.
+references. Domain is independent of transport and JSON. Application does not depend on Wire
+or Presentation. The published CLI excludes Application. Product friendship is limited to tests.
 
 ## Source vocabulary
 
@@ -74,7 +73,7 @@ core constraints without changing the schema. Structural `restrict` declarations
 raw validator. Check native structural admission against authored examples; arbitrary
 codec records and interpretation predicates do not establish schema equivalence.
 
-[IStore](../src/ClaimCore.Application/LedgerStorePort.fs) is the internal Application/Postgres seam,
+[IStore](../src/ClaimCore.Application/Storage/Store.fs) is the internal transaction seam,
 not an integrator custom-store contract. It supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.

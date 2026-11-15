@@ -102,7 +102,7 @@ Keep traffic isolated after an uncertain owner procedure.
 
 Every host cleans expired sessions and access requests in bounded batches every ten minutes with up to
 one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
-No manual prune command is required. See [housekeeping](../src/ClaimCore.Postgres/Housekeeping.fs)
+No manual prune command is required. See [housekeeping](../src/ClaimCore.Application/Storage/Housekeeping.fs)
 and the [host service](../src/ClaimCore.Server/HousekeepingService.fs) for the enforced limits and scheduling.
 
 ## Access review and sessions

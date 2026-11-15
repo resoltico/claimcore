@@ -7,7 +7,11 @@ open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 let private token = CancellationToken.None
 

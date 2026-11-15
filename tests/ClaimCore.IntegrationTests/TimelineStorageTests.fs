@@ -4,6 +4,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -106,39 +110,45 @@ let tests =
                             Work =
                                 fun tx ->
                                     task {
-                                        let! parent = tx.FindCaseByReference "TIMELINE-1"
+                                        let! parent =
+                                            FamilyReads.findCaseByReference tx "TIMELINE-1"
 
                                         let parent =
                                             parent
                                             |> Option.defaultWith (fun () ->
                                                 failtest "Created parent must exist")
 
-                                        let query =
+                                        let query: TimelineStorage.PageQuery =
                                             {
-                                                TimelinePageQuery.CaseId = parent.CaseId
+                                                TimelineStorage.PageQuery.CaseId = parent.CaseId
                                                 Filter = None
                                                 Range = None
                                                 BeforePosition = None
                                                 Limit = 50
                                             }
 
-                                        let! all = tx.TimelinePage query
-                                        let! previous = tx.PreviousEntries all.Items
+                                        let! all = LedgerReads.timelinePage tx query
+                                        let! previous = LedgerReads.previousEntries tx all.Items
 
                                         let! facts =
-                                            tx.TimelinePage
+                                            LedgerReads.timelinePage
+                                                tx
                                                 { query with
                                                     Filter = Some TimelineFilter.Facts
                                                 }
 
                                         let! work =
-                                            tx.TimelinePage
+                                            LedgerReads.timelinePage
+                                                tx
                                                 { query with
                                                     Filter = Some TimelineFilter.Work
                                                 }
 
-                                        let! first = tx.TimelinePage { query with Limit = 1 }
-                                        let! firstPrevious = tx.PreviousEntries first.Items
+                                        let! first =
+                                            LedgerReads.timelinePage tx { query with Limit = 1 }
+
+                                        let! firstPrevious =
+                                            LedgerReads.previousEntries tx first.Items
 
                                         Expect.equal
                                             firstPrevious.Count
@@ -153,7 +163,8 @@ let tests =
                                             "Paging does not truncate next-reminder creation context"
 
                                         let! rest =
-                                            tx.TimelinePage
+                                            LedgerReads.timelinePage
+                                                tx
                                                 { query with
                                                     BeforePosition = first.Next
                                                 }
@@ -164,9 +175,9 @@ let tests =
                                             |> LedgerEntries.content
 
                                         let! actors =
-                                            tx.ActorRefs(
-                                                all.Items |> List.map _.ActorId |> List.distinct
-                                            )
+                                            PeopleReads.actorRefs
+                                                tx
+                                                (all.Items |> List.map _.ActorId |> List.distinct)
 
                                         let differences =
                                             all.Items

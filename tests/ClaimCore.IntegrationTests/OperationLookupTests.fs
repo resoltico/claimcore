@@ -7,34 +7,23 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
-/// The provider still owns locking, reads, writes and commit; only its clock input is controlled.
-type ClockTransaction() =
-    inherit DispatchProxy()
-    member val Inner: IReadTx = Unchecked.defaultof<_> with get, set
-    member val Instant = DateTimeOffset.MinValue with get, set
+/// The provider still owns locking, reads, writes and commit; only its supplied instant is controlled.
+let private withClock<'Tx when 'Tx :> ReadTx> instant (tx: 'Tx) =
+    tx.ObservedAt <- instant
+    tx
 
-    override this.Invoke(methodInfo, arguments) =
-        let methodInfo = nonNull methodInfo
-
-        if methodInfo.Name = "get_ObservedAt" then
-            box this.Instant
-        else
-            methodInfo.Invoke(this.Inner, arguments)
-
-let private withClock<'Tx when 'Tx :> IReadTx> instant (tx: 'Tx) =
-    let proxy = DispatchProxy.Create<'Tx, ClockTransaction>()
-    let clock = nonNull (box proxy) :?> ClockTransaction
-    clock.Inner <- tx :> IReadTx
-    clock.Instant <- instant
-    proxy
-
-type ControlledStore
+type internal ControlledStore
     (
         inner: IStore,
         instant,

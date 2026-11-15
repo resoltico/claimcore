@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
@@ -37,13 +43,13 @@ module internal PeopleQueries =
 
     let private reviewedActors
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (viewer: AccessView)
         (actors: Actor list)
         =
         task {
             let ids = actors |> List.map _.ActorId |> List.distinct
-            let! summaries = tx.ActorRoleSummaries ids
+            let! summaries = PeopleReads.actorRoleSummaries tx ids
 
             let valid =
                 (summaries |> Map.keys |> Set.ofSeq) = Set.ofList ids
@@ -76,7 +82,7 @@ module internal PeopleQueries =
                             }
                     }
 
-                let! counts = tx.ResponsibilityCounts(selection, ids)
+                let! counts = WorkReads.responsibilityCounts tx (selection, ids)
 
                 if
                     (counts |> Map.keys |> Set.ofSeq) <> Set.ofList ids
@@ -112,11 +118,7 @@ module internal PeopleQueries =
                                 fun tx ->
                                     task {
                                         let! viewer =
-                                            tx.Access
-                                                {
-                                                    Principal = services.Principal
-                                                    CaseId = None
-                                                }
+                                            AccessReads.access tx (services.Principal) (None)
 
                                         match
                                             selectActors
@@ -128,7 +130,8 @@ module internal PeopleQueries =
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok(text, after) ->
                                             let! page =
-                                                tx.ActorPage
+                                                PeopleReads.actorPage
+                                                    tx
                                                     {
                                                         Role = request.Role
                                                         Text = text
@@ -199,13 +202,9 @@ module internal PeopleQueries =
                                     fun tx ->
                                         task {
                                             let! viewer =
-                                                tx.Access
-                                                    {
-                                                        Principal = services.Principal
-                                                        CaseId = None
-                                                    }
+                                                AccessReads.access tx (services.Principal) (None)
 
-                                            let! target = tx.FindActor actorId
+                                            let! target = PeopleReads.findActor tx actorId
 
                                             match
                                                 selectGrants
@@ -222,7 +221,10 @@ module internal PeopleQueries =
                                                     return
                                                         Outcome.Failed CoreFault.StoreIntegrityError
                                                 | Some target ->
-                                                    let! owned = tx.PeopleRevision target.Principal
+                                                    let! owned =
+                                                        PeopleReads.peopleRevision
+                                                            tx
+                                                            target.Principal
 
                                                     match owned with
                                                     | None ->
@@ -230,7 +232,8 @@ module internal PeopleQueries =
                                                             Outcome.Failed
                                                                 CoreFault.StoreIntegrityError
                                                     | Some revision ->
-                                                        let! maintenance = tx.Maintenance()
+                                                        let! maintenance =
+                                                            RegisterReads.maintenance tx ()
 
                                                         let offers =
                                                             Advice.actorOffers
@@ -250,7 +253,8 @@ module internal PeopleQueries =
                                                                 None
 
                                                         let! page =
-                                                            tx.GrantPage
+                                                            PeopleReads.grantPage
+                                                                tx
                                                                 {
                                                                     ActorId = actorId
                                                                     AfterGrant = after
@@ -273,11 +277,11 @@ module internal PeopleQueries =
                                                                     [ target ]
 
                                                             let! authors =
-                                                                tx.ActorRefs(
-                                                                    page.Items
-                                                                    |> List.map _.GrantedBy
-                                                                    |> List.distinct
-                                                                )
+                                                                PeopleReads.actorRefs
+                                                                    tx
+                                                                    (page.Items
+                                                                     |> List.map _.GrantedBy
+                                                                     |> List.distinct)
 
                                                             let items =
                                                                 page.Items
@@ -363,7 +367,7 @@ module internal PeopleQueries =
 
     let private historyEntries
         installation
-        (query: PeopleHistoryPageQuery)
+        (query: TransactionPages.PeopleHistoryQuery)
         cases
         actors
         (page: Page<StoredEffect, EffectPosition>)
@@ -410,11 +414,7 @@ module internal PeopleQueries =
                                 fun tx ->
                                     task {
                                         let! actor =
-                                            tx.Access
-                                                {
-                                                    Principal = services.Principal
-                                                    CaseId = None
-                                                }
+                                            AccessReads.access tx (services.Principal) (None)
 
                                         match
                                             selectHistory
@@ -426,14 +426,15 @@ module internal PeopleQueries =
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok before ->
-                                            let query =
+                                            let query: TransactionPages.PeopleHistoryQuery =
                                                 {
-                                                    PeopleHistoryPageQuery.TargetActorId = target
+                                                    TransactionPages.PeopleHistoryQuery.TargetActorId =
+                                                        target
                                                     BeforePosition = before
                                                     Limit = request.Limit
                                                 }
 
-                                            let! page = tx.PeopleHistoryPage query
+                                            let! page = PeopleReads.peopleHistoryPage tx query
 
                                             let ids =
                                                 page.Items
@@ -444,7 +445,7 @@ module internal PeopleQueries =
                                                         | _ -> []))
                                                 |> List.distinct
 
-                                            let! actors = tx.ActorRefs ids
+                                            let! actors = PeopleReads.actorRefs tx ids
 
                                             let caseIds =
                                                 page.Items
@@ -454,7 +455,7 @@ module internal PeopleQueries =
                                             let mutable cases = Map.empty
 
                                             for id in caseIds do
-                                                let! current = tx.FindCase id
+                                                let! current = FamilyReads.findCase tx id
 
                                                 match current with
                                                 | Some current ->

@@ -5,6 +5,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
@@ -405,7 +409,11 @@ let grantScopes (fixture: Fixture) =
         let! stored =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id fixture 632)))
+                    Work =
+                        (fun tx ->
+                            LedgerReads.findOperation
+                                tx
+                                (CaseFixtures.operationId (id fixture 632)))
                     CancellationToken = token
                 }
 

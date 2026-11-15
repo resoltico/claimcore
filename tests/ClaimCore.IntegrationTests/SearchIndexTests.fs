@@ -7,8 +7,12 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -362,9 +366,9 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         let! context = Service.context actor () token
         let ownerId = (Inputs.activeContext (read context)).ActorId
 
-        let query observed =
+        let query observed : TransactionPages.CaseQuery =
             {
-                CasePageQuery.Selection =
+                TransactionPages.CaseQuery.Selection =
                     {
                         DateBasis =
                             {
@@ -383,7 +387,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 Limit = 50
             }
 
-        let selected (page: ClaimCore.Application.Page<CasePageItem, CaseListPosition>) =
+        let selected (page: ClaimCore.Application.Storage.Page<CasePageItem, CaseListPosition>) =
             page.Items
             |> List.map (fun item -> CaseReference.format item.Case.Snapshot.Reference)
 
@@ -394,7 +398,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                     Work =
                         fun tx ->
                             task {
-                                let! old = tx.CasePage(query tx.ObservedAt)
+                                let! old = FamilyReads.casePage tx (query tx.ObservedAt)
 
                                 Expect.equal
                                     (selected old)
@@ -415,7 +419,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                                         token
 
                                 accepted erased |> ignore
-                                let! stillOld = tx.CasePage(query tx.ObservedAt)
+                                let! stillOld = FamilyReads.casePage tx (query tx.ObservedAt)
 
                                 Expect.equal
                                     (selected stillOld)

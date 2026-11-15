@@ -4,7 +4,11 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open Npgsql
 open ClaimCore.TestSupport
 

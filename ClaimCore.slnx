@@ -8,7 +8,6 @@
   <Project Path="src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   <Project Path="tests/ClaimCore.Tests/ClaimCore.Tests.fsproj" />
   <Project Path="src/ClaimCore.Application/ClaimCore.Application.fsproj" />
-  <Project Path="src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
   <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
   <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />

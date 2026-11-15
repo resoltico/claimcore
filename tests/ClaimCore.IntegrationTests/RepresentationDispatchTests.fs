@@ -6,11 +6,16 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Server
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -309,6 +314,7 @@ let private dispatch () =
             )
 
         administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
+
         let maintained = person owner
         Expect.isEmpty maintained.Offers "Maintenance suppresses person tasks at the query snapshot"
         Expect.isNone maintained.ProfileSeed "Maintenance removes editable profile input"

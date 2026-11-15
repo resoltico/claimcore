@@ -10,6 +10,10 @@ open ClaimCore.Json
 open System
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat

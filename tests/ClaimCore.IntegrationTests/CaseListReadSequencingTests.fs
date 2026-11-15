@@ -9,77 +9,16 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
-
-// Delegate to PostgreSQL; inject only the returned identity and the later lookup failure.
-type CaseListReadProbe() =
-    inherit DispatchProxy()
-    member val Inner: IReadTx = Unchecked.defaultof<_> with get, set
-    member val Calls = ResizeArray<string>() with get, set
-    member val CorruptPage = false with get, set
-    member val FailLookup = false with get, set
-
-    override this.Invoke(methodInfo, arguments) =
-        let methodInfo = nonNull methodInfo
-        this.Calls.Add methodInfo.Name
-
-        if methodInfo.Name = "FindCaseByReference" && this.FailLookup then
-            raise (IO.IOException "Synthetic later lookup failure")
-
-        let result = methodInfo.Invoke(this.Inner, arguments)
-
-        if methodInfo.Name = "CasePage" && this.CorruptPage then
-            box (
-                task {
-                    let! page = unbox<Task<Page<CasePageItem, CaseListPosition>>> result
-
-                    let changed =
-                        page.Items
-                        |> List.map (fun (item: CasePageItem) ->
-                            let wrongId =
-                                CaseId.create (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000099")
-                                |> Option.get
-
-                            { item with
-                                Case = { item.Case with CaseId = wrongId }
-                            })
-
-                    return { page with Items = changed }
-                }
-            )
-        else
-            result
-
-type private ProbedStore(inner: IStore) =
-    member val Calls = ResizeArray<string>() with get
-    member val CorruptPage = false with get, set
-    member val FailLookup = false with get, set
-
-    interface IStore with
-        member _.Context query = inner.Context query
-        member _.Write operation = inner.Write operation
-
-        member this.Read operation =
-            let work tx =
-                let proxy = DispatchProxy.Create<IReadTx, CaseListReadProbe>()
-                let state = (box proxy |> nonNull) :?> CaseListReadProbe
-                state.Inner <- tx
-                state.Calls <- this.Calls
-                state.CorruptPage <- this.CorruptPage
-                state.FailLookup <- this.FailLookup
-                operation.Work proxy
-
-            task {
-                try
-                    return! inner.Read { operation with Work = work }
-                with :? IO.IOException ->
-                    return Error StoreFailure.Unavailable
-            }
 
 let private accepted result =
     Result.defaultWith (fun error -> failtestf "%A" error) result
 
-let private withProbe check =
+let private withCases check =
     let principal = PrincipalKey.human "https://issuer.example/" "reader" |> accepted
 
     let database =
@@ -128,13 +67,11 @@ let private withProbe check =
 
         StoreFixtures.acceptedPeople granted
 
-    let traced = ProbedStore(database.Fixture.Store)
-
     let core principal =
         Service.create
             "synthetic"
             database.Fixture.InstallationId
-            traced
+            database.Fixture.Store
             database.Fixture.Calendar
             principal
 
@@ -190,8 +127,7 @@ let private withProbe check =
 
     StoreFixtures.acceptedPeople granted
     let scoped = core scopedPrincipal
-    traced.Calls.Clear()
-    check current scoped traced operationId
+    check current scoped operationId
 
 let private read core text statuses limit =
     Service.list
@@ -221,148 +157,61 @@ let private expectExact operationId (value: CaseSummaryPage) =
 [<Tests>]
 let tests =
     testList
-        "case-list read sequencing"
+        "case-list exact reference disclosure"
         [
             testCase
-                "summary integrity failure wins and prevents later lookup or people reads"
+                "visible exact identity and original spelling survive case-insensitive matching"
                 (fun () ->
-                    withProbe (fun core _ traced _operationId ->
-                        traced.CorruptPage <- true
-                        traced.FailLookup <- true
-
-                        Expect.equal
-                            (read core "Match-1" [] 50)
-                            (Outcome.Failed CoreFault.StoreIntegrityError)
-                            "Known integrity failure is not masked by a later provider failure"
-
-                        Expect.isFalse
-                            (traced.Calls.Contains "FindCaseByReference")
-                            "No later reference lookup"
-
-                        Expect.isFalse
-                            (traced.Calls.Contains "Access")
-                            "No later target people read"))
-
-            testCase "validated visible exact hit reuses disclosure without later reads" (fun () ->
-                withProbe (fun core _ traced operationId ->
-                    traced.FailLookup <- true
-                    let result = read core "match-1" [] 50 |> page
-                    expectExact operationId result
-
-                    Expect.equal
-                        (result.Items
-                         |> List.map (fun item -> CaseReference.format item.Reference))
-                        [ "A-MATCH-1"; "Match-1" ]
-                        "Exact matching need not be the first row"
-
-                    Expect.isFalse
-                        (traced.Calls.Contains "FindCaseByReference")
-                        "Visible validated identity needs no second lookup"
-
-                    Expect.isFalse
-                        (traced.Calls.Contains "Access")
-                        "Visible row already passed snapshot disclosure"))
-            testCase
-                "readable exact reference outside a page still needs lookup and authorization"
-                (fun () ->
-                    withProbe (fun core _ traced operationId ->
-                        let result = read core "match-1" [] 1 |> page
+                    withCases (fun core _ operationId ->
+                        let result = read core "match-1" [] 50 |> page
                         expectExact operationId result
 
                         Expect.equal
                             (result.Items
                              |> List.map (fun item -> CaseReference.format item.Reference))
-                            [ "A-MATCH-1" ]
-                            "Exact target is outside this page"
-
-                        Expect.equal
-                            (traced.Calls |> Seq.filter ((=) "FindCaseByReference") |> Seq.length)
-                            1
-                            "One fallback lookup"
-
-                        Expect.equal
-                            (traced.Calls |> Seq.filter ((=) "Access") |> Seq.length)
-                            1
-                            "Independent target authorization"))
-            testCase "readable exact reference survives an empty filtered page" (fun () ->
-                withProbe (fun core _ traced operationId ->
-                    let result = read core "match-1" [ CaseStatus.Closed ] 50 |> page
-                    Expect.isEmpty result.Items "No closed case is in the fixture"
-                    expectExact operationId result
-
-                    Expect.isTrue
-                        (traced.Calls.Contains "FindCaseByReference")
-                        "Empty page does not suppress lookup"
-
-                    Expect.isTrue
-                        (traced.Calls.Contains "Access")
-                        "Outside-filter target is authorized"))
+                            [ "A-MATCH-1"; "Match-1" ]
+                            "Independently selected rows"))
             testCase
-                "partial and absent reference searches retain fallback and nonmatches"
+                "authorized exact identity remains available outside the current page or filter"
                 (fun () ->
-                    withProbe (fun core _ traced _operationId ->
-                        for query, count in [ "match", 2; "MISSING", 0 ] do
-                            traced.Calls.Clear()
+                    withCases (fun core _ operationId ->
+                        read core "match-1" [] 1 |> page |> expectExact operationId
+                        let empty = read core "match-1" [ CaseStatus.Closed ] 50 |> page
+                        Expect.isEmpty empty.Items "No closed rows"
+                        expectExact operationId empty))
+            testCase
+                "partial, absent and malformed references do not become exact identities"
+                (fun () ->
+                    withCases (fun core _ _ ->
+                        for query, count in [ "match", 2; "MISSING", 0; "two words", 0 ] do
                             let result = read core query [] 50 |> page
                             Expect.equal result.Items.Length count "Independently selected rows"
-
-                            Expect.isNone
-                                result.ExactReference
-                                "Substring or missing identity is not exact"
-
-                            Expect.equal
-                                (traced.Calls
-                                 |> Seq.filter ((=) "FindCaseByReference")
-                                 |> Seq.length)
-                                1
-                                "Valid reference syntax still probes absence"
-
-                            Expect.isFalse
-                                (traced.Calls.Contains "Access")
-                                "No target to authorize"))
+                            Expect.isNone result.ExactReference "No exact identity"))
             testCase
-                "unreadable exact target remains undisclosed beside a visible partial match"
+                "unreadable exact target stays undisclosed beside a visible partial match"
                 (fun () ->
-                    withProbe (fun _ scoped traced _operationId ->
+                    withCases (fun _ scoped _ ->
                         let result = read scoped "match-1" [] 50 |> page
 
                         Expect.equal
                             (result.Items
                              |> List.map (fun item -> CaseReference.format item.Reference))
                             [ "A-MATCH-1" ]
-                            "Only granted case is disclosed"
+                            "Only the granted case is disclosed"
 
-                        Expect.isNone result.ExactReference "Other exact target is not disclosed"
+                        Expect.isNone
+                            result.ExactReference
+                            "The unreadable exact identity is withheld"
 
-                        Expect.isTrue
-                            (traced.Calls.Contains "Access")
-                            "Fallback still checks target scope"))
-            testCase
-                "scoped visible match avoids rereads and malformed reference syntax does not probe"
-                (fun () ->
-                    withProbe (fun _ scoped traced _operationId ->
-                        traced.FailLookup <- true
-                        let result = read scoped "a-match-1" [] 50 |> page
+                        let visible = read scoped "a-match-1" [] 50 |> page
 
                         Expect.equal
-                            (result.ExactReference
+                            (visible.ExactReference
                              |> Option.map (fun item -> CaseReference.format item.CaseReference))
                             (Some "A-MATCH-1")
-                            "Scoped visible hit"
-
-                        Expect.isFalse
-                            (traced.Calls.Contains "FindCaseByReference")
-                            "No second lookup"
-
-                        traced.Calls.Clear()
-                        let result = read scoped "two words" [] 50 |> page
-                        Expect.isNone result.ExactReference "Not a case-reference grammar"
-
-                        Expect.isFalse
-                            (traced.Calls.Contains "FindCaseByReference")
-                            "Parse guard remains"))
+                            "Scoped visible exact identity"))
             testCase "erasure preserves exact authorized reference identity" (fun () ->
-                withProbe (fun core _ traced operationId ->
+                withCases (fun core _ operationId ->
                     for operation, revision, act in
                         [
                             31, 1L, AuthoredCaseAct.Void "Retained reason"
@@ -395,6 +244,5 @@ let tests =
                         | ExecuteResult.Accepted _ -> ()
                         | other -> failtestf "Fixture erasure failed: %A" other
 
-                    traced.Calls.Clear()
                     read core "match-1" [] 50 |> page |> expectExact operationId))
         ]

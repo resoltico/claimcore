@@ -210,7 +210,7 @@ let reviews =
                             Before = Some before
                             Proposed = proposed
                             Changes =
-                                ClaimCore.Application.CaseChanges.review
+                                ClaimCore.Application.Execution.CaseChanges.review
                                     (Some before)
                                     { After = proposed; Payment = None }
                             Context = context

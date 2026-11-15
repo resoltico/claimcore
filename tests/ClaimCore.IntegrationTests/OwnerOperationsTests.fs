@@ -6,8 +6,12 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -150,7 +154,9 @@ let private actionState (database: PostgresFixture.Database) =
         Expect.isEmpty read.Advice.Acts "Current advice offers no register writes"
         let! context = Service.context actor () token
         let context = Inputs.activeContext (success context)
+
         Expect.isTrue context.Maintenance.Active "Context exposes register maintenance"
+
         Expect.isEmpty context.Offers "Context offers are read-only during maintenance"
         let! replay = Service.execute actor pending token
 

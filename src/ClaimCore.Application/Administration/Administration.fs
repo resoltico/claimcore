@@ -1,0 +1,182 @@
+namespace ClaimCore.Application.Administration
+
+open System
+open System.Threading
+open Npgsql
+open ClaimCore.Domain
+open ClaimCore.Application
+open ClaimCore.Application.Contracts
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Verification
+
+module internal LedgerAdministration =
+    let verify source expected cancellationToken =
+        Verification.verify source expected cancellationToken
+
+    let head source cancellationToken =
+        DatabaseSession.read source cancellationToken (fun connection ->
+            task {
+                ServerSupport.require connection.PostgreSqlVersion
+                let! installation, _ = Baseline.require connection cancellationToken
+                return! CheckpointEvidence.read connection installation cancellationToken
+            })
+
+    let initialize source productVersion timeZone (owner: InitialOwner) token =
+        if not (PrincipalKey.isHuman owner.Principal) then
+            raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
+
+        match ActorProfile.parse owner.Profile, People.validateInitialOwnerRoles owner.Roles with
+        | Ok _, Ok _ -> ()
+        | _ -> raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
+
+        let timeZone = Baseline.zone timeZone
+
+        SchemaAdministration.initialize
+            source
+            timeZone
+            (fun connection installationId ->
+                task {
+                    let! _ = Transactions.configure connection Transactions.timeouts token
+                    let! head, observed = Transactions.head connection token
+
+                    let store =
+                        LedgerStore(
+                            source,
+                            {
+                                InstallationId = installationId
+                                BusinessTimeZone = timeZone
+                            },
+                            Transactions.timeouts
+                        )
+                        :> IStore
+
+                    let calendar = InstallationCheck.calendar timeZone
+
+                    let services =
+                        Service.create productVersion installationId store calendar owner.Principal
+
+                    let tx =
+                        LedgerStore.InTransaction(
+                            connection,
+                            installationId,
+                            head,
+                            observed,
+                            token
+                        )
+
+                    let! result =
+                        Service.provisionOwnerInTransaction
+                            services
+                            tx
+                            (Transactions.operationId observed)
+                            owner.Profile
+                            owner.Roles
+
+                    match result with
+                    | Verdict.Proceed _ -> return ()
+                    | Verdict.Refuse _ ->
+                        return invalidOp "The initial owner could not be recorded."
+                    | Verdict.Fail _
+                    | Verdict.Replay _ ->
+                        return raise (RecordCorruptException "Initial owner recording failed.")
+                })
+            token
+
+module internal AdministrationFailures =
+    let private installation =
+        function
+        | RuntimeOpenFault.InvalidTransport -> OperatorFault.UnsafeTransport
+        | RuntimeOpenFault.UnsupportedServer -> OperatorFault.UnsupportedServer
+        | RuntimeOpenFault.UnsafeRole -> OperatorFault.PermissionDenied
+        | RuntimeOpenFault.SchemaMismatch -> OperatorFault.SchemaMismatch
+        | RuntimeOpenFault.InstallationInvalid -> OperatorFault.InstallationInvalid
+        | RuntimeOpenFault.HeadMismatch -> OperatorFault.HeadMismatch
+        | RuntimeOpenFault.Unavailable -> OperatorFault.Unavailable
+        | RuntimeOpenFault.Cancelled -> OperatorFault.Cancelled
+
+    let classify (error: exn) =
+        match error with
+        | :? AdministrationOutcomeUnknownException -> AdministrationFailure.OutcomeUnknown
+        | :? OperatorFaultException as error -> AdministrationFailure.Fault error.Fault
+        | InstallationRefusal fault -> AdministrationFailure.Fault(installation fault)
+        | :? MaintenanceRequiredException ->
+            AdministrationFailure.Fault OperatorFault.MaintenanceRequired
+        | :? InstallationConfigurationException ->
+            AdministrationFailure.Fault OperatorFault.InstallationInvalid
+        | :? RecordCorruptException -> AdministrationFailure.Fault OperatorFault.IntegrityFailure
+        | :? OperationCanceledException -> AdministrationFailure.Fault OperatorFault.Cancelled
+        | :? PostgresException as error ->
+            let fault =
+                match error.SqlState with
+                | "42501" -> OperatorFault.PermissionDenied
+                | code when code.StartsWith("28", StringComparison.Ordinal) ->
+                    OperatorFault.ConnectionRejected
+                | "42P01"
+                | "42703"
+                | "42883"
+                | "3F000" -> OperatorFault.SchemaMismatch
+                | "57P01"
+                | "57P02"
+                | "57P03" -> OperatorFault.Unavailable
+                | code when code.StartsWith("08", StringComparison.Ordinal) ->
+                    OperatorFault.Unavailable
+                | "CC001"
+                | "CC002"
+                | "CC003"
+                | "CC004"
+                | "CC005" -> OperatorFault.IntegrityFailure
+                | _ -> OperatorFault.InternalFailure
+
+            AdministrationFailure.Fault fault
+        | :? NpgsqlException
+        | :? TimeoutException
+        | :? IO.IOException -> AdministrationFailure.Fault OperatorFault.Unavailable
+        | _ -> AdministrationFailure.Fault OperatorFault.InternalFailure
+
+/// The owner administration process supplies its connection; runtime composition does not expose it.
+[<Sealed>]
+type Administration(connectionString: string, productVersion: string) =
+    let source =
+        let settings =
+            try
+                NpgsqlConnectionStringBuilder connectionString
+            with :? ArgumentException ->
+                raise (OperatorFaultException OperatorFault.ConnectionInvalid)
+
+        if String.IsNullOrWhiteSpace settings.Host then
+            raise (OperatorFaultException OperatorFault.ConnectionInvalid)
+
+        InstallationCheck.transport settings
+
+        try
+            InstallationCheck.dataSource connectionString
+        with :? ArgumentException ->
+            raise (OperatorFaultException OperatorFault.ConnectionInvalid)
+
+    static member ClassifyFailure error = AdministrationFailures.classify error
+
+    member _.Initialize(timeZone, owner, cancellationToken) =
+        LedgerAdministration.initialize source productVersion timeZone owner cancellationToken
+
+    member _.Verify(expected, cancellationToken) =
+        LedgerAdministration.verify source expected cancellationToken
+
+    member _.Rebuild(expected, cancellationToken) =
+        ProjectionRebuild.rebuild source expected cancellationToken
+
+    /// Call only with all application/bearer/CLI traffic externally isolated and maintenance active.
+    member _.AdmitRestoredInstallation(checkpoint, cancellationToken) =
+        RestoreAdmission.admit source checkpoint cancellationToken
+
+    member _.Status(cancellationToken) =
+        InstallationStatus.read source cancellationToken
+
+    member _.Maintenance(change, cancellationToken) =
+        RegisterMaintenanceStore.change source change cancellationToken
+
+    member _.Head(cancellationToken) =
+        LedgerAdministration.head source cancellationToken
+
+    interface IDisposable with
+        member _.Dispose() =
+            FailureDiagnostics.cleanupSync source.Dispose

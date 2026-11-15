@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
@@ -106,13 +112,13 @@ module internal Queries =
         | _, None -> Ok None
         | _, Some _ -> invalid
 
-    let private stageDisplay installation (tx: IReadTx) (record: StoredCase) =
+    let private stageDisplay installation (tx: ReadTx) (record: StoredCase) =
         task {
-            let! facts = tx.CaseStageFacts record.CaseId
+            let! facts = FamilyReads.caseStageFacts tx record.CaseId
 
             match facts with
             | Some facts when facts.Revision = record.Snapshot.Revision ->
-                let! authors = tx.ActorRefs [ facts.RecordedBy ]
+                let! authors = PeopleReads.actorRefs tx [ facts.RecordedBy ]
 
                 return
                     match
@@ -190,10 +196,10 @@ module internal Queries =
                                                     | None ->
                                                         System.Threading.Tasks.Task.FromResult []
                                                     | Some _ ->
-                                                        tx.LatestPayments(
-                                                            record.CaseId,
-                                                            PaymentPaging.PreviewLimit
-                                                        )
+                                                        PaymentReads.latestPayments
+                                                            tx
+                                                            (record.CaseId,
+                                                             PaymentPaging.PreviewLimit)
 
                                                 let count =
                                                     CaseState.fields record.Snapshot.State
@@ -263,11 +269,10 @@ module internal Queries =
                                             let! record = ExecutionFacts.findCase tx request.Target
 
                                             let! actor =
-                                                tx.Access
-                                                    {
-                                                        Principal = services.Principal
-                                                        CaseId = record |> Option.map _.CaseId
-                                                    }
+                                                AccessReads.access
+                                                    tx
+                                                    (services.Principal)
+                                                    (record |> Option.map _.CaseId)
 
                                             match record with
                                             | Some record when
@@ -292,7 +297,7 @@ module internal Queries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok after ->
-                                                    let! work = tx.FindWork record.CaseId
+                                                    let! work = WorkReads.findWork tx record.CaseId
 
                                                     match work with
                                                     | Some work when
@@ -302,7 +307,8 @@ module internal Queries =
                                                                 snapshot.Revision = work.Revision))
                                                         ->
                                                         let! page =
-                                                            tx.AssigneePage
+                                                            AccessReads.assigneePage
+                                                                tx
                                                                 {
                                                                     CaseId = record.CaseId
                                                                     ReadRoles =
@@ -451,7 +457,13 @@ module internal Queries =
                 |> readResult
         }
 
-    let selectCases installation principal basis (request: CaseListRequest) actor =
+    let selectCases
+        installation
+        principal
+        basis
+        (request: CaseListRequest)
+        actor
+        : Result<TransactionPages.CaseQuery, Refusal> =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Access.visibility principal actor with
@@ -464,7 +476,7 @@ module internal Queries =
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
-                            CasePageQuery.Selection =
+                            TransactionPages.CaseQuery.Selection =
                                 {
                                     DateBasis = basis
                                     Visibility = visibility
@@ -527,7 +539,7 @@ module internal Queries =
 
     let private summaries
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         basis
         paused
         (items: CasePageItem list)
@@ -542,7 +554,9 @@ module internal Queries =
                 |> Map.ofList
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
-            let! actor = tx.AccessCases(services.Principal, records |> List.map _.CaseId)
+
+            let! actor =
+                AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
 
             return
                 work
@@ -567,7 +581,7 @@ module internal Queries =
 
     let private exactReference
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (items: CaseSummary list)
         text
         =
@@ -591,17 +605,13 @@ module internal Queries =
                                 CaseReference = item.Reference
                             }
                 | None ->
-                    let! record = tx.FindCaseByReference(CaseReference.format reference)
+                    let! record =
+                        FamilyReads.findCaseByReference tx (CaseReference.format reference)
 
                     match record with
                     | None -> return None
                     | Some record ->
-                        let! actor =
-                            tx.Access
-                                {
-                                    Principal = services.Principal
-                                    CaseId = Some record.CaseId
-                                }
+                        let! actor = AccessReads.access tx (services.Principal) (Some record.CaseId)
 
                         return
                             if
@@ -634,7 +644,7 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! facts = tx.GlobalReadFacts principal
+                                        let! facts = AccessReads.globalReadFacts tx principal
                                         let actor = facts.People
 
                                         match
@@ -647,7 +657,7 @@ module internal Queries =
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
-                                            let! page = tx.CasePage selection
+                                            let! page = FamilyReads.casePage tx selection
                                             let maintenance = facts.Maintenance
 
                                             if page.Items.Length > Paging.MaximumPageSize then
@@ -711,12 +721,7 @@ module internal Queries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Access
-                                            {
-                                                Principal = services.Principal
-                                                CaseId = None
-                                            }
+                                    let! actor = AccessReads.access tx (services.Principal) (None)
 
                                     let request =
                                         {
@@ -734,7 +739,9 @@ module internal Queries =
                                     with
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
-                                        let! summary = tx.CaseSummary selection.Selection
+                                        let! summary =
+                                            FamilyReads.caseSummary tx selection.Selection
+
                                         return Outcome.Succeeded summary
                                 }
                         CancellationToken = token

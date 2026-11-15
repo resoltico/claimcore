@@ -6,6 +6,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
@@ -170,7 +174,7 @@ let private summary actor filter =
         | _ -> return failtestf "Expected filtered summary: %A" result
     }
 
-let private counts value entries =
+let private counts value (entries: ValueCount<_> list) =
     entries |> List.find (fun entry -> entry.Value = value) |> _.Count
 
 let private totals (values: CurrencyTotal list) =
@@ -381,8 +385,8 @@ let internal assignmentExcludesForbiddenRoles fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! actor = tx.FindActor actorId
-                                let! state = tx.PeopleState actor.Value.Principal
+                                let! actor = PeopleReads.findActor tx actorId
+                                let! state = PeopleReads.peopleState tx actor.Value.Principal
                                 let rows = state |> Option.bind PeopleSubject.rows |> Option.get
 
                                 let grant =

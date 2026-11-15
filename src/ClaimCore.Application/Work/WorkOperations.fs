@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Execution
+
+open ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
@@ -125,21 +131,16 @@ module internal WorkOperations =
             |> Result.map (fun () -> parent)
         | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
-    let private eligibleAssignee (tx: IReadTx) caseId =
+    let private eligibleAssignee (tx: ReadTx) caseId =
         function
         | None -> System.Threading.Tasks.Task.FromResult true
         | Some id ->
             task {
-                let! actor = tx.FindActor id
+                let! actor = PeopleReads.findActor tx id
 
                 match actor with
                 | Some actor when PrincipalKey.isHuman actor.Principal ->
-                    let! people =
-                        tx.Access
-                            {
-                                Principal = actor.Principal
-                                CaseId = Some caseId
-                            }
+                    let! people = AccessReads.access tx (actor.Principal) (Some caseId)
 
                     return CaseWorkPolicy.eligibleAssignee actor.Principal people caseId
                 | _ -> return false
@@ -148,7 +149,7 @@ module internal WorkOperations =
     let private workProposal
         context
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (view: CaseFacts)
         (parent: StoredCase)
         operation
@@ -156,7 +157,7 @@ module internal WorkOperations =
         update
         =
         task {
-            let! current = tx.FindWork parent.CaseId
+            let! current = WorkReads.findWork tx parent.CaseId
 
             let bytes = OperationIntent.work operation parent.CaseId expected update
             let state = ReceiptCurrent.Work(Some parent, current, Map.empty)
@@ -213,7 +214,7 @@ module internal WorkOperations =
                     with
                     | Error refusal -> return Verdict.Refuse refusal
                     | Ok after ->
-                        let! pendingDue = tx.PendingReminderDue(parent.CaseId, None)
+                        let! pendingDue = ReminderReads.pendingReminderDue tx (parent.CaseId, None)
                         let recordedBy = LedgerEnvelope.actorId view.Actor
 
                         let applied =
@@ -246,7 +247,7 @@ module internal WorkOperations =
                                 |> Option.map (fun actor -> parent.CaseId, actor))
                             |> List.distinct
 
-                        let! accounts = tx.AssignedAccounts relations
+                        let! accounts = WorkReads.assignedAccounts tx relations
 
                         match
                             CaseWorkReadModels.snapshot accounts before,
@@ -297,7 +298,7 @@ module internal WorkOperations =
     let private reminderProposal
         context
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (view: CaseFacts)
         (parent: StoredCase)
         operation
@@ -325,7 +326,7 @@ module internal WorkOperations =
 
             let bytes = OperationIntent.reminder operation scope command
             let id = ReminderCommand.target operation command
-            let! target = tx.FindReminder id
+            let! target = ReminderReads.findReminder tx id
 
             let nextId =
                 if ReminderCommand.kind command = ReminderActKind.CompleteAndPlanNext then
@@ -335,7 +336,7 @@ module internal WorkOperations =
 
             let! next =
                 match nextId with
-                | Some id -> tx.FindReminder id
+                | Some id -> ReminderReads.findReminder tx id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let current =
@@ -390,8 +391,8 @@ module internal WorkOperations =
                     return Verdict.Fail CoreFault.StoreIntegrityError
                 | Error refusal -> return Verdict.Refuse refusal
                 | Ok effects ->
-                    let! work = tx.FindWork parent.CaseId
-                    let! pendingDue = tx.PendingReminderDue(parent.CaseId, Some id)
+                    let! work = WorkReads.findWork tx parent.CaseId
+                    let! pendingDue = ReminderReads.pendingReminderDue tx (parent.CaseId, Some id)
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 
                     let applied =
@@ -469,7 +470,7 @@ module internal WorkOperations =
     let private noteProposal
         context
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (view: CaseFacts)
         (parent: StoredCase)
         operation
@@ -480,7 +481,7 @@ module internal WorkOperations =
             let id = NoteCommand.target operation command
 
             let bytes = OperationIntent.note operation command
-            let! stored = tx.FindNote id
+            let! stored = NoteReads.findNote tx id
             let before = stored |> Option.map _.Note
 
             let replay =
@@ -550,7 +551,7 @@ module internal WorkOperations =
                         other
         }
 
-    let private load (services: ServiceContext) (tx: IReadTx) prepared =
+    let private load (services: ServiceContext) (tx: ReadTx) prepared =
         task {
             let! view =
                 ExecutionFacts.case services tx (Some(identity prepared)) (target prepared) None
@@ -562,20 +563,14 @@ module internal WorkOperations =
                     && CaseWorkPolicy.authorize services.Principal view.Actor parent.CaseId
                        |> Result.isOk
                     ->
-                    tx.CaseState parent.CaseId
+                    FamilyReads.caseState tx parent.CaseId
                 | _ -> System.Threading.Tasks.Task.FromResult None
 
             let view = { view with State = state }
             return view
         }
 
-    let private propose
-        context
-        (services: ServiceContext)
-        (tx: IReadTx)
-        prepared
-        (view: CaseFacts)
-        =
+    let private propose context (services: ServiceContext) (tx: ReadTx) prepared (view: CaseFacts) =
         task {
 
             try

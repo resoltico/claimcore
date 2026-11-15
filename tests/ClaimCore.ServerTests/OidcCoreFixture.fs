@@ -6,12 +6,16 @@ open ClaimCore.Presentation
 open System
 open System.Threading
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport
-open ClaimCore.Postgres
+open ClaimCore.Application
 
 /// Real PostgreSQL preserves the same Application authorization exercised through OIDC.
 type Fixture(database: PostgresFixture.Database) =

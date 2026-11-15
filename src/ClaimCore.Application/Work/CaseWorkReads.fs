@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -48,7 +54,7 @@ module internal CaseWorkReads =
                  |> Option.map (HandlingSummary.format >> TextSearch.normalize))
 
     let viewsFromSummaries
-        (tx: IReadTx)
+        (tx: ReadTx)
         (basis: WorkDateBasis)
         (records: StoredCase list)
         (summaries: Map<CaseId, CaseWorkSummary>)
@@ -62,7 +68,7 @@ module internal CaseWorkReads =
                     |> Option.bind (fun snapshot ->
                         snapshot.Work.Responsible |> Option.map (fun actor -> id, actor)))
 
-            let! accounts = tx.AssignedAccounts assignments
+            let! accounts = WorkReads.assignedAccounts tx assignments
 
             let authorIds =
                 summaries
@@ -72,7 +78,7 @@ module internal CaseWorkReads =
                 |> Seq.distinct
                 |> Seq.toList
 
-            let! authors = tx.ActorRefs authorIds
+            let! authors = PeopleReads.actorRefs tx authorIds
             let mutable result = Ok Map.empty
 
             for record in records do
@@ -176,9 +182,11 @@ module internal CaseWorkReads =
             return result
         }
 
-    let views (tx: IReadTx) (basis: WorkDateBasis) (records: StoredCase list) =
+    let views (tx: ReadTx) (basis: WorkDateBasis) (records: StoredCase list) =
         task {
-            let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
+            let! summaries =
+                WorkReads.workSummaries tx (records |> List.map _.CaseId, basis.BusinessDate)
+
             return! viewsFromSummaries tx basis records summaries
         }
 
@@ -214,7 +222,7 @@ module internal CaseWorkReads =
     /// A bounded set of current pending rows under the same authorized case-read snapshot.
     let nextActions
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (work: CaseWorkView)
         (actor: AccessView)
         maintenance
@@ -226,7 +234,8 @@ module internal CaseWorkReads =
             match actor.Actor with
             | Some requester when CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased ->
                 let! page =
-                    tx.ReminderPage
+                    ReminderReads.reminderPage
+                        tx
                         {
                             Selection =
                                 {
@@ -258,7 +267,9 @@ module internal CaseWorkReads =
                         }
 
                 let! authors =
-                    tx.ActorRefs(page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
+                    PeopleReads.actorRefs
+                        tx
+                        (page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
 
                 return
                     page.Items

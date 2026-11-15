@@ -2,6 +2,10 @@ module internal ClaimCore.IntegrationTests.SubmissionStorage
 
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Wire
 open ClaimCore.Presentation

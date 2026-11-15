@@ -4,9 +4,13 @@ open Expecto
 open System
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -44,7 +48,11 @@ let private erasedRebuild (database: PostgresFixture.Database) =
             database.Fixture.Store.Read
                 {
                     CancellationToken = token
-                    Work = (fun tx -> tx.FindActor(CaseFixtures.actorId (id database.Fixture 740)))
+                    Work =
+                        (fun tx ->
+                            PeopleReads.findActor
+                                tx
+                                (CaseFixtures.actorId (id database.Fixture 740)))
                 }
 
         let person =

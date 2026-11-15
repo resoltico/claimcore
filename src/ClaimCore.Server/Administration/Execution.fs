@@ -6,7 +6,8 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open System.Threading
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Administration
 
 module Execution =
     let private perform (administration: Administration) token command =
@@ -62,7 +63,10 @@ module Execution =
                         return! perform administration token command
                     with error ->
                         return
-                            match AdministrationFailures.classify error with
+                            match
+                                ClaimCore.Application.Administration.Administration.ClassifyFailure
+                                    error
+                            with
                             | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
                             | AdministrationFailure.Fault fault -> Replies.operatorFault fault
         }

@@ -8,7 +8,7 @@ open Microsoft.AspNetCore.DataProtection
 open Microsoft.Extensions.Options
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.HostSecurity
-open ClaimCore.Postgres
+open ClaimCore.Application
 
 module SessionKeys =
     [<Literal>]

@@ -12,6 +12,10 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -122,16 +126,7 @@ let peopleReceipt (request: ClaimCore.Domain.PeopleRequest) =
 
 
 // Host tests configure replies rather than implement ledger state or transitions.
-type ScriptedRead() =
-    inherit System.Reflection.DispatchProxy()
-
-    member val Reply: string -> (obj | null) array -> (obj | null) =
-        (fun name _ -> invalidOp ("Unexpected store read: " + name)) with get, set
-
-    override this.Invoke(methodInfo, arguments) =
-        this.Reply (nonNull methodInfo).Name (nonNull arguments)
-
-type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
+type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?reads: IStore) =
     let contexts = System.Collections.Concurrent.ConcurrentQueue<ContextQuery>()
 
     let facts principal =
@@ -160,25 +155,6 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
             Maintenance = RegisterMaintenance.initial
         }
 
-    let reader = System.Reflection.DispatchProxy.Create<IReadTx, ScriptedRead>()
-
-    do
-        (reader :?> ScriptedRead).Reply <-
-            fun name arguments ->
-                match name with
-                | "get_ObservedAt" -> box observed
-                | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
-                | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
-                | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
-                | "Access" ->
-                    box (
-                        Task.FromResult
-                            (facts (unbox<AccessQuery>(nonNull arguments[0])).Principal).People
-                    )
-                | "FindOperation" ->
-                    box (Task.FromResult<ClaimCore.RecordFormat.RetainedOperation option> None)
-                | _ -> invalidOp ("Unexpected store read: " + name)
-
     member _.ContextQueries = contexts.ToArray() |> Array.toList
 
     interface IStore with
@@ -194,10 +170,9 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
             )
 
         member _.Read operation =
-            task {
-                let! reply = operation.Work reader
-                return Ok reply
-            }
+            match reads with
+            | Some store -> store.Read operation
+            | None -> Task.FromResult(Error StoreFailure.Unavailable)
 
         member _.Write _ =
             invalidOp "Host reply stubs do not execute writes."

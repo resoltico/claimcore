@@ -13,6 +13,10 @@ open System.Reflection
 open System.Threading.RateLimiting
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.TestServerFixture
@@ -87,37 +91,21 @@ let private busy (response: System.Net.Http.HttpResponseMessage) =
 
 let private pressure () =
     task {
-        let installation = Guid.NewGuid()
+        use! fixture = OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
 
         let principal =
             PrincipalKey.human oidc.Issuer.AbsoluteUri "synthetic-human"
             |> Result.defaultWith (string >> failtest)
 
-        let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+        let held = HeldReads((fixture.Actor principal).Store)
 
-        let actor =
-            {
-                Actor.ActorId = CaseFixtures.actorId (Guid.NewGuid())
-                Principal = principal
-                Enabled = true
-                Profile = None
-            }
+        let service actor =
+            fixture.Actor actor |> Service.mapStore (fun _ -> held)
 
-        let storage = HandlerStub.ScriptedStore(observed, Some actor)
+        use host =
+            new Host(true, forActor = service, installationId = fixture.InstallationId)
 
-        let calendar =
-            { new IBusinessCalendar with
-                member _.TimeZoneId = "Etc/UTC"
-
-                member _.DateAt instant =
-                    DateOnly.FromDateTime instant.UtcDateTime
-            }
-
-        let service store actor =
-            Service.create "synthetic" installation store calendar actor
-
-        let held = HeldReads(storage)
-        use host = new Host(true, forActor = service held, installationId = installation)
+        let observed = DateTimeOffset.UtcNow
         let! login, _ = host.Login()
         Expect.equal login 200 "Cookie authentication control"
         let! token = host.Token()

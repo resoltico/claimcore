@@ -14,7 +14,7 @@ open System.Text
 open ClaimCore.Json
 open System.Security.Cryptography
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.HostSecurity
 open ClaimCore.RecordFormat
 
