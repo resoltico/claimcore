@@ -98,6 +98,19 @@ module Access =
         rolesFor Capability.ReadCase
         |> List.filter (fun role -> PrincipalKey.isHuman principal || not (humanOnlyRole role))
 
+    let grantRefusal principal (grant: ActorGrant) =
+        let kind =
+            match grant.Scope with
+            | Scope.Installation -> ScopeKind.Installation
+            | Scope.Case _ -> ScopeKind.Case
+
+        if humanOnlyRole grant.Role && not (PrincipalKey.isHuman principal) then
+            Some PeopleRefusal.HumanPrincipalRequired
+        elif not (List.contains kind (roleScopes grant.Role)) then
+            Some PeopleRefusal.RoleScopeNotApplicable
+        else
+            None
+
     let validActor principal (view: AccessView) =
         let loaded =
             view.Installation @ (view.Cases |> Map.values |> Seq.collect id |> Seq.toList)

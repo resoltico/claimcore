@@ -74,7 +74,7 @@ module OperationSubmissionCodecs =
                 let codec =
                     inputMap collection.Inputs
                     |> boundedList
-                        (TaskCollectionId.minimumRows collection.Collection)
+                        (collection.MinimumRows)
                         (TaskCollectionId.maximumRows collection.Collection)
                     |> map SubmissionValue.Rows (function
                         | SubmissionValue.Rows rows -> rows

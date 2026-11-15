@@ -178,7 +178,7 @@ module OperationSubmission =
                     match Map.tryFind input values with
                     | Some(SubmissionValue.Rows rows) ->
                         if
-                            rows.Length < TaskCollectionId.minimumRows collection.Collection
+                            rows.Length < collection.MinimumRows
                             || rows.Length > TaskCollectionId.maximumRows collection.Collection
                         then
                             Error(

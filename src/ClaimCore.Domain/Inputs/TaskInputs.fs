@@ -129,10 +129,6 @@ module TaskCollectionId =
         function
         | TaskCollectionId.PeopleGrants -> TaskInputId.Target InputTarget.Grants
 
-    let minimumRows =
-        function
-        | TaskCollectionId.PeopleGrants -> PeopleAdmission.MinimumGrants
-
     let maximumRows =
         function
         | TaskCollectionId.PeopleGrants -> PeopleAdmission.MaximumGrants
@@ -191,3 +187,14 @@ module TaskInputIssue =
             Violation = issue.Violation
             RelatedDate = issue.RelatedDate
         }
+
+/// An input rejection always explains at least one failed rule.
+type TaskInputIssues = private TaskInputIssues of TaskInputIssue * TaskInputIssue list
+
+module TaskInputIssues =
+    let ofList =
+        function
+        | [] -> None
+        | first :: rest -> Some(TaskInputIssues(first, rest))
+
+    let toList (TaskInputIssues(first, rest)) = first :: rest

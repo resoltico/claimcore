@@ -179,4 +179,59 @@ let tests =
                             (Map.ofList
                                 [ TaskCollectionId.PeopleGrants, List.replicate 49 Map.empty ]))
                         "A grant collection cannot produce ordinal 48")
+            testCase
+                "declarations preserve capability-based human requester requirements"
+                (fun () ->
+                    let expected =
+                        Set.ofList
+                            [
+                                "case.void"
+                                "case.reinstate"
+                                "case.erase"
+                                "people.register"
+                                "people.admit"
+                                "people.grant"
+                                "people.revoke"
+                                "people.enable"
+                                "people.disable"
+                                "people.setProfile"
+                                "people.eraseProfile"
+                                "work.update"
+                                "note.add"
+                                "note.remove"
+                                "reminder.create"
+                                "reminder.update"
+                                "reminder.complete"
+                                "reminder.cancel"
+                                "reminder.reopen"
+                                "reminder.completeAndPlanNext"
+                            ]
+
+                    let actual =
+                        Registry.declarations
+                        |> List.filter _.RequiresHumanRequester
+                        |> List.map (fun declaration -> TaskId.token declaration.Id)
+                        |> Set.ofList
+
+                    Expect.equal
+                        actual
+                        expected
+                        "Domain capability policy determines the requester classification"
+
+                    Expect.isTrue
+                        (Registry.clientDeclarations
+                         |> List.forall (fun declaration -> not declaration.Capabilities.IsEmpty))
+                        "Client tasks have declared capability needs"
+
+                    let operator =
+                        Registry.findDeclaration (TaskId.ofLiteral "people.provisionOwner")
+                        |> Option.get
+
+                    Expect.isEmpty
+                        operator.Capabilities
+                        "Operator provisioning has no pre-existing actor capability"
+
+                    Expect.isFalse
+                        operator.RequiresHumanRequester
+                        "The operator path is distinct from requester admission")
         ]

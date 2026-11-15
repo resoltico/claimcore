@@ -46,6 +46,45 @@
     <Compile Include="Cli/OutcomeTests.fs" />
     <Compile Include="Domain/InputIdentityTests.fs" />
     <Compile Include="Domain/TaskRegistryTests.fs" />
+    <Compile Include="Domain/AggregateApplyTests.fs" />
+    <Compile Include="Domain/Tasks/TaskBuilders.fs" />
+    <Compile Include="Domain/Tasks/NoteAddTests.fs" />
+    <Compile Include="Domain/Tasks/NoteRemoveTests.fs" />
+    <Compile Include="Domain/Tasks/WorkUpdateTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderCreateTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderUpdateTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderCompleteTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderCancelTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderReopenTests.fs" />
+    <Compile Include="Domain/Tasks/ReminderCompleteAndPlanNextTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleRegisterTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleAdmitTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleProvisionOwnerTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleGrantTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleRevokeTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleEnableTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleDisableTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleSetProfileTests.fs" />
+    <Compile Include="Domain/Tasks/PeopleEraseProfileTests.fs" />
+    <Compile Include="Domain/Tasks/CaseOpenTests.fs" />
+    <Compile Include="Domain/Tasks/CaseAmendRegistrationTests.fs" />
+    <Compile Include="Domain/Tasks/CaseDecideTests.fs" />
+    <Compile Include="Domain/Tasks/CaseRecordPaymentTests.fs" />
+    <Compile Include="Domain/Tasks/CaseRemovePaymentTests.fs" />
+    <Compile Include="Domain/Tasks/CaseCorrectTests.fs" />
+    <Compile Include="Domain/Tasks/CaseCloseTests.fs" />
+    <Compile Include="Domain/Tasks/CaseReopenTests.fs" />
+    <Compile Include="Domain/Tasks/CaseVoidTests.fs" />
+    <Compile Include="Domain/Tasks/CaseReinstateTests.fs" />
+    <Compile Include="Domain/Tasks/CaseEraseTests.fs" />
+    <Compile Include="Domain/Tasks/CaseWithdrawDecisionTests.fs" />
+    <Compile Include="Domain/PartDescriptionTests.fs" />
+    <Compile Include="Domain/AggregateInvariantTests.fs" />
+    <Compile Include="Domain/TaskAvailabilityTests.fs" />
+
+
+
+
     <Compile Include="Domain/OperationLifetimeTests.fs" />
     <Compile Include="Domain/InputAccumulationTests.fs" />
     <Compile Include="Contract/InputIssueBudgetTests.fs" />

@@ -1,0 +1,396 @@
+namespace ClaimCore.Domain.Aggregates
+
+open System
+open ClaimCore.Domain
+open ClaimCore.Domain.Changes
+open ClaimCore.Domain.Inputs
+
+type AcceptedPart<'value> =
+    {
+        Revision: Revision
+        Stamp: SubjectStamp
+        Value: 'value
+    }
+
+/// Notes contribute identity and removal state to decisions; their text stays in accepted values.
+type NoteState =
+    { Removed: bool; Created: SubjectStamp }
+
+/// Decisions do not retain the accepted change's disposition reason.
+type CasePartState =
+    {
+        Lifecycle: Lifecycle
+        Status: CaseStatus
+        Content: CaseContent option
+    }
+
+type CaseFamily =
+    private
+        {
+            Identity: CaseId
+            ReferenceValue: CaseReference
+            CaseValue: AcceptedPart<CasePartState>
+            PaymentsValue: Map<OperationId, AcceptedPart<PaymentValue>>
+            WorkValue: AcceptedPart<CaseWork option> option
+            RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
+            NotesValue: Map<NoteId, AcceptedPart<NoteState>>
+            SequenceValue: Sequence
+        }
+
+    member this.Id = this.Identity
+    member this.Reference = this.ReferenceValue
+    member this.Case = this.CaseValue
+    member this.Payments = this.PaymentsValue
+    member this.Work = this.WorkValue
+    member this.Reminders = this.RemindersValue
+    member this.Notes = this.NotesValue
+    member this.Sequence = this.SequenceValue
+    member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
+
+module CaseFamily =
+    let private financial
+        (payments: Map<OperationId, AcceptedPart<PaymentValue>>)
+        (value: CaseValue)
+        =
+        match value.Content with
+        | None -> Ok()
+        | Some content ->
+            CaseAdmission.financial content.Registration content.Finance
+            |> Result.bind (fun () ->
+                let active =
+                    payments
+                    |> Map.values
+                    |> Seq.filter (fun part -> not part.Value.Removed)
+                    |> Seq.toList
+
+                let entries = active |> List.choose _.Value.Entry
+                let dates = entries |> List.map PaymentEntry.date |> List.sort
+
+                let bounds =
+                    match dates with
+                    | [] -> None
+                    | first :: _ -> PaymentDateBounds.create first (List.last dates)
+
+                if
+                    entries.Length <> active.Length
+                    || int64 entries.Length <> content.Finance.PaymentCount
+                    || (entries |> List.sumBy (PaymentEntry.amount >> Amount.value))
+                       <> Amount.value content.Finance.PaidAmount
+                    || bounds <> content.Finance.PaymentDates
+                then
+                    Error RecordViolation.InvalidPaymentState
+                else
+                    Ok())
+
+    let private caseState (value: CaseValue) : CasePartState =
+        {
+            Lifecycle = value.Lifecycle
+            Status = value.Status
+            Content = value.Content
+        }
+
+    let private accepted (change: PartChange) value =
+        {
+            Revision = change.Revision
+            Stamp = change.Stamp
+            Value = value
+        }
+
+    let private version (previous: AcceptedPart<'value> option) (change: PartChange) =
+        PartChange.successor
+            (previous |> Option.map _.Revision |> Option.defaultValue Revision.zero)
+            change.Revision
+
+    let private clear state =
+        { state with
+            CaseValue =
+                { state.Case with
+                    Value = { state.Case.Value with Content = None }
+                }
+            PaymentsValue =
+                state.Payments
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Entry = None }
+                    })
+            WorkValue = state.Work |> Option.map (fun part -> { part with Value = None })
+            RemindersValue =
+                state.Reminders
+                |> Map.map (fun _ part ->
+                    { part with
+                        Value = { part.Value with Plan = None }
+                    })
+        }
+
+    /// Structural application never invents missing private values or re-runs a task's business rules.
+    let apply (state: CaseFamily option) (change: PartChange) =
+        let invalid = Error RecordViolation.InvalidSubjectState
+
+        match change.Aggregate with
+        | AggregateReference.Person _ -> invalid
+        | AggregateReference.Family id when
+            change.PartId = Guid.Empty
+            || not (PartChange.validErasure change)
+            || (state |> Option.exists (fun state -> state.Id <> id))
+            ->
+            invalid
+        | AggregateReference.Family id ->
+            let changed =
+                match state, change.Value with
+                | None, PartValue.Case value when
+                    change.PartId = CaseId.value id
+                    && id = CaseId.ofOperationId change.Stamp.OperationId
+                    && value.Lifecycle = Lifecycle.Active
+                    && value.Status = CaseStatus.Opened
+                    && change.Erases.IsNone
+                    && value.Disposition.IsNone
+                    && value.Reference.IsSome
+                    && change.NaturalKey = (value.Reference |> Option.map CaseReference.format)
+                    && change.Revision = Revision.first
+                    ->
+                    financial Map.empty value
+                    |> Result.map (fun () ->
+                        {
+                            Identity = id
+                            ReferenceValue = value.Reference.Value
+                            CaseValue = accepted change (caseState value)
+                            PaymentsValue = Map.empty
+                            WorkValue = None
+                            RemindersValue = Map.empty
+                            NotesValue = Map.empty
+                            SequenceValue = EffectPosition.sequence change.Stamp.Position
+                        })
+                | None, _ -> Error RecordViolation.InvalidHistoryStart
+                | Some before, _ when
+                    change.NaturalKey.IsSome
+                    || before.Case.Value.Lifecycle = Lifecycle.Erased
+                    || EffectPosition.sequence change.Stamp.Position < before.Sequence
+                    ->
+                    invalid
+                | Some _, value when change.Erases.IsSome && PartValue.kind value <> PartKind.Case ->
+                    invalid
+                | Some before, PartValue.Case value when change.PartId = CaseId.value id ->
+                    if not (version (Some before.Case) change) then
+                        Error RecordViolation.InvalidRevisionSequence
+                    elif value.Reference.IsSome then
+                        invalid
+                    elif
+                        value.Lifecycle = Lifecycle.Erased
+                        && (value.Content.IsSome || value.Disposition.IsSome)
+                    then
+                        invalid
+                    elif
+                        (value.Lifecycle = Lifecycle.Erased)
+                        <> (change.Erases = Some(CompartmentOwner.Family id))
+                    then
+                        invalid
+                    else
+                        financial before.Payments value
+                        |> Result.map (fun () ->
+                            { before with
+                                CaseValue = accepted change (caseState value)
+                            })
+                | Some before, PartValue.Payment value ->
+                    match OperationId.create change.PartId with
+                    | Some payment when version (Map.tryFind payment before.Payments) change ->
+                        let previous = Map.tryFind payment before.Payments
+
+                        let validTransition =
+                            match previous with
+                            | None -> not value.Removed && payment = change.Stamp.OperationId
+                            | Some previous ->
+                                not previous.Value.Removed
+                                && value.Removed
+                                && (match previous.Value.Entry, value.Entry with
+                                    | Some before, Some after -> before = after
+                                    | _ -> true)
+
+                        if
+                            not validTransition
+                            || (value.Entry
+                                |> Option.exists (fun entry -> PaymentEntry.id entry <> payment))
+                        then
+                            Error RecordViolation.InvalidPaymentState
+                        else
+                            Ok
+                                { before with
+                                    PaymentsValue =
+                                        Map.add payment (accepted change value) before.Payments
+                                }
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> Error RecordViolation.InvalidPaymentState
+                | Some before, PartValue.Work value when change.PartId = CaseId.value id ->
+                    if version before.Work change then
+                        Ok
+                            { before with
+                                WorkValue = Some(accepted change value)
+                            }
+                    else
+                        Error RecordViolation.InvalidRevisionSequence
+                | Some before, PartValue.Reminder value ->
+                    match ReminderId.create change.PartId with
+                    | Some reminder when version (Map.tryFind reminder before.Reminders) change ->
+                        let previous = Map.tryFind reminder before.Reminders
+
+                        let validTransition =
+                            match previous with
+                            | None ->
+                                value.State = ReminderState.Pending
+                                && reminder = ReminderId.ofOperationId change.Stamp.OperationId
+                            | Some previous ->
+                                match previous.Value.State, value.State with
+                                | ReminderState.Pending, ReminderState.Pending -> true
+                                | ReminderState.Pending,
+                                  (ReminderState.Completed | ReminderState.Cancelled) ->
+                                    match previous.Value.Plan, value.Plan with
+                                    | Some before, Some after -> before = after
+                                    | _ -> true
+                                | (ReminderState.Completed | ReminderState.Cancelled),
+                                  ReminderState.Pending ->
+                                    match previous.Value.Plan, value.Plan with
+                                    | Some before, Some after -> before.Action = after.Action
+                                    | _ -> true
+                                | _ -> false
+
+                        if not validTransition then
+                            invalid
+                        else
+                            Ok
+                                { before with
+                                    RemindersValue =
+                                        Map.add reminder (accepted change value) before.Reminders
+                                }
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
+                | Some before, PartValue.Note value ->
+                    match NoteId.create change.PartId with
+                    | Some note when version (Map.tryFind note before.Notes) change ->
+                        let previous = Map.tryFind note before.Notes
+
+                        let validTransition =
+                            match previous with
+                            | None ->
+                                not value.Removed
+                                && note = NoteId.ofOperationId change.Stamp.OperationId
+                            | Some previous -> not previous.Value.Removed && value.Removed
+
+                        let created =
+                            Map.tryFind note before.Notes
+                            |> Option.map _.Value.Created
+                            |> Option.defaultValue change.Stamp
+
+                        if not validTransition || (value.Removed && value.Text.IsSome) then
+                            invalid
+                        else
+                            Ok
+                                { before with
+                                    NotesValue =
+                                        Map.add
+                                            note
+                                            (accepted
+                                                change
+                                                {
+                                                    Removed = value.Removed
+                                                    Created = created
+                                                })
+                                            before.Notes
+                                }
+                    | Some _ -> Error RecordViolation.InvalidRevisionSequence
+                    | None -> invalid
+                | _ -> invalid
+
+            changed
+            |> Result.map (fun state ->
+                let state = if change.Erases.IsSome then clear state else state
+
+                { state with
+                    SequenceValue = EffectPosition.sequence change.Stamp.Position
+                })
+
+    let snapshot (state: CaseFamily) =
+        let value = state.Case.Value
+
+        let fields =
+            value.Content
+            |> Option.map (fun content ->
+                {
+                    CaseReference = state.Reference
+                    Status = value.Status
+                    Registration = content.Registration
+                    Finance = content.Finance
+                })
+
+        match value.Lifecycle, fields with
+        | Lifecycle.Erased, _ ->
+            Some
+                {
+                    CaseId = state.Id
+                    Reference = state.Reference
+                    Revision = state.Case.Revision
+                    State = CaseState.Erased
+                }
+        | lifecycle, Some fields ->
+            Some
+                {
+                    CaseId = state.Id
+                    Reference = state.Reference
+                    Revision = state.Case.Revision
+                    State = CaseState.ofLifecycle lifecycle fields
+                }
+        | _ -> None
+
+    let index (state: CaseFamily) =
+        snapshot state
+        |> Option.map (fun snapshot ->
+            let work =
+                state.Work
+                |> Option.bind (fun part ->
+                    part.Value
+                    |> Option.map (fun work ->
+                        {
+                            CaseId = state.Id
+                            Revision = part.Revision
+                            Work = work
+                        }))
+
+            let due =
+                state.Reminders
+                |> Map.values
+                |> Seq.choose (fun part ->
+                    if part.Value.State = ReminderState.Pending then
+                        part.Value.Plan |> Option.map _.Due
+                    else
+                        None)
+                |> Seq.toList
+
+            CaseIndex.create state.ChangedAt snapshot work due)
+
+    /// Projection writers consume accepted values and aggregate-derived indexes in the same fold.
+    let rows (state: CaseFamily) (changes: PartChange list) =
+        if
+            changes
+            |> List.exists (fun change ->
+                change.Aggregate <> AggregateReference.Family state.Id
+                || change.Kind = PartKind.Person)
+        then
+            Error RecordViolation.InvalidSubjectState
+        else
+            match index state with
+            | None -> Error RecordViolation.InvalidFinancialPosition
+            | Some index ->
+                let erased = state.Case.Value.Lifecycle = Lifecycle.Erased
+
+                let missing =
+                    (state.Work |> Option.exists (fun part -> part.Value.IsNone))
+                    || (state.Payments |> Map.exists (fun _ part -> part.Value.Entry.IsNone))
+                    || (state.Reminders |> Map.exists (fun _ part -> part.Value.Plan.IsNone))
+                    || (changes
+                        |> List.exists (fun change ->
+                            match change.Value with
+                            | PartValue.Note value -> not value.Removed && value.Text.IsNone
+                            | _ -> false))
+
+                if missing && not erased then
+                    Error RecordViolation.InvalidSubjectState
+                else
+                    Ok(changes, index)

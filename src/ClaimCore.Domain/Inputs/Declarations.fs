@@ -53,6 +53,7 @@ type TaskInputDeclaration =
 type TaskCollectionDeclaration =
     {
         Collection: TaskCollectionId
+        MinimumRows: int
         Inputs: TaskInputDeclaration list
     }
 

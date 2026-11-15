@@ -107,6 +107,22 @@ module PrincipalKey =
         | HumanPrincipal _ -> true
         | ServicePrincipal _ -> false
 
+    /// A fixed-size index key preserves exact principal identity under a case-insensitive index.
+    let naturalKey principal =
+        let kind, issuer, subject = parts principal
+
+        let frame (value: string) =
+            let bytes = Text.Encoding.UTF8.GetBytes value
+            let length = Array.zeroCreate<byte> 4
+            Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(length.AsSpan(), bytes.Length)
+            Array.append length bytes
+
+        [ Vocabulary.token PrincipalKind.vocabulary kind; issuer; subject ]
+        |> List.map frame
+        |> Array.concat
+        |> Security.Cryptography.SHA256.HashData
+        |> Convert.ToHexStringLower
+
 
 [<RequireQualifiedAccess>]
 type ScopeKind =

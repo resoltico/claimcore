@@ -62,7 +62,7 @@ module TaskMetadata =
                             id = TaskCollectionId.key collection.Collection
                             input =
                                 TaskInputId.token (TaskCollectionId.input collection.Collection)
-                            minimumRows = TaskCollectionId.minimumRows collection.Collection
+                            minimumRows = collection.MinimumRows
                             maximumRows = TaskCollectionId.maximumRows collection.Collection
                             defaults =
                                 TaskCollectionId.defaultValues collection.Collection

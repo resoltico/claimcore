@@ -189,7 +189,7 @@ module TaskAffordances =
 
     let initialGrantRows =
         collectionDefaults TaskCollectionId.PeopleGrants
-        |> List.replicate (TaskCollectionId.minimumRows TaskCollectionId.PeopleGrants)
+        |> List.replicate (PeopleAdmission.MinimumGrants)
         |> SubmissionValue.Rows
 
     let grantSeeds role scope =
