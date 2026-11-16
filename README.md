@@ -10,7 +10,8 @@ adjudicate coverage or transfer money.
 Follow [Getting started](docs/getting-started.md) for a fresh synthetic installation, sign-in and first
 case. The [examples](examples/README.md) demonstrate changes through JSON calls and human commands.
 Operators manage identity, access, backups and erasure of copies outside the live database.
-Durable changes before 1.0 require a fresh installation.
+This revision uses installation format 5 and requires a fresh installation and matching clients.
+Older CLI recovery state is incompatible with journal format 4.
 Build with the SDK pinned in [global.json](global.json); framework-dependent CLI distributions require its matching .NET runtime.
 
 The [HTTP contract](contracts/openapi.json) defines the endpoints. Actor endpoints negotiate HUMAN documents

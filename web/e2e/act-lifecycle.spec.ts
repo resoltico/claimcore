@@ -43,11 +43,9 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await completeAct(page, "case.withdrawDecision");
   await expectRevision(page, "4");
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(4);
-  const opening = page
-    .locator(".case-timeline-panel .region-timeline > li")
-    .filter({
-      has: page.locator('[data-entry="operationId"]').filter({ hasText: opened.operationId }),
-    });
+  const opening = page.locator(".case-timeline-panel .region-timeline > li").filter({
+    has: page.locator('[data-entry="operationId"]').filter({ hasText: opened.operationId }),
+  });
   await expect(opening).toHaveCount(1);
   await expect(opening).toContainText("Case facts recorded");
   await expect(opening).toContainText(opened.operationId);

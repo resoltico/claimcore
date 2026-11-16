@@ -1,6 +1,6 @@
 # Synthetic case walkthrough
 
-Use a fresh installation and matching service/CLI. [Getting started](../docs/getting-started.md) supplies
+Use a fresh format 5 installation, fresh CLI state and matching service/CLI. [Getting started](../docs/getting-started.md) supplies
 local HTTPS, identity and owner setup. Configure the CLI using
 [CLI use](../docs/integrating.md#cli-use); it receives no database credential.
 Use synthetic data only. The selected account needs Case handler and Payment recorder for all cases;
@@ -17,7 +17,9 @@ claimcore call < examples/05-reopen.json
 claimcore call < examples/06-revise-decision.json
 ```
 
-Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Structured calls carry the task, binding and declared input-token map. Human verbs use the same contract; after step
+Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with EUR 750 paid against EUR 800 payable. No money is transferred or refunded. Structured calls carry the task, binding and declared input-token map. Creation has no target in its
+binding; the opening reference is authored as `field:caseReference`. Payment changes update case totals
+and a payment record, so history can contain more entries than case versions. Human verbs use the same contract; after step
 three, inspect the next frame offline with:
 
 ```sh
@@ -41,7 +43,7 @@ The positive family sequence in the sample is illustrative: earlier accepted ins
 changes this value. Acquire it after step eight and preserve it with the reviewed request. Any accepted
 change to this case or its owned contents requires a new review before erasure.
 
-The erased case retains its ID, reference and version 9. Related live case/work/reminder payloads are
+The erased case retains its ID, reference and version 9. Related live case/payment/work/reminder/note payloads are
 removed; change metadata remains. Erasure does not remove WAL, backups or external copies.
 
 ## Preserve the dispatched ID

@@ -41,7 +41,7 @@ and expanded text.
 disables accounts. **Access** names rights and the policy that determines what a principal may do.
 The capabilities are `MANAGE_ACCESS` and `READ_ACCESS`; `people.*` endpoint IDs identify people reads
 and commands. **Actor** and **ActorId** remain the technical registered-identity terms, for both human
-and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the act
+and service principals. A dotted task ID, such as `case.recordPayment` or `people.grant`, is the task
 identity in submissions, advice, receipts, history and CLI declarations.
 
 ## Account and sign-in identity
@@ -74,6 +74,14 @@ and history; reinstatement permits work again without changing open/closed statu
 removes the live case's erasable contents while retaining its reference and change metadata.
 [Erasure limits](operating.md#erasure-limits) explain copies outside the live database.
 
+## Case family
+
+A case family includes the case facts, payment entries, case work, reminders and notes. Each owned
+record has its own revision; each task declares the preconditions reviewed for its change. The family
+sequence advances for every accepted family change.
+Erasing the family clears its live erasable contents together. A person has a separate lifetime and
+combines identity, profile, enablement and role assignments.
+
 ## Case work and responsibility
 
 Case work has an optional responsible person and handling summary, with an independent version starting
@@ -101,13 +109,13 @@ reminders retain their own page's basis until refreshed.
 
 A work view is a named selection of readable cases or reminders. Attention explains work needing action;
 a headline describes composite case state, combining lifecycle, status and payment progress. Inactive
-reminder parents report coarse case state without inferring an open/closed status. The recommendation is an offered next action. The response's presentation `view` is a Screen of ordered semantic regions with seven content kinds. Human clients render these
+reminder parents report coarse case state without inferring an open/closed status. The recommendation is an offered next action. The HUMAN document carries a Screen of ordered semantic regions with seven content kinds. Human clients render these
 values generically; typed data remains available for interaction and machine output.
 
 ## Change and unconfirmed changes
 
 An operation ID is a UUIDv7 identifying one exact submitted change. Its first-execution window is ten
-minutes; replay is checked first. A local recovery attempt stores identity, never the business request
+minutes; accepted retry lookup follows current authorization. A local recovery attempt stores identity, never the business request
 or credentials. Restart recovery checks the result and cannot reconstruct a submission.
 
 `operation.get` returns accepted metadata under current disclosure rights, a pending deadline, or final

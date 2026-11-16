@@ -31,8 +31,8 @@ The table below defines project ownership. Supported contracts are documented in
 | Project | Responsibility |
 | --- | --- |
 | Json | Strict JSON, codecs, schemas and writers |
-| Domain | Values, acts, transitions, access policy and business refusals |
-| Application.Contracts | Use-case contracts, semantic tasks, typed assembly, outcomes and pages |
+| Domain | Values, task declarations, checks, decisions, aggregates, part descriptions and access policy |
+| Application.Contracts | Use-case contracts, endpoint declarations, client task metadata, typed assembly and outcomes |
 | RecordFormat | Current durable grammars, literal spellings, limits and cursors |
 | Application | Execution, reads, verification, storage and administration; PostgreSQL transactions and projections |
 | Presentation | Semantic regions, screen presenters, messages and language policy |
@@ -44,7 +44,10 @@ The table below defines project ownership. Supported contracts are documented in
 
 The [evaluated edge policy](../tests/ClaimCore.Tests/Architecture/ProjectReferences.fs) owns exact project
 references. Domain is independent of transport and JSON. Application does not depend on Wire
-or Presentation. The published CLI excludes Application. Product friendship is limited to tests.
+or Presentation. Its internal Storage namespace owns connections, concrete transactions and ledger
+writes; Reads owns SQL, and Administration supplies the operator facade. Npgsql is compile-private.
+The published CLI excludes Application. Product friendship is limited to tests. Presentation and Wire
+use Application.Contracts reply kinds; CLI alone maps those kinds to process exit codes.
 
 ## Source vocabulary
 
@@ -55,7 +58,10 @@ listing and prominence. Human layout changes do not change Domain or the machine
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 [Task modules](../src/ClaimCore.Domain/Tasks/Registry.fs) own declarations, checks, availability and decisions.
 [CaseFamily](../src/ClaimCore.Domain/Aggregates/CaseFamily.fs) and [Person](../src/ClaimCore.Domain/Aggregates/Person.fs)
-apply accepted parts, retaining identity and provenance when private content is erased.
+apply accepted parts, retaining identity and provenance when private content is erased. The case family
+owns case facts, payments, work, reminders and notes; the person combines identity, profile, enablement
+and role assignments. Task decisions produce part changes; shared before/after descriptions serve
+reviews, receipts and history.
 [CaseIndex](../src/ClaimCore.Domain/CaseIndex.fs) derives the family index.
 [Engine](../src/ClaimCore.Application/Execution/Engine.fs) shares preview and execution decisions;
 [Fold](../src/ClaimCore.Application/Execution/Fold.fs) re-decides available inputs and facts for replay, rebuild and verification.
@@ -80,7 +86,10 @@ lookup uses the write callback without appending. Current authorization governs 
 
 Pre-1.0 durable changes require a fresh installation. There are no migrations or cross-version readers.
 The [SQL baseline](../db/baseline.sql) enforces structure, append-only storage and erasure authorization;
-RecordFormat decoding and verification enforce act meaning. Do not move business vocabulary into SQL.
+RecordFormat decoding and verification enforce task meaning. The ledger stores opaque task tokens,
+public bindings, retained inputs, effects and erasable owner compartments. SQL checks gap-free part
+revisions, aggregate ownership and authorized clearing; it does not re-derive tasks, roles or business
+bounds. Do not move business vocabulary into SQL.
 
 ## Generated contracts
 
@@ -93,16 +102,20 @@ dotnet run --project eng/ClaimCore.ContractGenerator --no-restore -- --check
 
 The generator owns only [contracts](../contracts/). Presentation resolves authored catalogs at runtime for the host and CLI.
 Check mode compares generated contents and does not repair them. Review changes with their producers.
-A custom output directory contains the contract artifacts only.
+A custom output directory contains the contract artifacts only. HUMAN reads share one document/reply
+grammar; affordances and links are generic, while operation submissions and DATA replies remain typed.
+Binding definitions are shared by target shape. Review remaining identical schemas by meaning rather
+than merging every equal JSON shape.
 
 ## Core presentation and copy
 
 Host bindings compute locale-neutral screens with semantic regions through
 [screen presenters](../src/ClaimCore.Presentation/Screens). Actor replies negotiate distinct
-HUMAN documents and DATA projections. A HUMAN document owns its subject, Screen, affordances, typed query links,
+HUMAN documents and DATA projections. A HUMAN document owns its subject, Screen, affordances, generic query links,
 observation, disclosure and cursor. Rows carry their own controls. DATA carries no Screen; browser and native text consume documents,
 while JSON and CSV consume DATA. Review documents carry changes and bindings without full snapshots.
-[Task declarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) own semantic inputs and choices;
+[Domain declarations](../src/ClaimCore.Domain/Tasks/Registry.fs) own semantic inputs, retention and choices;
+the [client facade](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) includes endpoint metadata;
 [submission assembly](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) owns their command construction.
 
 Keep action eligibility, lifecycle, reminder timing, disclosure and recommendations in their core owners.
@@ -138,8 +151,20 @@ and `npm --prefix web run theme -- --check` to check generation. Components use 
 `ui/` controls. [layout.css](../web/src/ui/layout.css) owns responsive boundaries. Keep strict CSP,
 keyboard access, forced colours, bidi isolation and exact money/date formatting intact.
 
+Domain scenarios under `tests/ClaimCore.Tests/Domain` use Domain and pure builders:
+[DomainInputs](../tests/ClaimCore.TestSupport/DomainInputs.fs),
+[CaseFixtures](../tests/ClaimCore.TestSupport/CaseFixtures.fs) and
+[CaseBuilders](../tests/ClaimCore.Tests/Domain/CaseBuilders.fs). Keep codec, presentation and compiler
+boundary checks with Contract or Architecture. Builders supply inputs; expected business outcomes
+remain hand-authored. Retain storage/transaction checks, security controls and user journeys when
+removing repeated per-task adapter cases.
+
 Browser units live under `web/tests/unit`, interactions under `web/tests/flows`, and fixtures under
 `web/tests/support`. Type-aware lint and the strict protocol TypeScript project enforce import boundaries.
+The existing frontend lint also rejects task/endpoint literals outside generated contracts and the
+transport/types/routing adapters. Select operations from Core controls and definitions; lookups use
+choicesFrom, and all matching choicesWhen conditions constrain choices. Core owns business wording
+in all nine catalogs; interaction chrome stays with the browser.
 Local Vitest name filters may deliberately deselect tests. The completion lint rejects authored skip,
 todo, conditional exclusion and focused-test APIs. Required CI rejects any incomplete collected test,
 including runner deselection; run the complete selected files there.

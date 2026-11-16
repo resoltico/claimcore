@@ -1,6 +1,6 @@
 # People and access
 
-Use **People & access** to add accounts, update names and contact details, and assign roles. An owner can
+Use **People and access** to add accounts, update names and contact details, and assign roles. An owner can
 make these changes. An auditor can review people and access without changing them. See the
 [operating guide](operating.md#access-review-and-sessions) for identity-provider and session controls.
 

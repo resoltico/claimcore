@@ -15,7 +15,10 @@ server and its assets; the human CLI is distributed separately.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-The runtime refuses unsupported baseline identities and formats without converting them.
+The current installation format is 5. Format 4 databases cannot be migrated or rebuilt into this
+format by this build: initialize a separate empty database with matching tools. The runtime refuses
+unsupported baseline identities and formats without converting them. Use fresh CLI state for recovery
+journal format 4; retain older installations and their matching tools separately where needed.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
@@ -330,10 +333,12 @@ reloading cannot reconstruct a discarded request body.
 Accepted writes serialize at one ledger head. Verification replays retained requests through the same
 Domain decisions, using each entry's stored business date and authority at that position. It checks
 hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes
-the replayed state as projections. Erased payloads receive structural erasure checks; request-admission
-windows and maintenance mode are not replayed.
+the replayed state as projections. One fold supplies the historical environment, applies effects and
+checks reproduced part changes. Erased history is checked from retained inputs and available facts,
+including owner/compartment consistency; cleared private values cannot be reconstructed. First-execution
+windows and present maintenance are not replayed.
 
-Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
+Unknown stored task, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are
 structured results; provider failures remain failures. A checkpoint contains `installationId`,
 `operationSequence`, `operationHash` and the nullable full-precision `expiredBefore` frontier. A matching
