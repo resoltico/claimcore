@@ -35,7 +35,7 @@ module internal ExecutionEnvironment =
                             | Some id when
                                 Access.can principal access Capability.ReadCase (Scope.Case id)
                                 ->
-                                return! AggregateStorage.family tx id
+                                return! AggregateStorage.familyForDecision tx id binding
                             | Some _ -> return None
                     }
 

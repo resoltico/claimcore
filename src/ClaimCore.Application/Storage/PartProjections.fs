@@ -258,6 +258,18 @@ module internal PartProjections =
                 exactlyOne changed
 
             if row.Snapshot.State = CaseState.Erased then
+                // Erasure clears existing child projections without opening their private roots.
+                for sql in
+                    [
+                        "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.notes SET text=NULL WHERE case_id=$1"
+                    ] do
+                    let! _ =
+                        DatabaseSession.execute connection sql [| box (CaseId.value id) |] token
+
+                    ()
+
                 let! _ =
                     DatabaseSession.execute
                         connection

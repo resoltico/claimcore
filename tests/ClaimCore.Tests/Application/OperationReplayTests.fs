@@ -1,6 +1,9 @@
 module ClaimCore.Tests.OperationReplayTests
 
 open Expecto
+open Hedgehog
+open Hedgehog.FSharp
+open ClaimCore.Tests.PropertyHarness
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
@@ -41,11 +44,198 @@ let private executor id (record: RetainedOperation) =
         (fun () -> Array.create 32 199uy)
     |> required
 
+let private checkReplay steps =
+    let ownerRecord, one = owner ()
+
+    let registered, two =
+        build
+            one
+            2
+            principal
+            "people.register"
+            (Binding.PeopleNew Revision.zero)
+            (registration "generated-person")
+
+    let opened, three =
+        build
+            two
+            3
+            principal
+            "case.open"
+            (Binding.CaseNew Revision.zero)
+            (opening "GENERATED-REPLAY")
+
+    let target = person 2
+    let caseId = CaseId.ofOperationId (operation 3)
+    let mutable state = three
+    let mutable records = [ ownerRecord; registered; opened ]
+    let mutable name = Some "generated-person"
+    let mutable enabled = true
+    let mutable granted = false
+    let mutable closed = false
+    let mutable personRevision = 1L
+    let mutable caseRevision = 1L
+    let mutable notes = 0
+
+    for index, step in List.indexed steps do
+        let number = index + 10
+
+        let task, binding, values =
+            match step with
+            | 0 ->
+                name <- Some(sprintf "Replacement %d" number)
+
+                "people.setProfile",
+                Binding.People(target, revise personRevision),
+                profile name.Value
+            | 1 ->
+                name <- None
+                "people.eraseProfile", Binding.People(target, revise personRevision), inputs []
+            | 2 ->
+                granted <- not granted
+
+                (if granted then "people.grant" else "people.revoke"),
+                Binding.People(target, revise personRevision),
+                grant "CASE_READER"
+            | 3 ->
+                enabled <- not enabled
+
+                (if enabled then "people.enable" else "people.disable"),
+                Binding.People(target, revise personRevision),
+                inputs []
+            | 4 ->
+                closed <- not closed
+
+                (if closed then "case.close" else "case.reopen"),
+                Binding.Case(CaseSelector.Id caseId, revise caseRevision),
+                inputs []
+            | _ ->
+                notes <- notes + 1
+
+                "note.add",
+                Binding.NoteNew(CaseSelector.Id caseId),
+                inputs [ input InputTarget.NoteText (sprintf "Exact note %d" number) ]
+
+        let record, next = build state number principal task binding values
+
+        for owner in record.Changes |> List.choose _.Erases do
+            records <-
+                records
+                |> List.map (fun prior ->
+                    if
+                        prior.Root.Structure.Compartments
+                        |> List.exists (fun compartment -> compartment.Descriptor.Owner = owner)
+                    then
+                        clear prior
+                    else
+                        prior)
+
+        records <- records @ [ record ]
+
+        if step < 4 then
+            personRevision <- personRevision + 1L
+        elif step = 4 then
+            caseRevision <- caseRevision + 1L
+
+        let replayed = scan records |> required
+        Fold.complete replayed |> required |> ignore
+
+        Expect.equal
+            replayed.People
+            next.People
+            "Application replay re-decides accepted Person prefixes"
+
+        Expect.equal
+            replayed.Families
+            next.Families
+            "Application replay re-decides accepted CaseFamily prefixes"
+
+        let current = replayed.People[target]
+        Expect.equal current.Actor.Enabled enabled "Independent enablement model"
+
+        Expect.equal
+            (current.Actor.Profile
+             |> Option.map (fun profile -> PartyName.format profile.DisplayName))
+            name
+            "Independent profile presence/replacement model"
+
+        Expect.equal
+            (current.Grants |> Map.keys |> Seq.toList)
+            (if granted then
+                 [
+                     {
+                         ActorGrant.Role = Role.CaseReader
+                         Scope = Scope.Installation
+                     }
+                 ]
+             else
+                 [])
+            "Independent grant model"
+
+        let family = replayed.Families[caseId]
+
+        Expect.equal family.Case.Revision (revise caseRevision) "Independent case revision model"
+
+        Expect.equal
+            family.Case.Value.Status
+            (if closed then CaseStatus.Closed else CaseStatus.Opened)
+            "Independent case lifecycle model"
+
+        Expect.equal family.Notes.Count notes "Independent note identities"
+        state <- next
+
+    true
+
+let private generatedReplay =
+    property {
+        let! steps =
+            Gen.list (Range.constant 1 (sequenceMaximum ())) (Gen.int32 (Range.constant 0 5))
+
+        return checkReplay steps
+    }
+
 [<Tests>]
 let tests =
     testList
         "operation root replay"
         [
+            testCase
+                "generated Person and CaseFamily accepted sequences replay through the application fold"
+                (fun () -> run "aggregate application replay" generatedReplay)
+            testCase
+                "application replay rejects a coherent root with a corrupt Person effect"
+                (fun () ->
+                    let first, one = owner ()
+
+                    let registered, two =
+                        build
+                            one
+                            2
+                            principal
+                            "people.register"
+                            (Binding.PeopleNew Revision.zero)
+                            (registration "corrupt-person")
+
+                    let corrupt, _ =
+                        buildWith
+                            (List.map (fun change ->
+                                match change.Value with
+                                | PartValue.Person value ->
+                                    { change with
+                                        Value = PartValue.Person { value with Enabled = false }
+                                    }
+                                | _ -> change))
+                            two
+                            3
+                            principal
+                            "people.setProfile"
+                            (Binding.People(person 2, Revision.first))
+                            (profile "Replacement")
+
+                    Expect.equal
+                        (scan [ first; registered; corrupt ])
+                        (Error FoldProblem.Decision)
+                        "Valid hashes do not legitimize a wrong accepted effect")
             testCase
                 "generic root restoration does not replace reviewed-version verification"
                 (fun () ->

@@ -21,11 +21,15 @@ if (theme.status !== 0) {
 }
 // Core declarations own task tokens; endpoint bindings belong to the transport and routing adapters.
 /** @type {Set<string>} */
-const identifiers = new Set([...taskDefinitions, ...endpoints].map(({ id }) => id));
-const allowedIdentifiers = new Set(["routing/coreLinks.ts", "api/service.ts", "protocol/types.ts"]);
+const operationIdentifiers = new Set(
+  taskDefinitions.filter(({ kind }) => kind === "OPERATION").map(({ id }) => id),
+);
+/** @type {Set<string>} */
+const endpointIdentifiers = new Set(endpoints.map(({ id }) => id));
+const endpointAdapters = new Set(["routing/coreLinks.ts", "api/service.ts", "protocol/types.ts"]);
 const identifierFindings = [];
 for (const path of readdirSync(resolve(root, "src"), { recursive: true, encoding: "utf8" })) {
-  if (!/\.(css|tsx?)$/u.test(path) || allowedIdentifiers.has(path.split(sep).join("/"))) {
+  if (!/\.(css|tsx?)$/u.test(path)) {
     continue;
   }
   const source = readFileSync(resolve(root, "src", path), "utf8");
@@ -33,7 +37,11 @@ for (const path of readdirSync(resolve(root, "src"), { recursive: true, encoding
   for (const match of source.matchAll(
     /\/\/[^\n]*|\/\*[\s\S]*?\*\/|(["'\x60])((?:\\.|(?!\1)[^\r\n])*)\1/gu,
   )) {
-    if (match[2] !== undefined && identifiers.has(match[2])) {
+    if (
+      match[2] !== undefined &&
+      (operationIdentifiers.has(match[2]) ||
+        (endpointIdentifiers.has(match[2]) && !endpointAdapters.has(path.split(sep).join("/"))))
+    ) {
       const line = source.slice(0, match.index).split("\n").length;
       identifierFindings.push(
         `${path}:${line}: task/endpoint token ${

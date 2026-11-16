@@ -40,7 +40,7 @@ let private context number sequence =
             }
     }
 
-let private initial () =
+let private initialChanges () =
     let context = context 1 Sequence.first
 
     let context =
@@ -63,6 +63,9 @@ let private initial () =
         |> required
 
     changes
+
+let private initial () =
+    initialChanges ()
     |> List.fold (fun state change -> Some(CaseFamily.apply state change |> required)) None
     |> Option.get
 
@@ -112,6 +115,8 @@ let private actualSnapshot state =
 let private checkSequence steps =
     let start = initial ()
 
+    let mutable acceptedChanges = initialChanges ()
+
     let _, _, valid =
         steps
         |> List.indexed
@@ -128,7 +133,34 @@ let private checkSequence steps =
                         (ClaimCore.Tests.TaskBuilders.operation number)
                         sequence
 
+                let task = selected step.Witness
+
+                let decision =
+                    task.Decide
+                        (context number sequence)
+                        ClaimCore.Tests.TaskBuilders.environment
+                        (Some current)
+                        (binding model step.Stale step.Witness)
+                        step.Witness.Inputs
+
+                match decision with
+                | Ok changes -> acceptedChanges <- acceptedChanges @ changes
+                | Error _ -> ()
+
                 let result = execute number sequence current model step.Stale step.Witness
+
+                let replayed =
+                    acceptedChanges
+                    |> List.fold
+                        (fun state change -> Some(CaseFamily.apply state change |> required))
+                        None
+                    |> Option.get
+
+                Expect.equal
+                    replayed
+                    (result |> Result.defaultValue current)
+                    "Accepted case prefixes replay through generic apply"
+
                 let matches = Oracle.matches expected (result |> Result.map actualSnapshot)
 
                 let sequenceMatches =

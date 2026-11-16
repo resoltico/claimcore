@@ -83,6 +83,10 @@ codec records and interpretation predicates do not establish schema equivalence.
 not an integrator custom-store contract. It supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.
+Live family acquisition reads note headers and reminder dates; it opens preceding private text/plans
+only for selected parts. Public roots and acquired private values retain their hash checks. Reminder
+query controls acquire the plans they present. Live child projections consume accepted changed parts;
+owner erasure clears all related private projections. Replay/rebuild still reconstruct the full rows.
 
 Pre-1.0 durable changes require a fresh installation. There are no migrations or cross-version readers.
 The [SQL baseline](../db/baseline.sql) enforces structure, append-only storage and erasure authorization;

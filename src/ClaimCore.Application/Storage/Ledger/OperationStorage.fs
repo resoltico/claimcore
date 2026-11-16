@@ -126,7 +126,7 @@ module internal OperationStorage =
             (DatabaseSession.optional<byte array> 5 row)
         |> admitted
 
-    let find connection installation operation token =
+    let private read includePrivate connection installation operation token =
         task {
             let! rows =
                 DatabaseSession.rows
@@ -171,7 +171,10 @@ module internal OperationStorage =
                 let! contentRows =
                     DatabaseSession.rows
                         connection
-                        "SELECT ordinal,owner_kind,owner_id,commitment,nonce,payload FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal"
+                        (if includePrivate then
+                             "SELECT ordinal,owner_kind,owner_id,commitment,nonce,payload FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal"
+                         else
+                             "SELECT ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea FROM claimcore.ledger_compartments WHERE operation_sequence=$1 ORDER BY ordinal")
                         [| box (Sequence.value header.Sequence) |]
                         token
 
@@ -201,6 +204,13 @@ module internal OperationStorage =
                 return Some(RetainedOperation.restore root |> admitted)
             | _ -> return corrupt ()
         }
+
+    let find connection installation operation token =
+        read true connection installation operation token
+
+    /// Commitments authenticate public structure without acquiring private compartment bytes.
+    let findStructure connection installation operation token =
+        read false connection installation operation token
 
     let previous connection installation (change: PartChange) token =
         task {

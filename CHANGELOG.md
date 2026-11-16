@@ -10,6 +10,7 @@
 - Update DATA history consumers for generic part subjects and change descriptions; payment changes can emit both case and payment entries.
 - People history combines identity, profile, enablement and roles in one person change description with current private-data availability.
 - Tasks own declarations, checks and decisions; case-family and person aggregates share execution, replay, verification and reconstruction.
+- Live family decisions skip unrelated note/reminder text; selected values supply review, and child projections update only changed parts.
 - Format 5 retains opaque task/input/effect structure with owner compartments; SQL enforces revision chains, ownership and authorized clearing without business task lists.
 - Core supplies business wording and action placement; browser and CLI acquire operations from declarations and controls instead of task branches.
 - Business catalogs are current in all nine languages; translated changes remain AI-assisted and require human linguistic review.

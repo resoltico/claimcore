@@ -16,6 +16,7 @@ type internal DecisionSnapshot =
     {
         Declaration: TaskDeclaration
         Requester: AccessView
+        // Current retained headers plus the acquired private values for selected descriptions.
         Parts: PartChange list
         Origins: Map<PartKind * System.Guid, SubjectStamp>
         State: AggregateState

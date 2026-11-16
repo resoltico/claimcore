@@ -53,7 +53,15 @@ module internal ReminderRules =
                             Error(
                                 Refusal.Reminder(ReminderRuleRefusal.NotOffered part.Value.State)
                             )
-                        | None -> Ok(id, part))
+                        | None ->
+                            Ok(
+                                id,
+                                {
+                                    Revision = part.Revision
+                                    Stamp = part.Stamp
+                                    Value = part.Value.Value
+                                }
+                            ))
             | _ -> Error FamilyRules.unavailable
 
     let availability

@@ -24,6 +24,31 @@ type CasePartState =
         Content: CaseContent option
     }
 
+/// Due dates participate in the family index; an action is acquired only for a selected reminder.
+type ReminderSchedule =
+    | DueOnly of CalendarDate
+    | AvailablePlan of ReminderPlan
+    | Cleared
+
+type ReminderFacts =
+    {
+        State: ReminderState
+        Schedule: ReminderSchedule
+    }
+
+    member this.Plan =
+        match this.Schedule with
+        | AvailablePlan plan -> Some plan
+        | _ -> None
+
+    member this.Due =
+        match this.Schedule with
+        | AvailablePlan plan -> Some plan.Due
+        | DueOnly due -> Some due
+        | Cleared -> None
+
+    member this.Value: ReminderValue = { State = this.State; Plan = this.Plan }
+
 type CaseFamily =
     private
         {
@@ -32,7 +57,7 @@ type CaseFamily =
             CaseValue: AcceptedPart<CasePartState>
             PaymentsValue: Map<OperationId, AcceptedPart<PaymentValue>>
             WorkValue: AcceptedPart<CaseWork option> option
-            RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
+            RemindersValue: Map<ReminderId, AcceptedPart<ReminderFacts>>
             NotesValue: Map<NoteId, AcceptedPart<NoteState>>
             SequenceValue: Sequence
         }
@@ -136,7 +161,7 @@ module CaseFamily =
                 state.Reminders
                 |> Map.map (fun _ part ->
                     { part with
-                        Value = { part.Value with Plan = None }
+                        Value = { part.Value with Schedule = Cleared }
                     })
         }
 
@@ -276,7 +301,18 @@ module CaseFamily =
                             Ok
                                 { before with
                                     RemindersValue =
-                                        Map.add reminder (accepted change value) before.Reminders
+                                        Map.add
+                                            reminder
+                                            (accepted
+                                                change
+                                                {
+                                                    ReminderFacts.State = value.State
+                                                    Schedule =
+                                                        value.Plan
+                                                        |> Option.map AvailablePlan
+                                                        |> Option.defaultValue Cleared
+                                                })
+                                            before.Reminders
                                 }
                     | Some _ -> Error RecordViolation.InvalidRevisionSequence
                     | None -> invalid
@@ -376,7 +412,7 @@ module CaseFamily =
                 |> Map.values
                 |> Seq.choose (fun part ->
                     if part.Value.State = ReminderState.Pending then
-                        part.Value.Plan |> Option.map _.Due
+                        part.Value.Due
                     else
                         None)
                 |> Seq.toList
@@ -401,11 +437,12 @@ module CaseFamily =
                 let missing =
                     (state.Work |> Option.exists (fun part -> part.Value.IsNone))
                     || (state.Payments |> Map.exists (fun _ part -> part.Value.Entry.IsNone))
-                    || (state.Reminders |> Map.exists (fun _ part -> part.Value.Plan.IsNone))
+                    || (state.Reminders |> Map.exists (fun _ part -> part.Value.Due.IsNone))
                     || (changes
                         |> List.exists (fun change ->
                             match change.Value with
                             | PartValue.Note value -> not value.Removed && value.Text.IsNone
+                            | PartValue.Reminder value -> value.Plan.IsNone
                             | _ -> false))
 
                 if missing && not erased then
@@ -414,7 +451,9 @@ module CaseFamily =
                     Ok(changes, index)
 
     /// Restores exact accepted versions for live decisions; history succession is checked by apply.
-    let restore
+    let private restoreParts
+        (reminderDates: Map<ReminderId, CalendarDate>)
+        includePrivate
         id
         reference
         sequence
@@ -484,7 +523,22 @@ module CaseFamily =
                     |> List.choose (fun change ->
                         match change.Value, ReminderId.create change.PartId with
                         | PartValue.Reminder value, Some reminder ->
-                            Some(reminder, accepted change value)
+                            Some(
+                                reminder,
+                                accepted
+                                    change
+                                    {
+                                        ReminderFacts.State = value.State
+                                        Schedule =
+                                            match
+                                                value.Plan, Map.tryFind reminder reminderDates
+                                            with
+                                            | Some plan, Some due when plan.Due <> due -> Cleared
+                                            | Some plan, _ -> AvailablePlan plan
+                                            | None, Some due -> DueOnly due
+                                            | None, None -> Cleared
+                                    }
+                            )
                         | _ -> None)
                     |> Map.ofList
 
@@ -518,5 +572,17 @@ module CaseFamily =
                     }
 
                 financial payments value
-                |> Result.bind (fun () -> rows state parts |> Result.map (fun _ -> state))
+                |> Result.bind (fun () ->
+                    let acquired =
+                        parts |> List.filter (fun part -> includePrivate part.Kind part.PartId)
+
+                    rows state acquired |> Result.map (fun _ -> state))
             | _ -> invalid
+
+    /// Full reconstruction requires all still-present private values.
+    let restore id reference sequence parts origins =
+        restoreParts Map.empty (fun _ _ -> true) id reference sequence parts origins
+
+    /// Live acquisition carries note identity/removal and reminder dates without unrelated text.
+    let restoreForDecision dates includePrivate id reference sequence parts origins =
+        restoreParts dates includePrivate id reference sequence parts origins

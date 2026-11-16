@@ -206,7 +206,7 @@ module internal CaseWorkReads =
             let mutable families = Map.empty
 
             for id in List.distinct ids do
-                let! state = AggregateStorage.family tx id
+                let! state = AggregateStorage.familyForReminders tx id
 
                 match state with
                 | Some(state, _, _) -> families <- Map.add id state families

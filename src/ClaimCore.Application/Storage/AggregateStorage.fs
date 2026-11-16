@@ -6,7 +6,7 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
 
-/// Current aggregate parts come from their complete, hash-checked accepted roots.
+/// Restores authenticated public roots and only the private values needed by this consumer.
 module internal AggregateStorage =
     let private corrupt message = raise (RecordCorruptException message)
 
@@ -24,12 +24,14 @@ module internal AggregateStorage =
                 return record, Map.add id record cache
         }
 
-    let family (tx: ReadTx) id =
+    let private readFamily includePrivate (tx: ReadTx) id =
         task {
             let! rows =
                 DatabaseSession.rows
                     tx.Connection
-                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind='FAMILY' AND e.aggregate_id=$1 ORDER BY e.part_kind,e.part_id,e.revision DESC"
+                    ("SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,"
+                     + DatabaseSession.dateExpression "m.due"
+                     + " FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 JOIN claimcore.ledger o ON o.sequence=f.operation_sequence LEFT JOIN claimcore.reminders m ON e.part_kind='REMINDER' AND m.reminder_id=e.part_id WHERE e.aggregate_kind='FAMILY' AND e.aggregate_id=$1 ORDER BY e.part_kind,e.part_id,e.revision DESC")
                     [| box (CaseId.value id) |]
                     tx.CancellationToken
 
@@ -39,16 +41,52 @@ module internal AggregateStorage =
                 let mutable cache = Map.empty
                 let mutable parts = []
                 let mutable origins = Map.empty
+                let mutable dates = Map.empty
+                let mutable publicCache = Map.empty
+
+                let load privateValues id =
+                    task {
+                        match Map.tryFind id cache with
+                        | Some record -> return record
+                        | None when privateValues ->
+                            let! record, loaded = operation tx cache id
+                            cache <- loaded
+                            return record
+                        | None ->
+                            match Map.tryFind id publicCache with
+                            | Some record -> return record
+                            | None ->
+                                let! record =
+                                    OperationStorage.findStructure
+                                        tx.Connection
+                                        tx.InstallationId
+                                        id
+                                        tx.CancellationToken
+
+                                let record =
+                                    record
+                                    |> Option.defaultWith (fun () ->
+                                        corrupt "Accepted part root is absent.")
+
+                                publicCache <- Map.add id record publicCache
+                                return record
+                    }
 
                 for row in rows do
                     let idAt index =
                         DatabaseSession.value<Guid> index row
                         |> DatabaseSession.admitted OperationId.create
 
-                    let! record, loaded = operation tx cache (idAt 0)
-                    cache <- loaded
-                    let! first, loaded = operation tx cache (idAt 2)
-                    cache <- loaded
+                    let! structure = load false (idAt 0)
+                    let index = DatabaseSession.value<int> 1 row
+
+                    let retained =
+                        structure.Changes
+                        |> List.tryItem index
+                        |> Option.defaultWith (fun () -> corrupt "Accepted part index is absent.")
+
+                    let! record = load (includePrivate retained.Kind retained.PartId) (idAt 0)
+                    let! first = load false (idAt 2)
 
                     let part =
                         record.Changes
@@ -68,6 +106,15 @@ module internal AggregateStorage =
                         || origin.Revision <> Revision.first
                     then
                         corrupt "Accepted part origin does not match its current owner."
+
+                    match part.Value with
+                    | PartValue.Reminder _ ->
+                        match DatabaseSession.optionalCalendarDate 4 row with
+                        | Some due ->
+                            let reminder = DatabaseSession.admitted ReminderId.create part.PartId
+                            dates <- Map.add reminder (CalendarDate.ofDate due) dates
+                        | None -> ()
+                    | _ -> ()
 
                     parts <- part :: parts
                     origins <- Map.add (part.Kind, part.PartId) origin.Stamp origins
@@ -91,12 +138,40 @@ module internal AggregateStorage =
                     parts |> List.map (_.Stamp.Position >> EffectPosition.sequence) |> List.max
 
                 let family =
-                    CaseFamily.restore id reference sequence parts origins
+                    CaseFamily.restoreForDecision
+                        dates
+                        includePrivate
+                        id
+                        reference
+                        sequence
+                        parts
+                        origins
                     |> Result.defaultWith (fun _ ->
                         corrupt "Accepted family parts are inconsistent.")
 
                 return Some(family, parts, origins)
         }
+
+    /// Aggregate consumers need note identity/removal and reminder dates, not unrelated text.
+    let family tx id =
+        readFamily (fun kind _ -> kind <> PartKind.Note && kind <> PartKind.Reminder) tx id
+
+    /// Reminder lists offer controls for their rows and therefore also need the recorded plans.
+    let familyForReminders tx id =
+        readFamily (fun kind _ -> kind <> PartKind.Note) tx id
+
+    let familyForDecision tx id binding =
+        readFamily
+            (fun kind part ->
+                match kind, binding with
+                | PartKind.Note, Binding.Note(_, note) -> part = NoteId.value note
+                | PartKind.Note, _ -> false
+                | PartKind.Reminder, Binding.Reminder(_, reminder, _) ->
+                    part = ReminderId.value reminder
+                | PartKind.Reminder, _ -> false
+                | _ -> true)
+            tx
+            id
 
     let person (tx: ReadTx) id =
         task {

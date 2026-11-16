@@ -281,15 +281,6 @@ module internal Engine =
                             do! tx.ProjectPerson rows
                             return Ok record
                     | AggregateState.Family(Some family) ->
-                        let parts =
-                            (plan.Snapshot.Parts @ plan.Changes)
-                            |> List.fold
-                                (fun parts change ->
-                                    Map.add (change.Kind, change.PartId) change parts)
-                                Map.empty
-                            |> Map.values
-                            |> Seq.toList
-
                         let origins =
                             plan.Changes
                             |> List.fold
@@ -322,7 +313,7 @@ module internal Engine =
                         match
                             ProjectionRows.family
                                 family
-                                parts
+                                plan.Changes
                                 origins
                                 (Map.tryFind family.Id summaries)
                         with

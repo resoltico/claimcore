@@ -461,11 +461,165 @@ let private causalText database =
         do! finding VerificationFinding.PayloadFormat database
     }
 
+let private targetedLoading database =
+    task {
+        let! owner = populated database
+
+        for number, role in [ 170, Role.Auditor; 171, Role.DataSteward ] do
+            let! granted =
+                grant
+                    owner
+                    (id database.Fixture number)
+                    database.Fixture.Owner
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedPeople granted
+
+        for number in [ 180..182 ] do
+            let! added =
+                Service.executeSubmission
+                    owner
+                    (note
+                        database.Fixture
+                        number
+                        "note.add"
+                        None
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.NoteText,
+                                SubmissionValue.Text(sprintf "Private note %d" number)
+                            ]))
+                    token
+
+            accepted added |> ignore
+
+        for number in [ 183; 184 ] do
+            let! planned =
+                Service.executeSubmission
+                    owner
+                    (Submissions.createRaw
+                        "reminder.create"
+                        (id database.Fixture number)
+                        (OperationBinding.Reminder(target, None))
+                        (Submissions.reminderPlan (sprintf "Reminder %d" number) "2027-01-01"))
+                    token
+
+            match planned.Outcome with
+            | ExecuteResult.Accepted _ -> ()
+            | other -> failtestf "Reminder %d setup failed: %A" number other
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT payload FROM claimcore.ledger_compartments WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                [| box (id database.Fixture 181) |]
+                token
+
+        let payload = DatabaseSession.value<byte array> 0 rows.Head
+
+        let replace =
+            "UPDATE claimcore.ledger_compartments SET payload=$2 WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+
+        do! guardedSql database replace [| box (id database.Fixture 181); box [| 0uy |] |]
+
+        let! reminderRows =
+            DatabaseSession.rows
+                connection
+                "SELECT payload FROM claimcore.ledger_compartments WHERE operation_sequence=(SELECT sequence FROM claimcore.ledger WHERE operation_id=$1)"
+                [| box (id database.Fixture 184) |]
+                token
+
+        let reminderPayload = DatabaseSession.value<byte array> 0 reminderRows.Head
+        do! guardedSql database replace [| box (id database.Fixture 184); box [| 0uy |] |]
+        let! closed = executeCase database owner 190 1L "case.close" Map.empty
+        accepted closed |> ignore
+
+        let removal =
+            note database.Fixture 191 "note.remove" (Some(id database.Fixture 181)) Map.empty
+
+        let! corrupt = Service.previewSubmission owner removal token
+
+        Expect.equal
+            corrupt.Outcome
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "Selecting that same private root must still detect corruption"
+
+        let reminderUpdate =
+            Submissions.createRaw
+                "reminder.update"
+                (id database.Fixture 193)
+                (OperationBinding.Reminder(target, Some(id database.Fixture 184, 1L)))
+                (Submissions.reminderPlan "Changed action" "2027-01-02")
+
+        let! corruptReminder = Service.previewSubmission owner reminderUpdate token
+
+        Expect.equal
+            corruptReminder.Outcome
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "Selected reminder action roots remain hash checked"
+
+        do! guardedSql database replace [| box (id database.Fixture 184); box reminderPayload |]
+        do! guardedSql database replace [| box (id database.Fixture 181); box payload |]
+        let! preview = Service.previewSubmission owner removal token
+
+        match preview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
+            match review.Changes |> List.map _.Description with
+            | [ ClaimCore.Domain.Changes.PartDescription.Note value ] ->
+                Expect.equal
+                    (value.Text |> Option.bind _.Before |> Option.map NoteText.format)
+                    (Some "Private note 181")
+                    "Only selected preceding text supplies the removal description"
+            | other -> failtestf "Expected selected note description: %A" other
+        | other -> failtestf "Expected note removal review: %A" other
+
+        let! removed = Service.executeSubmission owner removal token
+        accepted removed |> ignore
+
+        let! history =
+            Service.timeline
+                owner
+                {
+                    Target = target
+                    Filter = Some TimelineFilter.Notes
+                    AfterCursor = None
+                    Limit = 20
+                }
+                token
+
+        Expect.equal
+            (read history).Items.Length
+            4
+            "Three adds and the targeted removal remain readable"
+
+        let! _ = verified database
+        let! erased = executeCase database owner 192 2L "case.erase" Map.empty
+        accepted erased |> ignore
+        let! current = notes owner None 20
+
+        Expect.equal
+            (read current).Notes.Count
+            0L
+            "Bulk erasure clears unrelated note projections without acquiring bodies"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testList
         "PostgreSQL case notes"
         [
+            testCaseAsync
+                "unrelated decisions skip note bodies while selected review and erasure retain integrity"
+                (run targetedLoading)
             testCaseAsync
                 "current disclosure pagination removal maintenance erasure and rebuild"
                 (run lifecycle)
