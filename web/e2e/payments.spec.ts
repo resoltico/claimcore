@@ -282,7 +282,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   }
   expect(current.outcome.data.state.fields.finance.paymentCount).toBe(54);
   expect(current.outcome.data.state.fields.finance.paidAmount).toBe("54");
-  const acceptedNotice = page.locator(".success-toast");
+  const acceptedNotice = page.locator(".accepted-receipt");
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice
     .getByRole("button", {

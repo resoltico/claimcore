@@ -1,12 +1,14 @@
-.success-toast {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+.accepted-receipt {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   padding: var(--space-3) var(--gutter);
   color: var(--success-text);
   background: var(--success-bg);
+}
+.accepted-receipt-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 .segmented-choice,
 .radio-choice {

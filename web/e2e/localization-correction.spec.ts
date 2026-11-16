@@ -189,7 +189,7 @@ for (const status of ["CLOSED"] as const) {
             },
           });
           await expect(page.locator("#case-detail-title")).toBeVisible();
-          await expect(page.locator(".success-toast")).toBeVisible();
+          await expect(page.locator(".accepted-receipt")).toBeVisible();
           await expectRecordedClaimantWarning(page, language);
           expectResultFields(before, await currentCase(page, reference), modes);
           const acceptedHistory = await history(page, reference);

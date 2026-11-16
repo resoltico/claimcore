@@ -198,7 +198,7 @@ const WorkspaceStatus = ({
     </>
   );
 };
-const AcceptedToast = ({
+const AcceptedReceipt = ({
   route,
   receipt,
   close,
@@ -217,11 +217,13 @@ const AcceptedToast = ({
     return null;
   }
   return (
-    <section className="success-toast receipt" aria-label={p.text("label.recordedChange")}>
+    <section className="accepted-receipt receipt" aria-label={p.text("label.recordedChange")}>
+      <div className="accepted-receipt-actions">
+        <button type="button" onClick={close}>
+          {p.text("ui.close")}
+        </button>
+      </div>
       <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
-      <button type="button" onClick={close}>
-        {p.text("ui.close")}
-      </button>
     </section>
   );
 };
@@ -612,7 +614,7 @@ export const Dashboard = () => {
                   locked={locked}
                 />
                 <main className="app-shell">
-                  <AcceptedToast
+                  <AcceptedReceipt
                     route={route}
                     receipt={feedback.receipt}
                     close={() => {

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Accepted case receipts use the available width and place Close above the facts, including narrow and RTL layouts.
+
 - Use a fresh installation for format 5; format 4 databases have no migration or cross-version reader. Use fresh CLI state for recovery journal format 4.
 - Rebuild integrations for shape-based bindings; case.open now authors field:caseReference in inputs; case/person creation has no target selector.
 - Regenerate HUMAN clients for one document/read grammar, generic affordances and links, scalar seeds, and recommendation/context regions replacing primary flags.
