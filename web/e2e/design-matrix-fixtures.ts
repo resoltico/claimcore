@@ -76,12 +76,19 @@ const caseAct = async (
   return execute(page, {
     ...authored,
     operationId: mintOperationId(),
-    binding: {
-      kind: "CASE",
-      target,
-      expectedRevision: revision,
-      ...(family === undefined ? {} : { expectedFamilySequence: family }),
-    },
+    inputs:
+      authored.task === "case.open"
+        ? { ...authored.inputs, "field:caseReference": reference }
+        : authored.inputs,
+    binding:
+      authored.task === "case.open"
+        ? { kind: "CASE", expectedRevision: 0 }
+        : {
+            kind: "CASE",
+            target,
+            expectedRevision: revision,
+            ...(family === undefined ? {} : { expectedFamilySequence: family }),
+          },
   } as CaseSubmission);
 };
 const workAct = (

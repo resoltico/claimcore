@@ -193,7 +193,12 @@ for (const status of ["CLOSED"] as const) {
           await expectRecordedClaimantWarning(page, language);
           expectResultFields(before, await currentCase(page, reference), modes);
           const acceptedHistory = await history(page, reference);
-          expect(acceptedHistory).toHaveLength(before.revision + 1);
+          expect(acceptedHistory.filter((entry) => entry.subject.partKind === "CASE")).toHaveLength(
+            before.revision + 1,
+          );
+          expect(
+            acceptedHistory.filter((entry) => entry.subject.partKind === "PAYMENT"),
+          ).toHaveLength(1);
           expect(
             acceptedHistory.some(
               (entry) => entry.subject.partKind === "CASE" && entry.task === "case.correct",
@@ -204,7 +209,13 @@ for (const status of ["CLOSED"] as const) {
           await expect(page.getByRole("alert")).toBeVisible();
           await expectPaymentGuidance(page, refusal);
           expect(await currentCase(page, reference)).toEqual(before);
-          expect(await history(page, reference)).toHaveLength(before.revision);
+          const unchangedHistory = await history(page, reference);
+          expect(
+            unchangedHistory.filter((entry) => entry.subject.partKind === "CASE"),
+          ).toHaveLength(before.revision);
+          expect(
+            unchangedHistory.filter((entry) => entry.subject.partKind === "PAYMENT"),
+          ).toHaveLength(1);
         }
       });
     }

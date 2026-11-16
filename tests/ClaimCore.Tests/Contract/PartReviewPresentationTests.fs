@@ -39,6 +39,33 @@ let tests =
         "shared part review facts"
         [
             testCase
+                "stewardship reasons survive the shared review receipt and timeline description"
+                (fun () ->
+                    let before = caseValue CaseStatus.Opened fields.Finance
+
+                    let reason =
+                        Reason.parse "Exact 1.0000 العربية" |> Result.toOption |> Option.get
+
+                    let after =
+                        { before with
+                            Lifecycle = Lifecycle.Voided
+                            Disposition = Some(CaseDisposition.Voided reason)
+                        }
+
+                    let description =
+                        CaseDescription.describe fields.CaseReference (Some before) after
+
+                    let changes, _ =
+                        ReviewScreen.describePart references id (PartDescription.Case description)
+
+                    let reasonChange =
+                        changes |> List.find (fun change -> change.LabelId = "field.reason.label")
+
+                    Expect.equal
+                        reasonChange.After
+                        (PresentedValue.Narrative "Exact 1.0000 العربية")
+                        "Exact authored reason")
+            testCase
                 "unchanged case money retains its unit and is not split into scalar currency fields"
                 (fun () ->
                     let before = caseValue CaseStatus.Opened fields.Finance

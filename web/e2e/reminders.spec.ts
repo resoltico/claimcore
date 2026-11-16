@@ -168,11 +168,7 @@ test("supports multiple independently revised reminders, terminal records, reope
     page.locator(":is(.reminder-list,.case-reminders) .table-view tbody > tr:not(.table-group)"),
     "reminder.reopen",
   );
-  // The supplied due-date seed opens review immediately; editing remains an explicit choice.
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "Return to editing", exact: true })
-    .click();
+  // A supplied seed remains editable before the explicit review.
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
@@ -985,9 +981,8 @@ test("@engine exact reminder URLs retain completed selection and UUID-shaped ref
   const reopen = selected.getByRole("button", { name: /^Reopen reminder/u });
   await reopen.click();
   const drawer = page.getByRole("dialog");
-  await expect(
-    drawer.getByRole("button", { name: "Return to editing", exact: true }),
-  ).toBeVisible();
+  await expect(drawer.getByRole("button", { name: "Review changes", exact: true })).toBeVisible();
+  await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await drawer.getByRole("button", { name: "Close", exact: true }).first().click();
   await page
     .getByRole("dialog", { name: "Discard these draft changes?" })
@@ -995,6 +990,7 @@ test("@engine exact reminder URLs retain completed selection and UUID-shaped ref
     .click();
   await expect(reopen).toBeFocused();
   await reopen.click();
+  await reviewDraft(page);
   const dispatched = page.waitForRequest(
     (request) => new URL(request.url()).pathname === "/api/operation.execute",
   );

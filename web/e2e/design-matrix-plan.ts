@@ -4,7 +4,7 @@ export type Dimension = {
   mode: "light" | "dark";
   accent: "green" | "blue";
   width: number;
-  zoom?: number;
+  reflowScale?: number;
 };
 /** Cover layout risks separately instead of multiplying every independent preference. */
 export const dimensions = (engine: string): Dimension[] => {
@@ -20,11 +20,11 @@ export const dimensions = (engine: string): Dimension[] => {
     { width: 1280, language: "en", mode: "dark", accent: "blue" },
     { width: 320, language: "de", mode: "light", accent: "green" },
     { width: 320, language: "en-XA", mode: "light", accent: "green" },
-    { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
+    { width: 640, language: "en", mode: "light", accent: "green", reflowScale: 2 },
   ];
 };
 export const screenshotDimension = (dimension: Dimension): boolean =>
-  dimension.zoom === undefined &&
+  dimension.reflowScale === undefined &&
   dimension.language !== "en-XA" &&
   (dimension.width <= 390 || (dimension.language === "en" && dimension.width === 1280));
 export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
@@ -61,4 +61,4 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
 };
 
 export const dimensionCaseTitle = (dimension: Dimension): string =>
-  `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`;
+  `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.reflowScale === undefined ? "" : " at 200% equivalent reflow"}`;

@@ -23,7 +23,7 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   ).toBeVisible();
 };
 
-test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports @engine", async ({
+test("keeps published login, editor, review, receipt and history accessible at narrow and zoom-equivalent reflow viewports @engine", async ({
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
@@ -67,13 +67,11 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expect(facts).toHaveAttribute("aria-selected", "true");
   await expect(timeline).toHaveAttribute("aria-busy", "false");
   await expect(timeline.locator(".region-timeline > li")).toHaveCount(1);
-  await expect(timeline.locator(".region-timeline > li")).toContainText("Case opened");
+  await expect(timeline.locator(".region-timeline > li")).toContainText("Case facts recorded");
   await progress("a11y-history");
   await expectAccessible(page);
-  await page.setViewportSize({ width: 640, height: 900 });
-  await page.evaluate(() => {
-    document.documentElement.style.zoom = "2";
-  });
+  // A 640x900 viewport at 200% browser zoom has this CSS viewport; do not inject CSS zoom.
+  await page.setViewportSize({ width: 320, height: 450 });
   await progress("a11y-zoom");
   await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();

@@ -87,25 +87,25 @@ const show = (
     },
   };
 };
-it("previews once when editable authored inputs are supplied by Core seeds", () => {
+it("keeps editable Core seeds in the editor until explicit review", () => {
   const view = show({
     "input:reminderAction": "Call claimant",
     "input:reminderDueDate": "2026-11-20",
   });
-  expect(state.preview).toHaveBeenCalledOnce();
+  expect(state.preview).not.toHaveBeenCalled();
   expect(state.options.mock.calls[0]![0].prefill).toBeUndefined();
   view.renderAgain();
-  expect(state.preview).toHaveBeenCalledOnce();
+  expect(state.preview).not.toHaveBeenCalled();
 });
 it("does not preview with a missing authored input", () => {
   show({ "input:reminderAction": "Call claimant" });
   expect(state.preview).not.toHaveBeenCalled();
 });
-it("combines Core seeds with inline composer values", () => {
+it("keeps other editable seeds open when only one inline value was authored", () => {
   show({ "input:reminderAction": "Call claimant" }, undefined, {
     "input:reminderDueDate": "2026-11-21",
   });
-  expect(state.preview).toHaveBeenCalledOnce();
+  expect(state.preview).not.toHaveBeenCalled();
 });
 it("retains fixed seeded action preview", () => {
   show({ "input:reminderAction": "Call claimant", "input:reminderDueDate": "2026-11-20" }, []);

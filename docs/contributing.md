@@ -227,6 +227,9 @@ The file selector passes directly to Playwright. Retain the acceptance settings'
 fixture setup, authentication and teardown do not overlap. Chromium covers the complete journeys;
 Firefox/WebKit cover CSP, sessions, IndexedDB, keyboard interaction, RTL and forced colours. The design
 matrix uses six representative Chromium contexts and desktop English/narrow Arabic on the other engines.
+Its 200% equivalent reflow case uses the resulting 320-CSS-pixel viewport, including responsive media
+queries; it does not inject CSS `zoom` or claim actual browser zoom coverage. See
+[Reflow guidance](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html).
 Do not multiply independent language, theme and viewport choices into a full Cartesian product.
 Failed browser jobs retain synthetic failed-spec traces, screenshots and bounded service captures for
 three days in their verification artifact. Authentication-state files and private fixture configuration

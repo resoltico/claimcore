@@ -1313,7 +1313,13 @@ test("same-requester access loss retains unknown bytes and a visible departure g
             ? active
             : {
                 screen: {
-                  regions: [],
+                  regions: [
+                    {
+                      role: "IDENTITY",
+                      titleId: "label.accessPending",
+                      content: { kind: "ENTRIES", entries: [] },
+                    },
+                  ],
                 },
                 subject: {
                   kind: "REQUESTER",

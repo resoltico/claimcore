@@ -102,7 +102,19 @@ module ReviewScreen =
                     else
                         change)
 
-            removals @ lifecycle, unchanged
+            let reason =
+                value.Disposition
+                |> Option.map (function
+                    | CaseDisposition.Voided reason
+                    | CaseDisposition.Reinstated reason ->
+                        changed
+                            (prefix + "reason")
+                            "field.reason.label"
+                            (Reason.format >> PresentedValue.Narrative)
+                            { Before = None; After = Some reason })
+                |> Option.toList
+
+            removals @ lifecycle @ reason, unchanged
         | PartDescription.Payment value ->
             let removed = value.Removed |> Option.bind _.After = Some true
             let totals = if removed then value.Totals.Before else value.Totals.After

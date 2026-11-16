@@ -61,8 +61,8 @@ test("updates supplied records without refetching while receipt disclosure refre
       displayLocale: "ar-EG",
     });
     await history.locator("details > summary").click();
-    await expect(history.locator("details")).toContainText("١٬٢٠٠٫٥٠");
-    await expect(history.locator("details")).toContainText("Synthetic claimant");
+    await expect(history).toContainText("١٬٢٠٠٫٥٠");
+    await expect(history).toContainText("Synthetic claimant");
     await history.locator("details > summary").click();
   }
   expect(requests.filter((request) => request !== "POST /api/operation.get")).toEqual([]);

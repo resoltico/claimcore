@@ -226,12 +226,18 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       {
         operationId: step.operationId ?? mintOperationId(),
         task: step.task,
-        binding: {
-          kind: "CASE",
-          target: { kind: "REFERENCE", caseReference: reference },
-          expectedRevision: revision,
-        },
-        inputs: step.inputs,
+        binding:
+          step.task === "case.open"
+            ? { kind: "CASE", expectedRevision: 0 }
+            : {
+                kind: "CASE",
+                target: { kind: "REFERENCE", caseReference: reference },
+                expectedRevision: revision,
+              },
+        inputs:
+          step.task === "case.open"
+            ? { ...step.inputs, "field:caseReference": reference }
+            : step.inputs,
       } as CaseSubmission,
       step.fields,
     );

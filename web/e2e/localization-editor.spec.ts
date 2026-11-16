@@ -81,15 +81,9 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
       body: JSON.stringify({
         operationId: mintOperationId(),
         task: "case.open",
-        binding: {
-          kind: "CASE",
-          target: {
-            kind: "REFERENCE",
-            caseReference: reference,
-          },
-          expectedRevision: 0,
-        },
+        binding: { kind: "CASE", expectedRevision: 0 },
         inputs: {
+          "field:caseReference": reference,
           ...prefixedInputs(
             "field:",
             registration({

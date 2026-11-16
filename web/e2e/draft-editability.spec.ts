@@ -1,3 +1,4 @@
+import { documentActions } from "../src/operation/affordances";
 import type { ResponseFor } from "@contracts/client";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { showCaseRecordDetails } from "./workspace-navigation";
@@ -148,7 +149,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
   }
   expect(caseGetReply.outcome.document.subject.revision).toBe(1);
-  expect(caseGetReply.outcome.document.actions.map((action) => action.task)).toContain(
+  expect(documentActions(caseGetReply.outcome.document).map((action) => action.task)).toContain(
     "case.amendRegistration",
   );
   await expect(page.locator('[data-entry="caseReference"]').first()).toContainText(reference);
