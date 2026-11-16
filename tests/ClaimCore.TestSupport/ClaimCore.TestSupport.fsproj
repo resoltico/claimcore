@@ -28,6 +28,7 @@
     <Compile Include="DecodingExamples.fs" />
     <Compile Include="CaseFixtures.fs" />
     <Compile Include="RequestInputs.fs" />
+    <Compile Include="Reviews.fs" />
     <Compile Include="ResponseExamples.fs" />
     <Compile Include="StoreFixtures.fs" />
     <Compile Include="PostgresFixture.fs" />

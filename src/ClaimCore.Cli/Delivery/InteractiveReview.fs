@@ -57,27 +57,25 @@ module internal InteractiveReview =
         | _ -> false
 
     let private operation arguments =
-        (ApplicationTaskId.all |> List.filter (TaskRouting.act >> Option.isSome))
+        ((TaskDeclarations.all |> List.map _.Id)
+         |> List.filter (TaskRouting.act >> Option.isSome))
         |> List.tryFind (fun entry ->
             let words = CommandGrammar.words entry
 
-            words = List.truncate words.Length arguments
-            && match (TaskRouting.act entry) with
-               | Some(ActKind.Case _) -> true
-               | Some(ActKind.Note _)
-               | Some(ActKind.Work _)
-               | Some(ActKind.Reminder _)
-               | Some(ActKind.People _) -> true
-               | _ -> false)
+            words = List.truncate words.Length arguments)
 
     let prepare console arguments =
         if
             not console.IsInteractive
             || not (requestedText arguments)
-            || hasOption "--expected-revision" arguments
-            || hasOption "--expected-work-revision" arguments
-            || hasOption "--expected-reminder-revision" arguments
-            || hasOption "--expected-family-sequence" arguments
+            || (operation arguments
+                |> Option.exists (fun task ->
+                    CommandGrammar.inputs task
+                    |> List.exists (fun input ->
+                        input.Declaration.Source = InputSource.ExpectedRevision
+                        && hasOption
+                            ("--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name))
+                            arguments)))
             || hasOption "--dry-run" arguments
             || hasOption "--confirm" arguments
         then
@@ -187,46 +185,43 @@ module internal InteractiveReview =
                   | _ -> [])))
 
     let private selected (draft: InteractiveDraft) (action: Affordance) =
+        let raw = action.Binding |> Option.map OperationSubmission.rawBinding
+
         let sameSelection =
-            match draft.Input.Binding, action.Binding with
+            match draft.Input.Binding, raw with
             | OperationBinding.Case(_, _, Some expected, _),
-              OperationBinding.Case(_, _, Some actual, _) -> expected = actual
-            | OperationBinding.Note(_, Some expected), OperationBinding.Note(_, Some actual) ->
+              Some(OperationBinding.Case(_, _, Some actual, _)) -> expected = actual
+            | OperationBinding.Note(_, Some expected), Some(OperationBinding.Note(_, Some actual)) ->
                 expected = actual
             | OperationBinding.Reminder(_, Some(expected, _)),
-              OperationBinding.Reminder(_, Some(actual, _)) -> expected = actual
-            | OperationBinding.People(Some expected, _), OperationBinding.People(Some actual, _) ->
-                expected = actual
-            | _ -> true
+              Some(OperationBinding.Reminder(_, Some(actual, _))) -> expected = actual
+            | OperationBinding.People(Some expected, _),
+              Some(OperationBinding.People(Some actual, _)) -> expected = actual
+            | _, Some _ -> true
+            | _, None -> false
 
-        let sameGrant =
-            if draft.Input.Task <> ActKind.People PeopleActKind.Revoke then
-                true
-            else
-                let normalize input value =
-                    match input, value with
-                    | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
-                      SubmissionValue.Text text ->
-                        CaseReference.parse text
-                        |> Result.map (
-                            CaseReference.format >> CaseReference.key >> SubmissionValue.Text
-                        )
-                        |> Result.defaultValue value
-                    | _ -> value
+        let normalize input value =
+            match input, value with
+            | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
+              SubmissionValue.Text text ->
+                CaseReference.parse text
+                |> Result.map (CaseReference.format >> CaseReference.key >> SubmissionValue.Text)
+                |> Result.defaultValue value
+            | _ -> value
 
-                action.Seeds
-                |> Map.forall (fun input value ->
-                    draft.Input.Inputs
+        let sameFixedInputs =
+            action.Seeds
+            |> Map.forall (fun input value ->
+                List.contains input action.Editable
+                || (draft.Input.Inputs
                     |> Map.tryFind input
-                    |> Option.exists (fun supplied ->
-                        normalize input supplied = normalize input value))
+                    |> Option.forall (fun supplied ->
+                        normalize input supplied = normalize input value)))
 
-        action.Task = ApplicationTaskId.Operation draft.Input.Task
-        && sameSelection
-        && sameGrant
+        action.Task = draft.Input.Task && sameSelection && sameFixedInputs
 
     let private complete newId (draft: InteractiveDraft) (action: Affordance) =
-        let binding = action.Binding
+        let binding = action.Binding |> Option.get |> OperationSubmission.rawBinding
 
         let fixedInputs =
             action.Seeds

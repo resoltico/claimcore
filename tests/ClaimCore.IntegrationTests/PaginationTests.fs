@@ -35,11 +35,17 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request database.Fixture n reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted result |> ignore
@@ -49,16 +55,20 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 3)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 3))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople registered
 
@@ -223,16 +233,17 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedPeople revoked
 
             let! later =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            13
-                            "CASE-AFTER"
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (13)
+                        ("CASE-AFTER")
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted later |> ignore

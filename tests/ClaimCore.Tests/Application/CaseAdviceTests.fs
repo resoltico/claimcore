@@ -14,18 +14,18 @@ let private accepted =
 
 let private kinds =
     [
-        CaseActKind.Open
-        CaseActKind.AmendRegistration
-        CaseActKind.Correct
-        CaseActKind.Decide
-        CaseActKind.WithdrawDecision
-        CaseActKind.RecordPayment
-        CaseActKind.RemovePayment
-        CaseActKind.Close
-        CaseActKind.Reopen
-        CaseActKind.Void
-        CaseActKind.Reinstate
-        CaseActKind.Erase
+        (TaskId.ofLiteral "case.open")
+        (TaskId.ofLiteral "case.amendRegistration")
+        (TaskId.ofLiteral "case.correct")
+        (TaskId.ofLiteral "case.decide")
+        (TaskId.ofLiteral "case.withdrawDecision")
+        (TaskId.ofLiteral "case.recordPayment")
+        (TaskId.ofLiteral "case.removePayment")
+        (TaskId.ofLiteral "case.close")
+        (TaskId.ofLiteral "case.reopen")
+        (TaskId.ofLiteral "case.void")
+        (TaskId.ofLiteral "case.reinstate")
+        (TaskId.ofLiteral "case.erase")
     ]
 
 let private blocked =
@@ -52,7 +52,7 @@ let model =
             "Duplicate reasons are detected"
 
         Expect.isError
-            (CaseAdvice.create [ CaseActKind.Void ] None HistoryAccess.None blocked)
+            (CaseAdvice.create [ (TaskId.ofLiteral "case.void") ] None HistoryAccess.None blocked)
             "Offered acts cannot also be blocked"
 
         let invalid =
@@ -66,11 +66,27 @@ let model =
 
         let advice =
             CaseAdvice.create
-                [ CaseActKind.Void ]
+                [ (TaskId.ofLiteral "case.void") ]
                 None
                 HistoryAccess.None
-                (blocked |> List.filter (fun item -> item.Act <> CaseActKind.Void))
+                (blocked |> List.filter (fun item -> item.Act <> (TaskId.ofLiteral "case.void")))
             |> accepted
+
+        let family = ClaimCore.Tests.TaskBuilders.family ()
+        let taskId = TaskId.ofLiteral "case.void"
+        let binding = ClaimCore.Tests.TaskBuilders.caseBinding family
+
+        let task =
+            match ClaimCore.Domain.Tasks.Registry.find taskId with
+            | Some(ClaimCore.Domain.Tasks.Task.Family task) -> task
+            | _ -> failtest "Expected void task."
+
+        let offered =
+            task.Availability ClaimCore.Tests.TaskBuilders.environment (Some family) binding
+
+        let advice =
+            advice
+            |> CaseAdvice.withOffers [ TaskOffer.Available(taskId, binding, offered) ]
 
         let maintenance = RegisterMaintenance.create true
         let current = CaseAdvice.duringMaintenance maintenance advice
@@ -79,21 +95,29 @@ let model =
 
         Expect.equal
             (current.Blocked
-             |> List.find (fun item -> item.Act = CaseActKind.Void)
+             |> List.find (fun item -> item.Act = (TaskId.ofLiteral "case.void"))
              |> _.Reason)
             Refusal.RegisterMaintenance
             "A previously permitted act gets the maintenance reason"
 
         Expect.equal
             (current.Blocked
-             |> List.find (fun item -> item.Act = CaseActKind.Decide)
+             |> List.find (fun item -> item.Act = (TaskId.ofLiteral "case.decide"))
              |> _.Reason)
             (Refusal.Access AccessRefusal.ResourceUnavailable)
             "Permission denials retain non-disclosure precedence"
+
+        match current.Offers with
+        | [ TaskOffer.Available(_, _, available) ] ->
+            Expect.equal
+                available.Blocked
+                (Some Refusal.RegisterMaintenance)
+                "Maintenance also blocks captured executable controls"
+        | _ -> failtest "Expected the retained blocked control."
 
         let encoded = Codec.encode ResponseCodecs.caseAdvice current
 
         Expect.equal
             (Codec.decode Limits.MaximumResponseBytes ResponseCodecs.caseAdvice encoded)
-            (Ok current)
-            "The complete maintenance contract round trips")
+            (Ok(CaseAdvice.withOffers [] current))
+            "The complete maintenance DATA contract round trips")

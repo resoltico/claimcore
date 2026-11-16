@@ -223,12 +223,9 @@ const qualify = async (origin, ca) => {
     const input = {
       operationId: operationId(),
       task: "case.open",
-      binding: {
-        kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
-        expectedRevision: 0,
-      },
+      binding: { kind: "CASE", expectedRevision: 0 },
       inputs: {
+        "field:caseReference": "DEPLOYMENT-001",
         "field:incidentDate": requester.businessDate,
         "field:incidentNotificationDate": requester.businessDate,
         "field:incidentCountry": "LV",

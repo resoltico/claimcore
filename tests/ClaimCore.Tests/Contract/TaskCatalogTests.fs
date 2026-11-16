@@ -19,32 +19,39 @@ let tests =
         "semantic tasks and neutral metadata"
         [
             testCase
-                "case effects and affected sections retain independently stated Domain meaning"
+                "task declarations retain independently stated consequence and binding meaning"
                 (fun () ->
-                    for kind, family, sections, effect in
+                    for token, family, binding, consequence in
                         [
-                            CaseActKind.Correct,
+                            "case.correct",
                             ActFamily.Business,
-                            [ CaseSection.Registration; CaseSection.Decision ],
-                            CaseEffect.RecordFacts
-                            CaseActKind.Erase,
+                            BindingShape.Case,
+                            Consequence.Routine
+                            "case.erase",
                             ActFamily.Stewardship,
-                            [
-                                CaseSection.Registration
-                                CaseSection.Decision
-                                CaseSection.Payment
-                                CaseSection.Work
-                            ],
-                            CaseEffect.ErasePayload
-                            CaseActKind.Close, ActFamily.Business, [], CaseEffect.ChangeStatus
-                            CaseActKind.Void, ActFamily.Stewardship, [], CaseEffect.ChangeLifecycle
+                            BindingShape.CaseErase,
+                            Consequence.Irreversible
+                            "case.close",
+                            ActFamily.Business,
+                            BindingShape.Case,
+                            Consequence.Routine
+                            "case.void",
+                            ActFamily.Stewardship,
+                            BindingShape.Case,
+                            Consequence.Stewardship
                         ] do
-                        let description = CaseActKind.describe kind
+                        let declaration =
+                            ClaimCore.Domain.Tasks.Registry.findDeclaration (
+                                TaskId.ofLiteral token
+                            )
+                            |> Option.get
 
                         Expect.equal
-                            (description.Family, description.AffectedSections, description.Effect)
-                            (family, sections, effect)
-                            "Core owns business meaning independently of transport")
+                            (declaration.Family,
+                             TaskDeclaration.bindingShape declaration,
+                             declaration.Consequence)
+                            (family, binding, consequence)
+                            "Domain declaration semantics")
             testCase "role principal choices retain the independent human-only policy" (fun () ->
                 let both = [ PrincipalKind.Human; PrincipalKind.Service ]
 
@@ -71,19 +78,18 @@ let tests =
                 "every actor operation and endpoint has one semantic task with no provisioning command"
                 (fun () ->
                     let acts =
-                        ApplicationTaskId.all
-                        |> List.choose (function
-                            | ApplicationTaskId.Operation act -> Some act
-                            | _ -> None)
+                        TaskDeclarations.all
+                        |> List.choose (fun declaration -> declaration.Ledger |> Option.map _.Id)
 
                     let expected =
-                        ActKind.all
-                        |> List.filter ((<>) (ActKind.People PeopleActKind.ProvisionOwner))
+                        ClaimCore.Domain.Tasks.Registry.clientDeclarations |> List.map _.Id
 
                     Expect.equal
                         (Set.ofList acts)
                         (Set.ofList expected)
-                        "All authored operation families"
+                        "Every actor-exposed ledger declaration"
+
+                    Expect.equal acts.Length 29 "Provisioning is operator-only"
 
                     Expect.equal
                         acts.Length
@@ -92,8 +98,9 @@ let tests =
 
                     let endpoints =
                         Api.operationPreview.Token
-                        :: (ApplicationTaskId.all
-                            |> List.map (TaskRouting.endpoint >> ActorEndpoint.token))
+                        :: (TaskDeclarations.all
+                            |> List.map (fun task ->
+                                TaskRouting.endpoint task.Id |> ActorEndpoint.token))
                         |> Set.ofList
 
                     let expected =
@@ -154,27 +161,27 @@ let tests =
                 "clearable metadata describes updates rather than creation-time absence"
                 (fun () ->
                     let inputs act =
-                        (TaskDeclarations.describe (ApplicationTaskId.Operation act)).Inputs
+                        (TaskDeclarations.describe (TaskId.token act)).Inputs
 
                     for act in
                         [
-                            ActKind.Case CaseActKind.Open
-                            ActKind.People PeopleActKind.Register
-                            ActKind.People PeopleActKind.Admit
+                            (TaskId.ofLiteral "case.open")
+                            (TaskId.ofLiteral "people.register")
+                            (TaskId.ofLiteral "people.admit")
                         ] do
                         Expect.isFalse
                             (inputs act |> List.exists _.Clearable)
                             "Creation has no previously stored value to clear"
 
                     let contact =
-                        inputs (ActKind.People PeopleActKind.SetProfile)
+                        inputs ((TaskId.ofLiteral "people.setProfile"))
                         |> List.find (fun input ->
                             input.Input = TaskInputId.Target InputTarget.ProfileContact)
 
                     Expect.isTrue contact.Clearable "Profile updates can clear existing contact"
 
                     let narrative =
-                        inputs (ActKind.Case CaseActKind.AmendRegistration)
+                        inputs ((TaskId.ofLiteral "case.amendRegistration"))
                         |> List.find (fun input ->
                             input.Input =
                                 TaskInputId.Target(

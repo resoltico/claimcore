@@ -19,7 +19,7 @@ module PresentationCodecs =
     let MaximumKeyCharacters = 256
 
     let MaximumCodes =
-        max ActKind.all.Length (max Role.all.Length Capability.all.Length)
+        max TaskVocabulary.all.Length (max Role.all.Length Capability.all.Length)
 
     let private textMaximum =
         max IncidentDescription.MaximumBytes HandlingSummary.MaximumBytes
@@ -124,7 +124,7 @@ module PresentationCodecs =
             codeVariant many ReminderState.vocabulary
             codeVariant many PresentedBoolean.vocabulary
             codeVariant many CorrectionGroupAction.vocabulary
-            codeVariant many ActKind.vocabulary
+            codeVariant many TaskVocabulary.vocabulary
             codeVariant many CaseStageKind.vocabulary
             codeVariant many CaseAttention.vocabulary
             codeVariant many AccountState.vocabulary
@@ -505,16 +505,23 @@ module PresentationCodecs =
             TaskDeclarations.all
             |> List.choose (fun declaration ->
                 let binding =
-                    match declaration.Task with
-                    | ApplicationTaskId.Operation task ->
-                        Some(OperationSubmissionCodecs.binding task)
-                    | ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss ->
+                    match declaration.Kind with
+                    | ClientTaskKind.Operation ->
+                        let task = TaskId.ofLiteral declaration.Id
+                        let owned = declaration.Ledger |> Option.get
+
                         Some(
-                            record (OperationBinding.People(None, 0L))
-                            |> fixedField "kind" "PEOPLE"
-                            |> build
+                            OperationSubmissionCodecs.binding task
+                            |> map
+                                (fun raw ->
+                                    OperationSubmission.admitBinding owned raw
+                                    |> Result.toOption
+                                    |> Option.get
+                                    |> Some)
+                                (Option.get >> OperationSubmission.rawBinding)
                         )
-                    | ApplicationTaskId.Query _ -> None
+                    | ClientTaskKind.Command -> Some(record None |> build |> named "Binding.Empty")
+                    | ClientTaskKind.Query -> None
 
                 binding
                 |> Option.map (fun binding ->
@@ -553,12 +560,16 @@ module PresentationCodecs =
                         |> fieldMapWithPresence
 
                     variant
-                        (ApplicationTaskId.key declaration.Task)
+                        (declaration.Id)
                         id
-                        (fun value -> if value.Task = declaration.Task then Some value else None)
+                        (fun value ->
+                            if TaskId.token value.Task = declaration.Id then
+                                Some value
+                            else
+                                None)
                         (record (fun binding seeds editable choices primary blocked ->
                             {
-                                Affordance.Task = declaration.Task
+                                Affordance.Task = TaskId.ofLiteral declaration.Id
                                 Binding = binding
                                 Seeds = seeds
                                 Editable = editable
@@ -578,7 +589,7 @@ module PresentationCodecs =
 
         taggedOn "task" "Affordance" variants
 
-    let private actions = list ApplicationTaskId.all.Length affordance
+    let private actions = list TaskDeclarations.all.Length affordance
 
     let entry =
         (record (fun key label prominence value recorded ->

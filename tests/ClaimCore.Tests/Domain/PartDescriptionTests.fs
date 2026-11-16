@@ -23,6 +23,99 @@ let tests =
         "accepted part descriptions"
         [
             testCase
+                "timeline messages retain accepted reminder context and current responsibility references"
+                (fun () ->
+                    let action = ReminderAction.parse "Retained\u202eaction" |> accepted
+
+                    Expect.isError
+                        (ReminderAction.admit action)
+                        "Historical action is not currently authorable"
+
+                    let due = CalendarDate.parse "2026-11-17" |> accepted
+
+                    let before =
+                        {
+                            ReminderValue.Plan = Some { Action = action; Due = due }
+                            State = ReminderState.Pending
+                        }
+
+                    let completed =
+                        { before with
+                            State = ReminderState.Completed
+                        }
+
+                    let described description =
+                        {
+                            DescribedPart.PartId = OperationId.value (operation 4)
+                            Revision = Revision.create 2L |> Option.get
+                            Description = description
+                        }
+
+                    let completedView =
+                        PartDescriptions.timeline
+                            Map.empty
+                            (described (
+                                PartDescription.Reminder(
+                                    ReminderDescription.describe (Some before) completed
+                                )
+                            ))
+                        |> accepted
+
+                    Expect.equal
+                        completedView.Overview.Event
+                        (TimelineEvent.ReminderCompleted action)
+                        "Completion keeps its unchanged historical action"
+
+                    let nextDue = CalendarDate.parse "2026-11-18" |> accepted
+
+                    let reopened =
+                        { before with
+                            Plan = Some { Action = action; Due = nextDue }
+                        }
+
+                    let reopenedView =
+                        PartDescriptions.timeline
+                            Map.empty
+                            (described (
+                                PartDescription.Reminder(
+                                    ReminderDescription.describe (Some completed) reopened
+                                )
+                            ))
+                        |> accepted
+
+                    Expect.equal
+                        reopenedView.Overview.Event
+                        (TimelineEvent.ReminderReopened(action, nextDue))
+                        "Reopening preserves action and reports its actual due date"
+
+                    let reference =
+                        {
+                            ActorRef.ActorId = actorId
+                            DisplayName = DisplayName.Erased
+                            PrincipalKind = PrincipalKind.Human
+                            Availability = ActorAvailability.Available
+                        }
+
+                    let work =
+                        WorkDescription.describe
+                            None
+                            (Some
+                                {
+                                    Responsible = Some actorId
+                                    Summary = None
+                                })
+
+                    let assigned =
+                        PartDescriptions.timeline
+                            (Map.ofList [ actorId, reference ])
+                            (described (PartDescription.Work work))
+                        |> accepted
+
+                    Expect.equal
+                        assigned.Overview.Event
+                        (TimelineEvent.ResponsibilityAssigned reference)
+                        "An erased current reference remains exact")
+            testCase
                 "case creation and a status-only change share field and money differences"
                 (fun () ->
                     let task = ClaimCore.Domain.Tasks.Case.Open.task |> familyTask
@@ -465,7 +558,7 @@ let tests =
                         (Person.rows historical)
                         "Unavailable replacement bytes are distinct from an absent profile"
 
-                    let nextErasure =
+                    let nextErasureChanges =
                         ClaimCore.Domain.Tasks.People.EraseProfile.decide
                             (context 5)
                             environment
@@ -473,7 +566,27 @@ let tests =
                             (personBinding historical)
                             InputMap.empty
                         |> accepted
-                        |> personApply historical
+
+                    match
+                        (PartDescriptions.person (Some historical) nextErasureChanges
+                         |> accepted
+                         |> List.exactlyOne)
+                            .Description
+                    with
+                    | PartDescription.Person description ->
+                        Expect.equal
+                            description.ProfilePresent
+                            (Some
+                                {
+                                    Before = Some true
+                                    After = Some false
+                                })
+                            "The public erasure fact survives unavailable private profile bytes"
+
+                        Expect.isNone description.DisplayName "No unavailable name is fabricated"
+                    | _ -> failtest "Expected person description"
+
+                    let nextErasure = nextErasureChanges |> personApply historical
 
                     Expect.equal
                         nextErasure.ProfileErasure

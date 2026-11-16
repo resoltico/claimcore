@@ -27,7 +27,7 @@ const document = (
                 principalKind: "HUMAN",
                 availability: "AVAILABLE",
               },
-              summary: { messageId: "timeline.event.caseOpened", arguments: [] },
+              summary: { messageId: "change.CASE.recorded", arguments: [] },
               highlights: [],
               details: [],
             },

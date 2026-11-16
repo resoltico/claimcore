@@ -22,7 +22,7 @@ module CaseIndex =
         let fields = CaseState.fields snapshot.State
 
         let work = if snapshot.State = CaseState.Erased then None else work
-        let responsible, _, workSearch = WorkSubject.columns work
+        let responsible, _, workSearch = CaseWorkSnapshot.columns work
 
         {
             Responsible = responsible

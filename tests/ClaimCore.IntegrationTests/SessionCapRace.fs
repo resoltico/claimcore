@@ -101,7 +101,7 @@ let run (database: PostgresFixture.Database) =
         try
             let! _ = creation
             ()
-        with :? InvalidOperationException as failure when
+        with :? System.IO.IOException as failure when
             failure.Message = "The OIDC session store is full." ->
             refused <- true
 

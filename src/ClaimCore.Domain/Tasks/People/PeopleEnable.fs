@@ -44,9 +44,11 @@ let task =
     Task.Person
         {
             Declaration = declaration
+            Authorize = fun environment _ _ -> PersonRules.permission declaration environment
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decide
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.person
         }

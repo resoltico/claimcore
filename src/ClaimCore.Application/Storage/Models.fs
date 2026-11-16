@@ -29,41 +29,7 @@ type internal StoredCase =
         Index: CaseIndex
     }
 
-type internal WorkEntryMetadata =
-    {
-        CaseId: CaseId
-        Revision: Revision
-        Act: WorkActKind
-        BusinessDate: DateOnly
-    }
-
-type internal ReminderEntryMetadata =
-    {
-        CaseId: CaseId
-        ReminderId: ReminderId
-        Revision: Revision
-        Act: ReminderActKind
-        NextReminderId: ReminderId option
-        BusinessDate: DateOnly
-    }
-
-type internal NoteEntryMetadata =
-    {
-        CaseId: CaseId
-        NoteId: NoteId
-        Act: NoteActKind
-        BusinessDate: DateOnly
-    }
-
-[<RequireQualifiedAccess>]
-type internal EntryTarget =
-    | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
-    | People of targetActorId: ActorId * act: PeopleActKind
-    | Work of WorkEntryMetadata
-    | Reminder of ReminderEntryMetadata
-    | Note of NoteEntryMetadata
-
-/// A logical effect is inseparable from its closed, decoded operation root.
+/// A logical part version is inseparable from its complete, decoded accepted root.
 [<NoComparison>]
 type internal StoredEffect =
     private
@@ -74,114 +40,23 @@ type internal StoredEffect =
 
     member this.Operation = this.OperationValue
     member this.Index = this.IndexValue
-    member this.Descriptor = this.OperationValue.Root.Structure.Effects[this.IndexValue]
+    member this.Change = this.OperationValue.Changes[this.IndexValue]
 
     member this.Id =
         EffectId.create this.OperationValue.Root.Header.OperationId this.IndexValue
         |> Option.get
 
-    member this.Position =
-        EffectPosition.create this.OperationValue.Root.Header.Sequence this.IndexValue
-        |> Option.get
-
+    member this.Position = this.Change.Stamp.Position
     member this.Sequence = this.OperationValue.Root.Header.Sequence
     member this.EntryHash = EntryHash.toBytes this.OperationValue.Root.Hash
     member this.OperationId = this.OperationValue.Root.Header.OperationId
     member this.ActorId = this.OperationValue.Root.Header.ActorId
     member this.RecordedAt = this.OperationValue.Root.Header.RecordedAt
-
-    member this.CreationReference =
-        match this.Descriptor with
-        | EffectDescriptor.Case(_, _, _, reference, _) -> reference
-        | _ -> None
-
-    member this.Subject =
-        let businessDate () =
-            this.OperationValue.Root.Header.BusinessDate.Value
-
-        match this.Descriptor with
-        | EffectDescriptor.Case(id, revision, act, _, _) ->
-            EntryTarget.Case(id, revision, act, businessDate ())
-        | EffectDescriptor.People(id, change) ->
-            let act =
-                match change with
-                | PeopleEffectDescriptor.ProvisionOwner _ -> PeopleActKind.ProvisionOwner
-                | PeopleEffectDescriptor.Register _ -> PeopleActKind.Register
-                | PeopleEffectDescriptor.SetProfile _ -> PeopleActKind.SetProfile
-                | PeopleEffectDescriptor.EraseProfile -> PeopleActKind.EraseProfile
-                | PeopleEffectDescriptor.Grant _ -> PeopleActKind.Grant
-                | PeopleEffectDescriptor.Revoke _ -> PeopleActKind.Revoke
-                | PeopleEffectDescriptor.Enable -> PeopleActKind.Enable
-                | PeopleEffectDescriptor.Disable -> PeopleActKind.Disable
-
-            EntryTarget.People(id, act)
-        | EffectDescriptor.Work(parent, revision) ->
-            EntryTarget.Work
-                {
-                    CaseId = parent
-                    Revision = revision
-                    Act = WorkActKind.UpdateWork
-                    BusinessDate = businessDate ()
-                }
-        | EffectDescriptor.NoteAdded(parent, id) ->
-            EntryTarget.Note
-                {
-                    CaseId = parent
-                    NoteId = id
-                    Act = NoteActKind.AddNote
-                    BusinessDate = businessDate ()
-                }
-        | EffectDescriptor.NoteRemoved(parent, id) ->
-            EntryTarget.Note
-                {
-                    CaseId = parent
-                    NoteId = id
-                    Act = NoteActKind.RemoveNote
-                    BusinessDate = businessDate ()
-                }
-        | EffectDescriptor.ReminderCreated(parent, id, revision) ->
-            EntryTarget.Reminder
-                {
-                    CaseId = parent
-                    ReminderId = id
-                    Revision = revision
-                    Act = ReminderActKind.Create
-                    NextReminderId = None
-                    BusinessDate = businessDate ()
-                }
-        | EffectDescriptor.ReminderChanged(parent, id, revision, act) ->
-            let compound =
-                match this.OperationValue.Root.Structure.Command with
-                | CommandSkeleton.Reminder command ->
-                    command.Act = ReminderActKind.CompleteAndPlanNext && this.IndexValue = 0
-                | _ -> false
-
-            let kind =
-                if compound then
-                    ReminderActKind.CompleteAndPlanNext
-                else
-                    act
-
-            let next =
-                if compound then
-                    Some(ReminderId.ofOperationId this.OperationId)
-                else
-                    None
-
-            EntryTarget.Reminder
-                {
-                    CaseId = parent
-                    ReminderId = id
-                    Revision = revision
-                    Act = kind
-                    NextReminderId = next
-                    BusinessDate = businessDate ()
-                }
-
+    member this.Task = this.OperationValue.Root.Structure.Task
 
 module internal StoredEffect =
     let ofOperation (operation: RetainedOperation) =
-        operation.Root.Structure.Effects
+        operation.Changes
         |> List.mapi (fun index _ ->
             {
                 OperationValue = operation
@@ -189,12 +64,14 @@ module internal StoredEffect =
             })
 
     let privateAvailable (entry: StoredEffect) =
-        entry.Operation.Root.Structure.Compartments
-        |> List.exists (Compartment.content >> Option.isSome)
+        match entry.Operation.Root.Structure.Effects[entry.Index].Compartment with
+        | None -> true
+        | Some ordinal ->
+            entry.Operation.Root.Structure.Compartments[ordinal]
+            |> Compartment.content
+            |> Option.isSome
 
-    let privateUnavailable (entry: StoredEffect) =
-        entry.Operation.Root.Structure.Compartments
-        |> List.exists (Compartment.content >> Option.isNone)
+    let privateUnavailable entry = not (privateAvailable entry)
 
     let find index operation =
         ofOperation operation |> List.tryItem index
@@ -205,8 +82,8 @@ type internal CaseStageFacts =
         Revision: Revision
         OpenedOn: CalendarDate
         ClosedOn: CalendarDate option
-        LastAct: CaseActKind
-        DispositionEntry: StoredEffect option
+        Snapshot: CaseSnapshot
+        Disposition: CaseDisposition option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorId
     }
@@ -265,42 +142,6 @@ type internal CasePageItem =
         Case: StoredCase
         WorkSummary: CaseWorkSummary option
     }
-
-[<RequireQualifiedAccess>]
-type internal WorkChangeProjection =
-    | Work of WorkSubjectRows
-    | Reminder of ReminderSubjectRows list
-    | Note of NoteSubjectRows
-
-[<RequireQualifiedAccess>]
-type internal ReceiptCurrent =
-    | Case of StoredCase option
-    | Work of
-        parent: StoredCase option *
-        current: StoredWork option *
-        accounts: Map<CaseId * ActorId, ActorRef>
-    | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
-    | Note of parent: StoredCase option * current: Note option
-    | People of target: ActorRef option
-
-type internal CaseProjection =
-    {
-        Rows: CaseSubjectRows
-        Index: CaseIndex
-        Family: CaseFamilyRows option
-    }
-
-
-
-
-
-
-
-
-
-
-
-
 
 type internal GrantRow =
     {

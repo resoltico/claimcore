@@ -11,15 +11,6 @@ type GrantScope =
 
 type ScopedGrant = Grant<GrantScope>
 
-type CaseOperationRequest =
-    {
-        ExpectedFamilySequence: int64 option
-        OperationId: Guid
-        Target: CaseSelector
-        ExpectedRevision: int64
-        Act: AuthoredCaseAct
-    }
-
 type PageRequest =
     {
         AfterCursor: string option
@@ -59,33 +50,11 @@ type AssigneeRequest =
     }
 
 
-type WorkOperationRequest =
-    {
-        OperationId: Guid
-        Target: CaseSelector
-        ExpectedRevision: int64
-        Act: AuthoredWorkAct
-    }
-
-type NoteOperationRequest =
-    {
-        OperationId: Guid
-        Target: CaseSelector
-        Act: AuthoredNoteAct
-    }
-
 type CaseNotesRequest =
     {
         Target: CaseSelector
         AfterCursor: string option
         Limit: int
-    }
-
-type ReminderOperationRequest =
-    {
-        OperationId: Guid
-        Target: CaseSelector
-        Act: AuthoredReminderAct
     }
 
 type ReminderListRequest =

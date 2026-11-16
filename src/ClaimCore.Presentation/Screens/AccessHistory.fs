@@ -16,58 +16,11 @@ module AccessHistoryScreen =
                 false
                 (fun (item: PeopleHistoryEntry) -> PresentedValue.Instant item.RecordedAt)
             column "act" "label.action" Prominence.Primary false (fun item ->
-                code PeopleActKind.vocabulary (PeopleHistoryFacts.kind item.Facts))
+                PresentedValue.Message("task." + TaskId.token item.Task + ".label"))
             column "recordedBy" "label.recordedBy" Prominence.Primary false (fun item ->
                 PresentedValue.Actor item.RecordedBy)
             column "target" "label.targetAccount" Prominence.Primary false (fun item ->
                 PresentedValue.Actor item.Target)
-            column
-                "scopeReference"
-                "field.caseReference.label"
-                Prominence.Secondary
-                false
-                (fun item ->
-                    match item.Facts with
-                    | PeopleHistoryFacts.Granted {
-                                                     Scope = GrantScope.Case(_, reference)
-                                                 }
-                    | PeopleHistoryFacts.Revoked {
-                                                     Scope = GrantScope.Case(_, reference)
-                                                 } -> PresentedValue.Reference reference
-                    | _ -> absent)
-            column "details" "label.details" Prominence.Primary false (fun item ->
-                match item.Facts with
-                | PeopleHistoryFacts.Granted grant
-                | PeopleHistoryFacts.Revoked grant -> code Role.vocabulary grant.Role
-                | PeopleHistoryFacts.ProfileSet(Some profile) ->
-                    PresentedValue.Party profile.DisplayName
-                | PeopleHistoryFacts.ProfileSet None
-                | PeopleHistoryFacts.ProfileErased -> PresentedValue.Absent "label.changesErased"
-                | PeopleHistoryFacts.OwnerProvisioned principal
-                | PeopleHistoryFacts.Registered principal ->
-                    let kind, _, _ = PrincipalKey.parts principal in
-                    code PrincipalKind.vocabulary kind
-                | PeopleHistoryFacts.Enabled -> boolean true
-                | PeopleHistoryFacts.Disabled -> boolean false)
-            column "scope" "input.scope.label" Prominence.Secondary false (fun item ->
-                match item.Facts with
-                | PeopleHistoryFacts.Granted grant
-                | PeopleHistoryFacts.Revoked grant ->
-                    code
-                        ScopeKind.vocabulary
-                        (match grant.Scope with
-                         | GrantScope.Installation -> ScopeKind.Installation
-                         | GrantScope.Case _ -> ScopeKind.Case)
-                | _ -> PresentedValue.Absent "label.notApplicable")
-            column "reference" "field.caseReference.label" Prominence.Secondary false (fun item ->
-                match item.Facts with
-                | PeopleHistoryFacts.Granted {
-                                                 Scope = GrantScope.Case(_, reference)
-                                             }
-                | PeopleHistoryFacts.Revoked {
-                                                 Scope = GrantScope.Case(_, reference)
-                                             } -> PresentedValue.Reference reference
-                | _ -> PresentedValue.Absent "label.notApplicable")
             column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(EffectPosition.format item.Position))
             column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
@@ -78,56 +31,38 @@ module AccessHistoryScreen =
                 ))
         ]
 
-    let peopleHistory item =
-        let facts =
-            match item.Facts with
-            | PeopleHistoryFacts.OwnerProvisioned principal
-            | PeopleHistoryFacts.Registered principal ->
-                let kind, issuer, subject = PrincipalKey.parts principal
+    let peopleHistory (item: PeopleHistoryEntry) =
+        let changes, _ =
+            ReviewScreen.describePart
+                item.References
+                (ActorId.value item.Target.ActorId)
+                (ClaimCore.Domain.Changes.PartDescription.Person item.Changes)
 
-                [
-                    value
-                        "principalKind"
-                        "field.principal.kind.label"
-                        Prominence.Detail
-                        (code PrincipalKind.vocabulary kind)
-                    value
-                        "issuer"
-                        "field.principal.issuer.label"
-                        Prominence.Detail
-                        (PresentedValue.Identifier issuer)
-                    value
-                        "subject"
-                        "field.principal.subject.label"
-                        Prominence.Detail
-                        (PresentedValue.Identifier subject)
-                ]
-            | PeopleHistoryFacts.Granted item
-            | PeopleHistoryFacts.Revoked item -> grant item
-            | PeopleHistoryFacts.ProfileSet profile ->
-                [
-                    value
-                        "name"
-                        "field.profile.displayName.label"
-                        Prominence.Primary
-                        (optional
-                            (fun (profile: ActorProfile) ->
-                                PresentedValue.Party profile.DisplayName)
-                            profile)
-                    value
-                        "contact"
-                        "field.profile.contact.label"
-                        Prominence.Secondary
-                        (profile
-                         |> Option.bind _.Contact
-                         |> optional (ContactText.format >> PresentedValue.Text))
-                ]
-            | PeopleHistoryFacts.Enabled
-            | PeopleHistoryFacts.Disabled
-            | PeopleHistoryFacts.ProfileErased -> []
-
-        [ section "label.peopleHistory" (entries peopleHistoryColumns item @ facts) ]
-
+        [
+            section
+                "label.peopleHistory"
+                (entries peopleHistoryColumns item
+                 @ [
+                     if not item.PrivateAvailable then
+                         value
+                             "privateContent"
+                             "label.changesErased"
+                             Prominence.Secondary
+                             (PresentedValue.Absent "label.changesErased")
+                 ])
+        ]
+        @ (changes
+           |> List.map (fun change ->
+               section
+                   change.LabelId
+                   [
+                       value
+                           (change.Key + ".before")
+                           "label.before"
+                           Prominence.Secondary
+                           change.Before
+                       value (change.Key + ".after") "label.after" Prominence.Primary change.After
+                   ]))
 
     let rows rows =
         let items =
@@ -149,21 +84,15 @@ module AccessHistoryScreen =
                 {
                     RegionTimelineEntry.Key = EffectPosition.format item.Position
                     Link =
-                        (match item.Facts with
-                         | PeopleHistoryFacts.Granted { Scope = GrantScope.Case(id, _) }
-                         | PeopleHistoryFacts.Revoked { Scope = GrantScope.Case(id, _) } ->
-                             Some(Link.caseById id)
-                         | _ -> None)
+                        item.References.Cases
+                        |> List.tryHead
+                        |> Option.map (fun item -> Link.caseById item.CaseId)
                     Actions = []
                     When = item.RecordedAt
                     Who = item.RecordedBy
                     Summary =
                         {
-                            MessageId =
-                                Vocabulary.messageKey
-                                    PeopleActKind.vocabulary
-                                    (PeopleHistoryFacts.kind item.Facts)
-                                    "label"
+                            MessageId = "task." + TaskId.token item.Task + ".label"
                             Arguments = Map.empty
                         }
                     Highlights = sections

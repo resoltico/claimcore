@@ -235,48 +235,52 @@ let private reads fixture core =
 
 let internal malformedWrites fixture =
     [
-        OperationInput.People(
-            peopleRequest
-                Guid.Empty
-                (principal "new-person")
-                (PeopleAct.Register Inputs.actorProfile)
-        )
-        OperationInput.People(
-            reviewedPeopleRequest
-                fixture.Store
-                (id fixture 80100)
-                (principal "new-person")
-                (PeopleAct.Register { DisplayName = ""; Contact = None })
-        )
-        OperationInput.Work
-            {
-                OperationId = id fixture 80101
-                Target = missing
-                ExpectedRevision = 0L
-                Act =
-                    WorkAct.UpdateWork
-                        {
-                            Responsible = WorkValue.Keep
-                            Summary = WorkValue.Set ""
-                        }
-            }
-        OperationInput.Reminder
-            {
-                OperationId = id fixture 80102
-                Target = missing
-                Act = AuthoredReminderAct.Create { Action = ""; Due = "invalid" }
-            }
-        OperationInput.Reminder
-            {
-                OperationId = id fixture 80103
-                Target = missing
-                Act = AuthoredReminderAct.Complete(Guid.Empty, -1L)
-            }
+        (personSubmission
+            fixture.Store
+            Guid.Empty
+            (principal "new-person")
+            None
+            "people.register"
+            (Submissions.profile Inputs.actorProfile))
+            .GetAwaiter()
+            .GetResult()
+        (personSubmission
+            fixture.Store
+            (id fixture 80100)
+            (principal "new-person")
+            None
+            "people.register"
+            (Submissions.profile { DisplayName = ""; Contact = None }))
+            .GetAwaiter()
+            .GetResult()
+        (ClaimCore.TestSupport.Submissions.createRaw)
+            "work.update"
+            (id fixture 80101)
+            (ClaimCore.Application.Contracts.OperationBinding.Work((missing), (0L)))
+            (ClaimCore.TestSupport.Submissions.work (
+                {
+                    Responsible = WorkValue.Keep
+                    Summary = WorkValue.Set ""
+                }
+            ))
+        (ClaimCore.TestSupport.Submissions.createRaw)
+            "reminder.create"
+            (id fixture 80102)
+            (ClaimCore.Application.Contracts.OperationBinding.Reminder((missing), None))
+            (ClaimCore.TestSupport.Submissions.reminderPlan ("") ("invalid"))
+        (ClaimCore.TestSupport.Submissions.createRaw)
+            "reminder.complete"
+            (id fixture 80103)
+            (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                (missing),
+                Some((Guid.Empty), (-1L))
+            ))
+            (Map.empty)
     ]
 
 let private mutationCode core input =
     task {
-        let! reply = Service.execute core input token
+        let! reply = Service.executeSubmission core input token
 
         return
             match reply.Outcome with
@@ -288,7 +292,7 @@ let internal lifecycle fixture =
     task {
         let! owner = caseWorker fixture
         let authored = List.item 1 (malformedWrites fixture)
-        let submission = Submissions.ofCommand None authored
+        let submission = (authored)
         let wire = Codec.encode Api.operationExecute.Input submission
 
         Expect.equal
@@ -301,30 +305,34 @@ let internal lifecycle fixture =
 
         for index, target in List.indexed [ disabled; roleless ] do
             let! registered =
-                Service.execute
-                    owner
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            fixture.Store
-                            (id fixture (80010 + index))
-                            target
-                            (PeopleAct.Register Inputs.actorProfile)
-                    ))
-                    token
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (fixture.Store)
+                            ((id fixture (80010 + index)))
+                            (target)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                    return! Service.executeSubmission (owner) submission (token)
+                })
 
             acceptedPeople registered
 
         let! turnedOff =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 80012)
-                        disabled
-                        PeopleAct.Disable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 80012))
+                        (disabled)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople turnedOff
 
@@ -347,7 +355,7 @@ let internal lifecycle fixture =
                     "RESOURCE_UNAVAILABLE"
                     "Unavailable execute caller receives no business input detail"
 
-                let! reply = Service.preview current input token
+                let! reply = Service.previewSubmission current input token
                 let! actual = code (Task.FromResult reply.Outcome)
 
                 Expect.equal
@@ -379,7 +387,7 @@ let internal lifecycle fixture =
                 "INVALID_INPUT"
                 "Enabled authorized caller retains accumulated input issues"
 
-            let! preview = Service.preview owner input token
+            let! preview = Service.previewSubmission owner input token
             let! actual = code (Task.FromResult preview.Outcome)
             Expect.equal actual "INVALID_INPUT" "Enabled preview retains the same input diagnostics"
 
@@ -406,40 +414,49 @@ let internal targetPrivacy fixture =
         let reader = principal "scope-reader"
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 80300)
-                        reader
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 80300))
+                        (reader)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registered
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request
-                        fixture
-                        80301
-                        "ADMISSION-READABLE"
-                        0L
-                        (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (80301)
+                    ("ADMISSION-READABLE")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let parent = accepted opened |> caseReceipt
 
         let! other =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 80302 "ADMISSION-PRIVATE" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (80302)
+                    ("ADMISSION-PRIVATE")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         accepted other |> ignore
@@ -467,9 +484,7 @@ let internal targetPrivacy fixture =
             let! actual =
                 mutationCode
                     core
-                    (Inputs.caseOperation (
-                        request fixture number target 1L (AuthoredCaseAct.Bare BareAct.Close)
-                    ))
+                    (((request (fixture) (number) (target) (1L) "case.close" (Map.empty))))
 
             Expect.equal
                 actual

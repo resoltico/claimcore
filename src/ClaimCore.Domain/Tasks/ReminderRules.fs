@@ -56,12 +56,13 @@ module internal ReminderRules =
                         | None -> Ok(id, part))
             | _ -> Error FamilyRules.unavailable
 
-    let gate requireOpen allowed binding state =
-        match current requireOpen allowed state binding with
-        | Ok _ -> None
-        | Error refusal -> Some refusal
-
-    let availability declaration requireOpen allowed environment state binding =
+    let availability
+        declaration
+        (resolve: CaseFamily -> Binding -> Result<ReminderId * AcceptedPart<ReminderValue>, Refusal>)
+        environment
+        state
+        binding
+        =
         let offered =
             FamilyRules.availability
                 declaration
@@ -69,12 +70,14 @@ module internal ReminderRules =
                 state
                 binding
                 Capability.ManageCaseWork
-                (gate requireOpen allowed binding)
+                (fun state ->
+                    match resolve state binding with
+                    | Ok _ -> None
+                    | Error refusal -> Some refusal)
 
         let seeds =
             state
-            |> Option.bind (fun state ->
-                current requireOpen allowed state binding |> Result.toOption)
+            |> Option.bind (fun state -> resolve state binding |> Result.toOption)
             |> Option.bind (snd >> _.Value.Plan)
             |> Option.map (fun plan ->
                 Map.ofList
@@ -85,6 +88,10 @@ module internal ReminderRules =
                         InputValue.Text(CalendarDate.format plan.Due)
                     ])
             |> Option.defaultValue Map.empty
+            |> Map.filter (fun input _ ->
+                declaration.Inputs
+                |> List.exists (fun declared ->
+                    declared.Source = InputSource.Authored && declared.Input = input))
 
         { offered with Seeds = seeds }
 
@@ -103,3 +110,27 @@ module internal ReminderRules =
             (ReminderId.value id)
             revision
             (PartValue.Reminder value)
+
+    let retained context environment state binding resolve nextState =
+        match state with
+        | None -> Error(Rejection.Refused FamilyRules.unavailable)
+        | Some state ->
+            FamilyRules.admit
+                context
+                environment
+                state
+                binding
+                Capability.ManageCaseWork
+                (FamilyRules.active false)
+            |> Result.bind (fun () -> resolve state binding)
+            |> Result.map (fun (id, before: AcceptedPart<ReminderValue>) ->
+                [
+                    change
+                        context
+                        state
+                        id
+                        (Revision.successor before.Revision)
+                        { State = nextState; Plan = None }
+                ])
+            |> Parsing.reject
+            |> Result.map (TaskContext.changes context)

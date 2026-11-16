@@ -50,32 +50,42 @@ let private service (database: PostgresFixture.Database) (person: Actor) =
         person.Principal
 
 let private execute core input =
-    match (Service.execute core input token |> get).Outcome with
+    match (Service.executeSubmission core input token |> get).Outcome with
     | ExecuteResult.Accepted receipt -> receipt
     | other -> failtestf "Expected accepted fixture: %A" other
 
-let private case (core: ServiceContext) ids number revision act =
-    Inputs.caseOperation
-        {
-            ExpectedFamilySequence =
-                if CaseAct.kind act = CaseActKind.Erase then
+let private case (core: ServiceContext) ids number revision taskName values =
+    let declaration =
+        ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral taskName)
+        |> Option.get
+
+    let reference = "TIMELINE-OVERVIEW"
+
+    let binding, values =
+        if declaration.Creates then
+            OperationBinding.CaseNew revision,
+            values
+            |> Map.add
+                (Submissions.field BusinessField.CaseReference)
+                (SubmissionValue.Text reference)
+        else
+            let family =
+                if declaration.ReviewsFamilySequence then
                     Some(
                         StoreFixtures.reviewedFamilySequence
                             core.Store
-                            (CaseSelector.Reference "TIMELINE-OVERVIEW")
+                            (CaseSelector.Reference reference)
                     )
                 else
                     None
-            OperationId = id ids number
-            CaseReference = "TIMELINE-OVERVIEW"
-            ExpectedRevision = revision
-            Act = act
-        }
 
-let private people (core: ServiceContext) ids number (person: Actor) act =
-    OperationInput.People(
-        StoreFixtures.reviewedPeopleRequest core.Store (id ids number) person.Principal act
-    )
+            OperationBinding.Case(CaseSelector.Reference reference, revision, None, family), values
+
+    Submissions.createRaw taskName (id ids number) binding values
+
+let private people (core: ServiceContext) ids number (person: Actor) taskName values =
+    StoreFixtures.personSubmission core.Store (id ids number) person.Principal None taskName values
+    |> get
 
 let private page core filter cursor limit : CaseTimelinePage =
     match
@@ -156,11 +166,14 @@ let private fixture () =
             execute
                 core
                 (people
-                    core
-                    ids
-                    number
-                    person
-                    (PeopleAct.Register { DisplayName = name; Contact = None }))
+                    (core)
+                    (ids)
+                    (number)
+                    (person)
+                    "people.register"
+                    (ClaimCore.TestSupport.Submissions.profile (
+                        { DisplayName = name; Contact = None }
+                    )))
             |> ignore
 
         for number, person, role in
@@ -173,19 +186,31 @@ let private fixture () =
             execute
                 core
                 (people
-                    core
-                    ids
-                    number
-                    person
-                    (PeopleAct.Grant
+                    (core)
+                    (ids)
+                    (number)
+                    (person)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = role
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
             |> ignore
 
         let receipt =
-            execute core (case core ids 10 0L (AuthoredCaseAct.Open Inputs.registration))
+            execute
+                core
+                (case
+                    (core)
+                    (ids)
+                    (10)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                    )))
 
         let parent =
             match receipt.Subject with
@@ -195,18 +220,28 @@ let private fixture () =
         execute
             core
             (people
-                core
-                ids
-                1004
-                reader
-                (PeopleAct.Grant
+                (core)
+                (ids)
+                (1004)
+                (reader)
+                "people.grant"
+                (ClaimCore.TestSupport.Submissions.grant (
                     {
                         Role = Role.CaseReader
                         Scope = GrantTarget.CaseId parent
-                    }))
+                    }
+                )))
         |> ignore
 
-        execute core (case core ids 11 1L (AuthoredCaseAct.Decide Inputs.decision))
+        execute
+            core
+            (case
+                (core)
+                (ids)
+                (11)
+                (1L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision))))
         |> ignore
 
         for number, action, due in
@@ -216,28 +251,31 @@ let private fixture () =
             ] do
             execute
                 core
-                (OperationInput.Reminder
-                    {
-                        OperationId = id ids number
-                        Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
-                        Act = AuthoredReminderAct.Create { Action = action; Due = due }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id ids number)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "TIMELINE-OVERVIEW"),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan (action) (due)))
             |> ignore
 
         execute
             core
-            (OperationInput.Work
-                {
-                    OperationId = id ids 14
-                    Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
-                    ExpectedRevision = 0L
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible = WorkValue.Set(ActorId.format assigned.ActorId)
-                                Summary = WorkValue.Set "Exact authored handling summary"
-                            }
-                })
+            ((ClaimCore.TestSupport.Submissions.createRaw)
+                "work.update"
+                (id ids 14)
+                (ClaimCore.Application.Contracts.OperationBinding.Work(
+                    (CaseSelector.Reference "TIMELINE-OVERVIEW"),
+                    (0L)
+                ))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible = WorkValue.Set(ActorId.format assigned.ActorId)
+                        Summary = WorkValue.Set "Exact authored handling summary"
+                    }
+                )))
         |> ignore
 
         database, core, owner, assigned, reader, steward
@@ -255,29 +293,23 @@ let private ledgerCount (database: PostgresFixture.Database) =
         })
     |> get
 
-let private reminder ids number act =
-    OperationInput.Reminder
-        {
-            OperationId = id ids number
-            Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
-            Act = act
-        }
+let private reminder ids number taskName selected values =
+    Submissions.createRaw
+        taskName
+        (id ids number)
+        (OperationBinding.Reminder((CaseSelector.Reference "TIMELINE-OVERVIEW"), selected))
+        values
 
 let private stalePreview ids core number identity expected =
     let input =
         reminder
-            ids
-            number
-            (AuthoredReminderAct.Update(
-                ReminderId.value identity,
-                expected,
-                {
-                    Action = "Stale proposed action"
-                    Due = "2026-11-25"
-                }
-            ))
+            (ids)
+            (number)
+            "reminder.update"
+            (Some((ReminderId.value identity), (expected)))
+            (ClaimCore.TestSupport.Submissions.reminderPlan ("Stale proposed action") ("2026-11-25"))
 
-    match (Service.preview core input token |> get).Outcome with
+    match (Service.previewSubmission core input token |> get).Outcome with
     | Outcome.Rejected(Refusal.RevisionConflict conflict) ->
         match conflict.Changes with
         | Some(ConflictChanges.Page page) -> conflict.ActualRevision, page
@@ -327,16 +359,13 @@ let tests =
 
                     let malformed =
                         reminder
-                            ids
-                            401
-                            (AuthoredReminderAct.Update(
-                                target,
-                                0L,
-                                {
-                                    Action = "Invalid zero"
-                                    Due = "2026-11-15"
-                                }
-                            ))
+                            (ids)
+                            (401)
+                            "reminder.update"
+                            (Some((target), (0L)))
+                            (ClaimCore.TestSupport.Submissions.reminderPlan
+                                ("Invalid zero")
+                                ("2026-11-15"))
 
                     let check =
                         function
@@ -355,11 +384,11 @@ let tests =
                                 "The range refusal is not a storage exception"
                         | other -> failtestf "Expected targeted input refusal: %A" other
 
-                    match (Service.preview core malformed token |> get).Outcome with
+                    match (Service.previewSubmission core malformed token |> get).Outcome with
                     | Outcome.Rejected refusal -> check refusal
                     | other -> failtestf "Expected clean preview refusal: %A" other
 
-                    match (Service.execute core malformed token |> get).Outcome with
+                    match (Service.executeSubmission core malformed token |> get).Outcome with
                     | ExecuteResult.Rejected refusal -> check refusal
                     | other -> failtestf "Expected clean execute refusal: %A" other
 
@@ -375,18 +404,15 @@ let tests =
 
                     let valid =
                         reminder
-                            ids
-                            402
-                            (AuthoredReminderAct.Update(
-                                target,
-                                1L,
-                                {
-                                    Action = "Valid one"
-                                    Due = "2026-11-15"
-                                }
-                            ))
+                            (ids)
+                            (402)
+                            "reminder.update"
+                            (Some((target), (1L)))
+                            (ClaimCore.TestSupport.Submissions.reminderPlan
+                                ("Valid one")
+                                ("2026-11-15"))
 
-                    match (Service.preview core valid token |> get).Outcome with
+                    match (Service.previewSubmission core valid token |> get).Outcome with
                     | Outcome.Succeeded(Previewed.Reviewed _) -> ()
                     | other -> failtestf "Revision one remains reviewable: %A" other
 
@@ -408,16 +434,13 @@ let tests =
                         execute
                             core
                             (reminder
-                                ids
-                                40
-                                (AuthoredReminderAct.CompleteAndPlanNext(
-                                    ReminderId.value original,
-                                    1L,
-                                    {
-                                        Action = "Private paired next action"
-                                        Due = "2026-11-10"
-                                    }
-                                )))
+                                (ids)
+                                (40)
+                                "reminder.completeAndPlanNext"
+                                (Some((ReminderId.value original), (1L)))
+                                (ClaimCore.TestSupport.Submissions.reminderPlan
+                                    ("Private paired next action")
+                                    ("2026-11-10")))
 
                     let completed, next =
                         match paired.Subject with
@@ -445,45 +468,43 @@ let tests =
                     execute
                         core
                         (reminder
-                            ids
-                            41
-                            (AuthoredReminderAct.Reopen(
-                                ReminderId.value original,
-                                2L,
-                                "2026-11-11"
-                            )))
+                            (ids)
+                            (41)
+                            "reminder.reopen"
+                            (Some((ReminderId.value original), (2L)))
+                            (Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.ReminderDueDate,
+                                    ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                        "2026-11-11"
+                                    )
+                                ]))
                     |> ignore
 
                     for revision in 1L .. 49L do
                         execute
                             core
                             (reminder
-                                ids
-                                (100 + int revision)
-                                (AuthoredReminderAct.Update(
-                                    ReminderId.value original,
-                                    revision + 2L,
-                                    {
-                                        Action = sprintf "Original update %d" revision
-                                        Due = "2026-11-11"
-                                    }
-                                )))
+                                (ids)
+                                ((100 + int revision))
+                                "reminder.update"
+                                (Some((ReminderId.value original), (revision + 2L)))
+                                (ClaimCore.TestSupport.Submissions.reminderPlan
+                                    (sprintf "Original update %d" revision)
+                                    ("2026-11-11")))
                         |> ignore
 
                     for revision in 1L .. 51L do
                         execute
                             core
                             (reminder
-                                ids
-                                (200 + int revision)
-                                (AuthoredReminderAct.Update(
-                                    ReminderId.value next.ReminderId,
-                                    revision,
-                                    {
-                                        Action = sprintf "Next update %d" revision
-                                        Due = "2026-11-12"
-                                    }
-                                )))
+                                (ids)
+                                ((200 + int revision))
+                                "reminder.update"
+                                (Some((ReminderId.value next.ReminderId), (revision)))
+                                (ClaimCore.TestSupport.Submissions.reminderPlan
+                                    (sprintf "Next update %d" revision)
+                                    ("2026-11-12")))
                         |> ignore
 
                     let originalActual, originalPage = stalePreview ids core 301 original 1L
@@ -509,31 +530,25 @@ let tests =
                     execute
                         core
                         (reminder
-                            ids
-                            303
-                            (AuthoredReminderAct.Update(
-                                ReminderId.value original,
-                                52L,
-                                {
-                                    Action = "Future original action"
-                                    Due = "2026-11-20"
-                                }
-                            )))
+                            (ids)
+                            (303)
+                            "reminder.update"
+                            (Some((ReminderId.value original), (52L)))
+                            (ClaimCore.TestSupport.Submissions.reminderPlan
+                                ("Future original action")
+                                ("2026-11-20")))
                     |> ignore
 
                     execute
                         core
                         (reminder
-                            ids
-                            304
-                            (AuthoredReminderAct.Update(
-                                ReminderId.value next.ReminderId,
-                                52L,
-                                {
-                                    Action = "Future next action"
-                                    Due = "2026-11-21"
-                                }
-                            )))
+                            (ids)
+                            (304)
+                            "reminder.update"
+                            (Some((ReminderId.value next.ReminderId), (52L)))
+                            (ClaimCore.TestSupport.Submissions.reminderPlan
+                                ("Future next action")
+                                ("2026-11-21")))
                     |> ignore
 
                     let oldEntry = conflictContinuation core originalPage
@@ -732,13 +747,23 @@ let tests =
 
                     Expect.equal
                         ((disclosed (List.item 3 initial)).Overview.Event)
-                        (TimelineEvent.CaseActRecorded CaseActKind.Decide)
+                        (TimelineEvent.PartChanged ClaimCore.Domain.Changes.PartKind.Case)
                         "Decision event is not reconstructed by the web"
 
+                    let opening = disclosed (List.item 4 initial)
+
                     Expect.equal
-                        ((disclosed (List.item 4 initial)).Overview.Highlights)
-                        []
-                        "OPEN remains one semantic event outside details"
+                        opening.Overview.Event
+                        (TimelineEvent.PartChanged ClaimCore.Domain.Changes.PartKind.Case)
+                        "Core supplies the opening part event"
+
+                    Expect.isTrue
+                        (opening.Overview.Highlights
+                         |> List.forall (function
+                             | TimelineHighlight.Change index ->
+                                 index >= 0 && index < opening.Items.Length
+                             | _ -> true))
+                        "Every core-selected opening highlight addresses its disclosed details"
 
                     Expect.isGreaterThan
                         (disclosed (List.item 4 initial)).Items.Length
@@ -758,15 +783,17 @@ let tests =
                     execute
                         core
                         (people
-                            core
-                            ids
-                            20
-                            assigned
-                            (PeopleAct.SetProfile
+                            (core)
+                            (ids)
+                            (20)
+                            (assigned)
+                            "people.setProfile"
+                            (ClaimCore.TestSupport.Submissions.profile (
                                 {
                                     DisplayName = "Current renamed assignee"
                                     Contact = None
-                                }))
+                                }
+                            )))
                     |> ignore
 
                     match (collect core None |> List.head |> disclosed).Overview.Event with
@@ -804,7 +831,10 @@ let tests =
                         (bytes.Contains("Current renamed assignee", StringComparison.Ordinal))
                         "Assignment context is not a summary-permission escape"
 
-                    execute core (people core ids 21 assigned PeopleAct.EraseProfile) |> ignore
+                    execute
+                        core
+                        (people (core) (ids) (21) (assigned) "people.eraseProfile" (Map.empty))
+                    |> ignore
 
                     match (collect core None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->
@@ -828,10 +858,22 @@ let tests =
 
                     execute
                         stewardCore
-                        (case core ids 30 2L (AuthoredCaseAct.Void "Retained reason"))
+                        (case
+                            (core)
+                            (ids)
+                            (30)
+                            (2L)
+                            "case.void"
+                            (Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Reason,
+                                    ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                        "Retained reason"
+                                    )
+                                ]))
                     |> ignore
 
-                    execute stewardCore (case core ids 31 3L (AuthoredCaseAct.Bare BareAct.Erase))
+                    execute stewardCore (case (core) (ids) (31) (3L) "case.erase" (Map.empty))
                     |> ignore
 
                     let erased = collect core None

@@ -47,7 +47,12 @@ module RequestCodecs =
             ]
         |> Codec.vocabulary "caseSelector"
 
-    let principal = CanonicalInputs.principal
+    let principal =
+        PrincipalCodecs.key
+        |> Codec.map PrincipalKey.toInput (fun value ->
+            PrincipalKey.ofKind value.Kind value.Issuer value.Subject
+            |> Result.toOption
+            |> Option.get)
 
     let private caseOperand get fields =
         fields |> field "target" get caseSelector

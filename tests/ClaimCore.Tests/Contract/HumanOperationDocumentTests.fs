@@ -5,6 +5,7 @@ open ClaimCore.CommandLine
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
@@ -34,54 +35,48 @@ let private containsMember name value =
     walk value
 
 let private peopleReview () =
-    let principal =
-        PrincipalKey.human "https://issuer.example/" "review-subject" |> accepted
-
     let actor =
         Inputs.namedActorReference
             (CaseFixtures.actorId (Guid.Parse "78280331-c97d-4be4-8031-f5dbd4a65282"))
             "Reviewed actor🪙"
 
-    let state =
-        {
-            PeopleState.Profile = None
-            Enabled = true
-            Grants = []
-            Access = []
-        }
+    let binding = Binding.People(actor.ActorId, Revision.first)
 
     let input =
-        OperationInput.People
-            {
-                ExpectedRevision = 1L
-                OperationId = OperationId.value ResponseExamples.receipt.OperationId
-                Target =
+        Submissions.create
+            "people.eraseProfile"
+            (OperationId.value ResponseExamples.receipt.OperationId)
+            binding
+            Map.empty
+
+    let description =
+        {
+            PersonPartDescription.Profiles = { Before = None; After = None }
+            Principal = None
+            Enabled = None
+            ProfilePresent =
+                Some
                     {
-                        Kind = PrincipalKind.Human
-                        Issuer = "https://issuer.example/"
-                        Subject = "review-subject"
+                        Before = Some true
+                        After = Some false
                     }
-                Act = PeopleAct.EraseProfile
-            }
+            DisplayName = None
+            Contact = None
+            Grants = []
+        }
 
     let review =
-        OperationReview.People
+        Reviews.personReview
+            input.Task
+            binding
+            (Some actor)
+            (ActorId.value actor.ActorId)
+            (Revision.create 2L |> Option.get)
+            description
+            { Actors = [ actor ]; Cases = [] }
             {
+                ProductVersion = "fixture"
                 Basis = Inputs.workBasis
-                Effects = [ PeopleReviewEffect.EraseProfile ]
-                Target =
-                    Some
-                        {
-                            Actor = actor
-                            Principal = principal
-                            Contact = None
-                            State = AccountState.NoRoles
-                            Roles = []
-                            ResponsibleCases = None
-                        }
-                AccessScope = GrantScope.Installation
-                Before = state
-                After = state
             }
 
     input, review, actor
@@ -109,7 +104,7 @@ let private closedReceipt () =
                 Subject =
                     ReceiptSubject.Case
                         { value with
-                            Act = CaseActKind.Close
+                            Act = (TaskId.ofLiteral "case.close")
                             Revision = revision
                             Snapshot = SnapshotDisclosure.Disclosed { shown with State = state }
                         }
@@ -151,7 +146,7 @@ let tests =
                 "review supplies the authored operation identity only in Core Details"
                 (fun () ->
                     let input, review, _ = peopleReview ()
-                    let document = (HumanReviewDocument.ofCore input review).Document
+                    let document = (HumanReviewDocument.ofSubmission input review).Document
 
                     let entries =
                         document.Screen.Regions
@@ -170,9 +165,7 @@ let tests =
                         [
                             RegionRole.Details,
                             Prominence.Detail,
-                            PresentedValue.Identifier(
-                                (OperationInput.operationId input).ToString("D")
-                            )
+                            PresentedValue.Identifier((input.OperationId).ToString("D"))
                         ]
                         "One technical identifier is supplied by Core, never reconstructed by a client")
 
@@ -180,26 +173,23 @@ let tests =
                 "review carries core confirmation and bindings without full snapshots"
                 (fun () ->
                     let input, review, actor = peopleReview ()
-                    let result = HumanReviewDocument.ofCore input review
+                    let result = HumanReviewDocument.ofSubmission input review
 
                     Expect.equal
                         result.Document.Subject
                         (DocumentSubject.Review(
-                            ConfirmationTarget.Operation(OperationInput.operationId input),
+                            ConfirmationTarget.Operation(input.OperationId),
                             Consequence.Irreversible
                         ))
                         "Core confirmation"
 
                     let action = List.exactlyOne result.Document.Actions
 
-                    Expect.equal
-                        action.Task
-                        (ApplicationTaskId.Operation(ActKind.People PeopleActKind.EraseProfile))
-                        "Task"
+                    Expect.equal action.Task (TaskId.ofLiteral "people.eraseProfile") "Task"
 
                     Expect.equal
                         action.Binding
-                        (OperationBinding.People(Some(ActorId.value actor.ActorId), 1L))
+                        (Some(Binding.People(actor.ActorId, Revision.first)))
                         "Target"
 
                     let wire = HumanDocumentCodecs.reviewDocument.Write result
@@ -225,7 +215,7 @@ let tests =
 
                 let wire =
                     HumanDocumentCodecs.document.Write
-                        (HumanReviewDocument.ofCore input review).Document
+                        (HumanReviewDocument.ofSubmission input review).Document
 
                 Expect.isError
                     (HumanDocumentCodecs.document.Validate
@@ -242,11 +232,11 @@ let tests =
                             ReceiptSubject.People
                                 {
                                     TargetActor = PeopleTargetDisclosure.Disclosed actor
-                                    Act = PeopleActKind.Disable
+                                    Act = (TaskId.ofLiteral "people.disable")
                                     Effects =
                                         [
                                             {
-                                                Act = PeopleActKind.Disable
+                                                Act = (TaskId.ofLiteral "people.disable")
                                                 Id =
                                                     EffectId.create
                                                         ResponseExamples.peopleReceipt.OperationId
@@ -321,7 +311,7 @@ let tests =
                                     {
                                         CaseId = parent
                                         Reference = ResponseExamples.snapshot.Reference
-                                        Act = ReminderActKind.CompleteAndPlanNext
+                                        Act = (TaskId.ofLiteral "reminder.completeAndPlanNext")
                                         Effects =
                                             ReminderReceiptEffects.CompletedAndPlanned(
                                                 version first ReminderDisclosure.Erased,
@@ -515,7 +505,9 @@ let receiptStatusAndProgress =
             | ReceiptSubject.Case item ->
                 let disclosure =
                     match act, disclosure with
-                    | CaseActKind.RecordPayment, SnapshotDisclosure.Disclosed shown ->
+                    | task, SnapshotDisclosure.Disclosed shown when
+                        task = TaskId.ofLiteral "case.recordPayment"
+                        ->
                         SnapshotDisclosure.Disclosed
                             { shown with
                                 Payment =
@@ -562,17 +554,17 @@ let receiptStatusAndProgress =
             for name, act, finance, progress, recorded in
                 [
                     "open",
-                    CaseActKind.Open,
+                    (TaskId.ofLiteral "case.open"),
                     FinancialPosition.undecided,
                     "Undecided",
                     BusinessField.ofGroup RecordGroup.Registration
                     "decide",
-                    CaseActKind.Decide,
+                    (TaskId.ofLiteral "case.decide"),
                     decided,
                     "Decided",
                     BusinessField.ofGroup RecordGroup.Decision
                     "payment",
-                    CaseActKind.RecordPayment,
+                    (TaskId.ofLiteral "case.recordPayment"),
                     partlyPaid,
                     "Partly paid",
                     BusinessField.ofGroup RecordGroup.Payment
@@ -597,7 +589,7 @@ let receiptStatusAndProgress =
                         (output.Contains("Case status: " + progress))
                         "A payment headline is never a case status"
 
-                    if act = CaseActKind.Decide then
+                    if act = (TaskId.ofLiteral "case.decide") then
                         Expect.stringContains
                             output
                             "750.00 EUR"
@@ -605,7 +597,7 @@ let receiptStatusAndProgress =
             testCase "closed" (fun () ->
                 let output =
                     render
-                        CaseActKind.Close
+                        (TaskId.ofLiteral "case.close")
                         (disclosed
                             (LiveCase.Active
                                 { fields with
@@ -624,7 +616,8 @@ let receiptStatusAndProgress =
                     "Payment progress: Decided"
                     "Closing does not rewrite payment progress")
             testCase "voided" (fun () ->
-                let output = render CaseActKind.Void (disclosed (LiveCase.Voided fields) [])
+                let output =
+                    render (TaskId.ofLiteral "case.void") (disclosed (LiveCase.Voided fields) [])
 
                 Expect.stringContains
                     output
@@ -647,7 +640,7 @@ let receiptStatusAndProgress =
                     "erased", SnapshotDisclosure.Erased, "Details: Erased"
                 ] do
                 testCase name (fun () ->
-                    let output = render CaseActKind.Open disclosure
+                    let output = render (TaskId.ofLiteral "case.open") disclosure
                     Expect.stringContains output explanation "Disclosure remains explicit"
 
                     Expect.isFalse

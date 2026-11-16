@@ -2,6 +2,7 @@ module ClaimCore.TestSupport.ResponseExamples
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
@@ -44,7 +45,7 @@ let receipt: OperationReceipt =
                     CaseId = snapshot.CaseId
                     Reference = reference
                     Revision = Revision.first
-                    Act = CaseActKind.Open
+                    Act = (TaskId.ofLiteral "case.open")
                     Snapshot =
                         SnapshotDisclosure.Disclosed
                             {
@@ -61,11 +62,11 @@ let peopleReceipt =
             ReceiptSubject.People
                 {
                     TargetActor = PeopleTargetDisclosure.Disclosed actor
-                    Act = PeopleActKind.ProvisionOwner
+                    Act = (TaskId.ofLiteral "people.provisionOwner")
                     Effects =
                         [
                             {
-                                Act = PeopleActKind.ProvisionOwner
+                                Act = (TaskId.ofLiteral "people.provisionOwner")
                                 Id = EffectId.create receipt.OperationId 0 |> Option.get
                                 Position = EffectPosition.create position.Sequence 0 |> Option.get
                             }
@@ -117,54 +118,60 @@ let private directoryActor: ActorReviewItem =
     }
 
 let previewInput =
-    OperationInput.Case
-        {
-            ExpectedFamilySequence = None
-            OperationId = id
-            Target = CaseSelector.Id snapshot.CaseId
-            ExpectedRevision = 1L
-            Act = CaseAct.Void "Synthetic reason"
-        }
+    Submissions.create
+        "case.void"
+        id
+        (Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first))
+        (Map.ofList
+            [
+                Submissions.input InputTarget.Reason, SubmissionValue.Text "Synthetic reason"
+            ])
 
 let preview: PreviewReply =
     {
         OperationId = id
         Outcome =
             Outcome.Succeeded(
-                Previewed.Reviewed(
-                    OperationReview.Case
-                        {
-                            Before = Some snapshot
-                            Proposed =
-                                { snapshot with
-                                    Revision = CaseFixtures.revision 2L
-                                }
-                            Context = runtime
-                            Changes =
+                Previewed.Reviewed
+                    {
+                        OperationReview.Task = TaskId.ofLiteral "case.void"
+                        Target = ReviewTarget.Case(snapshot.CaseId, reference)
+                        References = { Actors = []; Cases = [] }
+                        Binding = Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first)
+                        Context = runtime
+                        Changes =
+                            [
                                 {
-                                    Lifecycle = None
-                                    Payments = None
-                                    Fields =
-                                        [
+                                    DescribedPart.PartId = CaseId.value snapshot.CaseId
+                                    Revision = CaseFixtures.revision 2L
+                                    Description =
+                                        ClaimCore.Domain.Changes.PartDescription.Case
                                             {
-                                                FieldName = BusinessField.ClaimantName
-                                                Before =
+                                                Values =
+                                                    {
+                                                        Before = CaseState.fields snapshot.State
+                                                        After = CaseState.fields snapshot.State
+                                                    }
+                                                Lifecycle =
+                                                    Some
+                                                        {
+                                                            Before = Some Lifecycle.Active
+                                                            After = Some Lifecycle.Voided
+                                                        }
+                                                Fields = []
+                                                Money = []
+                                                Disposition =
                                                     Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name(Inputs.name "Before")
-                                                        )
-                                                    )
-                                                After =
-                                                    Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name(Inputs.name "After")
+                                                        CaseDisposition.Voided(
+                                                            Reason.parse "Synthetic reason"
+                                                            |> Result.toOption
+                                                            |> Option.get
                                                         )
                                                     )
                                             }
-                                        ]
                                 }
-                        }
-                )
+                            ]
+                    }
             )
     }
 
@@ -269,7 +276,10 @@ let internal replies () : IEndpointOutput list =
                         Reference = snapshot.Reference
                         Revision = snapshot.Revision
                         WorkRevision = Revision.zero
-                        State = CaseState.map _.Finance snapshot.State
+                        State =
+                            CaseState.map
+                                (fun (fields: CaseFields) -> fields.Finance)
+                                snapshot.State
                         Items = []
                         NextCursor = None
                     })
@@ -388,7 +398,7 @@ let internal replies () : IEndpointOutput list =
                                 Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor
-                                Acts = []
+                                Offers = []
                                 Active = true
                                 Timing = Some ReminderDue.Today
                             }
@@ -422,6 +432,7 @@ let internal replies () : IEndpointOutput list =
                         Basis = basis
                         Actor = directoryActor
                         Revision = Revision.first
+                        Controls = []
                         Offers = []
                         ProfileSeed = None
                         Items = []
@@ -462,7 +473,7 @@ let internal replies () : IEndpointOutput list =
             yield
                 EndpointValues.output
                     Api.operationPreview
-                    (RepresentationReply.Human(HumanReplies.preview previewInput reply))
+                    (RepresentationReply.Human(HumanReplies.previewSubmission previewInput reply))
         for outcome in
             [
                 ExecuteResult.Accepted receipt

@@ -307,8 +307,8 @@ module Api =
     let private actorEndpoint endpoint input name data =
         let task =
             match endpoint with
-            | ActorEndpoint.Query query -> ApplicationTaskId.Query query
-            | ActorEndpoint.Command command -> ApplicationTaskId.Command command
+            | ActorEndpoint.Query query -> QueryTaskId.key query
+            | ActorEndpoint.Command command -> command
             | ActorEndpoint.Operation _ ->
                 invalidArg (nameof endpoint) "Operations have their own replies."
 
@@ -316,7 +316,7 @@ module Api =
             Id = EndpointId.Actor endpoint
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
-            Input = EndpointInputs.check (ApplicationTaskId.key task) input
+            Input = EndpointInputs.check task input
             Output =
                 RepresentationCodecs.reply
                     name
@@ -547,7 +547,7 @@ module Api =
 
     let peopleRequestsDismiss =
         { actorEndpoint
-              (ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss)
+              (ActorEndpoint.Command (EndpointDeclarations.commands |> List.exactlyOne).Id)
               RequestCodecs.accessRequestDismissRequest
               "AccessRequestDismissReply"
               Codec.nullValue with
@@ -583,8 +583,13 @@ module Api =
         | (ActorEndpoint.Query QueryTaskId.PeopleHistory) -> EndpointDefinition.create peopleHistory
         | (ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
             EndpointDefinition.create peopleRequests
-        | (ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss) ->
+        | (ActorEndpoint.Command command) when
+            command = (EndpointDeclarations.commands |> List.exactlyOne).Id
+            ->
             EndpointDefinition.create peopleRequestsDismiss
+
+        | ActorEndpoint.Command command ->
+            invalidArg (nameof command) "The command endpoint is not declared."
 
     let definitions =
         ((HostEndpoint.all |> List.map defineHost)

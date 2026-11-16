@@ -68,13 +68,43 @@ let decide context environment (state: CaseFamily option) binding inputs =
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+    match state, binding with
+    | Some state, Binding.NoteNew _ ->
+        FamilyRules.admit context environment state binding capability (FamilyRules.active false)
+        |> Result.bind (fun () ->
+            let id = NoteId.ofOperationId context.Stamp.OperationId
+
+            if Map.containsKey id state.Notes then
+                Error Refusal.IdempotencyConflict
+            else
+                Ok
+                    [
+                        FamilyRules.change
+                            context
+                            state.Id
+                            (NoteId.value id)
+                            Revision.first
+                            (PartValue.Note { Removed = false; Text = None })
+                    ])
+        |> Parsing.reject
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

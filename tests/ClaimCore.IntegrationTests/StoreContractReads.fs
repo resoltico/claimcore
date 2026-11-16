@@ -109,12 +109,17 @@ let internal listCases fixture visibility after limit =
 let internal existingCaseId fixture reference =
     task {
         let! result =
-            inspectCase fixture (fixture.Owner) (None) (reference) (CancellationToken.None)
+            fixture.Store.Read
+                {
+                    Work = fun tx -> FamilyReads.findCaseByReference tx reference
+                    CancellationToken = CancellationToken.None
+                }
 
         return
             match result with
-            | Ok { Case = Some record } -> record.CaseId
+            | Ok(Some record) -> record.CaseId
             | _ -> failtest "Expected existing case identity"
+
     }
 
 let internal assignedReader fixture (actor: ServiceContext) =
@@ -124,16 +129,20 @@ let internal assignedReader fixture (actor: ServiceContext) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 15)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 15))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -156,16 +165,20 @@ let internal assignedReader fixture (actor: ServiceContext) =
 let internal registerReader fixture (owner: ServiceContext) target =
     task {
         let! registered =
-            (Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 2)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 2))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (owner) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 

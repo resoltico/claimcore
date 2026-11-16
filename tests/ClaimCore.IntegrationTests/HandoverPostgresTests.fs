@@ -18,18 +18,19 @@ let private read =
     | other -> failtestf "Expected read: %A" other
 
 let private work fixture number reference revision responsible summary =
-    OperationInput.Work
-        {
-            OperationId = id fixture number
-            Target = CaseSelector.Reference reference
-            ExpectedRevision = revision
-            Act =
-                WorkAct.UpdateWork
-                    {
-                        Responsible = responsible
-                        Summary = summary
-                    }
-        }
+    (ClaimCore.TestSupport.Submissions.createRaw)
+        "work.update"
+        (id fixture number)
+        (ClaimCore.Application.Contracts.OperationBinding.Work(
+            (CaseSelector.Reference reference),
+            (revision)
+        ))
+        (ClaimCore.TestSupport.Submissions.work (
+            {
+                Responsible = responsible
+                Summary = summary
+            }
+        ))
 
 let private handover (database: PostgresFixture.Database) =
     task {
@@ -41,16 +42,18 @@ let private handover (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> invalidOp)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 100)
-                        principal
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 100))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registered
         let outgoing = CaseFixtures.actorId (id fixture 100)
@@ -70,18 +73,24 @@ let private handover (database: PostgresFixture.Database) =
         acceptedPeople granted
 
         let! second =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 102 "synthetic-b" 0L (AuthoredCaseAct.Open Inputs.registration)
-                ))
+                (((request
+                    (fixture)
+                    (102)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                    )))))
                 token
 
         accepted second |> ignore
 
         for number, reference in [ 110, "synthetic-a"; 111, "synthetic-b" ] do
             let! updated =
-                Service.execute
+                Service.executeSubmission
                     owner
                     (work
                         fixture
@@ -95,22 +104,23 @@ let private handover (database: PostgresFixture.Database) =
             accepted updated |> ignore
 
         let! closedCase =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request
-                        fixture
-                        112
-                        "synthetic-closed"
-                        0L
-                        (AuthoredCaseAct.Open Inputs.registration)
-                ))
+                (((request
+                    (fixture)
+                    (112)
+                    ("synthetic-closed")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                    )))))
                 token
 
         accepted closedCase |> ignore
 
         let! closedAssigned =
-            Service.execute
+            Service.executeSubmission
                 owner
                 (work
                     fixture
@@ -124,11 +134,9 @@ let private handover (database: PostgresFixture.Database) =
         accepted closedAssigned |> ignore
 
         let! closed =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 114 "synthetic-closed" 1L (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                (((request (fixture) (114) ("synthetic-closed") (1L) "case.close" (Map.empty))))
                 token
 
         accepted closed |> ignore
@@ -174,7 +182,7 @@ let private handover (database: PostgresFixture.Database) =
             "Work did not change fact revisions"
 
         let! changed =
-            Service.execute
+            Service.executeSubmission
                 owner
                 (work
                     fixture
@@ -196,7 +204,7 @@ let private handover (database: PostgresFixture.Database) =
                 (WorkValue.Set(ActorId.format incoming))
                 WorkValue.Keep
 
-        let! preview = Service.preview owner stale token
+        let! preview = Service.previewSubmission owner stale token
 
         Expect.isTrue
             (match preview.Outcome with
@@ -205,7 +213,7 @@ let private handover (database: PostgresFixture.Database) =
              | _ -> false)
             "Review conflicts on the selected row revision"
 
-        let! staleWrite = Service.execute owner stale token
+        let! staleWrite = Service.executeSubmission owner stale token
 
         Expect.isTrue
             (match staleWrite.Outcome with
@@ -224,17 +232,21 @@ let private handover (database: PostgresFixture.Database) =
                     (WorkValue.Set(ActorId.format incoming))
                     WorkValue.Keep
 
-            let! review = Service.preview owner input token
+            let! review = Service.previewSubmission owner input token
 
             Expect.isTrue
                 (match review.Outcome with
-                 | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work value)) ->
-                     value.Proposed.Responsible
-                     |> Option.exists (fun actor -> actor.ActorId = incoming)
+                 | Outcome.Succeeded(Previewed.Reviewed review) ->
+                     review.Changes
+                     |> List.exists (fun part ->
+                         match part.Description with
+                         | ClaimCore.Domain.Changes.PartDescription.Work description ->
+                             description.Responsible |> Option.bind _.After = Some incoming
+                         | _ -> false)
                  | _ -> false)
                 "One case is reviewed for reassignment"
 
-            let! written = Service.execute owner input token
+            let! written = Service.executeSubmission owner input token
             accepted written |> ignore
 
         let! remaining = list ()

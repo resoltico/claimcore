@@ -24,8 +24,7 @@ type internal RecoveryIdentity =
         ActorId: Guid
         AttemptId: Guid
         OperationId: Guid
-        Subject: ActSubject
-        Act: string
+        Task: string
         Refused: bool
     }
 
@@ -45,15 +44,14 @@ module internal RecoveryJournal =
     let private maximumBytes = 4096
 
     let identityCodec =
-        (Codec.record (fun origin installation actor attempt operation subject act refused () ->
+        (Codec.record (fun origin installation actor attempt operation task refused () ->
             {
                 ServiceOrigin = origin
                 InstallationId = installation
                 ActorId = actor
                 AttemptId = attempt
                 OperationId = operation
-                Subject = subject
-                Act = act
+                Task = task
                 Refused = refused
             })
         : Fields<RecoveryIdentity, _>)
@@ -62,16 +60,12 @@ module internal RecoveryJournal =
         |> Codec.field "actorId" _.ActorId Codec.uuid
         |> Codec.field "attemptId" _.AttemptId Codec.uuid
         |> Codec.field "operationId" _.OperationId Codec.uuid
-        |> Codec.field
-            "subject"
-            _.Subject
-            (Codec.enumeration (Vocabulary.entries ActSubject.vocabulary))
-        |> Codec.field "act" _.Act (Codec.boundedText 1 40)
+        |> Codec.field "task" _.Task (Codec.boundedText 1 40)
         |> Codec.field "refused" _.Refused Codec.boolean
         |> Codec.field
             "format"
             (fun _ -> ())
-            (Codec.integer 3L 3L |> Codec.map (fun _ -> ()) (fun () -> 3L))
+            (Codec.integer 4L 4L |> Codec.map (fun _ -> ()) (fun () -> 4L))
         |> Codec.build
 
 
@@ -85,12 +79,8 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
-        && (ApplicationTaskId.all
-            |> List.exists (function
-                | ApplicationTaskId.Operation kind ->
-                    ActKind.subject kind = record.Subject && ActKind.token kind = record.Act
-                | ApplicationTaskId.Query _
-                | ApplicationTaskId.Command _ -> false))
+        && (TaskDeclarations.find record.Task
+            |> Option.exists (fun declaration -> declaration.Kind = ClientTaskKind.Operation))
 
 
 

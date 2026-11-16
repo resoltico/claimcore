@@ -4,6 +4,7 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -99,47 +100,63 @@ let tests =
                 let before = PartyName.parse "Authoritative᠎Before" |> Fixtures.accepted
                 let after = PartyName.parse "Authoritative👩‍💻After" |> Fixtures.accepted
 
-                let review =
-                    OperationReview.Case
+                let original =
+                    Reviews.caseReview
+                        (TaskId.ofLiteral "case.void")
+                        (Binding.Case(
+                            CaseSelector.Id CliReplyFixtures.snapshot.CaseId,
+                            CliReplyFixtures.snapshot.Revision
+                        ))
+                        (Some CliReplyFixtures.snapshot)
+                        CliReplyFixtures.snapshot
                         {
-                            Before = Some CliReplyFixtures.snapshot
-                            Proposed = CliReplyFixtures.snapshot
-                            Context =
-                                {
-                                    ProductVersion = "fixture"
-                                    Basis = Inputs.workBasis
-                                }
-                            Changes =
-                                {
-                                    Payments = None
-                                    Lifecycle = None
-                                    Fields =
-                                        [
-                                            {
-                                                FieldName = BusinessField.ClaimantName
-                                                Before =
-                                                    Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name before
-                                                        )
-                                                    )
-                                                After =
-                                                    Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name after
-                                                        )
-                                                    )
-                                            }
-                                        ]
-                                }
+                            ProductVersion = "fixture"
+                            Basis = Inputs.workBasis
                         }
 
-                let supplied = HumanReviewDocument.ofCore ResponseExamples.previewInput review
+                let changes =
+                    original.Changes
+                    |> List.map (fun part ->
+                        match part.Description with
+                        | PartDescription.Case value ->
+                            { part with
+                                Description =
+                                    PartDescription.Case
+                                        { value with
+                                            Fields =
+                                                [
+                                                    {
+                                                        FieldName = BusinessField.ClaimantName
+                                                        Before =
+                                                            Some(
+                                                                CaseFieldValue.Business(
+                                                                    Admitted.Name before
+                                                                )
+                                                            )
+                                                        After =
+                                                            Some(
+                                                                CaseFieldValue.Business(
+                                                                    Admitted.Name after
+                                                                )
+                                                            )
+                                                    }
+                                                ]
+                                        }
+                            }
+                        | _ -> failtest "Case part required")
+
+                let review = { original with Changes = changes }
+
+                let supplied =
+                    HumanReviewDocument.ofSubmission ResponseExamples.previewInput review
 
                 let change =
                     supplied.Presentation.Changes
                     |> List.find (fun change ->
-                        change.Key = BusinessField.key BusinessField.ClaimantName)
+                        change.Key.EndsWith(
+                            "." + BusinessField.key BusinessField.ClaimantName,
+                            StringComparison.Ordinal
+                        ))
 
                 Expect.equal
                     change.Before
@@ -207,33 +224,72 @@ let producerBudgets =
                         }
                 ]
 
-            let admission =
-                OperationReview.People
+            let grantFacts =
+                grants
+                |> List.map (fun grant ->
+                    let scope =
+                        match grant.Scope with
+                        | GrantScope.Installation -> Scope.Installation
+                        | GrantScope.Case(id, _) -> Scope.Case id
+
                     {
-                        Basis = Inputs.workBasis
-                        Effects =
-                            [
-                                PeopleReviewEffect.Register principal
-                                PeopleReviewEffect.SetProfile profile
-                            ]
-                            @ (grants |> List.map PeopleReviewEffect.Grant)
-                        Target = None
-                        AccessScope = GrantScope.Installation
-                        Before =
+                        GrantAssignmentChange.Grant = { Role = grant.Role; Scope = scope }
+                        Before = false
+                        After = true
+                    })
+
+            let references =
+                {
+                    ChangeReferences.Actors = []
+                    Cases =
+                        grants
+                        |> List.choose (fun grant ->
+                            match grant.Scope with
+                            | GrantScope.Case(id, reference) ->
+                                Some
+                                    {
+                                        CaseReferenceItem.CaseId = id
+                                        Reference = reference
+                                    }
+                            | _ -> None)
+                }
+
+            let description =
+                {
+                    PersonPartDescription.Profiles = { Before = None; After = Some profile }
+                    Principal =
+                        Some
                             {
-                                Profile = None
-                                Enabled = false
-                                Grants = []
-                                Access = []
+                                Before = None
+                                After = Some principal
                             }
-                        After =
+                    Enabled = Some { Before = None; After = Some true }
+                    ProfilePresent = Some { Before = None; After = Some true }
+                    DisplayName =
+                        Some
                             {
-                                Profile = Some profile
-                                Enabled = true
-                                Grants = grants
-                                Access = []
+                                Before = None
+                                After = Some profile.DisplayName
                             }
-                    }
+                    Contact =
+                        Some
+                            {
+                                Before = None
+                                After = profile.Contact
+                            }
+                    Grants = grantFacts
+                }
+
+            let admission =
+                Reviews.personReview
+                    (TaskId.ofLiteral "people.admit")
+                    (Binding.PeopleNew Revision.zero)
+                    None
+                    CliReplyFixtures.id
+                    Revision.first
+                    description
+                    references
+                    context
 
             let beforeWork =
                 {
@@ -245,20 +301,20 @@ let producerBudgets =
                         |> Result.toOption
                 }
 
+            let afterWork =
+                { beforeWork with
+                    Revision = CaseFixtures.revision 2L
+                    Summary = HandlingSummary.parse (String.replicate 600 "😀") |> Result.toOption
+                }
+
             let work =
-                OperationReview.Work
-                    {
-                        Parent = CliReplyFixtures.snapshot
-                        Reference = CliReplyFixtures.snapshot.Reference
-                        Before = beforeWork
-                        Proposed =
-                            { beforeWork with
-                                Summary =
-                                    HandlingSummary.parse (String.replicate 600 "😀")
-                                    |> Result.toOption
-                            }
-                        Context = context
-                    }
+                Reviews.workReview
+                    (TaskId.ofLiteral "work.update")
+                    (Binding.Work(CaseSelector.Id beforeWork.CaseId, beforeWork.Revision))
+                    CliReplyFixtures.snapshot
+                    beforeWork
+                    afterWork
+                    context
 
             let reminder id revision action state =
                 Reminder.ofAccepted
@@ -283,41 +339,42 @@ let producerBudgets =
                     (String.replicate 200 "😀")
                     ReminderState.Pending
 
+            let binding =
+                Binding.Reminder(
+                    CaseSelector.Id CliReplyFixtures.snapshot.CaseId,
+                    Reminder.id old,
+                    Reminder.revision old
+                )
+
             let completeNext =
-                OperationReview.Reminder
-                    {
-                        Parent = CliReplyFixtures.snapshot
-                        Reference = CliReplyFixtures.snapshot.Reference
-                        CaseId = CliReplyFixtures.snapshot.CaseId
-                        Before = Some old
-                        Effects = ReminderEffects.CompletedAndPlanned(completed, next)
-                        Context = context
-                    }
+                Reviews.reminderReview
+                    (TaskId.ofLiteral "reminder.completeAndPlanNext")
+                    binding
+                    CliReplyFixtures.snapshot
+                    (Some old)
+                    [ completed; next ]
+                    context
 
             let suppliedReminder =
-                HumanReviewDocument.ofCore
-                    (OperationInput.Reminder
-                        {
-                            OperationId = CliReplyFixtures.id
-                            Target = CaseSelector.Id CliReplyFixtures.snapshot.CaseId
-                            Act =
-                                ReminderAct.CompleteAndPlanNext(
-                                    ReminderId.value (Reminder.id old),
-                                    Revision.value (Reminder.revision old),
-                                    {
-                                        Action = ReminderAction.format (Reminder.action next)
-                                        Due = CalendarDate.format (Reminder.due next)
-                                    }
-                                )
-                        })
+                HumanReviewDocument.ofSubmission
+                    (Submissions.create
+                        "reminder.completeAndPlanNext"
+                        CliReplyFixtures.id
+                        binding
+                        (Map.ofList
+                            [
+                                Submissions.input InputTarget.ReminderAction,
+                                SubmissionValue.Text(ReminderAction.format (Reminder.action next))
+                                Submissions.input InputTarget.ReminderDueDate,
+                                SubmissionValue.Text(CalendarDate.format (Reminder.due next))
+                            ]))
                     completeNext
 
             let identityValues =
                 suppliedReminder.Document.Screen.Regions
                 |> List.collect (fun region ->
                     match region.Role, region.Content with
-                    | RegionRole.Identity, RegionContent.Entries entries ->
-                        entries |> List.map _.Value
+                    | _, RegionContent.Entries entries -> entries |> List.map _.Value
                     | _ -> [])
 
             Expect.contains
@@ -348,70 +405,66 @@ let producerBudgets =
 [<Tests>]
 let primaryPeopleChanges =
     testCase
-        "overlapping and disabled people reviews keep authored changes without ambiguous access rows"
+        "overlapping and disabled accounts retain explicit assignment changes without capability rows"
         (fun () ->
-            let reference = CaseFixtures.reference "OVERLAP"
-
-            let scoped =
-                {
-                    ScopedGrant.Role = Role.CaseReader
-                    Scope = GrantScope.Case(CliReplyFixtures.snapshot.CaseId, reference)
-                }
-
-            let installation =
-                {
-                    ScopedGrant.Role = Role.CaseReader
-                    Scope = GrantScope.Installation
-                }
-
-            let access enabled roles =
-                [
-                    for capability in [ Capability.ReadCase; Capability.ReadHistory ] ->
-                        {
-                            CapabilityAccess.Capability = capability
-                            Effective = enabled
-                            DirectRoles = roles
-                            InstallationRoles = [ Role.Owner ]
-                        }
-                ]
-
             for enabled in [ true; false ] do
-                let before =
-                    {
-                        PeopleState.Profile = None
-                        Enabled = enabled
-                        Grants = [ scoped ]
-                        Access = access enabled []
-                    }
+                let actor = ActorId.create CliReplyFixtures.id |> Option.get
 
-                let after =
-                    { before with
-                        Grants = [ scoped; installation ]
-                        Access = access enabled [ Role.CaseReader ]
+                let description =
+                    {
+                        PersonPartDescription.Profiles = { Before = None; After = None }
+                        Principal = None
+                        Enabled = None
+                        ProfilePresent = None
+                        DisplayName = None
+                        Contact = None
+                        Grants =
+                            [
+                                {
+                                    Grant =
+                                        {
+                                            Role = Role.CaseReader
+                                            Scope = Scope.Installation
+                                        }
+                                    Before = false
+                                    After = true
+                                }
+                            ]
                     }
 
                 let value =
-                    {
-                        PeopleReview.Basis = Inputs.workBasis
-                        Target = None
-                        AccessScope = GrantScope.Installation
-                        Before = before
-                        After = after
-                        Effects = [ PeopleReviewEffect.Grant installation ]
-                    }
-
-                let result =
-                    HumanReviewDocument.ofCore
-                        (OperationInput.People
-                            { CliReplyFixtures.peopleRequest with
-                                Act =
-                                    PeopleAct.Grant
-                                        {
-                                            Role = Role.CaseReader
-                                            Scope = GrantTarget.Installation
-                                        }
+                    Reviews.personReview
+                        (TaskId.ofLiteral "people.grant")
+                        (Binding.People(actor, Revision.first))
+                        (Some
+                            { Inputs.actorReference actor with
+                                Availability =
+                                    if enabled then
+                                        ActorAvailability.Available
+                                    else
+                                        ActorAvailability.Disabled
                             })
-                        (OperationReview.People value)
+                        CliReplyFixtures.id
+                        (CaseFixtures.revision 2L)
+                        description
+                        { Actors = []; Cases = [] }
+                        {
+                            ProductVersion = "fixture"
+                            Basis = Inputs.workBasis
+                        }
+
+                let input =
+                    Submissions.create
+                        "people.grant"
+                        CliReplyFixtures.id
+                        value.Binding
+                        (Submissions.grant
+                            {
+                                Role = Role.CaseReader
+                                Scope = GrantTarget.Installation
+                            })
+
+                let result = HumanReviewDocument.ofSubmission input value
 
                 let keys =
                     (result.Presentation.Changes |> List.map _.Key)
@@ -422,32 +475,25 @@ let primaryPeopleChanges =
                      |> List.exists (fun key ->
                          key.StartsWith("READ_CASE.", StringComparison.Ordinal)
                          || key.StartsWith("READ_HISTORY.", StringComparison.Ordinal)))
-                    "Primary presentation never loses capability identity in repeated access-source rows"
+                    "Primary assignment does not invent capability rows"
 
                 Expect.equal
                     (result.Presentation.Changes |> List.map _.Key)
-                    [ "CASE_READER.installation.role"; "CASE_READER.installation.scope" ]
-                    "Authored role and scope remain explicit"
+                    [ CliReplyFixtures.id.ToString("D") + ".role.0" ]
+                    "One authoritative assignment"
 
-                match
-                    ReplyCodecs.review.Read
-                        "$"
-                        (ReplyCodecs.review.Write(OperationReview.People value))
+                let provided =
+                    ReplyCodecs.review.Read "$" (ReplyCodecs.review.Write value)
                     |> Fixtures.accepted
-                with
-                | OperationReview.People provided ->
-                    Expect.equal
-                        provided.Before.Access
-                        before.Access
-                        "The full correctly grouped before-access DATA contract remains available"
 
+                match provided.Changes.Head.Description with
+                | PartDescription.Person provided ->
                     Expect.equal
-                        provided.After.Access
-                        after.Access
-                        "The full correctly grouped after-access DATA contract remains available"
+                        provided.Grants
+                        description.Grants
+                        "Explicit assignment survives DATA"
 
-                    Expect.equal
-                        provided.Effects
-                        [ PeopleReviewEffect.Grant installation ]
-                        "No authored effect is removed"
-                | _ -> failtest "Expected people")
+                    Expect.isNone
+                        provided.Enabled
+                        "Granting a role does not invent an enabled-state change"
+                | _ -> failtest "Person part required")

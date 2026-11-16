@@ -28,16 +28,22 @@ let tests =
                 let openCase number reference =
                     task {
                         let! reply =
-                            Service.execute
+                            Service.executeSubmission
                                 admin
-                                (Inputs.caseOperation
-                                    {
-                                        ExpectedFamilySequence = None
-                                        OperationId = id number
-                                        CaseReference = reference
-                                        ExpectedRevision = 0L
-                                        Act = AuthoredCaseAct.Open registration
-                                    })
+                                ((ClaimCore.TestSupport.Submissions.createRaw
+                                    "case.open"
+                                    (id number)
+                                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                                    (ClaimCore.TestSupport.Submissions.fields (
+                                        RegistrationInput.values (registration)
+                                     )
+                                     |> Map.add
+                                         (TaskInputId.Target(
+                                             InputTarget.Field BusinessField.CaseReference
+                                         ))
+                                         (ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                             reference
+                                         )))))
                                 token
 
                         return (accepted reply |> caseReceipt).CaseId
@@ -53,15 +59,20 @@ let tests =
                             |> Result.defaultWith (string >> failtest)
 
                         let! reply =
-                            Service.execute
-                                admin
-                                (OperationInput.People(
-                                    peopleRequest
-                                        (id number)
-                                        principal
-                                        (PeopleAct.Register { DisplayName = name; Contact = None })
-                                ))
-                                token
+                            (task {
+                                let! submission =
+                                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                        (admin).Store
+                                        ((id number))
+                                        (principal)
+                                        (Some 0L)
+                                        "people.register"
+                                        (ClaimCore.TestSupport.Submissions.profile (
+                                            { DisplayName = name; Contact = None }
+                                        ))
+
+                                return! Service.executeSubmission (admin) submission (token)
+                            })
 
                         let actorId =
                             match (accepted reply).Subject with
@@ -101,16 +112,18 @@ let tests =
                     acceptedPeople reply
 
                 let! disabled =
-                    Service.execute
-                        admin
-                        (OperationInput.People(
-                            reviewedPeopleRequest
-                                database.Fixture.Store
-                                (id 10)
-                                bobPrincipal
-                                PeopleAct.Disable
-                        ))
-                        token
+                    (task {
+                        let! submission =
+                            ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                (database.Fixture.Store)
+                                ((id 10))
+                                (bobPrincipal)
+                                (None)
+                                "people.disable"
+                                (Map.empty)
+
+                        return! Service.executeSubmission (admin) submission (token)
+                    })
                     |> Async.AwaitTask
 
                 acceptedPeople disabled

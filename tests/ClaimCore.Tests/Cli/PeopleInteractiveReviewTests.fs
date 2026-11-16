@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -17,22 +18,7 @@ let private operation = Guid.Parse "6f91c638-a33f-793d-9a32-000000000001"
 let private actor = Guid.Parse "10000000-0000-7000-8000-000000000001"
 let private baseWords verb = [ "people"; verb; actor.ToString("D") ]
 
-let private command (submission: OperationSubmission) =
-    match submission.Operation with
-    | Ok(SubmittedOperation.ActorPeople value) ->
-        OperationInput.People
-            {
-                ExpectedRevision = value.ExpectedRevision
-                OperationId = value.OperationId
-                Target =
-                    {
-                        Kind = PrincipalKind.Human
-                        Issuer = "https://intent.example/"
-                        Subject = "person"
-                    }
-                Act = value.Act
-            }
-    | _ -> Submissions.command submission
+let private command (submission: OperationSubmission) = submission
 
 let private targetActor =
     { CliReplyFixtures.receipt.RecordedBy with
@@ -93,13 +79,40 @@ let private run words (answer: string option) =
                                         (Outcome.Succeeded
                                             {
                                                 Revision = Revision.first
+                                                Controls =
+                                                    [
+                                                        "people.setProfile"
+                                                        "people.disable"
+                                                        "people.eraseProfile"
+                                                    ]
+                                                    |> List.map (fun task ->
+                                                        let seeds =
+                                                            if task = "people.setProfile" then
+                                                                Map.ofList
+                                                                    [
+                                                                        TaskInputId.Target
+                                                                            InputTarget
+                                                                                .ProfileDisplayName,
+                                                                        InputValue.Text
+                                                                            "Current person"
+                                                                    ]
+                                                            else
+                                                                Map.empty
+
+                                                        Inputs.offeredTask
+                                                            task
+                                                            (Binding.People(
+                                                                ActorId.create actor |> Option.get,
+                                                                Revision.first
+                                                            ))
+                                                            seeds)
                                                 Basis = Inputs.workBasis
                                                 Actor = person
                                                 Offers =
                                                     [
-                                                        PeopleActKind.SetProfile
-                                                        PeopleActKind.Disable
-                                                        PeopleActKind.EraseProfile
+                                                        (TaskId.ofLiteral "people.setProfile")
+                                                        (TaskId.ofLiteral "people.disable")
+                                                        (TaskId.ofLiteral "people.eraseProfile")
                                                     ]
                                                 ProfileSeed =
                                                     Some
@@ -116,42 +129,77 @@ let private run words (answer: string option) =
                                 (Frames.value Api.operationPreview >> Option.map command) frame
                                 |> Option.get
 
-                            let people =
-                                match request with
-                                | OperationInput.People value -> value
-                                | _ -> failtest "Expected people input"
+                            let people = request
 
-                            let before =
+                            let afterProfile, enabled =
+                                match TaskId.token people.Task with
+                                | "people.setProfile" ->
+                                    let text target =
+                                        people.Envelope.Inputs[TaskInputId.Target target]
+                                        |> function
+                                            | SubmissionValue.Text text -> text
+                                            | _ -> failtest "Text expected"
+
+                                    Some(
+                                        ActorProfile.parse
+                                            {
+                                                DisplayName = text InputTarget.ProfileDisplayName
+                                                Contact = None
+                                            }
+                                        |> Fixtures.accepted
+                                    ),
+                                    true
+                                | "people.disable" -> Some profile, false
+                                | "people.eraseProfile" -> None, true
+                                | _ -> failtest "Unexpected person task"
+
+                            let change before after =
+                                if before = after then
+                                    None
+                                else
+                                    Some
+                                        {
+                                            ValueChange.Before = before
+                                            After = after
+                                        }
+
+                            let description =
                                 {
-                                    PeopleState.Profile = Some profile
-                                    Enabled = true
+                                    PersonPartDescription.Profiles =
+                                        {
+                                            Before = Some profile
+                                            After = afterProfile
+                                        }
+                                    Principal = None
+                                    Enabled = change (Some true) (Some enabled)
+                                    ProfilePresent = change (Some true) (Some afterProfile.IsSome)
+                                    DisplayName =
+                                        change
+                                            (Some profile.DisplayName)
+                                            (afterProfile |> Option.map _.DisplayName)
+                                    Contact = None
                                     Grants = []
-                                    Access = []
                                 }
 
-                            let after, effect =
-                                match people.Act with
-                                | PeopleAct.SetProfile input ->
-                                    let value = ActorProfile.parse input |> Fixtures.accepted in
-
-                                    { before with Profile = Some value },
-                                    PeopleReviewEffect.SetProfile value
-                                | PeopleAct.Disable ->
-                                    { before with Enabled = false }, PeopleReviewEffect.Disable
-                                | PeopleAct.EraseProfile ->
-                                    { before with Profile = None }, PeopleReviewEffect.EraseProfile
-                                | _ -> failtest "Unsupported review scenario"
-
-                            let target =
+                            let review =
                                 {
-                                    ActorReviewItem.Actor = targetActor
-                                    Principal =
-                                        PrincipalKey.human "https://intent.example/" "person"
-                                        |> Fixtures.accepted
-                                    Contact = None
-                                    State = AccountState.Active
-                                    Roles = []
-                                    ResponsibleCases = None
+                                    OperationReview.Task = people.Task
+                                    Binding = (Submissions.command people).Binding
+                                    Target = ReviewTarget.Person(Some targetActor)
+                                    References = { Actors = [ targetActor ]; Cases = [] }
+                                    Context =
+                                        {
+                                            ProductVersion = "fixture"
+                                            Basis = Inputs.workBasis
+                                        }
+                                    Changes =
+                                        [
+                                            {
+                                                PartId = actor
+                                                Revision = Revision.create 2L |> Option.get
+                                                Description = PartDescription.Person description
+                                            }
+                                        ]
                                 }
 
                             response
@@ -162,21 +210,7 @@ let private run words (answer: string option) =
                                         (Frames.value Api.operationPreview frame |> Option.get)
                                         {
                                             PreviewReply.OperationId = people.OperationId
-                                            Outcome =
-                                                Outcome.Succeeded(
-                                                    Previewed.Reviewed(
-                                                        OperationReview.People
-                                                            {
-                                                                Basis = Inputs.workBasis
-                                                                Target = Some target
-                                                                AccessScope =
-                                                                    GrantScope.Installation
-                                                                Before = before
-                                                                After = after
-                                                                Effects = [ effect ]
-                                                            }
-                                                    )
-                                                )
+                                            Outcome = Outcome.Succeeded(Previewed.Reviewed(review))
                                         }
                                 ))
                         elif (Frames.endpoint frame).Id = Api.operationExecute.Id then
@@ -184,12 +218,8 @@ let private run words (answer: string option) =
                                 (Frames.value Api.operationExecute >> Option.map command) frame
                                 |> Option.get
 
-                            let people =
-                                match request with
-                                | OperationInput.People value -> value
-                                | _ -> failtest "Expected people input"
-
-                            let kind = PeopleAct.kind people.Act
+                            let people = request
+                            let kind = people.Task
 
                             let receipt =
                                 { CliReplyFixtures.receipt with
@@ -292,7 +322,7 @@ let tests =
                 let input = Frames.value Api.operationExecute prepared.Invocation |> Option.get
 
                 Expect.equal
-                    input.Binding
+                    input.Envelope.Binding
                     (OperationBinding.People(Some actor, 2L))
                     "An explicit revision remains unchanged")
             testCase "ordinary people previews then executes identical ID and bytes" (fun () ->
@@ -329,7 +359,7 @@ let tests =
                     [ "context"; "people.grants"; "operation.preview" ]
                     "No mutation"
 
-                let key = PresentationKeys.consequence (ActKind.People PeopleActKind.Disable)
+                let key = PresentationKeys.consequence ((TaskId.ofLiteral "people.disable"))
 
                 Expect.stringContains
                     text
@@ -381,31 +411,42 @@ let tests =
             testCase
                 "supplied invalid intent metadata still fails without fabricating missing metadata"
                 (fun () ->
-                    let valid =
-                        AuthoredIntent.Case(
-                            None,
-                            Some "R-1",
-                            None,
-                            None,
-                            CaseAct.Bare BareAct.Close
-                        )
+                    let valid: SubmissionEnvelope<int64 option, Guid option> =
+                        {
+                            OperationId = None
+                            Task = TaskId.ofLiteral "case.close"
+                            Binding =
+                                OperationBinding.Case(
+                                    CaseSelector.Reference "R-1",
+                                    None,
+                                    None,
+                                    None
+                                )
+                            Inputs = Map.empty
+                        }
 
                     Expect.equal
-                        (Validation.syntaxIntent valid)
-                        None
-                        "Omitted identity and revision are legitimately absent"
+                        (OperationSubmission.syntaxDraft valid)
+                        (Ok None)
+                        "Absent identity and revision remain absent"
 
                     let invalid =
-                        AuthoredIntent.Case(
-                            Some Guid.Empty,
-                            Some "R-1",
-                            Some -1L,
-                            None,
-                            CaseAct.Bare BareAct.Close
-                        )
+                        { valid with
+                            OperationId = Some Guid.Empty
+                            Binding =
+                                OperationBinding.Case(
+                                    CaseSelector.Reference "R-1",
+                                    Some -1L,
+                                    None,
+                                    None
+                                )
+                        }
 
                     let issues =
-                        Validation.syntaxIntent invalid |> Option.get |> InputIssues.toList
+                        OperationSubmission.syntaxDraft invalid
+                        |> Fixtures.accepted
+                        |> Option.get
+                        |> InputIssues.toList
 
                     Expect.equal
                         (issues |> List.map _.Target)

@@ -87,16 +87,18 @@ let private lifecycle (database: PostgresFixture.Database) =
         Expect.equal after.Head[2] before.Head[2] "Refresh preserves first-seen time"
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 710)
-                        human
-                        (PeopleAct.Register Inputs.ownerProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 710))
+                        (human)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         match registered.Outcome with
         | ExecuteResult.Accepted _ -> ()
@@ -146,8 +148,13 @@ let private bounded (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen) SELECT 'HUMAN','https://issuer.example/','expired-'||n,clock_timestamp()-INTERVAL '31 days',clock_timestamp()-INTERVAL '31 days' FROM generate_series(1,120)n"
-                [||]
+                "INSERT INTO claimcore.access_request(principal_key,principal_kind,issuer,subject,first_seen,last_seen) SELECT key,'HUMAN','https://issuer.example/','expired-'||n,clock_timestamp()-INTERVAL '31 days',clock_timestamp()-INTERVAL '31 days' FROM unnest($1::text[]) WITH ORDINALITY AS seed(key,n)"
+                [|
+                    box (
+                        Array.init 120 (fun index ->
+                            humanPrincipalKey "https://issuer.example/" ($"expired-{index + 1}"))
+                    )
+                |]
 
         let! _ =
             Service.context (core database.Fixture (principal PrincipalKind.Human "fresh")) () token
@@ -162,11 +169,18 @@ let private bounded (database: PostgresFixture.Database) =
             120L
             "Refreshing a request does not run housekeeping"
 
+        do! sql database "TRUNCATE claimcore.access_request" [||]
+
         do!
             sql
                 database
-                "TRUNCATE claimcore.access_request; INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen) SELECT 'HUMAN','https://issuer.example/','capacity-'||n,clock_timestamp()-INTERVAL '1 hour',clock_timestamp()-INTERVAL '1 hour' FROM generate_series(1,1000)n"
-                [||]
+                "INSERT INTO claimcore.access_request(principal_key,principal_kind,issuer,subject,first_seen,last_seen) SELECT key,'HUMAN','https://issuer.example/','capacity-'||n,clock_timestamp()-INTERVAL '1 hour',clock_timestamp()-INTERVAL '1 hour' FROM unnest($1::text[]) WITH ORDINALITY AS seed(key,n)"
+                [|
+                    box (
+                        Array.init 1000 (fun index ->
+                            humanPrincipalKey "https://issuer.example/" ($"capacity-{index + 1}"))
+                    )
+                |]
 
         let callers =
             [ 1..12 ]
@@ -221,16 +235,18 @@ let private lockRace (database: PostgresFixture.Database) =
         let fixture = { database.Fixture with Store = held }
 
         let registering =
-            Service.execute
-                (core fixture fixture.Owner)
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 711)
-                        target
-                        (PeopleAct.Register Inputs.ownerProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 711))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+
+                return! Service.executeSubmission ((core fixture fixture.Owner)) submission (token)
+            })
 
         do! entered.Task.WaitAsync(TimeSpan.FromSeconds 10.)
         let waiting = Service.context (core database.Fixture target) () token
@@ -288,16 +304,18 @@ let private administration (database: PostgresFixture.Database) =
         let audit = principal PrincipalKind.Human "request-auditor"
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 720)
-                        audit
-                        (PeopleAct.Register Inputs.ownerProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 720))
+                        (audit)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registered
 
@@ -321,8 +339,8 @@ let private administration (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen) VALUES ('HUMAN','https://issuer.example/','expired-admin',clock_timestamp()-INTERVAL '31 days',clock_timestamp()-INTERVAL '31 days')"
-                [||]
+                "INSERT INTO claimcore.access_request(principal_key,principal_kind,issuer,subject,first_seen,last_seen) VALUES ($1,'HUMAN','https://issuer.example/','expired-admin',clock_timestamp()-INTERVAL '31 days',clock_timestamp()-INTERVAL '31 days')"
+                [| box (humanPrincipalKey "https://issuer.example/" "expired-admin") |]
 
         let! before = verified database
         let! first = Service.accessRequests owner { AfterCursor = None; Limit = 1 } token

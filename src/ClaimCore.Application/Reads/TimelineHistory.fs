@@ -1,19 +1,17 @@
 namespace ClaimCore.Application.Reads
 
-open ClaimCore.Application.Storage
-
-open ClaimCore.Application.Execution
-
-open ClaimCore.Application
-
 open System
-open System.Security.Cryptography
 open System.Text
+open System.Security.Cryptography
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Domain.Changes
+open ClaimCore.Application
 open ClaimCore.Application.Contracts
+open ClaimCore.Application.Storage
 open ClaimCore.RecordFormat
 
-/// Shared timeline construction keeps conflicts and ordinary history under the same disclosure rules.
+/// Conflicts and ordinary history share the same accepted-version projection and disclosure.
 module internal TimelineHistory =
     let binding parent actor filter =
         [
@@ -26,197 +24,148 @@ module internal TimelineHistory =
         |> SHA256.HashData
         |> Convert.ToHexStringLower
 
-    let subject =
-        function
-        | EntryTarget.Case(_, revision, act, _) -> Ok(TimelineSubject.CaseFact(revision, act))
-        | EntryTarget.Note note -> Ok(TimelineSubject.Note(note.Act, note.NoteId))
-        | EntryTarget.Work work -> Ok(TimelineSubject.Work(work.Revision, work.Act))
-        | EntryTarget.Reminder reminder ->
-            Ok(
-                TimelineSubject.Reminder(
-                    reminder.Act,
-                    reminder.ReminderId,
-                    reminder.Revision,
-                    reminder.NextReminderId |> Option.map (fun id -> id, Revision.first)
-                )
-            )
-        | EntryTarget.People _ -> Error CoreFault.StoreIntegrityError
+    let belongs parent filter (entry: StoredEffect) =
+        entry.Change.Aggregate = AggregateReference.Family parent
+        && (filter
+            |> Option.forall (fun filter ->
+                List.contains entry.Change.Kind (TimelineFilter.parts filter)))
 
-    let belongs parent (filter: TimelineFilter option) (entry: StoredEffect) =
-        match entry.Subject with
-        | EntryTarget.Case(id, _, _, _) ->
-            id = parent && (filter.IsNone || filter = Some TimelineFilter.Facts)
-        | EntryTarget.Work work ->
-            work.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Work)
-        | EntryTarget.Reminder reminder ->
-            reminder.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Work)
-        | EntryTarget.Note note ->
-            note.CaseId = parent && (filter.IsNone || filter = Some TimelineFilter.Notes)
-        | EntryTarget.People _ -> false
-
-    let inRange (range: ChangeRange) subject =
-        let revision value =
-            value > range.ExpectedRevision && value <= range.ActualRevision
-
-        match range.Entity, subject with
-        | ChangeEntity.Case, EntryTarget.Case(_, value, _, _) -> revision value
-        | ChangeEntity.Work, EntryTarget.Work work -> revision work.Revision
-        | ChangeEntity.Reminder id, EntryTarget.Reminder reminder ->
-            reminder.ReminderId = id && revision reminder.Revision
-        | _ -> false
+    let private inRange parent (range: ChangeRange) (entry: StoredEffect) =
+        entry.Change.Kind = ChangeEntity.partKind range.Entity
+        && entry.Change.PartId = ChangeEntity.partId parent range.Entity
+        && entry.Change.Revision > range.ExpectedRevision
+        && entry.Change.Revision <= range.ActualRevision
 
     let validPage parent filter range before limit (page: Page<StoredEffect, EffectPosition>) =
         page.Items.Length <= limit
         && (page.Items
+            |> List.pairwise
+            |> List.forall (fun (first, second) -> first.Position > second.Position))
+        && (page.Next
+            |> Option.forall (fun position ->
+                page.Items
+                |> List.tryLast
+                |> Option.exists (fun entry -> entry.Position = position)))
+        && (page.Items
             |> List.forall (fun entry ->
                 belongs parent filter entry
-                && (range |> Option.forall (fun range -> inRange range entry.Subject))
-                && (before |> Option.forall (fun position -> entry.Position < position))))
-        && (page.Items
-            |> List.pairwise
-            |> List.forall (fun (newer, older) -> newer.Position > older.Position))
-        && (page.Next
-            |> Option.forall (fun next ->
-                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Position = next)))
-
-    let validContent erased =
-        function
-        | EntryContent.ErasedCase
-        | EntryContent.Case(_, None) -> erased
-        | EntryContent.Note({ Command = NoteCommand.RemoveNote _ }, note) when Note.text note = None ->
-            true
-        | EntryContent.Case(_, Some _)
-        | EntryContent.Work _
-        | EntryContent.Note _
-        | EntryContent.Reminder _ -> not erased
-        | EntryContent.People _
-        | EntryContent.ErasedProfile -> false
-
-    let validate (services: ServiceContext) entries =
-        entries
-        |> List.map (fun entry ->
-            LedgerEntries.validate services.InstallationId entry
-            |> Result.map (fun value -> entry, LedgerEntries.content value))
-        |> QueryResults.collect
+                && (range |> Option.forall (fun range -> inRange parent range entry))
+                && (before |> Option.forall (fun before -> entry.Position < before))))
 
     let entries
-        (services: ServiceContext)
+        _services
         (tx: ReadTx)
+        reference
         erased
         full
-        (range: ChangeRange option)
+        _range
         (page: Page<StoredEffect, EffectPosition>)
         =
         task {
-            match validate services page.Items with
-            | Error fault -> return Error fault
-            | Ok values when values |> List.exists (snd >> validContent erased >> not) ->
-                return Error CoreFault.StoreIntegrityError
-            | Ok values ->
-                let! previous =
-                    if full && not erased then
-                        LedgerReads.previousEntries tx page.Items
-                    else
-                        System.Threading.Tasks.Task.FromResult Map.empty
+            let mutable authors = Map.empty
 
-                let sequences = page.Items |> List.map _.Position |> Set.ofList
+            for id in page.Items |> List.map _.ActorId |> List.distinct do
+                let! person = AggregateStorage.person tx id
 
-                if
-                    previous.Count > page.Items.Length
-                    || (previous
-                        |> Map.exists (fun sequence entry ->
-                            not (Set.contains sequence sequences) || entry.Position >= sequence))
-                then
-                    return Error CoreFault.StoreIntegrityError
-                else
-                    match validate services (previous |> Map.values |> Seq.toList) with
-                    | Error fault -> return Error fault
-                    | Ok prior ->
-                        let contents =
-                            prior
-                            |> List.map (fun (entry, content) -> entry.Position, content)
-                            |> Map.ofList
+                match person with
+                | None -> raise (RecordCorruptException "Timeline author is absent.")
+                | Some person -> authors <- Map.add id (Actor.currentReference person.Actor) authors
 
-                        let authors = page.Items |> List.map _.ActorId
+            let mutable roots = Map.empty
+            let result = ResizeArray<CaseTimelineEntry>()
 
-                        let responsibility =
-                            if full && not erased then
-                                (values @ prior)
-                                |> List.collect (snd >> TimelineDifferences.actorIds)
-                            else
-                                []
+            for entry in page.Items do
+                let! changes =
+                    task {
+                        if erased then
+                            return Ok TimelineChanges.Erased
+                        elif not full then
+                            return Ok TimelineChanges.Withheld
+                        elif StoredEffect.privateUnavailable entry then
+                            return Error CoreFault.StoreIntegrityError
+                        else
+                            let! descriptions =
+                                task {
+                                    match Map.tryFind entry.OperationId roots with
+                                    | Some descriptions -> return Ok descriptions
+                                    | None ->
+                                        let mutable previous = Map.empty
 
-                        let! actors =
-                            PeopleReads.actorRefs tx (authors @ responsibility |> List.distinct)
+                                        for change in entry.Operation.Changes do
+                                            let! prior =
+                                                OperationStorage.previous
+                                                    tx.Connection
+                                                    tx.InstallationId
+                                                    change
+                                                    tx.CancellationToken
 
-                        return
-                            values
-                            |> List.map (fun (entry, content) ->
-                                let changes =
-                                    if erased then
-                                        Ok TimelineChanges.Erased
-                                    elif not full then
-                                        Ok TimelineChanges.Withheld
-                                    else
-                                        let before =
-                                            previous
-                                            |> Map.tryFind entry.Position
-                                            |> Option.bind (fun prior ->
-                                                Map.tryFind prior.Position contents)
+                                            match prior with
+                                            | Some prior ->
+                                                previous <-
+                                                    Map.add
+                                                        (prior.Kind, prior.PartId)
+                                                        prior
+                                                        previous
+                                            | None -> ()
 
-                                        TimelineDifferences.describeEffect
-                                            entry.Subject
-                                            (match entry.Subject with
-                                             | EntryTarget.Case(_, _, _, date) -> date
-                                             | EntryTarget.Work value -> value.BusinessDate
-                                             | EntryTarget.Reminder value -> value.BusinessDate
-                                             | EntryTarget.Note value -> value.BusinessDate
-                                             | EntryTarget.People _ ->
-                                                 invalidOp "Case history excludes people entries.")
-                                            actors
-                                            content
-                                            before
-                                        |> Result.map (fun changes ->
-                                            match range |> Option.map _.Entity with
-                                            | Some(ChangeEntity.Reminder id) ->
-                                                changes
-                                                |> List.filter (function
-                                                    | TimelineChange.Reminder difference ->
-                                                        difference.ReminderId = id
-                                                    | _ -> false)
-                                            | _ -> changes)
-                                        |> Result.bind (fun changes ->
-                                            subject entry.Subject
-                                            |> Result.bind (fun subject ->
-                                                TimelineOverview.create
-                                                    (range |> Option.map _.Entity)
-                                                    subject
-                                                    content
-                                                    changes)
-                                            |> Result.bind (fun overview ->
-                                                TimelineDisclosure.create changes overview
-                                                |> Result.map TimelineChanges.Disclosed
-                                                |> Result.mapError (fun _ ->
-                                                    CoreFault.StoreIntegrityError)))
+                                        let described =
+                                            PartDescriptions.familyVersions
+                                                reference
+                                                previous
+                                                entry.Operation.Changes
+                                            |> Result.mapError (fun _ ->
+                                                CoreFault.StoreIntegrityError)
 
-                                match
-                                    subject entry.Subject,
-                                    TimelineDifferences.actor actors entry.ActorId,
-                                    changes
-                                with
-                                | Ok subject, Ok author, Ok changes ->
-                                    Ok
-                                        {
-                                            CaseTimelineEntry.OperationId = entry.OperationId
-                                            Position = entry.Position
-                                            OperationHash = entry.Operation.Root.Hash
-                                            Subject = subject
-                                            RecordedAt = entry.RecordedAt
-                                            RecordedBy = author
-                                            Changes = changes
-                                        }
-                                | Error fault, _, _
-                                | _, _, Error fault -> Error fault
-                                | _ -> Error CoreFault.StoreIntegrityError)
-                            |> QueryResults.collect
+                                        match described with
+                                        | Ok descriptions ->
+                                            roots <- Map.add entry.OperationId descriptions roots
+                                        | Error _ -> ()
+
+                                        return described
+                                }
+
+                            match descriptions with
+                            | Error fault -> return Error fault
+                            | Ok descriptions ->
+                                match List.tryItem entry.Index descriptions with
+                                | None -> return Error CoreFault.StoreIntegrityError
+                                | Some description ->
+                                    let! references =
+                                        ChangeReferenceReads.read
+                                            tx
+                                            entry.Change.Aggregate
+                                            [ description ]
+
+                                    return
+                                        PartDescriptions.timeline
+                                            (references.Actors
+                                             |> List.map (fun actor -> actor.ActorId, actor)
+                                             |> Map.ofList)
+                                            description
+                                        |> Result.map TimelineChanges.Disclosed
+                                        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+                    }
+
+                match changes with
+                | Error _ ->
+                    raise (RecordCorruptException "Timeline accepted changes cannot be described.")
+                | Ok changes ->
+                    result.Add
+                        {
+                            OperationId = entry.OperationId
+                            Position = entry.Position
+                            OperationHash = entry.Operation.Root.Hash
+                            Task = entry.Task
+                            Subject =
+                                {
+                                    PartKind = entry.Change.Kind
+                                    PartId = entry.Change.PartId
+                                    Revision = entry.Change.Revision
+                                }
+                            RecordedAt = entry.RecordedAt
+                            RecordedBy = Map.find entry.ActorId authors
+                            Changes = changes
+                        }
+
+            return Ok(List.ofSeq result)
         }

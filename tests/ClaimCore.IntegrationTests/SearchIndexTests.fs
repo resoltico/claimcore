@@ -286,35 +286,37 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                     registration
 
             let! opened =
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            operation
-                            reference
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (operation)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     token
 
             accepted opened |> ignore
 
         let! handled =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Work
-                    {
-                        OperationId = id database.Fixture 103
-                        Target = CaseSelector.Reference "GIN-WORK"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Summary = WorkValue.Set("Handling " + authored)
-                                    Responsible = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id database.Fixture 103)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "GIN-WORK"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Summary = WorkValue.Set("Handling " + authored)
+                            Responsible = WorkValue.Keep
+                        }
+                    )))
                 token
 
         accepted handled |> ignore
@@ -406,16 +408,15 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                                     "Positive old-snapshot control"
 
                                 let! erased =
-                                    Service.execute
+                                    Service.executeSubmission
                                         actor
-                                        (Inputs.caseOperation (
-                                            request
-                                                database.Fixture
-                                                105
-                                                "GIN-FACTS"
-                                                1L
-                                                (AuthoredCaseAct.Bare BareAct.Erase)
-                                        ))
+                                        (((request
+                                            (database.Fixture)
+                                            (105)
+                                            ("GIN-FACTS")
+                                            (1L)
+                                            "case.erase"
+                                            (Map.empty))))
                                         token
 
                                 accepted erased |> ignore
@@ -468,10 +469,10 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
         let reference = "POLICY-SEARCH"
 
-        let write number revision act =
-            Service.execute
+        let write number revision taskName values =
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (request database.Fixture number reference revision act))
+                (((request database.Fixture number reference revision taskName values)))
                 token
 
         let search text =
@@ -499,7 +500,13 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                 ]
                 registration
 
-        let! opened = write 700 0L (CaseAct.Open facts)
+        let! opened =
+            write
+                (700)
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (facts)))
+
         accepted opened |> ignore
 
         for term in [ "policy-unique-42"; "insurer-unique-17" ] do
@@ -515,10 +522,13 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
 
         let! amended =
             write
-                701
-                1L
-                (CaseAct.AmendRegistration(
-                    update [ BusinessField.PolicyNumber, Some "POLICY-UPDATED-43" ]
+                (701)
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values (
+                        (update [ BusinessField.PolicyNumber, Some "POLICY-UPDATED-43" ])
+                    )
                 ))
 
         accepted amended |> ignore
@@ -526,25 +536,32 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
         let! newPolicy = search "policy-updated-43"
         Expect.isEmpty oldPolicy "Amendment replaces searchable policy text"
         Expect.equal newPolicy [ reference ] "Replacement policy is searchable"
-        let! decided = write 702 2L (CaseAct.Decide Inputs.decision)
+
+        let! decided =
+            write
+                (702)
+                (2L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision)))
+
         accepted decided |> ignore
 
         let! corrected =
             write
                 703
                 3L
-                (CaseAct.Correct
-                    {
-                        Registration =
-                            Amendment.Update(
-                                update
-                                    [
-                                        BusinessField.InsurerClaimReference,
-                                        Some "INSURER-UPDATED-18"
-                                    ]
-                            )
-                        Decision = Change.Keep
-                    })
+                "case.correct"
+                (Submissions.updates (
+                    RegistrationUpdateInput.values (
+                        update [ BusinessField.InsurerClaimReference, Some "INSURER-UPDATED-18" ]
+                    )
+                 )
+                 |> Map.add
+                     (Submissions.input (InputTarget.Group RecordGroup.Registration))
+                     (SubmissionValue.Text "UPDATE")
+                 |> Map.add
+                     (Submissions.input (InputTarget.Group RecordGroup.Decision))
+                     (SubmissionValue.Text "KEEP"))
 
         accepted corrected |> ignore
         let! correctedReference = search "insurer-updated-18"
@@ -562,7 +579,7 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                 true
 
         acceptedPeople steward
-        let! erased = write 705 4L (CaseAct.Bare BareAct.Erase)
+        let! erased = write (705) (4L) "case.erase" (Map.empty)
         accepted erased |> ignore
 
         for term in [ "policy-updated-43"; "insurer-updated-18" ] do

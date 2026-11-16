@@ -41,24 +41,32 @@ let internal erasureReadback fixture (actor: ServiceContext) =
             "Only erasable columns are cleared"
 
         let! other =
-            inspectCase fixture (fixture.Owner) (None) ("CONTRACT-002") (CancellationToken.None)
+            fixture.Store.Read
+                {
+                    Work = fun tx -> FamilyReads.findCaseByReference tx "CONTRACT-002"
+                    CancellationToken = CancellationToken.None
+                }
 
         match other with
-        | Ok {
-                 Case = Some {
-                                 Snapshot = {
-                                                State = (CaseState.Active _ | CaseState.Voided _)
-                                            }
-                             }
-             } -> ()
+        | Ok(Some {
+                      Snapshot = {
+                                     State = (CaseState.Active _ | CaseState.Voided _)
+                                 }
+                  }) -> ()
         | _ -> failtest "Other case changed"
 
         let! replay =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (10)
+                    ("CONTRACT-001")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (CancellationToken.None))
 
         Expect.equal
@@ -67,11 +75,17 @@ let internal erasureReadback fixture (actor: ServiceContext) =
             "Erased requests cannot replay"
 
         let! reopen =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 13 "contract-001" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (13)
+                    ("contract-001")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (CancellationToken.None))
 
         Expect.equal
@@ -99,23 +113,24 @@ let internal caseErasure fixture =
 
         for n, reference in [ 10, "CONTRACT-001"; 11, "CONTRACT-002" ] do
             let! opened =
-                (Service.execute
+                (Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (CancellationToken.None))
 
             accepted opened |> ignore
 
-        let erase =
-            actRequest fixture 12 "CONTRACT-001" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
+        let erase = request (fixture) (12) ("CONTRACT-001") (1L) "case.erase" (Map.empty)
 
-        let! result =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation erase)
-                (CancellationToken.None))
+        let! result = (Service.executeSubmission actor ((erase)) (CancellationToken.None))
 
         Expect.equal
             (accepted result |> caseReceipt).Snapshot
@@ -131,11 +146,17 @@ let internal caseVisibility fixture =
 
         for n, reference in [ 10, "C"; 11, "A"; 12, "B" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -184,11 +205,17 @@ let internal foldedOrdering fixture =
 
         for n, reference in [ 20, "Ref-b"; 21, "ref-A"; 22, "REF-C" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture n reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (CancellationToken.None))
 
             accepted result |> ignore

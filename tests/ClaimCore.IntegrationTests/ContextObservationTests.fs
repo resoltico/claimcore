@@ -60,16 +60,18 @@ let tests =
 
                 for number, target in [ 100, activePrincipal; 102, roleless; 103, disabled ] do
                     let! reply =
-                        Service.execute
-                            admin
-                            (OperationInput.People(
-                                reviewedPeopleRequest
-                                    database.Fixture.Store
-                                    (id database.Fixture number)
-                                    target
-                                    (PeopleAct.Register Inputs.actorProfile)
-                            ))
-                            token
+                        (task {
+                            let! submission =
+                                ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                    (database.Fixture.Store)
+                                    ((id database.Fixture number))
+                                    (target)
+                                    (None)
+                                    "people.register"
+                                    (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                            return! Service.executeSubmission (admin) submission (token)
+                        })
                         |> Async.AwaitTask
 
                     acceptedPeople reply
@@ -90,16 +92,18 @@ let tests =
                     acceptedPeople reply
 
                 let! reply =
-                    Service.execute
-                        admin
-                        (OperationInput.People(
-                            reviewedPeopleRequest
-                                database.Fixture.Store
-                                (id database.Fixture 105)
-                                disabled
-                                PeopleAct.Disable
-                        ))
-                        token
+                    (task {
+                        let! submission =
+                            ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                (database.Fixture.Store)
+                                ((id database.Fixture 105))
+                                (disabled)
+                                (None)
+                                "people.disable"
+                                (Map.empty)
+
+                        return! Service.executeSubmission (admin) submission (token)
+                    })
                     |> Async.AwaitTask
 
                 acceptedPeople reply
@@ -253,25 +257,27 @@ let peoplePageBasis =
                     check (read requests).Basis
 
                     let! preview =
-                        Service.preview
-                            service
-                            (OperationInput.People(
-                                reviewedPeopleRequest
-                                    database.Fixture.Store
-                                    (id database.Fixture 120)
-                                    fixture.Owner
-                                    (PeopleAct.SetProfile
+                        (task {
+                            let! submission =
+                                ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                    (database.Fixture.Store)
+                                    ((id database.Fixture 120))
+                                    (fixture.Owner)
+                                    (None)
+                                    "people.setProfile"
+                                    (ClaimCore.TestSupport.Submissions.profile (
                                         {
                                             DisplayName = "Basis profile"
                                             Contact = None
-                                        })
-                            ))
-                            token
+                                        }
+                                    ))
+
+                            return! Service.previewSubmission (service) submission (token)
+                        })
                         |> Async.AwaitTask
 
                     match preview.Outcome with
-                    | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
-                        check review.Basis
+                    | Outcome.Succeeded(Previewed.Reviewed review) -> check review.Context.Basis
                     | other -> failtestf "%A" other
             finally
                 database.Fixture.Dispose()

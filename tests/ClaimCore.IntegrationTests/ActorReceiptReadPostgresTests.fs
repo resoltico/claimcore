@@ -20,12 +20,14 @@ let private principal subject =
     PrincipalKey.human "https://pg-receipt-names.example/" subject
     |> Result.defaultWith (string >> failtest)
 
-let private people fixture number target act =
-    OperationInput.People(reviewedPeopleRequest fixture.Store (id fixture number) target act)
+let private people fixture number target taskName values =
+    (personSubmission fixture.Store (id fixture number) target None taskName values)
+        .GetAwaiter()
+        .GetResult()
 
 let private execute service input =
     task {
-        let! reply = Service.execute service input token
+        let! reply = Service.executeSubmission service input token
 
         return
             match reply.Outcome with
@@ -34,7 +36,12 @@ let private execute service input =
     }
 
 let private named fixture number target name =
-    people fixture number target (PeopleAct.Register { DisplayName = name; Contact = None })
+    people
+        (fixture)
+        (number)
+        (target)
+        "people.register"
+        (ClaimCore.TestSupport.Submissions.profile ({ DisplayName = name; Contact = None }))
 
 let private target (receipt: OperationReceipt) =
     match receipt.Subject with
@@ -64,27 +71,31 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (people
-                    fixture
-                    101
-                    fixture.Owner
-                    (PeopleAct.Grant
+                    (fixture)
+                    (101)
+                    (fixture.Owner)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.CaseHandler
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
 
         let! _ =
             execute
                 owner
                 (people
-                    fixture
-                    2
-                    fixture.Owner
-                    (PeopleAct.Grant
+                    (fixture)
+                    (2)
+                    (fixture.Owner)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.DataSteward
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
 
         let alice, bob, guardian = principal "alice", principal "bob", principal "guardian"
         let! aliceReceipt = execute owner (named fixture 3 alice "Alice")
@@ -95,72 +106,91 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (people
-                    fixture
-                    6
-                    guardian
-                    (PeopleAct.Grant
+                    (fixture)
+                    (6)
+                    (guardian)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
 
         let guardianCore = core fixture guardian
 
         let! _ =
             execute
                 owner
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = id fixture 7
-                        CaseReference = "PG-NAMED-WORK"
-                        ExpectedRevision = 0L
-                        Act = CaseAct.Open Inputs.registration
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.open"
+                    (id fixture 7)
+                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                     )
+                     |> Map.add
+                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text("PG-NAMED-WORK")))))
 
         for number, person in [ 8, alice; 9, bob ] do
             let! _ =
                 execute
                     owner
                     (people
-                        fixture
-                        number
-                        person
-                        (PeopleAct.Grant
+                        (fixture)
+                        (number)
+                        (person)
+                        "people.grant"
+                        (ClaimCore.TestSupport.Submissions.grant (
                             {
                                 Role = Role.CaseHandler
                                 Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
-                            }))
+                            }
+                        )))
 
             ()
 
         let change number revision responsible =
-            OperationInput.Work
-                {
-                    OperationId = id fixture number
-                    Target = CaseSelector.Reference "PG-NAMED-WORK"
-                    ExpectedRevision = revision
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible = WorkValue.Set(ActorId.format responsible)
-                                Summary = WorkValue.Set "Private work summary"
-                            }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "work.update"
+                (id fixture number)
+                (ClaimCore.Application.Contracts.OperationBinding.Work(
+                    (CaseSelector.Reference "PG-NAMED-WORK"),
+                    (revision)
+                ))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible = WorkValue.Set(ActorId.format responsible)
+                        Summary = WorkValue.Set "Private work summary"
+                    }
+                ))
 
         let! _ = execute owner (change 10 0L (known aliceReceipt))
         let next = change 11 1L (known bobReceipt)
-        let! preview = Service.preview owner next token
+        let! preview = Service.previewSubmission owner next token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work review)) ->
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
+            let responsibility =
+                match review.Changes.Head.Description with
+                | ClaimCore.Domain.Changes.PartDescription.Work description ->
+                    description.Responsible |> Option.get
+                | _ -> failtest "Work description required"
+
+            let label selected =
+                selected
+                |> Option.bind (fun id ->
+                    review.References.Actors |> List.tryFind (fun actor -> actor.ActorId = id))
+                |> Option.map _.DisplayName
+
             Expect.equal
-                (review.Before.Responsible |> Option.map _.DisplayName)
+                (label responsibility.Before)
                 (Some(DisplayName.Named(Inputs.name "Alice")))
                 "The SQL batch retains the previous actor on the same case"
 
             Expect.equal
-                (review.Proposed.Responsible |> Option.map _.DisplayName)
+                (label responsibility.After)
                 (Some(DisplayName.Named(Inputs.name "Bob")))
                 "The SQL batch retains the proposed actor independently"
         | other -> failtestf "%A" other
@@ -171,14 +201,16 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (people
-                    fixture
-                    19
-                    alice
-                    (PeopleAct.SetProfile
+                    (fixture)
+                    (19)
+                    (alice)
+                    "people.setProfile"
+                    (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Current Alice"
                             Contact = None
-                        }))
+                        }
+                    )))
 
         let! historical = Service.operationGet owner { OperationId = id fixture 10 } token
 
@@ -202,14 +234,16 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (people
-                    fixture
-                    21
-                    reader
-                    (PeopleAct.Grant
+                    (fixture)
+                    (21)
+                    (reader)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.CaseReader
                             Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
-                        }))
+                        }
+                    )))
 
         let! limited =
             Service.operationGet (core fixture reader) { OperationId = id fixture 10 } token
@@ -227,14 +261,16 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (people
-                    fixture
-                    12
-                    bob
-                    (PeopleAct.SetProfile
+                    (fixture)
+                    (12)
+                    (bob)
+                    "people.setProfile"
+                    (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Saved Bob"
                             Contact = None
-                        }))
+                        }
+                    )))
 
         match target saved with
         | PeopleTargetDisclosure.Disclosed actor ->
@@ -248,27 +284,31 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 guardianCore
                 (people
-                    fixture
-                    13
-                    fixture.Owner
-                    (PeopleAct.Revoke
+                    (fixture)
+                    (13)
+                    (fixture.Owner)
+                    "people.revoke"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
 
         let! _ =
             execute
                 guardianCore
                 (people
-                    fixture
-                    14
-                    bob
-                    (PeopleAct.SetProfile
+                    (fixture)
+                    (14)
+                    (bob)
+                    "people.setProfile"
+                    (ClaimCore.TestSupport.Submissions.profile (
                         {
                             DisplayName = "Current private Bob"
                             Contact = None
-                        }))
+                        }
+                    )))
 
         let! hidden = status fixture owner 12
 
@@ -290,14 +330,16 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 guardianCore
                 (people
-                    fixture
-                    15
-                    fixture.Owner
-                    (PeopleAct.Grant
+                    (fixture)
+                    (15)
+                    (fixture.Owner)
+                    "people.grant"
+                    (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.Owner
                             Scope = GrantTarget.Installation
-                        }))
+                        }
+                    )))
 
         let! visible = status fixture owner 12
 
@@ -309,7 +351,9 @@ let private scenario (database: PostgresFixture.Database) =
                 "Regrant resolves the current account name"
         | other -> failtestf "%A" other
 
-        let! _ = execute guardianCore (people fixture 16 bob PeopleAct.EraseProfile)
+        let! _ =
+            execute guardianCore (people (fixture) (16) (bob) "people.eraseProfile" (Map.empty))
+
         let! erased = status fixture owner 12
 
         match target erased with
@@ -320,7 +364,8 @@ let private scenario (database: PostgresFixture.Database) =
                 "Real erasure remains different from withheld details"
         | other -> failtestf "%A" other
 
-        let! disabled = execute guardianCore (people fixture 17 bob PeopleAct.Disable)
+        let! disabled =
+            execute guardianCore (people (fixture) (17) (bob) "people.disable" (Map.empty))
 
         match target disabled with
         | PeopleTargetDisclosure.Disclosed actor ->
@@ -333,19 +378,20 @@ let private scenario (database: PostgresFixture.Database) =
         let! _ =
             execute
                 owner
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence =
-                            Some(
-                                reviewedFamilySequence
-                                    fixture.Store
-                                    (CaseSelector.Reference "PG-NAMED-WORK")
-                            )
-                        OperationId = id fixture 18
-                        CaseReference = "PG-NAMED-WORK"
-                        ExpectedRevision = 1L
-                        Act = CaseAct.Bare BareAct.Erase
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.erase"
+                    (id fixture 18)
+                    (ClaimCore.Application.Contracts.OperationBinding.Case(
+                        CaseSelector.Reference("PG-NAMED-WORK"),
+                        (1L),
+                        None,
+                        (Some(
+                            reviewedFamilySequence
+                                fixture.Store
+                                (CaseSelector.Reference "PG-NAMED-WORK")
+                        ))
+                    ))
+                    (Map.empty)))
 
         let! observed = Service.operationGet owner { OperationId = id fixture 10 } token
 

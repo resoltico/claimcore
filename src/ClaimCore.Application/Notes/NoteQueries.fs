@@ -14,7 +14,7 @@ module internal NoteQueries =
     let current
         (services: ServiceContext)
         (tx: ReadTx)
-        (view: CaseFacts)
+        (view: CaseReadFacts)
         (parent: StoredCase)
         before
         limit
@@ -91,7 +91,7 @@ module internal NoteQueries =
                             Violation.PageLimitRange NotePaging.MaximumLimit
                         ))
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -102,12 +102,7 @@ module internal NoteQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case
-                                                    services
-                                                    tx
-                                                    None
-                                                    request.Target
-                                                    None
+                                                CaseReadContext.load services tx request.Target
 
                                             match view.Case with
                                             | Some parent when

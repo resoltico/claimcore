@@ -75,9 +75,22 @@ module CaseDescription =
                     }))
 
         {
-            CasePartDescription.Lifecycle =
-                Difference.value (before |> Option.map _.Lifecycle) (Some after.Lifecycle)
+            CasePartDescription.Values = { Before = prior; After = next }
+            Lifecycle = Difference.value (before |> Option.map _.Lifecycle) (Some after.Lifecycle)
             Fields = changes
             Money = amounts
             Disposition = after.Disposition
         }
+
+    let fromChanges reference (before: PartChange option) (after: PartChange) =
+        let prior =
+            before
+            |> Option.bind (fun change ->
+                match change.Value with
+                | PartValue.Case value -> Some value
+                | _ -> None)
+
+        match after.Value with
+        | PartValue.Case value when before.IsSome = prior.IsSome ->
+            Ok(describe reference prior value)
+        | _ -> Error RecordViolation.InvalidSubjectState

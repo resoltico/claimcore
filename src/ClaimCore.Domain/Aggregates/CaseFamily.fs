@@ -48,6 +48,24 @@ type CaseFamily =
     member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
 
 module CaseFamily =
+    let validateContent (content: CaseContent) =
+        CaseAdmission.financial content.Registration content.Finance
+
+    let validateSnapshot (snapshot: CaseSnapshot) =
+        if snapshot.Revision < Revision.first then
+            Error RecordViolation.RevisionOutOfRange
+        else
+            match CaseState.fields snapshot.State with
+            | None -> Ok()
+            | Some fields when fields.CaseReference <> snapshot.Reference ->
+                Error RecordViolation.ReferenceMismatch
+            | Some fields ->
+                validateContent
+                    {
+                        Registration = fields.Registration
+                        Finance = fields.Finance
+                    }
+
     let private financial
         (payments: Map<OperationId, AcceptedPart<PaymentValue>>)
         (value: CaseValue)
@@ -55,7 +73,7 @@ module CaseFamily =
         match value.Content with
         | None -> Ok()
         | Some content ->
-            CaseAdmission.financial content.Registration content.Finance
+            validateContent content
             |> Result.bind (fun () ->
                 let active =
                     payments
@@ -394,3 +412,111 @@ module CaseFamily =
                     Error RecordViolation.InvalidSubjectState
                 else
                     Ok(changes, index)
+
+    /// Restores exact accepted versions for live decisions; history succession is checked by apply.
+    let restore
+        id
+        reference
+        sequence
+        (parts: PartChange list)
+        (origins: Map<PartKind * Guid, SubjectStamp>)
+        =
+        let invalid = Error RecordViolation.InvalidSubjectState
+
+        let cases =
+            parts
+            |> List.choose (fun change ->
+                match change.Value with
+                | PartValue.Case value -> Some(change, value)
+                | _ -> None)
+
+        let validIdentity (change: PartChange) =
+            change.Aggregate = AggregateReference.Family id
+            && change.PartId <> Guid.Empty
+            && change.Revision >= Revision.first
+            && EffectPosition.sequence change.Stamp.Position <= sequence
+            && PartChange.validErasure change
+            && (match Map.tryFind (change.Kind, change.PartId) origins with
+                | Some origin ->
+                    EffectPosition.sequence origin.Position
+                    <= EffectPosition.sequence change.Stamp.Position
+                    && (match change.Kind with
+                        | PartKind.Case ->
+                            change.PartId = CaseId.value id
+                            && id = CaseId.ofOperationId origin.OperationId
+                        | PartKind.Work -> change.PartId = CaseId.value id
+                        | PartKind.Payment
+                        | PartKind.Reminder
+                        | PartKind.Note -> change.PartId = OperationId.value origin.OperationId
+                        | PartKind.Person -> false)
+                | None -> false)
+
+        if
+            parts |> List.exists (validIdentity >> not)
+            || (parts
+                |> List.map (fun part -> part.Kind, part.PartId)
+                |> List.distinct
+                |> List.length)
+               <> parts.Length
+        then
+            invalid
+        else
+            match cases with
+            | [ case, value ] when value.Reference |> Option.forall ((=) reference) ->
+                let payments =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, OperationId.create change.PartId with
+                        | PartValue.Payment value, Some payment ->
+                            Some(payment, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
+                let work =
+                    parts
+                    |> List.tryPick (fun change ->
+                        match change.Value with
+                        | PartValue.Work value -> Some(accepted change value)
+                        | _ -> None)
+
+                let reminders =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, ReminderId.create change.PartId with
+                        | PartValue.Reminder value, Some reminder ->
+                            Some(reminder, accepted change value)
+                        | _ -> None)
+                    |> Map.ofList
+
+                let notes =
+                    parts
+                    |> List.choose (fun change ->
+                        match change.Value, NoteId.create change.PartId with
+                        | PartValue.Note value, Some note ->
+                            Some(
+                                note,
+                                accepted
+                                    change
+                                    {
+                                        Removed = value.Removed
+                                        Created = Map.find (change.Kind, change.PartId) origins
+                                    }
+                            )
+                        | _ -> None)
+                    |> Map.ofList
+
+                let state =
+                    {
+                        Identity = id
+                        ReferenceValue = reference
+                        CaseValue = accepted case (caseState value)
+                        PaymentsValue = payments
+                        WorkValue = work
+                        RemindersValue = reminders
+                        NotesValue = notes
+                        SequenceValue = sequence
+                    }
+
+                financial payments value
+                |> Result.bind (fun () -> rows state parts |> Result.map (fun _ -> state))
+            | _ -> invalid

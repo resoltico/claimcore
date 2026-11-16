@@ -17,7 +17,7 @@ module internal NoteStorage =
         }
 
     let columns =
-        "n.note_id,n.case_id,n.created_sequence,n.created_effect_index,n.text,e.subject_id,e.parent_case_id,e.act,e.subject_kind,"
+        "n.note_id,n.case_id,n.created_sequence,n.created_effect_index,n.text,e.part_id,e.aggregate_id,e.revision,e.part_kind,"
         + DatabaseSession.instantExpression "l.recorded_at"
         + " AS recorded_at,l.actor_id"
 
@@ -34,11 +34,11 @@ module internal NoteStorage =
             |> DatabaseSession.admitted CaseId.create
 
         if
-            DatabaseSession.namedValue<Guid> "subject_id" value <> NoteId.value id
-            || DatabaseSession.namedValue<Guid> "parent_case_id" value <> CaseId.value parent
-            || DatabaseSession.namedValue<string> "act" value
-               <> (NoteActKind.token NoteActKind.AddNote)
-            || DatabaseSession.namedValue<string> "subject_kind" value <> "NOTE"
+            DatabaseSession.namedValue<Guid> "part_id" value <> NoteId.value id
+            || DatabaseSession.namedValue<Guid> "aggregate_id" value <> CaseId.value parent
+            || DatabaseSession.namedValue<int64> "revision" value <> 1L
+            || DatabaseSession.namedValue<string> "part_kind" value
+               <> ClaimCore.Domain.Changes.PartKind.token ClaimCore.Domain.Changes.PartKind.Note
         then
             raise (RecordCorruptException "Note creation source disagrees.")
 
@@ -65,18 +65,6 @@ module internal NoteStorage =
             RecordedBy =
                 DatabaseSession.namedValue<Guid> "actor_id" value
                 |> DatabaseSession.admitted ActorId.create
-        }
-
-    let projectionRow value : NoteSubjectRows =
-        let record = row value
-
-        {
-            NoteId = Note.id record.Note
-            CaseId = Note.caseId record.Note
-            CreatedPosition = record.CreatedPosition
-            RecordedAt = record.RecordedAt
-            RecordedBy = record.RecordedBy
-            Text = Note.text record.Note
         }
 
     let find connection id token =

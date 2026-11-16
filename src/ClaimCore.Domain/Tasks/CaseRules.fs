@@ -101,3 +101,14 @@ module internal CaseRules =
         |> List.map (fun (field, value) ->
             TaskInputId.Target(InputTarget.Field field), InputValue.Text(FieldValue.format value))
         |> Map.ofList
+
+    /// A retained decision reproduces public structure without manufacturing erased case content.
+    let retained context environment state binding capability gate transform =
+        match state, binding with
+        | Some state, Binding.Case _ ->
+            admit context environment state binding capability gate
+            |> Result.mapError Rejection.ofRefusal
+            |> Result.map (fun () ->
+                [ change context state (transform { state.Case.Value with Content = None }) ])
+            |> Result.map (TaskContext.changes context)
+        | _ -> Error(Rejection.Refused FamilyRules.unavailable)

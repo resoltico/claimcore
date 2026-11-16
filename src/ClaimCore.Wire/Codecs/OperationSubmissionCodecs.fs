@@ -56,7 +56,7 @@ module OperationSubmissionCodecs =
             scalar input)
         |> fieldMapWithPresence
 
-    let private inputs (declaration: ApplicationTaskDeclaration) =
+    let private inputs (declaration: ClientTaskDeclaration) =
         let members =
             declaration.Inputs
             |> List.filter (fun input -> input.Source = InputSource.Authored)
@@ -85,7 +85,7 @@ module OperationSubmissionCodecs =
         fieldMapWithPresence (members @ collections)
 
     /// Prefill is partial, including collection rows that the user has not completed yet.
-    let seedInputs (declaration: ApplicationTaskDeclaration) =
+    let seedInputs (declaration: ClientTaskDeclaration) =
         let members =
             declaration.Inputs
             |> List.map (fun input ->
@@ -167,7 +167,7 @@ module OperationSubmissionCodecs =
         let positiveVersion = integer 1L Revision.Maximum
 
         let declaration =
-            ActKind.token kind
+            TaskId.token kind
             |> TaskId.ofLiteral
             |> ClaimCore.Domain.Tasks.Registry.findDeclaration
             |> Option.defaultWith (fun () -> invalidArg (nameof kind) "The task is not declared.")
@@ -268,41 +268,52 @@ module OperationSubmissionCodecs =
                     positiveVersion
                 |> build
 
-        built |> named ("OperationBinding." + ActKind.token kind)
+        let shape =
+            match TaskDeclaration.bindingShape declaration with
+            | BindingShape.CaseNew -> "CASE.new"
+            | BindingShape.Case -> "CASE"
+            | BindingShape.CasePayment -> "CASE.payment"
+            | BindingShape.CaseErase -> "CASE.erase"
+            | BindingShape.Work -> "WORK"
+            | BindingShape.ReminderNew -> "REMINDER.new"
+            | BindingShape.Reminder -> "REMINDER"
+            | BindingShape.NoteNew -> "NOTE.new"
+            | BindingShape.Note -> "NOTE"
+            | BindingShape.PeopleNew -> "PEOPLE.new"
+            | BindingShape.People -> "PEOPLE"
+
+        built |> named ("Binding." + shape)
 
     let submission =
         let variants =
-            ApplicationTaskId.all
-            |> List.choose (function
-                | ApplicationTaskId.Operation kind ->
-                    let declaration = TaskDeclarations.describe (ApplicationTaskId.Operation kind)
+            TaskVocabulary.client
+            |> List.map (fun kind ->
+                let declaration = TaskDeclarations.describe (TaskId.token kind)
 
-                    let fields =
-                        record (fun operation binding values -> operation, binding, values)
-                        |> field "operationId" (fun (id, _, _) -> id) uuid
-                        |> field "binding" (fun (_, binding, _) -> binding) (binding kind)
-                        |> field
-                            "inputs"
-                            (fun (_, _, values) -> values)
-                            (inputs declaration |> named ("OperationInputs." + ActKind.token kind))
+                let fields =
+                    record (fun operation binding values -> operation, binding, values)
+                    |> field "operationId" (fun (id, _, _) -> id) uuid
+                    |> field "binding" (fun (_, binding, _) -> binding) (binding kind)
+                    |> field
+                        "inputs"
+                        (fun (_, _, values) -> values)
+                        (inputs declaration |> named ("OperationInputs." + TaskId.token kind))
 
-                    variant
-                        (ActKind.token kind)
-                        (fun (operation, binding, values) ->
-                            {
-                                SubmissionEnvelope.OperationId = operation
-                                Task = kind
-                                Binding = binding
-                                Inputs = values
-                            })
-                        (fun (submission: SubmissionEnvelope<int64, System.Guid>) ->
-                            if submission.Task = kind then
-                                Some(submission.OperationId, submission.Binding, submission.Inputs)
-                            else
-                                None)
-                        fields
-                    |> Some
-                | _ -> None)
+                variant
+                    (TaskId.token kind)
+                    (fun (operation, binding, values) ->
+                        {
+                            SubmissionEnvelope.OperationId = operation
+                            Task = kind
+                            Binding = binding
+                            Inputs = values
+                        })
+                    (fun (submission: SubmissionEnvelope<int64, System.Guid>) ->
+                        if submission.Task = kind then
+                            Some(submission.OperationId, submission.Binding, submission.Inputs)
+                        else
+                            None)
+                    fields)
 
         taggedOn "task" "OperationSubmission" variants
         |> interpret

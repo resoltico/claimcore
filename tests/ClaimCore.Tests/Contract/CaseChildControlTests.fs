@@ -35,11 +35,11 @@ let private read () =
 
     let advice =
         CaseAdvice.create
-            [ CaseActKind.RemovePayment ]
+            [ (TaskId.ofLiteral "case.removePayment") ]
             None
             HistoryAccess.None
             ((Inputs.caseAdvice snapshot.State).Blocked
-             |> List.filter (fun item -> item.Act <> CaseActKind.RemovePayment))
+             |> List.filter (fun item -> item.Act <> (TaskId.ofLiteral "case.removePayment")))
         |> accepted
 
     let reminderId =
@@ -64,7 +64,17 @@ let private read () =
             Responsible = None
             RecordedAt = Inputs.workBasis.ObservedAt
             RecordedBy = ResponseExamples.caseRead.RecordedBy
-            Acts = [ ReminderActKind.Complete ]
+            Offers =
+                [
+                    Inputs.offeredTask
+                        "reminder.complete"
+                        (Binding.Reminder(
+                            CaseSelector.Id snapshot.CaseId,
+                            reminderId,
+                            Revision.first
+                        ))
+                        Map.empty
+                ]
             Active = true
             Timing = Some ReminderDue.Today
         }
@@ -96,16 +106,17 @@ let tests =
 
                 Expect.equal
                     payment.Task
-                    (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
+                    (TaskId.ofLiteral "case.removePayment")
                     "Only the offered row task"
 
                 Expect.equal
                     payment.Binding
-                    (OperationBinding.Case(
-                        CaseSelector.Id value.Snapshot.CaseId,
-                        Revision.value value.Snapshot.Revision,
-                        Some(OperationId.value ResponseExamples.receipt.OperationId),
-                        None
+                    (Some(
+                        Binding.CasePayment(
+                            CaseSelector.Id value.Snapshot.CaseId,
+                            value.Snapshot.Revision,
+                            ResponseExamples.receipt.OperationId
+                        )
                     ))
                     "Payment identity and version stay together"
 
@@ -113,7 +124,7 @@ let tests =
 
                 Expect.equal
                     reminder.Task
-                    (ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Complete))
+                    (TaskId.ofLiteral "reminder.complete")
                     "The selected reminder offers completion"
 
                 Expect.isEmpty reminder.Seeds "Completion needs no editable action or date"
@@ -129,22 +140,36 @@ let tests =
 
                     let advice =
                         CaseAdvice.create
-                            [ CaseActKind.RecordPayment ]
+                            [ (TaskId.ofLiteral "case.recordPayment") ]
                             None
                             HistoryAccess.None
                             ((Inputs.caseAdvice value.Snapshot.State).Blocked
-                             |> List.filter (fun item -> item.Act <> CaseActKind.RecordPayment))
+                             |> List.filter (fun item ->
+                                 item.Act <> (TaskId.ofLiteral "case.recordPayment")))
                         |> accepted
+                        |> CaseAdvice.withOffers
+                            [
+                                Inputs.offeredTask
+                                    "case.recordPayment"
+                                    (Binding.Case(
+                                        CaseSelector.Id value.Snapshot.CaseId,
+                                        value.Snapshot.Revision
+                                    ))
+                                    (Map.ofList
+                                        [
+                                            TaskInputId.Target(
+                                                InputTarget.Field BusinessField.PaidCurrency
+                                            ),
+                                            InputValue.Text "EUR"
+                                        ])
+                            ]
 
                     let offered = HumanCaseDocument.ofCore { value with Advice = advice }
 
                     let record =
                         offered.Actions
                         |> List.find (fun action ->
-                            action.Task =
-                                ApplicationTaskId.Operation(
-                                    ActKind.Case CaseActKind.RecordPayment
-                                )
+                            action.Task = (TaskId.ofLiteral "case.recordPayment")
                             && action.Blocked.IsNone)
 
                     Expect.equal

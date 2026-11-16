@@ -27,16 +27,17 @@ type private Command =
 
 let check (_: InputMap) = []
 
+let private current = ReminderRules.current false [ ReminderState.Pending ]
+
 let availability environment state binding =
-    ReminderRules.availability declaration false [ ReminderState.Pending ] environment state binding
+    ReminderRules.availability declaration current environment state binding
 
 let decide context environment (state: CaseFamily option) binding (_: InputMap) =
     match state with
     | None -> Error(Rejection.Refused FamilyRules.unavailable)
     | Some state ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active false)
-        |> Result.bind (fun () ->
-            ReminderRules.current false [ ReminderState.Pending ] state binding)
+        |> Result.bind (fun () -> current state binding)
         |> Result.map (fun (id, before) ->
             let command = { ReminderId = id; Before = before }
 
@@ -57,9 +58,16 @@ let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decide
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

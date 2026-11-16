@@ -76,10 +76,6 @@ module CaseListOrder =
 
     let token = Vocabulary.token vocabulary
 
-module TextSearch =
-    let normalize (value: string) =
-        value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
-
 [<Struct>]
 type CaseSearchText = private CaseSearchText of string
 

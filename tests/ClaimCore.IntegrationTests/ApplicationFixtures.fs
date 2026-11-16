@@ -45,7 +45,13 @@ let run action =
     }
 
 let openRequest fixture n reference =
-    request fixture n reference 0L (AuthoredCaseAct.Open registration)
+    request
+        (fixture)
+        (n)
+        (reference)
+        (0L)
+        "case.open"
+        (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
 /// A write can finish before another accepted change is observed by its caller.
 type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =

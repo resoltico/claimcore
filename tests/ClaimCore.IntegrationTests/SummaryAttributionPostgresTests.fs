@@ -41,37 +41,38 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            Service.execute
+                            Service.executeSubmission
                                 actor
-                                (Inputs.caseOperation (
-                                    request
-                                        database.Fixture
-                                        88100
-                                        "SUMMARY-REBUILD"
-                                        0L
-                                        (AuthoredCaseAct.Open registration)
-                                ))
+                                (((request
+                                    (database.Fixture)
+                                    (88100)
+                                    ("SUMMARY-REBUILD")
+                                    (0L)
+                                    "case.open"
+                                    (ClaimCore.TestSupport.Submissions.fields (
+                                        RegistrationInput.values (registration)
+                                    )))))
                                 token
 
                         let parent = accepted opened |> caseReceipt |> _.CaseId
                         let target = CaseSelector.Id parent
 
                         let! changed =
-                            Service.execute
+                            Service.executeSubmission
                                 actor
-                                (OperationInput.Work
-                                    {
-                                        OperationId = id database.Fixture 88101
-                                        Target = target
-                                        ExpectedRevision = 0L
-                                        Act =
-                                            WorkAct.UpdateWork
-                                                {
-                                                    Responsible = WorkValue.Keep
-                                                    Summary =
-                                                        WorkValue.Set "Summary to reconstruct"
-                                                }
-                                    })
+                                ((ClaimCore.TestSupport.Submissions.createRaw)
+                                    "work.update"
+                                    (id database.Fixture 88101)
+                                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                                        (target),
+                                        (0L)
+                                    ))
+                                    (ClaimCore.TestSupport.Submissions.work (
+                                        {
+                                            Responsible = WorkValue.Keep
+                                            Summary = WorkValue.Set "Summary to reconstruct"
+                                        }
+                                    )))
                                 token
 
                         let receipt = accepted changed

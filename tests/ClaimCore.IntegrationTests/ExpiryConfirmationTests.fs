@@ -22,11 +22,11 @@ let private owner fixture =
     let service = core fixture fixture.Owner
 
     match
-        PeopleOperations.provisionStore
+        Service.provisionOwner
             service
             (id fixture 1)
             Inputs.ownerProfile
-            People.initialOwnerRoles
+            ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
             token
         |> sync
     with
@@ -49,14 +49,14 @@ let private lookup service identity cancellation =
     reply.Outcome
 
 let private openCase identity reference =
-    Inputs.caseOperation
-        {
-            ExpectedFamilySequence = None
-            OperationId = identity
-            CaseReference = reference
-            ExpectedRevision = 0L
-            Act = AuthoredCaseAct.Open Inputs.registration
-        }
+    (ClaimCore.TestSupport.Submissions.createRaw
+        "case.open"
+        (identity)
+        (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+        (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (Inputs.registration))
+         |> Map.add
+             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+             (ClaimCore.Application.Contracts.SubmissionValue.Text(reference))))
 
 let private confirmed () =
     let database = PostgresFixture.create () |> sync
@@ -65,26 +65,30 @@ let private confirmed () =
         let fixture = database.Fixture
         let service = owner fixture
         let original = openCase (Guid.CreateVersion7()) "EXPIRY-AVAILABLE"
-        let acceptedReceipt = Service.execute service original token |> sync |> accepted
+
+        let acceptedReceipt =
+            Service.executeSubmission service original token |> sync |> accepted
+
         let erasedInput = openCase (Guid.CreateVersion7()) "EXPIRY-ERASED"
-        let erased = Service.execute service erasedInput token |> sync |> accepted
+        let erased = Service.executeSubmission service erasedInput token |> sync |> accepted
 
         let cleared =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence =
-                            Some(
-                                reviewedFamilySequence
-                                    fixture.Store
-                                    (CaseSelector.Reference "EXPIRY-ERASED")
-                            )
-                        OperationId = Guid.CreateVersion7()
-                        CaseReference = "EXPIRY-ERASED"
-                        ExpectedRevision = 1L
-                        Act = AuthoredCaseAct.Bare BareAct.Erase
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.erase"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.Case(
+                        CaseSelector.Reference("EXPIRY-ERASED"),
+                        (1L),
+                        None,
+                        (Some(
+                            reviewedFamilySequence
+                                fixture.Store
+                                (CaseSelector.Reference "EXPIRY-ERASED")
+                        ))
+                    ))
+                    (Map.empty)))
                 token
             |> sync
             |> accepted
@@ -162,55 +166,54 @@ let private confirmed () =
         let inputs =
             [
                 openCase current "EXPIRY-REFUSED"
-                OperationInput.Work
-                    {
-                        OperationId = Guid.CreateVersion7()
-                        Target = target
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    Summary = WorkValue.Set "Not saved"
-                                }
-                    }
-                OperationInput.Note
-                    {
-                        OperationId = Guid.CreateVersion7()
-                        Target = target
-                        Act = AuthoredNoteAct.AddNote "Not saved"
-                    }
-                OperationInput.Reminder
-                    {
-                        OperationId = Guid.CreateVersion7()
-                        Target = target
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Not saved"
-                                    Due = "2027-01-01"
-                                }
-                    }
-                OperationInput.People(
-                    Inputs.peopleRequest
-                        (Guid.CreateVersion7())
-                        fixture.Owner
-                        (PeopleAct.SetProfile Inputs.actorProfile)
-                )
+                (ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Set "Not saved"
+                        }
+                    ))
+                (ClaimCore.TestSupport.Submissions.createRaw)
+                    "note.add"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.Note((target), None))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("Not saved")
+                        ])
+                (ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder((target), None))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan ("Not saved") ("2027-01-01"))
+                (personSubmission
+                    fixture.Store
+                    (Guid.CreateVersion7())
+                    fixture.Owner
+                    None
+                    "people.setProfile"
+                    (Submissions.profile Inputs.actorProfile)
+                 |> sync)
+
             ]
 
         for input in inputs do
-            match (Service.execute service input token |> sync).Outcome with
+            match (Service.executeSubmission service input token |> sync).Outcome with
             | ExecuteResult.Rejected(Refusal.OperationClockUnavailable(cutoff, _)) ->
                 Expect.equal cutoff future "Each actual command consults committed frontier"
             | other -> failtestf "Current-window unseen operation must refuse: %A" other
 
-            match (Service.preview service input token |> sync).Outcome with
+            match (Service.previewSubmission service input token |> sync).Outcome with
             | Outcome.Rejected(Refusal.OperationClockUnavailable(cutoff, _)) ->
                 Expect.equal cutoff future "Preview consults same frontier"
             | other -> failtestf "Preview must refuse expired unseen operation: %A" other
 
-        let replay = Service.execute service original token |> sync |> replayReceipt
+        let replay =
+            Service.executeSubmission service original token |> sync |> replayReceipt
 
         Expect.equal
             replay.Position
@@ -233,7 +236,10 @@ let private confirmed () =
         let denied = core fixture unknown
 
         match
-            (Service.execute denied (openCase (Guid.CreateVersion7()) "EXPIRY-HIDDEN") token
+            (Service.executeSubmission
+                denied
+                (openCase (Guid.CreateVersion7()) "EXPIRY-HIDDEN")
+                token
              |> sync)
                 .Outcome
         with

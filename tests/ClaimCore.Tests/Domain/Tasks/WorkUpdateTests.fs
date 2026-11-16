@@ -12,6 +12,34 @@ let tests =
     testList
         "task work.update"
         [
+            testCase
+                "permanent syntax and state-dependent admission remain distinct for blank summaries"
+                (fun () ->
+                    let state = family ()
+
+                    let values =
+                        inputs [ text (InputTarget.Field BusinessField.HandlingSummary) "\n" ]
+
+                    Expect.isEmpty
+                        (Update.check values)
+                        "Retained syntax does not apply current text policy without state"
+
+                    let issues =
+                        Update.decide
+                            (context 2)
+                            environment
+                            (Some state)
+                            (Binding.Work(target state, Revision.zero))
+                            values
+                        |> expectInputs
+
+                    Expect.equal
+                        (issues |> List.map (fun issue -> issue.Input, issue.Violation))
+                        [
+                            TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary),
+                            Violation.TextRequired
+                        ]
+                        "Changed blank assertions fail current admission")
             testCase "omission preserves values and explicit null clears them" (fun () ->
                 let state = family ()
 

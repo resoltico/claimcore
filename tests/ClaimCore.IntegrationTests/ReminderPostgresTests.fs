@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.ReminderPostgresTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -27,13 +28,12 @@ let private parsed =
 
 let private target = CaseSelector.Reference "synthetic-a"
 
-let private reminder fixture operation act =
-    OperationInput.Reminder
-        {
-            OperationId = id fixture operation
-            Target = target
-            Act = act
-        }
+let private reminder fixture operation taskName selected values =
+    Submissions.createRaw
+        taskName
+        (id fixture operation)
+        (OperationBinding.Reminder((target), selected))
+        values
 
 let private queue actor cursor =
     Service.reminders
@@ -57,16 +57,16 @@ let private dates database =
 
         for operation, date in [ 100, "0001-01-01"; 101, "9999-12-31" ] do
             let! created =
-                Service.execute
+                Service.executeSubmission
                     actor
                     (reminder
-                        database.Fixture
-                        operation
-                        (AuthoredReminderAct.Create
-                            {
-                                Action = "Review the boundary date"
-                                Due = date
-                            }))
+                        (database.Fixture)
+                        (operation)
+                        "reminder.create"
+                        (None)
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Review the boundary date")
+                            (date)))
                     token
 
             accepted created |> ignore
@@ -96,16 +96,16 @@ let private dates database =
         let today = (read current).Work.Basis.BusinessDate
 
         let! dueToday =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    105
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Due on the observed business date"
-                            Due = CalendarDate.format (CalendarDate.ofDate today)
-                        }))
+                    (database.Fixture)
+                    (105)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Due on the observed business date")
+                        (CalendarDate.format (CalendarDate.ofDate today))))
                 token
 
         accepted dueToday |> ignore
@@ -209,23 +209,27 @@ let private dates database =
             "Read-time due classification never appends synthetic ledger events"
 
         let! cancelledToday =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    106
-                    (AuthoredReminderAct.Cancel(id database.Fixture 105, 1L)))
+                    (database.Fixture)
+                    (106)
+                    "reminder.cancel"
+                    (Some((id database.Fixture 105), (1L)))
+                    (Map.empty))
                 token
 
         accepted cancelledToday |> ignore
 
         let! cancelled =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    102
-                    (AuthoredReminderAct.Cancel(id database.Fixture 100, 1L)))
+                    (database.Fixture)
+                    (102)
+                    "reminder.cancel"
+                    (Some((id database.Fixture 100), (1L)))
+                    (Map.empty))
                 token
 
         accepted cancelled |> ignore
@@ -239,29 +243,34 @@ let private dates database =
                 registration
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 103 "synthetic-b" 0L (CaseAct.Open minimumRegistration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (103)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (minimumRegistration)
+                    )))))
                 token
 
         accepted opened |> ignore
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Reminder
-                    {
-                        OperationId = id database.Fixture 104
-                        Target = CaseSelector.Reference "synthetic-b"
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Another future action"
-                                    Due = "9999-12-31"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id database.Fixture 104)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "synthetic-b"),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Another future action")
+                        ("9999-12-31")))
                 token
 
         accepted planned |> ignore
@@ -373,16 +382,16 @@ let private atomicRollback database =
         let! actor = populated database
 
         let! initial =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    200
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Original action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (200)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Original action")
+                        ("2027-01-01")))
                 token
 
         accepted initial |> ignore
@@ -398,18 +407,15 @@ let private atomicRollback database =
 
         let operation =
             reminder
-                database.Fixture
-                201
-                (AuthoredReminderAct.CompleteAndPlanNext(
-                    id database.Fixture 200,
-                    1L,
-                    {
-                        Action = "Replacement action"
-                        Due = "2027-01-02"
-                    }
-                ))
+                (database.Fixture)
+                (201)
+                "reminder.completeAndPlanNext"
+                (Some((id database.Fixture 200), (1L)))
+                (ClaimCore.TestSupport.Submissions.reminderPlan
+                    ("Replacement action")
+                    ("2027-01-02"))
 
-        let! failed = Service.execute actor operation token
+        let! failed = Service.executeSubmission actor operation token
 
         match failed.Outcome with
         | ExecuteResult.Failed _ -> ()
@@ -452,7 +458,7 @@ let private atomicRollback database =
                 "DROP TRIGGER inject_reminder_failure ON claimcore.reminders; DROP FUNCTION claimcore.inject_reminder_failure()"
                 [||]
 
-        let! acceptedPair = Service.execute actor operation token
+        let! acceptedPair = Service.executeSubmission actor operation token
         let receipt = accepted acceptedPair
 
         match receipt.Subject with
@@ -468,7 +474,7 @@ let private atomicRollback database =
                 "Positive control accepts one fixed correlated pair"
         | other -> failtestf "Expected compound receipt: %A" other
 
-        let! replay = Service.execute actor operation token
+        let! replay = Service.executeSubmission actor operation token
 
         match replay.Outcome with
         | ExecuteResult.AlreadyAccepted replay ->
@@ -484,27 +490,29 @@ let private causalEffect database =
         let! actor = populated database
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    300
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Original action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (300)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Original action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore
 
         let! completed =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    301
-                    (AuthoredReminderAct.Complete(id database.Fixture 300, 1L)))
+                    (database.Fixture)
+                    (301)
+                    "reminder.complete"
+                    (Some((id database.Fixture 300), (1L)))
+                    (Map.empty))
                 token
 
         let receipt = accepted completed
@@ -512,25 +520,25 @@ let private causalEffect database =
 
         do!
             rewrite database receipt.Position.Sequence (fun original ->
-                let values =
-                    match original.Values with
-                    | RetainedOperationValues.Reminder(Some value) -> value
-                    | _ -> failtest "Available reminder decision required"
-
-                let value =
-                    match values.Effects with
-                    | ReminderEffects.Changed value -> value
-                    | _ -> failtest "A single completion is required"
+                let change = original.Changes |> List.exactlyOne
 
                 let changed =
-                    Reminder.ofAccepted
-                        (Reminder.id value)
-                        (Reminder.caseId value)
-                        (Reminder.revision value)
-                        (Reminder.action value)
-                        (Inputs.date "2027-01-02")
-                        ReminderState.Completed
-                    |> parsed
+                    match change.Value with
+                    | PartValue.Reminder value ->
+                        let plan = value.Plan |> Option.get
+
+                        { change with
+                            Value =
+                                PartValue.Reminder
+                                    { value with
+                                        Plan =
+                                            Some
+                                                { plan with
+                                                    Due = Inputs.date "2027-01-02"
+                                                }
+                                    }
+                        }
+                    | _ -> failtest "A single completion part is required"
 
                 let nonce =
                     original.Root.Structure.Compartments
@@ -541,12 +549,12 @@ let private causalEffect database =
 
                 recreate
                     original.Root.Header
-                    original.Root.Structure.Command
-                    (OperationValues.Reminder
-                        { values with
-                            Effects = ReminderEffects.Changed changed
-                        })
+                    original.Root.Structure.Task
+                    original.Root.Structure.Binding
+                    original.Inputs.Value
+                    [ changed ]
                     nonce)
+
 
         do! finding VerificationFinding.StateSequence database
     }
@@ -556,38 +564,56 @@ let private causalParent database =
         let! actor = populated database
 
         let! other =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 400 "synthetic-b" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (400)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let other = accepted other |> caseReceipt
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    401
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Original action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (401)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Original action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore
         let! _ = verified database
 
-        do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{caseId}',to_jsonb($2::text)) WHERE operation_id=$1"
-                [| box (id database.Fixture 401); box (CaseId.format other.CaseId) |]
+        let receipt = accepted planned
 
-        do! finding VerificationFinding.PayloadFormat database
+        do!
+            rewrite database receipt.Position.Sequence (fun original ->
+                let binding =
+                    match original.Root.Structure.Binding with
+                    | Binding.ReminderNew _ -> Binding.ReminderNew(CaseSelector.Id other.CaseId)
+                    | _ -> failtest "Reminder creation binding required"
+
+                rehashed
+                    original.Root.Header
+                    original.Root.Structure.Task
+                    binding
+                    original.Root.Structure.Retained
+                    original.Root.Structure.Effects
+                    original.Root.Structure.Compartments)
+
+        do! finding VerificationFinding.StateSequence database
+
     }
 
 let private causalRevision database =
@@ -595,39 +621,58 @@ let private causalRevision database =
         let! actor = populated database
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    700
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Original action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (700)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Original action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore
 
         let! completed =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    701
-                    (AuthoredReminderAct.Complete(id database.Fixture 700, 1L)))
+                    (database.Fixture)
+                    (701)
+                    "reminder.complete"
+                    (Some((id database.Fixture 700), (1L)))
+                    (Map.empty))
                 token
 
         accepted completed |> ignore
         let! _ = verified database
 
-        do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{expectedRevision}','9007199254740991'::jsonb) WHERE operation_id=$1"
-                [| box (id database.Fixture 701) |]
+        let receipt = accepted completed
 
-        do! finding VerificationFinding.PayloadFormat database
+        do!
+            rewrite database receipt.Position.Sequence (fun original ->
+                let binding =
+                    match original.Root.Structure.Binding with
+                    | Binding.Reminder(target, reminder, _) ->
+                        Binding.Reminder(
+                            target,
+                            reminder,
+                            CaseFixtures.revision SafeInteger.Maximum
+                        )
+                    | _ -> failtest "Existing reminder binding required"
+
+                rehashed
+                    original.Root.Header
+                    original.Root.Structure.Task
+                    binding
+                    original.Root.Structure.Retained
+                    original.Root.Structure.Effects
+                    original.Root.Structure.Compartments)
+
+        do! finding VerificationFinding.StateSequence database
+
     }
 
 let private projectionRepair database =
@@ -635,16 +680,16 @@ let private projectionRepair database =
         let! actor = populated database
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    500
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Original action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (500)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Original action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore
@@ -713,35 +758,33 @@ let private casePageOwners database =
         let! actor = populated database
 
         let! updated =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Work
-                    {
-                        OperationId = id database.Fixture 550
-                        Target = target
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Summary = WorkValue.Set "Page work summary"
-                                    Responsible = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id database.Fixture 550)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Summary = WorkValue.Set "Page work summary"
+                            Responsible = WorkValue.Keep
+                        }
+                    )))
                 token
 
         accepted updated |> ignore
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
                 (reminder
-                    database.Fixture
-                    551
-                    (AuthoredReminderAct.Create
-                        {
-                            Action = "Current page action"
-                            Due = "2027-01-01"
-                        }))
+                    (database.Fixture)
+                    (551)
+                    "reminder.create"
+                    (None)
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Current page action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore
@@ -816,42 +859,41 @@ let private currentLookup database =
     task {
         let! actor = populated database
 
-        for operation, act in
+        for operation, taskName, selected, values in
             [
-                600,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Earlier action"
-                        Due = "2027-01-01"
-                    }
+                600, "reminder.create", None, Submissions.reminderPlan "Earlier action" "2027-01-01"
                 601,
-                AuthoredReminderAct.Update(
-                    id database.Fixture 600,
-                    1L,
-                    {
-                        Action = "Current action"
-                        Due = "2027-02-01"
-                    }
-                )
-                602, AuthoredReminderAct.Cancel(id database.Fixture 600, 2L)
+                "reminder.update",
+                Some(id database.Fixture 600, 1L),
+                Submissions.reminderPlan "Current action" "2027-02-01"
+                602, "reminder.cancel", Some(id database.Fixture 600, 2L), Map.empty
             ] do
-            let! result = Service.execute actor (reminder database.Fixture operation act) token
+            let! result =
+                Service.executeSubmission
+                    actor
+                    (reminder database.Fixture operation taskName selected values)
+                    token
+
             accepted result |> ignore
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reminder-current-reader" |> parsed
 
         let! registered =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 603)
-                        reader
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 603))
+                        (reader)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         acceptedPeople registered
 
@@ -920,29 +962,34 @@ let private currentLookup database =
                 "ReadCase never discloses earlier reminder payloads."
 
         let! other =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 605 "synthetic-b" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (605)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         accepted other |> ignore
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Reminder
-                    {
-                        OperationId = id database.Fixture 606
-                        Target = CaseSelector.Reference "synthetic-b"
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Other case action"
-                                    Due = "2027-01-01"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id database.Fixture 606)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "synthetic-b"),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Other case action")
+                        ("2027-01-01")))
                 token
 
         accepted planned |> ignore

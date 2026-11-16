@@ -9,6 +9,9 @@ open System
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Domain.Changes
+open ClaimCore.Domain.Tasks
 
 let today = DateOnly(2026, 9, 7)
 
@@ -25,7 +28,10 @@ let completeAdviceWire (raw: string) =
     let paused = (maintenance["active"] |> nonNull).GetValue<bool>()
     let blocked = JsonArray()
 
-    for token in (CaseActKind.all |> List.map CaseActKind.token) do
+    for token in
+        (Registry.clientDeclarations
+         |> List.filter (fun declaration -> declaration.Target = ActSubject.Case)
+         |> List.map (fun declaration -> TaskId.token declaration.Id)) do
         if not (Set.contains token offered) then
             let item = JsonObject()
             item["act"] <- JsonValue.Create token
@@ -52,54 +58,103 @@ let registration = Inputs.exampleRegistration
 
 let decision = Inputs.decision
 
-let request revision act =
-    {
-        ExpectedFamilySequence =
-            if CaseAct.kind act = CaseActKind.Erase then
-                Some 1L
-            else
-                None
-        OperationId = Guid.Parse("20000000-0000-7000-8000-000000000001")
-        CaseReference = "UNIT-001"
-        ExpectedRevision = revision
-        Act = act
-    }
-
 let accepted result =
     match result with
     | Ok value -> value
-    | Error _ -> failtest "Expected acceptance."
-
-let private acceptedRecord (decision: CaseDecision) =
-    Case.ofAccepted decision.After |> accepted
+    | Error error -> failtestf "Expected acceptance: %A" error
 
 let opened () =
-    CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open registration)) None
-    |> accepted
-    |> acceptedRecord
+    let original = TaskBuilders.initialChange
 
-let applyWith context act claim =
-    CaseFixtures.decide
-        today
-        context
-        (request (Revision.value (Case.snapshot claim).Revision) act)
-        (Some claim)
-    |> Result.map acceptedRecord
+    let id =
+        Guid.Parse "20000000-0000-7000-8000-000000000001"
+        |> OperationId.create
+        |> Option.get
 
-let apply act claim = applyWith Map.empty act claim
+    let reference = CaseReference.parse "UNIT-001" |> accepted
+
+    let content =
+        {
+            CaseContent.Registration = Inputs.admittedRegistration registration
+            Finance = FinancialPosition.undecided
+        }
+
+    let change =
+        { original with
+            Aggregate = AggregateReference.Family(CaseId.ofOperationId id)
+            PartId = OperationId.value id
+            NaturalKey = Some "UNIT-001"
+            Stamp = { original.Stamp with OperationId = id }
+            Value =
+                PartValue.Case
+                    {
+                        Reference = Some reference
+                        Lifecycle = Lifecycle.Active
+                        Status = CaseStatus.Opened
+                        Content = Some content
+                        Disposition = None
+                    }
+        }
+
+    CaseFamily.apply None change |> accepted
+
+let familySnapshot family =
+    CaseFamily.snapshot family |> Option.get
+
+let apply task inputs (family: CaseFamily) =
+    let number = int (Sequence.value family.Sequence) + 1
+    let context = TaskBuilders.context number
+
+    let context =
+        { context with
+            Decision =
+                { context.Decision with
+                    BusinessDate = Some today
+                    Lifetime = DecisionLifetime.Execution None
+                }
+        }
+
+    match Registry.find (TaskId.ofLiteral task) with
+    | Some(Task.Family task) ->
+        task.Decide
+            context
+            TaskBuilders.environment
+            (Some family)
+            (Binding.Case(CaseSelector.Id family.Id, family.Case.Revision))
+            inputs
+        |> Result.map (TaskBuilders.apply family)
+    | _ -> failtest "Expected a family task."
 
 let decided () =
-    opened () |> apply (AuthoredCaseAct.Decide decision) |> accepted
+    opened ()
+    |> apply "case.decide" (TaskBuilders.decisionInputs "2026-08-15" "750.00" "EUR")
+    |> accepted
 
 let paid () =
-    decided () |> apply (AuthoredCaseAct.RecordPayment Inputs.payment) |> accepted
+    let family = decided ()
 
-let isInvalid result =
-    match result with
-    | Error(CaseDecisionError.Refused(Refusal.InvalidInput _)) -> true
-    | _ -> false
+    let context =
+        { TaskBuilders.context 3 with
+            Decision =
+                { (TaskBuilders.context 3).Decision with
+                    Lifetime = DecisionLifetime.Execution None
+                    BusinessDate = Some today
+                }
+        }
 
-let actRequest revision act = request revision act
+    let inputs = TaskBuilders.paymentInputs "2026-08-20" "750.00" "EUR"
+
+    match Registry.find (TaskId.ofLiteral "case.recordPayment") with
+    | Some(Task.Family task) ->
+        task.Decide
+            context
+            TaskBuilders.environment
+            (Some family)
+            (Binding.Case(CaseSelector.Id family.Id, family.Case.Revision))
+            inputs
+        |> accepted
+        |> TaskBuilders.apply family
+    | _ -> failtest "Expected the payment task."
 
 let viewFields (snapshot: CaseSnapshot) =
     match snapshot.State with

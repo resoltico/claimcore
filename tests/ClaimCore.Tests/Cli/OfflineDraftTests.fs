@@ -67,7 +67,7 @@ let tests =
                             "Delivery rejects incomplete metadata")
             testCase "other authored syntax still uses the Domain owner" (fun () ->
                 let value =
-                    draft [ "work"; "update"; "OFFLINE"; "--handling-summary"; "\n"; "--dry-run" ]
+                    draft [ "work"; "update"; "OFFLINE"; "--handling-summary"; ""; "--dry-run" ]
 
                 Expect.isSome value.Issues "Invalid narrative is not excused by a missing version"
                 let fields = value.Issues |> Option.get |> InputIssues.toList |> List.map _.Target
@@ -157,19 +157,16 @@ let tests =
                         Frames.admit value.Bytes
                         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
-                    let input =
-                        (Frames.value Api.operationExecute
-                         >> Option.map ClaimCore.TestSupport.Submissions.command)
-                            frame
-                        |> Option.get
+                    let input = Frames.value Api.operationExecute frame |> Option.get
 
-                    match input with
-                    | ClaimCore.Application.Contracts.OperationInput.Case command ->
-                        Expect.equal
-                            command.OperationId
-                            (System.Guid.Parse "10000000-0000-7000-8000-000000000072")
-                            "Supplied identity"
+                    Expect.equal
+                        input.OperationId
+                        (System.Guid.Parse "10000000-0000-7000-8000-000000000072")
+                        "Supplied identity"
 
-                        Expect.equal command.ExpectedRevision 7L "Supplied reviewed revision"
-                    | _ -> failtest "Case intent required")
+                    match (ClaimCore.TestSupport.Submissions.command input).Binding with
+                    | Binding.Case(_, revision) ->
+                        Expect.equal (Revision.value revision) 7L "Supplied reviewed revision"
+                    | _ -> failtest "Case binding required")
+
         ]

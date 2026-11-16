@@ -315,12 +315,32 @@ let private capacity (database: PostgresFixture.Database) =
         let store =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
+        let mutable expired = false
+
+        try
+            let! _ =
+                store.Create(
+                    payload,
+                    Some(DateTimeOffset.UtcNow.AddMinutes(-1.0)),
+                    TimeSpan.FromMinutes 30.,
+                    TimeSpan.FromHours 8.,
+                    token
+                )
+
+            ()
+        with :? System.Security.Authentication.AuthenticationException ->
+            expired <- true
+
+        Expect.isTrue
+            expired
+            "An expired authentication ticket is refused before the capacity check"
+
         let mutable refused = false
 
         try
             let! _ = create store
             ()
-        with :? InvalidOperationException ->
+        with :? System.IO.IOException ->
             refused <- true
 
         Expect.isTrue refused "Creation cap rejects the 10001st active session"

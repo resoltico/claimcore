@@ -57,16 +57,17 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     owner
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            n
-                            reference
-                            0L
-                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted result |> ignore
@@ -223,16 +224,17 @@ let tests =
 
                         let! result =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Service.execute
+                                (Service.executeSubmission
                                     actor
-                                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                                        request
-                                            database.Fixture
-                                            30
-                                            "synthetic-hosting"
-                                            0L
-                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                    ))
+                                    (((request
+                                        (database.Fixture)
+                                        (30)
+                                        ("synthetic-hosting")
+                                        (0L)
+                                        "case.open"
+                                        (ClaimCore.TestSupport.Submissions.fields (
+                                            RegistrationInput.values (registration)
+                                        )))))
                                     (token)))
 
                         accepted result |> ignore
@@ -342,16 +344,17 @@ let tests =
 
                         let running =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Service.execute
+                                (Service.executeSubmission
                                     actor
-                                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                                        request
-                                            database.Fixture
-                                            40
-                                            "synthetic-drain"
-                                            0L
-                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                    ))
+                                    (((request
+                                        (database.Fixture)
+                                        (40)
+                                        ("synthetic-drain")
+                                        (0L)
+                                        "case.open"
+                                        (ClaimCore.TestSupport.Submissions.fields (
+                                            RegistrationInput.values (registration)
+                                        )))))
                                     (token)))
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.

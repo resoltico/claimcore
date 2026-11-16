@@ -26,7 +26,7 @@ const handles = principals.map((principal) =>
 );
 const dismiss = (index: number): Affordance => ({
   task: "people.requests.dismiss",
-  binding: { kind: "PEOPLE" },
+  binding: {},
   seeds: {
     "input:principal.kind": principals[index]!.kind,
     "input:principal.issuer": principals[index]!.issuer,

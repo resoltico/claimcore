@@ -32,25 +32,10 @@ type internal WriteTx(connection, installation, head: LedgerPosition, observedAt
                 ApplicationMetrics.appended (System.Diagnostics.Stopwatch.GetElapsedTime started)
         }
 
-    member _.ProjectCase projection =
+    member _.ProjectFamily projection =
         FailureDiagnostics.phase FailurePhase.Projection
-        Persistence.case connection projection token
+        PartProjections.family connection projection token
 
-    member _.ProjectCaseIndex(id, index) =
+    member _.ProjectPerson projection =
         FailureDiagnostics.phase FailurePhase.Projection
-        Persistence.caseIndex connection id index token
-
-    member _.ProjectWorkChange projection =
-        FailureDiagnostics.phase FailurePhase.Projection
-        Persistence.workChange connection projection token
-
-    member _.DismissAccessRequest principal =
-        task {
-            let! _ = AccessRequests.lockPrincipal connection principal token
-            let! _ = AccessRequests.delete connection principal token
-            return ()
-        }
-
-    member _.ProjectPeople projection =
-        FailureDiagnostics.phase FailurePhase.Projection
-        Persistence.people connection projection token
+        PartProjections.person connection projection token

@@ -22,13 +22,12 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected read: %A" other
 
-let private note fixture number act =
-    OperationInput.Note
-        {
-            OperationId = id fixture number
-            Target = target
-            Act = act
-        }
+let private note fixture number taskName selected values =
+    Submissions.createRaw
+        taskName
+        (id fixture number)
+        (OperationBinding.Note(target, selected))
+        values
 
 let private notes service cursor limit =
     Service.notes
@@ -40,10 +39,10 @@ let private notes service cursor limit =
         }
         token
 
-let private executeCase (database: PostgresFixture.Database) service number revision act =
-    Service.execute
+let private executeCase (database: PostgresFixture.Database) service number revision task values =
+    Service.executeSubmission
         service
-        (Inputs.caseOperation (request database.Fixture number "synthetic-a" revision act))
+        (((request database.Fixture number "synthetic-a" revision task values)))
         token
 
 let private lifecycle database =
@@ -55,16 +54,18 @@ let private lifecycle database =
             |> Result.defaultWith (string >> invalidOp)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 100)
-                        readerPrincipal
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 100))
+                        (readerPrincipal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registered
 
@@ -110,12 +111,20 @@ let private lifecycle database =
 
         for number in [ 110..113 ] do
             let! acceptedNote =
-                Service.execute
+                Service.executeSubmission
                     owner
                     (note
-                        database.Fixture
-                        number
-                        (AuthoredNoteAct.AddNote(sprintf "Note %d\nSecond line" number)))
+                        (database.Fixture)
+                        (number)
+                        "note.add"
+                        (None)
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.NoteText,
+                                ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                    sprintf "Note %d\nSecond line" number
+                                )
+                            ]))
                     token
 
             accepted acceptedNote |> ignore
@@ -157,9 +166,14 @@ let private lifecycle database =
             "Maximum 20"
 
         let! removed =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 120 (AuthoredNoteAct.RemoveNote(id database.Fixture 111)))
+                (note
+                    (database.Fixture)
+                    (120)
+                    "note.remove"
+                    (Some((id database.Fixture 111)))
+                    (Map.empty))
                 token
 
         accepted removed |> ignore
@@ -227,9 +241,14 @@ let private lifecycle database =
             "FULL history discloses the removed accepted text"
 
         let! unavailable =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 121 (AuthoredNoteAct.RemoveNote(id database.Fixture 111)))
+                (note
+                    (database.Fixture)
+                    (121)
+                    "note.remove"
+                    (Some((id database.Fixture 111)))
+                    (Map.empty))
                 token
 
         Expect.isTrue
@@ -275,7 +294,7 @@ let private lifecycle database =
                  | TimelineChanges.Disclosed value ->
                      value.Items
                      |> List.exists (function
-                         | TimelineChange.Note(NoteActKind.AddNote, _, Some text) ->
+                         | TimelineChange.Note(false, _, Some text) ->
                              NoteText.format text = "Note 111\nSecond line"
                          | _ -> false)
                  | _ -> false))
@@ -295,9 +314,18 @@ let private lifecycle database =
         Expect.isOk repaired "Shared replay rebuilds current and removed notes"
 
         let! paused =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 122 (AuthoredNoteAct.AddNote "Paused"))
+                (note
+                    (database.Fixture)
+                    (122)
+                    "note.add"
+                    (None)
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("Paused")
+                        ]))
                 token
 
         Expect.isTrue
@@ -310,17 +338,26 @@ let private lifecycle database =
             RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
 
         Expect.isFalse mode.State.Active "Maintenance is off"
-        let! closed = executeCase database owner 130 1L (AuthoredCaseAct.Bare BareAct.Close)
+        let! closed = executeCase (database) (owner) (130) (1L) "case.close" (Map.empty)
         accepted closed |> ignore
 
         let! closedNote =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 131 (AuthoredNoteAct.AddNote "After closing"))
+                (note
+                    (database.Fixture)
+                    (131)
+                    "note.add"
+                    (None)
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("After closing")
+                        ]))
                 token
 
         accepted closedNote |> ignore
-        let! erased = executeCase database owner 132 2L (AuthoredCaseAct.Bare BareAct.Erase)
+        let! erased = executeCase (database) (owner) (132) (2L) "case.erase" (Map.empty)
         accepted erased |> ignore
         let! erasedNotes = notes reader None 20
         Expect.equal (read erasedNotes).Notes.Count 0L "Erasure clears all current text"
@@ -365,9 +402,20 @@ let private missingPayload database =
         let! owner = populated database
 
         let! added =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 150 (AuthoredNoteAct.AddNote "Must remain until erasure"))
+                (note
+                    (database.Fixture)
+                    (150)
+                    "note.add"
+                    (None)
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Must remain until erasure"
+                            )
+                        ]))
                 token
 
         accepted added |> ignore
@@ -387,9 +435,18 @@ let private causalText database =
         let! owner = populated database
 
         let! added =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (note database.Fixture 160 (AuthoredNoteAct.AddNote "Accepted text"))
+                (note
+                    (database.Fixture)
+                    (160)
+                    "note.add"
+                    (None)
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("Accepted text")
+                        ]))
                 token
 
         accepted added |> ignore

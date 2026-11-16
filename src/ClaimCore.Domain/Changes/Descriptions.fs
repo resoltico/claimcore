@@ -5,6 +5,7 @@ open ClaimCore.Domain
 
 type CasePartDescription =
     {
+        Values: ValueChange<CaseFields>
         Lifecycle: ValueChange<Lifecycle> option
         Fields: CaseFieldDifference list
         Money: CaseMoneyDifference list
@@ -13,18 +14,21 @@ type CasePartDescription =
 
 type PaymentPartDescription =
     {
+        Totals: ValueChange<PaymentTotals>
         Entry: PaymentEntry option
         Removed: ValueChange<bool> option
     }
 
 type WorkPartDescription =
     {
+        Values: ValueChange<CaseWork>
         Responsible: ValueChange<ActorId> option
         Summary: ValueChange<HandlingSummary> option
     }
 
 type ReminderPartDescription =
     {
+        Plans: ValueChange<ReminderPlan>
         Action: ValueChange<ReminderAction> option
         Due: ValueChange<CalendarDate> option
         State: ValueChange<ReminderState> option
@@ -45,8 +49,10 @@ type GrantAssignmentChange =
 
 type PersonPartDescription =
     {
+        Profiles: ValueChange<ActorProfile>
         Principal: ValueChange<PrincipalKey> option
         Enabled: ValueChange<bool> option
+        ProfilePresent: ValueChange<bool> option
         DisplayName: ValueChange<PartyName> option
         Contact: ValueChange<ContactText> option
         Grants: GrantAssignmentChange list
@@ -60,6 +66,16 @@ type PartDescription =
     | Reminder of ReminderPartDescription
     | Note of NotePartDescription
     | Person of PersonPartDescription
+
+module PartDescription =
+    let kind =
+        function
+        | PartDescription.Case _ -> PartKind.Case
+        | PartDescription.Payment _ -> PartKind.Payment
+        | PartDescription.Work _ -> PartKind.Work
+        | PartDescription.Reminder _ -> PartKind.Reminder
+        | PartDescription.Note _ -> PartKind.Note
+        | PartDescription.Person _ -> PartKind.Person
 
 type DescribedPart =
     {

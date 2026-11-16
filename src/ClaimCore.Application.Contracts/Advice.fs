@@ -50,7 +50,7 @@ type View =
 [<RequireQualifiedAccess>]
 type InstallationOffer =
     | Open
-    | PeopleAct of PeopleActKind
+    | PeopleAct of TaskId
 
 type CorrectionChoices =
     {
@@ -58,17 +58,18 @@ type CorrectionChoices =
         Decision: CorrectionGroupAction list
     }
 
-type CaseActRefusal = { Act: CaseActKind; Reason: Refusal }
+type CaseTaskRefusal = { Act: TaskId; Reason: Refusal }
 
 type CaseAdvice =
     private
         {
             MaintenanceState: RegisterMaintenance
-            OfferedActs: CaseActKind list
+            OfferedActs: TaskId list
             CorrectionChoices: CorrectionChoices option
             HistoryVisibility: HistoryAccess
-            RecommendedAct: CaseActKind option
-            BlockedActs: CaseActRefusal list
+            RecommendedAct: TaskId option
+            BlockedActs: CaseTaskRefusal list
+            TaskOffers: TaskOffer list
         }
 
     member this.Maintenance = this.MaintenanceState
@@ -77,6 +78,7 @@ type CaseAdvice =
     member this.History = this.HistoryVisibility
     member this.Recommended = this.RecommendedAct
     member this.Blocked = this.BlockedActs
+    member this.Offers = this.TaskOffers
 
 module CaseAdvice =
     let private availabilityReason =
@@ -86,14 +88,26 @@ module CaseAdvice =
         | Refusal.RegisterMaintenance -> true
         | _ -> false
 
+    let private caseTasks =
+        ClaimCore.Domain.Tasks.Registry.clientDeclarations
+        |> List.filter (fun declaration -> declaration.Target = ActSubject.Case)
+
+    let private hasCorrectionChoices id =
+        caseTasks
+        |> List.exists (fun declaration ->
+            declaration.Id = id
+            && declaration.Inputs
+               |> List.exists (fun input ->
+                   input.Input = TaskInputId.Target(InputTarget.Group RecordGroup.Registration)))
+
     let create acts correction history blocked =
-        if List.contains CaseActKind.Correct acts <> Option.isSome correction then
+        if List.exists hasCorrectionChoices acts <> Option.isSome correction then
             Error "Correction choices must be present exactly when Correct is offered."
         elif blocked |> List.exists (fun blocked -> not (availabilityReason blocked.Reason)) then
             Error "An unavailable act requires a permission, maintenance or state reason."
         elif
             (blocked |> List.map _.Act |> Set.ofList)
-            <> Set.difference (Set.ofList CaseActKind.all) (Set.ofList acts)
+            <> Set.difference (Set.ofList (caseTasks |> List.map _.Id)) (Set.ofList acts)
             || (blocked |> List.map _.Act |> List.distinct |> List.length)
                <> List.length blocked
         then
@@ -107,8 +121,11 @@ module CaseAdvice =
                     CorrectionChoices = correction
                     HistoryVisibility = history
                     RecommendedAct = None
+                    TaskOffers = []
                     BlockedActs = blocked
                 }
+
+    let withOffers offers (advice: CaseAdvice) = { advice with TaskOffers = offers }
 
     let withRecommendation recommended (advice: CaseAdvice) =
         if recommended |> Option.exists (fun act -> not (List.contains act advice.Acts)) then
@@ -123,6 +140,24 @@ module CaseAdvice =
         { advice with
             MaintenanceState = maintenance
             OfferedActs = if maintenance.Active then [] else advice.Acts
+            TaskOffers =
+                advice.Offers
+                |> List.map (function
+                    | TaskOffer.Available(task, binding, available) when maintenance.Active ->
+                        let blocked =
+                            match available.Blocked with
+                            | Some(Refusal.Access _) -> available.Blocked
+                            | _ -> Some Refusal.RegisterMaintenance
+
+                        TaskOffer.Available(
+                            task,
+                            binding,
+                            { available with
+                                Blocked = blocked
+                                Recommendation = None
+                            }
+                        )
+                    | offer -> offer)
             CorrectionChoices = if maintenance.Active then None else advice.Correction
             RecommendedAct = if maintenance.Active then None else advice.Recommended
             BlockedActs =
@@ -192,10 +227,12 @@ type ReminderReadModel =
         Responsible: ActorRef option
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
-        Acts: ReminderActKind list
+        Offers: TaskOffer list
         Active: bool
         Timing: ReminderDue option
     }
+
+    member this.Acts = this.Offers |> List.map TaskOffer.id
 
 type NoteReadModel =
     {

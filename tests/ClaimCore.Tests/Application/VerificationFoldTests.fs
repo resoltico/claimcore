@@ -3,392 +3,56 @@ module ClaimCore.Tests.VerificationFoldTests
 open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-open ClaimCore.RecordFormat
+open ClaimCore.Domain.Changes
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application
+open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
-open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
+open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.FoldRecords
 
-let private id =
-    OperationIds.numberedAt (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)) 1
+let private id = OperationId.value (operation 1)
+let private human = principal
+let private accepted = required
 
-let private installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
-let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
+let private finding expected result =
+    match result with
+    | Error issue -> Expect.equal issue.Finding expected "Specific verification finding"
+    | Ok _ -> failtestf "Expected verification finding %A" expected
 
-let private decisionContext =
-    CaseFixtures.recordedContext (DateOnly.FromDateTime instant.UtcDateTime)
+let private append state record =
+    Replay.append installation None state record
 
-let private human =
-    PrincipalKey.human "https://issuer.example/" "synthetic-owner" |> accepted
+let private initial () =
+    let root, _ = owner ()
+    root, (append (Replay.initial None) root |> required)
 
-let private service =
-    PrincipalKey.service "https://issuer.example/" "synthetic-service" |> accepted
-
-let private actor principal grants : ActorAccess =
-    {
-        Actor =
-            {
-                ActorId = CaseFixtures.actorId id
-                Principal = principal
-                Enabled = true
-                Profile = None
-            }
-        Grants = grants
-    }
-
-let private owner =
-    actor
-        human
-        [
-            {
-                Role = Role.Owner
-                Scope = Scope.Installation
-            }
-        ]
-
-let private unitResult result = Result.map (fun _ -> ()) result
-let private state = Replay.initial None
-
-let private header sequence operation actor previous businessDate =
-    {
-        OperationHeader.InstallationId = installation
-        Sequence = CaseFixtures.sequence sequence
-        PreviousHash = previous
-        OperationId = CaseFixtures.operationId operation
-        ActorId = actor
-        RecordedAt = instant
-        BusinessDate = businessDate
-    }
-
-let private nonce value () = Array.create 32 value
-
-let private root () =
+let private rewrite (record: RetainedOperation) header changes =
     RetainedOperation.create
-        (header 1L id (CaseFixtures.actorId id) EntryHash.zero None)
-        (CommandSkeleton.People
-            {
-                ExpectedRevision = Revision.zero
-                TargetActorId = CaseFixtures.actorId id
-                Principal = human
-                Act = PeopleAct.ProvisionOwner(0, People.initialOwnerRoles)
-            })
-        (OperationValues.People
-            {
-                Profile = Some(ActorProfile.parse Inputs.actorProfile |> accepted)
-            })
-        (nonce 1uy)
-    |> accepted
+        header
+        record.Root.Structure.Task
+        record.Root.Structure.Binding
+        (record.Inputs |> Option.get)
+        changes
+        (fun () -> Array.create 32 199uy)
+    |> required
 
-let private entry () =
-    root () |> StoredEffect.ofOperation |> List.head
+let private opened () =
+    let root, state = initial ()
 
-let private finding expected run =
-    match run () with
-    | Error divergence -> Expect.equal divergence.Finding expected "Stable finding category"
-    | Ok() -> failtest "Corrupt synthetic state was accepted"
+    let record, _ =
+        build
+            state.Fold
+            2
+            principal
+            "case.open"
+            (Binding.CaseNew Revision.zero)
+            (opening "VERIFY-1")
 
-let private append state root =
-    Replay.append installation None state root
-
-// The root is structurally valid and correctly committed; replay must independently decide its state.
-let private caseRoot revision kind afterStatus =
-    let command =
-        Case.parse
-            {
-                ExpectedFamilySequence = None
-                OperationId = id
-                CaseReference = "EFFECT-OPEN"
-                ExpectedRevision = revision
-                Act = kind
-            }
-        |> accepted
-
-    let reference = CaseFixtures.reference "EFFECT-OPEN"
-
-    let snapshot =
-        {
-            CaseSnapshot.CaseId = CaseFixtures.caseId id
-            Reference = reference
-            Revision = CaseFixtures.revision (revision + 1L)
-            State =
-                CaseState.Active
-                    {
-                        CaseReference = reference
-                        Status = afterStatus
-                        Registration = Inputs.admittedRegistration Inputs.registration
-                        Finance = FinancialPosition.undecided
-                    }
-        }
-
-    RetainedOperation.create
-        (header 1L id (CaseFixtures.actorId id) EntryHash.zero (Some(DateOnly(2026, 9, 7))))
-        (CommandSkeleton.Case
-            {
-                ExpectedFamilySequence = None
-                CaseId = snapshot.CaseId
-                Reference = reference
-                ExpectedRevision = command.ExpectedRevision
-                Act = CaseAct.kind kind
-                SelectedPayment = None
-            })
-        (OperationValues.Case
-            {
-                Command = command
-                Decision = { After = snapshot; Payment = None }
-            })
-        (nonce 2uy)
-
-
-let private caseEntry revision kind status =
-    caseRoot revision kind status
-    |> accepted
-    |> StoredEffect.ofOperation
-    |> List.head
-
-[<Tests>]
-let requestEffectAgreement =
-    testCase "verification rejects a correctly committed OPEN with a CLOSED result" (fun () ->
-        let check status =
-            let root = caseRoot 0L (CaseAct.Open Inputs.registration) status |> accepted
-
-            let executor =
-                { owner with
-                    Grants =
-                        {
-                            Role = Role.CaseHandler
-                            Scope = Scope.Installation
-                        }
-                        :: owner.Grants
-                }
-
-            append
-                { state with
-                    People =
-                        Map.ofList
-                            [
-                                owner.ActorId,
-                                {
-                                    Revision = Revision.first
-                                    PeopleSubjectState.Actor = executor.Actor
-                                    Grants =
-                                        executor.Grants
-                                        |> List.mapi (fun index grant ->
-                                            grant,
-                                            EffectPosition.create Sequence.first index
-                                            |> Option.get)
-                                        |> Map.ofList
-                                    ProfileErasure =
-                                        Some(EffectPosition.create Sequence.first 1 |> Option.get)
-                                }
-                            ]
-                }
-                root
-            |> unitResult
-
-        Expect.isOk (check CaseStatus.Opened) "Independently authored OPEN result passes"
-        finding VerificationFinding.StateSequence (fun () -> check CaseStatus.Closed))
-
-let private history: CaseHistory =
-    {
-        PaymentProjections = Map.empty
-        Revision = CaseFixtures.revision 1L
-        ChangedAt = instant
-        Snapshot = None
-        Reference = Some(CaseFixtures.reference "SYNTHETIC")
-        State = CaseState.Active()
-        Status = CaseStatus.Opened
-        MissingPayloadAt = None
-        PresentPayloadAt = None
-        ErasedAt = None
-    }
-
-let private ledgerChecks =
-    [
-        VerificationFinding.Link,
-        (fun () ->
-            Replay.link state (CaseFixtures.sequence 2L) (EntryHash.toBytes state.Head.EntryHash))
-        VerificationFinding.Head, (fun () -> Replay.head state None)
-        VerificationFinding.ExpectedPosition,
-        (fun () ->
-            Replay.complete
-                (Some
-                    {
-                        Sequence = Sequence.first
-                        EntryHash = EntryHash.zero
-                    })
-                state
-            |> unitResult)
-        VerificationFinding.PayloadFormat,
-        (fun () ->
-            Replay.append (Guid.Parse "90000000-0000-7000-8000-000000000099") None state (root ())
-            |> unitResult)
-        VerificationFinding.PayloadFormat,
-        (fun () ->
-            let root = root ()
-
-            append
-                { state with
-                    Accepted = Map.ofList [ root.OperationId, root.ActorId ]
-                }
-                root
-            |> unitResult)
-        VerificationFinding.Commitment,
-        (fun () ->
-            let root = root ()
-
-            append
-                { state with
-                    AvailableNonces = Set.singleton (Convert.ToHexString(nonce 1uy ()))
-                }
-                root
-            |> unitResult)
-    ]
-
-let private caseChecks =
-    [
-        VerificationFinding.RevisionSequence,
-        (fun () ->
-            SubjectReplay.caseEffect
-                decisionContext
-                Map.empty
-                (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
-                VerifiedPayload.Erased
-            |> unitResult)
-        VerificationFinding.HistoryStart,
-        (fun () ->
-            SubjectReplay.caseEffect
-                decisionContext
-                (Map.ofList
-                    [
-                        CaseFixtures.caseId id,
-                        { history with
-                            Revision = Revision.zero
-                        }
-                    ])
-                (caseEntry 0L (CaseAct.Open Inputs.registration) CaseStatus.Opened)
-                VerifiedPayload.Erased
-            |> unitResult)
-        VerificationFinding.StateSequence,
-        (fun () ->
-            SubjectReplay.caseEffect
-                decisionContext
-                (Map.ofList
-                    [
-                        CaseFixtures.caseId id,
-                        { history with
-                            State = CaseState.Erased
-                        }
-                    ])
-                (caseEntry 1L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
-                VerifiedPayload.Erased
-            |> unitResult)
-        VerificationFinding.ErasureIncomplete,
-        (fun () ->
-            SubjectReplay.caseErasure (
-                Map.ofList
-                    [
-                        CaseFixtures.caseId id,
-                        { history with
-                            State = CaseState.Erased
-                            PresentPayloadAt = Some Sequence.first
-                            ErasedAt = Some(CaseFixtures.sequence 2L)
-                        }
-                    ]
-            ))
-        VerificationFinding.PayloadWithoutErasure,
-        (fun () ->
-            SubjectReplay.caseErasure (
-                Map.ofList
-                    [
-                        CaseFixtures.caseId id,
-                        { history with
-                            MissingPayloadAt = Some Sequence.first
-                        }
-                    ]
-            ))
-        VerificationFinding.CaseProjection,
-        (fun () ->
-            Replay.caseRecords
-                { state with
-                    Cases = Map.ofList [ CaseFixtures.caseId id, history ]
-                }
-            |> Result.bind (fun expected ->
-                ProjectionVerification.rows
-                    VerificationFinding.CaseProjection
-                    (fun (row: StoredCase) -> row.CaseId)
-                    expected
-                    [])
-            |> unitResult)
-    ]
-
-let private peopleChecks =
-    let check context human required =
-        DecisionContext.executor context human required
-        |> Result.mapError (ReplayContext.issue (Some (entry ()).Sequence))
-
-    let executor (actor: ActorAccess) human required =
-        check
-            { decisionContext with
-                Principal = actor.Principal
-                Access = AccessView.ofActor (Some actor)
-            }
-            human
-            required
-
-    [
-        VerificationFinding.ActorNotEnabled,
-        (fun () ->
-            check
-                { decisionContext with
-                    Access = AccessView.empty
-                }
-                false
-                false)
-        VerificationFinding.HumanRequired, (fun () -> executor (actor service []) true false)
-        VerificationFinding.OwnerRequired, (fun () -> executor (actor human []) true true)
-        VerificationFinding.PeopleFold,
-        (fun () ->
-            let root = root ()
-
-            let person =
-                {
-                    Revision = Revision.first
-                    PeopleSubjectState.Actor = owner.Actor
-                    Grants =
-                        owner.Grants
-                        |> List.map (fun grant ->
-                            grant, EffectPosition.create Sequence.first 0 |> Option.get)
-                        |> Map.ofList
-                    ProfileErasure = Some(EffectPosition.create Sequence.first 1 |> Option.get)
-                }
-
-            Replay.append
-                installation
-                None
-                { state with
-                    People = Map.ofList [ owner.ActorId, person ]
-                }
-                root
-            |> unitResult)
-        VerificationFinding.PeopleProjection,
-        (fun () ->
-            ProjectionVerification.rows
-                VerificationFinding.PeopleProjection
-                (fun (actor: Actor) -> actor.ActorId)
-                (Map.ofList [ owner.ActorId, owner.Actor ])
-                [])
-        VerificationFinding.PeopleProfileProjection,
-        (fun () ->
-            ProjectionVerification.rows
-                VerificationFinding.PeopleProfileProjection
-                fst
-                (Map.ofList [ owner.ActorId, (owner.ActorId, None) ])
-                [ owner.ActorId, Some(ActorProfile.parse Inputs.actorProfile |> accepted) ])
-    ]
+    root, state, record
 
 let private invalidProjectionRows () =
     let row: Actor =
@@ -462,26 +126,223 @@ let tests =
     testList
         "pure operation verification findings"
         [
-            for index, (expected, run) in
-                ledgerChecks
-                @ caseChecks
-                @ peopleChecks
-                @ ProjectionIndexChecks.checks installation instant
-                |> List.indexed do
-                testCase (string index + " " + VerificationFinding.token expected) (fun () ->
-                    finding expected run)
+            testCase
+                "ledger link, head and checkpoint checks have independent negative controls"
+                (fun () ->
+                    let root, state = initial ()
+
+                    Expect.isOk
+                        (Replay.link
+                            state
+                            (Sequence.successor state.Head.Sequence)
+                            (EntryHash.toBytes state.Head.EntryHash))
+                        "Valid extension"
+
+                    finding
+                        VerificationFinding.Link
+                        (Replay.link
+                            state
+                            state.Head.Sequence
+                            (EntryHash.toBytes state.Head.EntryHash))
+
+                    Expect.isOk (Replay.head state (Some state.Head)) "Exact head"
+                    finding VerificationFinding.Head (Replay.head state None)
+
+                    finding
+                        VerificationFinding.ExpectedPosition
+                        (Replay.complete
+                            (Some
+                                {
+                                    Sequence = Sequence.first
+                                    EntryHash = EntryHash.zero
+                                })
+                            (Replay.initial None))
+
+                    let expected = Some root.Root.Position
+
+                    let witnessed =
+                        Replay.append installation expected (Replay.initial expected) root
+                        |> required
+
+                    Expect.equal
+                        (Replay.complete expected witnessed)
+                        (Ok root.Root.Position)
+                        "The expected position was observed")
+            testCase
+                "installation, operation identity and nonce reuse are independently rejected"
+                (fun () ->
+                    let root, _ = initial ()
+
+                    finding
+                        VerificationFinding.PayloadFormat
+                        (Replay.append Guid.Empty None (Replay.initial None) root)
+
+                    let state = Replay.initial None
+
+                    let duplicate =
+                        { state with
+                            Fold =
+                                { state.Fold with
+                                    Accepted = Set.singleton root.Root.Header.OperationId
+                                }
+                        }
+
+                    finding VerificationFinding.PayloadFormat (append duplicate root)
+
+                    let nonce =
+                        root.Root.Structure.Compartments.Head
+                        |> Compartment.content
+                        |> Option.get
+                        |> fst
+                        |> Convert.ToHexString
+
+                    let reused =
+                        { state with
+                            Fold =
+                                { state.Fold with
+                                    Nonces = Set.singleton nonce
+                                }
+                        }
+
+                    finding VerificationFinding.Commitment (append reused root))
+            testCase
+                "unknown task identity remains a fold finding after structural hash validation"
+                (fun () ->
+                    let record, _ = initial ()
+                    let root = record.Root
+
+                    let unknown =
+                        OperationRoot.append
+                            root.Header
+                            (TaskId.ofLiteral "people.unknown")
+                            root.Structure.Binding
+                            root.Structure.Retained
+                            root.Structure.Effects
+                            root.Structure.Compartments
+                        |> required
+                        |> RetainedOperation.restore
+                        |> required
+
+                    finding
+                        VerificationFinding.PayloadFormat
+                        (append (Replay.initial None) unknown))
+            testCase
+                "a correctly hash-committed OPEN with a CLOSED result is not reproduced"
+                (fun () ->
+                    let _, state, record = opened ()
+                    Expect.isOk (append state record) "The genuine accepted decision passes"
+
+                    let changed =
+                        record.Changes
+                        |> List.map (fun change ->
+                            match change.Value with
+                            | PartValue.Case value ->
+                                { change with
+                                    Value =
+                                        PartValue.Case
+                                            { value with
+                                                Status = CaseStatus.Closed
+                                            }
+                                }
+                            | _ -> failtest "Expected the case part")
+
+                    let forged = rewrite record record.Root.Header changed
+
+                    Expect.isOk
+                        (OperationRoot.restore
+                            forged.Root.Header
+                            (TaskId.token forged.Root.Structure.Task)
+                            (OperationRoot.structureBytes forged.Root)
+                            (OperationRoot.effectBytes forged.Root)
+                            forged.Root.Structure.Compartments
+                            forged.Root.Hash)
+                        "The negative control reaches decision verification with a valid hash"
+
+                    finding VerificationFinding.StateSequence (append state forged))
+            testCase
+                "a revision gap and a non-creation first part cannot become accepted history"
+                (fun () ->
+                    let _, state, record = opened ()
+
+                    let gap =
+                        rewrite
+                            record
+                            record.Root.Header
+                            (record.Changes
+                             |> List.map (fun part ->
+                                 { part with
+                                     Revision = Revision.create 2L |> Option.get
+                                 }))
+
+                    finding VerificationFinding.RevisionSequence (append state gap)
+
+                    Expect.equal
+                        (CaseFamily.apply
+                            None
+                            { record.Changes.Head with
+                                Revision = Revision.zero
+                            })
+                        (Error RecordViolation.InvalidHistoryStart)
+                        "The aggregate independently rejects the invalid first version")
+            testCase
+                "missing payload requires erasure, and an accepted erase requires earlier content cleared"
+                (fun () ->
+                    let _, before, record = opened ()
+                    let missing = append before (clear record) |> required
+                    finding VerificationFinding.PayloadWithoutErasure (Replay.erasure missing)
+                    let available = append before record |> required
+
+                    let family =
+                        available.Fold.Families[CaseId.ofOperationId record.Root.Header.OperationId]
+
+                    let erase, _ =
+                        build
+                            available.Fold
+                            3
+                            principal
+                            "case.erase"
+                            (Binding.CaseErase(
+                                CaseSelector.Id family.Id,
+                                family.Case.Revision,
+                                family.Sequence
+                            ))
+                            InputMap.empty
+
+                    finding VerificationFinding.ErasureIncomplete (append available erase)
+                    let complete = append missing erase |> required
+
+                    Expect.isOk
+                        (Replay.erasure complete)
+                        "The actual clearing frontier is justified by the accepted erase")
+            testCase
+                "family projection membership and each independent index are verified"
+                (fun () ->
+                    let _, before, record = opened ()
+                    let state = append before record |> required
+                    let expected = Replay.caseRecords state |> required
+
+                    Expect.isOk
+                        (ProjectionVerification.rows
+                            VerificationFinding.CaseProjection
+                            (fun (row: StoredCase) -> row.CaseId)
+                            expected
+                            (expected |> Map.values |> Seq.toList))
+                        "Exact rows"
+
+                    finding
+                        VerificationFinding.CaseProjection
+                        (ProjectionVerification.rows
+                            VerificationFinding.CaseProjection
+                            (fun (row: StoredCase) -> row.CaseId)
+                            expected
+                            [])
+
+                    for expected, run in
+                        ClaimCore.Tests.ProjectionIndexChecks.checks
+                            installation
+                            record.Root.Header.RecordedAt do
+                        finding expected (run ()))
+            testCase
+                "invalid projection rows return typed findings without escaping exceptions"
+                invalidProjectionRows
         ]
-
-[<Tests>]
-let projectionTests =
-    testCase
-        "invalid projection rows return typed findings without escaping exceptions"
-        invalidProjectionRows
-
-[<Tests>]
-let firstRevisionBoundary =
-    testCase "a non-OPEN first revision is refused by the root before replay" (fun () ->
-        Expect.equal
-            (caseRoot 0L (CaseAct.Bare BareAct.Close) CaseStatus.Closed)
-            (Error(OperationContentProblem.Structure OperationStructureProblem.Command))
-            "A closed typed root cannot construct the retired invalid effect")

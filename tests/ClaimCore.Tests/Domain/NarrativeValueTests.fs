@@ -167,3 +167,33 @@ let tests =
 
                     Expect.throws (fun () -> check oldName) "The previous substitute is detected")
         ]
+
+[<Tests>]
+let reasonAdmission =
+    testCase
+        "reason admission preserves scalar bounds and rejects malformed or unsafe text"
+        (fun () ->
+            let admit raw =
+                Reason.parse raw |> Result.bind Reason.admit
+
+            for raw in
+                [
+                    Unchecked.defaultof<string>
+                    ""
+                    " "
+                    " leading"
+                    "trailing "
+                    "a\u0000b"
+                    "a\u2028b"
+                    "a\u2029b"
+                    System.String([| char 0xD800 |])
+                    String.replicate 201 "x"
+                    String.replicate 201 "😀"
+                ] do
+                Expect.isError (admit raw) "Malformed or newly nonconforming reason refuses"
+
+            for raw in [ "Reason"; String.replicate 200 "x"; String.replicate 200 "😀" ] do
+                Expect.equal
+                    (admit raw |> Result.map Reason.format)
+                    (Ok raw)
+                    "Accepted reason is not rewritten")

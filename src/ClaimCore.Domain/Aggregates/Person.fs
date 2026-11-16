@@ -30,6 +30,13 @@ type Person =
     member this.ProfileErasure = this.ProfileErasureValue
 
 module Person =
+    let creationPrincipal (changes: PartChange list) =
+        changes
+        |> List.tryPick (fun change ->
+            match change.Aggregate, change.Value with
+            | AggregateReference.Person _, PartValue.Person value -> value.Principal
+            | _ -> None)
+
     let access (state: Person) =
         {
             ActorAccess.Actor = state.Actor
@@ -133,3 +140,71 @@ module Person =
                 |> Option.map (ContactText.format >> TextSearch.normalize)
 
             Ok(actor, state.Revision, state.Grants, state.ProfileErasure, displayName, contact)
+
+    /// Current rows must agree with the immutable identity and latest accepted person value.
+    let restore
+        (origin: PartChange)
+        (latest: PartChange)
+        (actor: Actor)
+        revision
+        (grants: Map<ActorGrant, EffectPosition>)
+        (erasure: EffectPosition option)
+        =
+        let invalid = Error RecordViolation.InvalidSubjectState
+
+        match origin.Value, latest.Value with
+        | PartValue.Person created, PartValue.Person current ->
+            let valid =
+                origin.Aggregate = AggregateReference.Person actor.ActorId
+                && latest.Aggregate = origin.Aggregate
+                && origin.PartId = ActorId.value actor.ActorId
+                && latest.PartId = origin.PartId
+                && origin.Revision = Revision.first
+                && latest.Revision = revision
+                && revision >= Revision.first
+                && latest.Stamp.Position >= origin.Stamp.Position
+                && actor.ActorId = ActorId.ofOperationId origin.Stamp.OperationId
+                && created.Principal = Some actor.Principal
+                && origin.NaturalKey = Some(PrincipalKey.naturalKey actor.Principal)
+                && origin.Erases.IsNone
+                && created.Enabled
+                && created.Profile <> ProfileValue.Absent
+                && (if revision = Revision.first then
+                        current.Principal = created.Principal
+                        && latest.NaturalKey = origin.NaturalKey
+                    else
+                        current.Principal.IsNone && latest.NaturalKey.IsNone)
+                && current.Enabled = actor.Enabled
+                && ProfileValue.value current.Profile = actor.Profile
+                && PartChange.validErasure latest
+                && (current.Profile = ProfileValue.Absent) = erasure.IsSome
+                && (erasure
+                    |> Option.forall (fun position ->
+                        position >= origin.Stamp.Position && position <= latest.Stamp.Position))
+                && (latest.Erases.IsNone || erasure = Some latest.Stamp.Position)
+                && (grants
+                    |> Map.forall (fun _ position ->
+                        position >= origin.Stamp.Position && position <= latest.Stamp.Position))
+                && (current.Grants
+                    |> List.forall (fun assignment ->
+                        if assignment.Active then
+                            Map.tryFind assignment.Grant grants = Some latest.Stamp.Position
+                        else
+                            not (Map.containsKey assignment.Grant grants)))
+
+            if not valid then
+                invalid
+            else
+                let state =
+                    {
+                        Identity = actor.ActorId
+                        PrincipalValue = actor.Principal
+                        EnabledValue = actor.Enabled
+                        ProfileValue = current.Profile
+                        RevisionValue = revision
+                        GrantsValue = grants
+                        ProfileErasureValue = erasure
+                    }
+
+                rows state |> Result.map (fun _ -> state)
+        | _ -> invalid

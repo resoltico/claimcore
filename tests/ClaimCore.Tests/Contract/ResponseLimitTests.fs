@@ -15,6 +15,7 @@ open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -77,7 +78,7 @@ let private receipt disclosure : OperationReceipt =
                         )
                     Reference = CaseFixtures.reference reference
                     Revision = CaseFixtures.revision maximum
-                    Act = CaseActKind.AmendRegistration
+                    Act = (TaskId.ofLiteral "case.amendRegistration")
                     Snapshot = disclosure
                 }
     }
@@ -130,12 +131,14 @@ let private boundedPeople () =
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
                         Offers = []
+                        Controls = []
                         ProfileSeed = None
                         Items =
                             List.replicate
                                 count
                                 {
-                                    GrantReadModel.Role = grant.Role
+                                    GrantReadModel.Controls = []
+                                    Role = grant.Role
                                     Scope = grant.Scope
                                     GrantedAt = Inputs.workBasis.ObservedAt
                                     GrantedBy = Inputs.actorReference actor.ActorId
@@ -208,7 +211,13 @@ let private timelineLimit () =
                 EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
                 |> Option.get
             OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
-            Subject = TimelineSubject.Work(CaseFixtures.revision maximum, WorkActKind.UpdateWork)
+            Subject =
+                {
+                    PartKind = PartKind.Work
+                    PartId = id
+                    Revision = CaseFixtures.revision maximum
+                }
+            Task = TaskId.ofLiteral "work.update"
             RecordedAt = instant
             RecordedBy = person 1 (char 1)
             Changes =
@@ -357,14 +366,14 @@ let private reminderTimelineLimit () =
                         }
             }
 
-    for kind, event, changes, highlights, version in
+    for kind, event, changes, highlights, _ in
         [
-            ReminderActKind.Update,
+            (TaskId.ofLiteral "reminder.update"),
             TimelineEvent.ReminderChanged nextAction,
             [ updated ],
             [ TimelineHighlight.Reminder(0, [ TimelineFacet.Action; TimelineFacet.Due ]) ],
             None
-            ReminderActKind.CompleteAndPlanNext,
+            (TaskId.ofLiteral "reminder.completeAndPlanNext"),
             TimelineEvent.ReminderCompletedAndPlanned(oldAction, nextAction, due),
             [ completed; planned ],
             [],
@@ -377,7 +386,13 @@ let private reminderTimelineLimit () =
                     EffectPosition.create (receipt SnapshotDisclosure.Withheld).Position.Sequence 0
                     |> Option.get
                 OperationHash = (receipt SnapshotDisclosure.Withheld).Position.EntryHash
-                Subject = TimelineSubject.Reminder(kind, first, Revision.first, version)
+                Subject =
+                    {
+                        PartKind = PartKind.Reminder
+                        PartId = ReminderId.value first
+                        Revision = Revision.first
+                    }
+                Task = kind
                 RecordedAt = instant
                 RecordedBy = actor
                 Changes =

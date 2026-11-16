@@ -18,3 +18,8 @@ type JsonSerializerCall =
 type DirectEnumeration =
     static member Read() =
         ClaimCore.Json.Codec.enumeration [ 0, "ZERO" ]
+
+
+type TaskModuleFromClient =
+    static member Read() =
+        ClaimCore.Domain.Tasks.Case.Open.declaration

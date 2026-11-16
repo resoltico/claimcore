@@ -50,12 +50,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
             let! command = parsed |> Parsing.reject
 
             let! reason =
-                (if context.Decision.Lifetime = DecisionLifetime.Recorded then
-                     Ok command.Reason
-                 else
-                     Reason.admit command.Reason)
-                |> Parsing.at InputTarget.Reason
-                |> Parsing.reject
+                Reason.admit command.Reason |> Parsing.at InputTarget.Reason |> Parsing.reject
 
             do! CaseRules.checkState gate state
 
@@ -73,13 +68,26 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment state binding (_: InputMap) =
+    CaseRules.retained context environment state binding capability gate (fun value ->
+        { value with
+            Lifecycle = Lifecycle.Voided
+        })
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

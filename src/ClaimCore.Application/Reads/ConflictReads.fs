@@ -69,7 +69,16 @@ module internal ConflictReads =
                             (Scope.Case parent.CaseId)
 
                     let erased = CaseState.lifecycle parent.Snapshot.State = Lifecycle.Erased
-                    let! values = TimelineHistory.entries services tx erased full (Some range) page
+
+                    let! values =
+                        TimelineHistory.entries
+                            services
+                            tx
+                            parent.Snapshot.Reference
+                            erased
+                            full
+                            (Some range)
+                            page
 
                     return
                         values

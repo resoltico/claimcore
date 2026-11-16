@@ -3,6 +3,7 @@ module ClaimCore.Tests.PeopleHistoryDocumentTests
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
@@ -11,7 +12,7 @@ open ClaimCore.TestSupport
 
 let private parent = ResponseExamples.caseRead.Snapshot.CaseId
 
-let private entry index facts =
+let private entry index task changes =
     {
         PeopleHistoryEntry.OperationId = ResponseExamples.receipt.OperationId
         Position = EffectPosition.create Sequence.first index |> Option.get
@@ -19,7 +20,24 @@ let private entry index facts =
         RecordedAt = Inputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy
         Target = ResponseExamples.caseRead.RecordedBy
-        Facts = facts
+        Task = TaskId.ofLiteral task
+        Changes = changes
+        PrivateAvailable = true
+        References =
+            {
+                Actors = []
+                Cases =
+                    changes.Grants
+                    |> List.choose (fun grant ->
+                        match grant.Grant.Scope with
+                        | Scope.Case id ->
+                            Some
+                                {
+                                    CaseId = id
+                                    Reference = ResponseExamples.snapshot.Reference
+                                }
+                        | Scope.Installation -> None)
+            }
     }
 
 [<Tests>]
@@ -33,16 +51,46 @@ let tests =
                         [
                             entry
                                 0
-                                (PeopleHistoryFacts.Granted
-                                    {
-                                        Role = Role.CaseReader
-                                        Scope =
-                                            GrantScope.Case(
-                                                parent,
-                                                ResponseExamples.caseRead.Snapshot.Reference
-                                            )
-                                    })
-                            entry 1 PeopleHistoryFacts.Enabled
+                                "people.grant"
+                                {
+                                    PersonPartDescription.Profiles =
+                                        { Before = None; After = None }
+                                    Principal = None
+                                    Enabled = None
+                                    ProfilePresent = None
+                                    DisplayName = None
+                                    Contact = None
+                                    Grants =
+                                        [
+                                            {
+                                                Grant =
+                                                    {
+                                                        Role = Role.CaseReader
+                                                        Scope = Scope.Case parent
+                                                    }
+                                                Before = false
+                                                After = true
+                                            }
+                                        ]
+                                }
+                            entry
+                                1
+                                "people.enable"
+                                {
+                                    PersonPartDescription.Profiles =
+                                        { Before = None; After = None }
+                                    Principal = None
+                                    Enabled =
+                                        Some
+                                            {
+                                                Before = Some false
+                                                After = Some true
+                                            }
+                                    ProfilePresent = None
+                                    DisplayName = None
+                                    Contact = None
+                                    Grants = []
+                                }
                         ]
                     NextCursor = Some "history-next"
                 }

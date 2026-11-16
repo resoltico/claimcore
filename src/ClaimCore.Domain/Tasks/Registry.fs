@@ -49,3 +49,18 @@ module Registry =
     let find id = Map.tryFind id byId
     let findDeclaration id = find id |> Option.map Task.declaration
     let initialOwnerRoles = ClaimCore.Domain.Tasks.People.ProvisionOwner.initialRoles
+
+    let validateInitialOwnerRoles =
+        ClaimCore.Domain.Tasks.People.ProvisionOwner.validateRoles
+
+    /// Tasks own recommendation ranks; this common selection never recommends a blocked task.
+    let recommendation (offers: (TaskDeclaration * Availability) list) =
+        offers
+        |> List.choose (fun (declaration, available) ->
+            if available.Blocked.IsSome then
+                None
+            else
+                available.Recommendation |> Option.map (fun rank -> rank, declaration.Id))
+        |> List.sortBy fst
+        |> List.tryHead
+        |> Option.map snd

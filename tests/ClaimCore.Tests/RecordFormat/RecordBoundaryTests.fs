@@ -10,7 +10,9 @@ open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
 let private utf8 (value: string) = Encoding.UTF8.GetBytes value
-let private snapshot () = Case.snapshot (opened ())
+
+let private snapshot () =
+    ClaimCore.Domain.Aggregates.CaseFamily.snapshot (opened ()) |> Option.get
 
 [<Tests>]
 let tests =
@@ -115,7 +117,7 @@ let tests =
                     let encoded =
                         snapshot () |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString
 
-                    Expect.equal InstallationFormat.Current 4 "Fresh installation grammar"
+                    Expect.equal InstallationFormat.Current 5 "Fresh installation grammar"
 
                     for altered in
                         [

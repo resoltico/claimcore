@@ -326,7 +326,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.contains
             offers
-            (InstallationOffer.PeopleAct PeopleActKind.Register)
+            (InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register"))
             "Installation advice offers registration without a selected actor"
     }
 
@@ -335,9 +335,9 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let! actor = caseWorker fixture
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "LONG-HISTORY"))
+                (((openRequest fixture 10 "LONG-HISTORY")))
                 (CancellationToken.None))
 
         accepted opened |> ignore
@@ -379,9 +379,12 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
             cursor <- page.NextCursor
 
         let revision (entry: CaseTimelineEntry) =
-            match entry.Subject with
-            | TimelineSubject.CaseFact(value, _) -> Revision.value value
-            | _ -> failtest "Expected fact timeline entry"
+            Expect.equal
+                entry.Subject.PartKind
+                ClaimCore.Domain.Changes.PartKind.Case
+                "Fact timeline entry"
+
+            Revision.value entry.Subject.Revision
 
         Expect.equal
             (first.Items |> List.map revision)

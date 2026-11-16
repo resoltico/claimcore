@@ -57,13 +57,31 @@ let decide context environment (state: CaseFamily option) binding (_: InputMap) 
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment state binding (_: InputMap) =
+    let publicGate state =
+        FamilyRules.active true state
+        |> Option.orElseWith (fun () ->
+            if state.Payments |> Map.exists (fun _ part -> not part.Value.Removed) then
+                Some(FamilyRules.notOffered state)
+            else
+                None)
+
+    CaseRules.retained context environment state binding capability publicGate id
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = CaseRules.contentAvailable
             Describe = PartDescriptions.family
         }

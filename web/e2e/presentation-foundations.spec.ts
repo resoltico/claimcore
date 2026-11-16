@@ -1034,7 +1034,7 @@ for (const language of ["en", "ar"] as const) {
       const entry = {
         ...openedTimelineEntry,
         summary: {
-          messageId: "timeline.event.factsCorrected",
+          messageId: "change.CASE.recorded",
           arguments: [],
         },
         highlights: [

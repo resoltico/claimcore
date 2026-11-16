@@ -92,11 +92,17 @@ let private controls (database: PostgresFixture.Database) =
                 [||]
 
         let execute number =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture number sensitive 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (number)
+                    (sensitive)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let safe (reply: ExecuteReply) =

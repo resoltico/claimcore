@@ -108,16 +108,18 @@ let private initialization (database: PostgresFixture.Database) =
         | other -> failtestf "Active owner required: %A" other
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = Guid.CreateVersion7()
-                        CaseReference = "INITIAL-OWNER"
-                        ExpectedRevision = 0L
-                        Act = AuthoredCaseAct.Open Inputs.registration
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.open"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                     )
+                     |> Map.add
+                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text("INITIAL-OWNER")))))
                 token
 
         Expect.isTrue

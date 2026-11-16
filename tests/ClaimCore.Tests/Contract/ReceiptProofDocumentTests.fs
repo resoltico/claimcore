@@ -3,6 +3,7 @@ module ClaimCore.Tests.ReceiptProofDocumentTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.TestSupport
@@ -39,7 +40,11 @@ let tests =
                             "private-target-caption"
 
                     let effects =
-                        [ PeopleActKind.Register; PeopleActKind.SetProfile; PeopleActKind.Grant ]
+                        [
+                            (TaskId.ofLiteral "people.register")
+                            (TaskId.ofLiteral "people.setProfile")
+                            (TaskId.ofLiteral "people.grant")
+                        ]
                         |> List.mapi (fun index act ->
                             {
                                 PeopleReceiptEffect.Act = act
@@ -59,7 +64,7 @@ let tests =
                                 ReceiptSubject.People
                                     {
                                         TargetActor = PeopleTargetDisclosure.Disclosed actor
-                                        Act = PeopleActKind.Admit
+                                        Act = (TaskId.ofLiteral "people.admit")
                                         Effects = effects
                                     }
                         }
@@ -118,7 +123,7 @@ let tests =
                                 ReceiptSubject.People
                                     {
                                         TargetActor = PeopleTargetDisclosure.Withheld actor.ActorId
-                                        Act = PeopleActKind.Admit
+                                        Act = (TaskId.ofLiteral "people.admit")
                                         Effects = effects
                                     }
                         }
@@ -151,7 +156,13 @@ let tests =
                             OperationId = receipt.OperationId
                             Position = position
                             OperationHash = hash
-                            Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Close)
+                            Subject =
+                                {
+                                    PartKind = PartKind.Case
+                                    PartId = CaseId.value ResponseExamples.snapshot.CaseId
+                                    Revision = Revision.first
+                                }
+                            Task = TaskId.ofLiteral "case.close"
                             RecordedAt = receipt.RecordedAt
                             RecordedBy = receipt.RecordedBy
                             Changes = TimelineChanges.Withheld
@@ -182,7 +193,25 @@ let tests =
                             RecordedAt = receipt.RecordedAt
                             RecordedBy = receipt.RecordedBy
                             Target = receipt.RecordedBy
-                            Facts = PeopleHistoryFacts.Enabled
+                            Task = TaskId.ofLiteral "people.enable"
+                            Changes =
+                                {
+                                    PersonPartDescription.Profiles =
+                                        { Before = None; After = None }
+                                    Principal = None
+                                    Enabled =
+                                        Some
+                                            {
+                                                Before = Some false
+                                                After = Some true
+                                            }
+                                    ProfilePresent = None
+                                    DisplayName = None
+                                    Contact = None
+                                    Grants = []
+                                }
+                            PrivateAvailable = true
+                            References = { Actors = []; Cases = [] }
                         }
 
                     let screen = AccessHistoryScreen.rows [ history ]

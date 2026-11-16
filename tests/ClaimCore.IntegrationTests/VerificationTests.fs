@@ -29,7 +29,7 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
         let! _ = populated database
         let sequence = CaseFixtures.sequence 4L
         let! original = row database sequence
-        let request, snapshot = livePayload original
+        let request, snapshot = livePayload (CaseFixtures.reference "synthetic-a") original
 
         let forged =
             { snapshot with
@@ -42,7 +42,9 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
                         snapshot.State
             }
 
-        Expect.isOk (Case.ofAccepted forged) "CLOSED remains intrinsically representable"
+        Expect.isOk
+            (ClaimCore.Domain.Aggregates.CaseFamily.validateSnapshot forged)
+            "CLOSED remains intrinsically representable"
         // Recommit the retained request/result, rehash every affected link and replace the head.
         do! rewrite database sequence (updateCase request forged)
         let bytes = CaseRecord.encodeSnapshot forged
@@ -73,7 +75,9 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
             "Independent closed projection expectation"
 
         let! retained = row database sequence
-        let _, retainedSnapshot = livePayload retained
+
+        let _, retainedSnapshot =
+            livePayload (CaseFixtures.reference "synthetic-a") retained
 
         Expect.equal
             retainedSnapshot

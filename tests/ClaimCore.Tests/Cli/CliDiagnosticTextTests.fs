@@ -6,6 +6,7 @@ open ClaimCore.Presentation
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -266,10 +267,12 @@ let nextAndConflicts =
                                         |> Option.get
                                     OperationHash = CliReplyFixtures.receipt.Position.EntryHash
                                     Subject =
-                                        TimelineSubject.CaseFact(
-                                            CaseFixtures.revision (int64 number),
-                                            CaseActKind.AmendRegistration
-                                        )
+                                        {
+                                            PartKind = PartKind.Case
+                                            PartId = CaseId.value CliReplyFixtures.snapshot.CaseId
+                                            Revision = CaseFixtures.revision (int64 number)
+                                        }
+                                    Task = TaskId.ofLiteral "case.amendRegistration"
                                     RecordedAt = ClaimCore.TestSupport.Inputs.workBasis.ObservedAt
                                     RecordedBy =
                                         { CliReplyFixtures.receipt.RecordedBy with
@@ -307,8 +310,8 @@ let nextAndConflicts =
                                                     Overview =
                                                         {
                                                             Event =
-                                                                TimelineEvent.CaseActRecorded
-                                                                    CaseActKind.AmendRegistration
+                                                                TimelineEvent.PartChanged
+                                                                    PartKind.Case
                                                             Highlights = []
                                                         }
                                                 }

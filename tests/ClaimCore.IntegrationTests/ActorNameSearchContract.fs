@@ -64,16 +64,18 @@ let internal lookup fixture =
                 }
 
             let! result =
-                Service.execute
-                    owner
-                    (OperationInput.People(
-                        ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                            fixture.Store
-                            (id fixture (1100 + index))
-                            principal
-                            (PeopleAct.Register profile)
-                    ))
-                    token
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (fixture.Store)
+                            ((id fixture (1100 + index)))
+                            (principal)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (profile))
+
+                    return! Service.executeSubmission (owner) submission (token)
+                })
 
             acceptedPeople result
             people <- (name, principal) :: people
@@ -164,16 +166,18 @@ let internal lookup fixture =
         let person = people |> List.find (fun (name, _) -> name = "Alice Example") |> snd
 
         let! erased =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1120)
-                        person
-                        PeopleAct.EraseProfile
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1120))
+                        (person)
+                        (None)
+                        "people.eraseProfile"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople erased
         let! after = search owner "ALICE"
@@ -184,20 +188,23 @@ let internal lookup fixture =
             "Erased profiles immediately stop matching while distinct authored compatibility spelling remains"
 
         let! restored =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1121)
-                        person
-                        (PeopleAct.SetProfile
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1121))
+                        (person)
+                        (None)
+                        "people.setProfile"
+                        (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Renamed person"
                                 Contact = None
-                            })
-                ))
-                token
+                            }
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople restored
         let! old = search owner "Alice Example"
@@ -230,20 +237,23 @@ let internal contactAndRole fixture =
                 let principal = PrincipalKey.human "https://issuer.example/" subject |> required
 
                 let! reply =
-                    Service.execute
-                        owner
-                        (OperationInput.People(
-                            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                                fixture.Store
-                                (id fixture operation)
-                                principal
-                                (PeopleAct.Register
+                    (task {
+                        let! submission =
+                            ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                (fixture.Store)
+                                ((id fixture operation))
+                                (principal)
+                                (None)
+                                "people.register"
+                                (ClaimCore.TestSupport.Submissions.profile (
                                     {
                                         DisplayName = display
                                         Contact = contact
-                                    })
-                        ))
-                        token
+                                    }
+                                ))
+
+                        return! Service.executeSubmission (owner) submission (token)
+                    })
 
                 acceptedPeople reply
                 return principal
@@ -338,16 +348,18 @@ let internal contactAndRole fixture =
             "A role cursor cannot become an unfiltered page"
 
         let! erased =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1146)
-                        first
-                        PeopleAct.EraseProfile
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1146))
+                        (first)
+                        (None)
+                        "people.eraseProfile"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople erased
         let! absent = find (Some "contact@example") None None 50
@@ -365,20 +377,23 @@ let internal contactAndRole fixture =
             "Profile erasure never removes assigned role facts"
 
         let! reprofiled =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1147)
-                        first
-                        (PeopleAct.SetProfile
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1147))
+                        (first)
+                        (None)
+                        "people.setProfile"
+                        (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Replacement person"
                                 Contact = Some "NEW@EXAMPLE.INVALID"
-                            })
-                ))
-                token
+                            }
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople reprofiled
         let! fresh = find (Some "new@example") (Some Role.CaseReader) None 50

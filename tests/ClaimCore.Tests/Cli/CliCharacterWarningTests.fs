@@ -92,10 +92,55 @@ let private example kind =
                 |> RepresentationReply.Human
             )
         | Reviewed ->
+            let before = ResponseExamples.snapshot
+            let fields = CaseState.fields before.State |> Option.get
+
+            let registration =
+                Registration.replace
+                    [
+                        BusinessField.ClaimantName,
+                        Admitted.Name(PartyName.parse "After" |> Fixtures.accepted)
+                    ]
+                    fields.Registration
+                |> Fixtures.accepted
+
+            let after =
+                { before with
+                    Revision = Revision.successor before.Revision
+                    State =
+                        CaseState.Active
+                            { fields with
+                                Registration = registration
+                            }
+                }
+
+            let input =
+                Submissions.create
+                    "case.amendRegistration"
+                    (OperationId.value ResponseExamples.receipt.OperationId)
+                    (Binding.Case(CaseSelector.Id before.CaseId, before.Revision))
+                    (Submissions.fields [ BusinessField.ClaimantName, "After" ])
+
+            let review =
+                Reviews.caseReview
+                    input.Task
+                    (Submissions.command input).Binding
+                    (Some before)
+                    after
+                    {
+                        ProductVersion = "fixture"
+                        Basis = Inputs.workBasis
+                    }
+
             "operation.preview",
             Api.operationPreview.Output.Write(
                 RepresentationReply.Human(
-                    HumanReplies.preview ResponseExamples.previewInput ResponseExamples.preview
+                    HumanReplies.previewSubmission
+                        input
+                        {
+                            PreviewReply.OperationId = input.OperationId
+                            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                        }
                 )
             )
         | Accepted ->
@@ -207,7 +252,9 @@ let private previewWarnings () =
                 changes
                 |> Seq.map nonNull
                 |> Seq.find (fun value ->
-                    (value["key"] |> nonNull).GetValue<string>() = "claimantName")
+                    (value["key"] |> nonNull)
+                        .GetValue<string>()
+                        .EndsWith(".claimantName", System.StringComparison.Ordinal))
 
             (change["before"] |> nonNull)["value"] <- JsonValue.Create before
             (change["after"] |> nonNull)["value"] <- JsonValue.Create after)
@@ -291,7 +338,9 @@ let private retainedTerminalControls () =
                 changes
                 |> Seq.map nonNull
                 |> Seq.find (fun row ->
-                    (row["key"] |> nonNull).GetValue<string>() = "claimantName")
+                    (row["key"] |> nonNull)
+                        .GetValue<string>()
+                        .EndsWith(".claimantName", System.StringComparison.Ordinal))
 
             (change["before"] |> nonNull)["value"] <- JsonValue.Create value
             (change["after"] |> nonNull)["value"] <- JsonValue.Create "safe")

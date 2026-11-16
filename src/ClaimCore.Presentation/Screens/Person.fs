@@ -92,19 +92,7 @@ module PersonScreen =
                         | GrantScope.Case(id, _) -> Some(Link.caseById id)
                         | _ -> None
 
-                    let actions =
-                        if List.contains PeopleActKind.Revoke reply.Offers then
-                            [
-                                TaskAffordances.person
-                                    PeopleActKind.Revoke
-                                    actor.Actor.ActorId
-                                    reply.Revision
-                                    (TaskAffordances.grantSeeds row.Role row.Scope)
-                                    []
-                                    Map.empty
-                            ]
-                        else
-                            []
+                    let actions = row.Controls |> List.choose TaskAffordances.fromOffer
 
                     link, actions)
                 reply.Items

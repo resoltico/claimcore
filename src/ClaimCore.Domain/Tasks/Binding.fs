@@ -33,3 +33,32 @@ module Binding =
         | Binding.NoteNew target
         | Binding.Note(target, _) -> Some target
         | _ -> None
+
+[<RequireQualifiedAccess>]
+type BindingShape =
+    | CaseNew
+    | Case
+    | CasePayment
+    | CaseErase
+    | Work
+    | ReminderNew
+    | Reminder
+    | NoteNew
+    | Note
+    | PeopleNew
+    | People
+
+module BindingShape =
+    let ofValue =
+        function
+        | Binding.CaseNew _ -> BindingShape.CaseNew
+        | Binding.Case _ -> BindingShape.Case
+        | Binding.CasePayment _ -> BindingShape.CasePayment
+        | Binding.CaseErase _ -> BindingShape.CaseErase
+        | Binding.Work _ -> BindingShape.Work
+        | Binding.ReminderNew _ -> BindingShape.ReminderNew
+        | Binding.Reminder _ -> BindingShape.Reminder
+        | Binding.NoteNew _ -> BindingShape.NoteNew
+        | Binding.Note _ -> BindingShape.Note
+        | Binding.PeopleNew _ -> BindingShape.PeopleNew
+        | Binding.People _ -> BindingShape.People

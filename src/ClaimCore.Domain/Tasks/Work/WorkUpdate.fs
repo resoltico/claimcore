@@ -172,13 +172,42 @@ let decide context environment (state: CaseFamily option) binding inputs =
 let decisionFactsAvailable (state: CaseFamily option) (_: Binding) =
     state |> Option.bind _.Work |> Option.forall (fun part -> part.Value.IsSome)
 
+let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+    match state, binding with
+    | Some state, Binding.Work(_, expected) ->
+        FamilyRules.admit context environment state binding capability (FamilyRules.active false)
+        |> Result.bind (fun () ->
+            let revision =
+                state.Work |> Option.map _.Revision |> Option.defaultValue Revision.zero
+
+            FamilyRules.revision expected revision
+            |> Result.map (fun () ->
+                [
+                    FamilyRules.change
+                        context
+                        state.Id
+                        (CaseId.value state.Id)
+                        (Revision.successor revision)
+                        (PartValue.Work None)
+                ]))
+        |> Parsing.reject
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = decisionFactsAvailable
             Describe = PartDescriptions.family
         }

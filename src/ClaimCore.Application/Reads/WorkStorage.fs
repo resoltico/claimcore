@@ -68,7 +68,9 @@ module internal WorkStorage =
         let responsible = actorOption (name "responsible_actor") row
         let summary = DatabaseSession.namedOptional<string> (name "handling_summary") row
         let search = DatabaseSession.namedOptional<string> (name "search_text") row
-        let expectedResponsible, expectedSummary, expectedSearch = WorkSubject.columns value
+
+        let expectedResponsible, expectedSummary, expectedSearch =
+            CaseWorkSnapshot.columns value
 
         if bytes <> (value |> Option.map WorkRecord.encodeSnapshot) then
             raise (RecordCorruptException "Work snapshot is not canonical.")
@@ -130,7 +132,7 @@ module internal WorkStorage =
         let search = DatabaseSession.namedOptional<string> (name "search_text") row
 
         let expectedStatus, expectedAction, expectedDue, expectedSearch =
-            ReminderSubject.columns value
+            Reminder.columns value
 
         if bytes <> (value |> Option.map ReminderRecord.encodeSnapshot) then
             raise (RecordCorruptException "Reminder snapshot is not canonical.")
@@ -160,40 +162,6 @@ module internal WorkStorage =
             SnapshotBytes = defaultArg bytes Array.empty
             RecordedAt = DatabaseSession.namedRecordedInstant (name "changed_at") row
             RecordedBy = actor (name "recorded_by") row
-        }
-
-    let workProjectionRow row : WorkSubjectRows =
-        let record = readWork id row
-        let responsible, summary, search = WorkSubject.columns record.Snapshot
-
-        {
-            CaseId = record.CaseId
-            Revision = record.Revision
-            Snapshot = record.Snapshot
-            Responsible = responsible
-            Summary = summary
-            SearchText = search
-            ChangedAt = record.ChangedAt
-            RecordedBy = record.RecordedBy
-            SummaryChangedAt = record.SummaryChangedAt
-            SummaryRecordedBy = record.SummaryRecordedBy
-        }
-
-    let reminderProjectionRow row : ReminderSubjectRows =
-        let record = readReminder id row
-        let status, action, due, search = ReminderSubject.columns record.Snapshot
-
-        {
-            ReminderId = record.ReminderId
-            CaseId = record.CaseId
-            Revision = record.Revision
-            Snapshot = record.Snapshot
-            RecordedAt = record.RecordedAt
-            RecordedBy = record.RecordedBy
-            Status = status
-            Action = action
-            Due = due
-            SearchText = search
         }
 
     let workRow row = readWork id row

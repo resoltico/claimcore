@@ -53,14 +53,14 @@ field kinds and money relationships; typed records retain validated structure th
 [CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
-Subject contracts own `decide`, `apply`, `applyErased` and `rows`; execution and replay call the same
-Domain owners. [CaseSubject](../src/ClaimCore.Domain/CaseSubject.fs) retains erased identity and payment
-provenance separately from unavailable private content. [CaseIndex](../src/ClaimCore.Domain/CaseIndex.fs)
-alone derives the family index. [SubjectExecution](../src/ClaimCore.Application/Operations/SubjectExecution.fs)
-runs registered operations in one transaction path; replay validates the closed journal before applying
-those contracts.
-[TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) owns finite semantic task
-inputs and choices; [OperationSubmission](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) assembles
+[Task modules](../src/ClaimCore.Domain/Tasks/Registry.fs) own declarations, checks, availability and decisions.
+[CaseFamily](../src/ClaimCore.Domain/Aggregates/CaseFamily.fs) and [Person](../src/ClaimCore.Domain/Aggregates/Person.fs)
+apply accepted parts, retaining identity and provenance when private content is erased.
+[CaseIndex](../src/ClaimCore.Domain/CaseIndex.fs) derives the family index.
+[Engine](../src/ClaimCore.Application/Execution/Engine.fs) shares preview and execution decisions;
+[Fold](../src/ClaimCore.Application/Execution/Fold.fs) re-decides available inputs and facts for replay, rebuild and verification.
+[TaskDeclarations](../src/ClaimCore.Application.Contracts/TaskDeclarations.fs) combines Domain declarations with
+[endpoint declarations](../src/ClaimCore.Application.Contracts/EndpointDeclarations.fs) for clients; [OperationSubmission](../src/ClaimCore.Application.Contracts/OperationSubmission.fs) assembles
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
 Generated types and task metadata live in `contracts/client.ts`; collection row keys stay outside submissions.
 

@@ -36,8 +36,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let reference = "CLI-DELIVERY-" + id ()
     input["operationId"] <- JsonValue.Create operationId
 
-    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
-        JsonValue.Create reference
+    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
     values["field:claimedAmount"] <- JsonValue.Create "1.0000"

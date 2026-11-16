@@ -41,7 +41,7 @@ type CommandCollection =
     }
 
 module CommandGrammar =
-    let operations = ApplicationTaskId.all
+    let operations = (TaskDeclarations.all |> List.map _.Id)
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
@@ -67,8 +67,8 @@ module CommandGrammar =
         | TaskInputId.TimelineFilter -> "filter"
         | input -> TaskInputId.key input
 
-    let words (entry: ApplicationTaskId) =
-        (ApplicationTaskId.key entry).Split('.') |> Array.map kebab |> List.ofArray
+    let words (entry: string) =
+        entry.Split('.') |> Array.map kebab |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
@@ -157,8 +157,8 @@ module CommandGrammar =
                         TaskInputPresentation.messageKey
                             (TaskInputId.Target InputTarget.Grants)
                             "label"
-                    MinimumItems = PeopleAdmission.MinimumGrants
-                    MaximumItems = PeopleAdmission.MaximumGrants
+                    MinimumItems = item.MinimumRows
+                    MaximumItems = TaskCollectionId.maximumRows item.Collection
                 })
 
     let collectionFlag (definition: CommandCollection) =
@@ -173,14 +173,10 @@ module CommandGrammar =
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
     let supportsAll operation =
-        EndpointDeclarations.find (ApplicationTaskId.key operation)
-        |> Option.exists _.Paged
+        EndpointDeclarations.find operation |> Option.exists _.Paged
 
     let formats operation =
-        if
-            EndpointDeclarations.find (ApplicationTaskId.key operation)
-            |> Option.exists _.Csv
-        then
+        if EndpointDeclarations.find operation |> Option.exists _.Csv then
             [ "text"; "json"; "csv" ]
         else
             [ "text"; "json" ]
@@ -217,9 +213,9 @@ module CommandGrammar =
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
 
-    let canClear (_operation: ApplicationTaskId) (input: CommandInput) = input.Declaration.Clearable
+    let canClear (_operation: string) (input: CommandInput) = input.Declaration.Clearable
 
-    let synopsisForDraft draft (operation: ApplicationTaskId) =
+    let synopsisForDraft draft (operation: string) =
         let placeholder =
             function
             | CommandAtom.Text -> "VALUE"

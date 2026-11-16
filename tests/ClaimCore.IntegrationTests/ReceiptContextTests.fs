@@ -26,16 +26,20 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 3)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 3))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -56,23 +60,23 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             task {
                 let amendment =
                     request
-                        fixture
-                        11
-                        "PROBE-1"
-                        1L
-                        (AuthoredCaseAct.AmendRegistration(
-                            Inputs.registrationUpdate (
-                                ClaimCore.TestSupport.Inputs.registrationWith
-                                    [ BusinessField.ClaimantName, ("Later Party") ]
-                                    (registration)
+                        (fixture)
+                        (11)
+                        ("PROBE-1")
+                        (1L)
+                        "case.amendRegistration"
+                        (ClaimCore.TestSupport.Submissions.updates (
+                            RegistrationUpdateInput.values (
+                                (Inputs.registrationUpdate (
+                                    ClaimCore.TestSupport.Inputs.registrationWith
+                                        [ BusinessField.ClaimantName, ("Later Party") ]
+                                        (registration)
+                                ))
                             )
                         ))
 
                 let! amended =
-                    (Service.execute
-                        admin
-                        (ClaimCore.TestSupport.Inputs.caseOperation amendment)
-                        (CancellationToken.None))
+                    (Service.executeSubmission admin ((amendment)) (CancellationToken.None))
 
                 accepted amended |> ignore
 
@@ -101,9 +105,9 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 principal
 
         let! result =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "PROBE-1"))
+                (((openRequest fixture 10 "PROBE-1")))
                 (CancellationToken.None))
 
         let receipt = accepted result

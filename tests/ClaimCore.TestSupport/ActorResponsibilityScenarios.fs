@@ -27,7 +27,7 @@ let private principal name create =
 
 let private execute services input =
     task {
-        let! reply = Service.execute services input token
+        let! reply = Service.executeSubmission services input token
         accepted reply |> ignore
     }
 
@@ -78,12 +78,14 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 do!
                     execute
                         admin
-                        (OperationInput.People(
-                            peopleRequest
-                                registration
-                                target
-                                (PeopleAct.Register { DisplayName = name; Contact = None })
-                        ))
+                        (Submissions.create
+                            "people.register"
+                            registration
+                            (Binding.PeopleNew Revision.zero)
+                            (Submissions.principal target
+                             |> Map.fold
+                                 (fun values key value -> Map.add key value values)
+                                 (Submissions.profile { DisplayName = name; Contact = None })))
 
                 return target, ActorId.ofOperationId (CaseFixtures.operationId registration)
             }
@@ -116,14 +118,14 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             do!
                 execute
                     admin
-                    (Inputs.caseOperation
-                        {
-                            ExpectedFamilySequence = None
-                            OperationId = opening
-                            CaseReference = reference
-                            ExpectedRevision = 0L
-                            Act = AuthoredCaseAct.Open Inputs.registration
-                        })
+                    (Submissions.create
+                        "case.open"
+                        opening
+                        (Binding.CaseNew Revision.zero)
+                        (Submissions.fields (RegistrationInput.values Inputs.registration)
+                         |> Map.add
+                             (Submissions.field BusinessField.CaseReference)
+                             (SubmissionValue.Text reference)))
 
             let caseId = CaseId.ofOperationId (CaseFixtures.operationId opening)
             created.Add caseId
@@ -131,60 +133,51 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             do!
                 execute
                     admin
-                    (OperationInput.Work
-                        {
-                            OperationId = operation ()
-                            Target = CaseSelector.Id caseId
-                            ExpectedRevision = 0L
-                            Act =
-                                WorkAct.UpdateWork
-                                    {
-                                        Responsible = WorkValue.Set(ActorId.format staffId)
-                                        Summary = WorkValue.Keep
-                                    }
-                        })
+                    (Submissions.create
+                        "work.update"
+                        (operation ())
+                        (Binding.Work(CaseSelector.Id caseId, Revision.zero))
+                        (Map.ofList
+                            [
+                                Submissions.field BusinessField.ResponsibleActor,
+                                SubmissionValue.Text(ActorId.format staffId)
+                            ]))
 
         do!
             execute
                 admin
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = operation ()
-                        CaseReference = "RESP-B"
-                        ExpectedRevision = 1L
-                        Act = AuthoredCaseAct.Bare BareAct.Close
-                    })
+                (Submissions.create
+                    "case.close"
+                    (operation ())
+                    (Binding.Case(CaseSelector.Reference "RESP-B", Revision.first))
+                    Map.empty)
 
         do!
             execute
                 admin
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = operation ()
-                        CaseReference = "RESP-C"
-                        ExpectedRevision = 1L
-                        Act = AuthoredCaseAct.Void "Incorrect case"
-                    })
-
+                (Submissions.create
+                    "case.void"
+                    (operation ())
+                    (Binding.Case(CaseSelector.Reference "RESP-C", Revision.first))
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.Reason,
+                            SubmissionValue.Text "Incorrect case"
+                        ]))
 
         do!
             execute
                 admin
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence =
-                            Some(
-                                reviewedFamilySequence
-                                    fixture.Store
-                                    (CaseSelector.Reference "RESP-D")
-                            )
-                        OperationId = operation ()
-                        CaseReference = "RESP-D"
-                        ExpectedRevision = 1L
-                        Act = AuthoredCaseAct.Bare BareAct.Erase
-                    })
+                (Submissions.create
+                    "case.erase"
+                    (operation ())
+                    (Binding.CaseErase(
+                        CaseSelector.Reference "RESP-D",
+                        Revision.first,
+                        reviewedFamilySequence fixture.Store (CaseSelector.Reference "RESP-D")
+                        |> CaseFixtures.sequence
+                    ))
+                    Map.empty)
 
         for caseId in [ created[0]; created[1] ] do
             do! addRole scoped Role.CaseReader (GrantTarget.CaseId caseId)

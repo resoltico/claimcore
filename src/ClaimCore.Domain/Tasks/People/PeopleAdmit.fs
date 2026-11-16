@@ -29,7 +29,7 @@ type private Command =
     {
         Principal: PrincipalKey
         Profile: ActorProfile
-        Grants: AuthoredGrant list
+        Grants: GrantInput list
     }
 
 let private parse inputs =
@@ -82,13 +82,34 @@ let decide context environment (state: Person option) binding inputs =
     |> Parsing.reject
     |> Result.map (TaskContext.changes context)
 
+let decideRetained context environment state binding inputs =
+    PersonRules.admit
+        context
+        environment
+        (PersonRules.permission declaration environment)
+        (fun () -> Ok())
+    |> Result.bind (fun () ->
+        Admission.map2
+            (fun principal grants -> principal, grants)
+            (PersonInputs.principal inputs)
+            (PersonInputs.grants declaration.Collections.Head.MinimumRows inputs))
+    |> Result.bind (fun (principal, grants) ->
+        PersonRules.registration environment state binding principal false
+        |> Result.bind (fun () -> PersonRules.admitGrants environment principal grants)
+        |> Result.map (fun grants ->
+            [ PersonRules.createValue context principal (ProfileValue.Present None) grants ]))
+    |> Parsing.reject
+    |> Result.map (TaskContext.changes context)
+
 let task =
     Task.Person
         {
             Declaration = declaration
+            Authorize = fun environment _ _ -> PersonRules.permission declaration environment
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.person
         }

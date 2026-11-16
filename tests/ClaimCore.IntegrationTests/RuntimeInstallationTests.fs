@@ -238,8 +238,14 @@ let private retarget () =
                 let! _ =
                     DatabaseSession.execute
                         seed
-                        "INSERT INTO claimcore.access_request(issuer,principal_kind,subject,first_seen,last_seen) VALUES('https://issuer.example/','HUMAN','expired-foreign',clock_timestamp()-interval '40 days',clock_timestamp()-interval '35 days')"
-                        [||]
+                        "INSERT INTO claimcore.access_request(principal_key,issuer,principal_kind,subject,first_seen,last_seen) VALUES($1,'https://issuer.example/','HUMAN','expired-foreign',clock_timestamp()-interval '40 days',clock_timestamp()-interval '35 days')"
+                        [|
+                            box (
+                                StoreFixtures.humanPrincipalKey
+                                    "https://issuer.example/"
+                                    "expired-foreign"
+                            )
+                        |]
                         token
 
                 do! refused (fun () -> task { let! _ = runtime.Housekeep token in return () })

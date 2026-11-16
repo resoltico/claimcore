@@ -117,7 +117,7 @@ let private calendarBounds (database: PostgresFixture.Database) =
                 let! count =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE command->>'kind'='CASE'"
+                        "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE business_date IS NOT NULL"
                         [| box value |]
                         token
 

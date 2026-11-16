@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -27,8 +28,23 @@ let private successful =
 let private principal value =
     PrincipalKey.human "https://issuer.example/" value |> required
 
-let private execute owner operation target act =
-    Service.execute owner (OperationInput.People(Inputs.peopleRequest operation target act)) token
+let private execute (owner: ServiceContext) operation target taskName values =
+    task {
+        let declaration =
+            ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral taskName)
+            |> Option.get
+
+        let! input =
+            personSubmission
+                owner.Store
+                operation
+                target
+                (Some(if declaration.Creates then 0L else 1L))
+                taskName
+                values
+
+        return! Service.executeSubmission owner input token
+    }
 
 let private profile =
     {
@@ -62,21 +78,33 @@ let internal lifecycle fixture =
         let uuidReference = "10000000-0000-4000-8000-000000000777"
 
         let! a =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 731 first 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (731)
+                    (first)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let a = accepted a |> caseReceipt
 
         let! b =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 732 uuidReference 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (732)
+                    (uuidReference)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let b = accepted b |> caseReceipt
@@ -140,69 +168,62 @@ let internal lifecycle fixture =
                 }
             ]
 
-        let operation =
-            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                fixture.Store
-                (id fixture 740)
-                target
-                (PeopleAct.Admit { Profile = profile; Grants = grants })
-            |> OperationInput.People
+        let values =
+            Submissions.profile profile
+            |> Map.add
+                (Submissions.input InputTarget.Grants)
+                (SubmissionValue.Rows(grants |> List.map Submissions.grant))
 
-        let! preview = Service.preview owner operation token
+        let! operation =
+            personSubmission fixture.Store (id fixture 740) target (Some 0L) "people.admit" values
+
+        let! preview = Service.previewSubmission owner operation token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
             Expect.equal
-                review.Effects.Length
-                5
-                "Review exposes identity, authored profile and every grant"
+                review.Changes.Length
+                1
+                "One accepting person part carries identity, profile and grants"
 
-            Expect.equal review.After.Grants.Length 3 "Review preserves every distinct scope"
-
-            Expect.equal
-                (review.After.Profile
-                 |> Option.map (fun value -> PartyName.format value.DisplayName))
-                (Some profile.DisplayName)
-                "Token hints never select the authored profile"
-
-            match review.Effects with
-            | PeopleReviewEffect.Register identity :: PeopleReviewEffect.SetProfile _ :: effects ->
-                Expect.equal identity target "Review identifies the admitted principal"
+            match review.Changes.Head.Description with
+            | PartDescription.Person changes ->
+                Expect.equal changes.Grants.Length 3 "Every distinct scope remains explicit"
 
                 Expect.equal
-                    (effects
-                     |> List.choose (function
-                         | PeopleReviewEffect.Grant grant -> Some grant
-                         | _ -> None)
-                     |> List.length)
-                    3
-                    "Only typed grant effects follow profile"
-            | _ -> failtest "Wrong ordered review effects"
+                    (changes.Profiles.After
+                     |> Option.map (fun value -> PartyName.format value.DisplayName))
+                    (Some profile.DisplayName)
+                    "IdP hints never select the authored profile"
+
+                Expect.equal
+                    (changes.Principal |> Option.bind _.After)
+                    (Some target)
+                    "Admitted principal is exact"
+            | _ -> failtest "Person description required"
         | other -> failtestf "Admission review failed: %A" other
 
-        let! acceptedReply = Service.execute owner operation token
+        let! acceptedReply = Service.executeSubmission owner operation token
         let receipt = accepted acceptedReply
         let metadata, kinds = effectKinds receipt
-        Expect.equal metadata.Act PeopleActKind.Admit "Logical operation remains ADMIT"
+
+        Expect.equal
+            metadata.Act
+            (TaskId.ofLiteral "people.admit")
+            "Logical operation remains ADMIT"
 
         Expect.equal
             kinds
-            [
-                PeopleActKind.Register
-                PeopleActKind.SetProfile
-                PeopleActKind.Grant
-                PeopleActKind.Grant
-                PeopleActKind.Grant
-            ]
-            "Receipt includes every logical effect in order"
+            [ TaskId.ofLiteral "people.admit" ]
+            "Receipt identifies the single accepting part"
 
         Expect.equal
             (metadata.Effects |> List.map (fun effect -> effect.Id, effect.Position))
-            ([ 0..4 ]
-             |> List.map (fun index ->
-                 (EffectId.create receipt.OperationId index |> Option.get),
-                 (EffectPosition.create receipt.Position.Sequence index |> Option.get)))
-            "Every ordered effect belongs to the one accepting root"
+            [
+                (EffectId.create receipt.OperationId 0 |> Option.get),
+                (EffectPosition.create receipt.Position.Sequence 0 |> Option.get)
+            ]
+            "All assignments share the actual accepting position"
 
         let! stored = lookup fixture (id fixture 740)
 
@@ -210,19 +231,29 @@ let internal lifecycle fixture =
             required stored
             |> Option.defaultWith (fun () -> failtest "Complete operation missing")
 
-        Expect.equal stored.Root.Structure.Effects.Length 5 "Atomic operation exposes every effect"
-        Expect.equal stored.Position receipt.Position "Store and receipt have one root proof"
+        Expect.equal
+            stored.Root.Structure.Effects.Length
+            1
+            "One person part owns every accepted value"
 
-        match stored.Root.Structure.Command with
-        | CommandSkeleton.People { Act = PeopleAct.Admit _ } -> ()
-        | _ -> failtest "The command remains ADMIT, not its REGISTER effect"
+        Expect.equal stored.Root.Position receipt.Position "Store and receipt have one root proof"
+
+        Expect.equal
+            stored.Root.Structure.Task
+            (TaskId.ofLiteral "people.admit")
+            "Task identity is retained"
+
+        match stored.Changes.Head.Value with
+        | PartValue.Person value ->
+            Expect.equal value.Grants.Length 3 "All accepted assignments are present"
+        | _ -> failtest "Person part required"
 
         let privateProfile = stored.Root.Structure.Compartments |> List.exactlyOne
 
         Expect.equal
-            privateProfile.Descriptor.Purpose
-            CompartmentPurpose.Profile
-            "Only profile values are private"
+            privateProfile.Descriptor.Owner
+            (CompartmentOwner.Profile(ActorId.ofOperationId receipt.OperationId))
+            "Profile owns its private values"
 
         Expect.isSome
             (Compartment.content privateProfile)
@@ -230,7 +261,7 @@ let internal lifecycle fixture =
 
         let publicBytes =
             Array.concat (
-                OperationRoot.commandBytes stored.Root
+                OperationRoot.structureBytes stored.Root
                 :: (OperationRoot.effectBytes stored.Root |> List.map snd)
             )
             |> Text.Encoding.UTF8.GetString
@@ -284,23 +315,27 @@ let internal lifecycle fixture =
 
         let! replay =
             execute
-                owner
-                (id fixture 740)
-                target
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants = aliasGrants
-                    })
+                (owner)
+                ((id fixture 740))
+                (target)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         (aliasGrants) |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         expectReceipt
             (replayReceipt replay)
             receipt
             "Reference and ID aliases replay the same normalized operation"
 
-        let! erased = execute owner (id fixture 741) target PeopleAct.EraseProfile
+        let! erased =
+            execute (owner) ((id fixture 741)) (target) "people.eraseProfile" (Map.empty)
+
         acceptedPeople erased
-        let! hidden = Service.execute owner operation token
+        let! hidden = Service.executeSubmission owner operation token
 
         Expect.equal
             hidden.Outcome
@@ -319,11 +354,17 @@ let internal boundary fixture =
         let! owner = caseWorker fixture
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 750 "ADMIT-DUPLICATE" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (750)
+                    ("ADMIT-DUPLICATE")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let current = accepted opened |> caseReceipt
@@ -343,14 +384,16 @@ let internal boundary fixture =
 
         let! refused =
             execute
-                owner
-                (id fixture 751)
-                target
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants = duplicate
-                    })
+                (owner)
+                ((id fixture 751))
+                (target)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         (duplicate) |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         match refused.Outcome with
         | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
@@ -376,10 +419,16 @@ let internal boundary fixture =
             ] do
             let! refused =
                 execute
-                    owner
-                    (id fixture operation)
-                    target
-                    (PeopleAct.Admit { Profile = profile; Grants = grants })
+                    (owner)
+                    ((id fixture operation))
+                    (target)
+                    "people.admit"
+                    (ClaimCore.TestSupport.Submissions.profile (profile)
+                     |> Map.add
+                         (TaskInputId.Target InputTarget.Grants)
+                         (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                             (grants) |> List.map ClaimCore.TestSupport.Submissions.grant
+                         )))
 
             match refused.Outcome with
             | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
@@ -391,20 +440,22 @@ let internal boundary fixture =
 
         let! unavailable =
             execute
-                owner
-                (id fixture 754)
-                target
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants =
-                            [
-                                {
-                                    Role = Role.CaseReader
-                                    Scope = GrantTarget.CaseReference "NO-SUCH-ADMIT-CASE"
-                                }
-                            ]
-                    })
+                (owner)
+                ((id fixture 754))
+                (target)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         ([
+                             {
+                                 Role = Role.CaseReader
+                                 Scope = GrantTarget.CaseReference "NO-SUCH-ADMIT-CASE"
+                             }
+                         ])
+                         |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         Expect.equal
             unavailable.Outcome
@@ -413,20 +464,22 @@ let internal boundary fixture =
 
         let! wrongScope =
             execute
-                owner
-                (id fixture 755)
-                target
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants =
-                            [
-                                {
-                                    Role = Role.Owner
-                                    Scope = GrantTarget.CaseId current.CaseId
-                                }
-                            ]
-                    })
+                (owner)
+                ((id fixture 755))
+                (target)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         ([
+                             {
+                                 Role = Role.Owner
+                                 Scope = GrantTarget.CaseId current.CaseId
+                             }
+                         ])
+                         |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         Expect.equal
             wrongScope.Outcome
@@ -438,20 +491,22 @@ let internal boundary fixture =
 
         let! wrongKind =
             execute
-                owner
-                (id fixture 756)
-                service
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants =
-                            [
-                                {
-                                    Role = Role.Owner
-                                    Scope = GrantTarget.Installation
-                                }
-                            ]
-                    })
+                (owner)
+                ((id fixture 756))
+                (service)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         ([
+                             {
+                                 Role = Role.Owner
+                                 Scope = GrantTarget.Installation
+                             }
+                         ])
+                         |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         Expect.equal
             wrongKind.Outcome
@@ -468,16 +523,17 @@ let internal maximum fixture =
             let reference = $"ADMIT-MAX-{index:D2}"
 
             let! opened =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (Inputs.caseOperation (
-                        request
-                            fixture
-                            (760 + index)
-                            reference
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        ((760 + index))
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     token
 
             accepted opened |> ignore
@@ -493,30 +549,37 @@ let internal maximum fixture =
 
         let! reply =
             execute
-                owner
-                (id fixture 810)
-                target
-                (PeopleAct.Admit
-                    {
-                        Profile = profile
-                        Grants = List.rev grants
-                    })
+                (owner)
+                ((id fixture 810))
+                (target)
+                "people.admit"
+                (ClaimCore.TestSupport.Submissions.profile (profile)
+                 |> Map.add
+                     (TaskInputId.Target InputTarget.Grants)
+                     (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                         (List.rev grants) |> List.map ClaimCore.TestSupport.Submissions.grant
+                     )))
 
         let receipt = accepted reply
         let metadata, _ = effectKinds receipt
 
         Expect.equal
             metadata.Effects.Length
-            50
-            "48 distinct grants commit with identity and profile within the declared effect bound"
+            1
+            "All forty-eight grants share one accepting person part"
 
         let! stored = lookup fixture (id fixture 810)
         let stored = required stored |> Option.get
 
         Expect.equal
             stored.Root.Structure.Effects.Length
-            50
-            "Every bounded logical effect is retained"
+            1
+            "One part retains the complete atomic admission"
+
+        match stored.Changes.Head.Value with
+        | PartValue.Person value ->
+            Expect.equal value.Grants.Length 48 "Every distinct accepted assignment is retained"
+        | _ -> failtest "Person part required"
 
         Expect.equal
             stored.Root.Structure.Compartments.Length
@@ -556,17 +619,17 @@ let internal atomicWrites fixture =
                 }
             ]
 
-        for after in [ 1..5 ] do
+        for after in [ 1; 2 ] do
             let operation = id fixture (850 + after)
 
-            let command =
-                People.parse (
-                    Inputs.peopleRequest
-                        operation
-                        target
-                        (PeopleAct.Admit { Profile = profile; Grants = grants })
-                )
-                |> required
+            let values =
+                Submissions.profile profile
+                |> Map.add
+                    (Submissions.input InputTarget.Grants)
+                    (SubmissionValue.Rows(grants |> List.map Submissions.grant))
+
+            let! submission =
+                personSubmission fixture.Store operation target (Some 0L) "people.admit" values
 
             let! failed =
                 fixture.Store.Write
@@ -575,56 +638,60 @@ let internal atomicWrites fixture =
                         Work =
                             fun tx ->
                                 task {
-                                    let! view =
-                                        ExecutionFacts.target
-                                            owner
+                                    let input = Submissions.command submission
+
+                                    let selected =
+                                        ClaimCore.Domain.Tasks.Registry.find submission.Task
+                                        |> Option.get
+
+                                    let context =
+                                        {
+                                            DecisionContext.BusinessDate = None
+                                            ObservedAt = tx.ObservedAt
+                                            Principal = owner.Principal
+                                            Access = AccessView.empty
+                                            Maintenance = false
+                                            Lifetime = DecisionLifetime.Execution None
+                                        }
+
+                                    let! prepared =
+                                        Engine.prepare
                                             tx
-                                            (People.factsNeeded command.Act)
-                                            command.OperationId
-                                            command.Target
-                                            (PeopleRequests.targetCases command)
+                                            tx.Head
+                                            context
+                                            selected
+                                            (CaseFixtures.operationId submission.OperationId)
+                                            input.Binding
+                                            input.Inputs
 
-                                    let verdict =
-                                        ClaimCore.TestSupport.StoreFixtures.executePeople
-                                            owner
-                                            command
-                                            {
-                                                Head = tx.Head
-                                                NewPayloadNonce = tx.NewPayloadNonce
+                                    let plan = prepared |> required
 
-                                            }
-                                            view
+                                    let record =
+                                        RetainedOperation.create
+                                            plan.Header
+                                            submission.Task
+                                            plan.Binding
+                                            plan.Inputs
+                                            plan.Changes
+                                            tx.NewPayloadNonce
+                                        |> required
 
-                                    match verdict with
-                                    | Verdict.Proceed(operation, rows, _) ->
-                                        do! tx.Append operation
+                                    do! tx.Append record
 
-                                        let grants =
-                                            rows.Grants
-                                            |> Map.toList
-                                            |> List.sortBy snd
-                                            |> List.truncate (max 0 (after - 2))
-                                            |> Map.ofList
+                                    let rows =
+                                        match plan.After with
+                                        | AggregateState.Person(Some person) ->
+                                            ProjectionRows.person person |> required
+                                        | _ -> failtest "Person plan required"
 
-                                        let partial =
-                                            if after = 1 then
-                                                { rows with
-                                                    Actor = { rows.Actor with Profile = None }
-                                                    DisplayNameSearch = None
-                                                    ContactSearch = None
-                                                    Grants = grants
-                                                }
-                                            else
-                                                { rows with Grants = grants }
+                                    if after = 1 then
+                                        do! PartProjections.personIdentity tx.Connection rows token
+                                    else
+                                        do! tx.ProjectPerson rows
 
-                                        do! tx.ProjectPeople partial
-
-                                        return
-                                            failwith
-                                                "Injected failure after an admission effect and projection"
-                                    | other ->
-                                        return
-                                            failtestf "Injection requires valid admission: %A" other
+                                    return
+                                        failwith
+                                            "injected after actual person append and projection phase"
                                 }
                     }
 

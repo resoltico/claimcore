@@ -62,7 +62,7 @@ let tests =
                     for action in selections do
                         Expect.equal
                             action.Binding
-                            (OperationBinding.Work(CaseSelector.Id parent, 1L))
+                            (Some(Binding.Work(CaseSelector.Id parent, Revision.first)))
                             "The actual read's version binds the selection"
 
                     Expect.equal

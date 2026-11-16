@@ -8,6 +8,7 @@ open System.Text
 open Microsoft.VisualBasic.FileIO
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Cli
@@ -53,7 +54,24 @@ let tests =
                 RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
                 RecordedBy = actor
                 Target = actor
-                Facts = PeopleHistoryFacts.Enabled
+                Task = TaskId.ofLiteral "people.enable"
+                Changes =
+                    {
+                        PersonPartDescription.Profiles = { Before = None; After = None }
+                        Principal = None
+                        Enabled =
+                            Some
+                                {
+                                    Before = Some false
+                                    After = Some true
+                                }
+                        ProfilePresent = None
+                        DisplayName = None
+                        Contact = None
+                        Grants = []
+                    }
+                PrivateAvailable = true
+                References = { Actors = []; Cases = [] }
             }
 
         let people =
@@ -69,7 +87,13 @@ let tests =
                 OperationId = operation
                 Position = position
                 OperationHash = hash
-                Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+                Subject =
+                    {
+                        PartKind = PartKind.Case
+                        PartId = raw
+                        Revision = Revision.first
+                    }
+                Task = TaskId.ofLiteral "case.open"
                 RecordedAt = entry.RecordedAt
                 RecordedBy = actor
                 Changes = TimelineChanges.Withheld

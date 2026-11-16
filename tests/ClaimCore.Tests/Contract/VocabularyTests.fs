@@ -126,36 +126,33 @@ let tests =
                         (fun () ->
                             Vocabulary.define "role" (all @ [ Member.Reader ]) token |> ignore)
                         "Ambiguous case")
-            testCase "explicit vocabularies still reject missing act cases" (fun () ->
-                Expect.equal
-                    (Vocabulary.tokens CaseActKind.vocabulary)
-                    ((CaseActKind.all |> List.map CaseActKind.token))
-                    "All inventoried nullary acts are declared"
+            testCase
+                "the declared task vocabulary covers all aggregate parts without duplicate identities"
+                (fun () ->
+                    let tokens = Vocabulary.tokens TaskVocabulary.vocabulary
 
-                Expect.throwsT<ArgumentException>
-                    (fun () ->
-                        Vocabulary.define "act" [ CaseActKind.Open ] CaseActKind.token |> ignore)
-                    "Missing act cases")
-            testCase "one act vocabulary covers case people work and reminder identities" (fun () ->
-                let tokens = Vocabulary.tokens ActKind.vocabulary
+                    Expect.hasLength
+                        tokens
+                        30
+                        "All ledger declarations, including operator provisioning"
 
-                Expect.equal
-                    (List.length tokens)
-                    (((CaseActKind.all |> List.map CaseActKind.token)
-                      @ (Vocabulary.entries PeopleActKind.vocabulary |> List.map snd)
-                      @ (Vocabulary.entries WorkActKind.vocabulary |> List.map snd)
-                      @ (Vocabulary.entries NoteActKind.vocabulary |> List.map snd)
-                      @ (Vocabulary.entries ReminderActKind.vocabulary |> List.map snd))
-                        .Length)
-                    "Independent family inventories include owner provisioning and bounded reminder acts"
+                    for subject, count in
+                        [
+                            ActSubject.Case, 12
+                            ActSubject.People, 9
+                            ActSubject.Work, 1
+                            ActSubject.Note, 2
+                            ActSubject.Reminder, 6
+                        ] do
+                        Expect.equal
+                            (TaskVocabulary.count subject)
+                            count
+                            "Independent task inventory"
 
-                Expect.equal (List.distinct tokens) tokens "Scopes have no ambiguous act spelling"
+                    Expect.equal (List.distinct tokens) tokens "Task identities are unambiguous"
 
-                Expect.equal
-                    (Vocabulary.messageKey
-                        ActKind.vocabulary
-                        (ActKind.People PeopleActKind.Revoke)
-                        "label")
-                    "task.people.revoke.label"
-                    "Shared act message family")
+                    Expect.equal
+                        (TaskId.token (TaskId.ofLiteral "people.revoke"))
+                        "people.revoke"
+                        "Stable declared identity")
         ]

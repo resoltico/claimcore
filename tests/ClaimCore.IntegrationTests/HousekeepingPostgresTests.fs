@@ -8,6 +8,7 @@ open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
+open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private seed database count =
@@ -21,8 +22,13 @@ let private seed database count =
         do!
             sql
                 database
-                "INSERT INTO claimcore.access_request(issuer,principal_kind,subject,first_seen,last_seen) SELECT 'https://issuer.example/','HUMAN','expired-'||n,clock_timestamp()-interval '32 days',clock_timestamp()-interval '31 days' FROM generate_series(1,$1) n"
-                [| box count |]
+                "INSERT INTO claimcore.access_request(principal_key,issuer,principal_kind,subject,first_seen,last_seen) SELECT key,'https://issuer.example/','HUMAN','expired-'||n,clock_timestamp()-interval '32 days',clock_timestamp()-interval '31 days' FROM unnest($1::text[]) WITH ORDINALITY AS seed(key,n)"
+                [|
+                    box (
+                        Array.init count (fun index ->
+                            humanPrincipalKey "https://issuer.example/" ($"expired-{index + 1}"))
+                    )
+                |]
     }
 
 let private lockedRenewal (database: PostgresFixture.Database) =
@@ -32,8 +38,8 @@ let private lockedRenewal (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.access_request(issuer,principal_kind,subject,first_seen,last_seen) VALUES('https://issuer.example/','HUMAN','fresh',clock_timestamp(),clock_timestamp())"
-                [||]
+                "INSERT INTO claimcore.access_request(principal_key,issuer,principal_kind,subject,first_seen,last_seen) VALUES($1,'https://issuer.example/','HUMAN','fresh',clock_timestamp(),clock_timestamp())"
+                [| box (humanPrincipalKey "https://issuer.example/" "fresh") |]
 
         do! enterMaintenance database
         let! before = InstallationStatus.read database.OwnerSource token

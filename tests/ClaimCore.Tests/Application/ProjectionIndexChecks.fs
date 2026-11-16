@@ -14,7 +14,9 @@ open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
 let checks _installation instant =
-    let snapshot = Case.snapshot (decided ())
+    let snapshot =
+        ClaimCore.Domain.Aggregates.CaseFamily.snapshot (decided ()) |> Option.get
+
     let index = CaseIndex.create instant snapshot None []
 
     let record =

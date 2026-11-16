@@ -37,24 +37,23 @@ type private Command =
         Roles: Role list
     }
 
+let validateRoles roles =
+    if List.distinct roles <> roles then
+        Error(Refusal.invalidInput (InputTarget.Grants, Violation.DuplicateGrant))
+    elif roles |> List.exists (fun role -> not (List.contains role initialRoles)) then
+        Error(Refusal.People PeopleRefusal.RoleScopeNotApplicable)
+    else
+        Ok roles
+
+let private roles inputs =
+    PersonInputs.grants declaration.Collections.Head.MinimumRows inputs
+    |> Result.bind (fun grants ->
+        if grants |> List.exists (fun grant -> grant.Scope <> GrantTarget.Installation) then
+            Error(Refusal.People PeopleRefusal.RoleScopeNotApplicable)
+        else
+            validateRoles (grants |> List.map _.Role))
+
 let private parse inputs =
-    let roles =
-        PersonInputs.grants declaration.Collections.Head.MinimumRows inputs
-        |> Result.bind (fun grants ->
-            let roles = grants |> List.map _.Role
-
-            if List.distinct roles <> roles then
-                Error(Refusal.invalidInput (InputTarget.Grants, Violation.DuplicateGrant))
-            elif
-                grants
-                |> List.exists (fun grant ->
-                    grant.Scope <> GrantTarget.Installation
-                    || not (List.contains grant.Role initialRoles))
-            then
-                Error(Refusal.People PeopleRefusal.RoleScopeNotApplicable)
-            else
-                Ok roles)
-
     Admission.map2
         (fun (principal, profile) roles ->
             {
@@ -66,7 +65,7 @@ let private parse inputs =
             (fun principal profile -> principal, profile)
             (PersonInputs.principal inputs)
             (PersonInputs.profile inputs))
-        roles
+        (roles inputs)
 
 let check inputs = Parsing.check parse inputs
 
@@ -105,13 +104,37 @@ let decide context environment (state: Person option) binding inputs =
     |> Parsing.reject
     |> Result.map (TaskContext.changes context)
 
+let decideRetained context environment state binding inputs =
+    PersonRules.admit context environment (Ok()) (fun () -> Ok())
+    |> Result.bind (fun () ->
+        Admission.map2
+            (fun principal roles -> principal, roles)
+            (PersonInputs.principal inputs)
+            (roles inputs))
+    |> Result.bind (fun (principal, roles) ->
+        PersonRules.registration environment state binding principal true
+        |> Result.map (fun () ->
+            let grants =
+                Role.Owner :: roles
+                |> List.map (fun role ->
+                    {
+                        ActorGrant.Role = role
+                        Scope = Scope.Installation
+                    })
+
+            [ PersonRules.createValue context principal (ProfileValue.Present None) grants ]))
+    |> Parsing.reject
+    |> Result.map (TaskContext.changes context)
+
 let task =
     Task.Person
         {
             Declaration = declaration
+            Authorize = fun _ _ _ -> Ok()
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.person
         }

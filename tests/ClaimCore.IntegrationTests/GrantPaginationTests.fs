@@ -31,11 +31,17 @@ let private seedCases fixture (admin: ServiceContext) target =
             let reference = "GRANT-" + string n
 
             let! opened =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture (300 + n) reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        ((300 + n))
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted opened |> ignore
@@ -104,21 +110,22 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
         acceptedPeople steward
 
         let erase =
-            {
-                ExpectedFamilySequence =
-                    Some(
+            ClaimCore.TestSupport.Submissions.createRaw
+                "case.erase"
+                (id database.Fixture 605)
+                (ClaimCore.Application.Contracts.OperationBinding.Case(
+                    CaseSelector.Reference("GRANT-1"),
+                    (1L),
+                    None,
+                    (Some(
                         reviewedFamilySequence
                             database.Fixture.Store
                             (CaseSelector.Reference "GRANT-1")
-                    )
-                OperationId = id database.Fixture 605
-                CaseReference = "GRANT-1"
-                ExpectedRevision = 1L
-                Act = ((AuthoredCaseAct.Bare BareAct.Erase))
-            }
+                    ))
+                ))
+                (Map.empty)
 
-        let! erased =
-            (Service.execute admin (ClaimCore.TestSupport.Inputs.caseOperation erase) (token))
+        let! erased = (Service.executeSubmission admin ((erase)) (token))
 
         accepted erased |> ignore
     }
@@ -132,16 +139,20 @@ let private prepare (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 200)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 200))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople registered
 
@@ -179,16 +190,18 @@ let private prepare (database: PostgresFixture.Database) =
             |> _.Actor.ActorId
 
         let! disabled =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 603)
-                        target
-                        (PeopleAct.Disable)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 603))
+                        (target)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople disabled
 
@@ -270,16 +283,20 @@ let private callerRevocation (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 620)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 620))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople registered
 
@@ -473,12 +490,18 @@ let private changeTarget fixture (admin: ServiceContext) =
             |> Result.defaultWith (string >> failtest)
 
         let! enabled =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest fixture.Store (id fixture 630) target (PeopleAct.Enable)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 630))
+                        (target)
+                        (None)
+                        "people.enable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople enabled
 

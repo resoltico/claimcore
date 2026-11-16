@@ -35,7 +35,7 @@ let private authoredIntent =
             OperationSubmission.admit
                 {
                     OperationId = OperationId.value operation
-                    Task = ActKind.Case CaseActKind.AmendRegistration
+                    Task = (TaskId.ofLiteral "case.amendRegistration")
                     Binding =
                         OperationBinding.Case(
                             CaseSelector.Reference "SPELLED-Target",

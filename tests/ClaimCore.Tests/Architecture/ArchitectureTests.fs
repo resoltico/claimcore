@@ -182,6 +182,23 @@ let private serializer () =
 
     rejects ArchitectureRule.Serializer typeof<JsonSerializerCall>
 
+let private taskModules () =
+    for assembly in products.Value do
+        let selected =
+            (ApiRules.subjects assembly)
+                .And()
+                .DoNotHaveFullNameMatching(
+                    @"^ClaimCore\.Domain\.Tasks(?:\.|$)|^<StartupCode\$ClaimCore-Domain>\.\$"
+                )
+
+        ApiRules.check
+            model.Value
+            ArchitectureRule.TaskModules
+            (assembly.GetName().Name |> nonNull)
+            selected
+
+    rejects ArchitectureRule.TaskModules typeof<TaskModuleFromClient>
+
 [<Tests>]
 let tests =
     testList
@@ -190,6 +207,7 @@ let tests =
             testCase
                 "pure projects reject ambient effects including timezone and resources"
                 ambientEffects
+            testCase "clients use the task registry rather than implementations" taskModules
             testCase "JSON has no project dependencies" jsonDependencies
             testCase "evaluated product edges" projectEdges
             testCase "Json, Wire and RecordFormat avoid JsonSerializer" serializer

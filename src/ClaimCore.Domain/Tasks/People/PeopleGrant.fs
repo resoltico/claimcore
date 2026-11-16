@@ -19,15 +19,30 @@ let declaration =
         (operation :: (required TaskInputId.ActorId |> bound) :: revision :: grant)
         []
 
-type private Command = { Grant: AuthoredGrant }
+type private Command = { Grant: GrantInput }
 
 let private parse inputs =
     PersonInputs.grant inputs |> Result.map (fun grant -> { Grant = grant })
 
 let check inputs = Parsing.check parse inputs
 
-let availability environment state binding =
-    PersonRules.availability declaration environment state binding
+let availability environment (state: Person option) binding =
+    let offered = PersonRules.availability declaration environment state binding
+
+    let roles =
+        Role.all
+        |> List.filter (fun role ->
+            state
+            |> Option.exists (fun person -> PrincipalKey.isHuman person.Actor.Principal)
+            || not (Access.humanOnlyRole role))
+        |> List.map Role.token
+
+    { offered with
+        Seeds =
+            Map.ofList
+                [ TaskInputId.Scope, InputValue.Text(ScopeKind.token ScopeKind.Installation) ]
+        Choices = Map.ofList [ TaskInputId.Target InputTarget.Role, roles ]
+    }
 
 let decide context environment (state: Person option) binding inputs =
     PersonRules.admit
@@ -58,9 +73,11 @@ let task =
     Task.Person
         {
             Declaration = declaration
+            Authorize = fun environment _ _ -> PersonRules.permission declaration environment
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decide
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.person
         }

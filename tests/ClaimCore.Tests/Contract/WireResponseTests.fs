@@ -242,13 +242,11 @@ let private checkDiscriminators (root: JsonElement) =
     for name, property, expected in
         [
             "ReceiptSubject", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
-            "OperationReview", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
+            "PartDescription", "kind", [ "CASE"; "PERSON"; "WORK"; "REMINDER"; "NOTE"; "PAYMENT" ]
             "OperationSubmission",
             "task",
-            (ApplicationTaskId.all
-             |> List.choose (function
-                 | ApplicationTaskId.Operation act -> Some(ActKind.token act)
-                 | _ -> None))
+            (ClaimCore.Domain.Tasks.Registry.clientDeclarations
+             |> List.map (fun declaration -> TaskId.token declaration.Id))
         ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"

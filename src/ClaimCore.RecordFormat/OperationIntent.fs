@@ -1,122 +1,133 @@
 namespace ClaimCore.RecordFormat
 
+open System
+open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.Json
 
-/// Business identity contains the typed public command and canonical input values only.
-/// Recording time, sequence, results, representation and compartment nonces never enter it.
+/// Canonical intent excludes the recording header, effects and compartment nonces.
+/// Resolved aliases and permanent scalar spelling do not invent a different business intent.
 module OperationIntent =
-    let private bytes operation command input =
-        let command =
-            match OperationPublicCodecs.command.Write command with
-            | JsonValue.Object fields ->
-                let fields =
-                    match command with
-                    | CommandSkeleton.Case scope ->
-                        fields
-                        |> List.choose (fun (key, value) ->
-                            if key = "reference" && scope.Act <> CaseActKind.Open then
-                                None
-                            elif key = "reference" then
-                                Some(
-                                    key,
-                                    JsonValue.String(
-                                        CaseReference.canonical scope.Reference
-                                        |> CaseReference.format
-                                    )
-                                )
-                            else
-                                Some(key, value))
-                    | _ -> fields
+    let private target resolve =
+        function
+        | CaseSelector.Reference reference as selector ->
+            match resolve selector with
+            | Some id -> CaseSelector.Id id
+            | None ->
+                CaseSelector.Reference(
+                    CaseReference.parse reference
+                    |> Result.map CaseReference.identity
+                    |> Result.defaultValue reference
+                )
+        | selector -> selector
 
-                JsonValue.Object fields
-            | _ -> invalidOp "An operation command is a closed object."
+    let resolveBinding resolve =
+        function
+        | Binding.Case(selector, revision) -> Binding.Case(target resolve selector, revision)
+        | Binding.CasePayment(selector, revision, payment) ->
+            Binding.CasePayment(target resolve selector, revision, payment)
+        | Binding.CaseErase(selector, revision, sequence) ->
+            Binding.CaseErase(target resolve selector, revision, sequence)
+        | Binding.Work(selector, revision) -> Binding.Work(target resolve selector, revision)
+        | Binding.NoteNew selector -> Binding.NoteNew(target resolve selector)
+        | Binding.Note(selector, id) -> Binding.Note(target resolve selector, id)
+        | Binding.ReminderNew selector -> Binding.ReminderNew(target resolve selector)
+        | Binding.Reminder(selector, id, revision) ->
+            Binding.Reminder(target resolve selector, id, revision)
+        | value -> value
+
+    let private uuid raw =
+        match Guid.TryParseExact(raw, "D") with
+        | true, value when value <> Guid.Empty -> value.ToString "D"
+        | _ -> raw
+
+    let private scalar input =
+        function
+        | InputValue.Text raw ->
+            let value =
+                match input with
+                | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
+                    CaseReference.parse raw
+                    |> Result.map CaseReference.identity
+                    |> Result.defaultValue raw
+                | TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor)
+                | TaskInputId.CaseId
+                | TaskInputId.ActorId -> uuid raw
+                | TaskInputId.Target(InputTarget.Field field) when
+                    (BusinessField.describe field).Kind = FieldValueKind.Amount
+                    ->
+                    Amount.parse raw |> Result.map Amount.format |> Result.defaultValue raw
+                | _ -> raw
+
+            InputValue.Text value
+        | value -> value
+
+    let private values resolve (definitions: TaskInputDeclaration list) inputValues =
+        let normalized =
+            inputValues
+            |> Map.toList
+            |> List.choose (fun (input, value) ->
+                let definition =
+                    definitions |> List.tryFind (fun definition -> definition.Input = input)
+
+                if
+                    value = InputValue.Null
+                    && (definition
+                        |> Option.exists (fun definition ->
+                            definition.Mode = TaskInputMode.Optional && definition.Clearable))
+                then
+                    None
+                else
+                    Some(input, scalar input value))
+            |> Map.ofList
+
+        match
+            Map.tryFind TaskInputId.Scope normalized,
+            Map.tryFind
+                (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                normalized
+        with
+        | Some(InputValue.Text "CASE"), Some(InputValue.Text reference) ->
+            match resolve (CaseSelector.Reference reference) with
+            | Some id ->
+                normalized
+                |> Map.remove (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                |> Map.add TaskInputId.CaseId (InputValue.Text(CaseId.format id))
+            | None -> normalized
+        | _ -> normalized
+
+    let canonical (declaration: TaskDeclaration) supplied (inputs: InputMap) resolve =
+        let scalarValues = values resolve declaration.Inputs inputs.Values
+
+        let collections =
+            inputs.Collections
+            |> Map.map (fun collection rows ->
+                let fields =
+                    declaration.Collections
+                    |> List.find (fun definition -> definition.Collection = collection)
+                    |> _.Inputs
+
+                rows |> List.map (fun row -> values resolve fields row.Values))
+
+        let normalized = InputMap.create scalarValues collections |> Option.get
 
         JsonValue.Object
             [
-                "operationId", JsonValue.String(OperationId.format operation)
-                "command", command
-                "input", input
+                "task", JsonValue.String(TaskId.token declaration.Id)
+                "binding", BindingCodecs.binding.Write(resolveBinding resolve supplied)
+                "inputs", InputMapCodecs.stored.Write normalized
             ]
         |> CanonicalWriter.bytes
 
-    let case operation scope command =
-        bytes
-            operation
-            (CommandSkeleton.Case scope)
-            ((OperationContentCodecs.caseInput operation scope).Write command)
+    let hash declaration binding inputs resolve =
+        canonical declaration binding inputs resolve |> SHA256.HashData
 
-    let work operation parent expected input =
-        bytes
-            operation
-            (CommandSkeleton.Work(parent, expected))
-            (WorkRecordCodecs.update.Write input)
+    let accepted (record: RetainedOperation) resolve =
+        record.Inputs
+        |> Option.bind (fun inputs ->
+            ClaimCore.Domain.Tasks.Registry.findDeclaration record.Root.Structure.Task
+            |> Option.map (fun declaration ->
+                hash declaration record.Root.Structure.Binding inputs resolve))
 
-    let note operation command =
-        match command with
-        | NoteCommand.AddNote(parent, text) ->
-            bytes
-                operation
-                (CommandSkeleton.Note(NoteCommandSkeleton.Add parent))
-                (JsonValue.String(NoteText.format text))
-        | NoteCommand.RemoveNote(parent, id) ->
-            bytes
-                operation
-                (CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, id)))
-                JsonValue.Null
-
-    let reminder operation scope command =
-        bytes
-            operation
-            (CommandSkeleton.Reminder scope)
-            ((OperationContentCodecs.reminderInput scope).Write command)
-
-    let people operation scope profile =
-        bytes
-            operation
-            (CommandSkeleton.People scope)
-            (profile
-             |> Option.map OperationContentCodecs.profile.Write
-             |> Option.defaultValue JsonValue.Null)
-
-    let accepted (value: RetainedOperation) =
-        let root = value.Root
-
-        match root.Structure.Command, value.Values with
-        | CommandSkeleton.Case scope, RetainedOperationValues.Case(Some content) ->
-            Some(case root.Header.OperationId scope content.Command)
-        | CommandSkeleton.Work(parent, expected), RetainedOperationValues.Work(Some content) ->
-            Some(work root.Header.OperationId parent expected content.Update)
-        | CommandSkeleton.Note _, RetainedOperationValues.Note(Some content) ->
-            Some(note root.Header.OperationId content.Command)
-        | CommandSkeleton.Reminder scope, RetainedOperationValues.Reminder(Some content) ->
-            Some(reminder root.Header.OperationId scope content.Command)
-        | CommandSkeleton.People scope,
-          RetainedOperationValues.People(RetainedProfile.Available profile) ->
-            Some(people root.Header.OperationId scope (Some profile))
-        | CommandSkeleton.People scope, RetainedOperationValues.People RetainedProfile.NotRequired ->
-            Some(people root.Header.OperationId scope None)
-        | CommandSkeleton.Case scope, RetainedOperationValues.Case None when
-            (match scope.Act with
-             | CaseActKind.RemovePayment
-             | CaseActKind.WithdrawDecision
-             | CaseActKind.Close
-             | CaseActKind.Reopen
-             | CaseActKind.Erase -> true
-             | CaseActKind.Open
-             | CaseActKind.AmendRegistration
-             | CaseActKind.Correct
-             | CaseActKind.Decide
-             | CaseActKind.RecordPayment
-             | CaseActKind.Void
-             | CaseActKind.Reinstate -> false)
-            ->
-            Some(bytes root.Header.OperationId (CommandSkeleton.Case scope) JsonValue.Null)
-        | CommandSkeleton.Reminder scope, RetainedOperationValues.Reminder None when
-            scope.Act = ReminderActKind.Complete || scope.Act = ReminderActKind.Cancel
-            ->
-            Some(bytes root.Header.OperationId (CommandSkeleton.Reminder scope) JsonValue.Null)
-        | _,
-          (RetainedOperationValues.Case None | RetainedOperationValues.Work None | RetainedOperationValues.Note None | RetainedOperationValues.Reminder None | RetainedOperationValues.People RetainedProfile.Unavailable) ->
-            None
-        | _ -> invalidOp "Decoded values must belong to their operation command."
+    let same (left: byte array) (right: byte array) =
+        CryptographicOperations.FixedTimeEquals(left, right)

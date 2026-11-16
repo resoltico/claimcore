@@ -102,20 +102,14 @@ type CaseWorkSnapshot =
         Work: CaseWork
     }
 
-[<RequireQualifiedAccess>]
-type WorkActKind = | UpdateWork
+module CaseWorkSnapshot =
+    let columns (snapshot: CaseWorkSnapshot option) =
+        let work = snapshot |> Option.map _.Work
+        let summary = work |> Option.bind _.Summary
 
-module WorkActKind =
-    let vocabulary =
-        Vocabulary.ofEntries "task" [ WorkActKind.UpdateWork, "work.update" ]
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-
-[<RequireQualifiedAccess>]
-type WorkAct<'value> = UpdateWork of 'value
-
-type AuthoredWorkAct = WorkAct<CaseWorkInput>
+        work |> Option.bind _.Responsible,
+        summary,
+        summary |> Option.map (HandlingSummary.format >> TextSearch.normalize)
 
 /// An explicitly supplied work choice sets or clears a value; omission preserves it.
 [<RequireQualifiedAccess>]

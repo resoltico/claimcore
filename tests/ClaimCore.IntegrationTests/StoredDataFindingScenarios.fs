@@ -69,11 +69,15 @@ let internal malformedOptionalDate (database: PostgresFixture.Database) =
                 ])
 
         let! decided =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request database.Fixture 11 "synthetic-a" 1L (AuthoredCaseAct.Decide decision)
-                ))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.decide"
+                    (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision))))))
                 (token))
 
         accepted decided |> ignore
@@ -131,31 +135,17 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         let! actor = populated database
 
         let! closed =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
                 (token))
 
         accepted closed |> ignore
 
         let! reopened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        12
-                        "synthetic-a"
-                        2L
-                        (AuthoredCaseAct.Bare BareAct.Reopen)
-                ))
+                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
                 (token))
 
         accepted reopened |> ignore
@@ -164,12 +154,11 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!
                 rewrite database (CaseFixtures.sequence sequence) (fun value ->
-                    let request, snapshot = livePayload value
+                    let request, snapshot =
+                        livePayload (CaseFixtures.reference "synthetic-a") value
 
                     updateCase
-                        { request with
-                            OperationId = id database.Fixture 10
-                        }
+                        (Submissions.withOperationId (id database.Fixture 10) request)
                         snapshot
                         value)
 

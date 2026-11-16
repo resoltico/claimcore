@@ -314,19 +314,23 @@ module internal VerificationRows =
             | Error finding -> return Error finding
             | Ok expected ->
                 let identities =
-                    expected |> Map.map (fun _ row -> { row.Actor with Profile = None })
+                    expected
+                    |> Map.map (fun _ row ->
+                        { row.Actor with Profile = None },
+                        PrincipalKey.naturalKey row.Actor.Principal)
 
                 let! actors =
                     compareRows
                         connection
                         VerificationFinding.PeopleProjection
-                        (fun (actor: Actor) -> actor.ActorId)
+                        (fun ((actor: Actor), _) -> actor.ActorId)
                         identities
-                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors ORDER BY actor_id"
+                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,principal_key FROM claimcore.actors ORDER BY actor_id"
                         (fun row ->
                             { Projections.actorRow row with
                                 Profile = None
-                            })
+                            },
+                            DatabaseSession.value<string> 7 row)
                         token
 
                 match actors with
@@ -431,15 +435,15 @@ module internal VerificationRows =
                 result {
                     let! work =
                         capture None VerificationFinding.CaseWorkProjection (fun () ->
-                            work |> List.map WorkStorage.workProjectionRow)
+                            work |> List.map WorkStorage.workRow)
 
                     let! reminders =
                         capture None VerificationFinding.CaseWorkProjection (fun () ->
-                            reminders |> List.map WorkStorage.reminderProjectionRow)
+                            reminders |> List.map WorkStorage.reminderRow)
 
                     let! notes =
                         capture None VerificationFinding.CaseNotesProjection (fun () ->
-                            notes |> List.map NoteStorage.projectionRow)
+                            notes |> List.map NoteStorage.row)
 
                     let! expectedWork = Replay.workRows state
                     let! expectedReminders = Replay.reminderRows state
@@ -448,30 +452,30 @@ module internal VerificationRows =
                     do!
                         ProjectionVerification.rows
                             VerificationFinding.CaseNotesProjection
-                            (fun (row: NoteSubjectRows) -> row.NoteId)
+                            (fun (row: StoredNote) -> Note.id row.Note)
                             expectedNotes
                             notes
 
                     do!
                         ProjectionVerification.rows
                             VerificationFinding.CaseWorkProjection
-                            (fun (row: WorkSubjectRows) -> row.CaseId)
+                            (fun (row: StoredWork) -> row.CaseId)
                             expectedWork
                             work
 
                     do!
                         ProjectionVerification.rows
                             VerificationFinding.CaseWorkProjection
-                            (fun (row: ReminderSubjectRows) -> row.ReminderId)
+                            (fun (row: StoredReminder) -> row.ReminderId)
                             expectedReminders
                             reminders
 
-                    let! expectedCases = Replay.caseRows state
+                    let! expectedCases = Replay.familyRows state
 
                     let expectedIndexes =
                         expectedCases
-                        |> Map.map (fun id (_, index) ->
-                            id, index.Responsible, index.FollowUp, index.WorkSearchText)
+                        |> Map.map (fun id row ->
+                            id, row.Index.Responsible, row.Index.FollowUp, row.Index.WorkSearchText)
 
                     return!
                         ProjectionVerification.rows

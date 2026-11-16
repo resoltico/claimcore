@@ -296,7 +296,17 @@ let tests =
                         Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor
-                        Acts = [ ReminderActKind.Complete ]
+                        Offers =
+                            [
+                                Inputs.offeredTask
+                                    "reminder.complete"
+                                    (Binding.Reminder(
+                                        CaseSelector.Id(Reminder.caseId reminder),
+                                        Reminder.id reminder,
+                                        Reminder.revision reminder
+                                    ))
+                                    Map.empty
+                            ]
                         Active = true
                         Timing = Some ReminderDue.Upcoming
                     }

@@ -60,16 +60,20 @@ let tests =
 
         for number in [ 3; 4 ] do
             let result =
-                Service.execute
+                Service.executeSubmission
                     (core adminPrincipal)
-                    (Inputs.caseOperation
-                        {
-                            ExpectedFamilySequence = None
-                            OperationId = id number
-                            CaseReference = sprintf "COUNT-%d" number
-                            ExpectedRevision = 0L
-                            Act = AuthoredCaseAct.Open Inputs.registration
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw
+                        "case.open"
+                        (id number)
+                        (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (Inputs.registration)
+                         )
+                         |> Map.add
+                             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                             (ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                 sprintf "COUNT-%d" number
+                             )))))
                     CancellationToken.None
                 |> get
 
@@ -79,19 +83,18 @@ let tests =
 
         for number in [ 3; 4 ] do
             let result =
-                Service.execute
+                Service.executeSubmission
                     (core adminPrincipal)
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id (100 + number)
-                            Target = CaseSelector.Reference(sprintf "COUNT-%d" number)
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = "Inspect evidence"
-                                        Due = dueDate
-                                    }
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "reminder.create"
+                        (id (100 + number))
+                        (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                            (CaseSelector.Reference(sprintf "COUNT-%d" number)),
+                            None
+                        ))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Inspect evidence")
+                            (dueDate)))
                     CancellationToken.None
                 |> get
 
@@ -103,15 +106,18 @@ let tests =
         let serviceId = id 5
 
         let registered =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    StoreFixtures.peopleRequest
-                        serviceId
-                        servicePrincipal
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (admin).Store
+                        (serviceId)
+                        (servicePrincipal)
+                        (Some 0L)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                return! Service.executeSubmission (admin) submission (CancellationToken.None)
+            })
             |> fun pending -> pending.GetAwaiter().GetResult()
 
         StoreFixtures.acceptedPeople registered
@@ -201,15 +207,18 @@ let tests =
         let denied = principal "no-read" PrincipalKey.human
 
         let registered =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    StoreFixtures.peopleRequest
-                        (id 6)
-                        denied
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (admin).Store
+                        ((id 6))
+                        (denied)
+                        (Some 0L)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+                return! Service.executeSubmission (admin) submission (CancellationToken.None)
+            })
             |> get
 
         StoreFixtures.acceptedPeople registered

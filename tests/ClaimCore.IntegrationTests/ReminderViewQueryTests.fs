@@ -19,7 +19,7 @@ let private read =
 
 let private execute fixture input =
     task {
-        let! pg = Service.execute fixture.Service input token
+        let! pg = Service.executeSubmission fixture.Service input token
         accepted pg |> ignore
     }
 
@@ -91,80 +91,87 @@ let private qualify fixture =
             do!
                 execute
                     fixture
-                    (OperationInput.Reminder
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "reminder.create"
+                        (id fixture.Database.Fixture number)
+                        (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                            (CaseSelector.Reference reference),
+                            None
+                        ))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            (action)
+                            (context.Runtime.Basis.BusinessDate.AddDays(offset)
+                             |> CalendarDate.ofDate
+                             |> CalendarDate.format)))
+
+        do!
+            execute
+                fixture
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture.Database.Fixture 6607)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "work-01"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
                         {
-                            OperationId = id fixture.Database.Fixture number
-                            Target = CaseSelector.Reference reference
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = action
-                                        Due =
-                                            context.Runtime.Basis.BusinessDate.AddDays(offset)
-                                            |> CalendarDate.ofDate
-                                            |> CalendarDate.format
-                                    }
-                        })
+                            Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                            Summary = WorkValue.Keep
+                        }
+                    )))
 
         do!
             execute
                 fixture
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture.Database.Fixture 6607
-                        Target = CaseSelector.Reference "work-01"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    Summary = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.complete"
+                    (id fixture.Database.Fixture 6608)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "mix-04"),
+                        Some((id fixture.Database.Fixture 6604), (1L))
+                    ))
+                    (Map.empty))
 
         do!
             execute
                 fixture
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture.Database.Fixture 6608
-                        Target = CaseSelector.Reference "mix-04"
-                        Act = AuthoredReminderAct.Complete(id fixture.Database.Fixture 6604, 1L)
-                    })
+                (((StoreFixtures.request
+                    (fixture.Database.Fixture)
+                    (6609)
+                    ("mix-04")
+                    (3L)
+                    "case.close"
+                    (Map.empty))))
 
         do!
             execute
                 fixture
-                (Inputs.caseOperation (
-                    StoreFixtures.request
-                        fixture.Database.Fixture
-                        6609
-                        "mix-04"
-                        3L
-                        (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.cancel"
+                    (id fixture.Database.Fixture 6610)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "Work-11"),
+                        Some((id fixture.Database.Fixture 6605), (1L))
+                    ))
+                    (Map.empty))
 
         do!
             execute
                 fixture
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture.Database.Fixture 6610
-                        Target = CaseSelector.Reference "Work-11"
-                        Act = AuthoredReminderAct.Cancel(id fixture.Database.Fixture 6605, 1L)
-                    })
-
-        do!
-            execute
-                fixture
-                (Inputs.caseOperation (
-                    StoreFixtures.request
-                        fixture.Database.Fixture
-                        6611
-                        "Work-11"
-                        2L
-                        (AuthoredCaseAct.Void "Incorrect duplicate")
-                ))
+                (((StoreFixtures.request
+                    (fixture.Database.Fixture)
+                    (6611)
+                    ("Work-11")
+                    (2L)
+                    "case.void"
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Incorrect duplicate"
+                            )
+                        ]))))
 
         for view, expected in
             [

@@ -124,11 +124,6 @@ module internal PeopleReads =
         let token = tx.CancellationToken
         PeopleStateStorage.revision connection principal token
 
-    let peopleState (tx: ReadTx) principal =
-        let connection = tx.Connection
-        let token = tx.CancellationToken
-        PeopleStateStorage.load connection principal token
-
     let findActor (tx: ReadTx) id =
         let connection = tx.Connection
         let token = tx.CancellationToken

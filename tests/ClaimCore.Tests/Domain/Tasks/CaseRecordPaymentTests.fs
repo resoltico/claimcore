@@ -14,6 +14,33 @@ let tests =
         "task case.recordPayment"
         [
             testCase
+                "payment currency acquisition is supplied only by the task's current decision"
+                (fun () ->
+                    let state = decided ()
+
+                    let offered =
+                        RecordPayment.availability environment (Some state) (caseBinding state)
+
+                    Expect.equal
+                        offered.Seeds
+                        (Map.ofList
+                            [
+                                TaskInputId.Target(InputTarget.Field BusinessField.PaidCurrency),
+                                InputValue.Text "EUR"
+                            ])
+                        "Decision currency seed"
+
+                    let unopened = family ()
+
+                    let unavailable =
+                        RecordPayment.availability
+                            environment
+                            (Some unopened)
+                            (caseBinding unopened)
+
+                    Expect.isSome unavailable.Blocked "No payment decision"
+                    Expect.isEmpty unavailable.Seeds "No currency is invented without a decision")
+            testCase
                 "payment and financial case values are one ordered decision with exact totals"
                 (fun () ->
                     let state = decided ()

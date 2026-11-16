@@ -53,8 +53,14 @@ module internal RecoveryCommand =
                                   else
                                       CliMessage.RecoveryAttempt) (
                                     record.AttemptId.ToString("D"),
-                                    TerminalText.data (ActSubject.token record.Subject),
-                                    TerminalText.data record.Act,
+                                    TerminalText.data (
+                                        ActSubject.token
+                                            (TaskRouting.operationDeclaration (
+                                                TaskId.ofLiteral record.Task
+                                            ))
+                                                .Target
+                                    ),
+                                    TerminalText.data record.Task,
                                     record.OperationId.ToString("D")
                                 )))
 

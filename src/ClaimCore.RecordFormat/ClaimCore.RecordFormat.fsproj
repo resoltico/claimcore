@@ -5,23 +5,23 @@
     <Compile Include="Cursors.fs" />
     <Compile Include="CheckpointRecord.fs" />
     <Compile Include="InstallationFormat.fs" />
-    <Compile Include="Compartment.fs" />
-    <Compile Include="OperationStructure.fs" />
     <Compile Include="DecodeProblem.fs" />
-    <Compile Include="PeopleRecordTypes.fs" />
     <Compile Include="VocabularyCodec.fs" />
-    <Compile Include="CanonicalInputs.fs" />
+    <Compile Include="RecordScalars.fs" />
     <Compile Include="FinancialCodecs.fs" />
     <Compile Include="RecordCodecs.fs" />
+    <Compile Include="PartCodecs.fs" />
+    <Compile Include="Compartment.fs" />
+    <Compile Include="InputMapCodecs.fs" />
+    <Compile Include="BindingCodecs.fs" />
+    <Compile Include="OperationStructure.fs" />
+    <Compile Include="OperationPublicCodecs.fs" />
+    <Compile Include="OperationRoot.fs" />
+    <Compile Include="RetainedOperation.fs" />
+    <Compile Include="OperationIntent.fs" />
     <Compile Include="CaseRecord.fs" />
     <Compile Include="WorkRecord.fs" />
     <Compile Include="ReminderRecord.fs" />
-    <Compile Include="OperationPublicCodecs.fs" />
-    <Compile Include="OperationRoot.fs" />
-    <Compile Include="OperationValues.fs" />
-    <Compile Include="OperationContentCodecs.fs" />
-    <Compile Include="RetainedOperation.fs" />
-    <Compile Include="OperationIntent.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

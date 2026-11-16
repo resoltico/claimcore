@@ -72,11 +72,8 @@ module DiagnosticCodecs =
 
     /// Every admitted scalar can contribute an issue; bounded row inputs add their own issues and a collection-level issue.
     let MaximumInputIssues =
-        ApplicationTaskId.all
-        |> List.choose (function
-            | ApplicationTaskId.Operation _ as task -> Some(TaskDeclarations.describe task)
-            | ApplicationTaskId.Query _
-            | ApplicationTaskId.Command _ -> None)
+        TaskDeclarations.all
+        |> List.filter (fun declaration -> declaration.Kind = ClientTaskKind.Operation)
         |> List.map (fun task ->
             task.Inputs.Length
             + (task.Collections

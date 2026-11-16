@@ -34,7 +34,7 @@ let private item active state timing : ReminderReadModel =
             ActorId.create identity
             |> Option.get
             |> ClaimCore.TestSupport.Inputs.actorReference
-        Acts = []
+        Offers = []
         Active = active
         Timing = timing
     }
@@ -200,7 +200,7 @@ let tests =
                                                     .ResponseExamples.snapshot.CaseId
                                             Reference =
                                                 CaseReference.parse "CLI-TIMING" |> required
-                                            Act = ReminderActKind.Create
+                                            Act = (TaskId.ofLiteral "reminder.create")
                                             Effects =
                                                 ReminderReceiptEffects.Single
                                                     {

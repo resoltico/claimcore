@@ -2239,50 +2239,6 @@
     "text": "Skata lietas un to pilnu vēsturi. Ar šo lomu visām lietām skata arī personas un piekļuvi. Nevar neko mainīt.",
     "source": "5c16effd2666"
   },
-  "timeline.event.caseOpened": {
-    "text": "Lieta atvērta",
-    "source": "06d0c814073c"
-  },
-  "timeline.event.registrationAmended": {
-    "text": "Prasījuma dati atjaunināti",
-    "source": "3464951cbb5f"
-  },
-  "timeline.event.factsCorrected": {
-    "text": "Fakti laboti",
-    "source": "b90ba017d774"
-  },
-  "timeline.event.decisionRecorded": {
-    "text": "Izmaksas lēmums reģistrēts",
-    "source": "17798f3d21af"
-  },
-  "timeline.event.decisionWithdrawn": {
-    "text": "Izmaksas lēmums atsaukts",
-    "source": "0f54656f1d92"
-  },
-  "timeline.event.paymentRecorded": {
-    "text": "Maksājuma datums reģistrēts",
-    "source": "bba7521a5c9f"
-  },
-  "timeline.event.caseClosed": {
-    "text": "Lieta slēgta",
-    "source": "aa56ad4b2d16"
-  },
-  "timeline.event.caseReopened": {
-    "text": "Lieta atvērta atkārtoti",
-    "source": "00dae005cb0c"
-  },
-  "timeline.event.caseVoided": {
-    "text": "Lieta anulēta",
-    "source": "38d380a51a59"
-  },
-  "timeline.event.caseReinstated": {
-    "text": "Lieta atjaunota",
-    "source": "d9c28b4df570"
-  },
-  "timeline.event.caseErased": {
-    "text": "Lieta dzēsta",
-    "source": "258332be465d"
-  },
   "timeline.event.responsibilityAssigned": {
     "text": "Atbildība par lietu piešķirta: {person}",
     "source": "1cea0340442f"
@@ -2539,10 +2495,6 @@
     "text": "Daļēji samaksāts",
     "source": "04739c2e8186"
   },
-  "timeline.event.paymentRemoved": {
-    "text": "Maksājuma ieraksts noņemts",
-    "source": "49cb55fa2f47"
-  },
   "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
     "text": "Ievadiet maksājuma summu, kas ir lielāka par nulli.",
     "source": "dc72fea18ef9"
@@ -2639,14 +2591,6 @@
     "text": "Piezīme",
     "source": "d8da2c49df39"
   },
-  "timeline.event.note.add": {
-    "text": "Piezīme pievienota",
-    "source": "a7886ebc4ffd"
-  },
-  "timeline.event.note.remove": {
-    "text": "Piezīme noņemta",
-    "source": "b9096ff4a83e"
-  },
   "timelineFilter.NOTES.label": {
     "text": "Piezīmes",
     "source": "8a7525b1492f"
@@ -2722,5 +2666,45 @@
   "diagnostic.CASE_SELECTION_INVALID.gui": {
     "text": "Vienas lietas tvērumam izvēlieties atsauci vai ID; visu lietu tvērumam nelietojiet nevienu.",
     "source": "8cd27490b35d"
+  },
+  "change.CASE.recorded": {
+    "text": "Lietas fakti reģistrēti",
+    "source": "8e5b5d6ba758"
+  },
+  "change.PAYMENT.recorded": {
+    "text": "Maksājuma izmaiņa reģistrēta",
+    "source": "5fda4f37c572"
+  },
+  "change.WORK.recorded": {
+    "text": "Lietas darbs reģistrēts",
+    "source": "d970b01f341f"
+  },
+  "change.REMINDER.recorded": {
+    "text": "Atgādinājuma izmaiņa reģistrēta",
+    "source": "6050baf70370"
+  },
+  "change.NOTE.recorded": {
+    "text": "Piezīmes izmaiņa reģistrēta",
+    "source": "db3aa5c9b123"
+  },
+  "change.PERSON.recorded": {
+    "text": "Konta izmaiņa reģistrēta",
+    "source": "6d1a5a30e98a"
+  },
+  "timeline.event.noteAdded": {
+    "text": "Piezīme pievienota",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.noteRemoved": {
+    "text": "Piezīme noņemta",
+    "source": "b9096ff4a83e"
+  },
+  "change.NOTE.removed": {
+    "text": "Piezīme noņemta",
+    "source": "b9096ff4a83e"
+  },
+  "label.profile": {
+    "text": "Saglabātais profils",
+    "source": "52c48ed49e09"
   }
 }

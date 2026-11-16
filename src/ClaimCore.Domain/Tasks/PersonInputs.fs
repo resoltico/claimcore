@@ -131,7 +131,7 @@ module internal PersonInputs =
         Admission.map2
             (fun role scope ->
                 {
-                    AuthoredGrant.Role = role
+                    GrantInput.Role = role
                     Scope = scope
                 })
             role

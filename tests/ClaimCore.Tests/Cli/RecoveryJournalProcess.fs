@@ -14,8 +14,7 @@ let publish directory =
             ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
             AttemptId = Guid.Parse "10000000-0000-7000-8000-000000000004"
             OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
-            Subject = ActSubject.Case
-            Act = "case.open"
+            Task = "case.open"
             Refused = false
         }
 

@@ -152,7 +152,10 @@ type internal SessionStore(source: NpgsqlDataSource, installation: Installation)
                                 .ToUniversalTime()
 
                         if deadline <= instant then
-                            invalidOp "The session ticket has expired."
+                            raise (
+                                Security.Authentication.AuthenticationException
+                                    "The session ticket has expired."
+                            )
 
                         let! expired = SessionRows.cleanup connection instant token
 
@@ -164,7 +167,7 @@ type internal SessionStore(source: NpgsqlDataSource, installation: Installation)
                                 token
 
                         if DatabaseSession.value<int64> 0 counts.Head >= 10000L then
-                            invalidOp "The OIDC session store is full."
+                            raise (IO.IOException "The OIDC session store is full.")
 
                         let key = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes 32)
 

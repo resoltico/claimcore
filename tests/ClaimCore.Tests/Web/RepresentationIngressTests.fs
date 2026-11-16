@@ -144,9 +144,9 @@ let tests =
                 let withActor principal work =
                     task {
                         let services =
-                            ClaimCore.Tests.DecisionFixtures.services
-                                ClaimCore.Tests.DecisionFixtures.installation
-                                ClaimCore.Tests.DecisionFixtures.calendar
+                            ClaimCore.Tests.ReadFixtures.services
+                                ClaimCore.Tests.ReadFixtures.installation
+                                ClaimCore.Tests.ReadFixtures.calendar
                                 principal
 
                         let! result = work services
@@ -168,7 +168,7 @@ let tests =
                         context.Request.Headers["ClaimCore-Contract"] <- ContractIdentity.value
 
                         context.Request.Headers["ClaimCore-Installation"] <-
-                            ClaimCore.Tests.DecisionFixtures.installation.ToString("D")
+                            ClaimCore.Tests.ReadFixtures.installation.ToString("D")
 
                         context.Request.Headers[Representation.HeaderName] <-
                             StringValues(values |> List.toArray)

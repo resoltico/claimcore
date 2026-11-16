@@ -27,10 +27,10 @@ let private caseCount view (counts: WorkViews) =
 let private reminderCount view (counts: WorkViews) =
     counts.ReminderViews |> List.find (fun row -> row.View = view) |> _.Count
 
-let private execute fixture core operation reference revision act =
-    Service.execute
+let private execute fixture core operation reference revision task values =
+    Service.executeSubmission
         core
-        (Inputs.caseOperation (request fixture operation reference revision act))
+        (((request fixture operation reference revision task values)))
         token
 
 let private get core caseId =
@@ -73,34 +73,51 @@ let internal assignmentAndDisclosure fixture =
 
         for operation, principal in [ 10, person; 11, reader; 12, automation ] do
             let! registered =
-                Service.execute
-                    owner
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            fixture.Store
-                            (id fixture operation)
-                            principal
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    token
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (fixture.Store)
+                            ((id fixture operation))
+                            (principal)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (
+                                ClaimCore.TestSupport.Inputs.actorProfile
+                            ))
+
+                    return! Service.executeSubmission (owner) submission (token)
+                })
 
             acceptedPeople registered
 
         let! opened =
             execute
-                fixture
-                owner
-                20
-                "WORK-A"
-                0L
-                (CaseAct.Open(
-                    Inputs.registrationWith
-                        [ BusinessField.ClaimantName, "Reminder parent claimant" ]
-                        registration
+                (fixture)
+                (owner)
+                (20)
+                ("WORK-A")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (
+                    RegistrationInput.values (
+                        (Inputs.registrationWith
+                            [ BusinessField.ClaimantName, "Reminder parent claimant" ]
+                            registration)
+                    )
                 ))
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
-        let! other = execute fixture owner 21 "WORK-B" 0L (CaseAct.Open registration)
+
+        let! other =
+            execute
+                (fixture)
+                (owner)
+                (21)
+                ("WORK-B")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
+
         let otherId = accepted other |> caseReceipt |> _.CaseId
 
         for operation, principal, role, scope in
@@ -200,21 +217,23 @@ let internal assignmentAndDisclosure fixture =
         let today = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
         let tomorrow = CalendarDate.ofDate (today.AddDays 1) |> CalendarDate.format
 
-        let update: WorkOperationRequest =
-            {
-                OperationId = id fixture 30
-                Target = CaseSelector.Id caseId
-                ExpectedRevision = 0L
-                Act =
-                    WorkAct.UpdateWork
-                        {
-                            Responsible =
-                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 10)))
-                            Summary = WorkValue.Set "Awaiting evidence"
-                        }
-            }
+        let update: OperationSubmission =
+            ClaimCore.TestSupport.Submissions.createRaw
+                "work.update"
+                (id fixture 30)
+                (ClaimCore.Application.Contracts.OperationBinding.Work(
+                    (CaseSelector.Id caseId),
+                    (0L)
+                ))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible =
+                            WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 10)))
+                        Summary = WorkValue.Set "Awaiting evidence"
+                    }
+                ))
 
-        let! assigned = Service.execute owner (OperationInput.Work update) token
+        let! assigned = Service.executeSubmission owner ((update)) token
         let receipt = accepted assigned
 
         match receipt.Subject with
@@ -223,19 +242,16 @@ let internal assignmentAndDisclosure fixture =
         | _ -> failtest "Expected work receipt"
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 130
-                        Target = CaseSelector.Id caseId
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Request evidence"
-                                    Due = tomorrow
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id fixture 130)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Id caseId),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan ("Request evidence") (tomorrow)))
                 token
 
         accepted planned |> ignore
@@ -320,7 +336,7 @@ let internal assignmentAndDisclosure fixture =
 
             Expect.contains
                 queue.Items.Head.Acts
-                ReminderActKind.CompleteAndPlanNext
+                (TaskId.ofLiteral "reminder.completeAndPlanNext")
                 "Scoped current work people supplies actions"
 
         let! invisiblePage =
@@ -356,16 +372,20 @@ let internal assignmentAndDisclosure fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registeredOwner =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 13)
-                        peopleOnly
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 13))
+                        (peopleOnly)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registeredOwner
 
@@ -390,22 +410,18 @@ let internal assignmentAndDisclosure fixture =
             "People-only role learns no case counts"
 
         let pending =
-            OperationInput.Work
-                { update with
-                    OperationId = id fixture 31
-                    ExpectedRevision = 1L
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible =
-                                    WorkValue.Set(
-                                        ActorId.format (CaseFixtures.actorId (id fixture 10))
-                                    )
-                                Summary = WorkValue.Set "Reviewed draft"
-                            }
-                }
+            Submissions.createRaw
+                "work.update"
+                (id fixture 31)
+                (OperationBinding.Work(CaseSelector.Id caseId, 1L))
+                (Submissions.work
+                    {
+                        Responsible =
+                            WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 10)))
+                        Summary = WorkValue.Set "Reviewed draft"
+                    })
 
-        let! preview = Service.preview owner pending token
+        let! preview = Service.previewSubmission owner pending token
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -423,7 +439,7 @@ let internal assignmentAndDisclosure fixture =
                 false
 
         acceptedPeople revoked
-        let! refused = Service.execute owner pending token
+        let! refused = Service.executeSubmission owner pending token
 
         Expect.equal
             refused.Outcome
@@ -454,12 +470,9 @@ let internal assignmentAndDisclosure fixture =
             "Assignment cannot restore revoked access"
 
         let! stale =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    { update with
-                        OperationId = id fixture 33
-                    })
+                ((ClaimCore.TestSupport.Submissions.withOperationId (id fixture 33) (update)))
                 token
 
         match stale.Outcome with
@@ -474,19 +487,17 @@ let internal assignmentAndDisclosure fixture =
 
         for principal in [ reader; automation ] do
             let! denied =
-                Service.execute
+                Service.executeSubmission
                     (core fixture principal)
-                    (OperationInput.Work
-                        { update with
-                            OperationId = id fixture 34
-                            ExpectedRevision = 1L
-                            Act =
-                                WorkAct.UpdateWork
-                                    {
-                                        Responsible = WorkValue.Clear
-                                        Summary = WorkValue.Keep
-                                    }
-                        })
+                    (Submissions.createRaw
+                        "work.update"
+                        (id fixture 34)
+                        (OperationBinding.Work(CaseSelector.Id caseId, 1L))
+                        (Submissions.work
+                            {
+                                Responsible = WorkValue.Clear
+                                Summary = WorkValue.Keep
+                            }))
                     token
 
             Expect.isFalse
@@ -496,12 +507,18 @@ let internal assignmentAndDisclosure fixture =
                 "Reader/service cannot manage work"
 
         let! disabled =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest fixture.Store (id fixture 35) person PeopleAct.Disable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 35))
+                        (person)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople disabled
         let! afterDisable = get owner caseId
@@ -512,19 +529,17 @@ let internal assignmentAndDisclosure fixture =
             "Disable changes no authored work revision"
 
         let! cleared =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    { update with
-                        OperationId = id fixture 36
-                        ExpectedRevision = 1L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Clear
-                                    Summary = WorkValue.Keep
-                                }
-                    })
+                (Submissions.createRaw
+                    "work.update"
+                    (id fixture 36)
+                    (OperationBinding.Work(CaseSelector.Id caseId, 1L))
+                    (Submissions.work
+                        {
+                            Responsible = WorkValue.Clear
+                            Summary = WorkValue.Keep
+                        }))
                 token
 
         accepted cleared |> ignore
@@ -553,14 +568,16 @@ let internal dueFiltersAndOrder fixture =
             today.AddDays offset |> CalendarDate.ofDate |> CalendarDate.format
 
         let add operation reference text due =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture operation
-                        Target = CaseSelector.Reference reference
-                        Act = AuthoredReminderAct.Create { Action = text; Due = due }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id fixture operation)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference reference),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan (text) (due)))
                 token
 
         for operation, reference in
@@ -576,7 +593,16 @@ let internal dueFiltersAndOrder fixture =
                 else
                     registration
 
-            let! reply = execute fixture owner operation reference 0L (CaseAct.Open facts)
+            let! reply =
+                execute
+                    (fixture)
+                    (owner)
+                    (operation)
+                    (reference)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (facts)))
+
             accepted reply |> ignore
 
         for operation, reference, text, due in
@@ -590,20 +616,21 @@ let internal dueFiltersAndOrder fixture =
             accepted reply |> ignore
 
         let! assigned =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 64
-                        Target = CaseSelector.Reference "WORK-TODAY"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    Summary = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 64)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "WORK-TODAY"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                            Summary = WorkValue.Keep
+                        }
+                    )))
                 token
 
         accepted assigned |> ignore
@@ -693,14 +720,16 @@ let internal dueFiltersAndOrder fixture =
             "The distinct union includes the available assignee’s due-today case"
 
         let! completed =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 65
-                        Target = CaseSelector.Reference "WORK-TODAY"
-                        Act = AuthoredReminderAct.Complete(id fixture 61, 1L)
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.complete"
+                    (id fixture 65)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "WORK-TODAY"),
+                        Some((id fixture 61), (1L))
+                    ))
+                    (Map.empty))
                 token
 
         accepted completed |> ignore
@@ -712,19 +741,16 @@ let internal dueFiltersAndOrder fixture =
             "Last completion accepts and creates monitored attention"
 
         let! invalid =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 66
-                        Target = CaseSelector.Reference "WORK-OVERDUE"
-                        Act =
-                            AuthoredReminderAct.CompleteAndPlanNext(
-                                id fixture 60,
-                                1L,
-                                { Action = " "; Due = date 1 }
-                            )
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.completeAndPlanNext"
+                    (id fixture 66)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "WORK-OVERDUE"),
+                        Some((id fixture 60), (1L))
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan (" ") (date 1)))
                 token
 
         Expect.isFalse
@@ -780,45 +806,46 @@ let internal reminderTiming fixture =
         let owner = core { fixture with Calendar = calendar } fixture.Owner
         let reference = "REMINDER-TIMING"
         let target = CaseSelector.Reference reference
-        let! opened = execute fixture owner 700 reference 0L (CaseAct.Open registration)
+
+        let! opened =
+            execute
+                (fixture)
+                (owner)
+                (700)
+                (reference)
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
+
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         for operation, offset in [ 701, -1; 702, 0; 703, 1; 704, 0; 705, 0 ] do
             let! created =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture operation
-                            Target = target
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = sprintf "Timing action %d" operation
-                                        Due =
-                                            initialDate.AddDays offset
-                                            |> CalendarDate.ofDate
-                                            |> CalendarDate.format
-                                    }
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "reminder.create"
+                        (id fixture operation)
+                        (ClaimCore.Application.Contracts.OperationBinding.Reminder((target), None))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            (sprintf "Timing action %d" operation)
+                            (initialDate.AddDays offset
+                             |> CalendarDate.ofDate
+                             |> CalendarDate.format)))
                     token
 
             accepted created |> ignore
 
-        for operation, act in
-            [
-                706, AuthoredReminderAct.Complete(id fixture 704, 1L)
-                707, AuthoredReminderAct.Cancel(id fixture 705, 1L)
-            ] do
+        for operation, taskName, selected in
+            [ 706, "reminder.complete", 704; 707, "reminder.cancel", 705 ] do
             let! changed =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture operation
-                            Target = target
-                            Act = act
-                        })
+                    (Submissions.createRaw
+                        taskName
+                        (id fixture operation)
+                        (OperationBinding.Reminder(target, Some(id fixture selected, 1L)))
+                        Map.empty)
                     token
 
             accepted changed |> ignore
@@ -982,7 +1009,9 @@ let internal reminderTiming fixture =
             beforePassage
             "Read-time reclassification writes neither reminder state nor ledger activity"
 
-        let! closed = execute fixture owner 708 reference 1L (CaseAct.Bare BareAct.Close)
+        let! closed =
+            execute (fixture) (owner) (708) (reference) (1L) "case.close" (Map.empty)
+
         accepted closed |> ignore
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
         let! hidden = checkPage request []
@@ -1016,7 +1045,9 @@ let internal reminderTiming fixture =
         Expect.isFalse closedItem.Active "Closed single read clearly marks retained work inactive"
         Expect.isNone closedItem.Timing "Closed pending work has no actionable timing"
 
-        let! reopened = execute fixture owner 709 reference 2L (CaseAct.Bare BareAct.Reopen)
+        let! reopened =
+            execute (fixture) (owner) (709) (reference) (2L) "case.reopen" (Map.empty)
+
         accepted reopened |> ignore
         let! reopenedItem = single 702
         Expect.isTrue reopenedItem.Active "Reopening reactivates retained pending work"
@@ -1032,7 +1063,20 @@ let internal reminderTiming fixture =
             "Reopening retains the authored due date"
 
         let! voided =
-            execute fixture owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
+            execute
+                (fixture)
+                (owner)
+                (710)
+                (reference)
+                (3L)
+                "case.void"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.Reason,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            "Timing lifecycle check"
+                        )
+                    ])
 
         accepted voided |> ignore
 
@@ -1049,12 +1093,19 @@ let internal reminderTiming fixture =
 
         let! reinstated =
             execute
-                fixture
-                owner
-                711
-                reference
-                4L
-                (CaseAct.Reinstate "Restore timing lifecycle check")
+                (fixture)
+                (owner)
+                (711)
+                (reference)
+                (4L)
+                "case.reinstate"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.Reason,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            "Restore timing lifecycle check"
+                        )
+                    ])
 
         accepted reinstated |> ignore
         let! reinstatedItem = single 702
@@ -1088,41 +1139,45 @@ let internal lifecycleAndErasure fixture =
                 [ BusinessField.IncidentDescription, "Erase incident narrative" ]
                 registration
 
-        let! opened = execute fixture owner 20 "WORK-LIFECYCLE" 0L (CaseAct.Open facts)
+        let! opened =
+            execute
+                (fixture)
+                (owner)
+                (20)
+                ("WORK-LIFECYCLE")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (facts)))
+
         let caseId = accepted opened |> caseReceipt |> _.CaseId
         let target = CaseSelector.Id caseId
 
         let! work =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 21
-                        Target = target
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible =
-                                        WorkValue.Set(
-                                            ActorId.format (CaseFixtures.actorId (id fixture 1))
-                                        )
-                                    Summary = WorkValue.Set "Erase handling summary"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 21)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible =
+                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 1)))
+                            Summary = WorkValue.Set "Erase handling summary"
+                        }
+                    )))
                 token
 
         accepted work |> ignore
 
         let add operation text =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture operation
-                        Target = target
-                        Act = AuthoredReminderAct.Create { Action = text; Due = "2027-12-31" }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id fixture operation)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder((target), None))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan (text) ("2027-12-31")))
                 token
 
         for operation, text in
@@ -1134,44 +1189,38 @@ let internal lifecycleAndErasure fixture =
             let! reply = add operation text
             accepted reply |> ignore
 
-        for operation, act in
-            [
-                25, AuthoredReminderAct.Complete(id fixture 23, 1L)
-                26, AuthoredReminderAct.Cancel(id fixture 24, 1L)
-            ] do
+        for operation, taskName, selected in
+            [ 25, "reminder.complete", 23; 26, "reminder.cancel", 24 ] do
             let! reply =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture operation
-                            Target = target
-                            Act = act
-                        })
+                    (Submissions.createRaw
+                        taskName
+                        (id fixture operation)
+                        (OperationBinding.Reminder(target, Some(id fixture selected, 1L)))
+                        Map.empty)
                     token
 
             accepted reply |> ignore
 
         let! closed =
-            execute fixture owner 27 "WORK-LIFECYCLE" 1L (CaseAct.Bare BareAct.Close)
+            execute (fixture) (owner) (27) ("WORK-LIFECYCLE") (1L) "case.close" (Map.empty)
 
         accepted closed |> ignore
 
         let! summary =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 28
-                        Target = target
-                        ExpectedRevision = 1L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    Summary = WorkValue.Set "Closed handling summary"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 28)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (1L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Set "Closed handling summary"
+                        }
+                    )))
                 token
 
         accepted summary |> ignore
@@ -1192,7 +1241,7 @@ let internal lifecycleAndErasure fixture =
             "Closing did not complete pending work"
 
         let! reopened =
-            execute fixture owner 30 "WORK-LIFECYCLE" 2L (CaseAct.Bare BareAct.Reopen)
+            execute (fixture) (owner) (30) ("WORK-LIFECYCLE") (2L) "case.reopen" (Map.empty)
 
         accepted reopened |> ignore
         let! active = get owner caseId
@@ -1203,43 +1252,35 @@ let internal lifecycleAndErasure fixture =
             "Reactivation retains exact date"
 
         let! compound =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 31
-                        Target = target
-                        Act =
-                            AuthoredReminderAct.CompleteAndPlanNext(
-                                id fixture 22,
-                                1L,
-                                {
-                                    Action = "Erase replacement action"
-                                    Due = "2028-01-01"
-                                }
-                            )
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.completeAndPlanNext"
+                    (id fixture 31)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (target),
+                        Some((id fixture 22), (1L))
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Erase replacement action")
+                        ("2028-01-01")))
                 token
 
         let compoundReceipt = accepted compound
 
         let! replayed =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 31
-                        Target = target
-                        Act =
-                            AuthoredReminderAct.CompleteAndPlanNext(
-                                id fixture 22,
-                                1L,
-                                {
-                                    Action = "Erase replacement action"
-                                    Due = "2028-01-01"
-                                }
-                            )
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.completeAndPlanNext"
+                    (id fixture 31)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (target),
+                        Some((id fixture 22), (1L))
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Erase replacement action")
+                        ("2028-01-01")))
                 token
 
         expectReceipt
@@ -1248,19 +1289,34 @@ let internal lifecycleAndErasure fixture =
             "Compound replay preserves both effects and identity"
 
         let! voided =
-            execute fixture owner 32 "WORK-LIFECYCLE" 3L (CaseAct.Void "Synthetic entry error")
+            execute
+                (fixture)
+                (owner)
+                (32)
+                ("WORK-LIFECYCLE")
+                (3L)
+                "case.void"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.Reason,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            "Synthetic entry error"
+                        )
+                    ])
 
         accepted voided |> ignore
 
         let! blocked =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture 33
-                        Target = target
-                        Act = AuthoredReminderAct.Complete(id fixture 31, 1L)
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.complete"
+                    (id fixture 33)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (target),
+                        Some((id fixture 31), (1L))
+                    ))
+                    (Map.empty))
                 token
 
         Expect.isFalse
@@ -1270,12 +1326,23 @@ let internal lifecycleAndErasure fixture =
             "Voided rejects ordinary reminders"
 
         let! restored =
-            execute fixture owner 34 "WORK-LIFECYCLE" 4L (CaseAct.Reinstate "Synthetic correction")
+            execute
+                (fixture)
+                (owner)
+                (34)
+                ("WORK-LIFECYCLE")
+                (4L)
+                "case.reinstate"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.Reason,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text("Synthetic correction")
+                    ])
 
         accepted restored |> ignore
 
         let! erased =
-            execute fixture owner 35 "WORK-LIFECYCLE" 5L (CaseAct.Bare BareAct.Erase)
+            execute (fixture) (owner) (35) ("WORK-LIFECYCLE") (5L) "case.erase" (Map.empty)
 
         accepted erased |> ignore
         let! current = get owner caseId
@@ -1350,7 +1417,17 @@ let internal lifecycleAndErasure fixture =
 let internal partialUpdatesAndPaymentPeople fixture =
     task {
         let! owner = caseWorker fixture
-        let! opened = execute fixture owner 40 "PARTIAL-FACTS" 0L (CaseAct.Open registration)
+
+        let! opened =
+            execute
+                (fixture)
+                (owner)
+                (40)
+                ("PARTIAL-FACTS")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
+
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         let partial: RegistrationUpdateInput =
@@ -1359,7 +1436,16 @@ let internal partialUpdatesAndPaymentPeople fixture =
              |> Result.defaultWith failtest)
 
         let! edited =
-            execute fixture owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)
+            execute
+                (fixture)
+                (owner)
+                (41)
+                ("PARTIAL-FACTS")
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values (partial)
+                ))
 
         let fields = disclosedFields (accepted edited)
 
@@ -1370,16 +1456,19 @@ let internal partialUpdatesAndPaymentPeople fixture =
 
         let! stale =
             execute
-                fixture
-                owner
-                42
-                "PARTIAL-FACTS"
-                1L
-                (CaseAct.AmendRegistration(
-                    RegistrationUpdateInput.replace
-                        [ BusinessField.ClaimantName, Some "Stale edit" ]
-                        (partial)
-                    |> Result.defaultWith failtest
+                (fixture)
+                (owner)
+                (42)
+                ("PARTIAL-FACTS")
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values (
+                        (RegistrationUpdateInput.replace
+                            [ BusinessField.ClaimantName, Some "Stale edit" ]
+                            (partial)
+                         |> Result.defaultWith failtest)
+                    )
                 ))
 
         match stale.Outcome with
@@ -1389,27 +1478,39 @@ let internal partialUpdatesAndPaymentPeople fixture =
         | other -> failtestf "Expected revision conflict, got %A" other
 
         let! decided =
-            execute fixture owner 43 "PARTIAL-FACTS" 2L (CaseAct.Decide Inputs.decision)
+            execute
+                (fixture)
+                (owner)
+                (43)
+                ("PARTIAL-FACTS")
+                (2L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision)))
 
         accepted decided |> ignore
 
         let! paid =
-            execute fixture owner 44 "PARTIAL-FACTS" 3L (CaseAct.RecordPayment Inputs.payment)
+            execute
+                (fixture)
+                (owner)
+                (44)
+                ("PARTIAL-FACTS")
+                (3L)
+                "case.recordPayment"
+                (ClaimCore.TestSupport.Submissions.fields (PaymentInput.values (Inputs.payment)))
 
         accepted paid |> ignore
 
-        let change: AuthoredCorrection =
-            {
-                Registration = Amendment.Keep
-                Decision =
-                    Change.Update
-                        {
-                            Date = None
-                            Payable = Some { Amount = "800.00"; Currency = "EUR" }
-                        }
-            }
-
-        let corrected = CaseAct.Correct change
+        let correction =
+            Map.ofList
+                [
+                    Submissions.input (InputTarget.Group RecordGroup.Registration),
+                    SubmissionValue.Text "KEEP"
+                    Submissions.input (InputTarget.Group RecordGroup.Decision),
+                    SubmissionValue.Text "UPDATE"
+                    Submissions.field BusinessField.PayableAmount, SubmissionValue.Text "800.00"
+                    Submissions.field BusinessField.PayableCurrency, SubmissionValue.Text "EUR"
+                ]
 
         let! revoked =
             grant
@@ -1425,7 +1526,20 @@ let internal partialUpdatesAndPaymentPeople fixture =
         acceptedPeople revoked
 
         let! denied =
-            execute fixture owner 47 "PARTIAL-FACTS" 4L (CaseAct.RemovePayment(id fixture 44))
+            execute
+                (fixture)
+                (owner)
+                (47)
+                ("PARTIAL-FACTS")
+                (4L)
+                "case.removePayment"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.PaymentId,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            ((id fixture 44)).ToString("D")
+                        )
+                    ])
 
         Expect.equal
             denied.Outcome
@@ -1446,7 +1560,7 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 true
 
         acceptedPeople granted
-        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L corrected
+        let! updated = execute fixture owner 49 "PARTIAL-FACTS" 4L "case.correct" correction
         accepted updated |> ignore
 
         let! chronology =
@@ -1456,15 +1570,16 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 50
                 "PARTIAL-FACTS"
                 5L
-                (CaseAct.Correct
-                    { change with
-                        Decision =
-                            Change.Update
-                                {
-                                    Date = Some "2026-08-21"
-                                    Payable = None
-                                }
-                    })
+                "case.correct"
+                (Map.ofList
+                    [
+                        Submissions.input (InputTarget.Group RecordGroup.Registration),
+                        SubmissionValue.Text "KEEP"
+                        Submissions.input (InputTarget.Group RecordGroup.Decision),
+                        SubmissionValue.Text "UPDATE"
+                        Submissions.field BusinessField.PaymentDecisionDate,
+                        SubmissionValue.Text "2026-08-21"
+                    ])
 
         match chronology.Outcome with
         | ExecuteResult.Rejected(Refusal.InvalidInput _) -> ()
@@ -1483,7 +1598,18 @@ let internal finiteDateRange fixture =
         let! owner = caseWorker fixture
 
         for number, reference in [ 600, "DATE-MIN"; 601, "DATE-MAX-A"; 602, "DATE-MAX-B" ] do
-            let! opened = execute fixture owner number reference 0L (CaseAct.Open registration)
+            let! opened =
+                execute
+                    (fixture)
+                    (owner)
+                    (number)
+                    (reference)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    ))
+
             accepted opened |> ignore
 
         for number, reference, due in
@@ -1495,19 +1621,18 @@ let internal finiteDateRange fixture =
                 614, "DATE-MAX-B", "9999-12-31"
             ] do
             let! planned =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture number
-                            Target = CaseSelector.Reference reference
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = "Finite Gregorian date"
-                                        Due = due
-                                    }
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "reminder.create"
+                        (id fixture number)
+                        (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                            (CaseSelector.Reference reference),
+                            None
+                        ))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Finite Gregorian date")
+                            (due)))
                     token
 
             accepted planned |> ignore
@@ -1576,53 +1701,57 @@ let internal pairedPage fixture =
 
         for operation, reference in [ 1100, "PAGE-A"; 1101, "PAGE-B"; 1102, "PAGE-C" ] do
             let! opened =
-                execute fixture owner operation reference 0L (CaseAct.Open registration)
+                execute
+                    (fixture)
+                    (owner)
+                    (operation)
+                    (reference)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    ))
 
             accepted opened |> ignore
 
         let! updated =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 1103
-                        Target = CaseSelector.Reference "PAGE-A"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Summary = WorkValue.Set "Page-owned summary\nالعربية"
-                                    Responsible =
-                                        WorkValue.Set(
-                                            ActorId.format (CaseFixtures.actorId (id fixture 1))
-                                        )
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 1103)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "PAGE-A"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Summary = WorkValue.Set "Page-owned summary\nالعربية"
+                            Responsible =
+                                WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 1)))
+                        }
+                    )))
                 token
 
         accepted updated |> ignore
 
         for operation in 1110..1119 do
-            let! created =
-                Service.execute
-                    owner
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture operation
-                            Target = CaseSelector.Reference "PAGE-A"
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action =
-                                            if operation = 1110 then
-                                                "First pending action"
-                                            else
-                                                "Later pending action"
-                                        Due =
-                                            if operation = 1110 then "0001-01-01" else "9999-12-31"
-                                    }
-                        })
-                    token
+            let action =
+                if operation = 1110 then
+                    "First pending action"
+                else
+                    "Later pending action"
+
+            let due = if operation = 1110 then "0001-01-01" else "9999-12-31"
+
+            let submission =
+                Submissions.createRaw
+                    "reminder.create"
+                    (id fixture operation)
+                    (OperationBinding.Reminder(CaseSelector.Reference "PAGE-A", None))
+                    (Submissions.reminderPlan action due)
+
+            let! created = Service.executeSubmission owner submission token
 
             accepted created |> ignore
 

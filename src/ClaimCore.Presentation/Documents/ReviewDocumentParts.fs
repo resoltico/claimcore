@@ -1,106 +1,83 @@
 namespace ClaimCore.Presentation
 
 open ClaimCore.Domain
-
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
-open ClaimCore.Presentation
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module internal ReviewDocumentParts =
-    /// The server computes presentation once from authoritative typed review facts.
-    let describe operationIdentity input review =
-        let described =
-            ReviewScreen.operationReview (operationIdentity |> Option.map fst) input review
+    let describe operationId (review: OperationReview) =
+        let described = ReviewScreen.operationReview review
 
-        let parent =
-            match review with
-            | OperationReview.Case value -> Some(defaultArg value.Before value.Proposed)
-            | OperationReview.Note value -> Some value.Parent
-            | OperationReview.Work value -> Some value.Parent
-            | OperationReview.Reminder value -> Some value.Parent
-            | OperationReview.People _ -> None
-
-        let reminderContext =
-            match review with
-            | OperationReview.Reminder { Before = Some reminder } ->
-                [
-                    ScreenEntries.value
-                        "reminderAction"
-                        "field.reminderAction.label"
-                        Prominence.Primary
-                        (PresentedValue.Text(ReminderAction.format (Reminder.action reminder)))
-                ]
-            | _ -> []
-
-        let action =
-            operationIdentity
-            |> Option.map (fun (act, _) ->
+        let identityEntries =
+            [
                 ScreenEntries.value
-                    "act"
+                    "task"
                     "label.action"
                     Prominence.Primary
-                    (ScreenEntries.code ActKind.vocabulary act))
-            |> Option.toList
+                    (PresentedValue.Message("task." + TaskId.token review.Task + ".label"))
+                match review.Target with
+                | ReviewTarget.Case(_, reference) ->
+                    ScreenEntries.value
+                        "reference"
+                        "field.caseReference.label"
+                        Prominence.Primary
+                        (PresentedValue.Reference reference)
+                | ReviewTarget.Person actor ->
+                    ScreenEntries.value
+                        "target"
+                        "label.targetAccount"
+                        Prominence.Primary
+                        (ScreenEntries.optional PresentedValue.Actor actor)
+            ]
 
         let identity =
-            let entries =
-                match parent, review with
-                | Some snapshot, _ ->
-                    [
-                        ScreenEntries.value
-                            "caseReference"
-                            "field.caseReference.label"
-                            Prominence.Primary
-                            (PresentedValue.Reference snapshot.Reference)
-                    ]
-                    @ CaseScreen.identityFacts snapshot
-                    @ reminderContext
-                | None, OperationReview.People value ->
-                    [
-                        ScreenEntries.value
-                            "target"
-                            "label.targetAccount"
-                            Prominence.Primary
-                            (match value.Target, value.After.Profile with
-                             | Some target, _ -> PresentedValue.Actor target.Actor
-                             | None, Some profile -> PresentedValue.Party profile.DisplayName
-                             | _ -> PresentedValue.Absent "label.notRecorded")
-                    ]
-                | _ -> []
+            [ ScreenEntries.entryRegion RegionRole.Identity None identityEntries ]
 
-            if (action @ entries).IsEmpty then
-                []
-            else
-                [ ScreenEntries.entryRegion RegionRole.Identity None (action @ entries) ]
+        let reviewed target revision =
+            let input = TaskInputId.Target target
 
-        let revision target value =
             ScreenEntries.value
-                (TaskInputId.key (TaskInputId.Target target))
-                (TaskInputPresentation.messageKey (TaskInputId.Target target) "label")
+                (TaskInputId.key input)
+                (TaskInputPresentation.messageKey input "label")
                 Prominence.Detail
-                (PresentedValue.Identifier(Revision.format value))
+                (PresentedValue.Identifier(Revision.format revision))
 
         let reviewedVersion =
-            match review with
-            | OperationReview.Case value ->
-                value.Before
-                |> Option.map (fun before -> revision InputTarget.ExpectedRevision before.Revision)
-                |> Option.toList
-            | OperationReview.Work value ->
-                [ revision InputTarget.ExpectedWorkRevision value.Before.Revision ]
-            | OperationReview.Reminder value ->
-                value.Before
-                |> Option.map (fun before ->
-                    revision InputTarget.ExpectedReminderRevision (Reminder.revision before))
-                |> Option.toList
-            | OperationReview.Note _
-            | OperationReview.People _ -> []
+            match review.Binding with
+            | Binding.Case(_, revision)
+            | Binding.CasePayment(_, revision, _) ->
+                [ reviewed InputTarget.ExpectedRevision revision ]
+            | Binding.CaseErase(_, revision, sequence) ->
+                [
+                    reviewed InputTarget.ExpectedRevision revision
+                    ScreenEntries.value
+                        "expectedFamilySequence"
+                        (TaskInputPresentation.messageKey
+                            (TaskInputId.Target InputTarget.ExpectedFamilySequence)
+                            "label")
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Sequence.format sequence))
+                ]
+            | Binding.Work(_, revision) -> [ reviewed InputTarget.ExpectedWorkRevision revision ]
+            | Binding.Reminder(_, _, revision) ->
+                [ reviewed InputTarget.ExpectedReminderRevision revision ]
+            | Binding.People(_, revision) -> [ reviewed InputTarget.ExpectedRevision revision ]
+            | Binding.CaseNew _
+            | Binding.PeopleNew _
+            | Binding.ReminderNew _
+            | Binding.NoteNew _
+            | Binding.Note _ -> []
 
-        let sections = described.Effects
+        let sections =
+            described.Effects
+            @ (if described.Unchanged.IsEmpty then
+                   []
+               else
+                   [ ScreenEntries.section "label.unchanged" described.Unchanged ])
 
         let operationIdentity =
-            operationIdentity
-            |> Option.map (fun (_, operationId: System.Guid) ->
+            operationId
+            |> Option.map (fun (operationId: System.Guid) ->
                 ScreenEntries.value
                     "operationId"
                     "field.operationId.label"
@@ -108,8 +85,14 @@ module internal ReviewDocumentParts =
                     (PresentedValue.Identifier(operationId.ToString("D"))))
             |> Option.toList
 
+        let partIdentities =
+            review.Changes
+            |> List.map (fun part ->
+                ScreenEntries.partIdentity (PartDescription.kind part.Description) part.PartId)
+
         let details =
             operationIdentity
+            @ partIdentities
             @ reviewedVersion
             @ (sections |> List.collect _.Entries |> List.filter ScreenEntries.technical)
 
@@ -123,6 +106,23 @@ module internal ReviewDocumentParts =
         let screen =
             Screen.create (
                 identity
+                @ [
+                    ScreenEntries.region
+                        RegionRole.Notice
+                        None
+                        (RegionContent.Notice
+                            {
+                                MessageId = PresentationKeys.consequence review.Task
+                                Reason = None
+                                Tone =
+                                    if
+                                        TaskConsequences.ofTask review.Task = Consequence.Routine
+                                    then
+                                        NoticeTone.Info
+                                    else
+                                        NoticeTone.Warning
+                            })
+                ]
                 @ ScreenEntries.factRegions facts
                 @ (if details.IsEmpty then
                        []

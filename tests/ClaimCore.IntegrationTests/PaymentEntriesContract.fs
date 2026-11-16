@@ -19,27 +19,25 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected read: %A" other
 
-let private execute fixture service number reference revision act =
-    Service.execute
+let private execute fixture service number reference revision task values =
+    Service.executeSubmission
         service
-        (Inputs.caseOperation (request fixture number reference revision act))
+        (((request fixture number reference revision task values)))
         token
 
 let private payment date amount currency =
-    CaseAct.RecordPayment(
-        Inputs.paymentFrom
-            [
-                BusinessField.PaymentDate, date
-                BusinessField.PaidAmount, amount
-                BusinessField.PaidCurrency, currency
-            ]
-    )
+    Submissions.fields
+        [
+            BusinessField.PaymentDate, date
+            BusinessField.PaidAmount, amount
+            BusinessField.PaidCurrency, currency
+        ]
 
 let private decision amount currency =
-    CaseAct.Decide(
-        Inputs.decisionFrom
-            [ BusinessField.PayableAmount, amount; BusinessField.PayableCurrency, currency ]
-    )
+    Inputs.decisionFrom
+        [ BusinessField.PayableAmount, amount; BusinessField.PayableCurrency, currency ]
+    |> DecisionInput.values
+    |> Submissions.fields
 
 let private selected =
     { CaseListFilter.empty<string> with
@@ -65,15 +63,21 @@ let internal lifecycle fixture =
 
         let! opened =
             execute
-                fixture
-                owner
-                10
-                "PAY-EUR"
-                0L
-                (CaseAct.Open(
-                    Inputs.registrationWith
-                        [ BusinessField.ClaimedAmount, "100"; BusinessField.ClaimedCurrency, "EUR" ]
-                        Inputs.registration
+                (fixture)
+                (owner)
+                (10)
+                ("PAY-EUR")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (
+                    RegistrationInput.values (
+                        (Inputs.registrationWith
+                            [
+                                BusinessField.ClaimedAmount, "100"
+                                BusinessField.ClaimedCurrency, "EUR"
+                            ]
+                            Inputs.registration)
+                    )
                 ))
 
         let receipt = accepted opened
@@ -83,35 +87,70 @@ let internal lifecycle fixture =
             | ReceiptSubject.Case case -> case.CaseId
             | _ -> failtest "Case receipt required"
 
-        let! decided = execute fixture owner 11 "PAY-EUR" 1L (decision "100" "EUR")
+        let! decided =
+            execute fixture owner 11 "PAY-EUR" 1L "case.decide" (decision "100" "EUR")
+
         accepted decided |> ignore
-        let! first = execute fixture owner 12 "PAY-EUR" 2L (payment "2026-08-20" "25" "EUR")
+
+        let! first =
+            execute
+                fixture
+                owner
+                12
+                "PAY-EUR"
+                2L
+                "case.recordPayment"
+                (payment "2026-08-20" "25" "EUR")
+
         accepted first |> ignore
 
         let! second =
-            execute fixture owner 13 "PAY-EUR" 3L (payment "2026-08-21" "35.25" "EUR")
+            execute
+                fixture
+                owner
+                13
+                "PAY-EUR"
+                3L
+                "case.recordPayment"
+                (payment "2026-08-21" "35.25" "EUR")
 
         accepted second |> ignore
 
         let! dollars =
             execute
-                fixture
-                owner
-                30
-                "PAY-USD"
-                0L
-                (CaseAct.Open(
-                    Inputs.registrationWith
-                        [ BusinessField.ClaimedAmount, "50"; BusinessField.ClaimedCurrency, "USD" ]
-                        Inputs.registration
+                (fixture)
+                (owner)
+                (30)
+                ("PAY-USD")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (
+                    RegistrationInput.values (
+                        (Inputs.registrationWith
+                            [
+                                BusinessField.ClaimedAmount, "50"
+                                BusinessField.ClaimedCurrency, "USD"
+                            ]
+                            Inputs.registration)
+                    )
                 ))
 
         accepted dollars |> ignore
-        let! dollarDecision = execute fixture owner 31 "PAY-USD" 1L (decision "50" "USD")
+
+        let! dollarDecision =
+            execute fixture owner 31 "PAY-USD" 1L "case.decide" (decision "50" "USD")
+
         accepted dollarDecision |> ignore
 
         let! dollarPayment =
-            execute fixture owner 32 "PAY-USD" 2L (payment "2026-08-20" "5" "USD")
+            execute
+                fixture
+                owner
+                32
+                "PAY-USD"
+                2L
+                "case.recordPayment"
+                (payment "2026-08-20" "5" "USD")
 
         accepted dollarPayment |> ignore
 
@@ -160,7 +199,14 @@ let internal lifecycle fixture =
             "SQL totals keep currencies separate"
 
         let! mismatch =
-            execute fixture owner 16 "PAY-EUR" 4L (payment "2026-08-22" "1" "USD")
+            execute
+                fixture
+                owner
+                16
+                "PAY-EUR"
+                4L
+                "case.recordPayment"
+                (payment "2026-08-22" "1" "USD")
 
         Expect.isTrue
             (match mismatch.Outcome with
@@ -169,7 +215,14 @@ let internal lifecycle fixture =
             "A wrong currency cannot be persisted"
 
         let! excessive =
-            execute fixture owner 17 "PAY-EUR" 4L (payment "2026-08-22" "40" "EUR")
+            execute
+                fixture
+                owner
+                17
+                "PAY-EUR"
+                4L
+                "case.recordPayment"
+                (payment "2026-08-22" "40" "EUR")
 
         Expect.isTrue
             (match excessive.Outcome with
@@ -178,12 +231,32 @@ let internal lifecycle fixture =
             "A sum over payable cannot be persisted"
 
         let! removed =
-            execute fixture owner 14 "PAY-EUR" 4L (CaseAct.RemovePayment(id fixture 12))
+            execute
+                (fixture)
+                (owner)
+                (14)
+                ("PAY-EUR")
+                (4L)
+                "case.removePayment"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.PaymentId,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            ((id fixture 12)).ToString("D")
+                        )
+                    ])
 
         accepted removed |> ignore
 
         let! full =
-            execute fixture owner 15 "PAY-EUR" 5L (payment "2026-08-22" "64.75" "EUR")
+            execute
+                fixture
+                owner
+                15
+                "PAY-EUR"
+                5L
+                "case.recordPayment"
+                (payment "2026-08-22" "64.75" "EUR")
 
         accepted full |> ignore
         let! current = Service.get owner { Target = CaseSelector.Id caseId } token
@@ -208,7 +281,9 @@ let internal lifecycle fixture =
             [ "PAY-USD" ]
             "Fully paid EUR leaves the selection"
 
-        let! erased = execute fixture owner 18 "PAY-EUR" 6L (CaseAct.Bare BareAct.Erase)
+        let! erased =
+            execute (fixture) (owner) (18) ("PAY-EUR") (6L) "case.erase" (Map.empty)
+
         accepted erased |> ignore
         let! erasedCase = Service.get owner { Target = CaseSelector.Id caseId } token
 

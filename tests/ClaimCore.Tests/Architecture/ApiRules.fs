@@ -81,6 +81,7 @@ type ArchitectureRule =
     | Pure
     | Serializer
     | ClosedVocabularyCodecs
+    | TaskModules
 
 let nonEmptyTargets architecture name (provider: IObjectProvider<'T>) =
     if provider.GetObjects architecture |> Seq.isEmpty then
@@ -128,6 +129,16 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                         | _ -> true))),
             "construct closed enums through VocabularyCodec",
             "Only VocabularyCodec may call the generic enumeration constructor"
+        )
+        :> IArchRule
+    | ArchitectureRule.TaskModules ->
+        clauses.NotDependOnAny(
+            Types()
+                .That()
+                .HaveFullNameMatching(
+                    @"^ClaimCore\.Domain\.Tasks\.(?!(?:Registry|Task|TaskModule)(?:$|\+))"
+                )
+            |> targets "task implementation modules"
         )
         :> IArchRule
     | ArchitectureRule.Serializer ->

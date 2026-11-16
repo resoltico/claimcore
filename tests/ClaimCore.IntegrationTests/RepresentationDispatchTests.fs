@@ -37,11 +37,17 @@ let private dispatch () =
         let owner = caseWorker fixture |> sync
 
         let opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    actRequest fixture 20 "REP-READ" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (20)
+                    ("REP-READ")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
             |> sync
             |> accepted
@@ -105,19 +111,19 @@ let private dispatch () =
         let identity = Guid.CreateVersion7()
 
         let input =
-            Inputs.caseOperation
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = identity
-                    CaseReference = "REP-WRITE"
-                    ExpectedRevision = 0L
-                    Act = AuthoredCaseAct.Open registration
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw
+                "case.open"
+                (identity)
+                (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
+                 |> Map.add
+                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                     (ClaimCore.Application.Contracts.SubmissionValue.Text("REP-WRITE"))))
 
         let preview = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Preview)
 
         let preparedPreview =
-            preview.Prepare(Api.operationPreview.Input.Write(Submissions.ofCommand None input))
+            preview.Prepare(Api.operationPreview.Input.Write((input)))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let beforeWrites = writes
@@ -139,7 +145,7 @@ let private dispatch () =
         let execute = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Execute)
 
         let prepared =
-            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None input))
+            execute.Prepare(Api.operationExecute.Input.Write((input)))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let head () =
@@ -167,17 +173,17 @@ let private dispatch () =
         Expect.equal (head ()).Position acceptedHead.Position "Replay creates no second root"
 
         let changed =
-            Inputs.caseOperation
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = identity
-                    CaseReference = "REP-CHANGED"
-                    ExpectedRevision = 0L
-                    Act = AuthoredCaseAct.Open registration
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw
+                "case.open"
+                (identity)
+                (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
+                 |> Map.add
+                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                     (ClaimCore.Application.Contracts.SubmissionValue.Text("REP-CHANGED"))))
 
         let changed =
-            execute.Prepare(Api.operationExecute.Input.Write(Submissions.ofCommand None changed))
+            execute.Prepare(Api.operationExecute.Input.Write((changed)))
             |> Result.defaultWith (fun error -> failtestf "%A" error)
 
         let conflict =
@@ -238,20 +244,23 @@ let private dispatch () =
             |> Result.defaultWith (string >> failtest)
 
         let registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 40001)
-                        reader
-                        (PeopleAct.Register
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 40001))
+                        (reader)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Auditor input"
                                 Contact = None
-                            })
-                ))
-                token
+                            }
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
             |> sync
             |> accepted
 
@@ -291,7 +300,7 @@ let private dispatch () =
 
         Expect.contains
             editable.Offers
-            PeopleActKind.SetProfile
+            (TaskId.ofLiteral "people.setProfile")
             "Owner receives permitted person task"
 
         Expect.equal

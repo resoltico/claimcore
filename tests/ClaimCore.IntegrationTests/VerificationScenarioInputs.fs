@@ -8,6 +8,7 @@ open ClaimCore.Presentation
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Application.Storage
@@ -20,41 +21,100 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 
-let internal livePayload (value: RetainedOperation) =
-    match value.Values with
-    | RetainedOperationValues.Case(Some values) ->
-        (Case.canonical values.Command).Authored, values.Decision.After
-    | _ -> failtest "Available accepted case values are required"
+let private authored (inputs: InputMap) =
+    let atom =
+        function
+        | InputValue.Text value -> SubmissionValue.Text value
+        | InputValue.Integer value -> SubmissionValue.Integer value
+        | InputValue.Boolean value -> SubmissionValue.Boolean value
+        | InputValue.Null -> SubmissionValue.Clear
+
+    let values = inputs.Values |> Map.map (fun _ -> atom)
+
+    inputs.Collections
+    |> Map.fold
+        (fun values collection rows ->
+            let key =
+                match collection with
+                | TaskCollectionId.PeopleGrants -> Submissions.input InputTarget.Grants
+
+            Map.add
+                key
+                (SubmissionValue.Rows(
+                    rows |> List.map (fun row -> row.Values |> Map.map (fun _ -> atom))
+                ))
+                values)
+        values
+
+let internal livePayload (reference: CaseReference) (value: RetainedOperation) =
+    let root = value.Root
+    let change = value.Changes |> List.find (fun change -> change.Kind = PartKind.Case)
+
+    let reference =
+        match change.Value with
+        | PartValue.Case current -> current.Reference |> Option.defaultValue reference
+        | _ -> failtest "Case part required"
+
+    let snapshot = PartChange.caseSnapshot reference change |> Option.get
+
+    let submission =
+        Submissions.create
+            (TaskId.token root.Structure.Task)
+            (OperationId.value root.Header.OperationId)
+            root.Structure.Binding
+            (value.Inputs |> Option.get |> authored)
+
+    submission, snapshot
 
 let internal updateCase
-    (request: UnvalidatedCaseRequest)
+    (request: OperationSubmission)
     (snapshot: CaseSnapshot)
     (value: RetainedOperation)
     =
-    let command =
-        Case.parse request
-        |> Result.defaultWith (fun error -> failtestf "Case mutation: %A" error)
+    let command = Submissions.command request
 
-    let previous =
-        match value.Values with
-        | RetainedOperationValues.Case(Some previous) -> previous
-        | _ -> failtest "Case values required"
-
-    let selected =
-        match command.Act with
-        | CaseAct.RemovePayment id -> Some id
-        | _ -> None
-
-    let scope =
-        CommandSkeleton.Case
+    let content =
+        CaseState.fields snapshot.State
+        |> Option.map (fun fields ->
             {
-                ExpectedFamilySequence = command.ExpectedFamilySequence
-                CaseId = snapshot.CaseId
-                Reference = snapshot.Reference
-                ExpectedRevision = command.ExpectedRevision
-                Act = CaseAct.kind command.Act
-                SelectedPayment = selected
-            }
+                CaseContent.Registration = fields.Registration
+                Finance = fields.Finance
+            })
+
+    let changes =
+        value.Changes
+        |> List.map (fun change ->
+            match change.Value with
+            | PartValue.Case before ->
+                { change with
+                    Revision = snapshot.Revision
+                    NaturalKey =
+                        change.NaturalKey
+                        |> Option.map (fun _ -> CaseReference.format snapshot.Reference)
+                    Value =
+                        PartValue.Case
+                            { before with
+                                Reference =
+                                    before.Reference |> Option.map (fun _ -> snapshot.Reference)
+                                Lifecycle = CaseState.lifecycle snapshot.State
+                                Status =
+                                    CaseState.fields snapshot.State
+                                    |> Option.map _.Status
+                                    |> Option.defaultValue before.Status
+                                Content = content
+                            }
+                }
+            | _ -> change)
+
+    let changes =
+        changes
+        |> List.map (fun change ->
+            { change with
+                Stamp =
+                    { change.Stamp with
+                        OperationId = CaseFixtures.operationId request.OperationId
+                    }
+            })
 
     let nonce =
         value.Root.Structure.Compartments
@@ -64,29 +124,32 @@ let internal updateCase
 
     recreate
         { value.Root.Header with
-            OperationId = command.OperationId
+            OperationId = CaseFixtures.operationId request.OperationId
         }
-        scope
-        (OperationValues.Case
-            {
-                Command = command
-                Decision =
-                    { previous.Decision with
-                        After = snapshot
-                    }
-            })
+        request.Task
+        command.Binding
+        command.Inputs
+        changes
         nonce
 
-let internal updatePeople act (value: RetainedOperation) =
-    let scope =
-        match value.Root.Structure.Command with
-        | CommandSkeleton.People scope -> scope
-        | _ -> failtest "People root required"
+let internal updatePeople taskName values mutate (value: RetainedOperation) =
+    let request =
+        Submissions.create
+            taskName
+            (OperationId.value value.Root.Header.OperationId)
+            value.Root.Structure.Binding
+            values
+        |> Submissions.command
 
-    let profile =
-        match value.Values with
-        | RetainedOperationValues.People(RetainedProfile.Available profile) -> Some profile
-        | _ -> None
+    let changes =
+        value.Changes
+        |> List.map (fun change ->
+            match change.Value with
+            | PartValue.Person person ->
+                { change with
+                    Value = PartValue.Person(mutate person)
+                }
+            | _ -> failtest "Person part required")
 
     let nonce =
         value.Root.Structure.Compartments
@@ -96,17 +159,20 @@ let internal updatePeople act (value: RetainedOperation) =
 
     recreate
         value.Root.Header
-        (CommandSkeleton.People { scope with Act = act })
-        (OperationValues.People { Profile = profile })
+        (TaskId.ofLiteral taskName)
+        request.Binding
+        request.Inputs
+        changes
         nonce
 
 let internal executor id (value: RetainedOperation) =
-    OperationRoot.append
+    rehashed
         { value.Root.Header with ActorId = id }
-        value.Root.Structure.Command
+        value.Root.Structure.Task
+        value.Root.Structure.Binding
+        value.Root.Structure.Retained
         value.Root.Structure.Effects
         value.Root.Structure.Compartments
-    |> Result.defaultWith (fun error -> failtestf "Executor mutation: %A" error)
 
 let internal target subject =
     PrincipalKey.human "https://issuer.example/" subject
@@ -115,16 +181,20 @@ let internal target subject =
 let internal register fixture (actor: ServiceContext) n principal =
     task {
         let! outcome =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture n)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture n))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission ((token))
+            }))
 
         acceptedPeople outcome
     }

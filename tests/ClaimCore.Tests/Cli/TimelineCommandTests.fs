@@ -9,6 +9,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -47,7 +48,13 @@ let private entry revision =
         CaseTimelineEntry.OperationId = CaseFixtures.operationId CliReplyFixtures.id
         Position = EffectPosition.create (CaseFixtures.sequence revision) 0 |> Option.get
         OperationHash = CliReplyFixtures.receipt.Position.EntryHash
-        Subject = TimelineSubject.CaseFact(CaseFixtures.revision revision, CaseActKind.Close)
+        Subject =
+            {
+                PartKind = PartKind.Case
+                PartId = CaseId.value CliReplyFixtures.snapshot.CaseId
+                Revision = CaseFixtures.revision revision
+            }
+        Task = TaskId.ofLiteral "case.close"
         RecordedAt = DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = actor
         Changes = TimelineChanges.Withheld
@@ -150,8 +157,8 @@ let tests =
                                                     Overview =
                                                         {
                                                             Event =
-                                                                TimelineEvent.CaseActRecorded
-                                                                    CaseActKind.Close
+                                                                TimelineEvent.PartChanged
+                                                                    PartKind.Case
                                                             Highlights = []
                                                         }
                                                 }
@@ -220,22 +227,24 @@ let tests =
 
                 let subjects =
                     [
-                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "task", "case.close"
-                        TimelineSubject.Work(revision, WorkActKind.UpdateWork),
-                        "task",
-                        "work.update"
-                        TimelineSubject.Reminder(
-                            ReminderActKind.Create,
-                            reminderId,
-                            revision,
-                            None
-                        ),
-                        "task",
-                        "reminder.create"
+                        PartKind.Case, CaseId.value CliReplyFixtures.snapshot.CaseId, "case.close"
+                        PartKind.Work, CaseId.value CliReplyFixtures.snapshot.CaseId, "work.update"
+                        PartKind.Reminder, ReminderId.value reminderId, "reminder.create"
                     ]
 
-                for subject, vocabulary, token in subjects do
-                    let item = { entry 1L with Subject = subject }
+                for kind, id, token in subjects do
+                    let item =
+                        { entry 1L with
+                            Subject =
+                                {
+                                    PartKind = kind
+                                    PartId = id
+                                    Revision = revision
+                                }
+                            Task = TaskId.ofLiteral token
+                        }
+
+                    let vocabulary = "task"
 
                     let act =
                         TimelineScreen.timelineEntry item
@@ -245,7 +254,7 @@ let tests =
 
                     Expect.equal
                         act.Value
-                        (PresentedValue.Code(vocabulary, token))
+                        (PresentedValue.Message("task." + token + ".label"))
                         "Work and reminder metadata cannot be relabelled as financial acts"
 
                     for language in LocalizationPolicy.languages do
@@ -330,8 +339,8 @@ let tests =
                     if details then
                         Expect.equal
                             (text.Split(operationId).Length - 1)
-                            2
-                            "Explicit details render the technical identity on both pages")
+                            4
+                            "Both operation and part identities are supplied on each of the two pages")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->
@@ -440,8 +449,7 @@ let tests =
                                         Items = changes
                                         Overview =
                                             {
-                                                Event =
-                                                    TimelineEvent.CaseActRecorded CaseActKind.Close
+                                                Event = TimelineEvent.PartChanged PartKind.Case
                                                 Highlights = []
                                             }
                                     }

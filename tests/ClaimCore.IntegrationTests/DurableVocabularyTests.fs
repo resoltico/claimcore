@@ -128,7 +128,7 @@ let tests =
                     (fun database ->
                         guardedSql
                             database
-                            "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act}','\"SYNTHETIC_UNKNOWN\"'::jsonb) WHERE operation_id=(SELECT operation_id FROM claimcore.ledger WHERE command->>'kind'='CASE' ORDER BY sequence LIMIT 1)"
+                            "UPDATE claimcore.ledger SET task='case.syntheticUnknown' WHERE operation_id=(SELECT operation_id FROM claimcore.ledger WHERE aggregate_kind='FAMILY' ORDER BY sequence LIMIT 1)"
                             [||])
                     readEntry
                     rawEntry)

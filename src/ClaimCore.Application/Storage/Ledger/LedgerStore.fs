@@ -29,10 +29,7 @@ type internal LedgerStore(source: NpgsqlDataSource, installation: Installation, 
                     // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
                     // The following single access query must acquire a fresh snapshot after that wait.
                     let! _ =
-                        AccessRequests.lockPrincipal
-                            connection
-                            query.Principal
-                            query.CancellationToken
+                        PrincipalLock.acquire connection query.Principal query.CancellationToken
 
                     let! observed =
                         DatabaseSession.rows

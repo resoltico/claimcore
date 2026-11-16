@@ -25,7 +25,9 @@ let ofData endpoint reply =
     ofValue endpoint (RepresentationReply.Data reply)
 
 let humanPreview input reply =
-    ofValue Api.operationPreview (RepresentationReply.Human(HumanReplies.preview input reply))
+    ofValue
+        Api.operationPreview
+        (RepresentationReply.Human(HumanReplies.previewSubmission input reply))
 
 let humanExecute reply =
     ofValue Api.operationExecute (RepresentationReply.Human(HumanReplies.execute reply))

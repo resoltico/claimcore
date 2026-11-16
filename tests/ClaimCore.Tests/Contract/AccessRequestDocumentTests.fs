@@ -53,12 +53,11 @@ let tests =
                     let admit =
                         actions original
                         |> List.find (fun action ->
-                            action.Task =
-                                ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
+                            action.Task = (TaskId.ofLiteral "people.admit"))
 
                     Expect.equal
                         admit.Binding
-                        (OperationBinding.People(None, 0L))
+                        (Some(Binding.PeopleNew Revision.zero))
                         "Admission selects an unregistered principal through authored inputs"
 
                     Expect.equal
@@ -114,8 +113,7 @@ let tests =
                 let dismiss =
                     actions (document None)
                     |> List.find (fun action ->
-                        action.Task =
-                            ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss)
+                        action.Task = (TaskId.ofLiteral "people.requests.dismiss"))
 
                 Expect.equal
                     dismiss.Seeds

@@ -82,20 +82,6 @@ type PartValue =
     | Note of NoteValue
     | Person of PersonValue
 
-[<RequireQualifiedAccess>]
-type PartKind =
-    | Case
-    | Payment
-    | Work
-    | Reminder
-    | Note
-    | Person
-
-module PartKind =
-    let vocabulary = Vocabulary.ofUnion<PartKind> "part" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-
 module PartValue =
     let kind =
         function
@@ -149,3 +135,80 @@ module PartChange =
 
     let validErasure change =
         change.Erases |> Option.forall ((=) (owner change))
+
+    /// Accepted-value views preserve unavailable private content instead of fabricating empty state.
+    let caseSnapshot reference change =
+        match change.Aggregate, change.Value with
+        | AggregateReference.Family id, PartValue.Case value when
+            value.Reference |> Option.forall ((=) reference)
+            ->
+            let state =
+                match value.Lifecycle, value.Content with
+                | Lifecycle.Erased, None -> Some CaseState.Erased
+                | lifecycle, Some content when lifecycle <> Lifecycle.Erased ->
+                    Some(
+                        CaseState.ofLifecycle
+                            lifecycle
+                            {
+                                CaseReference = reference
+                                Status = value.Status
+                                Registration = content.Registration
+                                Finance = content.Finance
+                            }
+                    )
+                | _ -> None
+
+            state
+            |> Option.map (fun state ->
+                {
+                    CaseSnapshot.CaseId = id
+                    Reference = reference
+                    Revision = change.Revision
+                    State = state
+                })
+        | _ -> None
+
+    let workSnapshot change =
+        match change.Aggregate, change.Value with
+        | AggregateReference.Family id, PartValue.Work(Some work) ->
+            Some
+                {
+                    CaseWorkSnapshot.CaseId = id
+                    Revision = change.Revision
+                    Work = work
+                }
+        | _ -> None
+
+    let reminderSnapshot change =
+        match change.Aggregate, change.Value with
+        | AggregateReference.Family id, PartValue.Reminder value ->
+            match ReminderId.create change.PartId, value.Plan with
+            | Some reminder, Some plan ->
+                Reminder.ofAccepted reminder id change.Revision plan.Action plan.Due value.State
+                |> Result.toOption
+            | _ -> None
+        | _ -> None
+
+    let noteSnapshot change =
+        match change.Aggregate, change.Value with
+        | AggregateReference.Family id, PartValue.Note value when value.Removed || value.Text.IsSome ->
+            NoteId.create change.PartId
+            |> Option.map (fun note -> Note.ofAccepted note id value.Text)
+        | _ -> None
+
+    let paymentDifference change =
+        match change.Value with
+        | PartValue.Payment value ->
+            value.Entry
+            |> Option.map (
+                if value.Removed then
+                    PaymentDifference.Removed
+                else
+                    PaymentDifference.Recorded
+            )
+        | _ -> None
+
+    let disposition change =
+        match change.Value with
+        | PartValue.Case value -> value.Disposition
+        | _ -> None

@@ -1,8 +1,8 @@
 namespace ClaimCore.RecordFormat
 
-open System
 open System.Security.Cryptography
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Json
 
 [<RequireQualifiedAccess>]
@@ -12,7 +12,6 @@ type OperationRootProblem =
     | EffectOrdinals
     | Hash
 
-/// The single accepted operation hash commits its complete ordered structural closure.
 type OperationRoot =
     private
         {
@@ -25,29 +24,27 @@ type OperationRoot =
     member this.Hash = this.HashValue
     member this.Position = LedgerPosition.create this.Header.Sequence this.HashValue
 
-type BoundOperationEffect =
-    {
-        Id: EffectId
-        Position: EffectPosition
-        Descriptor: EffectDescriptor
-    }
-
 module OperationRoot =
     [<Literal>]
     let MaximumPublicMetadataBytes = 65536
 
-    let private canonical (codec: Codec<'a>) value =
-        codec.Write value |> CanonicalWriter.bytes
+    let structureValue (root: OperationRoot) =
+        OperationPublicCodecs.structure.Write(root.Structure.Binding, root.Structure.Retained)
 
-    let commandBytes (value: OperationRoot) =
-        canonical OperationPublicCodecs.command value.Structure.Command
+    let structureBytes root =
+        structureValue root |> CanonicalWriter.bytes
 
-    let effectBytes (value: OperationRoot) =
-        value.Structure.Effects
-        |> List.mapi (fun index effect -> index, canonical OperationPublicCodecs.effect effect)
+    let effectValues (root: OperationRoot) =
+        root.Structure.Effects
+        |> List.mapi (fun index effect ->
+            index, (OperationPublicCodecs.effect root.Header index).Write effect)
 
-    let private bytes (structure: OperationStructure) =
-        let header = structure.Header
+    let effectBytes root =
+        effectValues root
+        |> List.map (fun (index, value) -> index, CanonicalWriter.bytes value)
+
+    let private bytes (value: OperationStructure) =
+        let header = value.Header
 
         Array.concat
             [
@@ -59,95 +56,150 @@ module OperationRoot =
                 OperationFrames.uuid (OperationId.value header.OperationId)
                 OperationFrames.uuid (ActorId.value header.ActorId)
                 OperationFrames.i64 header.RecordedAt.UtcTicks
-                match header.BusinessDate with
-                | None -> [| 0uy |]
-                | Some date -> Array.append [| 1uy |] (OperationFrames.u32 (uint32 date.DayNumber))
-                canonical OperationPublicCodecs.command structure.Command
+                (match header.BusinessDate with
+                 | None -> [| 0uy |]
+                 | Some date -> Array.append [| 1uy |] (OperationFrames.u32 (uint32 date.DayNumber)))
+                OperationFrames.text (TaskId.token value.Task)
+                BindingCodecs.binding.Write value.Binding
+                |> CanonicalWriter.bytes
                 |> OperationFrames.frame
-                OperationFrames.u32 (uint32 structure.Effects.Length)
-                structure.Effects
+                InputMapCodecs.stored.Write value.Retained
+                |> CanonicalWriter.bytes
+                |> OperationFrames.frame
+                OperationFrames.u32 (uint32 value.Effects.Length)
+                value.Effects
                 |> List.mapi (fun index effect ->
-                    Array.concat
-                        [
-                            OperationFrames.u32 (uint32 index)
-                            canonical OperationPublicCodecs.effect effect |> OperationFrames.frame
-                        ])
+                    Array.append
+                        (OperationFrames.u32 (uint32 index))
+                        ((OperationPublicCodecs.effect header index).Write effect
+                         |> CanonicalWriter.bytes
+                         |> OperationFrames.frame))
                 |> Array.concat
-                OperationFrames.u32 (uint32 structure.Compartments.Length)
-                structure.Compartments
-                |> List.map (fun content ->
-                    Array.concat
-                        [
-                            CompartmentDescriptor.bytes content.Descriptor |> OperationFrames.frame
-                            content.Commitment
-                        ])
+                OperationFrames.u32 (uint32 value.Compartments.Length)
+                value.Compartments
+                |> List.map (fun compartment ->
+                    Array.append
+                        (CompartmentDescriptor.bytes compartment.Descriptor
+                         |> OperationFrames.frame)
+                        compartment.Commitment)
                 |> Array.concat
             ]
 
     let private bind structure =
-        let hash = bytes structure |> SHA256.HashData |> EntryHash.ofBytes |> Option.get
-
         {
             StructureValue = structure
-            HashValue = hash
+            HashValue = bytes structure |> SHA256.HashData |> EntryHash.ofBytes |> Option.get
         }
 
-    let append header command effects compartments =
-        OperationStructure.append header command effects compartments
+    let private declared (structure: OperationStructure) =
+        match ClaimCore.Domain.Tasks.Registry.findDeclaration structure.Task with
+        | None -> Ok()
+        | Some declaration ->
+            let aggregate =
+                match structure.Effects.Head.Change.Aggregate with
+                | AggregateReference.Family _ -> AggregateKind.Family
+                | AggregateReference.Person _ -> AggregateKind.Person
+
+            if aggregate <> declaration.Aggregate then
+                Error(OperationRootProblem.Structure OperationStructureProblem.Task)
+            elif not (BindingCodecs.matches declaration structure.Binding) then
+                Error(OperationRootProblem.Structure OperationStructureProblem.Binding)
+            elif
+                InputMapCodecs.partition InputRetention.Retained declaration structure.Retained
+                <> structure.Retained
+            then
+                Error(OperationRootProblem.Structure OperationStructureProblem.Inputs)
+            elif InputMapCodecs.hasErasable declaration && structure.Compartments.IsEmpty then
+                Error(OperationRootProblem.Structure OperationStructureProblem.Compartments)
+            else
+                Ok()
+
+    let append header task binding retained effects compartments =
+        OperationStructure.append header task binding retained effects compartments
         |> Result.mapError OperationRootProblem.Structure
-        |> Result.map bind
+        |> Result.bind (fun structure ->
+            declared structure
+            |> Result.bind (fun () ->
+                let publicBytes =
+                    OperationPublicCodecs.structure.Write(structure.Binding, structure.Retained)
+                    |> CanonicalWriter.bytes
+
+                let effectsTooLarge =
+                    structure.Effects
+                    |> List.mapi (fun index effect ->
+                        (OperationPublicCodecs.effect header index).Write effect
+                        |> CanonicalWriter.bytes)
+                    |> List.exists (fun bytes -> bytes.Length > MaximumPublicMetadataBytes)
+
+                if publicBytes.Length > MaximumPublicMetadataBytes || effectsTooLarge then
+                    Error(
+                        OperationRootProblem.PublicMetadata
+                            {
+                                Field = "$"
+                                Message = "Public metadata exceeds the supported byte bound."
+                            }
+                    )
+                else
+                    Ok(bind structure)))
 
     let private read codec bytes =
         Codec.decode MaximumPublicMetadataBytes codec bytes
-        |> Result.mapError (fun error ->
+        |> Result.mapError (fun problem ->
             OperationRootProblem.PublicMetadata
                 {
-                    Field = error.Path
-                    Message = error.Reason
+                    Field = problem.Path
+                    Message = problem.Reason
                 })
 
-    /// Public metadata may come from JSONB; property order/whitespace are not business identity.
-    /// Canonical hash bytes are always derived from the interpreted closed metadata grammar.
     let restore
-        header
-        commandBytes
+        (header: OperationHeader)
+        taskToken
+        structureBytes
         (effectRows: (int * byte array) list)
         compartments
         expectedHash
         =
-        if
+        if header.Sequence < Sequence.first then
+            Error(OperationRootProblem.Structure OperationStructureProblem.Header)
+        elif
             effectRows.IsEmpty
             || effectRows.Length > OperationStructure.MaximumEffects
             || (effectRows |> List.map fst) <> [ 0 .. effectRows.Length - 1 ]
         then
             Error OperationRootProblem.EffectOrdinals
         else
-            read OperationPublicCodecs.command commandBytes
-            |> Result.bind (fun command ->
-                effectRows
-                |> List.fold
-                    (fun state (_, bytes) ->
-                        state
-                        |> Result.bind (fun effects ->
-                            read OperationPublicCodecs.effect bytes
-                            |> Result.map (fun effect -> effect :: effects)))
-                    (Ok [])
-                |> Result.bind (fun effects ->
-                    OperationStructure.restore header command (List.rev effects) compartments
-                    |> Result.mapError OperationRootProblem.Structure))
-            |> Result.map bind
+            OperationPublicCodecs.task.Read "$.task" (JsonValue.String taskToken)
+            |> Result.mapError (fun problem ->
+                OperationRootProblem.PublicMetadata
+                    {
+                        Field = problem.Path
+                        Message = problem.Reason
+                    })
+            |> Result.bind (fun task ->
+                read OperationPublicCodecs.structure structureBytes
+                |> Result.bind (fun (binding, retained) ->
+                    effectRows
+                    |> List.map (fun (index, bytes) ->
+                        read (OperationPublicCodecs.effect header index) bytes)
+                    |> List.fold
+                        (fun current next ->
+                            current
+                            |> Result.bind (fun current ->
+                                next |> Result.map (fun next -> next :: current)))
+                        (Ok [])
+                    |> Result.bind (fun effects ->
+                        OperationStructure.create
+                            header
+                            task
+                            binding
+                            retained
+                            (List.rev effects)
+                            compartments
+                        |> Result.mapError OperationRootProblem.Structure)))
+            |> Result.bind (fun structure ->
+                declared structure |> Result.map (fun () -> bind structure))
             |> Result.bind (fun root ->
                 if root.Hash = expectedHash then
                     Ok root
                 else
                     Error OperationRootProblem.Hash)
-
-    let effects (root: OperationRoot) =
-        root.Structure.Effects
-        |> List.mapi (fun index descriptor ->
-            {
-                BoundOperationEffect.Id =
-                    EffectId.create root.Header.OperationId index |> Option.get
-                Position = EffectPosition.create root.Header.Sequence index |> Option.get
-                Descriptor = descriptor
-            })

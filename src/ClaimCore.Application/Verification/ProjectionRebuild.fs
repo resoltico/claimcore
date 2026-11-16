@@ -16,107 +16,6 @@ open ClaimCore.RecordFormat
 
 /// Owner-only maintenance. The ledger head lock excludes application writers throughout the scan.
 module internal ProjectionRebuild =
-    let private replaceCases connection rows token =
-        task {
-            for KeyValue(_, (owned: CaseSubjectRows, index)) in rows do
-                do!
-                    Persistence.case
-                        connection
-                        {
-                            Rows = owned
-                            Index = index
-                            Family = None
-                        }
-                        token
-        }
-
-    let private replacePeople connection rows token =
-        task {
-            for row in rows |> Map.values do
-                do! Persistence.peopleActor connection row token
-        }
-
-    let private replaceWork connection (state: Replay.Scan) token =
-        task {
-            for KeyValue(id, history) in state.Work do
-                let parent = Map.find id state.Cases
-
-                let owned =
-                    {
-                        WorkSubjectState.CaseId = id
-                        Revision = history.Revision
-                        Snapshot = history.Snapshot
-                        ChangedAt = history.ChangedAt
-                        RecordedBy = history.RecordedBy
-                        SummaryChangedAt = history.SummaryChangedAt
-                        SummaryRecordedBy = history.SummaryRecordedBy
-                        Erased = parent.State = CaseState.Erased
-                    }
-
-                let rows =
-                    WorkSubject.rows owned
-                    |> Option.defaultWith (fun () ->
-                        raise (RecordCorruptException "Incomplete work after replay."))
-
-                do! Persistence.workChange connection (WorkChangeProjection.Work rows) token
-
-            let reminders =
-                state.Reminders
-                |> Map.toList
-                |> List.map (fun (id, history) ->
-                    let owned =
-                        {
-                            ReminderSubjectState.ReminderId = id
-                            CaseId = history.CaseId
-                            Revision = history.Revision
-                            Status = Some history.State
-                            Snapshot = history.Snapshot
-                            RecordedAt = history.RecordedAt
-                            RecordedBy = history.RecordedBy
-                            Erased = (Map.find history.CaseId state.Cases).State = CaseState.Erased
-                        }
-
-                    ReminderSubject.rows owned
-                    |> Option.defaultWith (fun () ->
-                        raise (RecordCorruptException "Incomplete reminder after replay.")))
-
-            do! Persistence.workChange connection (WorkChangeProjection.Reminder reminders) token
-
-        }
-
-    let private replaceNotes connection (state: Replay.Scan) token =
-        task {
-            for KeyValue(id, history) in state.Notes do
-                let owned =
-                    {
-                        NoteSubjectState.NoteId = id
-                        CaseId = history.CaseId
-                        Removed = Some history.Removed
-                        Snapshot = history.Snapshot
-                        Created =
-                            {
-                                Position = history.CreatedPosition
-                                OperationId = OperationId.create (NoteId.value id) |> Option.get
-                                ActorId = history.RecordedBy
-                                RecordedAt = history.RecordedAt
-                            }
-                        Erased = (Map.find history.CaseId state.Cases).State = CaseState.Erased
-                    }
-
-                let rows =
-                    NoteSubject.rows owned
-                    |> Option.defaultWith (fun () ->
-                        raise (RecordCorruptException "Incomplete note after replay."))
-
-                do! Persistence.workChange connection (WorkChangeProjection.Note rows) token
-        }
-
-    let private replaceGrants connection rows token =
-        task {
-            for row in rows |> Map.values do
-                do! Persistence.peopleGrants connection row token
-        }
-
     let rebuild
         (source: NpgsqlDataSource)
         (expected: InstallationCheckpoint)
@@ -162,7 +61,7 @@ module internal ProjectionRebuild =
                     | Error finding -> return Error finding
                     | Ok state ->
                         let rows =
-                            Replay.caseRows state
+                            Replay.familyRows state
                             |> Result.defaultWith (fun _ ->
                                 raise (
                                     RecordCorruptException
@@ -198,11 +97,14 @@ module internal ProjectionRebuild =
 
                             ()
 
-                        do! replacePeople connection people token
-                        do! replaceCases connection rows token
-                        do! replaceWork connection state token
-                        do! replaceNotes connection state token
-                        do! replaceGrants connection people token
+                        for row in people |> Map.values do
+                            do! PartProjections.personIdentity connection row token
+
+                        for row in rows |> Map.values do
+                            do! PartProjections.family connection row token
+
+                        for row in people |> Map.values do
+                            do! PartProjections.personGrants connection row token
 
                         let! validated =
                             Verification.projections connection installation state token

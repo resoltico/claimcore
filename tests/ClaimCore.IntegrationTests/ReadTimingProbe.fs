@@ -45,16 +45,17 @@ let tests =
 
                 for index in 1..10000 do
                     let! reply =
-                        Service.execute
+                        Service.executeSubmission
                             actor
-                            (Inputs.caseOperation (
-                                request
-                                    database.Fixture
-                                    (1000000 + index)
-                                    (sprintf "TIMING-%05d" index)
-                                    0L
-                                    (AuthoredCaseAct.Open registration)
-                            ))
+                            (((request
+                                (database.Fixture)
+                                ((1000000 + index))
+                                ((sprintf "TIMING-%05d" index))
+                                (0L)
+                                "case.open"
+                                (ClaimCore.TestSupport.Submissions.fields (
+                                    RegistrationInput.values (registration)
+                                )))))
                             token
 
                     accepted reply |> ignore

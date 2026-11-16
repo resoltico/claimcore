@@ -48,16 +48,18 @@ let createFor issuer subject =
                 PrincipalKey.service issuer "service"
                 |> Result.defaultWith (string >> invalidOp)
 
+            let registrationInput =
+                Submissions.create
+                    "people.register"
+                    (id fixture 20)
+                    (Binding.PeopleNew Revision.zero)
+                    (Submissions.principal service
+                     |> Map.fold
+                         (fun values key value -> Map.add key value values)
+                         (Submissions.profile Inputs.actorProfile))
+
             let! registered =
-                (Service.execute
-                    owner
-                    (OperationInput.People(
-                        peopleRequest
-                            (id fixture 20)
-                            service
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    (CancellationToken.None))
+                Service.executeSubmission owner registrationInput CancellationToken.None
 
             acceptedPeople registered
 
@@ -74,13 +76,19 @@ let createFor issuer subject =
 
             acceptedPeople granted
 
-            let! opened =
-                (Service.execute
-                    owner
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture 10 "SYNTHETIC-001" 0L (AuthoredCaseAct.Open registration)
-                    ))
-                    (CancellationToken.None))
+            let opening =
+                request
+                    fixture
+                    10
+                    "SYNTHETIC-001"
+                    0L
+                    "case.open"
+                    (Submissions.fields (RegistrationInput.values registration)
+                     |> Map.add
+                         (Submissions.field BusinessField.CaseReference)
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text "SYNTHETIC-001"))
+
+            let! opened = Service.executeSubmission owner opening CancellationToken.None
 
             accepted opened |> ignore
             return new Fixture(database)

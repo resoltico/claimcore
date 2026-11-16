@@ -70,14 +70,16 @@ let tests =
 
                         Expect.equal
                             action.Task
-                            (ApplicationTaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
+                            (TaskId.ofLiteral "note.remove")
                             "The removal task is supplied by Core"
 
                         Expect.equal
                             action.Binding
-                            (OperationBinding.Note(
-                                CaseSelector.Id ResponseExamples.caseRead.Snapshot.CaseId,
-                                Some(NoteId.value id)
+                            (Some(
+                                Binding.Note(
+                                    CaseSelector.Id ResponseExamples.caseRead.Snapshot.CaseId,
+                                    id
+                                )
                             ))
                             "No row-key lookup binds the note"
 

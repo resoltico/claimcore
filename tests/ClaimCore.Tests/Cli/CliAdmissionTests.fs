@@ -33,13 +33,13 @@ let private prepared tail =
 let private admission tail =
     let value = prepared tail |> Fixtures.accepted
 
-    match
-        (Frames.value Api.operationExecute
-         >> Option.map ClaimCore.TestSupport.Submissions.command)
-            value.Invocation
-    with
-    | Some(OperationInput.People { Act = PeopleAct.Admit admission }) -> admission
-    | other -> failtestf "Expected a typed ADMIT operation: %A" other
+    Frames.value Api.operationExecute value.Invocation
+    |> Option.map (ClaimCore.TestSupport.Submissions.command >> _.Inputs)
+    |> Option.defaultWith (fun () -> failtest "ADMIT input required")
+
+let private rows (value: InputMap) =
+    value.Collections[TaskCollectionId.PeopleGrants] |> List.map _.Values
+
 
 [<Tests>]
 let tests =
@@ -68,7 +68,7 @@ let tests =
                     "The wire codec defines member order"
 
                 Expect.stringContains
-                    (CommandGrammar.synopsis (ApplicationTaskId.Query QueryTaskId.PeopleList))
+                    (CommandGrammar.synopsis ((QueryTaskId.key QueryTaskId.PeopleList)))
                     "--text VALUE"
                     "Help uses the actual grammar")
             testCase
@@ -169,11 +169,11 @@ let tests =
                      >> Option.map ClaimCore.TestSupport.Submissions.command)
                         prepared.Invocation
                 with
-                | Some(OperationInput.People request) ->
+                | Some request ->
                     Expect.equal
-                        request.Target.Issuer
-                        "https://profile.example/"
-                        "The wire principal is explicit; the server never infers it"
+                        request.Inputs.Values[TaskInputId.Target InputTarget.PrincipalIssuer]
+                        (InputValue.Text "https://profile.example/")
+                        "Principal issuer is explicit"
                 | other -> failtestf "Expected people input: %A" other)
             testCase "explicit issuer and structured modes bypass profile defaulting" (fun () ->
                 let profile = Map.ofList [ CliSetting.Issuer, "https://profile.example/" ]
@@ -219,30 +219,45 @@ let tests =
                             ]
 
                     Expect.equal
-                        value.Profile
-                        {
-                            DisplayName = "Authored name"
-                            Contact = Some "Contact"
-                        }
-                        "Human profile aliases preserve their values"
+                        value.Values[TaskInputId.Target InputTarget.ProfileDisplayName]
+                        (InputValue.Text "Authored name")
+                        "Name alias"
 
                     Expect.equal
-                        value.Grants
+                        value.Values[TaskInputId.Target InputTarget.ProfileContact]
+                        (InputValue.Text "Contact")
+                        "Contact alias"
+
+                    Expect.equal
+                        (rows value)
                         [
-                            {
-                                Role = Role.CaseReader
-                                Scope = GrantTarget.Installation
-                            }
-                            {
-                                Role = Role.CaseHandler
-                                Scope = GrantTarget.CaseReference "CASE@SECOND@THIRD"
-                            }
-                            {
-                                Role = Role.Auditor
-                                Scope = GrantTarget.CaseReference uuid
-                            }
+                            Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Role,
+                                    InputValue.Text "CASE_READER"
+                                    TaskInputId.Scope, InputValue.Text "INSTALLATION"
+                                ]
+                            Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Role,
+                                    InputValue.Text "CASE_HANDLER"
+                                    TaskInputId.Scope, InputValue.Text "CASE"
+                                    TaskInputId.Target(
+                                        InputTarget.Field BusinessField.CaseReference
+                                    ),
+                                    InputValue.Text "CASE@SECOND@THIRD"
+                                ]
+                            Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Role, InputValue.Text "AUDITOR"
+                                    TaskInputId.Scope, InputValue.Text "CASE"
+                                    TaskInputId.Target(
+                                        InputTarget.Field BusinessField.CaseReference
+                                    ),
+                                    InputValue.Text uuid
+                                ]
                         ]
-                        "Only the first @ is syntax; a UUID-looking reference is never treated as an ID")
+                        "Only first @ separates the explicit reference")
             testCase "duplicates and role scope business policy remain core-owned" (fun () ->
                 let value =
                     admission
@@ -256,19 +271,25 @@ let tests =
                         ]
 
                 Expect.equal
-                    value.Grants.Length
+                    (rows value).Length
                     3
                     "The argv adapter does not normalize away repeated rows"
 
-                Expect.equal
-                    value.Grants[0]
-                    value.Grants[1]
-                    "The core receives both duplicate proposals"
+                let proposals = rows value
 
                 Expect.equal
-                    value.Grants[2].Scope
-                    (GrantTarget.CaseReference "CASE-1")
-                    "Applicability is not redefined by the CLI")
+                    (List.item 0 proposals)
+                    (List.item 1 proposals)
+                    "Core receives both duplicates"
+
+                Expect.equal
+                    (proposals
+                     |> List.item 2
+                     |> Map.find (
+                         TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+                     ))
+                    (InputValue.Text "CASE-1")
+                    "Applicability remains core-owned")
             testCase
                 "collection bounds are enforced at preparation without a partial operation"
                 (fun () ->
@@ -276,7 +297,7 @@ let tests =
                         List.replicate n [ "--role"; "CASE_READER" ] |> List.concat
 
                     Expect.equal
-                        (admission (roles 48)).Grants.Length
+                        (rows (admission (roles 48))).Length
                         48
                         "The full declared maximum is retained"
 
@@ -292,7 +313,7 @@ let tests =
                             "The required collection has a named missing option"
                     | Ok _ -> failtest "ADMIT requires at least one role")
             testCase "discovery exposes repeated role syntax and rejects creation clears" (fun () ->
-                let operation = ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit)
+                let operation = "people.admit"
                 let text = CommandGrammar.synopsis operation
                 Expect.stringContains text "--name" "The profile name uses the human alias"
 

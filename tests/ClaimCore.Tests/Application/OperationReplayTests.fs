@@ -1,86 +1,45 @@
 module ClaimCore.Tests.OperationReplayTests
 
-open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Application
-open ClaimCore.Application.Storage
-open ClaimCore.Application.Reads
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Domain.Changes
+open ClaimCore.Application.Contracts
 open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
-open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
+open ClaimCore.Tests.FoldRecords
 
-let private valid result =
-    Result.defaultWith (fun error -> failtestf "Root replay witness: %A" error) result
+let private grant role =
+    inputs
+        [
+            input InputTarget.Role role
+            TaskInputId.Scope, InputValue.Text "INSTALLATION"
+        ]
 
-let private installation = Guid.Parse "00000000-0000-4000-8000-000000000001"
+let private revise value = Revision.create value |> Option.get
 
-let private operation number =
-    Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
-    |> OperationId.create
-    |> Option.get
-
-let private actor number =
+let private person number =
     ActorId.ofOperationId (operation number)
 
-let private principal number =
-    PrincipalKey.human "https://issuer.example/" ("actor-" + string number) |> valid
+let private executor id (record: RetainedOperation) =
+    let header = { record.Root.Header with ActorId = id }
 
-let private profile name =
-    ActorProfile.parse { DisplayName = name; Contact = None } |> valid
-
-let private nonce number () =
-    Array.init 32 (fun index -> byte ((number + index) % 256))
-
-let private people number (head: LedgerPosition) executor target expected act saved =
-    let header =
-        {
-            OperationHeader.InstallationId = installation
-            Sequence = Sequence.successor head.Sequence
-            PreviousHash = head.EntryHash
-            OperationId = operation number
-            ActorId = executor
-            RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
-            BusinessDate = None
-        }
+    let changes =
+        record.Changes
+        |> List.map (fun change ->
+            { change with
+                Stamp = { change.Stamp with ActorId = id }
+            })
 
     RetainedOperation.create
         header
-        (CommandSkeleton.People
-            {
-                ExpectedRevision = Revision.create expected |> Option.get
-                TargetActorId = actor target
-                Principal = principal target
-                Act = act
-            })
-        (OperationValues.People { Profile = saved })
-        (nonce number)
-    |> valid
-
-let private erased (value: RetainedOperation) =
-    OperationRoot.restore
-        value.Root.Header
-        (OperationRoot.commandBytes value.Root)
-        (OperationRoot.effectBytes value.Root)
-        (value.Root.Structure.Compartments |> List.map Compartment.withoutContent)
-        value.Root.Hash
-    |> valid
-    |> RetainedOperation.decode
-    |> valid
-
-let private append state root =
-    Replay.append installation None state root |> valid
-
-let private owner () =
-    people
-        1
-        LedgerPosition.genesis
-        (actor 1)
-        1
-        0L
-        (PeopleAct.ProvisionOwner(0, People.initialOwnerRoles))
-        (Some(profile "Owner"))
+        record.Root.Structure.Task
+        record.Root.Structure.Binding
+        (record.Inputs |> Option.get)
+        changes
+        (fun () -> Array.create 32 199uy)
+    |> required
 
 [<Tests>]
 let tests =
@@ -88,345 +47,901 @@ let tests =
         "operation root replay"
         [
             testCase
-                "bootstrap registers profile and roles under one pre-operation decision"
+                "generic root restoration does not replace reviewed-version verification"
                 (fun () ->
-                    let root = owner ()
-                    let state = append (Replay.initial None) root
+                    let first, one = owner ()
+
+                    let opened, two =
+                        build
+                            one
+                            2
+                            principal
+                            "case.open"
+                            (Binding.CaseNew Revision.zero)
+                            (opening "REVIEWED-BOUND")
+
+                    let parent = CaseId.ofOperationId (operation 2)
+
+                    let closed, _ =
+                        build
+                            two
+                            3
+                            principal
+                            "case.close"
+                            (Binding.Case(CaseSelector.Id parent, Revision.first))
+                            InputMap.empty
+
+                    let terminal = Revision.create Revision.Maximum |> Option.get
+
+                    let forged =
+                        RetainedOperation.create
+                            closed.Root.Header
+                            closed.Root.Structure.Task
+                            (Binding.Case(CaseSelector.Id parent, terminal))
+                            closed.Inputs.Value
+                            closed.Changes
+                            (fun () -> Array.create 32 44uy)
+                        |> required
+
+                    Expect.isOk (scan [ first; opened; closed ]) "Genuine reviewed version"
 
                     Expect.equal
-                        state.Head.Sequence
-                        Sequence.first
-                        "A compound operation advances once"
-
-                    Expect.equal state.Actors.Count 1 "One actor registered"
-                    let current = state.Actors[actor 1]
-
-                    Expect.equal
-                        current.Actor.Profile
-                        (Some(profile "Owner"))
-                        "Typed profile applied"
-
-                    for role in Role.Owner :: People.initialOwnerRoles do
-                        Expect.contains
-                            current.Grants
-                            {
-                                Role = role
-                                Scope = Scope.Installation
-                            }
-                            "All declared grants applied"
-
-                    Expect.equal
-                        (EffectPosition.index
-                            state.GrantSources[(actor 1, Role.Owner, Scope.Installation)])
-                        0
-                        "Implicit owner grant belongs to registration effect"
-
-                    Expect.equal
-                        (EffectPosition.index
-                            state.GrantSources[(actor 1, Role.CaseHandler, Scope.Installation)])
-                        2
-                        "Initial role provenance uses its effect ordinal"
-
-                    Expect.isOk (Replay.erasure state) "Complete profile needs no erase evidence")
+                        (scan [ first; opened; forged ] |> Result.map ignore)
+                        (Error FoldProblem.Decision)
+                        "A representable binding with a valid hash cannot authorize a different reviewed version")
             testCase
-                "profile erasure does not skip mixed registration and grant semantics"
+                "child replay rejects validly committed values unrelated to the authored task"
                 (fun () ->
-                    let root = owner ()
-                    let initial = append (Replay.initial None) root
+                    let first, one = owner ()
 
-                    let grants =
-                        [
-                            {
-                                Role = Role.Auditor
-                                Scope = Scope.Installation
-                            }
-                            {
-                                Role = Role.CaseHandler
-                                Scope = Scope.Installation
-                            }
-                        ]
-
-                    let admitted =
-                        people
+                    let opened, two =
+                        build
+                            one
                             2
-                            initial.Head
-                            (actor 1)
-                            2
-                            0L
-                            (PeopleAct.Admit { Profile = 0; Grants = grants })
-                            (Some(profile "Removed profile"))
+                            principal
+                            "case.open"
+                            (Binding.CaseNew Revision.zero)
+                            (opening "CHILD-REPLAY")
 
-                    let beforeErase = append initial (erased admitted)
+                    let parent = CaseId.ofOperationId (operation 2)
+                    let target = CaseSelector.Id parent
 
-                    Expect.equal
-                        (beforeErase.Actors[actor 2].Grants |> Set.ofList)
-                        (Set.ofList grants)
-                        "Unavailable profile never drops retained grants"
+                    let work, three =
+                        build
+                            two
+                            3
+                            principal
+                            "work.update"
+                            (Binding.Work(target, Revision.zero))
+                            (fields [ BusinessField.HandlingSummary, "Exact summary" ])
 
-                    Expect.isNone
-                        beforeErase.Actors[actor 2].Actor.Profile
-                        "No dummy profile is invented"
-
-                    Expect.isError
-                        (Replay.erasure beforeErase)
-                        "Unexplained private loss remains corruption"
-
-                    let erase =
-                        people 3 beforeErase.Head (actor 1) 2 1L PeopleAct.EraseProfile None
-
-                    let after = append beforeErase erase
-
-                    Expect.isOk
-                        (Replay.erasure after)
-                        "Later accepted owner erase accounts for the missing profile"
-
-                    let later =
-                        people
+                    let reminder, four =
+                        build
+                            three
                             4
-                            after.Head
-                            (actor 1)
+                            principal
+                            "reminder.create"
+                            (Binding.ReminderNew target)
+                            (inputs
+                                [
+                                    input InputTarget.ReminderAction "Exact action"
+                                    input InputTarget.ReminderDueDate "2026-11-17"
+                                ])
+
+                    let completed, five =
+                        build
+                            four
+                            5
+                            principal
+                            "reminder.complete"
+                            (Binding.Reminder(
+                                target,
+                                ReminderId.ofOperationId (operation 4),
+                                Revision.first
+                            ))
+                            InputMap.empty
+
+                    let note, six =
+                        build
+                            five
+                            6
+                            principal
+                            "note.add"
+                            (Binding.NoteNew target)
+                            (inputs [ input InputTarget.NoteText "Exact first note" ])
+
+                    let other, seven =
+                        build
+                            six
+                            7
+                            principal
+                            "note.add"
+                            (Binding.NoteNew target)
+                            (inputs [ input InputTarget.NoteText "Other note" ])
+
+                    let removed, _ =
+                        build
+                            seven
+                            8
+                            principal
+                            "note.remove"
+                            (Binding.Note(target, NoteId.ofOperationId (operation 6)))
+                            InputMap.empty
+
+                    let forge (record: RetainedOperation) mutate =
+                        RetainedOperation.create
+                            record.Root.Header
+                            record.Root.Structure.Task
+                            record.Root.Structure.Binding
+                            record.Inputs.Value
+                            (record.Changes |> List.map mutate)
+                            (fun () -> Array.create 32 77uy)
+                        |> required
+
+                    let forgedWork =
+                        forge work (fun part ->
+                            match part.Value with
+                            | PartValue.Work(Some value) ->
+                                { part with
+                                    Value =
+                                        PartValue.Work(
+                                            Some
+                                                { value with
+                                                    Summary =
+                                                        Some(
+                                                            HandlingSummary.parse "Forged"
+                                                            |> required
+                                                        )
+                                                }
+                                        )
+                                }
+                            | _ -> failtest "Work required")
+
+                    let forgedReminder =
+                        forge completed (fun part ->
+                            match part.Value with
+                            | PartValue.Reminder value ->
+                                { part with
+                                    Value =
+                                        PartValue.Reminder
+                                            { value with
+                                                Plan =
+                                                    value.Plan
+                                                    |> Option.map (fun plan ->
+                                                        { plan with
+                                                            Action =
+                                                                ReminderAction.parse "Forged"
+                                                                |> required
+                                                        })
+                                            }
+                                }
+                            | _ -> failtest "Reminder required")
+
+                    let forgedRemoval =
+                        forge removed (fun part ->
+                            { part with
+                                PartId = OperationId.value (operation 7)
+                            })
+
+                    for prefix, original, forged in
+                        [
+                            [ first; opened ], work, forgedWork
+                            [ first; opened; work; reminder ], completed, forgedReminder
+                            [ first; opened; work; reminder; completed; note; other ],
+                            removed,
+                            forgedRemoval
+                        ] do
+                        Expect.isOk (scan (prefix @ [ original ])) "Original task result passes"
+
+                        Expect.equal
+                            (scan (prefix @ [ forged ]) |> Result.map ignore)
+                            (Error FoldProblem.Decision)
+                            "Valid hashes and individually representable values do not establish causality")
+            testCase
+                "replay admits assertions against the stored business date across midnight"
+                (fun () ->
+                    let first, one = owner ()
+                    let values = opening "STORED-DATE"
+
+                    let submitted day =
+                        InputMap.create
+                            (values.Values
+                             |> Map.add
+                                 (TaskInputId.Target(InputTarget.Field BusinessField.IncidentDate))
+                                 (InputValue.Text day)
+                             |> Map.add
+                                 (TaskInputId.Target(
+                                     InputTarget.Field BusinessField.IncidentNotificationDate
+                                 ))
+                                 (InputValue.Text day))
+                            Map.empty
+                        |> Option.get
+
+                    let original, _ =
+                        build
+                            one
                             2
-                            2L
-                            (PeopleAct.SetProfile 0)
-                            (Some(profile "Later profile"))
+                            principal
+                            "case.open"
+                            (Binding.CaseNew Revision.zero)
+                            (submitted "2026-11-16")
 
-                    let after = append after later
+                    let at = System.DateTimeOffset(2026, 11, 17, 0, 0, 1, System.TimeSpan.Zero)
 
-                    Expect.equal
-                        after.Actors[actor 2].Actor.Profile
-                        (Some(profile "Later profile"))
-                        "Later re-profile survives"
+                    let header =
+                        { original.Root.Header with
+                            RecordedAt = at
+                        }
 
-                    Expect.equal
-                        (after.Actors[actor 2].Grants |> Set.ofList)
-                        (Set.ofList grants)
-                        "Re-profile never changes earlier grants"
+                    let changes =
+                        original.Changes
+                        |> List.map (fun part ->
+                            { part with
+                                Stamp = { part.Stamp with RecordedAt = at }
+                            })
+
+                    let record inputs =
+                        RetainedOperation.create
+                            header
+                            original.Root.Structure.Task
+                            original.Root.Structure.Binding
+                            inputs
+                            changes
+                            (fun () -> Array.create 32 42uy)
+                        |> required
 
                     Expect.isOk
-                        (Replay.erasure after)
-                        "Earlier erase does not require later profile clearing")
-            testCase "an erased profile cannot grant people to execute its own command" (fun () ->
-                let root = owner ()
-                let initial = append (Replay.initial None) root
+                        (scan [ first; record (submitted "2026-11-16") ])
+                        "Stored decision date positive control"
 
-                let grants =
-                    [
+                    Expect.equal
+                        (scan [ first; record (submitted "2026-11-17") ] |> Result.map ignore)
+                        (Error FoldProblem.Decision)
+                        "Recorded timestamp cannot authorize tomorrow's assertion")
+            testCase
+                "replay rejects changed individual payment amounts despite unchanged case totals"
+                (fun () ->
+                    let first, one = owner ()
+
+                    let opened, two =
+                        build
+                            one
+                            2
+                            principal
+                            "case.open"
+                            (Binding.CaseNew Revision.zero)
+                            (opening "PAYMENT-TAMPER")
+
+                    let id = CaseId.ofOperationId (operation 2)
+
+                    let binding revision =
+                        Binding.Case(CaseSelector.Id id, revise revision)
+
+                    let decided, three =
+                        build
+                            two
+                            3
+                            principal
+                            "case.decide"
+                            (binding 1L)
+                            (fields
+                                [
+                                    BusinessField.PaymentDecisionDate, "2026-01-03"
+                                    BusinessField.PayableAmount, "750"
+                                    BusinessField.PayableCurrency, "EUR"
+                                ])
+
+                    let values =
+                        fields
+                            [
+                                BusinessField.PaymentDate, "2026-01-04"
+                                BusinessField.PaidAmount, "100"
+                                BusinessField.PaidCurrency, "EUR"
+                            ]
+
+                    let original, _ =
+                        build three 4 principal "case.recordPayment" (binding 2L) values
+
+                    let changes =
+                        original.Changes
+                        |> List.map (fun part ->
+                            match part.Value with
+                            | PartValue.Payment payment ->
+                                let entry = payment.Entry.Value
+
+                                let changed =
+                                    PaymentEntry.create
+                                        (PaymentEntry.id entry)
+                                        (PaymentEntry.date entry)
+                                        (Amount.parse "99" |> required)
+                                    |> required
+
+                                { part with
+                                    Value =
+                                        PartValue.Payment { payment with Entry = Some changed }
+                                }
+                            | _ -> part)
+
+                    let forged =
+                        RetainedOperation.create
+                            original.Root.Header
+                            original.Root.Structure.Task
+                            original.Root.Structure.Binding
+                            values
+                            changes
+                            (fun () -> Array.create 32 43uy)
+                        |> required
+
+                    Expect.isOk (scan [ first; opened; decided; original ]) "Exact payment control"
+
+                    Expect.equal
+                        (scan [ first; opened; decided; forged ] |> Result.map ignore)
+                        (Error FoldProblem.Decision)
+                        "The case part is unchanged; individual amount still must match")
+            testCase
+                "erased-profile regrant replay retains the latest real accepting position"
+                (fun () ->
+                    let first, one = owner ()
+
+                    let registered, two =
+                        build
+                            one
+                            2
+                            principal
+                            "people.register"
+                            (Binding.PeopleNew Revision.zero)
+                            (registration "regranted")
+
+                    let granted, three =
+                        build
+                            two
+                            3
+                            principal
+                            "people.grant"
+                            (Binding.People(person 2, Revision.first))
+                            (grant "CASE_READER")
+
+                    let reaffirmed, four =
+                        build
+                            three
+                            4
+                            principal
+                            "people.grant"
+                            (Binding.People(person 2, revise 2L))
+                            (grant "CASE_READER")
+
+                    let erased, _ =
+                        build
+                            four
+                            5
+                            principal
+                            "people.eraseProfile"
+                            (Binding.People(person 2, revise 3L))
+                            InputMap.empty
+
+                    let after =
+                        scan [ first; clear registered; clear granted; clear reaffirmed; erased ]
+                        |> required
+                        |> Fold.complete
+                        |> required
+
+                    let key =
+                        {
+                            Role = Role.CaseReader
+                            Scope = Scope.Installation
+                        }
+
+                    Expect.equal
+                        after.People[person 2].Grants[key]
+                        (EffectPosition.create (Sequence.create 4L |> Option.get) 0 |> Option.get)
+                        "The current grant belongs to its reaffirming person part")
+            testCase "bootstrap records the profile and every role in one person part" (fun () ->
+                let record, _ = owner ()
+                let state = scan [ record ] |> required
+
+                Expect.equal
+                    state.Head.Sequence
+                    Sequence.first
+                    "One operation extends the head once"
+
+                Expect.equal record.Changes.Length 1 "One accepted PERSON part"
+                Expect.equal state.People.Count 1 "One principal"
+                let current = state.People[person 1]
+
+                Expect.equal
+                    (current.Actor.Profile |> Option.map (_.DisplayName >> PartyName.format))
+                    (Some "owner")
+                    "Profile value"
+
+                Expect.equal
+                    (current.Grants |> Map.keys |> Seq.map _.Role |> Set.ofSeq)
+                    (set [ Role.Owner; Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward ])
+                    "Explicit and implicit roles"
+
+                for position in current.Grants |> Map.values do
+                    Expect.equal
+                        position
+                        (EffectPosition.create Sequence.first 0 |> Option.get)
+                        "All assignments belong to the real person part"
+
+                Expect.isOk (Fold.complete state) "No erasure is needed")
+            testCase
+                "profile erasure preserves admitted principal and grants, then permits a replacement profile"
+                (fun () ->
+                    let first, one = owner ()
+                    let values = registration "admitted"
+
+                    let rows =
+                        [ "AUDITOR"; "CASE_HANDLER" ] |> List.map (fun role -> (grant role).Values)
+
+                    let values =
+                        InputMap.create
+                            values.Values
+                            (Map.ofList [ TaskCollectionId.PeopleGrants, rows ])
+                        |> Option.get
+
+                    let admitted, two =
+                        build
+                            one
+                            2
+                            principal
+                            "people.admit"
+                            (Binding.PeopleNew Revision.zero)
+                            values
+
+                    let erased, three =
+                        build
+                            two
+                            3
+                            principal
+                            "people.eraseProfile"
+                            (Binding.People(person 2, Revision.first))
+                            InputMap.empty
+
+                    let prefix =
+                        scan [ first; clear admitted; erased ]
+                        |> required
+                        |> Fold.complete
+                        |> required
+
+                    let current = prefix.People[person 2]
+
+                    Expect.equal
+                        current.Actor.Principal
+                        (PrincipalKey.human "https://issuer.example/" "admitted" |> required)
+                        "Retained principal"
+
+                    Expect.isNone current.Actor.Profile "Private profile was cleared"
+
+                    Expect.equal
+                        (current.Grants |> Map.keys |> Seq.map _.Role |> Set.ofSeq)
+                        (set [ Role.Auditor; Role.CaseHandler ])
+                        "Retained grants"
+
+                    for position in current.Grants |> Map.values do
+                        Expect.equal
+                            position
+                            (EffectPosition.create (Sequence.create 2L |> Option.get) 0
+                             |> Option.get)
+                            "No invented grant coordinates"
+
+                    let replacement, _ =
+                        build
+                            three
+                            4
+                            principal
+                            "people.setProfile"
+                            (Binding.People(person 2, revise 2L))
+                            (profile "Replacement")
+
+                    let after =
+                        scan [ first; clear admitted; erased; replacement ]
+                        |> required
+                        |> Fold.complete
+                        |> required
+
+                    Expect.equal
+                        (after.People[person 2].Actor.Profile
+                         |> Option.map (_.DisplayName >> PartyName.format))
+                        (Some "Replacement")
+                        "New profile survives the older erasure"
+
+                    Expect.equal
+                        after.People[person 2].Grants
+                        current.Grants
+                        "Profile replacement preserves accepting positions")
+            testCase "an erased self-admission cannot authorize its own command" (fun () ->
+                let first, one = owner ()
+                let values = registration "untrusted"
+
+                let values =
+                    InputMap.create
+                        values.Values
+                        (Map.ofList [ TaskCollectionId.PeopleGrants, [ (grant "OWNER").Values ] ])
+                    |> Option.get
+
+                let admitted, _ =
+                    build one 2 principal "people.admit" (Binding.PeopleNew Revision.zero) values
+
+                let forged = admitted |> executor (person 2) |> clear
+                let before = scan [ first ] |> required
+
+                Expect.equal
+                    (Fold.append installation before forged)
+                    (Error(FoldProblem.Executor ExecutorIssue.ActorNotEnabled))
+                    "Authorization observes earlier people only")
+            testCase "public mutations cannot hide behind erased profile inputs" (fun () ->
+                let second =
+                    PrincipalKey.human "https://issuer.example/" "second-owner" |> required
+
+                let first, one = owner ()
+
+                let registered, two =
+                    build
+                        one
+                        2
+                        principal
+                        "people.register"
+                        (Binding.PeopleNew Revision.zero)
+                        (registration "second-owner")
+
+                let granted, three =
+                    build
+                        two
+                        3
+                        principal
+                        "people.grant"
+                        (Binding.People(person 2, Revision.first))
+                        (grant "OWNER")
+
+                let binding = Binding.People(person 1, Revision.first)
+
+                let forge (changes: PartChange list) =
+                    changes
+                    |> List.map (fun change ->
+                        match change.Value with
+                        | PartValue.Person value ->
+                            { change with
+                                Value =
+                                    PartValue.Person
+                                        { value with
+                                            Enabled = false
+                                            Grants =
+                                                [
+                                                    {
+                                                        Grant =
+                                                            {
+                                                                Role = Role.Owner
+                                                                Scope = Scope.Installation
+                                                            }
+                                                        Active = false
+                                                    }
+                                                ]
+                                        }
+                            }
+                        | _ -> failtest "Expected the person part")
+
+                let forged, wrong =
+                    buildWith
+                        forge
+                        three
+                        4
+                        second
+                        "people.setProfile"
+                        binding
+                        (profile "Changed name")
+
+                let erase, _ =
+                    build
+                        wrong
+                        5
+                        second
+                        "people.eraseProfile"
+                        (Binding.People(person 1, revise 2L))
+                        InputMap.empty
+
+                let before = scan [ clear first; registered; granted ] |> required
+
+                Expect.isTrue
+                    before.People[person 1].Actor.Enabled
+                    "The valid prefix retains the public account"
+
+                Expect.equal
+                    (Fold.append installation before (clear forged))
+                    (Error FoldProblem.Decision)
+                    "The profile task did not decide a disable or role revocation"
+
+                Expect.equal
+                    (scan [ clear first; registered; granted; clear forged; erase ])
+                    (Error FoldProblem.Decision)
+                    "Later erasure cannot conceal the forgery"
+
+                let proper, valid =
+                    build three 4 second "people.setProfile" binding (profile "Changed name")
+
+                let properErase, _ =
+                    build
+                        valid
+                        5
+                        second
+                        "people.eraseProfile"
+                        (Binding.People(person 1, revise 2L))
+                        InputMap.empty
+
+                let after =
+                    scan [ clear first; registered; granted; clear proper; properErase ]
+                    |> required
+                    |> Fold.complete
+                    |> required
+
+                Expect.isTrue
+                    after.People[person 1].Actor.Enabled
+                    "The genuine erased update verifies"
+
+                Expect.isTrue
+                    (Map.containsKey
                         {
                             Role = Role.Owner
                             Scope = Scope.Installation
                         }
-                    ]
-
-                let self =
-                    people
-                        2
-                        initial.Head
-                        (actor 2)
-                        2
-                        0L
-                        (PeopleAct.Admit { Profile = 0; Grants = grants })
-                        (Some(profile "Untrusted new owner"))
-                    |> erased
-
-                match Replay.append installation None initial self with
-                | Error finding ->
-                    Expect.equal
-                        finding.Finding
-                        VerificationFinding.PeopleFold
-                        "Command authorization uses earlier requester state"
-                | Ok _ ->
-                    failtest "Post-registration owner permission authorized an earlier command")
+                        after.People[person 1].Grants)
+                    "Owner rights survive")
             testCase
-                "available profile content before an accepted erase is independently detected"
+                "requester findings distinguish missing, human and owner requirements"
                 (fun () ->
-                    let root = owner ()
-                    let initial = append (Replay.initial None) root
+                    let first, one = owner ()
 
-                    let registered =
-                        people
+                    let registered, two =
+                        build
+                            one
                             2
-                            initial.Head
-                            (actor 1)
+                            principal
+                            "people.register"
+                            (Binding.PeopleNew Revision.zero)
+                            (registration "reader")
+
+                    let changed, _ =
+                        build
+                            two
+                            3
+                            principal
+                            "people.setProfile"
+                            (Binding.People(person 1, Revision.first))
+                            (profile "Changed")
+
+                    let prefix =
+                        Replay.append installation None (Replay.initial None) first |> required
+
+                    let prefix = Replay.append installation None prefix registered |> required
+
+                    let requireFinding finding record =
+                        match Replay.append installation None prefix record with
+                        | Error issue ->
+                            Expect.equal issue.Finding finding "Specific requester finding"
+                        | Ok _ -> failtest "Forged executor was accepted"
+
+                    requireFinding
+                        VerificationFinding.ActorNotEnabled
+                        (executor (person 99) changed)
+
+                    requireFinding VerificationFinding.OwnerRequired (executor (person 2) changed)
+                    let serviceInputs = registration "service"
+
+                    let serviceInputs =
+                        InputMap.create
+                            (Map.add
+                                (TaskInputId.Target InputTarget.PrincipalKind)
+                                (InputValue.Text "SERVICE")
+                                serviceInputs.Values)
+                            Map.empty
+                        |> Option.get
+
+                    let serviceRecord, serviceState =
+                        build
+                            one
                             2
-                            0L
-                            (PeopleAct.Register 0)
-                            (Some(profile "Still available"))
+                            principal
+                            "people.register"
+                            (Binding.PeopleNew Revision.zero)
+                            serviceInputs
 
-                    let before = append initial registered
-                    let erase = people 3 before.Head (actor 1) 2 1L PeopleAct.EraseProfile None
+                    let changed, _ =
+                        build
+                            serviceState
+                            3
+                            principal
+                            "people.setProfile"
+                            (Binding.People(person 1, Revision.first))
+                            (profile "Changed")
 
-                    match Replay.append installation None before erase with
-                    | Error finding ->
+                    let servicePrefix =
+                        Replay.append installation None (Replay.initial None) first
+                        |> required
+                        |> fun state ->
+                            Replay.append installation None state serviceRecord |> required
+
+                    match
+                        Replay.append installation None servicePrefix (executor (person 2) changed)
+                    with
+                    | Error issue ->
                         Expect.equal
-                            finding.Finding
-                            VerificationFinding.ErasureIncomplete
-                            "Accepted erase requires clearing earlier private bytes"
-                    | Ok _ -> failtest "Available earlier profile survived erase verification")
+                            issue.Finding
+                            VerificationFinding.HumanRequired
+                            "A valid service account is not a human requester"
+                    | Ok _ -> failtest "The service account executed a human-only task")
+            testCase
+                "erased family replay retains payment membership, removal and actual part positions"
+                (fun () ->
+                    let first, one = owner ()
+
+                    let opened, two =
+                        build
+                            one
+                            2
+                            principal
+                            "case.open"
+                            (Binding.CaseNew Revision.zero)
+                            (opening "REPLAY-PAYMENTS")
+
+                    let id = CaseId.ofOperationId (operation 2)
+
+                    let binding revision =
+                        Binding.Case(CaseSelector.Id id, revise revision)
+
+                    let decided, three =
+                        build
+                            two
+                            3
+                            principal
+                            "case.decide"
+                            (binding 1L)
+                            (fields
+                                [
+                                    BusinessField.PaymentDecisionDate, "2026-01-03"
+                                    BusinessField.PayableAmount, "750"
+                                    BusinessField.PayableCurrency, "EUR"
+                                ])
+
+                    let paid, four =
+                        build
+                            three
+                            4
+                            principal
+                            "case.recordPayment"
+                            (binding 2L)
+                            (fields
+                                [
+                                    BusinessField.PaymentDate, "2026-01-04"
+                                    BusinessField.PaidAmount, "100"
+                                    BusinessField.PaidCurrency, "EUR"
+                                ])
+
+                    let paidAgain, five =
+                        build
+                            four
+                            5
+                            principal
+                            "case.recordPayment"
+                            (binding 3L)
+                            (fields
+                                [
+                                    BusinessField.PaymentDate, "2026-01-05"
+                                    BusinessField.PaidAmount, "200"
+                                    BusinessField.PaidCurrency, "EUR"
+                                ])
+
+                    let removed, six =
+                        build
+                            five
+                            6
+                            principal
+                            "case.removePayment"
+                            (Binding.CasePayment(CaseSelector.Id id, revise 4L, operation 4))
+                            InputMap.empty
+
+                    let work, seven =
+                        build
+                            six
+                            7
+                            principal
+                            "work.update"
+                            (Binding.Work(CaseSelector.Id id, Revision.zero))
+                            (fields [ BusinessField.HandlingSummary, "Private work" ])
+
+                    let note, eight =
+                        build
+                            seven
+                            8
+                            principal
+                            "note.add"
+                            (Binding.NoteNew(CaseSelector.Id id))
+                            (inputs [ input InputTarget.NoteText "Private note" ])
+
+                    let reminder, nine =
+                        build
+                            eight
+                            9
+                            principal
+                            "reminder.create"
+                            (Binding.ReminderNew(CaseSelector.Id id))
+                            (inputs
+                                [
+                                    input InputTarget.ReminderAction "Follow up"
+                                    input InputTarget.ReminderDueDate "2026-11-17"
+                                ])
+
+                    let family = nine.Families[id]
+
+                    let erased, _ =
+                        build
+                            nine
+                            10
+                            principal
+                            "case.erase"
+                            (Binding.CaseErase(
+                                CaseSelector.Id id,
+                                family.Case.Revision,
+                                family.Sequence
+                            ))
+                            InputMap.empty
+
+                    let records =
+                        [ opened; decided; paid; paidAgain; removed; work; note; reminder ]
+                        |> List.map clear
+
+                    let after =
+                        scan (first :: records @ [ erased ])
+                        |> required
+                        |> Fold.complete
+                        |> required
+
+                    let family = after.Families[id]
+
+                    Expect.equal
+                        family.Reference
+                        (CaseReference.parse "REPLAY-PAYMENTS" |> required)
+                        "Public reference"
+
+                    Expect.equal family.Case.Value.Lifecycle Lifecycle.Erased "Erasure state"
+
+                    Expect.equal
+                        (Revision.value family.Case.Revision)
+                        6L
+                        "Only case parts advanced case revision"
+
+                    Expect.equal family.Payments.Count 2 "Both payment identities survive"
+                    Expect.isTrue family.Payments[operation 4].Value.Removed "Removal survives"
+
+                    Expect.isFalse
+                        family.Payments[operation 5].Value.Removed
+                        "Other payment remains structurally active"
+
+                    Expect.isTrue
+                        (family.Payments |> Map.forall (fun _ part -> part.Value.Entry.IsNone))
+                        "Payment values unavailable"
+
+                    Expect.equal
+                        (after.Parts[(PartKind.Payment, OperationId.value (operation 4))]
+                            .Stamp.Position
+                         |> EffectPosition.index)
+                        0
+                        "Payment part position"
+
+                    Expect.equal
+                        (paid.Changes
+                         |> List.find (fun part -> PartValue.kind part.Value = PartKind.Case)
+                         |> _.Stamp.Position
+                         |> EffectPosition.index)
+                        1
+                        "Case effect has its own position"
+
+                    Expect.isNone (family.Work |> Option.bind _.Value) "Work content unavailable"
+
+                    Expect.isTrue
+                        (family.Reminders |> Map.forall (fun _ part -> part.Value.Plan.IsNone))
+                        "Reminder content unavailable"
+
+                    match after.Parts[(PartKind.Note, OperationId.value (operation 8))].Value with
+                    | PartValue.Note value -> Expect.isNone value.Text "Note content unavailable"
+                    | _ -> failtest "Expected the accepted note part")
         ]
-
-[<Tests>]
-let erasedPayments =
-    testCase
-        "erased case replay reconstructs payment membership and removal markers from public roots"
-        (fun () ->
-            let bootstrap = owner ()
-            let mutable head = bootstrap.Root.Position
-            let mutable current: CaseSnapshot option = None
-            let mutable roots = [ bootstrap ]
-
-            let case number act context =
-                let input =
-                    Case.parse
-                        {
-                            ExpectedFamilySequence =
-                                if CaseAct.kind act = CaseActKind.Erase then
-                                    Some(Sequence.value head.Sequence)
-                                else
-                                    None
-                            OperationId = OperationId.value (operation number)
-                            CaseReference = "REPLAY-PAYMENTS"
-                            ExpectedRevision =
-                                current
-                                |> Option.map (_.Revision >> Revision.value)
-                                |> Option.defaultValue 0L
-                            Act = act
-                        }
-                    |> valid
-
-                let decision =
-                    Case.decideSnapshot (DateOnly(2026, 11, 9)) (context current) input current
-                    |> valid
-
-                let selected =
-                    match input.Act with
-                    | CaseAct.RemovePayment id -> Some id
-                    | _ -> None
-
-                let scope =
-                    CommandSkeleton.Case
-                        {
-                            ExpectedFamilySequence = input.ExpectedFamilySequence
-                            CaseId = decision.After.CaseId
-                            Reference = decision.After.Reference
-                            ExpectedRevision = input.ExpectedRevision
-                            Act = CaseAct.kind input.Act
-                            SelectedPayment = selected
-                        }
-
-                let header =
-                    { bootstrap.Root.Header with
-                        Sequence = Sequence.successor head.Sequence
-                        PreviousHash = head.EntryHash
-                        OperationId = operation number
-                        BusinessDate = Some(DateOnly(2026, 11, 9))
-                    }
-
-                let root =
-                    RetainedOperation.create
-                        header
-                        scope
-                        (OperationValues.Case { Command = input; Decision = decision })
-                        (nonce number)
-                    |> valid
-
-                head <- root.Root.Position
-                current <- Some decision.After
-                roots <- roots @ [ root ]
-                decision
-
-            let registration =
-                RegistrationInput.create
-                    [
-                        BusinessField.IncidentDate, "2026-01-01"
-                        BusinessField.IncidentNotificationDate, "2026-01-02"
-                        BusinessField.IncidentCountry, "LV"
-                        BusinessField.ClaimantName, "Synthetic claimant"
-                        BusinessField.InsurerName, "Synthetic insurer"
-                        BusinessField.ClaimedAmount, "100"
-                        BusinessField.ClaimedCurrency, "EUR"
-                    ]
-                |> valid
-
-            let decision =
-                DecisionInput.create
-                    [
-                        BusinessField.PaymentDecisionDate, "2026-01-03"
-                        BusinessField.PayableAmount, "100"
-                        BusinessField.PayableCurrency, "EUR"
-                    ]
-                |> valid
-
-            let payment amount =
-                PaymentInput.create
-                    [
-                        BusinessField.PaymentDate, "2026-01-04"
-                        BusinessField.PaidAmount, amount
-                        BusinessField.PaidCurrency, "EUR"
-                    ]
-                |> valid
-                |> CaseAct.RecordPayment
-
-            let noContext _ = Map.empty
-            case 2 (CaseAct.Open registration) noContext |> ignore
-            case 3 (CaseAct.Decide decision) noContext |> ignore
-
-            let recording (_before: CaseSnapshot option) = Map.empty
-
-            let first = case 4 (payment "10") recording
-            let second = case 5 (payment "5") recording
-
-            let selected =
-                match first.Payment with
-                | Some(PaymentDifference.Recorded entry) -> entry
-                | _ -> failtest "Recorded entry required"
-
-            let removal (before: CaseSnapshot option) =
-                let before = before.Value in
-
-                let remaining =
-                    match second.Payment with
-                    | Some(PaymentDifference.Recorded entry) -> entry
-                    | _ -> failtest "Second recorded payment required"
-
-                ClaimCore.TestSupport.CaseFixtures.paymentRows
-                    before.CaseId
-                    [ selected; remaining ]
-
-            case 6 (CaseAct.RemovePayment(OperationId.value (operation 4))) removal
-            |> ignore
-
-            case 7 (CaseAct.Bare BareAct.Erase) noContext |> ignore
-
-            let cleared =
-                roots
-                |> List.map (fun value ->
-                    match value.Root.Structure.Command with
-                    | CommandSkeleton.Case _ -> erased value
-                    | _ -> value)
-
-            let actual = cleared |> List.fold append (Replay.initial None)
-
-            Expect.isOk
-                (Replay.erasure actual)
-                "Accepted case erasure accounts for all unavailable case inputs/results"
-
-            let caseId = CaseId.ofOperationId (operation 2)
-            let payments = actual.Cases[caseId].PaymentProjections
-            Expect.equal payments.Count 2 "Every accepting payment identity remains reserved"
-
-            Expect.equal
-                payments[operation 4].Content
-                (PaymentProjectionContent.Cleared true)
-                "Erased removal target remains removed"
-
-            Expect.equal
-                payments[operation 5].Content
-                (PaymentProjectionContent.Cleared false)
-                "Another payment is never marked removed by inference"
-
-            Expect.equal
-                actual.Cases[caseId].State
-                CaseState.Erased
-                "No private financial position is invented"
-
-            Expect.equal actual.Head head "The operation head advances once per root")

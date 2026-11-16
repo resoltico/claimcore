@@ -1,29 +1,5 @@
 namespace ClaimCore.Domain
 
-open System
-open System.Text.RegularExpressions
-
-/// A task token is an identity; registry membership is resolved independently.
-[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
-type TaskId = private TaskId of string
-
-module TaskId =
-    let token (TaskId value) = value
-
-    let tryParse value =
-        if
-            not (String.IsNullOrEmpty value)
-            && Regex.IsMatch(value, @"\A[a-z]+(\.[a-z][A-Za-z]*)+\z", RegexOptions.CultureInvariant)
-        then
-            Some(TaskId value)
-        else
-            None
-
-    let ofLiteral value =
-        match tryParse value with
-        | Some task -> task
-        | None -> invalidArg (nameof value) "Use a dotted task token."
-
 [<RequireQualifiedAccess>]
 type TaskExposure =
     | Client
@@ -55,7 +31,27 @@ type TaskDeclaration =
         not this.Capabilities.IsEmpty
         && List.forall Access.humanOnlyCapability this.Capabilities
 
-namespace ClaimCore.Domain.Tasks
+module TaskDeclaration =
+    let bindingShape (declaration: TaskDeclaration) =
+        let binds input =
+            declaration.Inputs
+            |> List.exists (fun value ->
+                value.Input = TaskInputId.Target input && value.Source = InputSource.Binding)
+
+        match declaration.Target, declaration.Creates with
+        | ActSubject.Case, true -> BindingShape.CaseNew
+        | ActSubject.Case, false when binds InputTarget.PaymentId -> BindingShape.CasePayment
+        | ActSubject.Case, false when declaration.ReviewsFamilySequence -> BindingShape.CaseErase
+        | ActSubject.Case, false -> BindingShape.Case
+        | ActSubject.Work, _ -> BindingShape.Work
+        | ActSubject.Reminder, true -> BindingShape.ReminderNew
+        | ActSubject.Reminder, false -> BindingShape.Reminder
+        | ActSubject.Note, true -> BindingShape.NoteNew
+        | ActSubject.Note, false -> BindingShape.Note
+        | ActSubject.People, true -> BindingShape.PeopleNew
+        | ActSubject.People, false -> BindingShape.People
+
+namespace ClaimCore.Domain
 
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
@@ -105,9 +101,12 @@ module TaskContext =
 type Availability =
     {
         Seeds: Map<TaskInputId, InputValue>
+        // Fixed authored selections supplied by this task for current rows.
+        Selections: Set<Map<TaskInputId, InputValue>>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
         Blocked: Refusal option
+        Recommendation: int option
     }
 
 [<NoEquality; NoComparison>]
@@ -115,6 +114,7 @@ type FamilyTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
+        Authorize: FamilyEnvironment -> CaseFamily option -> InputMap -> Result<unit, Refusal>
         Availability: FamilyEnvironment -> CaseFamily option -> Binding -> Availability
         DecisionFactsAvailable: CaseFamily option -> Binding -> bool
         Describe:
@@ -129,6 +129,13 @@ type FamilyTask =
                 -> Binding
                 -> InputMap
                 -> Result<PartChange list, Rejection>
+        DecideRetained:
+            TaskContext
+                -> FamilyEnvironment
+                -> CaseFamily option
+                -> Binding
+                -> InputMap
+                -> Result<PartChange list, Rejection>
     }
 
 [<NoEquality; NoComparison>]
@@ -136,6 +143,7 @@ type PersonTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
+        Authorize: PersonEnvironment -> Person option -> InputMap -> Result<unit, Refusal>
         Availability: PersonEnvironment -> Person option -> Binding -> Availability
         DecisionFactsAvailable: Person option -> Binding -> bool
         Describe: Person option -> PartChange list -> Result<DescribedPart list, RecordViolation>
@@ -146,7 +154,18 @@ type PersonTask =
                 -> Binding
                 -> InputMap
                 -> Result<PartChange list, Rejection>
+        DecideRetained:
+            TaskContext
+                -> PersonEnvironment
+                -> Person option
+                -> Binding
+                -> InputMap
+                -> Result<PartChange list, Rejection>
     }
+
+namespace ClaimCore.Domain.Tasks
+
+open ClaimCore.Domain
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
 type Task =

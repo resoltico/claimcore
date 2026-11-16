@@ -83,7 +83,7 @@ let private owner fixture =
         let service = core fixture fixture.Owner
 
         let! provision =
-            PeopleOperations.provisionStore
+            Service.provisionOwner
                 service
                 (OperationIds.fresh ())
                 Inputs.ownerProfile
@@ -104,13 +104,18 @@ let private lookup service operation =
     }
 
 let private request operation =
-    OperationInput.People(
-        Inputs.peopleRequest
-            operation
-            (PrincipalKey.human "https://issuer.example/" ("lookup-subject-" + string operation)
-             |> Result.defaultWith (string >> invalidOp))
-            (PeopleAct.Register Inputs.ownerProfile)
-    )
+    let principal =
+        PrincipalKey.human "https://issuer.example/" ("lookup-subject-" + string operation)
+        |> Result.defaultWith (string >> invalidOp)
+
+    Submissions.createRaw
+        "people.register"
+        operation
+        (OperationBinding.People(None, 0L))
+        (Map.fold
+            (fun values key value -> Map.add key value values)
+            (Submissions.principal principal)
+            (Submissions.profile Inputs.ownerProfile))
 
 let private headWaiter (db: PostgresFixture.Database) =
     task {
@@ -262,7 +267,7 @@ let tests =
                                 DateTimeOffset.UtcNow.AddMinutes(3.)
                             ] do
                             let! (refused: ExecuteReply) =
-                                Service.execute
+                                Service.executeSubmission
                                     service
                                     (request (OperationIds.at stamp))
                                     CancellationToken.None
@@ -275,7 +280,7 @@ let tests =
                         let input = request operation
 
                         let! (accepted: ExecuteReply) =
-                            Service.execute service input CancellationToken.None
+                            Service.executeSubmission service input CancellationToken.None
 
                         match accepted.Outcome with
                         | ExecuteResult.Accepted _ -> ()
@@ -291,7 +296,7 @@ let tests =
                             )
 
                         let! (replay: ExecuteReply) =
-                            Service.execute
+                            Service.executeSubmission
                                 { service with Store = late }
                                 input
                                 CancellationToken.None
@@ -340,7 +345,7 @@ let tests =
                             )
 
                         let executing =
-                            Service.execute
+                            Service.executeSubmission
                                 { service with Store = writer }
                                 (request operation)
                                 CancellationToken.None
@@ -467,7 +472,10 @@ let tests =
                             "Forward cutoff is durable"
 
                         let! rollback =
-                            Service.execute service (request operation) CancellationToken.None
+                            Service.executeSubmission
+                                service
+                                (request operation)
+                                CancellationToken.None
 
                         match rollback.Outcome with
                         | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
@@ -525,7 +533,10 @@ let tests =
                         do! prepared.Task.WaitAsync(TimeSpan.FromSeconds 10.)
 
                         let executing =
-                            Service.execute service (request operation) CancellationToken.None
+                            Service.executeSubmission
+                                service
+                                (request operation)
+                                CancellationToken.None
 
                         try
                             do! headWaiter db
@@ -580,30 +591,45 @@ let tests =
                             |> Result.defaultWith (string >> invalidOp)
 
                         let! registered =
-                            Service.execute
-                                service
-                                (OperationInput.People(
-                                    Inputs.peopleRequest
-                                        (OperationIds.fresh ())
-                                        observer
-                                        (PeopleAct.Register Inputs.actorProfile)
-                                ))
-                                CancellationToken.None
+                            (task {
+                                let! submission =
+                                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                        (service).Store
+                                        ((OperationIds.fresh ()))
+                                        (observer)
+                                        (Some 0L)
+                                        "people.register"
+                                        (ClaimCore.TestSupport.Submissions.profile (
+                                            Inputs.actorProfile
+                                        ))
+
+                                return!
+                                    Service.executeSubmission
+                                        (service)
+                                        submission
+                                        (CancellationToken.None)
+                            })
 
                         acceptedPeople registered
                         let operation = OperationIds.fresh ()
 
                         let! opened =
-                            Service.execute
+                            Service.executeSubmission
                                 service
-                                (Inputs.caseOperation
-                                    {
-                                        ExpectedFamilySequence = None
-                                        OperationId = operation
-                                        CaseReference = "HIDDEN-CONTENT"
-                                        ExpectedRevision = 0L
-                                        Act = AuthoredCaseAct.Open registration
-                                    })
+                                ((ClaimCore.TestSupport.Submissions.createRaw
+                                    "case.open"
+                                    (operation)
+                                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                                    (ClaimCore.TestSupport.Submissions.fields (
+                                        RegistrationInput.values (registration)
+                                     )
+                                     |> Map.add
+                                         (TaskInputId.Target(
+                                             InputTarget.Field BusinessField.CaseReference
+                                         ))
+                                         (ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                             "HIDDEN-CONTENT"
+                                         )))))
                                 CancellationToken.None
 
                         accepted opened |> ignore

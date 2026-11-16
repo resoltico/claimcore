@@ -51,6 +51,7 @@ let availability environment state binding =
         |> Option.map (Decision.payable >> Money.currency)
 
     { offered with
+        Recommendation = Some 0
         Seeds =
             currency
             |> Option.map (fun value ->
@@ -100,11 +101,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
 
             let before = state.Case.Value.Content
 
-            let admit =
-                if context.Decision.Lifetime = DecisionLifetime.Recorded then
-                    fun _ -> Ok
-                else
-                    CaseAdmission.fieldAdmission today None
+            let admit = CaseAdmission.fieldAdmission today None
 
             let! command =
                 Admission.map2
@@ -148,13 +145,38 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+    match state, binding with
+    | Some state, Binding.Case _ ->
+        CaseRules.admit context environment state binding capability (FamilyRules.active true)
+        |> Parsing.reject
+        |> Result.map (fun () ->
+            [
+                FamilyRules.change
+                    context
+                    state.Id
+                    (OperationId.value context.Stamp.OperationId)
+                    Revision.first
+                    (PartValue.Payment { Removed = false; Entry = None })
+                CaseRules.change context state { state.Case.Value with Content = None }
+            ])
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = CaseRules.contentAvailable
             Describe = PartDescriptions.family
         }

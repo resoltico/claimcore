@@ -4,605 +4,313 @@ open System
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
+open ClaimCore.Json
 open ClaimCore.RecordFormat
+open ClaimCore.Tests.RecordBuilders
 
-let private valid result =
-    Result.defaultWith (fun error -> failtestf "Structural operation fixture: %A" error) result
-
-let private guid number =
-    Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
-
-let private operation = OperationId.create (guid 2) |> Option.get
-
-let private actor number =
-    ActorId.create (guid number) |> Option.get
-
-let private parent number =
-    CaseId.create (guid number) |> Option.get
-
-let private revision number = Revision.create number |> Option.get
-
-let private principal =
-    PrincipalKey.human "https://issuer.example/" "synthetic-owner" |> valid
-
-let private header =
-    {
-        OperationHeader.InstallationId = Guid.Parse "00000000-0000-4000-8000-000000000001"
-        Sequence = Sequence.create 42L |> Option.get
-        PreviousHash = EntryHash.zero
-        OperationId = operation
-        ActorId = actor 9
-        RecordedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
-        BusinessDate = Some(DateOnly(2026, 9, 7))
-    }
-
-let private reference = CaseReference.parse "STRUCTURE-1" |> valid
-
-let private content header ordinal owner purpose refs =
-    let descriptor = CompartmentDescriptor.create ordinal owner purpose refs |> valid
-
-    Compartment.seal
-        header.InstallationId
-        header.OperationId
-        descriptor
-        [| 0uy .. 31uy |]
-        (Encoding.UTF8.GetBytes """{"private":"synthetic"}""")
-    |> valid
-
-let private caseCommand act selection =
-    CommandSkeleton.Case
-        {
-            ExpectedFamilySequence =
-                if act = CaseActKind.Erase then
-                    Some(Sequence.create 1L |> Option.get)
-                else
-                    None
-            CaseId = parent 3
-            Reference = reference
-            ExpectedRevision = revision 4L
-            Act = act
-            SelectedPayment = selection
-        }
-
-let private caseEffect act payment =
-    EffectDescriptor.Case(parent 3, revision 5L, act, None, payment)
-
-let private caseContent () =
-    content header 0 (CompartmentOwner.Case(parent 3)) CompartmentPurpose.Case [ 0 ]
+let private structure header effects compartments (root: OperationRoot) =
+    OperationStructure.create
+        header
+        root.Structure.Task
+        root.Structure.Binding
+        root.Structure.Retained
+        effects
+        compartments
 
 [<Tests>]
 let tests =
     testList
-        "operation structural closure"
+        "format 5 typed operation structure"
         [
-            testCase "erased payment command and effect retain the selected identity" (fun () ->
-                let selected = OperationId.create (guid 7) |> Option.get
-                let command = caseCommand CaseActKind.RemovePayment (Some selected)
-
-                let effects =
-                    [
-                        caseEffect
-                            CaseActKind.RemovePayment
-                            (Some(PaymentReference.Removed selected))
-                    ]
-
-                let available = caseContent ()
-
-                let complete =
-                    OperationStructure.append header command effects [ available ] |> valid
-
-                Expect.equal
-                    complete.Effects
-                    effects
-                    "Public effect retains selection without private date or amount"
-
-                let erased = Compartment.withoutContent available
-
-                let restored =
-                    OperationStructure.restore header command effects [ erased ] |> valid
-
-                Expect.equal
-                    restored.Command
-                    command
-                    "Selective erasure cannot remove command identity"
-
-                Expect.equal
-                    restored.Effects
-                    effects
-                    "Removal markers remain independently reconstructible"
-
-                Expect.equal
-                    (OperationStructure.append header command effects [ erased ])
-                    (Error OperationStructureProblem.UnavailableAppendContent)
-                    "A newly appended operation cannot claim pre-erased contents")
             testCase
-                "a case erasure has no private compartment and a payment recording binds its accepting ID"
+                "the eleven distinct binding shapes have shared semantic schema names"
                 (fun () ->
-                    Expect.isOk
-                        (OperationStructure.append
-                            header
-                            (caseCommand CaseActKind.Erase None)
-                            [ caseEffect CaseActKind.Erase None ]
-                            [])
-                        "Case erasure is retained public structure"
-
-                    let recorded =
-                        [
-                            caseEffect
-                                CaseActKind.RecordPayment
-                                (Some(PaymentReference.Recorded operation))
-                        ]
-
-                    Expect.isOk
-                        (OperationStructure.append
-                            header
-                            (caseCommand CaseActKind.RecordPayment None)
-                            recorded
-                            [ caseContent () ])
-                        "Payment accepting identity belongs to the root"
-
-                    let wrong = OperationId.create (guid 7) |> Option.get
-
-                    Expect.equal
-                        (OperationStructure.append
-                            header
-                            (caseCommand CaseActKind.RecordPayment None)
+                    let expected =
+                        Map.ofList
                             [
-                                caseEffect
-                                    CaseActKind.RecordPayment
-                                    (Some(PaymentReference.Recorded wrong))
+                                BindingShape.CaseNew, "Binding.CASE.new"
+                                BindingShape.Case, "Binding.CASE"
+                                BindingShape.CasePayment, "Binding.CASE.payment"
+                                BindingShape.CaseErase, "Binding.CASE.erase"
+                                BindingShape.Work, "Binding.WORK"
+                                BindingShape.ReminderNew, "Binding.REMINDER.new"
+                                BindingShape.Reminder, "Binding.REMINDER"
+                                BindingShape.NoteNew, "Binding.NOTE.new"
+                                BindingShape.Note, "Binding.NOTE"
+                                BindingShape.PeopleNew, "Binding.PEOPLE.new"
+                                BindingShape.People, "Binding.PEOPLE"
                             ]
-                            [ caseContent () ])
-                        (Error OperationStructureProblem.Effects)
-                        "Another operation cannot donate a payment identity")
-            testCase
-                "mixed ADMIT retains grants when its independently owned profile is unavailable"
-                (fun () ->
-                    let target = ActorId.ofOperationId operation
-                    let peopleHeader = { header with BusinessDate = None }
 
-                    let grants =
-                        [
-                            {
-                                Role = Role.CaseHandler
-                                Scope = Scope.Case(parent 3)
-                            }
-                            {
-                                Role = Role.PaymentRecorder
-                                Scope = Scope.Installation
-                            }
-                        ]
-
-                    let command =
-                        CommandSkeleton.People
-                            {
-                                ExpectedRevision = Revision.zero
-                                TargetActorId = target
-                                Principal = principal
-                                Act = PeopleAct.Admit { Profile = 0; Grants = grants }
-                            }
-
-                    let effects =
-                        [
-                            EffectDescriptor.People(
-                                target,
-                                PeopleEffectDescriptor.Register principal
-                            )
-                            EffectDescriptor.People(target, PeopleEffectDescriptor.SetProfile 0)
-                            EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grants[0])
-                            EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grants[1])
-                        ]
-
-                    let profile =
-                        content
-                            peopleHeader
-                            0
-                            (CompartmentOwner.ActorProfile target)
-                            CompartmentPurpose.Profile
-                            [ 1 ]
-
-                    Expect.isOk
-                        (OperationStructure.append peopleHeader command effects [ profile ])
-                        "Complete mixed command closes before append"
-
-                    let restored =
-                        OperationStructure.restore
-                            peopleHeader
-                            command
-                            effects
-                            [ Compartment.withoutContent profile ]
-                        |> valid
+                    let records = samples ()
 
                     Expect.equal
-                        restored.Effects[2..]
-                        effects[2..]
-                        "Erasure never discards or fabricates public grants"
+                        (records
+                         |> List.map (fun record ->
+                             BindingShape.ofValue record.Root.Structure.Binding)
+                         |> Set.ofList)
+                        (expected |> Map.keys |> Set.ofSeq)
+                        "The witnesses exercise every binding shape"
 
-                    for forged in
-                        [ effects |> List.rev; List.tail effects; effects @ [ effects[1] ] ] do
+                    for record in records do
+                        let binding = record.Root.Structure.Binding
+
+                        let declaration =
+                            ClaimCore.Domain.Tasks.Registry.findDeclaration
+                                record.Root.Structure.Task
+                            |> Option.get
+
+                        let codec = BindingCodecs.forDeclaration declaration
+
                         Expect.equal
-                            (OperationStructure.restore peopleHeader command forged [ profile ])
+                            codec.Schema
+                            (Schema.Ref expected[BindingShape.ofValue binding])
+                            "No per-task binding schema"
+
+                        Expect.equal
+                            (Codec.encode codec binding |> Codec.decode 4096 codec)
+                            (Ok binding)
+                            "Typed selection and version round trip"
+
+                    Expect.equal
+                        (BindingCodecs.caseNew.Write(Binding.CaseNew Revision.zero)
+                         |> CanonicalWriter.bytes
+                         |> Encoding.UTF8.GetString)
+                        """{"expectedRevision":0,"kind":"CASE"}"""
+                        "Opening's reference belongs to inputs")
+            testCase
+                "headers separate family business dates from person recording instants"
+                (fun () ->
+                    let family, person = (caseRecord ()).Root, (personRecord ()).Root
+                    Expect.isSome family.Header.BusinessDate "Family business date"
+
+                    Expect.isNone
+                        person.Header.BusinessDate
+                        "People have no asserted business date"
+
+                    for root, header in
+                        [
+                            family,
+                            { family.Header with
+                                BusinessDate = None
+                            }
+                            person,
+                            { person.Header with
+                                BusinessDate = Some(DateOnly(2026, 11, 15))
+                            }
+                        ] do
+                        Expect.equal
+                            (structure
+                                header
+                                root.Structure.Effects
+                                root.Structure.Compartments
+                                root)
                             (Error OperationStructureProblem.Effects)
-                            "Missing, extra or reordered effects cannot close"
+                            "Aggregate/date mismatch"
 
-                    let changedGrant =
-                        EffectDescriptor.People(
-                            target,
-                            PeopleEffectDescriptor.Grant
-                                { grants[0] with
-                                    Scope = Scope.Case(parent 4)
-                                }
-                        )
-
-                    Expect.equal
-                        (OperationStructure.restore
-                            peopleHeader
-                            command
-                            [ effects[0]; effects[1]; changedGrant; effects[3] ]
-                            [ profile ])
-                        (Error OperationStructureProblem.Effects)
-                        "Reassigned grant references cannot close")
-            testCase
-                "missing extra reordered and rebound compartment descriptors are rejected"
-                (fun () ->
-                    let command = caseCommand CaseActKind.Decide None
-                    let effects = [ caseEffect CaseActKind.Decide None ]
-                    let original = caseContent ()
-
-                    for contents in
+                    for header in
                         [
-                            []
-                            [ original; original ]
-                            [
-                                content
-                                    header
-                                    1
-                                    (CompartmentOwner.Case(parent 3))
-                                    CompartmentPurpose.Case
-                                    [ 0 ]
-                            ]
-                            [
-                                content
-                                    header
-                                    0
-                                    (CompartmentOwner.Case(parent 4))
-                                    CompartmentPurpose.Case
-                                    [ 0 ]
-                            ]
-                            [
-                                content
-                                    header
-                                    0
-                                    (CompartmentOwner.Case(parent 3))
-                                    CompartmentPurpose.Work
-                                    [ 0 ]
-                            ]
-                            [
-                                content
-                                    header
-                                    0
-                                    (CompartmentOwner.Case(parent 3))
-                                    CompartmentPurpose.Case
-                                    [ 1 ]
-                            ]
+                            { person.Header with
+                                InstallationId = Guid.Empty
+                            }
+                            { person.Header with
+                                Sequence = Sequence.zero
+                            }
+                            { person.Header with
+                                RecordedAt = person.Header.RecordedAt.AddTicks 1L
+                            }
                         ] do
                         Expect.equal
-                            (OperationStructure.restore header command effects contents)
-                            (Error OperationStructureProblem.Compartments)
-                            "Only the declared exact owner, purpose, ordinal and references belong to the command"
+                            (structure
+                                header
+                                person.Structure.Effects
+                                person.Structure.Compartments
+                                person)
+                            (Error OperationStructureProblem.Header)
+                            "Exact header boundary")
+            testCase
+                "every part uses the root's operation, actor, timestamp, sequence and ordered index"
+                (fun () ->
+                    let root = (compoundReminder ()).Root
+                    let first = root.Structure.Effects.Head
+                    let stamp = first.Change.Stamp
 
-                    let otherHeader =
-                        { header with
-                            OperationId = OperationId.create (guid 8) |> Option.get
+                    let changed stamp =
+                        { first with
+                            Change = { first.Change with Stamp = stamp }
+                        }
+                        :: root.Structure.Effects.Tail
+
+                    let other = ClaimCore.Tests.TaskBuilders.operation 99
+
+                    for stamp in
+                        [
+                            { stamp with OperationId = other }
+                            { stamp with
+                                ActorId = ActorId.ofOperationId other
+                            }
+                            { stamp with
+                                RecordedAt = stamp.RecordedAt.AddTicks 10L
+                            }
+                            { stamp with
+                                Position =
+                                    EffectPosition.create
+                                        (Sequence.successor root.Header.Sequence)
+                                        0
+                                    |> Option.get
+                            }
+                            { stamp with
+                                Position =
+                                    EffectPosition.create root.Header.Sequence 1 |> Option.get
+                            }
+                        ] do
+                        Expect.equal
+                            (structure root.Header (changed stamp) root.Structure.Compartments root)
+                            (Error OperationStructureProblem.Effects)
+                            "Independent attribution mismatch"
+
+                    let foreign =
+                        { first with
+                            Change =
+                                { first.Change with
+                                    Aggregate =
+                                        AggregateReference.Family(CaseId.ofOperationId other)
+                                }
                         }
 
-                    let other =
-                        content
-                            otherHeader
-                            0
-                            (CompartmentOwner.Case(parent 3))
-                            CompartmentPurpose.Case
-                            [ 0 ]
+                    Expect.equal
+                        (structure root.Header [ first; foreign ] root.Structure.Compartments root)
+                        (Error OperationStructureProblem.Effects)
+                        "A root cannot span aggregates")
+            testCase
+                "compartment references, owners and ordinals are independently closed"
+                (fun () ->
+                    let root = (personRecord ()).Root
+                    let compartment = root.Structure.Compartments.Head
+                    let first = root.Structure.Effects.Head
 
                     Expect.equal
-                        (OperationStructure.restore header command effects [ other ])
+                        (structure root.Header root.Structure.Effects [] root)
                         (Error OperationStructureProblem.CompartmentBinding)
-                        "A structurally matching compartment remains bound to its operation")
-            testCase
-                "compound reminder effects have distinct IDs and positions inside one sequence"
-                (fun () ->
-                    let old = ReminderId.create (guid 7) |> Option.get
-                    let next = ReminderId.ofOperationId operation
+                        "Missing referenced compartment"
 
-                    let command =
-                        CommandSkeleton.Reminder
-                            {
-                                CaseId = parent 3
-                                Act = ReminderActKind.CompleteAndPlanNext
-                                ReminderId = Some old
-                                ExpectedRevision = Some(revision 2L)
-                            }
+                    for reference in [ None; Some 1 ] do
+                        Expect.equal
+                            (structure
+                                root.Header
+                                [ { first with Compartment = reference } ]
+                                root.Structure.Compartments
+                                root)
+                            (Error OperationStructureProblem.CompartmentBinding)
+                            "Missing or foreign ordinal"
 
-                    let effects =
-                        [
-                            EffectDescriptor.ReminderChanged(
-                                parent 3,
-                                old,
-                                revision 3L,
-                                ReminderActKind.Complete
-                            )
-                            EffectDescriptor.ReminderCreated(parent 3, next, Revision.first)
-                        ]
+                    let nonce, payload = Compartment.content compartment |> Option.get
 
-                    let payload =
-                        content
-                            header
-                            0
-                            (CompartmentOwner.Case(parent 3))
-                            CompartmentPurpose.Reminder
-                            [ 0; 1 ]
+                    let ordinal =
+                        CompartmentDescriptor.create 1 compartment.Descriptor.Owner |> required
 
-                    let value =
-                        OperationStructure.append header command effects [ payload ] |> valid
+                    let extra = Compartment.seal ordinal (Array.create 32 99uy) payload |> required
 
                     Expect.equal
-                        value.Header.Sequence
-                        header.Sequence
-                        "One operation advances one sequence"
-
-                    let first = EffectPosition.create value.Header.Sequence 0 |> Option.get
-                    let second = EffectPosition.create value.Header.Sequence 1 |> Option.get
-                    Expect.isLessThan first second "The second effect is ordered independently"
-
-                    Expect.notEqual
-                        (EffectId.create operation 0)
-                        (EffectId.create operation 1)
-                        "Sequence alone is not an effect identity"
-
-                    Expect.equal
-                        (OperationStructure.append header command (List.rev effects) [ payload ])
-                        (Error OperationStructureProblem.Effects)
-                        "Effect order is immutable"
-
-                    let incomplete =
-                        content
-                            header
-                            0
-                            (CompartmentOwner.Case(parent 3))
-                            CompartmentPurpose.Reminder
-                            [ 0 ]
-
-                    Expect.equal
-                        (OperationStructure.append header command effects [ incomplete ])
+                        (structure root.Header root.Structure.Effects [ extra ] root)
                         (Error OperationStructureProblem.Compartments)
-                        "The private plan is bound to both changed reminders")
-            testCase "operation headers separate business dates from recording instants" (fun () ->
-                let command = caseCommand CaseActKind.Close None
-                let effects = [ caseEffect CaseActKind.Close None ]
+                        "Ordinal gap"
 
-                for invalid in
-                    [
-                        { header with
-                            InstallationId = Guid.Empty
-                        }
-                        { header with Sequence = Sequence.zero }
-                        { header with BusinessDate = None }
-                        { header with
-                            RecordedAt = header.RecordedAt.AddTicks 1L
-                        }
-                    ] do
                     Expect.equal
-                        (OperationStructure.restore invalid command effects [ caseContent () ])
-                        (Error OperationStructureProblem.Header)
-                        "Stored header has one valid installation, positive sequence, business date and microsecond instant"
+                        (structure root.Header root.Structure.Effects [ compartment; extra ] root)
+                        (Error OperationStructureProblem.Compartments)
+                        "Duplicate owner, with distinct nonce"
 
-                let offset =
-                    { header with
-                        RecordedAt = header.RecordedAt.ToOffset(TimeSpan.FromHours 3.)
-                    }
+                    let foreign =
+                        CompartmentDescriptor.create
+                            0
+                            (CompartmentOwner.Profile(
+                                ActorId.ofOperationId (ClaimCore.Tests.TaskBuilders.operation 99)
+                            ))
+                        |> required
 
-                let normalized =
-                    OperationStructure.restore offset command effects [ caseContent () ] |> valid
+                    let foreign = Compartment.seal foreign nonce payload |> required
 
-                Expect.equal
-                    normalized.Header.RecordedAt.Offset
-                    TimeSpan.Zero
-                    "Recorded time normalizes the same instant to UTC"
+                    Expect.equal
+                        (structure root.Header root.Structure.Effects [ foreign ] root)
+                        (Error OperationStructureProblem.Compartments)
+                        "Wrong owner"
 
-                Expect.equal
-                    normalized.Header.RecordedAt
-                    header.RecordedAt
-                    "Normalization never changes the instant")
-            testCase
-                "case creation and bounded command shapes enforce their own identities"
-                (fun () ->
-                    let id = CaseId.ofOperationId operation
-
-                    let creation =
-                        CommandSkeleton.Case
-                            {
-                                ExpectedFamilySequence = None
-                                CaseId = id
-                                Reference = reference
-                                ExpectedRevision = Revision.zero
-                                Act = CaseActKind.Open
-                                SelectedPayment = None
-                            }
-
-                    let effects =
-                        [
-                            EffectDescriptor.Case(
-                                id,
-                                Revision.first,
-                                CaseActKind.Open,
-                                Some reference,
-                                None
-                            )
-                        ]
-
-                    let values =
-                        content header 0 (CompartmentOwner.Case id) CompartmentPurpose.Case [ 0 ]
+                    let erased = Compartment.withoutContent compartment
 
                     Expect.isOk
-                        (OperationStructure.append header creation effects [ values ])
-                        "OPEN creates its operation-derived case identity"
-
-                    for invalid in
-                        [
-                            caseCommand CaseActKind.Open None
-                            caseCommand CaseActKind.RemovePayment None
-                            caseCommand CaseActKind.Close (Some operation)
-                        ] do
-                        Expect.equal
-                            (OperationStructure.restore header invalid effects [ values ])
-                            (Error OperationStructureProblem.Command)
-                            "Public command cannot encode incompatible identity or selection"
-
-                    let terminal = CommandSkeleton.Work(parent 3, revision Revision.Maximum)
+                        (structure root.Header root.Structure.Effects [ erased ] root)
+                        "Restore may have unavailable content"
 
                     Expect.equal
-                        (OperationStructure.restore header terminal [] [])
-                        (Error OperationStructureProblem.Command)
-                        "A bounded revision cannot overflow on acceptance")
+                        (OperationStructure.append
+                            root.Header
+                            root.Structure.Task
+                            root.Structure.Binding
+                            root.Structure.Retained
+                            root.Structure.Effects
+                            [ erased ])
+                        (Error OperationStructureProblem.UnavailableAppendContent)
+                        "Append cannot fabricate missing bytes")
             testCase
-                "ADMIT and owner provisioning keep their declared task bounds and ordering"
+                "effect count bounds are technical and do not depend on task or part vocabulary"
                 (fun () ->
-                    let target = ActorId.ofOperationId operation
-                    let peopleHeader = { header with BusinessDate = None }
+                    let root = (publicRecord ()).Root
 
-                    let profile =
-                        content
-                            peopleHeader
-                            0
-                            (CompartmentOwner.ActorProfile target)
-                            CompartmentPurpose.Profile
-                            [ 1 ]
-
-                    let grants =
-                        [
-                            for number in 10..57 ->
-                                {
-                                    Role = Role.CaseHandler
-                                    Scope = Scope.Case(parent number)
-                                }
-                        ]
-
-                    let command grants =
-                        CommandSkeleton.People
-                            {
-                                ExpectedRevision = Revision.zero
-                                TargetActorId = target
-                                Principal = principal
-                                Act = PeopleAct.Admit { Profile = 0; Grants = grants }
-                            }
-
-                    let effects =
-                        [
-                            yield
-                                EffectDescriptor.People(
-                                    target,
-                                    PeopleEffectDescriptor.Register principal
-                                )
-                            yield
-                                EffectDescriptor.People(
-                                    target,
-                                    PeopleEffectDescriptor.SetProfile 0
-                                )
-                            for grant in grants ->
-                                EffectDescriptor.People(target, PeopleEffectDescriptor.Grant grant)
-                        ]
-
-                    let maximum =
-                        OperationStructure.append peopleHeader (command grants) effects [ profile ]
-                        |> valid
-
-                    Expect.equal
-                        maximum.Effects.Length
-                        50
-                        "Forty-eight grants plus registration/profile is one bounded operation"
-
-                    for invalid in
-                        [
-                            command []
-                            command (grants @ [ grants.Head ])
-                            command (
-                                grants
-                                @ [
-                                    {
-                                        Role = Role.CaseHandler
-                                        Scope = Scope.Case(parent 58)
-                                    }
-                                ]
-                            )
-                            CommandSkeleton.People
-                                {
-                                    ExpectedRevision = Revision.zero
-                                    TargetActorId = target
-                                    Principal = principal
-                                    Act = PeopleAct.Register 1
-                                }
-                        ] do
-                        Expect.equal
-                            (OperationStructure.restore peopleHeader invalid effects [ profile ])
-                            (Error OperationStructureProblem.Command)
-                            "Missing grants, duplicate grants, overflow and unknown profile ordinal are not accepted command shapes"
-
-                    let ownerHeader =
-                        { peopleHeader with
-                            Sequence = Sequence.first
-                            ActorId = target
+                    let header =
+                        { root.Header with
+                            BusinessDate = Some(DateOnly(2026, 11, 15))
                         }
 
-                    let roles = [ Role.CaseHandler; Role.Auditor ]
+                    let family = (ClaimCore.Tests.TaskBuilders.family ()).Id
 
-                    let owner =
-                        CommandSkeleton.People
+                    let parts count =
+                        List.init count (fun index ->
                             {
-                                ExpectedRevision = Revision.zero
-                                TargetActorId = target
-                                Principal = principal
-                                Act = PeopleAct.ProvisionOwner(0, roles)
-                            }
-
-                    let ownerEffects =
-                        [
-                            EffectDescriptor.People(
-                                target,
-                                PeopleEffectDescriptor.ProvisionOwner principal
-                            )
-                            EffectDescriptor.People(target, PeopleEffectDescriptor.SetProfile 0)
-                            EffectDescriptor.People(
-                                target,
-                                PeopleEffectDescriptor.Grant
+                                RecordedPart.Change =
                                     {
-                                        Role = Role.CaseHandler
-                                        Scope = Scope.Installation
+                                        Aggregate = AggregateReference.Family family
+                                        PartId =
+                                            OperationId.value (
+                                                ClaimCore.Tests.TaskBuilders.operation (
+                                                    index + 100
+                                                )
+                                            )
+                                        Revision = Revision.create 2L |> Option.get
+                                        NaturalKey = None
+                                        Value = PartValue.Note { Removed = true; Text = None }
+                                        Erases = None
+                                        Stamp =
+                                            {
+                                                OperationId = header.OperationId
+                                                ActorId = header.ActorId
+                                                RecordedAt = header.RecordedAt
+                                                Position =
+                                                    EffectPosition.create header.Sequence index
+                                                    |> Option.get
+                                            }
                                     }
-                            )
-                            EffectDescriptor.People(
-                                target,
-                                PeopleEffectDescriptor.Grant
-                                    {
-                                        Role = Role.Auditor
-                                        Scope = Scope.Installation
-                                    }
-                            )
-                        ]
+                                Compartment = None
+                            })
 
-                    let ownerProfile =
-                        content
-                            ownerHeader
-                            0
-                            (CompartmentOwner.ActorProfile target)
-                            CompartmentPurpose.Profile
-                            [ 1 ]
-
-                    Expect.isOk
-                        (OperationStructure.append ownerHeader owner ownerEffects [ ownerProfile ])
-                        "Owner, profile and initial roles close in the first atomic operation"
+                    let create count =
+                        OperationStructure.create
+                            header
+                            (TaskId.ofLiteral "sample.change")
+                            (Binding.Case(CaseSelector.Id family, Revision.first))
+                            InputMap.empty
+                            (parts count)
+                            []
 
                     Expect.equal
-                        (OperationStructure.restore peopleHeader owner ownerEffects [ profile ])
-                        (Error OperationStructureProblem.Command)
-                        "Owner provisioning cannot occur later or under a different executor")
+                        (create 0)
+                        (Error OperationStructureProblem.Effects)
+                        "At least one effect"
+
+                    Expect.isOk (create 50) "Exact technical effect budget"
+
+                    Expect.equal
+                        (create 51)
+                        (Error OperationStructureProblem.Effects)
+                        "The 51st effect refuses")
         ]

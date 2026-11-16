@@ -16,32 +16,6 @@ module internal FamilyReads =
         let token = tx.CancellationToken
         Projections.caseById connection installation id token
 
-    let caseState (tx: ReadTx) id =
-        let connection = tx.Connection
-        let installation = tx.InstallationId
-        let token = tx.CancellationToken
-
-        task {
-            let! record = Projections.caseById connection installation id token
-
-            match record with
-            | None -> return None
-            | Some record ->
-                let! payments = PaymentStorage.owned connection id token
-
-                return
-                    CaseSubject.restore
-                        record.Index.ChangedAt
-                        record.Snapshot
-                        (payments |> List.map (fun row -> row.PaymentId, row) |> Map.ofList)
-                    |> Result.map Some
-                    |> Result.defaultWith (fun _ ->
-                        raise (
-                            RecordCorruptException
-                                "Case payment state does not match its aggregate."
-                        ))
-        }
-
     let caseFamilySequence (tx: ReadTx) id =
         let connection = tx.Connection
         let token = tx.CancellationToken
@@ -50,7 +24,7 @@ module internal FamilyReads =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT coalesce(max(operation_sequence),0) FROM claimcore.ledger_effects WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1"
+                    "SELECT coalesce(max(operation_sequence),0) FROM claimcore.ledger_effects WHERE aggregate_kind='FAMILY' AND aggregate_id=$1"
                     [| box (CaseId.value id) |]
                     token
 
@@ -58,11 +32,6 @@ module internal FamilyReads =
                 DatabaseSession.value<int64> 0 rows.Head
                 |> DatabaseSession.admitted Sequence.create
         }
-
-    let caseFamily (tx: ReadTx) id =
-        let connection = tx.Connection
-        let token = tx.CancellationToken
-        CaseFamilyStorage.load connection id token
 
     let findCaseByReference (tx: ReadTx) reference =
         let connection = tx.Connection

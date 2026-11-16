@@ -28,9 +28,6 @@ type ExecutorIssue =
     | HumanRequired
     | OwnerRequired
 
-/// A broken restored state is an integrity failure, not a business refusal.
-exception SubjectStateInvalid of RecordViolation
-
 module DecisionContext =
     let executor context human owner =
         match context.Access.Actor with
@@ -42,7 +39,7 @@ module DecisionContext =
         | Some actor when
             owner
             && not (
-                People.isEnabledHumanOwner
+                Access.isEnabledHumanOwner
                     {
                         Actor = actor
                         Grants =
@@ -82,9 +79,3 @@ module DecisionContext =
         |> Result.bind (fun () -> lifetime context operation)
         |> Result.bind (fun () -> stateGate ())
         |> Result.bind (fun () -> maintenance context)
-
-    let workExecutor context =
-        executor context (Access.humanOnlyCapability Capability.ManageCaseWork) false
-
-    let workAccess context caseId =
-        CaseWorkPolicy.authorize context.Principal context.Access caseId

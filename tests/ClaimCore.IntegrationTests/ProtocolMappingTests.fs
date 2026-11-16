@@ -138,14 +138,14 @@ let private cancellationPolicy () =
         let! _ = caseWorker fixture |> Async.AwaitTask
         let actor = core fixture owner
 
-        let input =
-            ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 91 "MAPPING-001")
+        let input = ((openRequest fixture 91 "MAPPING-001"))
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
 
         let! preview =
-            (Service.preview actor (input) (cancellation.Token)) |> Async.AwaitTask
+            (Service.previewSubmission actor (input) (cancellation.Token))
+            |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
@@ -153,7 +153,8 @@ let private cancellationPolicy () =
             "Preview observes caller cancellation."
 
         let! execute =
-            (Service.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
+            (Service.executeSubmission actor (input) (CancellationToken.None))
+            |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

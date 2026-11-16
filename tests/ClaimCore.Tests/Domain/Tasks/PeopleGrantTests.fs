@@ -13,6 +13,31 @@ let tests =
     testList
         "task people.grant"
         [
+            testCase "available role choices follow the target's principal kind" (fun () ->
+                let service = PrincipalKey.service "https://issuer.example/" "service" |> accepted
+                let state = personWith service
+
+                let offer =
+                    Grant.availability
+                        (peopleEnvironment service)
+                        (Some state)
+                        (personBinding state)
+
+                Expect.equal
+                    offer.Choices[TaskInputId.Target InputTarget.Role]
+                    [
+                        "CASE_READER"
+                        "CASE_REGISTRAR"
+                        "CASE_HANDLER"
+                        "PAYMENT_RECORDER"
+                        "AUDITOR"
+                    ]
+                    "Service accounts cannot be offered human-only roles"
+
+                Expect.equal
+                    offer.Seeds[TaskInputId.Scope]
+                    (InputValue.Text "INSTALLATION")
+                    "The task owns the initial scope")
             testCase
                 "accepted assignments carry only the changed grant and regrant refreshes provenance"
                 (fun () ->

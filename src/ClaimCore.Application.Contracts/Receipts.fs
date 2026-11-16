@@ -24,13 +24,13 @@ type CaseReceipt =
         CaseId: CaseId
         Reference: CaseReference
         Revision: Revision
-        Act: CaseActKind
+        Act: TaskId
         Snapshot: SnapshotDisclosure
     }
 
 type PeopleReceiptEffect =
     {
-        Act: PeopleActKind
+        Act: TaskId
         Id: EffectId
         Position: EffectPosition
     }
@@ -50,7 +50,7 @@ type PeopleReceipt =
     {
         Effects: PeopleReceiptEffect list
         TargetActor: PeopleTargetDisclosure
-        Act: PeopleActKind
+        Act: TaskId
     }
 
 /// Historical receipt bounds follow the retained operation format, not current authoring admission.
@@ -69,7 +69,7 @@ type WorkReceipt =
         Reference: CaseReference
         CaseId: CaseId
         Revision: Revision
-        Act: WorkActKind
+        Act: TaskId
         Snapshot: WorkDisclosure
     }
 
@@ -95,7 +95,7 @@ type ReminderReceipt =
     {
         Reference: CaseReference
         CaseId: CaseId
-        Act: ReminderActKind
+        Act: TaskId
         Effects: ReminderReceiptEffects
     }
 
@@ -110,7 +110,7 @@ type NoteReceipt =
         Reference: CaseReference
         CaseId: CaseId
         NoteId: NoteId
-        Act: NoteActKind
+        Act: TaskId
         Snapshot: NoteDisclosure
     }
 

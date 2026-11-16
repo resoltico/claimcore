@@ -4,110 +4,35 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 module HumanReviewDocument =
-    let private describe act operationId binding seeds authored review =
-        let basis, reference =
-            match review with
-            | OperationReview.Case value -> value.Context.Basis, Some value.Proposed.Reference
-            | OperationReview.Work value -> value.Context.Basis, Some value.Reference
-            | OperationReview.Note value -> value.Context.Basis, Some value.Reference
-            | OperationReview.Reminder value -> value.Context.Basis, Some value.Reference
-            | OperationReview.People value -> value.Basis, None
-
+    let private describe task operationId binding seeds (review: OperationReview) =
         let confirmation =
-            reference
-            |> Option.map ConfirmationTarget.CaseReference
-            |> Option.defaultValue (ConfirmationTarget.Operation operationId)
+            match review.Target with
+            | ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
+            | ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
 
-        let screen, presentation =
-            ReviewDocumentParts.describe (Some(act, operationId)) authored review
-
-        let action =
-            TaskAffordances.offered (ApplicationTaskId.Operation act) binding seeds [] Map.empty
+        let screen, presentation = ReviewDocumentParts.describe (Some operationId) review
+        let action = TaskAffordances.offered task (Some binding) seeds [] Map.empty
 
         {
             HumanReview.Document =
                 HumanDocument.create
-                    (DocumentSubject.Review(confirmation, TaskConsequences.ofAct act))
+                    (DocumentSubject.Review(confirmation, TaskConsequences.ofTask task))
                     screen
-                    [ { action with Primary = true } ]
+                    [ action ]
                     []
                     None
-                    (ObservationBasis.Snapshot basis)
+                    (ObservationBasis.Snapshot review.Context.Basis)
                     HumanDisclosure.Current
                     None
             Presentation = presentation
         }
 
     let ofSubmission (submission: OperationSubmission) review =
-        let authored =
-            match submission.Operation with
-            | Ok(SubmittedOperation.Command input) -> Some input
-            | _ -> None
-
         describe
             submission.Task
             submission.OperationId
-            submission.Binding
-            submission.Inputs
-            authored
-            review
-
-    /// Typed Core callers retain their command structure without serializing a protocol request.
-    let ofCore input review =
-        let binding =
-            match input with
-            | OperationInput.Case value ->
-                let payment =
-                    match value.Act with
-                    | CaseAct.RemovePayment id -> Some id
-                    | _ -> None
-
-                if
-                    (TaskConsequences.declaration (ActKind.Case(CaseAct.kind value.Act))).Creates
-                then
-                    OperationBinding.CaseNew value.ExpectedRevision
-                else
-                    OperationBinding.Case(
-                        value.Target,
-                        value.ExpectedRevision,
-                        payment,
-                        value.ExpectedFamilySequence
-                    )
-            | OperationInput.Work value ->
-                OperationBinding.Work(value.Target, value.ExpectedRevision)
-            | OperationInput.Note value ->
-                let selected =
-                    match value.Act with
-                    | AuthoredNoteAct.RemoveNote id -> Some id
-                    | _ -> None
-
-                OperationBinding.Note(value.Target, selected)
-            | OperationInput.Reminder value ->
-                let current =
-                    match value.Act with
-                    | ReminderAct.Create _ -> None
-                    | ReminderAct.Update(id, revision, _)
-                    | ReminderAct.CompleteAndPlanNext(id, revision, _)
-                    | ReminderAct.Complete(id, revision)
-                    | ReminderAct.Cancel(id, revision)
-                    | ReminderAct.Reopen(id, revision, _) -> Some(id, revision)
-
-                OperationBinding.Reminder(value.Target, current)
-            | OperationInput.People request ->
-                let actor =
-                    match review with
-                    | OperationReview.People value ->
-                        value.Target |> Option.map (fun value -> ActorId.value value.Actor.ActorId)
-                    | _ -> None
-
-                OperationBinding.People(actor, request.ExpectedRevision)
-
-        describe
-            (ActKind.ofInput input)
-            (OperationInput.operationId input)
-            binding
-            Map.empty
-            (Some input)
+            review.Binding
+            submission.Envelope.Inputs
             review
 
 module HumanReceiptDocument =
@@ -123,9 +48,10 @@ module HumanReceiptDocument =
 
                 Some value.CaseId,
                 disclosure,
-                List.contains
-                    value.Act
-                    [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
+                (match value.Snapshot with
+                 | SnapshotDisclosure.Disclosed { State = LiveCase.Active fields } ->
+                     fields.Status = CaseStatus.Opened
+                 | _ -> false)
             | ReceiptSubject.Work value ->
                 let disclosure =
                     match value.Snapshot with

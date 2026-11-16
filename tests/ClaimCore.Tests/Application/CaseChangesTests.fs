@@ -9,6 +9,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.TestSupport
 
 let private identity = Guid.Parse "90000000-0000-7000-8000-000000000001"
@@ -33,10 +34,26 @@ let private live name =
         |> Registration.create
         |> Result.defaultWith failtest
 
-    LiveCase.Active
-        { fields with
-            Registration = registration
-        }
+    {
+        CaseValue.Reference = None
+        Lifecycle = Lifecycle.Active
+        Status = CaseStatus.Opened
+        Content =
+            Some
+                {
+                    Registration = registration
+                    Finance = fields.Finance
+                }
+        Disposition = None
+    }
+
+let private lifecycle before after =
+    (CaseDescription.describe fields.CaseReference before after).Lifecycle
+    |> Option.map (fun change ->
+        {
+            LifecycleChange.Before = change.Before
+            After = change.After |> Option.get
+        })
 
 [<Tests>]
 let tests =
@@ -44,12 +61,12 @@ let tests =
         let active = live "Before"
 
         let voided =
-            match live "After" with
-            | LiveCase.Active fields -> LiveCase.Voided fields
-            | _ -> failtest "Active fixture"
+            { live "After" with
+                Lifecycle = Lifecycle.Voided
+            }
 
         Expect.equal
-            (CaseChanges.lifecycle None active)
+            (lifecycle None active)
             (Some
                 {
                     Before = None
@@ -58,12 +75,12 @@ let tests =
             "Creation has no predecessor lifecycle"
 
         Expect.equal
-            (CaseChanges.lifecycle (Some active) (live "Changed name"))
+            (lifecycle (Some active) (live "Changed name"))
             None
             "Business changes do not fabricate a lifecycle change"
 
         Expect.equal
-            (CaseChanges.lifecycle (Some active) voided)
+            (lifecycle (Some active) voided)
             (Some
                 {
                     Before = Some Lifecycle.Active
@@ -72,7 +89,7 @@ let tests =
             "Voiding retains both lifecycle values"
 
         Expect.equal
-            (CaseChanges.lifecycle (Some voided) active)
+            (lifecycle (Some voided) active)
             (Some
                 {
                     Before = Some Lifecycle.Voided

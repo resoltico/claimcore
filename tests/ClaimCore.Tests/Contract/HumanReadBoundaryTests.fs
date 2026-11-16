@@ -22,10 +22,10 @@ let private required value =
     Result.defaultWith (fun error -> failtestf "%A" error) value
 
 let private services =
-    ClaimCore.Tests.DecisionFixtures.services
-        ClaimCore.Tests.DecisionFixtures.installation
-        ClaimCore.Tests.DecisionFixtures.calendar
-        ClaimCore.Tests.DecisionFixtures.owner
+    ClaimCore.Tests.ReadFixtures.services
+        ClaimCore.Tests.ReadFixtures.installation
+        ClaimCore.Tests.ReadFixtures.calendar
+        ClaimCore.Tests.ReadFixtures.owner
 
 [<Tests>]
 let tests =
@@ -180,16 +180,12 @@ let tests =
 
                     let action =
                         TaskAffordances.caseAction
-                            CaseActKind.AmendRegistration
+                            (TaskId.ofLiteral "case.amendRegistration")
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
                             Sequence.zero
                             (RegistrationInput.values bait |> TaskAffordances.fields)
-                            (TaskAffordances.authored (
-                                ApplicationTaskId.Operation(
-                                    ActKind.Case CaseActKind.AmendRegistration
-                                )
-                            ))
+                            (TaskAffordances.authored (TaskId.ofLiteral "case.amendRegistration"))
                             Map.empty
 
                     let screen =
@@ -244,7 +240,7 @@ let tests =
 
                     let action =
                         TaskAffordances.caseAction
-                            CaseActKind.AmendRegistration
+                            (TaskId.ofLiteral "case.amendRegistration")
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
                             Sequence.zero
@@ -270,7 +266,7 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 action.Task
-                                (OperationBinding.People(None, 0L))
+                                (Some(Binding.PeopleNew Revision.zero))
                                 action.Seeds
                                 []
                                 Map.empty
@@ -281,22 +277,14 @@ let tests =
             testCase
                 "native selection is correlated without entering frozen business bytes"
                 (fun () ->
-                    let input: OperationInput =
-                        OperationInput.Case
-                            {
-                                ExpectedFamilySequence = None
-                                OperationId =
-                                    OperationId.value ResponseExamples.receipt.OperationId
-                                Target = CaseSelector.Reference "CASE-1"
-                                ExpectedRevision = 1L
-                                Act = CaseAct.Bare BareAct.Close
-                            }
+                    let input =
+                        Submissions.create
+                            "case.close"
+                            (OperationId.value ResponseExamples.receipt.OperationId)
+                            (Binding.Case(CaseSelector.Reference "CASE-1", Revision.first))
+                            Map.empty
 
-                    let original =
-                        (Frames.create Api.operationExecute
-                         << ClaimCore.TestSupport.Submissions.ofCommand None)
-                            input
-                        |> required
+                    let original = Frames.create Api.operationExecute input |> required
 
                     let human = Frames.withRepresentation Representation.Human original
                     let data = Frames.withRepresentation Representation.Data original

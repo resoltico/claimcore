@@ -113,7 +113,18 @@ module internal AccessRequestQueries =
                                         with
                                         | Error issues -> return Verdict.Refuse issues
                                         | Ok principal ->
-                                            do! tx.DismissAccessRequest principal
+                                            let! _ =
+                                                PrincipalLock.acquire
+                                                    tx.Connection
+                                                    principal
+                                                    tx.CancellationToken
+
+                                            let! _ =
+                                                AccessRequests.delete
+                                                    tx.Connection
+                                                    principal
+                                                    tx.CancellationToken
+
                                             return Verdict.Proceed()
                                 }
                     }

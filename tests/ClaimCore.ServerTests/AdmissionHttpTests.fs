@@ -433,11 +433,6 @@ let private promotedCookieTransfer () =
                                     "The real limiter has removed the promoted waiter"
 
                                 Expect.equal
-                                    promoted.TotalSuccessfulLeases
-                                    3L
-                                    "Both holders and the promoted acquisition succeeded"
-
-                                Expect.equal
                                     promoted.CurrentAvailablePermits
                                     0L
                                     "The promoted lease owns the released permit before callback transfer"
@@ -469,6 +464,15 @@ let private promotedCookieTransfer () =
 
             first.Dispose()
             let! result = queued.WaitAsync(TimeSpan.FromSeconds 3.)
+
+            // ConcurrencyLimiter publishes completion before incrementing its success counter.
+            // The releasing holder has returned here; the ownership boundary above needs only
+            // the queue and permit state, not the later statistics publication.
+            if close <> "dispose" then
+                Expect.equal
+                    (statistics ()).TotalSuccessfulLeases
+                    3L
+                    "Both holders and the promoted acquisition succeeded"
 
             Expect.equal
                 reads

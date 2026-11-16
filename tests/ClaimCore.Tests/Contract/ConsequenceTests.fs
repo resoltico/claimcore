@@ -10,36 +10,36 @@ open ClaimCore.Json
 
 let private acts =
     [
-        ActKind.Case CaseActKind.Open, Consequence.Routine
-        ActKind.Case CaseActKind.AmendRegistration, Consequence.Routine
-        ActKind.Case CaseActKind.Correct, Consequence.Routine
-        ActKind.Case CaseActKind.Decide, Consequence.Routine
-        ActKind.Case CaseActKind.WithdrawDecision, Consequence.Routine
-        ActKind.Case CaseActKind.RecordPayment, Consequence.Routine
-        ActKind.Case CaseActKind.RemovePayment, Consequence.Routine
-        ActKind.Case CaseActKind.Close, Consequence.Routine
-        ActKind.Case CaseActKind.Reopen, Consequence.Routine
-        ActKind.Case CaseActKind.Void, Consequence.Stewardship
-        ActKind.Case CaseActKind.Reinstate, Consequence.Stewardship
-        ActKind.Case CaseActKind.Erase, Consequence.Irreversible
-        ActKind.People PeopleActKind.ProvisionOwner, Consequence.Routine
-        ActKind.People PeopleActKind.Register, Consequence.Routine
-        ActKind.People PeopleActKind.Admit, Consequence.Routine
-        ActKind.People PeopleActKind.Grant, Consequence.Routine
-        ActKind.People PeopleActKind.Revoke, Consequence.Routine
-        ActKind.People PeopleActKind.Enable, Consequence.Routine
-        ActKind.People PeopleActKind.Disable, Consequence.Stewardship
-        ActKind.People PeopleActKind.SetProfile, Consequence.Routine
-        ActKind.People PeopleActKind.EraseProfile, Consequence.Irreversible
-        ActKind.Note NoteActKind.AddNote, Consequence.Routine
-        ActKind.Note NoteActKind.RemoveNote, Consequence.Routine
-        ActKind.Work WorkActKind.UpdateWork, Consequence.Routine
-        ActKind.Reminder ReminderActKind.Create, Consequence.Routine
-        ActKind.Reminder ReminderActKind.Update, Consequence.Routine
-        ActKind.Reminder ReminderActKind.Complete, Consequence.Routine
-        ActKind.Reminder ReminderActKind.Cancel, Consequence.Routine
-        ActKind.Reminder ReminderActKind.Reopen, Consequence.Routine
-        ActKind.Reminder ReminderActKind.CompleteAndPlanNext, Consequence.Routine
+        (TaskId.ofLiteral "case.open"), Consequence.Routine
+        (TaskId.ofLiteral "case.amendRegistration"), Consequence.Routine
+        (TaskId.ofLiteral "case.correct"), Consequence.Routine
+        (TaskId.ofLiteral "case.decide"), Consequence.Routine
+        (TaskId.ofLiteral "case.withdrawDecision"), Consequence.Routine
+        (TaskId.ofLiteral "case.recordPayment"), Consequence.Routine
+        (TaskId.ofLiteral "case.removePayment"), Consequence.Routine
+        (TaskId.ofLiteral "case.close"), Consequence.Routine
+        (TaskId.ofLiteral "case.reopen"), Consequence.Routine
+        (TaskId.ofLiteral "case.void"), Consequence.Stewardship
+        (TaskId.ofLiteral "case.reinstate"), Consequence.Stewardship
+        (TaskId.ofLiteral "case.erase"), Consequence.Irreversible
+        (TaskId.ofLiteral "people.provisionOwner"), Consequence.Routine
+        (TaskId.ofLiteral "people.register"), Consequence.Routine
+        (TaskId.ofLiteral "people.admit"), Consequence.Routine
+        (TaskId.ofLiteral "people.grant"), Consequence.Routine
+        (TaskId.ofLiteral "people.revoke"), Consequence.Routine
+        (TaskId.ofLiteral "people.enable"), Consequence.Routine
+        (TaskId.ofLiteral "people.disable"), Consequence.Stewardship
+        (TaskId.ofLiteral "people.setProfile"), Consequence.Routine
+        (TaskId.ofLiteral "people.eraseProfile"), Consequence.Irreversible
+        (TaskId.ofLiteral "note.add"), Consequence.Routine
+        (TaskId.ofLiteral "note.remove"), Consequence.Routine
+        (TaskId.ofLiteral "work.update"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.create"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.update"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.complete"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.cancel"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.reopen"), Consequence.Routine
+        (TaskId.ofLiteral "reminder.completeAndPlanNext"), Consequence.Routine
     ]
 
 let private queries =
@@ -75,12 +75,12 @@ let tests =
 
                 Expect.equal
                     (acts |> List.map fst |> Set.ofList)
-                    (Set.ofList ActKind.all)
+                    (ClaimCore.Domain.Tasks.Registry.declarations |> List.map _.Id |> Set.ofList)
                     "Every declared act, including owner provisioning, requires a pin"
 
                 for act, expected in acts do
                     Expect.equal
-                        (TaskConsequences.ofAct act)
+                        (TaskConsequences.ofTask act)
                         expected
                         "Classification follows the adopted consequence policy")
             testCase "every query has an explicit routine consequence" (fun () ->
@@ -99,14 +99,14 @@ let tests =
 
                 for query, expected in queries do
                     Expect.equal
-                        (TaskRouting.consequence (ApplicationTaskId.Query query))
+                        (TaskRouting.consequence (QueryTaskId.key query))
                         expected
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "the actual CLI consumes Core operation consequences for every task" (fun () ->
                 for act, expected in acts do
-                    if act <> ActKind.People PeopleActKind.ProvisionOwner then
+                    if act <> (TaskId.ofLiteral "people.provisionOwner") then
                         Expect.equal
-                            (TaskRouting.consequence (ApplicationTaskId.Operation act))
+                            (TaskRouting.consequence (TaskId.token act))
                             expected
                             "CLI confirmation cannot downgrade Core consequence")
             testCase "consequence wire vocabulary is closed and stable" (fun () ->

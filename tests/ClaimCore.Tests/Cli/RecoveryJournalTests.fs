@@ -15,8 +15,7 @@ let private record (attempt: string) : RecoveryIdentity =
         ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
         AttemptId = Guid.Parse attempt
         OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
-        Subject = ActSubject.Case
-        Act = "case.open"
+        Task = "case.open"
         Refused = false
     }
 
@@ -28,24 +27,17 @@ let everyMutation =
         try
             let kinds =
                 TaskDeclarations.all
-                |> List.choose (fun declaration ->
-                    match declaration.Task with
-                    | ApplicationTaskId.Operation kind -> Some kind
-                    | ApplicationTaskId.Query _
-                    | ApplicationTaskId.Command _ -> None)
+                |> List.choose (fun declaration -> declaration.Ledger |> Option.map _.Id)
 
             Expect.isNonEmpty kinds "The actual human task inventory is exercised"
 
             for kind in kinds do
                 let identity =
                     { record (Guid.NewGuid().ToString("D")) with
-                        Subject = ActKind.subject kind
-                        Act = ActKind.token kind
+                        Task = TaskId.token kind
                     }
 
-                Expect.isOk
-                    (RecoveryJournal.save root.FullName identity)
-                    (ApplicationTaskId.key (ApplicationTaskId.Operation kind))
+                Expect.isOk (RecoveryJournal.save root.FullName identity) (TaskId.token kind)
 
                 let read =
                     RecoveryJournal.list root.FullName identity.Scope
@@ -54,7 +46,7 @@ let everyMutation =
                 Expect.contains
                     read
                     identity
-                    "The typed subject and its subject-specific action survive restart decoding"
+                    "The declared task identity survives restart decoding"
         finally
             root.Delete true)
 
@@ -113,8 +105,7 @@ let tests =
                                         "actorId"
                                         "attemptId"
                                         "operationId"
-                                        "subject"
-                                        "act"
+                                        "task"
                                         "refused"
                                     ])
                                 "Exact identity-only grammar"
@@ -311,7 +302,7 @@ let strictFamilies =
                             "Current format publishes"
 
                         let path = Directory.GetFiles directory |> Array.exactlyOne
-                        let old = File.ReadAllText(path).Replace("\"format\":3", "\"format\":2")
+                        let old = File.ReadAllText(path).Replace("\"format\":4", "\"format\":3")
                         File.WriteAllText(path, old)
 
                         Expect.isError

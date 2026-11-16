@@ -83,7 +83,7 @@ const succeeded = (
                 ),
                 {
                   task: "people.requests.dismiss",
-                  binding: { kind: "PEOPLE" },
+                  binding: {},
                   seeds: {
                     "input:principal.kind": item.principal.kind,
                     "input:principal.issuer": item.principal.issuer,

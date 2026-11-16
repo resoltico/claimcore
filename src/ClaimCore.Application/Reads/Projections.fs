@@ -42,7 +42,7 @@ module internal Projections =
         + DatabaseSession.dateExpression "notified_on"
         + " AS notified_on,responsible_actor,"
         + DatabaseSession.dateExpression "follow_up"
-        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT creation_reference FROM claimcore.ledger_effects e WHERE e.subject_kind='CASE' AND e.subject_id=c.case_id AND e.case_revision=1) AS creation_reference"
+        + " AS follow_up,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,paid_amount::text AS paid_amount,(SELECT natural_key FROM claimcore.ledger_effects e WHERE e.part_kind='CASE' AND e.part_id=c.case_id AND e.revision=1) AS reserved_reference"
 
     let caseStatus row =
         DatabaseSession.namedOptional<string> "status" row
@@ -148,12 +148,14 @@ module internal Projections =
             || snapshot.Revision <> revision
             || CaseState.token snapshot.State <> state
             || snapshot.CaseId <> id
-            || DatabaseSession.namedOptional<string> "creation_reference" row
+            || DatabaseSession.namedOptional<string> "reserved_reference" row
                <> Some(CaseReference.format reference)
         then
             raise (RecordCorruptException "Stored snapshot disagrees with projection identity.")
 
-        Case.ofAccepted snapshot |> parsed |> ignore
+        ClaimCore.Domain.Aggregates.CaseFamily.validateSnapshot snapshot
+        |> parsed
+        |> ignore
 
         {
             CaseId = id
@@ -238,7 +240,7 @@ module internal Projections =
             AccessView.ofActor (Some stored)
 
     let private actorQuery columns =
-        $"SELECT {columns} FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+        $"SELECT {columns} FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3 AND a.principal_key=$5"
 
     let private actorParameters principal (caseIds: CaseId list) =
         let kind, issuer, subject = PrincipalKey.parts principal
@@ -248,6 +250,7 @@ module internal Projections =
             box issuer
             box subject
             box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
+            box (PrincipalKey.naturalKey principal)
         |]
 
     let private actorColumns =
@@ -272,7 +275,7 @@ module internal Projections =
             "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($4::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($5::text[])))"
 
         let sql =
-            $"SELECT {actorColumns},{scoped},EXISTS(SELECT 1 FROM claimcore.grants assigned WHERE assigned.actor_id=a.actor_id) FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+            $"SELECT {actorColumns},{scoped},EXISTS(SELECT 1 FROM claimcore.grants assigned WHERE assigned.actor_id=a.actor_id) FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3 AND a.principal_key=$6"
 
         let parameters =
             [|
@@ -281,6 +284,7 @@ module internal Projections =
                 box subject
                 box (Access.readRoles principal |> List.map Role.token |> List.toArray)
                 box (Access.invalidRoles principal |> List.map Role.token |> List.toArray)
+                box (PrincipalKey.naturalKey principal)
             |]
 
         sql, parameters
@@ -364,11 +368,6 @@ module internal Projections =
                     Maintenance = mode
                 }
         }
-
-    let operationCases entry =
-        match entry |> Option.map (fun (entry: StoredEffect) -> entry.Subject) with
-        | Some(EntryTarget.Case(id, _, _, _)) -> [ id ]
-        | _ -> []
 
     let actorRow row : Actor =
         {

@@ -34,21 +34,21 @@ let tests =
         let different = OperationIds.fresh ()
 
         let input =
-            Inputs.caseOperation
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = operation
-                    CaseReference = "ECHO-1"
-                    ExpectedRevision = 0L
-                    Act = AuthoredCaseAct.Open Inputs.registration
-                }
+            Submissions.create
+                "case.open"
+                operation
+                (Binding.CaseNew Revision.zero)
+                (Submissions.fields (RegistrationInput.values Inputs.registration)
+                 |> Map.add
+                     (Submissions.field BusinessField.CaseReference)
+                     (SubmissionValue.Text "ECHO-1"))
 
         for echoed, expected in
             [ operation, DeliveryState.Delivered; different, DeliveryState.Uncertain ] do
             let executed =
                 delivered
                     Api.operationExecute
-                    (Submissions.ofCommand None input)
+                    input
                     {
                         ExecuteReply.OperationId = echoed
                         Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
@@ -68,7 +68,7 @@ let tests =
             let previewed =
                 delivered
                     Api.operationPreview
-                    (Submissions.ofCommand None input)
+                    input
                     {
                         PreviewReply.OperationId = echoed
                         Outcome = Outcome.Failed CoreFault.StoreUnavailable

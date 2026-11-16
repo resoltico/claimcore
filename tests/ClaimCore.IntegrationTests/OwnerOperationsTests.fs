@@ -29,7 +29,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 4 "Fresh installations use adopted format four"
+        Expect.equal initial.InstallationFormat 5 "Fresh installations use adopted format five"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
@@ -79,19 +79,21 @@ let private actionState (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let pending =
-            Inputs.caseOperation (
-                request database.Fixture 10 "MAINTENANCE-A" 0L (CaseAct.Open registration)
-            )
+            ((request
+                (database.Fixture)
+                (10)
+                ("MAINTENANCE-A")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))))
 
-        let! opening = Service.execute actor pending token
+        let! opening = Service.executeSubmission actor pending token
         accepted opening |> ignore
 
         let close =
-            Inputs.caseOperation (
-                request database.Fixture 11 "MAINTENANCE-A" 1L (CaseAct.Bare BareAct.Close)
-            )
+            ((request (database.Fixture) (11) ("MAINTENANCE-A") (1L) "case.close" (Map.empty)))
 
-        let! prepared = Service.preview actor close token
+        let! prepared = Service.previewSubmission actor close token
 
         match prepared.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -99,7 +101,7 @@ let private actionState (database: PostgresFixture.Database) =
 
         let! before = InstallationStatus.read database.OwnerSource token
         let! _ = changed database MaintenanceChange.On
-        let! refused = Service.execute actor close token
+        let! refused = Service.executeSubmission actor close token
 
         Expect.equal
             refused.Outcome
@@ -111,16 +113,20 @@ let private actionState (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! people =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 12)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 12))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.Inputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         Expect.equal
             people.Outcome
@@ -158,7 +164,7 @@ let private actionState (database: PostgresFixture.Database) =
         Expect.isTrue context.Maintenance.Active "Context exposes register maintenance"
 
         Expect.isEmpty context.Offers "Context offers are read-only during maintenance"
-        let! replay = Service.execute actor pending token
+        let! replay = Service.executeSubmission actor pending token
 
         let replayed =
             match replay.Outcome with
@@ -211,7 +217,7 @@ let private actionState (database: PostgresFixture.Database) =
             "Refusals, passive status, replay and authentication append nothing"
 
         let! _ = changed database MaintenanceChange.Off
-        let! recorded = Service.execute actor close token
+        let! recorded = Service.executeSubmission actor close token
 
         Expect.equal
             (accepted recorded |> caseReceipt |> _.Revision)
@@ -317,11 +323,9 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         let delayed = { actor with Store = store }
 
         let writing =
-            Service.execute
+            Service.executeSubmission
                 delayed
-                (Inputs.caseOperation (
-                    request database.Fixture 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)
-                ))
+                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
                 token
 
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
@@ -367,11 +371,9 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
             "Maintenance observes the previous acceptance's committed head"
 
         let! paused =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 12 "synthetic-a" 2L (CaseAct.Bare BareAct.Reopen)
-                ))
+                (((request (database.Fixture) (12) ("synthetic-a") (2L) "case.reopen" (Map.empty))))
                 token
 
         Expect.equal

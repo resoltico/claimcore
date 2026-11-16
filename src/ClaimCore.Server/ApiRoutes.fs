@@ -58,7 +58,9 @@ module internal ApiRoutes =
                 Api.peopleRequests
                 HumanReadDocuments.requests
                 Service.accessRequests
-        | ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss ->
+        | ActorEndpoint.Command command when
+            command = (EndpointDeclarations.commands |> List.exactlyOne).Id
+            ->
             Route.representedRead
                 Api.peopleRequestsDismiss
                 HumanReadDocuments.dismissed
@@ -80,6 +82,9 @@ module internal ApiRoutes =
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
                 Service.executeSubmission
+
+        | ActorEndpoint.Command command ->
+            invalidArg (nameof command) "The command endpoint is not declared."
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with

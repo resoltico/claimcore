@@ -28,72 +28,6 @@ type internal Fixture =
         Dispose: unit -> unit
     }
 
-let internal caseContext services mode (view: CaseFacts) =
-    SubjectExecution.context
-        services
-        mode
-        view.ObservedAt
-        view.Actor
-        view.Maintenance
-        view.ExpiredBefore
-
-let internal peopleContext services mode (view: PeopleExecutionFacts) =
-    SubjectExecution.context
-        services
-        mode
-        view.ObservedAt
-        view.Actor
-        view.Maintenance
-        view.ExpiredBefore
-
-/// Pure fixtures compose the same decision and accepted-row path as the registered transaction runner.
-let internal executeCase services command (write: LedgerWriteContext) (view: CaseFacts) =
-    CaseOperations.decide
-        (SubjectExecution.context
-            services
-            (SubjectExecutionMode.Commit write)
-            view.ObservedAt
-            view.Actor
-            view.Maintenance
-            view.ExpiredBefore)
-        services
-        command
-        view
-    |> SubjectExecution.accept
-        services
-        view.Actor
-        write
-        (CaseOperations.append services command view)
-
-let internal executePeople
-    services
-    command
-    (write: LedgerWriteContext)
-    (view: PeopleExecutionFacts)
-    =
-    PeopleOperations.decide
-        (SubjectExecutionMode.Commit write)
-        (SubjectExecution.context
-            services
-            (SubjectExecutionMode.Commit write)
-            view.ObservedAt
-            view.Actor
-            view.Maintenance
-            view.ExpiredBefore)
-        services
-        command
-        view
-    |> SubjectExecution.accept
-        services
-        view.Actor
-        write
-        (PeopleOperations.append services command view)
-
-let internal provisionPeople (services: ServiceContext) operation profile roles write view =
-    match People.provision (OperationId.value operation) services.Principal profile roles with
-    | Error refusal -> Verdict.Refuse refusal
-    | Ok command -> executePeople services command write view
-
 let internal core fixture principal =
     Service.create
         BuildIdentity.current.Version
@@ -102,83 +36,6 @@ let internal core fixture principal =
         fixture.Calendar
         principal
 
-let internal inspectCase fixture principal operation reference token =
-    fixture.Store.Read(
-        {
-            ReadOperation.Work =
-                (fun tx ->
-                    ExecutionFacts.case
-                        (core fixture principal)
-                        tx
-                        (Option.map CaseFixtures.operationId operation)
-                        (CaseSelector.Reference reference)
-                        None)
-            CancellationToken = token
-        }
-    )
-
-type internal PeopleInspection =
-    {
-        Needed: PeopleFact list
-        OperationId: Guid
-        Target: PrincipalKey
-        CaseTargets: GrantTarget list
-    }
-
-let internal inspectTarget fixture principal (query: PeopleInspection) token =
-    fixture.Store.Read(
-        {
-            ReadOperation.Work =
-                (fun tx ->
-                    ExecutionFacts.target
-                        (core fixture principal)
-                        tx
-                        query.Needed
-                        (CaseFixtures.operationId query.OperationId)
-                        query.Target
-                        query.CaseTargets)
-            CancellationToken = token
-        }
-    )
-
-let internal inspectOperation fixture principal operation token =
-    fixture.Store.Read(
-        {
-            ReadOperation.Work =
-                (fun tx ->
-                    task {
-                        let! actor, entry, current =
-                            ExecutionFacts.operation tx principal operation
-
-                        let! maintenance = RegisterReads.maintenance tx ()
-                        let! frontier = RegisterReads.expiredBefore tx ()
-
-                        return
-                            {
-                                FamilySequence = Sequence.create 1L |> Option.get
-                                Maintenance = maintenance
-                                State = None
-                                Family = None
-                                Work = None
-                                PendingReminderDue = []
-                                CaseFacts.Assignee = None
-                                ObservedAt = tx.ObservedAt
-                                ExpiredBefore = frontier
-                                Actor = actor
-                                ExistingOperation = entry
-                                Case =
-                                    match current with
-                                    | ReceiptCurrent.Case value
-                                    | ReceiptCurrent.Work(value, _, _)
-                                    | ReceiptCurrent.Reminder(value, _)
-                                    | ReceiptCurrent.Note(value, _) -> value
-                                    | ReceiptCurrent.People _ -> None
-                            }
-                    })
-            CancellationToken = token
-        }
-    )
-
 let internal inspectPeople fixture principal token =
     fixture.Store.Read(
         {
@@ -186,6 +43,11 @@ let internal inspectPeople fixture principal token =
             CancellationToken = token
         }
     )
+
+let internal humanPrincipalKey issuer subject =
+    PrincipalKey.human issuer subject
+    |> Result.defaultWith (fun error -> failtestf "Fixture principal: %A" error)
+    |> PrincipalKey.naturalKey
 
 let internal id (fixture: Fixture) n = fixture.OperationIds.Id n
 
@@ -215,46 +77,108 @@ let internal reviewedFamilySequence store target =
             | None -> return 1L // Syntactically valid wrong-target negative controls still reach disclosure policy.
         })
 
-let internal reviewedPeopleRequest store operation target act =
-    let expected =
-        if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
-            readFixture store (fun tx -> PeopleReads.peopleRevision tx target)
-            |> Option.map Revision.value
-            |> Option.defaultValue 1L
-        else
-            0L
+let internal request fixture n reference revision task values =
+    let declaration =
+        ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral task)
+        |> Option.get
 
-    { Inputs.peopleRequest operation target act with
-        ExpectedRevision = expected
-    }
+    let target = CaseSelector.Reference reference
+    let paymentInput = Submissions.input InputTarget.PaymentId
 
-let internal request fixture n reference revision act : UnvalidatedCaseRequest =
-    {
-        ExpectedFamilySequence =
-            if CaseAct.kind act = CaseActKind.Erase then
-                Some(reviewedFamilySequence fixture.Store (CaseSelector.Reference reference))
+    let binding, values =
+        match TaskDeclaration.bindingShape declaration with
+        | BindingShape.CaseNew ->
+            let referenceInput = Submissions.field BusinessField.CaseReference
+
+            let authored =
+                if Map.containsKey referenceInput values then
+                    values
+                else
+                    Map.add referenceInput (SubmissionValue.Text reference) values
+
+            OperationBinding.CaseNew revision, authored
+        | BindingShape.CaseErase ->
+            OperationBinding.Case(
+                target,
+                revision,
+                None,
+                Some(reviewedFamilySequence fixture.Store target)
+            ),
+            values
+        | BindingShape.CasePayment ->
+            let payment =
+                values[paymentInput]
+                |> function
+                    | SubmissionValue.Text text -> Guid.Parse text
+                    | _ -> failtest "Payment fixture selection required"
+
+            OperationBinding.Case(target, revision, Some payment, None),
+            Map.remove paymentInput values
+        | BindingShape.Case -> OperationBinding.Case(target, revision, None, None), values
+        | _ -> invalidArg (nameof task) "Supply an explicit row or person binding."
+
+    Submissions.createRaw task (id fixture n) binding values
+
+/// Fixture setup reads a ready actor identity; explicit stale revisions remain caller-supplied.
+let internal personSubmission (store: IStore) operation target expected taskName values =
+    task {
+        let declaration =
+            ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral taskName)
+            |> Option.get
+
+        let! binding =
+            task {
+                if declaration.Creates then
+                    return OperationBinding.People(None, Option.defaultValue 0L expected)
+                else
+                    let! result =
+                        store.Read
+                            {
+                                CancellationToken = CancellationToken.None
+                                Work =
+                                    fun tx ->
+                                        task {
+                                            let! rows =
+                                                DatabaseSession.rows
+                                                    tx.Connection
+                                                    "SELECT actor_id,revision FROM claimcore.actors WHERE principal_key=$1"
+                                                    [| box (PrincipalKey.naturalKey target) |]
+                                                    tx.CancellationToken
+
+                                            return
+                                                rows
+                                                |> List.tryHead
+                                                |> Option.map (fun row ->
+                                                    DatabaseSession.value<Guid> 0 row,
+                                                    DatabaseSession.value<int64> 1 row)
+                                        }
+                            }
+
+                    let current =
+                        result
+                        |> Result.defaultWith (fun error ->
+                            failtestf "Fixture actor binding read failed: %A" error)
+
+                    let identity, revision = current |> Option.defaultValue (operation, 1L)
+
+                    return
+                        OperationBinding.People(
+                            Some identity,
+                            Option.defaultValue revision expected
+                        )
+            }
+
+        let authored =
+            if declaration.Creates then
+                Map.fold
+                    (fun values key value -> Map.add key value values)
+                    values
+                    (Submissions.principal target)
             else
-                None
-        OperationId = id fixture n
-        CaseReference = reference
-        ExpectedRevision = revision
-        Act = act
-    }
+                values
 
-let internal actRequest fixture n reference revision act : UnvalidatedCaseRequest =
-    {
-        ExpectedFamilySequence =
-            if CaseAct.kind act = CaseActKind.Erase then
-                Some(reviewedFamilySequence fixture.Store (CaseSelector.Reference reference))
-            else
-                None
-        OperationId = id fixture n
-        CaseReference = reference
-        ExpectedRevision = revision
-        Act = act
+        return Submissions.createRaw taskName operation binding authored
     }
-
-let internal peopleRequest = Inputs.peopleRequest
 
 let internal registration: RegistrationInput = Inputs.registration
 
@@ -324,7 +248,7 @@ let internal disclosedFields receipt =
 let internal bootstrap fixture =
     task {
         let! result =
-            PeopleOperations.provisionStore
+            Service.provisionOwner
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile
@@ -338,30 +262,28 @@ let internal bootstrap fixture =
         return core fixture fixture.Owner
     }
 
-let internal grant (actor: ServiceContext) operationId target (grant: AuthoredGrant) active =
+let internal grant (actor: ServiceContext) operationId target (grant: GrantInput) active =
     task {
         let! observed =
             actor.Store.Read
                 {
-                    Work = (fun tx -> PeopleReads.peopleState tx target)
+                    Work = (fun tx -> AggregateStorage.principal tx target)
                     CancellationToken = CancellationToken.None
                 }
 
-        let expected =
+        let current =
             observed
             |> Result.defaultWith (fun error -> failtestf "Setup review failed: %A" error)
-            |> Option.map (_.Revision >> Revision.value)
-            |> Option.defaultValue 0L
+            |> Option.defaultWith (fun () -> failtest "Grant target is absent.")
 
         let input =
-            { peopleRequest
-                  operationId
-                  target
-                  ((if active then PeopleAct.Grant else PeopleAct.Revoke) grant) with
-                ExpectedRevision = expected
-            }
+            Submissions.create
+                (if active then "people.grant" else "people.revoke")
+                operationId
+                (Binding.People(current.Id, current.Revision))
+                (Submissions.grant grant)
 
-        return! Service.execute actor (OperationInput.People input) CancellationToken.None
+        return! Service.executeSubmission actor input CancellationToken.None
     }
 
 let internal caseWorker fixture =

@@ -2,6 +2,7 @@ module ClaimCore.Tests.Tasks.CaseAmendRegistrationTests
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Tests.TaskBuilders
 
@@ -12,6 +13,75 @@ let tests =
     testList
         "task case.amendRegistration"
         [
+            testCase
+                "retained nonconforming text is reaffirmed, while changed text uses current policy"
+                (fun () ->
+                    for oldName in [ "Synthetic\u202eParty"; String.replicate 201 "A" ] do
+                        let initial =
+                            match initialChange.Value with
+                            | PartValue.Case value -> value
+                            | _ -> failtest "Expected case fixture."
+
+                        let content = initial.Content.Value
+
+                        let registration =
+                            Registration.replace
+                                [
+                                    BusinessField.ClaimantName,
+                                    Admitted.Name(PartyName.parse oldName |> accepted)
+                                ]
+                                content.Registration
+                            |> accepted
+
+                        let part =
+                            { initialChange with
+                                Value =
+                                    PartValue.Case
+                                        { initial with
+                                            Content =
+                                                Some
+                                                    { content with
+                                                        Registration = registration
+                                                    }
+                                        }
+                            }
+
+                        let state = CaseFamily.apply None part |> accepted
+
+                        let unchanged =
+                            inputs [ text (InputTarget.Field BusinessField.ClaimantName) oldName ]
+
+                        Amend.decide
+                            (context 2)
+                            environment
+                            (Some state)
+                            (caseBinding state)
+                            unchanged
+                        |> accepted
+                        |> ignore
+
+                        let changed =
+                            inputs
+                                [
+                                    text
+                                        (InputTarget.Field BusinessField.ClaimantName)
+                                        (oldName + "x")
+                                ]
+
+                        Expect.isEmpty
+                            (Amend.check changed)
+                            "Permanent syntax does not preempt state-aware admission"
+
+                        let issues =
+                            Amend.decide
+                                (context 2)
+                                environment
+                                (Some state)
+                                (caseBinding state)
+                                changed
+                            |> expectInputs
+
+                        Expect.isFalse issues.IsEmpty "Changed assertions follow current policy")
             testCase
                 "partial updates preserve omission and permit clearing optional facts"
                 (fun () ->

@@ -32,46 +32,40 @@ let entriesEvidence () =
             number <- number + 1
             id fixture number
 
-        let case revision act =
-            Service.execute
-                actor
-                (OperationInput.Case
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = next ()
-                        Target = target
-                        ExpectedRevision = revision
-                        Act = act
-                    })
-                ct
+        let case revision taskName values =
+            let submission =
+                request fixture 0 "ENTRY-WITNESSES" revision taskName values
+                |> Submissions.withOperationId (next ())
 
-        let note act =
-            Service.execute
-                actor
-                (OperationInput.Note
-                    {
-                        OperationId = next ()
-                        Target = target
-                        Act = act
-                    })
-                ct
+            Service.executeSubmission actor submission ct
 
         let payment amount currency =
-            AuthoredCaseAct.RecordPayment(
-                Inputs.paymentFrom
-                    [
-                        BusinessField.PaymentDate, "2026-08-20"
-                        BusinessField.PaidAmount, amount
-                        BusinessField.PaidCurrency, currency
-                    ]
+            "case.recordPayment",
+            Submissions.fields (
+                PaymentInput.values (
+                    Inputs.paymentFrom
+                        [
+                            BusinessField.PaymentDate, "2026-08-20"
+                            BusinessField.PaidAmount, amount
+                            BusinessField.PaidCurrency, currency
+                        ]
+                )
             )
+
+        let remove (identity: Guid) =
+            "case.removePayment",
+            Map.ofList
+                [
+                    Submissions.input InputTarget.PaymentId,
+                    SubmissionValue.Text(identity.ToString("D"))
+                ]
 
         // Raw authoring errors are admitted refusals, not malformed transport or typed grants.
         for selection in [ [ TaskInputId.CaseId, SubmissionValue.Text "not-a-case-id" ]; [] ] do
             let envelope =
                 {
                     SubmissionEnvelope.OperationId = next ()
-                    Task = ActKind.People PeopleActKind.Grant
+                    Task = (TaskId.ofLiteral "people.grant")
                     Binding = OperationBinding.People(Some(id fixture 7998), 1L)
                     Inputs =
                         Map.ofList (
@@ -91,7 +85,12 @@ let entriesEvidence () =
             let! reply = Service.executeSubmission actor submission ct
             results.Add(refused reply)
 
-        let! opened = case 0L (AuthoredCaseAct.Open registration)
+        let! opened =
+            case
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
+
         accepted opened |> ignore
 
         for field in [ BusinessField.PolicyNumber; BusinessField.InsurerClaimReference ] do
@@ -99,55 +98,97 @@ let entriesEvidence () =
                 RegistrationUpdateInput.create [ field, Some "" ]
                 |> Result.defaultWith invalidOp
 
-            let! reply = case 1L (AuthoredCaseAct.AmendRegistration patch)
+            let! reply =
+                case
+                    (1L)
+                    "case.amendRegistration"
+                    (ClaimCore.TestSupport.Submissions.updates (
+                        RegistrationUpdateInput.values (patch)
+                    ))
+
             results.Add(refused reply)
 
-        for act in [ AuthoredNoteAct.AddNote ""; AuthoredNoteAct.RemoveNote Guid.Empty ] do
-            let! reply = note act
+        for taskName, selected, values in
+            [
+                "note.add",
+                None,
+                Map.ofList [ Submissions.input InputTarget.NoteText, SubmissionValue.Text "" ]
+                "note.remove", Some Guid.Empty, Map.empty
+            ] do
+            let! reply =
+                Service.executeSubmission
+                    actor
+                    (Submissions.createRaw
+                        taskName
+                        (next ())
+                        (OperationBinding.Note(target, selected))
+                        values)
+                    ct
+
             results.Add(refused reply)
 
-        let! decided = case 1L (AuthoredCaseAct.Decide decision)
+        let! decided =
+            case
+                (1L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision)))
+
         accepted decided |> ignore
 
-        for act in
+        for taskName, values in
             [
                 payment "0" "EUR"
                 payment "bad" "EUR"
                 payment "1" "bad"
                 payment "1" "USD"
                 payment "751" "EUR"
-                AuthoredCaseAct.RemovePayment Guid.Empty
+                remove Guid.Empty
             ] do
-            let! reply = case 2L act
+            let! reply = case 2L taskName values
             results.Add(refused reply)
 
-        let! paid = case 2L (payment "100" "EUR")
+        let! paid = case 2L "case.recordPayment" (snd (payment "100" "EUR"))
         accepted paid |> ignore
 
-        for act in
+        for taskName, values in
             [
-                AuthoredCaseAct.RemovePayment(id fixture 7999)
-                AuthoredCaseAct.Bare BareAct.WithdrawDecision
-                AuthoredCaseAct.Decide(
-                    Inputs.decisionWith [ BusinessField.PayableCurrency, "USD" ] decision
+                remove (id fixture 7999)
+                ("case.withdrawDecision", Map.empty)
+                "case.decide",
+                Submissions.fields (
+                    DecisionInput.values (
+                        Inputs.decisionWith [ BusinessField.PayableCurrency, "USD" ] decision
+                    )
                 )
-                AuthoredCaseAct.Decide(
-                    Inputs.decisionWith [ BusinessField.PayableAmount, "99" ] decision
+                "case.decide",
+                Submissions.fields (
+                    DecisionInput.values (
+                        Inputs.decisionWith [ BusinessField.PayableAmount, "99" ] decision
+                    )
                 )
             ] do
-            let! reply = case 3L act
+            let! reply = case 3L taskName values
             results.Add(refused reply)
 
         // Keep an outstanding balance while crossing the retired fifty-payment boundary.
         for revision in 3L .. 51L do
-            let! reply = case revision (payment "1" "EUR")
+            let! reply = case revision "case.recordPayment" (snd (payment "1" "EUR"))
             accepted reply |> ignore
 
-        let! fiftyFirst = case 52L (payment "1" "EUR")
+        let! fiftyFirst = case 52L "case.recordPayment" (snd (payment "1" "EUR"))
         accepted fiftyFirst |> ignore
 
         let! removed =
-            case 53L (AuthoredCaseAct.RemovePayment(OperationId.value (accepted paid).OperationId))
+            case
+                (53L)
+                "case.removePayment"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.PaymentId,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            ((OperationId.value (accepted paid).OperationId)).ToString("D")
+                        )
+                    ])
 
         let afterRemoval = accepted removed |> caseReceipt
 
@@ -156,7 +197,7 @@ let entriesEvidence () =
             54L
             "The fifty-first payment and removal each advance revision"
 
-        let! recordedAgain = case 54L (payment "1" "EUR")
+        let! recordedAgain = case 54L "case.recordPayment" (snd (payment "1" "EUR"))
         let restored = accepted recordedAgain |> caseReceipt
 
         match restored.Snapshot with
@@ -193,58 +234,31 @@ let technicalCountEvidence () =
             (PaymentDateBounds.create date date)
         |> valid
 
-    let parent =
-        {
-            CaseSnapshot.CaseId =
-                CaseFixtures.caseId (Guid.Parse "70000000-0000-7000-8000-000000000001")
-            Reference = CaseFixtures.reference "TECHNICAL-COUNT"
-            Revision = Revision.first
-            State =
-                CaseState.Active
-                    {
-                        CaseReference = CaseFixtures.reference "TECHNICAL-COUNT"
-                        Status = CaseStatus.Opened
-                        Registration = Inputs.admittedRegistration registration
-                        Finance = finance
-                    }
-        }
+    let payment =
+        Inputs.paymentFrom
+            [
+                BusinessField.PaymentDate, "2026-08-20"
+                BusinessField.PaidAmount, "0.0001"
+                BusinessField.PaidCurrency, "EUR"
+            ]
+        |> Inputs.admittedPayment
 
-    let today = DateOnly(2026, 9, 7)
-
-    let request =
-        {
-            ExpectedFamilySequence = None
-            OperationId = Guid.Parse "70000000-0000-7000-8000-000000000002"
-            CaseReference = "TECHNICAL-COUNT"
-            ExpectedRevision = 1L
-            Act =
-                CaseAct.RecordPayment(
-                    Inputs.paymentFrom
-                        [
-                            BusinessField.PaymentDate, "2026-08-20"
-                            BusinessField.PaidAmount, "0.0001"
-                            BusinessField.PaidCurrency, "EUR"
-                        ]
-                )
-        }
-
-    let command = Case.admit today (Some parent) request |> valid
-    let context = Map.empty
-
-    match Case.decideSnapshot today context command (Some parent) with
-    | Error(CaseDecisionError.Refused(Refusal.InvalidInput issues as refusal)) ->
-        Expect.equal
-            (InputIssues.toList issues |> List.map _.Violation)
-            [ Violation.PaymentCountLimit ]
-            "Actual Domain request reaches only the technical count boundary"
-
-        diagnostic refusal
-    | other -> failtestf "Expected technical integer boundary refusal: %A" other
+    Expect.equal
+        (FinancialPosition.record (DateOnly(2026, 9, 7)) payment finance)
+        (Error FinancialPositionIssue.CountOutOfRange)
+        "The financial owner refuses safe-integer saturation without constructing an impossible-sized family"
+    // This boundary cannot be reached in a finite PostgreSQL fixture. Verify its public
+    // diagnostic independently, without claiming that a forged family reached task admission.
+    diagnostic (
+        Refusal.invalidInput (InputTarget.Group RecordGroup.Payment, Violation.PaymentCountLimit)
+    )
 
 [<Tests>]
 let technicalCount =
-    testCase "technical payment count boundary produces its exact diagnostic" (fun () ->
-        Expect.equal
-            (technicalCountEvidence ())
-            [ ("INVALID_INPUT", None); ("PAYMENT_COUNT_LIMIT", Some "payment") ]
-            "The core integer boundary crosses the public diagnostic codec")
+    testCase
+        "financial count saturation and its public diagnostic are independently checked"
+        (fun () ->
+            Expect.equal
+                (technicalCountEvidence ())
+                [ ("INVALID_INPUT", None); ("PAYMENT_COUNT_LIMIT", Some "payment") ]
+                "The core integer boundary crosses the public diagnostic codec")

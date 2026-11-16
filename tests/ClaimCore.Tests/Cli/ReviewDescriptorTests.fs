@@ -110,20 +110,19 @@ let reviews =
                         }
 
                     let review =
-                        OperationReview.Work
-                            {
-                                Parent = CliReplyFixtures.snapshot
-                                Reference = CliReplyFixtures.snapshot.Reference
-                                Before = before
-                                Proposed = proposed
-                                Context = context
-                            }
+                        Reviews.workReview
+                            (TaskId.ofLiteral "work.update")
+                            (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
+                            CliReplyFixtures.snapshot
+                            before
+                            proposed
+                            context
 
-                    let delta = ReviewScreen.operationReview None None review
+                    let delta = ReviewScreen.operationReview review
 
                     Expect.equal
                         (delta.Changes |> List.map _.Key)
-                        [ "handlingSummary" ]
+                        [ CaseId.format before.CaseId + ".summary" ]
                         "The core supplies only actual changes"
 
                     Expect.equal
@@ -136,20 +135,16 @@ let reviews =
                             "en"
                             None
                             (RepresentationReply.Human(
-                                HumanReplies.preview
-                                    (OperationInput.Work
-                                        {
-                                            OperationId = CliReplyFixtures.id
-                                            Target = CaseSelector.Id before.CaseId
-                                            ExpectedRevision = 1L
-                                            Act =
-                                                WorkAct.UpdateWork
-                                                    {
-                                                        Responsible = WorkValue.Keep
-                                                        Summary =
-                                                            WorkValue.Set "After\nSecond line"
-                                                    }
-                                        })
+                                HumanReplies.previewSubmission
+                                    (Submissions.create
+                                        "work.update"
+                                        CliReplyFixtures.id
+                                        (Binding.Work(
+                                            CaseSelector.Id before.CaseId,
+                                            Revision.first
+                                        ))
+                                        (Submissions.fields
+                                            [ BusinessField.HandlingSummary, "After\nSecond line" ]))
                                     {
                                         PreviewReply.OperationId = CliReplyFixtures.id
                                         Outcome = Outcome.Succeeded(Previewed.Reviewed review)
@@ -205,22 +200,18 @@ let reviews =
                     }
 
                 let review proposed =
-                    OperationReview.Case
-                        {
-                            Before = Some before
-                            Proposed = proposed
-                            Changes =
-                                ClaimCore.Application.Execution.CaseChanges.review
-                                    (Some before)
-                                    { After = proposed; Payment = None }
-                            Context = context
-                        }
+                    Reviews.caseReview
+                        (TaskId.ofLiteral "case.amendRegistration")
+                        (Binding.Case(CaseSelector.Id before.CaseId, before.Revision))
+                        (Some before)
+                        proposed
+                        context
 
-                let delta = ReviewScreen.operationReview None None (review proposed)
+                let delta = ReviewScreen.operationReview (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
-                    [ "claimedAmount" ]
+                    [ CaseId.format before.CaseId + ".claimedAmount" ]
                     "The currency is not a competing changed field"
 
                 Expect.equal
@@ -230,15 +221,12 @@ let reviews =
                     "All accepted money digits and minor units survive"
 
                 let erased =
-                    ReviewScreen.operationReview
-                        None
-                        None
-                        (review { before with State = CaseState.Erased })
+                    ReviewScreen.operationReview (review { before with State = CaseState.Erased })
 
                 Expect.isTrue
                     (erased.Changes
                      |> List.exists (fun change ->
-                         change.Key = "claimedAmount"
+                         change.Key = CaseId.format before.CaseId + ".claimedAmount"
                          && change.After = PresentedValue.Absent "lifecycle.ERASED.label"))
                     "Erasure is a real removal, even with an empty historical scalar changes list"
 
@@ -267,12 +255,12 @@ let reviews =
                             Subject =
                                 ReceiptSubject.People
                                     {
-                                        Act = PeopleActKind.Disable
+                                        Act = (TaskId.ofLiteral "people.disable")
                                         TargetActor = PeopleTargetDisclosure.Withheld identity
                                         Effects =
                                             [
                                                 {
-                                                    Act = PeopleActKind.Disable
+                                                    Act = (TaskId.ofLiteral "people.disable")
                                                     Id =
                                                         EffectId.create
                                                             CliReplyFixtures.receipt.OperationId
@@ -350,16 +338,15 @@ let assignmentIdentity =
             }
 
         let review =
-            OperationReview.Work
-                {
-                    Parent = CliReplyFixtures.snapshot
-                    Reference = CliReplyFixtures.snapshot.Reference
-                    Before = before
-                    Proposed = after
-                    Context = context
-                }
+            Reviews.workReview
+                (TaskId.ofLiteral "work.update")
+                (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
+                CliReplyFixtures.snapshot
+                before
+                after
+                context
 
-        let delta = ReviewScreen.operationReview None None review
+        let delta = ReviewScreen.operationReview review
 
         Expect.equal
             delta.Changes

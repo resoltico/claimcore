@@ -25,7 +25,10 @@ module internal LedgerAdministration =
         if not (PrincipalKey.isHuman owner.Principal) then
             raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 
-        match ActorProfile.parse owner.Profile, People.validateInitialOwnerRoles owner.Roles with
+        match
+            ActorProfile.parse owner.Profile,
+            ClaimCore.Domain.Tasks.Registry.validateInitialOwnerRoles owner.Roles
+        with
         | Ok _, Ok _ -> ()
         | _ -> raise (OperatorFaultException OperatorFault.InitialOwnerInvalid)
 

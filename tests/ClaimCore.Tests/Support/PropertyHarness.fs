@@ -1,8 +1,5 @@
 module ClaimCore.Tests.PropertyHarness
 
-open ClaimCore.Domain
-open ClaimCore.Wire
-open ClaimCore.Presentation
 
 open System
 open System.Buffers.Binary
@@ -11,10 +8,6 @@ open System.Text
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-
-let wireName endpoint response =
-    let direction = if response then "reply" else "request"
-    ClaimCore.Wire.Api.id endpoint + " " + direction + " round trip"
 
 let private fixedBaseSeed = 0x434C41494D434F52UL
 

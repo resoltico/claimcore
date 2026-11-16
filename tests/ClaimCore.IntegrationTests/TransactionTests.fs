@@ -5,6 +5,7 @@ open ClaimCore.TestSupport
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -106,7 +107,7 @@ let private waiter (database: PostgresFixture.Database) settings =
 
     result
 
-let private snapshot (result: Result<CaseFacts, StoreFailure>) name hasHandler =
+let private snapshot (result: Result<CaseReadFacts, StoreFailure>) name hasHandler =
     match result with
     | Ok {
              Actor = ({ Actor = Some _ } as people)
@@ -141,16 +142,17 @@ let tests =
                         let tasks =
                             [|
                                 for index in 1..20 ->
-                                    (Service.execute
+                                    (Service.executeSubmission
                                         actor
-                                        (ClaimCore.TestSupport.Inputs.caseOperation (
-                                            request
-                                                database.Fixture
-                                                (100 + index)
-                                                ($"synthetic-{index}")
-                                                0L
-                                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                        ))
+                                        (((request
+                                            (database.Fixture)
+                                            ((100 + index))
+                                            (($"synthetic-{index}"))
+                                            (0L)
+                                            "case.open"
+                                            (ClaimCore.TestSupport.Submissions.fields (
+                                                RegistrationInput.values (registration)
+                                            )))))
                                         (token))
                             |]
 
@@ -339,17 +341,16 @@ let tests =
 
                         let operation =
                             request
-                                database.Fixture
-                                20
-                                "synthetic-deferred"
-                                0L
-                                (ClaimCore.Domain.AuthoredCaseAct.Open registration)
+                                (database.Fixture)
+                                (20)
+                                ("synthetic-deferred")
+                                (0L)
+                                "case.open"
+                                (ClaimCore.TestSupport.Submissions.fields (
+                                    RegistrationInput.values (registration)
+                                ))
 
-                        let! failed =
-                            (Service.execute
-                                actor
-                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
-                                (token))
+                        let! failed = (Service.executeSubmission actor ((operation)) (token))
 
                         Expect.equal
                             failed.Outcome
@@ -365,11 +366,7 @@ let tests =
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
 
-                        let! retry =
-                            (Service.execute
-                                actor
-                                (ClaimCore.TestSupport.Inputs.caseOperation operation)
-                                (token))
+                        let! retry = (Service.executeSubmission actor ((operation)) (token))
 
                         accepted retry |> ignore
                     }))
@@ -380,9 +377,6 @@ let tests =
                         let identity = CaseFixtures.operationId (id database.Fixture 900)
                         let target = ActorId.ofOperationId identity
 
-                        let principal =
-                            PrincipalKey.human "https://issuer.example/" "fork-target"
-                            |> Result.defaultWith (string >> failtest)
 
                         let root =
                             RetainedOperation.create
@@ -396,14 +390,47 @@ let tests =
                                         DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
                                     BusinessDate = None
                                 }
-                                (CommandSkeleton.People
+                                (TaskId.ofLiteral "people.enable")
+                                (Binding.People(target, Revision.first))
+                                InputMap.empty
+                                [
                                     {
-                                        ExpectedRevision = Revision.first
-                                        TargetActorId = target
-                                        Principal = principal
-                                        Act = PeopleAct.Enable
-                                    })
-                                (OperationValues.People { Profile = None })
+                                        PartChange.Aggregate = AggregateReference.Person target
+                                        PartId = ActorId.value target
+                                        Revision = Revision.first
+                                        NaturalKey = None
+                                        Erases = None
+                                        Value =
+                                            PartValue.Person
+                                                {
+                                                    Principal = None
+                                                    Enabled = true
+                                                    Grants = []
+                                                    Profile = ProfileValue.Absent
+                                                }
+                                        Stamp =
+                                            {
+                                                Position =
+                                                    EffectPosition.create
+                                                        (CaseFixtures.sequence 2L)
+                                                        0
+                                                    |> Option.get
+                                                OperationId = identity
+                                                ActorId = target
+                                                RecordedAt =
+                                                    DateTimeOffset(
+                                                        2026,
+                                                        9,
+                                                        7,
+                                                        12,
+                                                        0,
+                                                        0,
+                                                        TimeSpan.Zero
+                                                    )
+                                            }
+                                    }
+                                ]
+
                                 (fun () -> failtest "A public-only operation has no nonce")
                             |> Result.defaultWith (fun error ->
                                 failtestf "Public root fixture: %A" error)
@@ -428,11 +455,23 @@ let tests =
                                 database
                                 "DO $test$ DECLARE original text; changed text; BEGIN SELECT pg_get_functiondef(oid) INTO STRICT original FROM pg_proc WHERE pronamespace='claimcore'::regnamespace AND proname='append_operation'; changed:=replace(original,'IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION ''operation does not extend the current head'' USING ERRCODE=''CC001''; END IF;',''); IF changed=original THEN RAISE EXCEPTION 'negative control did not remove the head guard'; END IF; EXECUTE changed; END $test$"
 
+                        let! childGuarded = attempt ()
+
+                        Expect.equal
+                            childGuarded
+                            (Some "CC003")
+                            "The independent child guard still refuses the same gap"
+
+                        do!
+                            sql
+                                database
+                                "DROP TRIGGER effects_insert_guard ON claimcore.ledger_effects; DROP TRIGGER compartments_insert_guard ON claimcore.ledger_compartments"
+
                         let! unguarded = attempt ()
 
                         Expect.isNone
                             unguarded
-                            "Removing the owned fixture's append guard admits the same gap"
+                            "Removing both owned structural safeguards admits the same gap"
 
                         let! finding = Verification.verify database.OwnerSource None token
 
@@ -447,16 +486,17 @@ let tests =
                         let! actor = caseWorker database.Fixture
 
                         let! opened =
-                            (Service.execute
+                            (Service.executeSubmission
                                 actor
-                                (ClaimCore.TestSupport.Inputs.caseOperation (
-                                    request
-                                        database.Fixture
-                                        20
-                                        "synthetic-snapshot"
-                                        0L
-                                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                ))
+                                (((request
+                                    (database.Fixture)
+                                    (20)
+                                    ("synthetic-snapshot")
+                                    (0L)
+                                    "case.open"
+                                    (ClaimCore.TestSupport.Submissions.fields (
+                                        RegistrationInput.values (registration)
+                                    )))))
                                 (token))
 
                         accepted opened |> ignore
@@ -471,12 +511,16 @@ let tests =
                                 token
 
                         let reading =
-                            inspectCase
-                                database.Fixture
-                                (database.Fixture.Owner)
-                                (None)
-                                ("synthetic-snapshot")
-                                (token)
+                            database.Fixture.Store.Read
+                                {
+                                    Work =
+                                        fun tx ->
+                                            CaseReadContext.load
+                                                actor
+                                                tx
+                                                (CaseSelector.Reference "synthetic-snapshot")
+                                    CancellationToken = token
+                                }
 
                         do! waitForWaiter database
 
@@ -496,12 +540,16 @@ let tests =
                             true
 
                         let! after =
-                            inspectCase
-                                database.Fixture
-                                (database.Fixture.Owner)
-                                (None)
-                                ("synthetic-snapshot")
-                                (token)
+                            database.Fixture.Store.Read
+                                {
+                                    Work =
+                                        fun tx ->
+                                            CaseReadContext.load
+                                                actor
+                                                tx
+                                                (CaseSelector.Reference "synthetic-snapshot")
+                                    CancellationToken = token
+                                }
 
                         snapshot after "Changed synthetic" false
                     }))

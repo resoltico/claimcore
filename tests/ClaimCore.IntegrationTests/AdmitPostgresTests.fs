@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.AdmitPostgresTests
 open Expecto
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -91,41 +92,74 @@ let private duplicateHistory (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! admitted =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 930)
-                        principal
-                        (PeopleAct.Admit
-                            {
-                                Profile = Inputs.actorProfile
-                                Grants =
-                                    [
-                                        {
-                                            Role = Role.CaseReader
-                                            Scope = GrantTarget.Installation
-                                        }
-                                        {
-                                            Role = Role.CaseHandler
-                                            Scope = GrantTarget.Installation
-                                        }
-                                    ]
-                            })
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 930))
+                        (principal)
+                        (None)
+                        "people.admit"
+                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile)
+                         |> Map.add
+                             (TaskInputId.Target InputTarget.Grants)
+                             (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                                 ([
+                                     {
+                                         Role = Role.CaseReader
+                                         Scope = GrantTarget.Installation
+                                     }
+                                     {
+                                         Role = Role.CaseHandler
+                                         Scope = GrantTarget.Installation
+                                     }
+                                 ])
+                                 |> List.map ClaimCore.TestSupport.Submissions.grant
+                             )))
 
-        accepted admitted |> ignore
+                return! Service.executeSubmission (owner) submission (token)
+            })
+
+        let receipt = accepted admitted
         let! _ = verified database
 
         do!
-            guardedSql
-                database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act,grants,1}',command#>'{act,grants,0}') WHERE operation_id=$1"
-                [| box (id database.Fixture 930) |]
+            rewrite database receipt.Position.Sequence (fun original ->
+                let change = original.Changes |> List.exactlyOne
 
-        do! finding VerificationFinding.PayloadFormat database
+                let person =
+                    match change.Value with
+                    | PartValue.Person value -> value
+                    | _ -> failtest "Person part required"
+
+                let assignment = person.Grants.Head
+
+                let forged =
+                    { change with
+                        Value =
+                            PartValue.Person
+                                { person with
+                                    Grants = [ assignment; assignment ]
+                                }
+                    }
+
+                let nonce =
+                    original.Root.Structure.Compartments
+                    |> List.exactlyOne
+                    |> Compartment.content
+                    |> Option.get
+                    |> fst
+
+                recreate
+                    original.Root.Header
+                    original.Root.Structure.Task
+                    original.Root.Structure.Binding
+                    original.Inputs.Value
+                    [ forged ]
+                    nonce)
+
+        do! finding VerificationFinding.StateSequence database
+
     }
 
 [<Tests>]
@@ -137,7 +171,7 @@ let tests =
                 "erased admission rebuild preserves all grants without reviving names"
                 (run erasedRebuild)
             testCaseAsync
-                "retained duplicate admission grants are rejected by the structural grammar"
+                "valid-hash duplicate assignments do not reproduce the accepted admission"
                 (run duplicateHistory)
             testCaseAsync
                 "every effect/projection failure restores identity grants and waiting hints"

@@ -143,15 +143,18 @@ let tests =
                 (fun () ->
                     let operation kind =
                         CommandGrammar.operations
-                        |> List.find (fun operation ->
-                            TaskRouting.act operation = Some(ActKind.Case kind))
+                        |> List.find (fun operation -> TaskRouting.act operation = Some kind)
 
                     Expect.isFalse
-                        ((CommandGrammar.synopsis (operation CaseActKind.Open)).Contains "--clear-")
+                        ((CommandGrammar.synopsis (operation (TaskId.ofLiteral "case.open")))
+                            .Contains
+                            "--clear-")
                         "OPEN offers no clears"
 
                     Expect.stringContains
-                        (CommandGrammar.synopsis (operation CaseActKind.AmendRegistration))
+                        (CommandGrammar.synopsis (
+                            operation (TaskId.ofLiteral "case.amendRegistration")
+                        ))
                         "--clear-incident-description"
                         "Updates retain explicit clearing"
 

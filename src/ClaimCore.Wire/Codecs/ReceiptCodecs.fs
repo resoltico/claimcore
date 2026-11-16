@@ -58,7 +58,7 @@ module ReceiptCodecs =
         |> field "caseId" _.CaseId caseId
         |> field (BusinessField.key BusinessField.CaseReference) _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
-        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Case)
         |> field "snapshot" _.Snapshot disclosure
 
     let private peopleEffect =
@@ -69,7 +69,7 @@ module ReceiptCodecs =
                 Position = position
             })
         : Fields<PeopleReceiptEffect, _>)
-        |> field "act" _.Act (VocabularyCodec.create PeopleActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.People)
         |> field "id" _.Id LedgerCodecs.effectId
         |> field "position" _.Position LedgerCodecs.effectPosition
         |> build
@@ -104,7 +104,7 @@ module ReceiptCodecs =
             })
         : Fields<PeopleReceipt, _>)
         |> field "targetActor" _.TargetActor peopleTarget
-        |> field "act" _.Act (VocabularyCodec.create PeopleActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.People)
 
         |> field "effects" _.Effects (list PeopleReceipt.MaximumEffects peopleEffect)
 
@@ -198,7 +198,7 @@ module ReceiptCodecs =
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "revision" _.Revision positiveRevision
-        |> field "act" _.Act (VocabularyCodec.create WorkActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Work)
         |> field "snapshot" _.Snapshot workDisclosure
 
     let private noteDisclosure =
@@ -229,7 +229,7 @@ module ReceiptCodecs =
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "noteId" _.NoteId noteId
-        |> field "act" _.Act (VocabularyCodec.create NoteActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Note)
         |> field "snapshot" _.Snapshot noteDisclosure
 
     let private reminderReceiptFields =
@@ -243,7 +243,7 @@ module ReceiptCodecs =
         : Fields<ReminderReceipt, _>)
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
-        |> field "act" _.Act (VocabularyCodec.create ReminderActKind.vocabulary)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Reminder)
         |> field "effects" _.Effects reminderEffects
 
     let subject =
@@ -301,13 +301,18 @@ module ReceiptCodecs =
         |> build
 
     let private valid (receipt: OperationReceipt) =
-        let reminder parent act (version: ReminderVersion) =
+        let reminder parent (version: ReminderVersion) =
             match version.Snapshot with
             | ReminderDisclosure.Disclosed value ->
                 Reminder.id value = version.ReminderId
                 && Reminder.revision value = version.Revision
                 && Reminder.caseId value = parent
-                && ReminderState.isResultOf act (Reminder.state value)
+            | ReminderDisclosure.Withheld
+            | ReminderDisclosure.Erased -> true
+
+        let state expected (version: ReminderVersion) =
+            match version.Snapshot with
+            | ReminderDisclosure.Disclosed value -> Reminder.state value = expected
             | ReminderDisclosure.Withheld
             | ReminderDisclosure.Erased -> true
 
@@ -318,29 +323,31 @@ module ReceiptCodecs =
                 work.CaseId = value.CaseId && work.Revision = value.Revision
             | _ -> true
         | ReceiptSubject.Note value ->
-            (value.Act <> NoteActKind.AddNote
-             || value.NoteId = NoteId.ofOperationId receipt.OperationId)
+            let creates =
+                (ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get).Creates
+
+            (not creates || value.NoteId = NoteId.ofOperationId receipt.OperationId)
             && (match value.Snapshot with
                 | NoteDisclosure.Disclosed note ->
                     Note.caseId note = value.CaseId
                     && Note.id note = value.NoteId
-                    && ((Note.text note).IsSome = (value.Act = NoteActKind.AddNote))
-                | NoteDisclosure.Withheld
-                | NoteDisclosure.Erased -> true)
+                    && ((Note.text note).IsSome = creates)
+                | _ -> true)
         | ReceiptSubject.Reminder value ->
-            match value.Act, value.Effects with
-            | ReminderActKind.CompleteAndPlanNext,
-              ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
+            match value.Effects with
+            | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
                 completed.ReminderId <> next.ReminderId
                 && next.ReminderId = ReminderId.ofOperationId receipt.OperationId
                 && next.Revision = Revision.first
-                && reminder value.CaseId ReminderActKind.CompleteAndPlanNext completed
-                && reminder value.CaseId ReminderActKind.Create next
-            | ReminderActKind.CompleteAndPlanNext, _ -> false
-            | _, ReminderReceiptEffects.CompletedAndPlanned _ -> false
-            | act, ReminderReceiptEffects.Single version ->
-                reminder value.CaseId act version
-                && (act <> ReminderActKind.Create
+                && state ReminderState.Completed completed
+                && state ReminderState.Pending next
+                && reminder value.CaseId completed
+                && reminder value.CaseId next
+            | ReminderReceiptEffects.Single version ->
+                reminder value.CaseId version
+                && (not
+                        (ClaimCore.Domain.Tasks.Registry.findDeclaration value.Act |> Option.get)
+                            .Creates
                     || (version.ReminderId = ReminderId.ofOperationId receipt.OperationId
                         && version.Revision = Revision.first))
         | _ -> true

@@ -34,7 +34,23 @@ let private item =
         Responsible = None
         RecordedAt = Inputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy
-        Acts = [ ReminderActKind.Update; ReminderActKind.Complete ]
+        Offers =
+            [
+                Inputs.offeredTask
+                    "reminder.update"
+                    (Binding.Reminder(CaseSelector.Id parent, id, Revision.first))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.ReminderAction,
+                            InputValue.Text "Editable action seed"
+                            TaskInputId.Target InputTarget.ReminderDueDate,
+                            InputValue.Text(CalendarDate.format (Reminder.due reminder))
+                        ])
+                Inputs.offeredTask
+                    "reminder.complete"
+                    (Binding.Reminder(CaseSelector.Id parent, id, Revision.first))
+                    Map.empty
+            ]
         Active = true
         Timing = Some ReminderDue.Today
     }
@@ -56,18 +72,18 @@ let tests =
 
             Expect.equal
                 (controls |> List.map _.Task)
-                [
-                    ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Update)
-                    ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
-                ]
+                [ TaskId.ofLiteral "reminder.update"; TaskId.ofLiteral "reminder.complete" ]
                 "Literal offered task set"
 
             for control in controls do
                 Expect.equal
                     control.Binding
-                    (OperationBinding.Reminder(
-                        CaseSelector.Id(Reminder.caseId item.Reminder),
-                        Some(ReminderId.value (Reminder.id item.Reminder), 1L)
+                    (Some(
+                        Binding.Reminder(
+                            CaseSelector.Id(Reminder.caseId item.Reminder),
+                            Reminder.id item.Reminder,
+                            Revision.first
+                        )
                     ))
                     "The exact selected version binds both tasks"
 

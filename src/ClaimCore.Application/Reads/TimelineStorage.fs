@@ -1,13 +1,9 @@
 namespace ClaimCore.Application.Reads
 
-open ClaimCore.Application.Storage
-
-open ClaimCore.Application.Execution
-
 open ClaimCore.Domain
-open ClaimCore.Application
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
-open ClaimCore.RecordFormat
+open ClaimCore.Application.Storage
 
 module internal TimelineStorage =
     type PageQuery =
@@ -21,87 +17,96 @@ module internal TimelineStorage =
 
     let stages connection installation parent token =
         task {
+            let kind = PartKind.token PartKind.Case
+
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 ORDER BY e.case_revision DESC LIMIT 1"
-                    [| box (CaseId.value parent) |]
+                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.part_kind=$2 AND e.part_id=$1 ORDER BY e.revision DESC LIMIT 1"
+                    [| box (CaseId.value parent); box kind |]
                     token
 
-            let! effects = StoredEntries.bind connection installation rows token
+            let! entries = StoredEntries.bind connection installation rows token
 
-            match effects with
+            match entries with
             | [] -> return None
-            | [ effect ] ->
-                let revision, act =
-                    match effect.Subject with
-                    | EntryTarget.Case(_, revision, act, _) -> revision, act
-                    | _ -> raise (RecordCorruptException "Invalid case stage effect.")
-
+            | [ entry ] ->
                 let! dates =
                     DatabaseSession.rows
                         connection
                         ("SELECT "
                          + DatabaseSession.dateExpression
-                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='case.open' ORDER BY e.operation_sequence,e.effect_index LIMIT 1)"
+                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.part_kind=$2 AND e.part_id=$1 AND e.revision=1)"
                          + ","
                          + DatabaseSession.dateExpression
-                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.act='case.close' ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT 1)")
-                        [| box (CaseId.value parent) |]
+                             "(SELECT l.business_date FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence JOIN claimcore.ledger_effects p ON p.part_kind=e.part_kind AND p.part_id=e.part_id AND p.revision=e.revision-1 WHERE e.part_kind=$2 AND e.part_id=$1 AND e.retained->>'status'=$3 AND p.retained->>'status' IS DISTINCT FROM $3 ORDER BY e.operation_sequence DESC LIMIT 1)"
+                         + ",(SELECT natural_key FROM claimcore.ledger_effects WHERE part_kind=$2 AND part_id=$1 AND revision=1)")
+                        [|
+                            box (CaseId.value parent)
+                            box kind
+                            box (CaseStatus.token CaseStatus.Closed)
+                        |]
                         token
 
-                let date = List.exactlyOne dates
+                let row =
+                    match dates with
+                    | [ row ] -> row
+                    | _ -> raise (RecordCorruptException "Case stage basis is absent.")
+
+                let reference =
+                    DatabaseSession.value<string> 2 row
+                    |> CaseReference.parse
+                    |> Result.defaultWith (fun _ ->
+                        raise (RecordCorruptException "Case creation reference is invalid."))
+
+                let snapshot =
+                    PartChange.caseSnapshot reference entry.Change
+                    |> Option.defaultWith (fun () ->
+                        raise (
+                            RecordCorruptException "Current case version has unavailable content."
+                        ))
+
+                if snapshot.CaseId <> parent then
+                    raise (RecordCorruptException "Current case stage belongs to another family.")
 
                 return
                     Some
                         {
-                            CaseStageFacts.Revision = revision
-                            OpenedOn = DatabaseSession.calendarDate 0 date |> CalendarDate.ofDate
+                            CaseStageFacts.Revision = snapshot.Revision
+                            Snapshot = snapshot
+                            OpenedOn = DatabaseSession.calendarDate 0 row |> CalendarDate.ofDate
                             ClosedOn =
-                                DatabaseSession.optionalCalendarDate 1 date
+                                DatabaseSession.optionalCalendarDate 1 row
                                 |> Option.map CalendarDate.ofDate
-                            LastAct = act
-                            RecordedAt = effect.RecordedAt
-                            RecordedBy = effect.ActorId
-                            DispositionEntry =
-                                if act = CaseActKind.Void || act = CaseActKind.Reinstate then
-                                    Some effect
-                                else
-                                    None
+                            Disposition = PartChange.disposition entry.Change
+                            RecordedAt = entry.RecordedAt
+                            RecordedBy = entry.ActorId
                         }
-            | _ -> return raise (RecordCorruptException "Duplicate current case stage.")
+            | _ -> return raise (RecordCorruptException "Current case stage is duplicated.")
         }
 
     let page connection installation (query: PageQuery) token =
         task {
-            let filter =
-                match query.Filter with
-                | None -> "TRUE"
-                | Some TimelineFilter.Notes -> "e.subject_kind='NOTE'"
-                | Some TimelineFilter.Facts -> "e.subject_kind='CASE'"
-                | Some TimelineFilter.Work -> "e.subject_kind IN ('WORK','REMINDER')"
+            let kinds =
+                query.Filter
+                |> Option.map (TimelineFilter.parts >> List.map PartKind.token >> List.toArray)
 
-            let kind, expected, actual, reminder =
+            let rangeKind, rangeId, low, high =
                 match query.Range with
-                | None -> None, 0L, 0L, None
+                | None -> None, None, 0L, 0L
                 | Some range ->
-                    let kind, id =
-                        match range.Entity with
-                        | ChangeEntity.Case -> "CASE", None
-                        | ChangeEntity.Work -> "WORK", None
-                        | ChangeEntity.Reminder id -> "REMINDER", Some(ReminderId.value id)
-
-                    Some kind,
+                    Some(PartKind.token (ChangeEntity.partKind range.Entity)),
+                    Some(ChangeEntity.partId query.CaseId range.Entity),
                     Revision.value range.ExpectedRevision,
-                    Revision.value range.ActualRevision,
-                    id
+                    Revision.value range.ActualRevision
 
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE ((e.subject_kind='CASE' AND e.subject_id=$1) OR e.parent_case_id=$1) AND ({filter}) AND ($2::bigint IS NULL OR (e.operation_sequence,e.effect_index)<($2::bigint,$3::integer)) AND ($5::text IS NULL OR (e.subject_kind=$5 AND e.case_revision>$6 AND e.case_revision<=$7 AND ($5<>'REMINDER' OR e.subject_id=$8))) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT $4")
+                    "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.aggregate_kind='FAMILY' AND e.aggregate_id=$1 AND ($2::text[] IS NULL OR e.part_kind=ANY($2)) AND ($3::bigint IS NULL OR (e.operation_sequence,e.effect_index)<($3,$4)) AND ($5::text IS NULL OR (e.part_kind=$5 AND e.part_id=$6 AND e.revision>$7 AND e.revision<=$8)) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT $9"
                     [|
                         box (CaseId.value query.CaseId)
+                        DatabaseSession.parameter kinds
                         DatabaseSession.parameter (
                             query.BeforePosition
                             |> Option.map (EffectPosition.sequence >> Sequence.value)
@@ -109,29 +114,28 @@ module internal TimelineStorage =
                         DatabaseSession.parameter (
                             query.BeforePosition |> Option.map EffectPosition.index
                         )
+                        DatabaseSession.parameter rangeKind
+                        DatabaseSession.parameter rangeId
+                        box low
+                        box high
                         box (query.Limit + 1)
-                        DatabaseSession.parameter kind
-                        box expected
-                        box actual
-                        DatabaseSession.parameter reminder
                     |]
                     token
 
             let! entries = StoredEntries.bind connection installation rows token
-            let items = List.truncate query.Limit entries
+            let visible = List.truncate query.Limit entries
 
             return
                 {
-                    Items = items
+                    Page.Items = visible
                     Next =
                         if entries.Length > query.Limit then
-                            items |> List.tryLast |> Option.map _.Position
+                            visible |> List.tryLast |> Option.map _.Position
                         else
                             None
                 }
         }
 
-    /// Correlated lexicographic predecessor lookup includes earlier effects within the same root.
     let previous connection installation (entries: StoredEffect list) token =
         task {
             if entries.Length > Paging.MaximumTimelinePageSize then
@@ -140,32 +144,11 @@ module internal TimelineStorage =
             let mutable result = Map.empty
 
             for entry in entries do
-                let kind, target =
-                    match entry.Subject with
-                    | EntryTarget.Case(id, _, _, _) -> "CASE", CaseId.value id
-                    | EntryTarget.Work value -> "WORK", CaseId.value value.CaseId
-                    | EntryTarget.Note value -> "NOTE", NoteId.value value.NoteId
-                    | EntryTarget.Reminder value -> "REMINDER", ReminderId.value value.ReminderId
-                    | _ -> invalidArg (nameof entries) "Use case activity effects."
+                let! previous = OperationStorage.previous connection installation entry.Change token
 
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT l.operation_id,e.effect_index FROM claimcore.ledger_effects e JOIN claimcore.ledger l ON l.sequence=e.operation_sequence WHERE e.subject_kind=$1 AND e.subject_id=$2 AND (e.operation_sequence,e.effect_index)<($3,$4) ORDER BY e.operation_sequence DESC,e.effect_index DESC LIMIT 1"
-                        [|
-                            box kind
-                            box target
-                            box (Sequence.value entry.Sequence)
-                            box entry.Index
-                        |]
-                        token
-
-                let! found = StoredEntries.bind connection installation rows token
-
-                match found with
-                | [] -> ()
-                | [ previous ] -> result <- Map.add entry.Position previous result
-                | _ -> raise (RecordCorruptException "Duplicate immediate predecessor.")
+                match previous with
+                | Some previous -> result <- Map.add entry.Position previous result
+                | None -> ()
 
             return result
         }

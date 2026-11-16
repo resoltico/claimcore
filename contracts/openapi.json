@@ -2748,6 +2748,51 @@
       }
     },
     "schemas": {
+      "AcceptedGrantScope": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AcceptedGrantScope.INSTALLATION"
+          },
+          {
+            "$ref": "#/components/schemas/AcceptedGrantScope.CASE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "INSTALLATION": "#/components/schemas/AcceptedGrantScope.INSTALLATION",
+            "CASE": "#/components/schemas/AcceptedGrantScope.CASE"
+          }
+        }
+      },
+      "AcceptedGrantScope.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "caseId"
+        ]
+      },
+      "AcceptedGrantScope.INSTALLATION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "INSTALLATION"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "AccessRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -3014,6 +3059,30 @@
           "limit"
         ]
       },
+      "ActorGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AcceptedGrantScope"
+          }
+        },
+        "required": [
+          "role",
+          "scope"
+        ]
+      },
       "ActorListRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -3095,7 +3164,8 @@
           }
         },
         "required": [
-          "displayName"
+          "displayName",
+          "contact"
         ]
       },
       "ActorRef": {
@@ -3489,7 +3559,7 @@
             "const": "case.amendRegistration"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.amendRegistration"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -3690,7 +3760,7 @@
             "const": "case.close"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.close"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -3781,7 +3851,7 @@
             "const": "case.correct"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.correct"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -4068,7 +4138,7 @@
             "const": "case.decide"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.decide"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -4192,7 +4262,7 @@
             "const": "case.erase"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.erase"
+            "$ref": "#/components/schemas/Binding.CASE.erase"
           },
           "seeds": {
             "type": "object",
@@ -4296,7 +4366,7 @@
             "const": "case.open"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.open"
+            "$ref": "#/components/schemas/Binding.CASE.new"
           },
           "seeds": {
             "type": "object",
@@ -4497,7 +4567,7 @@
             "const": "case.recordPayment"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.recordPayment"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -4621,7 +4691,7 @@
             "const": "case.reinstate"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.reinstate"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -4723,7 +4793,7 @@
             "const": "case.removePayment"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.removePayment"
+            "$ref": "#/components/schemas/Binding.CASE.payment"
           },
           "seeds": {
             "type": "object",
@@ -4825,7 +4895,7 @@
             "const": "case.reopen"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.reopen"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -4916,7 +4986,7 @@
             "const": "case.void"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.void"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -5018,7 +5088,7 @@
             "const": "case.withdrawDecision"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.withdrawDecision"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "seeds": {
             "type": "object",
@@ -5109,7 +5179,7 @@
             "const": "note.add"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.note.add"
+            "$ref": "#/components/schemas/Binding.NOTE.new"
           },
           "seeds": {
             "type": "object",
@@ -5198,7 +5268,7 @@
             "const": "note.remove"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.note.remove"
+            "$ref": "#/components/schemas/Binding.NOTE"
           },
           "seeds": {
             "type": "object",
@@ -5287,7 +5357,7 @@
             "const": "people.admit"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.admit"
+            "$ref": "#/components/schemas/Binding.PEOPLE.new"
           },
           "seeds": {
             "type": "object",
@@ -5488,7 +5558,7 @@
             "const": "people.disable"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.disable"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -5579,7 +5649,7 @@
             "const": "people.enable"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.enable"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -5670,7 +5740,7 @@
             "const": "people.eraseProfile"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.eraseProfile"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -5761,7 +5831,7 @@
             "const": "people.grant"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.grant"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -5935,7 +6005,7 @@
             "const": "people.register"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.register"
+            "$ref": "#/components/schemas/Binding.PEOPLE.new"
           },
           "seeds": {
             "type": "object",
@@ -6072,16 +6142,7 @@
             "const": "people.requests.dismiss"
           },
           "binding": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "kind": {
-                "const": "PEOPLE"
-              }
-            },
-            "required": [
-              "kind"
-            ]
+            "$ref": "#/components/schemas/Binding.Empty"
           },
           "seeds": {
             "type": "object",
@@ -6185,7 +6246,7 @@
             "const": "people.revoke"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.revoke"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -6359,7 +6420,7 @@
             "const": "people.setProfile"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.setProfile"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "seeds": {
             "type": "object",
@@ -6472,7 +6533,7 @@
             "const": "reminder.cancel"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.cancel"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "seeds": {
             "type": "object",
@@ -6574,7 +6635,7 @@
             "const": "reminder.complete"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.complete"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "seeds": {
             "type": "object",
@@ -6676,7 +6737,7 @@
             "const": "reminder.completeAndPlanNext"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.completeAndPlanNext"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "seeds": {
             "type": "object",
@@ -6800,7 +6861,7 @@
             "const": "reminder.create"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.create"
+            "$ref": "#/components/schemas/Binding.REMINDER.new"
           },
           "seeds": {
             "type": "object",
@@ -6900,7 +6961,7 @@
             "const": "reminder.reopen"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.reopen"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "seeds": {
             "type": "object",
@@ -7013,7 +7074,7 @@
             "const": "reminder.update"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.update"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "seeds": {
             "type": "object",
@@ -7137,7 +7198,7 @@
             "const": "work.update"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.work.update"
+            "$ref": "#/components/schemas/Binding.WORK"
           },
           "seeds": {
             "type": "object",
@@ -7409,66 +7470,281 @@
           "count"
         ]
       },
-      "CapabilityAccess": {
+      "Binding": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Binding.CASE.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.CASE.payment"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.CASE.erase"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.WORK"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.REMINDER.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.NOTE.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.PEOPLE.new"
+          },
+          {
+            "$ref": "#/components/schemas/Binding.PEOPLE"
+          }
+        ]
+      },
+      "Binding.CASE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "capability": {
-            "enum": [
-              "READ_CASE",
-              "READ_HISTORY",
-              "READ_HISTORY_FULL",
-              "MANAGE_CASE_WORK",
-              "REGISTER",
-              "DECIDE",
-              "RECORD_PAYMENT",
-              "CLOSE",
-              "STEWARD",
-              "MANAGE_ACCESS",
-              "READ_ACCESS"
-            ]
+          "kind": {
+            "const": "CASE"
           },
-          "directRoles": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "OWNER",
-                "CASE_READER",
-                "CASE_REGISTRAR",
-                "CASE_HANDLER",
-                "PAYMENT_RECORDER",
-                "DATA_STEWARD",
-                "AUDITOR"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 7
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
           },
-          "installationRoles": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "OWNER",
-                "CASE_READER",
-                "CASE_REGISTRAR",
-                "CASE_HANDLER",
-                "PAYMENT_RECORDER",
-                "DATA_STEWARD",
-                "AUDITOR"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 7
-          },
-          "effective": {
-            "type": "boolean"
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
-          "capability",
-          "directRoles",
-          "installationRoles",
-          "effective"
+          "kind",
+          "target",
+          "expectedRevision"
+        ]
+      },
+      "Binding.CASE.erase": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "expectedFamilySequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision",
+          "expectedFamilySequence"
+        ]
+      },
+      "Binding.CASE.new": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "expectedRevision"
+        ]
+      },
+      "Binding.CASE.payment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "paymentId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision",
+          "paymentId"
+        ]
+      },
+      "Binding.Empty": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "Binding.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "noteId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "noteId"
+        ]
+      },
+      "Binding.NOTE.new": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ]
+      },
+      "Binding.PEOPLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "actorId",
+          "expectedRevision"
+        ]
+      },
+      "Binding.PEOPLE.new": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PEOPLE"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0
+          }
+        },
+        "required": [
+          "kind",
+          "expectedRevision"
+        ]
+      },
+      "Binding.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "reminderId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "reminderId",
+          "expectedRevision"
+        ]
+      },
+      "Binding.REMINDER.new": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ]
+      },
+      "Binding.WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CaseSelector"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "target",
+          "expectedRevision"
         ]
       },
       "CaseActAvailabilityReason": {
@@ -7608,35 +7884,6 @@
           "action"
         ]
       },
-      "CaseActRefusal": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "act": {
-            "enum": [
-              "case.open",
-              "case.amendRegistration",
-              "case.correct",
-              "case.decide",
-              "case.withdrawDecision",
-              "case.recordPayment",
-              "case.removePayment",
-              "case.close",
-              "case.reopen",
-              "case.void",
-              "case.reinstate",
-              "case.erase"
-            ]
-          },
-          "reason": {
-            "$ref": "#/components/schemas/CaseActAvailabilityReason"
-          }
-        },
-        "required": [
-          "act",
-          "reason"
-        ]
-      },
       "CaseAdvice": {
         "allOf": [
           {
@@ -7654,10 +7901,10 @@
                     "case.withdrawDecision",
                     "case.recordPayment",
                     "case.removePayment",
-                    "case.close",
-                    "case.reopen",
                     "case.void",
                     "case.reinstate",
+                    "case.close",
+                    "case.reopen",
                     "case.erase"
                   ]
                 },
@@ -7688,10 +7935,10 @@
                       "case.withdrawDecision",
                       "case.recordPayment",
                       "case.removePayment",
-                      "case.close",
-                      "case.reopen",
                       "case.void",
                       "case.reinstate",
+                      "case.close",
+                      "case.reopen",
                       "case.erase"
                     ]
                   },
@@ -7703,7 +7950,7 @@
               "blocked": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/CaseActRefusal"
+                  "$ref": "#/components/schemas/CaseTaskRefusal"
                 },
                 "minItems": 0,
                 "maxItems": 12
@@ -8094,112 +8341,6 @@
                 "properties": {
                   "acts": {
                     "contains": {
-                      "const": "case.close"
-                    },
-                    "minContains": 1
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.close"
-                        }
-                      }
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  }
-                }
-              },
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
-                      "const": "case.close"
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.close"
-                        }
-                      }
-                    },
-                    "minContains": 1,
-                    "maxContains": 1
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "oneOf": [
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
-                      "const": "case.reopen"
-                    },
-                    "minContains": 1
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.reopen"
-                        }
-                      }
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  }
-                }
-              },
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
-                      "const": "case.reopen"
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.reopen"
-                        }
-                      }
-                    },
-                    "minContains": 1,
-                    "maxContains": 1
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "oneOf": [
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
                       "const": "case.void"
                     },
                     "minContains": 1
@@ -8290,6 +8431,112 @@
                       "properties": {
                         "act": {
                           "const": "case.reinstate"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.close"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.close"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.close"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.close"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.reopen"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.reopen"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.reopen"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.reopen"
                         }
                       }
                     },
@@ -8813,6 +9060,44 @@
           "target"
         ]
       },
+      "CaseLifecycleChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "enum": [
+                  "ACTIVE",
+                  "VOIDED",
+                  "ERASED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "enum": [
+                  "ACTIVE",
+                  "VOIDED",
+                  "ERASED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "CaseListRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -9216,6 +9501,58 @@
           "representation"
         ]
       },
+      "CasePartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "values": {
+            "$ref": "#/components/schemas/CaseValues"
+          },
+          "lifecycle": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseLifecycleChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseFieldDifference"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "money": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseMoneyDifference"
+            },
+            "minItems": 0,
+            "maxItems": 20
+          },
+          "disposition": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "values",
+          "lifecycle",
+          "fields",
+          "money",
+          "disposition"
+        ]
+      },
       "CasePaymentItem": {
         "type": "object",
         "additionalProperties": false,
@@ -9496,43 +9833,23 @@
           "caseReference"
         ]
       },
-      "CaseReviewChanges": {
+      "CaseReferenceItem": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "lifecycle": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LifecycleChange"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
           },
-          "fields": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CaseFieldDifference"
-            },
-            "minItems": 0,
-            "maxItems": 20
-          },
-          "payments": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PaymentCollectionDifference"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
           }
         },
         "required": [
-          "lifecycle",
-          "fields",
-          "payments"
+          "caseId",
+          "caseReference"
         ]
       },
       "CaseSelector": {
@@ -9582,35 +9899,6 @@
         "required": [
           "kind",
           "caseReference"
-        ]
-      },
-      "CaseSnapshot": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "caseId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "state": {
-            "$ref": "#/components/schemas/CaseState"
-          }
-        },
-        "required": [
-          "caseId",
-          "caseReference",
-          "revision",
-          "state"
         ]
       },
       "CaseStageDisplay": {
@@ -10192,72 +10480,10 @@
           "fields"
         ]
       },
-      "CaseTimelineEntry": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CaseTimelineEntry.CASE_FACT"
-          },
-          {
-            "$ref": "#/components/schemas/CaseTimelineEntry.NOTE"
-          },
-          {
-            "$ref": "#/components/schemas/CaseTimelineEntry.WORK"
-          },
-          {
-            "$ref": "#/components/schemas/CaseTimelineEntry.REMINDER"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "CASE_FACT": "#/components/schemas/CaseTimelineEntry.CASE_FACT",
-            "NOTE": "#/components/schemas/CaseTimelineEntry.NOTE",
-            "WORK": "#/components/schemas/CaseTimelineEntry.WORK",
-            "REMINDER": "#/components/schemas/CaseTimelineEntry.REMINDER"
-          }
-        }
-      },
-      "CaseTimelineEntry.CASE_FACT": {
+      "CaseTaskRefusal": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "CASE_FACT"
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "position": {
-            "$ref": "#/components/schemas/EffectPosition"
-          },
-          "operationHash": {
-            "type": "string",
-            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-            "minLength": 64,
-            "maxLength": 64
-          },
-          "recordedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "recordedBy": {
-            "$ref": "#/components/schemas/ActorRef"
-          },
-          "changes": {
-            "$ref": "#/components/schemas/TimelineChanges"
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
           "act": {
             "enum": [
               "case.open",
@@ -10267,91 +10493,26 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
-              "case.close",
-              "case.reopen",
               "case.void",
               "case.reinstate",
+              "case.close",
+              "case.reopen",
               "case.erase"
             ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason"
           }
         },
         "required": [
-          "kind",
-          "operationId",
-          "position",
-          "operationHash",
-          "recordedAt",
-          "recordedBy",
-          "changes",
-          "revision",
-          "act"
-        ]
-      },
-      "CaseTimelineEntry.NOTE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "NOTE"
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "position": {
-            "$ref": "#/components/schemas/EffectPosition"
-          },
-          "operationHash": {
-            "type": "string",
-            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-            "minLength": 64,
-            "maxLength": 64
-          },
-          "recordedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "recordedBy": {
-            "$ref": "#/components/schemas/ActorRef"
-          },
-          "changes": {
-            "$ref": "#/components/schemas/TimelineChanges"
-          },
-          "act": {
-            "enum": [
-              "note.add",
-              "note.remove"
-            ]
-          },
-          "noteId": {
-            "$ref": "#/components/schemas/Uuid"
-          }
-        },
-        "required": [
-          "kind",
-          "operationId",
-          "position",
-          "operationHash",
-          "recordedAt",
-          "recordedBy",
-          "changes",
           "act",
-          "noteId"
+          "reason"
         ]
       },
-      "CaseTimelineEntry.REMINDER": {
+      "CaseTimelineEntry": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
           "operationId": {
             "type": "string",
             "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
@@ -10378,11 +10539,32 @@
           "recordedBy": {
             "$ref": "#/components/schemas/ActorRef"
           },
-          "changes": {
-            "$ref": "#/components/schemas/TimelineChanges"
-          },
-          "act": {
+          "task": {
             "enum": [
+              "case.open",
+              "case.amendRegistration",
+              "case.correct",
+              "case.decide",
+              "case.withdrawDecision",
+              "case.recordPayment",
+              "case.removePayment",
+              "case.void",
+              "case.reinstate",
+              "case.close",
+              "case.reopen",
+              "case.erase",
+              "people.provisionOwner",
+              "people.register",
+              "people.grant",
+              "people.revoke",
+              "people.enable",
+              "people.disable",
+              "people.setProfile",
+              "people.eraseProfile",
+              "people.admit",
+              "work.update",
+              "note.add",
+              "note.remove",
               "reminder.create",
               "reminder.update",
               "reminder.complete",
@@ -10391,94 +10573,22 @@
               "reminder.completeAndPlanNext"
             ]
           },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "next": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/TimelineReminderVersion"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "kind",
-          "operationId",
-          "position",
-          "operationHash",
-          "recordedAt",
-          "recordedBy",
-          "changes",
-          "act",
-          "reminderId",
-          "revision",
-          "next"
-        ]
-      },
-      "CaseTimelineEntry.WORK": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "WORK"
-          },
-          "operationId": {
-            "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-            "format": "uuid",
-            "minLength": 36,
-            "maxLength": 36
-          },
-          "position": {
-            "$ref": "#/components/schemas/EffectPosition"
-          },
-          "operationHash": {
-            "type": "string",
-            "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
-            "minLength": 64,
-            "maxLength": 64
-          },
-          "recordedAt": {
-            "type": "string",
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
-            "format": "date-time",
-            "minLength": 27,
-            "maxLength": 27
-          },
-          "recordedBy": {
-            "$ref": "#/components/schemas/ActorRef"
+          "subject": {
+            "$ref": "#/components/schemas/TimelineSubject"
           },
           "changes": {
             "$ref": "#/components/schemas/TimelineChanges"
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "act": {
-            "const": "work.update"
           }
         },
         "required": [
-          "kind",
           "operationId",
           "position",
           "operationHash",
           "recordedAt",
           "recordedBy",
-          "changes",
-          "revision",
-          "act"
+          "task",
+          "subject",
+          "changes"
         ]
       },
       "CaseTimelinePage": {
@@ -10638,6 +10748,36 @@
           "target"
         ]
       },
+      "CaseValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseFields"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseFields"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "CaseView": {
         "type": "object",
         "additionalProperties": false,
@@ -10790,6 +10930,39 @@
         "required": [
           "view",
           "count"
+        ]
+      },
+      "CaseWork": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "x-claimcore-maxUtf8Bytes": 4096
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "responsible",
+          "summary"
         ]
       },
       "CaseWorkReadModel": {
@@ -11129,7 +11302,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 9
+            "maxItems": 10
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
@@ -11151,6 +11324,32 @@
           "offers",
           "basis",
           "exactReference"
+        ]
+      },
+      "ChangeReferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActorRef"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseReferenceItem"
+            },
+            "minItems": 0,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "actors",
+          "cases"
         ]
       },
       "ConfirmationTarget": {
@@ -11880,6 +12079,28 @@
         "minLength": 1,
         "maxLength": 45
       },
+      "DescribedPart": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "partId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "description": {
+            "$ref": "#/components/schemas/PartDescription"
+          }
+        },
+        "required": [
+          "partId",
+          "revision",
+          "description"
+        ]
+      },
       "DisplayName": {
         "oneOf": [
           {
@@ -11926,6 +12147,42 @@
         "required": [
           "kind",
           "value"
+        ]
+      },
+      "DisplayNameChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
         ]
       },
       "DocumentSubject": {
@@ -12195,6 +12452,36 @@
         "additionalProperties": false,
         "properties": {},
         "required": []
+      },
+      "EnabledChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
       },
       "ExecuteReply": {
         "oneOf": [
@@ -12555,6 +12842,26 @@
           "paymentCount",
           "firstPaymentDate",
           "lastPaymentDate"
+        ]
+      },
+      "GrantAssignmentChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/ActorGrant"
+          },
+          "before": {
+            "type": "boolean"
+          },
+          "after": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "grant",
+          "before",
+          "after"
         ]
       },
       "GrantReadModel": {
@@ -15958,6 +16265,7 @@
           },
           "act": {
             "enum": [
+              "people.provisionOwner",
               "people.register",
               "people.grant",
               "people.revoke",
@@ -16745,6 +17053,36 @@
           "kind"
         ]
       },
+      "NotePartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoteTextChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "removed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/NoteRemovedChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "removed"
+        ]
+      },
       "NoteReadModel": {
         "type": "object",
         "additionalProperties": false,
@@ -16778,6 +17116,72 @@
           "recordedAt",
           "recordedBy",
           "canRemove"
+        ]
+      },
+      "NoteRemovedChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
+      "NoteTextChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192,
+                "x-claimcore-maxUtf8Bytes": 8192
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192,
+                "x-claimcore-maxUtf8Bytes": 8192
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
         ]
       },
       "ObservationBasis": {
@@ -16823,648 +17227,6 @@
         },
         "required": [
           "kind"
-        ]
-      },
-      "OperationBinding.case.amendRegistration": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.close": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.correct": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.decide": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.erase": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "expectedFamilySequence": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision",
-          "expectedFamilySequence"
-        ]
-      },
-      "OperationBinding.case.open": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 0
-          }
-        },
-        "required": [
-          "kind",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.recordPayment": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.reinstate": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.removePayment": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          },
-          "paymentId": {
-            "$ref": "#/components/schemas/Uuid"
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision",
-          "paymentId"
-        ]
-      },
-      "OperationBinding.case.reopen": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.void": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.case.withdrawDecision": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.note.add": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "NOTE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          }
-        },
-        "required": [
-          "kind",
-          "target"
-        ]
-      },
-      "OperationBinding.note.remove": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "NOTE"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "noteId": {
-            "$ref": "#/components/schemas/Uuid"
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "noteId"
-        ]
-      },
-      "OperationBinding.people.admit": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 0
-          }
-        },
-        "required": [
-          "kind",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.disable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.enable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.eraseProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.grant": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.register": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 0
-          }
-        },
-        "required": [
-          "kind",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.revoke": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.people.setProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "actorId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.reminder.cancel": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.reminder.complete": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.reminder.completeAndPlanNext": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.reminder.create": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          }
-        },
-        "required": [
-          "kind",
-          "target"
-        ]
-      },
-      "OperationBinding.reminder.reopen": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.reminder.update": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "reminderId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "reminderId",
-          "expectedRevision"
-        ]
-      },
-      "OperationBinding.work.update": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "WORK"
-          },
-          "target": {
-            "$ref": "#/components/schemas/CaseSelector"
-          },
-          "expectedRevision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "kind",
-          "target",
-          "expectedRevision"
         ]
       },
       "OperationGetReply": {
@@ -18762,244 +18524,70 @@
         ]
       },
       "OperationReview": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/OperationReview.NOTE"
-          },
-          {
-            "$ref": "#/components/schemas/OperationReview.WORK"
-          },
-          {
-            "$ref": "#/components/schemas/OperationReview.REMINDER"
-          },
-          {
-            "$ref": "#/components/schemas/OperationReview.CASE"
-          },
-          {
-            "$ref": "#/components/schemas/OperationReview.PEOPLE"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "NOTE": "#/components/schemas/OperationReview.NOTE",
-            "WORK": "#/components/schemas/OperationReview.WORK",
-            "REMINDER": "#/components/schemas/OperationReview.REMINDER",
-            "CASE": "#/components/schemas/OperationReview.CASE",
-            "PEOPLE": "#/components/schemas/OperationReview.PEOPLE"
-          }
-        }
-      },
-      "OperationReview.CASE": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "CASE"
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CaseSnapshot"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "after": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "changes": {
-            "$ref": "#/components/schemas/CaseReviewChanges"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "before",
-          "after",
-          "changes",
-          "context"
-        ]
-      },
-      "OperationReview.NOTE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "NOTE"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Note"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "proposed": {
-            "$ref": "#/components/schemas/Note"
-          },
-          "act": {
+          "task": {
             "enum": [
+              "case.open",
+              "case.amendRegistration",
+              "case.correct",
+              "case.decide",
+              "case.withdrawDecision",
+              "case.recordPayment",
+              "case.removePayment",
+              "case.void",
+              "case.reinstate",
+              "case.close",
+              "case.reopen",
+              "case.erase",
+              "people.provisionOwner",
+              "people.register",
+              "people.grant",
+              "people.revoke",
+              "people.enable",
+              "people.disable",
+              "people.setProfile",
+              "people.eraseProfile",
+              "people.admit",
+              "work.update",
               "note.add",
-              "note.remove"
+              "note.remove",
+              "reminder.create",
+              "reminder.update",
+              "reminder.complete",
+              "reminder.cancel",
+              "reminder.reopen",
+              "reminder.completeAndPlanNext"
             ]
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "parent",
-          "caseReference",
-          "before",
-          "proposed",
-          "act",
-          "context"
-        ]
-      },
-      "OperationReview.PEOPLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "PEOPLE"
-          },
-          "basis": {
-            "$ref": "#/components/schemas/WorkDateBasis"
           },
           "target": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ActorReviewItem"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/ReviewTarget"
           },
-          "accessScope": {
-            "$ref": "#/components/schemas/GrantScope"
+          "references": {
+            "$ref": "#/components/schemas/ChangeReferences"
           },
-          "before": {
-            "$ref": "#/components/schemas/PeopleState"
+          "binding": {
+            "$ref": "#/components/schemas/Binding"
           },
-          "after": {
-            "$ref": "#/components/schemas/PeopleState"
-          },
-          "effects": {
+          "changes": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PeopleReviewEffect"
+              "$ref": "#/components/schemas/DescribedPart"
             },
-            "minItems": 0,
+            "minItems": 1,
             "maxItems": 50
+          },
+          "context": {
+            "$ref": "#/components/schemas/RuntimeContext"
           }
         },
         "required": [
-          "kind",
-          "basis",
+          "task",
           "target",
-          "accessScope",
-          "before",
-          "after",
-          "effects"
-        ]
-      },
-      "OperationReview.REMINDER": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "REMINDER"
-          },
-          "caseId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Reminder"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "effects": {
-            "$ref": "#/components/schemas/ReminderEffects"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "caseId",
-          "parent",
-          "caseReference",
-          "before",
-          "effects",
-          "context"
-        ]
-      },
-      "OperationReview.WORK": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "WORK"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/CaseSnapshot"
-          },
-          "caseReference": {
-            "type": "string",
-            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 80
-          },
-          "before": {
-            "$ref": "#/components/schemas/CaseWorkReadModel"
-          },
-          "proposed": {
-            "$ref": "#/components/schemas/CaseWorkReadModel"
-          },
-          "context": {
-            "$ref": "#/components/schemas/RuntimeContext"
-          }
-        },
-        "required": [
-          "kind",
-          "parent",
-          "caseReference",
-          "before",
-          "proposed",
+          "references",
+          "binding",
+          "changes",
           "context"
         ]
       },
@@ -19139,7 +18727,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.amendRegistration"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.amendRegistration"
@@ -19163,7 +18751,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.close"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.close"
@@ -19187,7 +18775,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.correct"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.correct"
@@ -19211,7 +18799,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.decide"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.decide"
@@ -19235,7 +18823,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.erase"
+            "$ref": "#/components/schemas/Binding.CASE.erase"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.erase"
@@ -19259,7 +18847,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.open"
+            "$ref": "#/components/schemas/Binding.CASE.new"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.open"
@@ -19283,7 +18871,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.recordPayment"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.recordPayment"
@@ -19307,7 +18895,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.reinstate"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.reinstate"
@@ -19331,7 +18919,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.removePayment"
+            "$ref": "#/components/schemas/Binding.CASE.payment"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.removePayment"
@@ -19355,7 +18943,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.reopen"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.reopen"
@@ -19379,7 +18967,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.void"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.void"
@@ -19403,7 +18991,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.case.withdrawDecision"
+            "$ref": "#/components/schemas/Binding.CASE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.withdrawDecision"
@@ -19427,7 +19015,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.note.add"
+            "$ref": "#/components/schemas/Binding.NOTE.new"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.note.add"
@@ -19451,7 +19039,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.note.remove"
+            "$ref": "#/components/schemas/Binding.NOTE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.note.remove"
@@ -19475,7 +19063,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.admit"
+            "$ref": "#/components/schemas/Binding.PEOPLE.new"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.admit"
@@ -19499,7 +19087,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.disable"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.disable"
@@ -19523,7 +19111,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.enable"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.enable"
@@ -19547,7 +19135,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.eraseProfile"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.eraseProfile"
@@ -19571,7 +19159,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.grant"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.grant"
@@ -19595,7 +19183,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.register"
+            "$ref": "#/components/schemas/Binding.PEOPLE.new"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.register"
@@ -19619,7 +19207,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.revoke"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.revoke"
@@ -19643,7 +19231,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.people.setProfile"
+            "$ref": "#/components/schemas/Binding.PEOPLE"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.people.setProfile"
@@ -19667,7 +19255,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.cancel"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.cancel"
@@ -19691,7 +19279,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.complete"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.complete"
@@ -19715,7 +19303,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.completeAndPlanNext"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.completeAndPlanNext"
@@ -19739,7 +19327,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.create"
+            "$ref": "#/components/schemas/Binding.REMINDER.new"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.create"
@@ -19763,7 +19351,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.reopen"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.reopen"
@@ -19787,7 +19375,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.reminder.update"
+            "$ref": "#/components/schemas/Binding.REMINDER"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.reminder.update"
@@ -19811,7 +19399,7 @@
             "$ref": "#/components/schemas/Uuid"
           },
           "binding": {
-            "$ref": "#/components/schemas/OperationBinding.work.update"
+            "$ref": "#/components/schemas/Binding.WORK"
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.work.update"
@@ -19822,6 +19410,135 @@
           "operationId",
           "binding",
           "inputs"
+        ]
+      },
+      "PartDescription": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PartDescription.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/PartDescription.PAYMENT"
+          },
+          {
+            "$ref": "#/components/schemas/PartDescription.WORK"
+          },
+          {
+            "$ref": "#/components/schemas/PartDescription.REMINDER"
+          },
+          {
+            "$ref": "#/components/schemas/PartDescription.NOTE"
+          },
+          {
+            "$ref": "#/components/schemas/PartDescription.PERSON"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE": "#/components/schemas/PartDescription.CASE",
+            "PAYMENT": "#/components/schemas/PartDescription.PAYMENT",
+            "WORK": "#/components/schemas/PartDescription.WORK",
+            "REMINDER": "#/components/schemas/PartDescription.REMINDER",
+            "NOTE": "#/components/schemas/PartDescription.NOTE",
+            "PERSON": "#/components/schemas/PartDescription.PERSON"
+          }
+        }
+      },
+      "PartDescription.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/CasePartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
+      },
+      "PartDescription.NOTE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOTE"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/NotePartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
+      },
+      "PartDescription.PAYMENT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/PaymentPartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
+      },
+      "PartDescription.PERSON": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PERSON"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/PersonPartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
+      },
+      "PartDescription.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/ReminderPartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
+        ]
+      },
+      "PartDescription.WORK": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK"
+          },
+          "changes": {
+            "$ref": "#/components/schemas/WorkPartDescription"
+          }
+        },
+        "required": [
+          "kind",
+          "changes"
         ]
       },
       "PaymentCollectionDifference": {
@@ -20004,6 +19721,100 @@
           "finance"
         ]
       },
+      "PaymentPartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/PaymentTotalValues"
+          },
+          "entry": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentEntry"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "removed": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentRemovedChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "totals",
+          "entry",
+          "removed"
+        ]
+      },
+      "PaymentRemovedChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
+      "PaymentTotalValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PaymentTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "PaymentTotals": {
         "type": "object",
         "additionalProperties": false,
@@ -20022,30 +19833,6 @@
           "payable",
           "paid",
           "remaining"
-        ]
-      },
-      "PeopleGrant": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/GrantScope"
-          }
-        },
-        "required": [
-          "role",
-          "scope"
         ]
       },
       "PeopleHistoryEntry": {
@@ -20081,8 +19868,27 @@
           "target": {
             "$ref": "#/components/schemas/ActorRef"
           },
-          "act": {
-            "$ref": "#/components/schemas/PeopleHistoryFacts"
+          "task": {
+            "enum": [
+              "people.provisionOwner",
+              "people.register",
+              "people.grant",
+              "people.revoke",
+              "people.enable",
+              "people.disable",
+              "people.setProfile",
+              "people.eraseProfile",
+              "people.admit"
+            ]
+          },
+          "changes": {
+            "$ref": "#/components/schemas/PersonPartDescription"
+          },
+          "privateAvailable": {
+            "type": "boolean"
+          },
+          "references": {
+            "$ref": "#/components/schemas/ChangeReferences"
           }
         },
         "required": [
@@ -20092,195 +19898,10 @@
           "recordedAt",
           "recordedBy",
           "target",
-          "act"
-        ]
-      },
-      "PeopleHistoryFacts": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.provisionOwner"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.register"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.grant"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.revoke"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.setProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.eraseProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.enable"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleHistoryFacts.people.disable"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "people.provisionOwner": "#/components/schemas/PeopleHistoryFacts.people.provisionOwner",
-            "people.register": "#/components/schemas/PeopleHistoryFacts.people.register",
-            "people.grant": "#/components/schemas/PeopleHistoryFacts.people.grant",
-            "people.revoke": "#/components/schemas/PeopleHistoryFacts.people.revoke",
-            "people.setProfile": "#/components/schemas/PeopleHistoryFacts.people.setProfile",
-            "people.eraseProfile": "#/components/schemas/PeopleHistoryFacts.people.eraseProfile",
-            "people.enable": "#/components/schemas/PeopleHistoryFacts.people.enable",
-            "people.disable": "#/components/schemas/PeopleHistoryFacts.people.disable"
-          }
-        }
-      },
-      "PeopleHistoryFacts.people.disable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.disable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleHistoryFacts.people.enable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.enable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleHistoryFacts.people.eraseProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.eraseProfile"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleHistoryFacts.people.grant": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.grant"
-          },
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/GrantScope"
-          }
-        },
-        "required": [
-          "kind",
-          "role",
-          "scope"
-        ]
-      },
-      "PeopleHistoryFacts.people.provisionOwner": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.provisionOwner"
-          },
-          "principal": {
-            "$ref": "#/components/schemas/Principal"
-          }
-        },
-        "required": [
-          "kind",
-          "principal"
-        ]
-      },
-      "PeopleHistoryFacts.people.register": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.register"
-          },
-          "principal": {
-            "$ref": "#/components/schemas/Principal"
-          }
-        },
-        "required": [
-          "kind",
-          "principal"
-        ]
-      },
-      "PeopleHistoryFacts.people.revoke": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.revoke"
-          },
-          "role": {
-            "enum": [
-              "OWNER",
-              "CASE_READER",
-              "CASE_REGISTRAR",
-              "CASE_HANDLER",
-              "PAYMENT_RECORDER",
-              "DATA_STEWARD",
-              "AUDITOR"
-            ]
-          },
-          "scope": {
-            "$ref": "#/components/schemas/GrantScope"
-          }
-        },
-        "required": [
-          "kind",
-          "role",
-          "scope"
-        ]
-      },
-      "PeopleHistoryFacts.people.setProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.setProfile"
-          },
-          "profile": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ActorProfile"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "kind",
-          "profile"
+          "task",
+          "changes",
+          "privateAvailable",
+          "references"
         ]
       },
       "PeopleHistoryPage": {
@@ -20448,204 +20069,6 @@
           "position"
         ]
       },
-      "PeopleReviewEffect": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.register"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.provisionOwner"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.setProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.grant"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.revoke"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.eraseProfile"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.enable"
-          },
-          {
-            "$ref": "#/components/schemas/PeopleReviewEffect.people.disable"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "people.register": "#/components/schemas/PeopleReviewEffect.people.register",
-            "people.provisionOwner": "#/components/schemas/PeopleReviewEffect.people.provisionOwner",
-            "people.setProfile": "#/components/schemas/PeopleReviewEffect.people.setProfile",
-            "people.grant": "#/components/schemas/PeopleReviewEffect.people.grant",
-            "people.revoke": "#/components/schemas/PeopleReviewEffect.people.revoke",
-            "people.eraseProfile": "#/components/schemas/PeopleReviewEffect.people.eraseProfile",
-            "people.enable": "#/components/schemas/PeopleReviewEffect.people.enable",
-            "people.disable": "#/components/schemas/PeopleReviewEffect.people.disable"
-          }
-        }
-      },
-      "PeopleReviewEffect.people.disable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.disable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleReviewEffect.people.enable": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.enable"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleReviewEffect.people.eraseProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.eraseProfile"
-          }
-        },
-        "required": [
-          "kind"
-        ]
-      },
-      "PeopleReviewEffect.people.grant": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.grant"
-          },
-          "grant": {
-            "$ref": "#/components/schemas/PeopleGrant"
-          }
-        },
-        "required": [
-          "kind",
-          "grant"
-        ]
-      },
-      "PeopleReviewEffect.people.provisionOwner": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.provisionOwner"
-          },
-          "principal": {
-            "$ref": "#/components/schemas/Principal"
-          }
-        },
-        "required": [
-          "kind",
-          "principal"
-        ]
-      },
-      "PeopleReviewEffect.people.register": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.register"
-          },
-          "principal": {
-            "$ref": "#/components/schemas/Principal"
-          }
-        },
-        "required": [
-          "kind",
-          "principal"
-        ]
-      },
-      "PeopleReviewEffect.people.revoke": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.revoke"
-          },
-          "grant": {
-            "$ref": "#/components/schemas/PeopleGrant"
-          }
-        },
-        "required": [
-          "kind",
-          "grant"
-        ]
-      },
-      "PeopleReviewEffect.people.setProfile": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "people.setProfile"
-          },
-          "profile": {
-            "$ref": "#/components/schemas/ActorProfile"
-          }
-        },
-        "required": [
-          "kind",
-          "profile"
-        ]
-      },
-      "PeopleState": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "profile": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ActorProfile"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "grants": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PeopleGrant"
-            },
-            "minItems": 0,
-            "maxItems": 48
-          },
-          "access": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CapabilityAccess"
-            },
-            "minItems": 0,
-            "maxItems": 11
-          }
-        },
-        "required": [
-          "profile",
-          "enabled",
-          "grants",
-          "access"
-        ]
-      },
       "PeopleTargetDisclosure": {
         "oneOf": [
           {
@@ -20693,6 +20116,82 @@
         "required": [
           "kind",
           "actorId"
+        ]
+      },
+      "PersonPartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileValues"
+          },
+          "principal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PrincipalChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EnabledChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profilePresent": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfilePresenceChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "displayName": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DisplayNameChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileContactChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantAssignmentChange"
+            },
+            "minItems": 0,
+            "maxItems": 48
+          }
+        },
+        "required": [
+          "profiles",
+          "principal",
+          "enabled",
+          "profilePresent",
+          "displayName",
+          "contact",
+          "grants"
         ]
       },
       "Position": {
@@ -21290,10 +20789,10 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
-              "case.close",
-              "case.reopen",
               "case.void",
               "case.reinstate",
+              "case.close",
+              "case.reopen",
               "case.erase",
               "people.provisionOwner",
               "people.register",
@@ -21960,10 +21459,10 @@
                 "case.withdrawDecision",
                 "case.recordPayment",
                 "case.removePayment",
-                "case.close",
-                "case.reopen",
                 "case.void",
                 "case.reinstate",
+                "case.close",
+                "case.reopen",
                 "case.erase",
                 "people.provisionOwner",
                 "people.register",
@@ -22879,6 +22378,126 @@
           "subject"
         ]
       },
+      "PrincipalChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Principal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Principal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
+      "ProfileContactChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
+      "ProfilePresenceChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
+      "ProfileValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "ProgressCount": {
         "type": "object",
         "additionalProperties": false,
@@ -22961,10 +22580,10 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
-              "case.close",
-              "case.reopen",
               "case.void",
               "case.reinstate",
+              "case.close",
+              "case.reopen",
               "case.erase"
             ]
           },
@@ -23721,6 +23340,42 @@
           "after"
         ]
       },
+      "ReminderActionValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024,
+                "x-claimcore-maxUtf8Bytes": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "ReminderDifference": {
         "type": "object",
         "additionalProperties": false,
@@ -23865,77 +23520,42 @@
           "after"
         ]
       },
-      "ReminderEffects": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ReminderEffects.CREATED"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderEffects.CHANGED"
-          },
-          {
-            "$ref": "#/components/schemas/ReminderEffects.COMPLETED_AND_PLANNED"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "kind",
-          "mapping": {
-            "CREATED": "#/components/schemas/ReminderEffects.CREATED",
-            "CHANGED": "#/components/schemas/ReminderEffects.CHANGED",
-            "COMPLETED_AND_PLANNED": "#/components/schemas/ReminderEffects.COMPLETED_AND_PLANNED"
-          }
-        }
-      },
-      "ReminderEffects.CHANGED": {
+      "ReminderDueValues": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
-            "const": "CHANGED"
+          "before": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          "reminder": {
-            "$ref": "#/components/schemas/Reminder"
+          "after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "kind",
-          "reminder"
-        ]
-      },
-      "ReminderEffects.COMPLETED_AND_PLANNED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "COMPLETED_AND_PLANNED"
-          },
-          "completed": {
-            "$ref": "#/components/schemas/Reminder"
-          },
-          "next": {
-            "$ref": "#/components/schemas/Reminder"
-          }
-        },
-        "required": [
-          "kind",
-          "completed",
-          "next"
-        ]
-      },
-      "ReminderEffects.CREATED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CREATED"
-          },
-          "reminder": {
-            "$ref": "#/components/schemas/Reminder"
-          }
-        },
-        "required": [
-          "kind",
-          "reminder"
+          "before",
+          "after"
         ]
       },
       "ReminderGetRequest": {
@@ -24124,6 +23744,104 @@
           "basis",
           "items",
           "nextCursor"
+        ]
+      },
+      "ReminderPartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "plans": {
+            "$ref": "#/components/schemas/ReminderPlans"
+          },
+          "action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderActionValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderDueValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderStates"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "plans",
+          "action",
+          "due",
+          "state"
+        ]
+      },
+      "ReminderPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "due": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "action",
+          "due"
+        ]
+      },
+      "ReminderPlans": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReminderPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
         ]
       },
       "ReminderRead": {
@@ -24396,6 +24114,44 @@
           "after"
         ]
       },
+      "ReminderStates": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "enum": [
+                  "PENDING",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "enum": [
+                  "PENDING",
+                  "COMPLETED",
+                  "CANCELLED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "ReminderVersion": {
         "type": "object",
         "additionalProperties": false,
@@ -24575,7 +24331,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 9
+            "maxItems": 10
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
@@ -24728,6 +24484,36 @@
           "after"
         ]
       },
+      "ResponsibleActorChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "ReviewPresentation": {
         "type": "object",
         "additionalProperties": false,
@@ -24752,6 +24538,69 @@
         "required": [
           "changes",
           "unchanged"
+        ]
+      },
+      "ReviewTarget": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReviewTarget.CASE"
+          },
+          {
+            "$ref": "#/components/schemas/ReviewTarget.PERSON"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE": "#/components/schemas/ReviewTarget.CASE",
+            "PERSON": "#/components/schemas/ReviewTarget.PERSON"
+          }
+        }
+      },
+      "ReviewTarget.CASE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE"
+          },
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "kind",
+          "caseId",
+          "caseReference"
+        ]
+      },
+      "ReviewTarget.PERSON": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PERSON"
+          },
+          "actor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "actor"
         ]
       },
       "RuntimeContext": {
@@ -25260,6 +25109,42 @@
           "consequence"
         ]
       },
+      "SummaryChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "x-claimcore-maxUtf8Bytes": 4096
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "x-claimcore-maxUtf8Bytes": 4096
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
+        ]
+      },
       "TaskInputId": {
         "enum": [
           "field:incidentDate",
@@ -25444,11 +25329,8 @@
           "kind": {
             "const": "NOTE"
           },
-          "act": {
-            "enum": [
-              "note.add",
-              "note.remove"
-            ]
+          "removed": {
+            "type": "boolean"
           },
           "noteId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25469,7 +25351,7 @@
         },
         "required": [
           "kind",
-          "act",
+          "removed",
           "noteId",
           "text"
         ]
@@ -25595,40 +25477,22 @@
       "TimelineEvent": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_OPENED"
+            "$ref": "#/components/schemas/TimelineEvent.PART_CASE_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.REGISTRATION_AMENDED"
+            "$ref": "#/components/schemas/TimelineEvent.PART_PAYMENT_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.FACTS_CORRECTED"
+            "$ref": "#/components/schemas/TimelineEvent.PART_WORK_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.DECISION_RECORDED"
+            "$ref": "#/components/schemas/TimelineEvent.PART_REMINDER_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN"
+            "$ref": "#/components/schemas/TimelineEvent.PART_NOTE_RECORDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_CLOSED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_REOPENED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_VOIDED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_REINSTATED"
-          },
-          {
-            "$ref": "#/components/schemas/TimelineEvent.CASE_ERASED"
+            "$ref": "#/components/schemas/TimelineEvent.PART_PERSON_RECORDED"
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.RESPONSIBILITY_ASSIGNED"
@@ -25637,10 +25501,10 @@
             "$ref": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.note.add"
+            "$ref": "#/components/schemas/TimelineEvent.NOTE_ADDED"
           },
           {
-            "$ref": "#/components/schemas/TimelineEvent.note.remove"
+            "$ref": "#/components/schemas/TimelineEvent.NOTE_REMOVED"
           },
           {
             "$ref": "#/components/schemas/TimelineEvent.WORK_RECORDED"
@@ -25676,22 +25540,16 @@
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
-            "CASE_OPENED": "#/components/schemas/TimelineEvent.CASE_OPENED",
-            "REGISTRATION_AMENDED": "#/components/schemas/TimelineEvent.REGISTRATION_AMENDED",
-            "FACTS_CORRECTED": "#/components/schemas/TimelineEvent.FACTS_CORRECTED",
-            "DECISION_RECORDED": "#/components/schemas/TimelineEvent.DECISION_RECORDED",
-            "DECISION_WITHDRAWN": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN",
-            "PAYMENT_RECORDED": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED",
-            "PAYMENT_REMOVED": "#/components/schemas/TimelineEvent.PAYMENT_REMOVED",
-            "CASE_CLOSED": "#/components/schemas/TimelineEvent.CASE_CLOSED",
-            "CASE_REOPENED": "#/components/schemas/TimelineEvent.CASE_REOPENED",
-            "CASE_VOIDED": "#/components/schemas/TimelineEvent.CASE_VOIDED",
-            "CASE_REINSTATED": "#/components/schemas/TimelineEvent.CASE_REINSTATED",
-            "CASE_ERASED": "#/components/schemas/TimelineEvent.CASE_ERASED",
+            "PART_CASE_RECORDED": "#/components/schemas/TimelineEvent.PART_CASE_RECORDED",
+            "PART_PAYMENT_RECORDED": "#/components/schemas/TimelineEvent.PART_PAYMENT_RECORDED",
+            "PART_WORK_RECORDED": "#/components/schemas/TimelineEvent.PART_WORK_RECORDED",
+            "PART_REMINDER_RECORDED": "#/components/schemas/TimelineEvent.PART_REMINDER_RECORDED",
+            "PART_NOTE_RECORDED": "#/components/schemas/TimelineEvent.PART_NOTE_RECORDED",
+            "PART_PERSON_RECORDED": "#/components/schemas/TimelineEvent.PART_PERSON_RECORDED",
             "RESPONSIBILITY_ASSIGNED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_ASSIGNED",
             "RESPONSIBILITY_CLEARED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED",
-            "note.add": "#/components/schemas/TimelineEvent.note.add",
-            "note.remove": "#/components/schemas/TimelineEvent.note.remove",
+            "NOTE_ADDED": "#/components/schemas/TimelineEvent.NOTE_ADDED",
+            "NOTE_REMOVED": "#/components/schemas/TimelineEvent.NOTE_REMOVED",
             "WORK_RECORDED": "#/components/schemas/TimelineEvent.WORK_RECORDED",
             "HANDLING_SUMMARY_ADDED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_ADDED",
             "HANDLING_SUMMARY_CHANGED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CHANGED",
@@ -25704,150 +25562,6 @@
             "REMINDER_COMPLETED_AND_PLANNED": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED_AND_PLANNED"
           }
         }
-      },
-      "TimelineEvent.CASE_CLOSED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_CLOSED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseClosed"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.CASE_ERASED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_ERASED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseErased"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.CASE_OPENED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_OPENED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseOpened"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.CASE_REINSTATED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_REINSTATED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseReinstated"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.CASE_REOPENED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_REOPENED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseReopened"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.CASE_VOIDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "CASE_VOIDED"
-          },
-          "messageId": {
-            "const": "timeline.event.caseVoided"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.DECISION_RECORDED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "DECISION_RECORDED"
-          },
-          "messageId": {
-            "const": "timeline.event.decisionRecorded"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.DECISION_WITHDRAWN": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "DECISION_WITHDRAWN"
-          },
-          "messageId": {
-            "const": "timeline.event.decisionWithdrawn"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.FACTS_CORRECTED": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "FACTS_CORRECTED"
-          },
-          "messageId": {
-            "const": "timeline.event.factsCorrected"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
       },
       "TimelineEvent.HANDLING_SUMMARY_ADDED": {
         "type": "object",
@@ -25897,15 +25611,15 @@
           "messageId"
         ]
       },
-      "TimelineEvent.PAYMENT_RECORDED": {
+      "TimelineEvent.NOTE_ADDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "PAYMENT_RECORDED"
+            "const": "NOTE_ADDED"
           },
           "messageId": {
-            "const": "timeline.event.paymentRecorded"
+            "const": "timeline.event.noteAdded"
           }
         },
         "required": [
@@ -25913,15 +25627,15 @@
           "messageId"
         ]
       },
-      "TimelineEvent.PAYMENT_REMOVED": {
+      "TimelineEvent.NOTE_REMOVED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "PAYMENT_REMOVED"
+            "const": "NOTE_REMOVED"
           },
           "messageId": {
-            "const": "timeline.event.paymentRemoved"
+            "const": "timeline.event.noteRemoved"
           }
         },
         "required": [
@@ -25929,15 +25643,95 @@
           "messageId"
         ]
       },
-      "TimelineEvent.REGISTRATION_AMENDED": {
+      "TimelineEvent.PART_CASE_RECORDED": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "kind": {
-            "const": "REGISTRATION_AMENDED"
+            "const": "PART_CASE_RECORDED"
           },
           "messageId": {
-            "const": "timeline.event.registrationAmended"
+            "const": "change.CASE.recorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_NOTE_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_NOTE_RECORDED"
+          },
+          "messageId": {
+            "const": "change.NOTE.recorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_PAYMENT_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_PAYMENT_RECORDED"
+          },
+          "messageId": {
+            "const": "change.PAYMENT.recorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_PERSON_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_PERSON_RECORDED"
+          },
+          "messageId": {
+            "const": "change.PERSON.recorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_REMINDER_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_REMINDER_RECORDED"
+          },
+          "messageId": {
+            "const": "change.REMINDER.recorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PART_WORK_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PART_WORK_RECORDED"
+          },
+          "messageId": {
+            "const": "change.WORK.recorded"
           }
         },
         "required": [
@@ -26170,38 +25964,6 @@
           "messageId"
         ]
       },
-      "TimelineEvent.note.add": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "note.add"
-          },
-          "messageId": {
-            "const": "timeline.event.note.add"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
-      "TimelineEvent.note.remove": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "note.remove"
-          },
-          "messageId": {
-            "const": "timeline.event.note.remove"
-          }
-        },
-        "required": [
-          "kind",
-          "messageId"
-        ]
-      },
       "TimelineFacet": {
         "enum": [
           "ACTION",
@@ -26292,11 +26054,21 @@
           "highlights"
         ]
       },
-      "TimelineReminderVersion": {
+      "TimelineSubject": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "reminderId": {
+          "partKind": {
+            "enum": [
+              "CASE",
+              "PAYMENT",
+              "WORK",
+              "REMINDER",
+              "NOTE",
+              "PERSON"
+            ]
+          },
+          "partId": {
             "$ref": "#/components/schemas/Uuid"
           },
           "revision": {
@@ -26306,7 +26078,8 @@
           }
         },
         "required": [
-          "reminderId",
+          "partKind",
+          "partId",
           "revision"
         ]
       },
@@ -26406,6 +26179,70 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "WorkPartDescription": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "values": {
+            "$ref": "#/components/schemas/WorkValues"
+          },
+          "responsible": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResponsibleActorChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SummaryChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "values",
+          "responsible",
+          "summary"
+        ]
+      },
+      "WorkValues": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "before": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseWork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseWork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "before",
+          "after"
         ]
       },
       "WorkViews": {

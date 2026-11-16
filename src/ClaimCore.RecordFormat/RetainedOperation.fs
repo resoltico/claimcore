@@ -1,274 +1,247 @@
 namespace ClaimCore.RecordFormat
 
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Json
 
-/// One typed interpretation is shared by receipts, history, replay and rebuild.
-/// Unavailable private values still require independent accepted-erasure evidence in replay.
-[<NoComparison>]
+[<RequireQualifiedAccess>]
+type RetainedOperationProblem =
+    | Root of OperationRootProblem
+    | Compartment of CompartmentProblem
+    | Content of DecodeProblem
+    | Inputs
+    | UnknownTask
+
+/// One validated root and its available accepted values. Missing inputs remain explicit.
 type RetainedOperation =
     private
         {
             RootValue: OperationRoot
-            ValuesValue: RetainedOperationValues
+            InputsValue: InputMap option
+            ChangesValue: PartChange list
         }
 
     member this.Root = this.RootValue
-    member this.Values = this.ValuesValue
-    member this.OperationId = this.RootValue.Header.OperationId
-    member this.ActorId = this.RootValue.Header.ActorId
-    member this.RecordedAt = this.RootValue.Header.RecordedAt
-    member this.Position = this.RootValue.Position
+    member this.Inputs = this.InputsValue
+    member this.Changes = this.ChangesValue
 
 module RetainedOperation =
-    let private casePayment =
-        function
-        | [ EffectDescriptor.Case(_, _, _, _, payment) ] -> payment
-        | _ -> invalidOp "A case operation has one declared case effect."
+    let private contentProblem problem =
+        RetainedOperationProblem.Content
+            {
+                Field = problem.Path
+                Message = problem.Reason
+            }
 
-    let private afterRevision =
-        function
-        | [ EffectDescriptor.Case(_, revision, _, _, _) ]
-        | [ EffectDescriptor.Work(_, revision) ] -> revision
-        | _ -> invalidOp "A versioned operation has one declared primary effect."
+    let private any (inputs: InputMap) =
+        not inputs.Values.IsEmpty || not inputs.Collections.IsEmpty
 
-    let private profileRequired (scope: PeopleCommandSkeleton) =
-        match scope.Act with
-        | PeopleAct.Register _
-        | PeopleAct.Admit _
-        | PeopleAct.ProvisionOwner _
-        | PeopleAct.SetProfile _ -> true
-        | PeopleAct.EraseProfile
-        | PeopleAct.Grant _
-        | PeopleAct.Revoke _
-        | PeopleAct.Enable
-        | PeopleAct.Disable -> false
-
-    let private matches (header: OperationHeader) command effects values =
-        match command, values with
-        | CommandSkeleton.Case scope, OperationValues.Case value ->
-            let input, after = value.Command, value.Decision.After
-
-            let selected =
-                match input.Act with
-                | CaseAct.RemovePayment id -> Some id
-                | _ -> None
-
-            let payment =
-                match input.Act, value.Decision.Payment with
-                | CaseAct.RecordPayment payment, Some(PaymentDifference.Recorded entry) ->
-                    entry = PaymentEntry.recorded input.OperationId payment
-                | CaseAct.RemovePayment selected, Some(PaymentDifference.Removed entry) ->
-                    selected = PaymentEntry.id entry
-                | (CaseAct.RecordPayment _ | CaseAct.RemovePayment _), _ -> false
-                | _, None -> true
-                | _ -> false
-
-            input.OperationId = header.OperationId
-            && input.ExpectedRevision = scope.ExpectedRevision
-            && CaseReference.identity input.Reference = CaseReference.identity scope.Reference
-            && CaseAct.kind input.Act = scope.Act
-            && selected = scope.SelectedPayment
-            && after.CaseId = scope.CaseId
-            && after.Reference = scope.Reference
-            && after.Revision = afterRevision effects
-            && ((after.State = CaseState.Erased) = (scope.Act = CaseActKind.Erase))
-            && Result.isOk (Case.ofAccepted after)
-            && payment
-        | CommandSkeleton.Work(parent, _), OperationValues.Work value ->
-            value.After.CaseId = parent && value.After.Revision = afterRevision effects
-        | CommandSkeleton.Note(NoteCommandSkeleton.Add parent), OperationValues.Note value ->
-            match value.Command with
-            | NoteCommand.AddNote(input, text) ->
-                input = parent
-                && Note.caseId value.After = parent
-                && Note.id value.After = NoteId.ofOperationId header.OperationId
-                && Note.text value.After = Some text
-            | _ -> false
-        | CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note)), OperationValues.Note value ->
-            value.Command = NoteCommand.RemoveNote(parent, note)
-            && Note.caseId value.After = parent
-            && Note.id value.After = note
-            && Note.text value.After = None
-        | CommandSkeleton.Reminder scope, OperationValues.Reminder value ->
-            let target, expected =
-                match value.Command with
-                | ReminderCommand.Create _ -> None, None
-                | ReminderCommand.Change(_, target, expected, _) -> Some target, Some expected
-
-            ReminderCommand.parent value.Command = scope.CaseId
-            && ReminderCommand.kind value.Command = scope.Act
-            && target = scope.ReminderId
-            && expected = scope.ExpectedRevision
-            && ReminderCommand.matchesEffects header.OperationId value.Command value.Effects
-        | CommandSkeleton.People scope, OperationValues.People value ->
-            profileRequired scope = value.Profile.IsSome
-        | _ -> false
-
-    let private codec (header: OperationHeader) command effects =
-        match command with
-        | CommandSkeleton.Case scope ->
-            OperationContentCodecs.case header scope (afterRevision effects) (casePayment effects)
-            |> Codec.map OperationValues.Case (function
-                | OperationValues.Case value -> value
-                | _ -> invalidOp "Expected case values.")
-        | CommandSkeleton.Work(parent, _) ->
-            OperationContentCodecs.work parent (afterRevision effects)
-            |> Codec.map OperationValues.Work (function
-                | OperationValues.Work value -> value
-                | _ -> invalidOp "Expected work values.")
-        | CommandSkeleton.Note(NoteCommandSkeleton.Add parent) ->
-            OperationContentCodecs.note parent header.OperationId
-            |> Codec.map OperationValues.Note (function
-                | OperationValues.Note value -> value
-                | _ -> invalidOp "Expected note values.")
-        | CommandSkeleton.Reminder scope ->
-            OperationContentCodecs.reminder scope effects
-            |> Codec.map OperationValues.Reminder (function
-                | OperationValues.Reminder value -> value
-                | _ -> invalidOp "Expected reminder values.")
-        | CommandSkeleton.People _ ->
-            OperationContentCodecs.profile
-            |> Codec.map (fun profile -> OperationValues.People { Profile = Some profile }) (function
-                | OperationValues.People { Profile = Some profile } -> profile
-                | _ -> invalidOp "Expected profile values.")
-        | CommandSkeleton.Note(NoteCommandSkeleton.Remove _) ->
-            invalidOp "Removed notes have no private content."
-
-    let private disclosed =
-        function
-        | OperationValues.Case value -> RetainedOperationValues.Case(Some value)
-        | OperationValues.Work value -> RetainedOperationValues.Work(Some value)
-        | OperationValues.Note value -> RetainedOperationValues.Note(Some value)
-        | OperationValues.Reminder value -> RetainedOperationValues.Reminder(Some value)
-        | OperationValues.People value ->
-            RetainedOperationValues.People(
-                value.Profile
-                |> Option.map RetainedProfile.Available
-                |> Option.defaultValue RetainedProfile.NotRequired
+    let create header task binding (inputs: InputMap) (changes: PartChange list) newNonce =
+        match ClaimCore.Domain.Tasks.Registry.findDeclaration task with
+        | None -> Error RetainedOperationProblem.UnknownTask
+        | Some _ when not (OperationStructure.validHeader header) ->
+            Error(
+                RetainedOperationProblem.Root(
+                    OperationRootProblem.Structure OperationStructureProblem.Header
+                )
             )
+        | Some _ when changes.IsEmpty ->
+            Error(
+                RetainedOperationProblem.Root(
+                    OperationRootProblem.Structure OperationStructureProblem.Effects
+                )
+            )
+        | Some declaration ->
+            let retained = InputMapCodecs.partition InputRetention.Retained declaration inputs
+            let erasable = InputMapCodecs.partition InputRetention.Erasable declaration inputs
 
-    /// Encode once from the already-decided typed values. The returned receipt values are not decoded again.
-    let create header command values newNonce =
-        OperationStructure.validateHeader header command
-        |> Result.bind (fun () -> OperationStructure.expected header command)
-        |> Result.mapError OperationContentProblem.Structure
-        |> Result.bind (fun (effects, descriptors) ->
-            if not (matches header command effects values) then
-                Error OperationContentProblem.Values
-            else
-                let contents =
-                    match descriptors with
-                    | [] -> Ok []
-                    | [ descriptor ] ->
-                        let bytes =
-                            (codec header command effects).Write values |> CanonicalWriter.bytes
+            let privateValues =
+                changes
+                |> List.mapi (fun index change ->
+                    PartCodecs.privateValue change.PartId change.Value
+                    |> Result.map (fun value -> index, value))
 
-                        Compartment.seal
-                            header.InstallationId
-                            header.OperationId
-                            descriptor
-                            (newNonce ())
-                            bytes
-                        |> Result.mapError OperationContentProblem.Compartment
-                        |> Result.map List.singleton
-                    | _ -> Error OperationContentProblem.MissingContent
+            (if InputMapCodecs.merge retained erasable <> Some inputs then
+                 Error RetainedOperationProblem.Inputs
+             else
+                 Ok())
+            |> Result.bind (fun () ->
+                privateValues
+                |> List.fold
+                    (fun current next ->
+                        current
+                        |> Result.bind (fun values ->
+                            next |> Result.map (fun value -> value :: values)))
+                    (Ok [])
+                |> Result.mapError RetainedOperationProblem.Content)
+            |> Result.bind (fun values ->
+                let values =
+                    List.rev values
+                    |> List.choose (fun (index, value) ->
+                        value |> Option.map (fun value -> index, value))
 
-                contents
-                |> Result.bind (fun contents ->
-                    OperationRoot.append header command effects contents
-                    |> Result.mapError OperationContentProblem.Root
+                let hasPayload =
+                    any erasable || not values.IsEmpty || InputMapCodecs.hasErasable declaration
+
+                let compartments =
+                    if not hasPayload then
+                        Ok []
+                    else
+                        CompartmentDescriptor.create 0 (PartChange.owner changes.Head)
+                        |> Result.mapError RetainedOperationProblem.Compartment
+                        |> Result.bind (fun descriptor ->
+                            let payload =
+                                JsonValue.Object
+                                    [
+                                        "inputs", InputMapCodecs.stored.Write erasable
+                                        "values",
+                                        JsonValue.Object(
+                                            values
+                                            |> List.map (fun (index, value) ->
+                                                string index, value)
+                                        )
+                                    ]
+                                |> CanonicalWriter.bytes
+
+                            Compartment.seal descriptor (newNonce ()) payload
+                            |> Result.map List.singleton
+                            |> Result.mapError RetainedOperationProblem.Compartment)
+
+                compartments
+                |> Result.bind (fun compartments ->
+                    let effects =
+                        changes
+                        |> List.map (fun change ->
+                            {
+                                RecordedPart.Change =
+                                    { change with
+                                        Value = PartValue.clear change.Value
+                                    }
+                                Compartment =
+                                    if PartCodecs.hasPrivate change.Value then Some 0 else None
+                            })
+
+                    OperationRoot.append header task binding retained effects compartments
+                    |> Result.mapError RetainedOperationProblem.Root
                     |> Result.map (fun root ->
                         {
                             RootValue = root
-                            ValuesValue = disclosed values
+                            InputsValue = Some inputs
+                            ChangesValue = changes
                         })))
 
-    let private publicValues (root: OperationRoot) =
-        match root.Structure.Command with
-        | CommandSkeleton.Case scope when scope.Act = CaseActKind.Erase ->
-            Case.parse
-                {
-                    OperationId = OperationId.value root.Header.OperationId
-                    CaseReference = CaseReference.format scope.Reference
-                    ExpectedFamilySequence =
-                        scope.ExpectedFamilySequence |> Option.map Sequence.value
-                    ExpectedRevision = Revision.value scope.ExpectedRevision
-                    Act = CaseAct.Bare BareAct.Erase
-                }
-            |> Result.mapError (fun _ -> OperationContentProblem.Values)
-            |> Result.map (fun command ->
-                RetainedOperationValues.Case(
-                    Some
-                        {
-                            Command = command
-                            Decision =
-                                {
-                                    After =
-                                        {
-                                            CaseId = scope.CaseId
-                                            Reference = scope.Reference
-                                            Revision = afterRevision root.Structure.Effects
-                                            State = CaseState.Erased
-                                        }
-                                    Payment = None
-                                }
-                        }
-                ))
-        | CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note)) ->
-            Ok(
-                RetainedOperationValues.Note(
-                    Some
-                        {
-                            Command = NoteCommand.RemoveNote(parent, note)
-                            After = Note.ofAccepted note parent None
-                        }
-                )
-            )
-        | CommandSkeleton.People scope when not (profileRequired scope) ->
-            Ok(RetainedOperationValues.People RetainedProfile.NotRequired)
-        | _ -> Error OperationContentProblem.MissingContent
+    let private payloadCodec (root: OperationRoot) ordinal =
+        let fields =
+            root.Structure.Effects
+            |> List.mapi (fun index effect -> index, effect)
+            |> List.choose (fun (index, effect) ->
+                if effect.Compartment = Some ordinal then
+                    Some(
+                        index,
+                        string index,
+                        PartCodecs.privateValueCodec effect.Change.PartId effect.Change.Value
+                    )
+                else
+                    None)
 
-    let private cleared =
-        function
-        | CommandSkeleton.Case _ -> RetainedOperationValues.Case None
-        | CommandSkeleton.Work _ -> RetainedOperationValues.Work None
-        | CommandSkeleton.Note _ -> RetainedOperationValues.Note None
-        | CommandSkeleton.Reminder _ -> RetainedOperationValues.Reminder None
-        | CommandSkeleton.People _ -> RetainedOperationValues.People RetainedProfile.Unavailable
+        (Codec.record (fun inputs values -> inputs, values)
+        : Fields<InputMap * Map<int, PartValue>, _>)
+        |> Codec.field "inputs" fst InputMapCodecs.stored
+        |> Codec.field "values" snd (Codec.fieldMap fields)
+        |> Codec.build
 
-    /// All private interpretation goes through this boundary. Public-only/erased values are explicit.
-    let decode (root: OperationRoot) =
-        let command, effects = root.Structure.Command, root.Structure.Effects
-
-        let values =
-            match root.Structure.Compartments with
-            | [] -> publicValues root
-            | [ compartment ] ->
+    let restore (root: OperationRoot) =
+        let decoded =
+            root.Structure.Compartments
+            |> List.map (fun compartment ->
                 match Compartment.content compartment with
-                | None -> Ok(cleared command)
-                | Some(_, bytes) ->
-                    let codec = codec root.Header command effects
+                | None -> Ok(None, Map.empty)
+                | Some(_, payload) ->
+                    let codec = payloadCodec root compartment.Descriptor.Ordinal
 
-                    Codec.decode Compartment.MaximumContentBytes codec bytes
-                    |> Result.mapError (fun error ->
-                        OperationContentProblem.PrivateFormat
-                            {
-                                Field = error.Path
-                                Message = error.Reason
-                            })
-                    |> Result.bind (fun values ->
-                        if not (matches root.Header command effects values) then
-                            Error OperationContentProblem.Values
-                        elif (codec.Write values |> CanonicalWriter.bytes) <> bytes then
-                            Error OperationContentProblem.NonCanonicalPrivateContent
+                    Codec.decode Compartment.MaximumContentBytes codec payload
+                    |> Result.bind (fun value ->
+                        if codec.Write value |> CanonicalWriter.bytes = payload then
+                            Ok value
                         else
-                            Ok(disclosed values))
-            | _ -> Error OperationContentProblem.MissingContent
+                            Error
+                                {
+                                    Path = "$"
+                                    Reason = "Private content is not canonical."
+                                })
+                    |> Result.map (fun (inputs, values) -> Some inputs, values)
+                    |> Result.mapError contentProblem)
 
-        values
-        |> Result.map (fun values ->
-            {
-                RootValue = root
-                ValuesValue = values
-            })
+        decoded
+        |> List.fold
+            (fun current next ->
+                current
+                |> Result.bind (fun current -> next |> Result.map (fun next -> next :: current)))
+            (Ok [])
+        |> Result.bind (fun decoded ->
+            let decoded = List.rev decoded
+
+            let values =
+                decoded
+                |> List.fold
+                    (fun result (_, values) ->
+                        Map.fold (fun result key value -> Map.add key value result) result values)
+                    Map.empty
+
+            let changes =
+                root.Structure.Effects
+                |> List.mapi (fun index effect ->
+                    { effect.Change with
+                        Value =
+                            Map.tryFind index values |> Option.defaultValue effect.Change.Value
+                    })
+
+            let privateInputs =
+                decoded
+                |> List.fold
+                    (fun result (inputs, _) ->
+                        match result, inputs with
+                        | Some current, Some inputs -> InputMapCodecs.merge current inputs
+                        | _ -> None)
+                    (Some InputMap.empty)
+
+            let declared = ClaimCore.Domain.Tasks.Registry.findDeclaration root.Structure.Task
+
+            let complete =
+                match declared with
+                | Some declaration when not (InputMapCodecs.hasErasable declaration) ->
+                    Some root.Structure.Retained
+                | _ -> privateInputs |> Option.bind (InputMapCodecs.merge root.Structure.Retained)
+
+            let privateRetentionValid =
+                match declared with
+                | None -> true
+                | Some declaration ->
+                    decoded
+                    |> List.forall (fun (inputs, _) ->
+                        inputs
+                        |> Option.forall (fun inputs ->
+                            InputMapCodecs.partition InputRetention.Erasable declaration inputs =
+                                inputs))
+
+            match complete, declared with
+            | _ when not privateRetentionValid -> Error RetainedOperationProblem.Inputs
+            | Some inputs, Some declaration when
+                InputMapCodecs.partition InputRetention.Retained declaration inputs
+                <> root.Structure.Retained
+                ->
+                Error RetainedOperationProblem.Inputs
+            | Some inputs, Some declaration when
+                InputMapCodecs.merge
+                    (InputMapCodecs.partition InputRetention.Retained declaration inputs)
+                    (InputMapCodecs.partition InputRetention.Erasable declaration inputs)
+                <> Some inputs
+                ->
+                Error RetainedOperationProblem.Inputs
+            | _ ->
+                Ok
+                    {
+                        RootValue = root
+                        InputsValue = complete
+                        ChangesValue = changes
+                    })

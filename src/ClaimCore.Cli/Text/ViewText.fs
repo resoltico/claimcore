@@ -201,20 +201,7 @@ module internal ViewText =
             document.Actions
             |> List.filter (fun action -> action.Blocked.IsNone)
             |> List.map (fun action ->
-                let key =
-                    match action.Task with
-                    | ApplicationTaskId.Operation task ->
-                        Vocabulary.messageKey ActKind.vocabulary task "label"
-                    | ApplicationTaskId.Command command ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Command command)
-                            "label"
-                    | ApplicationTaskId.Query query ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Query query)
-                            "label"
+                let key = TaskRouting.labelId (TaskId.token action.Task)
 
                 ReplyTextFormat.label language key)
 

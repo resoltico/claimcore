@@ -12,7 +12,7 @@ let private parent =
 
 let private action () =
     TaskAffordances.caseAction
-        CaseActKind.Close
+        (TaskId.ofLiteral "case.close")
         parent
         Revision.first
         Sequence.zero
@@ -60,7 +60,7 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 value.Task
-                                (OperationBinding.People(None, 0L))
+                                (Some(Binding.PeopleNew Revision.zero))
                                 Map.empty
                                 []
                                 Map.empty
@@ -103,8 +103,8 @@ let tests =
                     Expect.throws
                         (fun () ->
                             Affordance.create
-                                (ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
-                                (OperationBinding.People(None, 0L))
+                                (TaskId.ofLiteral "people.admit")
+                                (Some(Binding.PeopleNew Revision.zero))
                                 seed
                                 []
                                 Map.empty

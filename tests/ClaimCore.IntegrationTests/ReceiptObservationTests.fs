@@ -37,16 +37,17 @@ let tests =
                 let token = CancellationToken.None
 
                 let input =
-                    Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            100
-                            "OBS-RECEIPT"
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    )
+                    ((request
+                        (database.Fixture)
+                        (100)
+                        ("OBS-RECEIPT")
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        ))))
 
-                let! reply = Service.execute service input token |> Async.AwaitTask
+                let! reply = Service.executeSubmission service input token |> Async.AwaitTask
                 let initial = accepted reply
 
                 Expect.equal
@@ -93,13 +94,10 @@ let tests =
                         (Some(JsonValue.String(format initial.RecordedAt)))
                         "Wire acceptance time stays historical"
 
-                let! replay = Service.execute service input token |> Async.AwaitTask
+                let! replay = Service.executeSubmission service input token |> Async.AwaitTask
                 check (replayReceipt replay)
 
-                let lookup =
-                    {
-                        OperationId = OperationInput.operationId input
-                    }
+                let lookup = { OperationId = input.OperationId }
 
                 let! reply = Service.operationGet service lookup token |> Async.AwaitTask
 

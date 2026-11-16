@@ -3,6 +3,7 @@ module ClaimCore.Tests.DescriptorReplyTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Wire
@@ -11,78 +12,68 @@ open ClaimCore.Cli
 open ClaimCore.TestSupport
 
 let private peopleReview () =
-    let reply: PreviewReply =
+    let operation = Guid.Parse "10000000-0000-7000-8000-000000000001"
+    let actor = CliReplyFixtures.receipt.RecordedBy
+    let binding = Binding.People(actor.ActorId, Revision.first)
+
+    let description =
         {
-            OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
-            Outcome =
-                Outcome.Succeeded(
-                    Previewed.Reviewed(
-                        OperationReview.People
+            PersonPartDescription.Profiles = { Before = None; After = None }
+            Principal = None
+            Enabled =
+                Some
+                    {
+                        Before = Some false
+                        After = Some true
+                    }
+            ProfilePresent = None
+            DisplayName = None
+            Contact = None
+            Grants =
+                [
+                    {
+                        Grant =
                             {
-                                Basis = Inputs.workBasis
-                                Effects =
-                                    [
-                                        PeopleReviewEffect.Grant
-                                            {
-                                                Role = Role.CaseReader
-                                                Scope = GrantScope.Installation
-                                            }
-                                    ]
-                                Target =
-                                    Some(
-                                        ActorReviewItem.ofActor
-                                            []
-                                            {
-                                                ActorId =
-                                                    CliReplyFixtures.receipt.RecordedBy.ActorId
-                                                Principal =
-                                                    PrincipalKey.human
-                                                        "https://issuer.example/"
-                                                        "synthetic"
-                                                    |> Fixtures.accepted
-                                                Enabled = false
-                                                Profile = None
-                                            }
-                                    )
-                                AccessScope = GrantScope.Installation
-                                Before =
-                                    {
-                                        Enabled = false
-                                        Profile = None
-                                        Grants = []
-                                        Access = []
-                                    }
-                                After =
-                                    {
-                                        Enabled = true
-                                        Profile = None
-                                        Access = []
-                                        Grants =
-                                            [
-                                                {
-                                                    Role = Role.CaseReader
-                                                    Scope = GrantScope.Installation
-                                                }
-                                            ]
-                                    }
+                                Role = Role.CaseReader
+                                Scope = Scope.Installation
                             }
-                    )
-                )
+                        Before = false
+                        After = true
+                    }
+                ]
         }
 
+    let review =
+        Reviews.personReview
+            (TaskId.ofLiteral "people.grant")
+            binding
+            (Some actor)
+            (ActorId.value actor.ActorId)
+            (Revision.create 2L |> Option.get)
+            description
+            { Actors = []; Cases = [] }
+            {
+                ProductVersion = "fixture"
+                Basis = Inputs.workBasis
+            }
+
+    let input =
+        Submissions.create
+            "people.grant"
+            operation
+            binding
+            (Submissions.grant
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                })
+
     CliReplies.humanPreview
-        (OperationInput.People
-            { CliReplyFixtures.peopleRequest with
-                OperationId = reply.OperationId
-                ExpectedRevision = 1L
-                Act =
-                    PeopleAct.Grant
-                        {
-                            Role = Role.CaseReader
-                            Scope = GrantTarget.Installation
-                        }
-            })
-        reply
+        input
+        {
+            PreviewReply.OperationId = operation
+            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+        }
 
 let rec private unknownPeople =
     function
@@ -191,10 +182,12 @@ let tests =
                                                 Basis = Inputs.workBasis
                                                 Actor = account
                                                 Offers = []
+                                                Controls = []
                                                 ProfileSeed = None
                                                 Items =
                                                     [
                                                         {
+                                                            GrantReadModel.Controls = []
                                                             Role = Role.CaseReader
                                                             Scope = GrantScope.Installation
                                                             GrantedAt = Inputs.workBasis.ObservedAt
@@ -432,13 +425,57 @@ let fullDirectoryAndAuditDetails =
                 PrincipalKey.human "https://historical-issuer.example/" "historical-subject"
                 |> Fixtures.accepted
 
+            let blank =
+                {
+                    PersonPartDescription.Profiles = { Before = None; After = None }
+                    Principal = None
+                    Enabled = None
+                    ProfilePresent = None
+                    DisplayName = None
+                    Contact = None
+                    Grants = []
+                }
+
+            let profileChange =
+                { blank with
+                    Profiles = { Before = None; After = Some profile }
+                    DisplayName =
+                        Some
+                            {
+                                Before = None
+                                After = Some profile.DisplayName
+                            }
+                    Contact =
+                        Some
+                            {
+                                Before = None
+                                After = profile.Contact
+                            }
+                }
+
             let entries =
                 [
-                    PeopleHistoryFacts.ProfileSet(Some profile)
-                    PeopleHistoryFacts.Registered principal
-                    PeopleHistoryFacts.OwnerProvisioned principal
+                    "people.setProfile", profileChange
+                    "people.register",
+                    { profileChange with
+                        Principal =
+                            Some
+                                {
+                                    Before = None
+                                    After = Some principal
+                                }
+                    }
+                    "people.provisionOwner",
+                    { profileChange with
+                        Principal =
+                            Some
+                                {
+                                    Before = None
+                                    After = Some principal
+                                }
+                    }
                 ]
-                |> List.mapi (fun index facts ->
+                |> List.mapi (fun index (task, changes) ->
                     {
                         PeopleHistoryEntry.OperationId =
                             OperationId.create (
@@ -452,7 +489,10 @@ let fullDirectoryAndAuditDetails =
                         RecordedAt = Inputs.workBasis.ObservedAt
                         RecordedBy = account.Actor
                         Target = account.Actor
-                        Facts = facts
+                        Task = TaskId.ofLiteral task
+                        Changes = changes
+                        PrivateAvailable = true
+                        References = { Actors = []; Cases = [] }
                     })
 
             let history: PeopleHistoryPage =
@@ -495,7 +535,13 @@ let fullDirectoryAndAuditDetails =
                         entries
                         |> List.map (fun item ->
                             { item with
-                                Facts = PeopleHistoryFacts.ProfileSet None
+                                PrivateAvailable = false
+                                Changes =
+                                    { item.Changes with
+                                        Profiles = { Before = None; After = None }
+                                        DisplayName = None
+                                        Contact = None
+                                    }
                             })
                 }
 
@@ -575,6 +621,7 @@ let emptyGrantPageDetails =
                 Basis = Inputs.workBasis
                 Actor = target
                 Offers = []
+                Controls = []
                 ProfileSeed = None
                 Items = []
                 NextCursor = None

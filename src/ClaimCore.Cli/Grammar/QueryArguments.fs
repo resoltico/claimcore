@@ -18,7 +18,7 @@ module internal QueryArguments =
         (problems: ResizeArray<UsageError>)
         =
         let declaration =
-            EndpointDeclarations.find (ApplicationTaskId.key entry)
+            EndpointDeclarations.find entry
             |> Option.defaultWith (fun () ->
                 invalidArg (nameof entry) "An endpoint declaration is required.")
 

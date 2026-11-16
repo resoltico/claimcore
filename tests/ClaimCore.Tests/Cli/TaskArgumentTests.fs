@@ -8,6 +8,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.Wire
+open ClaimCore.TestSupport
 
 let private operation = "019aa6a0-0000-7000-8000-000000000001"
 
@@ -16,61 +17,56 @@ let private prepare args =
     |> Result.defaultWith (fun errors -> failtestf "%A" errors)
 
 let private input args =
-    (Frames.value Api.operationExecute
-     >> Option.map ClaimCore.TestSupport.Submissions.command)
-        (prepare args).Invocation
+    Frames.value Api.operationExecute (prepare args).Invocation
     |> Option.defaultWith (fun () -> failtest "Executable operation required")
+
 
 [<Tests>]
 let tests =
     testList
         "typed task argv assembly"
         [
-            testCase
-                "payment task retains exact authored precision and explicit reviewed revision"
-                (fun () ->
-                    match
-                        input
-                            [
-                                "case"
-                                "record-payment"
-                                "TASK"
-                                "--expected-revision"
-                                "7"
-                                "--payment-date"
-                                "2026-11-09"
-                                "--paid-amount"
-                                "1.2300"
-                                "--paid-currency"
-                                "EUR"
-                            ]
-                    with
-                    | OperationInput.Case value ->
-                        Expect.equal value.OperationId (Guid.Parse operation) "Allocated identity"
+            testCase "payment task retains exact precision and explicit reviewed version" (fun () ->
+                let value =
+                    input
+                        [
+                            "case"
+                            "record-payment"
+                            "TASK"
+                            "--expected-revision"
+                            "7"
+                            "--payment-date"
+                            "2026-11-09"
+                            "--paid-amount"
+                            "1.2300"
+                            "--paid-currency"
+                            "EUR"
+                        ]
 
-                        Expect.equal
-                            value.Target
-                            (CaseSelector.Reference "TASK")
-                            "Reference remains an authored selector"
+                Expect.equal value.OperationId (Guid.Parse operation) "Allocated identity"
+                let command = Submissions.command value
 
-                        Expect.equal value.ExpectedRevision 7L "Explicit revision"
+                Expect.equal
+                    command.Binding
+                    (Binding.Case(CaseSelector.Reference "TASK", Revision.create 7L |> Option.get))
+                    "Authored selector and version"
 
-                        match value.Act with
-                        | CaseAct.RecordPayment payment ->
-                            Expect.equal
-                                (PaymentInput.values payment)
-                                [
-                                    BusinessField.PaymentDate, "2026-11-09"
-                                    BusinessField.PaidAmount, "1.2300"
-                                    BusinessField.PaidCurrency, "EUR"
-                                ]
-                                "No normalization before review or recording"
-                        | _ -> failtest "Payment act required"
-                    | _ -> failtest "Case command required")
+                Expect.equal
+                    command.Inputs.Values
+                    (Map.ofList
+                        [
+                            TaskInputId.Target(InputTarget.Field BusinessField.PaymentDate),
+                            InputValue.Text "2026-11-09"
+                            TaskInputId.Target(InputTarget.Field BusinessField.PaidAmount),
+                            InputValue.Text "1.2300"
+                            TaskInputId.Target(InputTarget.Field BusinessField.PaidCurrency),
+                            InputValue.Text "EUR"
+                        ])
+                    "No authored precision normalization")
             testCase
                 "correction preserves separate keep clear and selected scalar intent"
                 (fun () ->
-                    match
+                    let value =
                         input
                             [
                                 "case"
@@ -86,24 +82,24 @@ let tests =
                                 "--decision"
                                 "clear"
                             ]
-                    with
-                    | OperationInput.Case { Act = CaseAct.Correct value } ->
-                        match value.Registration with
-                        | Amendment.Update update ->
-                            Expect.equal
-                                (RegistrationUpdateInput.values update |> Map.ofList)
-                                (Map.ofList
-                                    [
-                                        BusinessField.PolicyNumber, None
-                                        BusinessField.ClaimantName, Some "Edited claimant"
-                                    ])
-                                "Omission is keep and explicit clear is retained"
-                        | _ -> failtest "Registration update required"
+                        |> Submissions.command
 
-                        Expect.equal value.Decision Change.Clear "Decision clear is independent"
-                    | _ -> failtest "Correction required")
-            testCase "compound people roles retain submitted order and typed scopes" (fun () ->
-                match
+                    Expect.equal
+                        value.Inputs.Values
+                        (Map.ofList
+                            [
+                                TaskInputId.Target(InputTarget.Group RecordGroup.Registration),
+                                InputValue.Text "UPDATE"
+                                TaskInputId.Target(InputTarget.Group RecordGroup.Decision),
+                                InputValue.Text "CLEAR"
+                                TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
+                                InputValue.Null
+                                TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                                InputValue.Text "Edited claimant"
+                            ])
+                        "Omitted fields keep, explicit null clears")
+            testCase "compound roles retain submitted order and explicit scope spelling" (fun () ->
+                let value =
                     input
                         [
                             "people"
@@ -121,24 +117,30 @@ let tests =
                             "--role"
                             "auditor"
                         ]
-                with
-                | OperationInput.People { Act = PeopleAct.Admit value } ->
-                    Expect.equal value.Profile.DisplayName "Editable name" "Profile input"
+                    |> Submissions.command
 
-                    Expect.equal
-                        value.Grants
-                        [
-                            {
-                                Role = Role.CaseReader
-                                Scope = GrantTarget.CaseReference "CASE-A"
-                            }
-                            {
-                                Role = Role.Auditor
-                                Scope = GrantTarget.Installation
-                            }
-                        ]
-                        "Submitted ordinal map follows this exact order"
-                | _ -> failtest "Compound people admission required")
+                Expect.equal
+                    value.Inputs.Values[TaskInputId.Target InputTarget.ProfileDisplayName]
+                    (InputValue.Text "Editable name")
+                    "Profile input"
+
+                Expect.equal
+                    (value.Inputs.Collections[TaskCollectionId.PeopleGrants] |> List.map _.Values)
+                    [
+                        Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.Role, InputValue.Text "CASE_READER"
+                                TaskInputId.Scope, InputValue.Text "CASE"
+                                TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
+                                InputValue.Text "CASE-A"
+                            ]
+                        Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.Role, InputValue.Text "AUDITOR"
+                                TaskInputId.Scope, InputValue.Text "INSTALLATION"
+                            ]
+                    ]
+                    "Submitted ordinals")
             testCase
                 "malformed metadata and unselected fields report usage without throwing or fabricating commands"
                 (fun () ->
@@ -201,13 +203,13 @@ let tests =
                         ] do
                         Expect.isError
                             (Grammar.prepare (fun () -> operation) args)
-                            "Usage failure before executable delivery")
+                            ("Usage failure before executable delivery: " + String.concat " " args))
         ]
 
 [<Tests>]
 let creationBasis =
     testCase "case creation never acquires an authored expected revision" (fun () ->
-        let task = ApplicationTaskId.Operation(ActKind.Case CaseActKind.Open)
+        let task = "case.open"
 
         let revision =
             CommandGrammar.inputs task

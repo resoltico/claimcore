@@ -60,16 +60,17 @@ let private receipts (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! created =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        110
-                        "LOOKUP-DISCLOSURE"
-                        0L
-                        (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (110)
+                    ("LOOKUP-DISCLOSURE")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         let receipt = accepted created
@@ -106,16 +107,15 @@ let private receipts (database: PostgresFixture.Database) =
         acceptedPeople steward
 
         let! erased =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        113
-                        "LOOKUP-DISCLOSURE"
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Erase)
-                ))
+                (((request
+                    (database.Fixture)
+                    (113)
+                    ("LOOKUP-DISCLOSURE")
+                    (1L)
+                    "case.erase"
+                    (Map.empty))))
                 (token))
 
         accepted erased |> ignore

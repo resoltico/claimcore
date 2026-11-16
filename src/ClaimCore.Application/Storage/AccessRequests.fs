@@ -32,24 +32,11 @@ module internal AccessRequests =
             box subject
         |]
 
-    let lockPrincipal connection principal token =
-        // Length framing avoids ambiguous key concatenation; hash collisions only add serialization.
-        let kind, issuer, subject = PrincipalKey.parts principal
-
-        let key =
-            $"{(Vocabulary.token PrincipalKind.vocabulary) kind}:{issuer.Length}:{issuer}{subject.Length}:{subject}"
-
-        DatabaseSession.execute
-            connection
-            "SELECT pg_advisory_xact_lock(hashtextextended($1,173701))"
-            [| box key |]
-            token
-
     let delete connection principal token =
         DatabaseSession.execute
             connection
-            "DELETE FROM claimcore.access_request WHERE principal_kind=$1 AND issuer=$2 AND subject=$3"
-            (parameters principal)
+            "DELETE FROM claimcore.access_request WHERE principal_kind=$1 AND issuer=$2 AND subject=$3 AND principal_key=$4"
+            (Array.append (parameters principal) [| box (PrincipalKey.naturalKey principal) |])
             token
 
     let refresh connection principal (claims: RequesterClaims) observed token =
@@ -65,10 +52,10 @@ module internal AccessRequests =
             let hint value =
                 DatabaseSession.parameter (value |> Option.map PartyName.format)
 
-            let! _ =
+            let! changed =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email) VALUES ($1,$2,$3,$4,$4,$5,$6,$7) ON CONFLICT (issuer,principal_kind,subject) DO UPDATE SET last_seen=greatest(access_request.last_seen,EXCLUDED.last_seen),name=EXCLUDED.name,preferred_username=EXCLUDED.preferred_username,email=EXCLUDED.email"
+                    "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,principal_key) VALUES ($1,$2,$3,$4,$4,$5,$6,$7,$8) ON CONFLICT (principal_key) DO UPDATE SET last_seen=greatest(access_request.last_seen,EXCLUDED.last_seen),name=EXCLUDED.name,preferred_username=EXCLUDED.preferred_username,email=EXCLUDED.email WHERE access_request.principal_kind=EXCLUDED.principal_kind AND access_request.issuer=EXCLUDED.issuer AND access_request.subject=EXCLUDED.subject"
                     (Array.append
                         (parameters principal)
                         [|
@@ -76,13 +63,20 @@ module internal AccessRequests =
                             hint claims.Name
                             hint claims.PreferredUsername
                             hint claims.Email
+                            box (PrincipalKey.naturalKey principal)
                         |])
                     token
+
+            if changed <> 1 then
+                raise (
+                    RecordCorruptException
+                        "Access-request principal key disagrees with its identity."
+                )
 
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "DELETE FROM claimcore.access_request WHERE (issuer,principal_kind,subject) IN (SELECT issuer,principal_kind,subject FROM claimcore.access_request ORDER BY last_seen DESC,issuer,principal_kind,subject OFFSET 1000)"
+                    "DELETE FROM claimcore.access_request WHERE principal_key IN (SELECT principal_key FROM claimcore.access_request ORDER BY last_seen DESC,principal_key OFFSET 1000)"
                     [||]
                     token
 
@@ -93,27 +87,19 @@ module internal AccessRequests =
         task {
             let seen, key =
                 match query.After with
-                | Some after -> Some after.LastSeen, parameters after.Principal
-                | None ->
-                    None,
-                    [|
-                        DatabaseSession.nullValue
-                        DatabaseSession.nullValue
-                        DatabaseSession.nullValue
-                    |]
+                | Some after -> Some after.LastSeen, Some(PrincipalKey.naturalKey after.Principal)
+                | None -> None, None
 
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ("SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email FROM claimcore.access_request WHERE NOT ("
+                    ("SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email,principal_key FROM claimcore.access_request WHERE NOT ("
                      + expiredPredicate ""
-                     + ") AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND (issuer,principal_kind,subject)>($4,$3,$5))) ORDER BY last_seen DESC,issuer,principal_kind,subject LIMIT $6")
+                     + ") AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND principal_key>$3)) ORDER BY last_seen DESC,principal_key LIMIT $4")
                     [|
                         box query.ObservedAt
                         DatabaseSession.parameter seen
-                        key[0]
-                        key[1]
-                        key[2]
+                        DatabaseSession.parameter key
                         box (query.Limit + 1)
                     |]
                     token
@@ -136,6 +122,14 @@ module internal AccessRequests =
                             (DatabaseSession.value<string> 2 row)
                         |> Result.defaultWith (fun _ ->
                             raise (RecordCorruptException "Invalid access-request principal."))
+
+                    if
+                        DatabaseSession.value<string> 8 row <> PrincipalKey.naturalKey principal
+                    then
+                        raise (
+                            RecordCorruptException
+                                "Access-request principal key disagrees with its identity."
+                        )
 
                     {
                         AccessRequest.Principal = principal

@@ -181,7 +181,7 @@ type WorklistFixture =
 
 let private execute fixture request =
     task {
-        let! reply = Service.execute fixture.Service (Inputs.caseOperation request) token
+        let! reply = Service.executeSubmission fixture.Service ((request)) token
         accepted reply |> ignore
     }
 
@@ -189,7 +189,7 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
     task {
         let mutable revision = 0L
 
-        let apply act =
+        let apply taskName values =
             task {
                 sequence.Value <- sequence.Value + 1
 
@@ -201,7 +201,8 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
                             sequence.Value
                             expected.Reference
                             revision
-                            act)
+                            taskName
+                            values)
 
                 revision <- revision + 1L
             }
@@ -214,25 +215,45 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
                 ]
                 Inputs.registration
 
-        do! apply (AuthoredCaseAct.Open registration)
+        do!
+            apply
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
         if expected.Progress <> Some CaseProgress.Undecided then
-            do! apply (AuthoredCaseAct.Decide Inputs.decision)
+            do!
+                apply
+                    "case.decide"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        DecisionInput.values (Inputs.decision)
+                    ))
 
         if
             expected.Progress = Some CaseProgress.Paid
             || expected.Lifecycle = Lifecycle.Erased
         then
-            do! apply (AuthoredCaseAct.RecordPayment Inputs.payment)
+            do!
+                apply
+                    "case.recordPayment"
+                    (ClaimCore.TestSupport.Submissions.fields (PaymentInput.values (Inputs.payment)))
 
         if expected.Status = Some CaseStatus.Closed then
-            do! apply (AuthoredCaseAct.Bare BareAct.Close)
+            do! apply "case.close" (Map.empty)
 
         if expected.Lifecycle = Lifecycle.Voided then
-            do! apply (AuthoredCaseAct.Void "Synthetic worklist correction")
+            do!
+                apply
+                    "case.void"
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Synthetic worklist correction"
+                            )
+                        ])
 
         if expected.Lifecycle = Lifecycle.Erased then
-            do! apply (AuthoredCaseAct.Bare BareAct.Erase)
+            do! apply "case.erase" (Map.empty)
     }
 
 let prepare () =
@@ -269,12 +290,12 @@ let prepare () =
             do!
                 execute
                     fixture
-                    (request database.Fixture 2001 "mix-04" 1L (AuthoredCaseAct.Bare BareAct.Close))
+                    (request (database.Fixture) (2001) ("mix-04") (1L) "case.close" (Map.empty))
 
             do!
                 execute
                     fixture
-                    (request database.Fixture 2002 "mix-04" 2L (AuthoredCaseAct.Bare BareAct.Reopen))
+                    (request (database.Fixture) (2002) ("mix-04") (2L) "case.reopen" (Map.empty))
 
             return fixture
         with error ->

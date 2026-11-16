@@ -94,7 +94,9 @@ module internal Declarations =
     let availability declaration blocked =
         {
             Seeds = Map.empty
+            Selections = Set.empty
             Editable = authored declaration
             Choices = Map.empty
             Blocked = blocked
+            Recommendation = None
         }

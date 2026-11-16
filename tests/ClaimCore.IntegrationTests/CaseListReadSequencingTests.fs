@@ -79,16 +79,18 @@ let private withCases check =
 
     for index, reference in List.indexed [ "A-MATCH-1"; "Match-1" ] do
         let reply =
-            Service.execute
+            Service.executeSubmission
                 current
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = operationId (index + 3)
-                        CaseReference = reference
-                        ExpectedRevision = 0L
-                        Act = AuthoredCaseAct.Open Inputs.registration
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.open"
+                    (operationId (index + 3))
+                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                     )
+                     |> Map.add
+                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))))
                 CancellationToken.None
             |> fun task -> task.GetAwaiter().GetResult()
 
@@ -100,15 +102,18 @@ let private withCases check =
         PrincipalKey.human "https://issuer.example/" "scoped" |> accepted
 
     let registered =
-        Service.execute
-            admin
-            (OperationInput.People(
-                StoreFixtures.peopleRequest
-                    (operationId 10)
-                    scopedPrincipal
-                    (PeopleAct.Register Inputs.actorProfile)
-            ))
-            CancellationToken.None
+        (task {
+            let! submission =
+                ClaimCore.TestSupport.StoreFixtures.personSubmission
+                    (admin).Store
+                    ((operationId 10))
+                    (scopedPrincipal)
+                    (Some 0L)
+                    "people.register"
+                    (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+            return! Service.executeSubmission (admin) submission (CancellationToken.None)
+        })
         |> fun pending -> pending.GetAwaiter().GetResult()
 
     StoreFixtures.acceptedPeople registered
@@ -212,31 +217,41 @@ let tests =
                             "Scoped visible exact identity"))
             testCase "erasure preserves exact authorized reference identity" (fun () ->
                 withCases (fun core _ operationId ->
-                    for operation, revision, act in
+                    for operation, revision, taskName, values in
                         [
-                            31, 1L, AuthoredCaseAct.Void "Retained reason"
-                            32, 2L, AuthoredCaseAct.Bare BareAct.Erase
+                            31,
+                            1L,
+                            "case.void",
+                            Map.ofList
+                                [
+                                    Submissions.input InputTarget.Reason,
+                                    SubmissionValue.Text "Retained reason"
+                                ]
+                            32, 2L, "case.erase", Map.empty
                         ] do
+                        let family =
+                            if taskName = "case.erase" then
+                                Some(
+                                    StoreFixtures.reviewedFamilySequence
+                                        core.Store
+                                        (CaseSelector.Reference "Match-1")
+                                )
+                            else
+                                None
+
                         let reply =
-                            Service.execute
+                            Service.executeSubmission
                                 core
-                                (Inputs.caseOperation
-                                    {
-                                        ExpectedFamilySequence =
-                                            if CaseAct.kind act = CaseActKind.Erase then
-                                                Some(
-                                                    ClaimCore.TestSupport.StoreFixtures
-                                                        .reviewedFamilySequence
-                                                        core.Store
-                                                        (CaseSelector.Reference "Match-1")
-                                                )
-                                            else
-                                                None
-                                        OperationId = operationId operation
-                                        CaseReference = "Match-1"
-                                        ExpectedRevision = revision
-                                        Act = act
-                                    })
+                                (Submissions.createRaw
+                                    taskName
+                                    (operationId operation)
+                                    (OperationBinding.Case(
+                                        CaseSelector.Reference "Match-1",
+                                        revision,
+                                        None,
+                                        family
+                                    ))
+                                    values)
                                 CancellationToken.None
                             |> fun task -> task.GetAwaiter().GetResult()
 

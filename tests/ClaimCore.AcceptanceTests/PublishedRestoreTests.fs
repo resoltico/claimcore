@@ -62,7 +62,12 @@ let private openFrame operationId reference =
 
     frame
         "operation.execute"
-        (caseSubmission operationId reference 0L None (CaseAct.Open registration))
+        (caseSubmission
+            operationId
+            reference
+            0L
+            "case.open"
+            (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values registration)))
 
 let private bearer
     (fixture: PublishedFixture.Fixture)

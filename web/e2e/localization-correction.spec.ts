@@ -194,7 +194,7 @@ for (const status of ["CLOSED"] as const) {
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.kind === "CASE_FACT" && entry.act === "case.correct",
+              (entry) => entry.subject.partKind === "CASE" && entry.task === "case.correct",
             ),
           ).toBe(true);
         } else {

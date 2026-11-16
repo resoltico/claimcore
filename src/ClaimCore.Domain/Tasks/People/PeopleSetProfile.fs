@@ -76,13 +76,29 @@ let decide context environment (state: Person option) binding inputs =
     |> Parsing.reject
     |> Result.map (TaskContext.changes context)
 
+let decideRetained context environment state binding (_: InputMap) =
+    PersonRules.admit
+        context
+        environment
+        (PersonRules.permission declaration environment)
+        (fun () -> Ok())
+    |> Result.bind (fun () -> PersonRules.existing environment state binding)
+    |> Result.map (fun state ->
+        [
+            PersonRules.change context state state.Actor.Enabled (ProfileValue.Present None) []
+        ])
+    |> Parsing.reject
+    |> Result.map (TaskContext.changes context)
+
 let task =
     Task.Person
         {
             Declaration = declaration
+            Authorize = fun environment _ _ -> PersonRules.permission declaration environment
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.person
         }

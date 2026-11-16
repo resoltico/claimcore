@@ -3,6 +3,7 @@ module ClaimCore.Tests.CaseStageTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
 open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
@@ -10,7 +11,7 @@ let private date text = CalendarDate.parse text |> accepted
 let private openedOn = date "2026-08-02"
 let private closedOn = date "2026-09-06"
 
-let private describe state (_lastAct: CaseActKind option) =
+let private describe state =
     CaseStages.describe state (Some openedOn) (Some closedOn) |> accepted
 
 let private tracker =
@@ -25,12 +26,11 @@ let tests =
         [
             testCase "closing without financial groups retains absent stages" (fun () ->
                 let fields =
-                    { viewFields (Case.snapshot (opened ())) with
+                    { viewFields ((CaseFamily.snapshot >> Option.get) (opened ())) with
                         Status = CaseStatus.Closed
                     }
 
-                let current, steps =
-                    describe (CaseState.Active fields) (Some CaseActKind.Close) |> tracker
+                let current, steps = describe (CaseState.Active fields) |> tracker
 
                 Expect.equal current CaseStageKind.Closed "Closed is the current step"
 
@@ -47,9 +47,9 @@ let tests =
                 Expect.equal steps[1].Amount None "An absent decision has no amount"
                 Expect.equal steps[2].Amount None "An absent payment has no amount")
             testCase "financial steps use authored dates and current admitted money" (fun () ->
-                let state = (Case.snapshot (paid ())).State
-                let fields = viewFields (Case.snapshot (paid ()))
-                let current, steps = describe state (Some CaseActKind.RecordPayment) |> tracker
+                let state = ((CaseFamily.snapshot >> Option.get) (paid ())).State
+                let fields = viewFields ((CaseFamily.snapshot >> Option.get) (paid ()))
+                let current, steps = describe state |> tracker
                 Expect.equal current CaseStageKind.Paid "Payment is current"
 
                 Expect.equal
@@ -78,8 +78,8 @@ let tests =
             testCase
                 "voided and reinstated facts retain the tracker while erasure removes it"
                 (fun () ->
-                    let state = (Case.snapshot (opened ())).State
-                    let current, steps = describe state (Some CaseActKind.Reinstate) |> tracker
+                    let state = ((CaseFamily.snapshot >> Option.get) (opened ())).State
+                    let current, steps = describe state |> tracker
 
                     Expect.equal
                         current
@@ -92,7 +92,11 @@ let tests =
                         "The retained opening date stays visible"
 
                     let current, _ =
-                        describe (CaseState.Voided(viewFields (Case.snapshot (opened ())))) None
+                        describe (
+                            CaseState.Voided(
+                                viewFields ((CaseFamily.snapshot >> Option.get) (opened ()))
+                            )
+                        )
                         |> tracker
 
                     Expect.equal
@@ -101,12 +105,12 @@ let tests =
                         "Voiding retains the factual tracker behind its notice"
 
                     Expect.equal
-                        (describe CaseState.Erased None)
+                        (describe CaseState.Erased)
                         CaseStageDisplay.Erased
                         "Erasure has no factual tracker")
             testCase "missing retained completion dates fail rather than fabricate" (fun () ->
                 let fields =
-                    { viewFields (Case.snapshot (opened ())) with
+                    { viewFields ((CaseFamily.snapshot >> Option.get) (opened ())) with
                         Status = CaseStatus.Closed
                     }
 

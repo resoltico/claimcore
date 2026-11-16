@@ -58,16 +58,17 @@ let private freshness (database: PostgresFixture.Database) =
         let target = CaseSelector.Reference "PREPARED-CASE"
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 admin
-                (Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        100
-                        "PREPARED-CASE"
-                        0L
-                        (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (100)
+                    ("PREPARED-CASE")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
@@ -80,16 +81,20 @@ let private freshness (database: PostgresFixture.Database) =
 
         for operation, who in [ 110, human; 111, service; 112, roleless ] do
             let! added =
-                Service.execute
-                    admin
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            database.Fixture.Store
-                            (id database.Fixture operation)
-                            who
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    token
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (database.Fixture.Store)
+                            ((id database.Fixture operation))
+                            (who)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (
+                                ClaimCore.TestSupport.Inputs.actorProfile
+                            ))
+
+                    return! Service.executeSubmission (admin) submission (token)
+                })
 
             acceptedPeople added
 
@@ -139,19 +144,15 @@ let private freshness (database: PostgresFixture.Database) =
             "An absent actor does not become a NULL pseudo-actor"
 
         let! planned =
-            Service.execute
+            Service.executeSubmission
                 admin
-                (OperationInput.Reminder
-                    {
-                        OperationId = id database.Fixture 130
-                        Target = target
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Current prepared action"
-                                    Due = "2026-11-02"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (id database.Fixture 130)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder((target), None))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan
+                        ("Current prepared action")
+                        ("2026-11-02")))
                 token
 
         accepted planned |> ignore
@@ -202,16 +203,18 @@ let private freshness (database: PostgresFixture.Database) =
         Expect.equal headAfter headBefore "Read date changes never write the ledger"
 
         let! disabled =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 140)
-                        human
-                        PeopleAct.Disable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 140))
+                        (human)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (admin) submission (token)
+            })
 
         acceptedPeople disabled
         let! off = facts human
@@ -298,16 +301,17 @@ let private multiplexing (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        500
-                        "MULTIPLEXED-WORK"
-                        0L
-                        (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (500)
+                    ("MULTIPLEXED-WORK")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId

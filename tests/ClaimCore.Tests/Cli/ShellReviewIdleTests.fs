@@ -21,26 +21,32 @@ let private response frame (endpoint: Endpoint<'Input, 'Output>) value =
 let private reviewed frame =
     let current = CliReplyFixtures.snapshot
 
+    let input = Frames.value Api.operationPreview frame |> Option.get
+
+    let after =
+        { current with
+            Revision = Revision.successor current.Revision
+            State =
+                current.State
+                |> CaseState.map (fun fields ->
+                    { fields with
+                        Status = CaseStatus.Closed
+                    })
+        }
+
     let review =
-        OperationReview.Case
+        Reviews.caseReview
+            input.Task
+            (Submissions.command input).Binding
+            (Some current)
+            after
             {
-                Before = Some current
-                Proposed = current
-                Changes =
+                ProductVersion = "synthetic"
+                Basis =
                     {
-                        Payments = None
-                        Lifecycle = None
-                        Fields = []
-                    }
-                Context =
-                    {
-                        ProductVersion = "synthetic"
-                        Basis =
-                            {
-                                ObservedAt = DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero)
-                                BusinessDate = DateOnly(2026, 10, 1)
-                                TimeZoneId = "Etc/UTC"
-                            }
+                        ObservedAt = DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero)
+                        BusinessDate = DateOnly(2026, 10, 1)
+                        TimeZoneId = "Etc/UTC"
                     }
             }
 
@@ -48,11 +54,8 @@ let private reviewed frame =
         frame
         Api.operationPreview
         (RepresentationReply.Human(
-            HumanReplies.preview
-                ((Frames.value Api.operationPreview
-                  >> Option.map ClaimCore.TestSupport.Submissions.command)
-                    frame
-                 |> Option.get)
+            HumanReplies.previewSubmission
+                input
                 {
                     OperationId = Frames.operationId frame |> Option.get
                     Outcome = Outcome.Succeeded(Previewed.Reviewed review)

@@ -93,7 +93,7 @@ let internal contextCodec () =
     |> ignore
 
 let internal queryCodecs () =
-    let snapshot = Case.snapshot (opened ())
+    let snapshot = familySnapshot (opened ())
 
     for view in
         [
@@ -253,7 +253,7 @@ let internal disclosures () =
                                 )
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L
-                            Act = CaseActKind.Open
+                            Act = (TaskId.ofLiteral "case.open")
                             Snapshot = snapshot
                         }
             }
@@ -280,35 +280,14 @@ let internal disclosures () =
             "Disclosure remains explicit"
 
 let internal previewCodecs () =
-    let review: AdvisoryReview =
-        {
-            Before = None
-            Proposed = Case.snapshot (opened ())
-            Changes =
-                {
-                    Payments = None
-                    Lifecycle = None
-                    Fields = []
-                }
-            Context =
-                {
-                    ProductVersion = "0.10.0"
-                    Basis =
-                        {
-                            ObservedAt =
-                                System.DateTimeOffset(
-                                    today.ToDateTime(System.TimeOnly.MinValue),
-                                    System.TimeSpan.Zero
-                                )
-                            BusinessDate = today
-                            TimeZoneId = "Etc/UTC"
-                        }
-                }
-        }
+    let review =
+        match ResponseExamples.preview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed review) -> review
+        | other -> failtestf "Expected review fixture, got %A" other
 
     for value in
         [
-            (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
+            (Previewed.Reviewed >> Outcome.Succeeded) review
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
             Outcome.Rejected(
                 ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
@@ -414,7 +393,7 @@ let internal diagnosticRevisions () =
         "Negative actual revisions remain invalid"
 
     let snapshot =
-        { Case.snapshot (opened ()) with
+        { familySnapshot (opened ()) with
             Revision = CaseFixtures.revision 0L
         }
 

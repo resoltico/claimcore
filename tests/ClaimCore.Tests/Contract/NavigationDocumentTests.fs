@@ -72,7 +72,7 @@ let private documents () =
             Responsible = None
             RecordedAt = Inputs.workBasis.ObservedAt
             RecordedBy = actor
-            Acts = []
+            Offers = []
             Active = true
             Timing = Some ReminderDue.Today
         }

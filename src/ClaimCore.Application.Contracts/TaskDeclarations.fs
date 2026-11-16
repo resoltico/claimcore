@@ -49,8 +49,11 @@ module TaskChoiceId =
         | TaskChoiceId.ReminderState -> vocabularyTokens ReminderState.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
-            Amendment.actions |> List.map CorrectionGroupAction.token
-        | TaskChoiceId.DecisionCorrection -> Change.actions |> List.map CorrectionGroupAction.token
+            CorrectionGroupAction.actions RecordGroup.Registration
+            |> List.map CorrectionGroupAction.token
+        | TaskChoiceId.DecisionCorrection ->
+            CorrectionGroupAction.actions RecordGroup.Decision
+            |> List.map CorrectionGroupAction.token
 
     let vocabularyName =
         function
@@ -102,40 +105,73 @@ module TaskChoiceId =
         | TaskInputId.ResponsibleActorFilter
         | TaskInputId.IncludeInactive -> None
 
-type ApplicationTaskDeclaration =
-    {
-        Task: ApplicationTaskId
-        Inputs: TaskInputDeclaration list
-        Collections: TaskCollectionDeclaration list
-    }
+[<RequireQualifiedAccess>]
+type ClientTaskKind =
+    | Operation
+    | Query
+    | Command
+
+/// A derived client view of the separate ledger and endpoint declarations.
+type ClientTaskDeclaration =
+    private
+        {
+            IdValue: string
+            KindValue: ClientTaskKind
+            InputsValue: TaskInputDeclaration list
+            CollectionsValue: TaskCollectionDeclaration list
+            LedgerValue: TaskDeclaration option
+            EndpointValue: EndpointDeclaration option
+        }
+
+    member this.Id = this.IdValue
+    member this.Kind = this.KindValue
+    member this.Inputs = this.InputsValue
+    member this.Collections = this.CollectionsValue
+    member this.Ledger = this.LedgerValue
+    member this.Endpoint = this.EndpointValue
+    member this.Creates = this.LedgerValue |> Option.exists _.Creates
+
+    member this.Consequence =
+        this.LedgerValue
+        |> Option.map _.Consequence
+        |> Option.defaultValue Consequence.Routine
+
+    member this.Subject = this.LedgerValue |> Option.map _.Target
+    member this.Paged = this.EndpointValue |> Option.exists _.Paged
+    member this.Csv = this.EndpointValue |> Option.exists _.Csv
 
 module TaskDeclarations =
-    let describe task =
-        match task with
-        | ApplicationTaskId.Operation act ->
-            let declaration =
-                ActKind.token act
-                |> TaskId.ofLiteral
-                |> ClaimCore.Domain.Tasks.Registry.findDeclaration
-                |> Option.defaultWith (fun () ->
-                    invalidArg (nameof task) "The operation is not declared.")
+    let all =
+        (ClaimCore.Domain.Tasks.Registry.clientDeclarations
+         |> List.map (fun declaration ->
+             {
+                 IdValue = TaskId.token declaration.Id
+                 KindValue = ClientTaskKind.Operation
+                 InputsValue = declaration.Inputs
+                 CollectionsValue = declaration.Collections
+                 LedgerValue = Some declaration
+                 EndpointValue = None
+             }))
+        @ (EndpointDeclarations.all
+           |> List.map (fun declaration ->
+               {
+                   IdValue = declaration.Id
+                   KindValue =
+                       (if declaration.Kind = EndpointKind.Query then
+                            ClientTaskKind.Query
+                        else
+                            ClientTaskKind.Command)
+                   InputsValue = declaration.Inputs
+                   CollectionsValue = []
+                   LedgerValue = None
+                   EndpointValue = Some declaration
+               }))
 
-            {
-                Task = task
-                Inputs = declaration.Inputs
-                Collections = declaration.Collections
-            }
-        | ApplicationTaskId.Query _
-        | ApplicationTaskId.Command _ ->
-            let declaration =
-                EndpointDeclarations.find (ApplicationTaskId.key task)
-                |> Option.defaultWith (fun () ->
-                    invalidArg (nameof task) "The endpoint is not declared.")
+    let private byId =
+        all |> List.map (fun declaration -> declaration.Id, declaration) |> Map.ofList
 
-            {
-                Task = task
-                Inputs = declaration.Inputs
-                Collections = []
-            }
+    let find id = Map.tryFind id byId
 
-    let all = ApplicationTaskId.all |> List.map describe
+    let describe id =
+        find id
+        |> Option.defaultWith (fun () -> invalidArg (nameof id) "The client task is not declared.")

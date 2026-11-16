@@ -67,8 +67,8 @@ let tests =
                         Capability = [ Capability.ReadAccess; Capability.ManageAccess ]
                         Offers =
                             [
-                                InstallationOffer.PeopleAct PeopleActKind.Register
-                                InstallationOffer.PeopleAct PeopleActKind.Admit
+                                InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
+                                InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")
                             ]
                     }
 
@@ -188,8 +188,8 @@ let tests =
                         offers
                         [
                             InstallationOffer.Open
-                            InstallationOffer.PeopleAct PeopleActKind.Register
-                            InstallationOffer.PeopleAct PeopleActKind.Admit
+                            InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
+                            InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")
                         ]
                         "Only bindings with no selected existing actor are offered here"
 

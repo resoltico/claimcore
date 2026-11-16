@@ -175,8 +175,7 @@ let private declaredPages () =
 
     for declaration in EndpointDeclarations.queries |> List.filter _.Paged do
         let entry =
-            CommandGrammar.operations
-            |> List.find (fun entry -> ApplicationTaskId.key entry = declaration.Id)
+            CommandGrammar.operations |> List.find (fun entry -> entry = declaration.Id)
 
         let operands =
             CommandGrammar.inputs entry

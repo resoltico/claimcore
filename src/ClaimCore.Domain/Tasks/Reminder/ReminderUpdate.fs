@@ -27,16 +27,17 @@ let private parse inputs =
 
 let check inputs = Parsing.check parse inputs
 
+let private current = ReminderRules.current true [ ReminderState.Pending ]
+
 let availability environment state binding =
-    ReminderRules.availability declaration true [ ReminderState.Pending ] environment state binding
+    ReminderRules.availability declaration current environment state binding
 
 let decide context environment (state: CaseFamily option) binding inputs =
     match state with
     | None -> Error(Rejection.Refused FamilyRules.unavailable)
     | Some state ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active false)
-        |> Result.bind (fun () ->
-            ReminderRules.current true [ ReminderState.Pending ] state binding)
+        |> Result.bind (fun () -> current state binding)
         |> Result.bind (fun (id, before) ->
             parse inputs
             |> Result.bind (fun command ->
@@ -68,13 +69,23 @@ let decide context environment (state: CaseFamily option) binding inputs =
         |> Parsing.reject
         |> Result.map (TaskContext.changes context)
 
+let decideRetained context environment state binding (_: InputMap) =
+    ReminderRules.retained context environment state binding current ReminderState.Pending
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = ReminderRules.planAvailable
             Describe = PartDescriptions.family
         }

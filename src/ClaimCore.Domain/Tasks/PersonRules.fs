@@ -79,10 +79,10 @@ module internal PersonRules =
         |> Result.bind (fun () ->
             if environment.TargetPrincipal |> Option.exists ((<>) principal) then
                 Error unavailable
-            elif provision && not (PrincipalKey.isHuman principal) then
-                Error(Refusal.People PeopleRefusal.HumanPrincipalRequired)
             elif state.IsSome || (provision && environment.ActorCount <> 0) then
                 Error(Refusal.People PeopleRefusal.ActorAlreadyRegistered)
+            elif provision && not (PrincipalKey.isHuman principal) then
+                Error(Refusal.People PeopleRefusal.HumanPrincipalRequired)
             else
                 Ok())
 
@@ -90,7 +90,10 @@ module internal PersonRules =
         function
         | GrantTarget.Installation -> Ok Scope.Installation
         | target ->
-            match Map.tryFind target environment.TargetCases with
+            match
+                Map.tryFind (GrantTarget.canonical target) environment.TargetCases
+                |> Option.orElseWith (fun () -> Map.tryFind target environment.TargetCases)
+            with
             | Some id when
                 (match target with
                  | GrantTarget.CaseId expected -> expected = id
@@ -104,7 +107,7 @@ module internal PersonRules =
         |> Option.map (Refusal.People >> Error)
         |> Option.defaultValue (Ok())
 
-    let resolveGrant environment (grant: AuthoredGrant) =
+    let resolveGrant environment (grant: GrantInput) =
         scope environment grant.Scope
         |> Result.map (fun scope ->
             {
@@ -126,14 +129,7 @@ module internal PersonRules =
                 Ok grants)
 
     let owner (state: Person) =
-        state.Actor.Enabled
-        && PrincipalKey.isHuman state.Actor.Principal
-        && Map.containsKey
-            {
-                ActorGrant.Role = Role.Owner
-                Scope = Scope.Installation
-            }
-            state.Grants
+        Access.isEnabledHumanOwner (Person.access state)
 
     let protectOwner environment state =
         if owner state && environment.EnabledHumanOwners <= 1 then
@@ -141,7 +137,7 @@ module internal PersonRules =
         else
             Ok()
 
-    let create (context: TaskContext) principal profile grants =
+    let createValue (context: TaskContext) principal (profile: ProfileValue) grants =
         let id = ActorId.ofOperationId context.Stamp.OperationId
 
         {
@@ -155,11 +151,14 @@ module internal PersonRules =
                         Principal = Some principal
                         Enabled = true
                         Grants = grants |> List.map (fun grant -> { Grant = grant; Active = true })
-                        Profile = ProfileValue.Present(Some profile)
+                        Profile = profile
                     }
             Erases = None
             Stamp = context.Stamp
         }
+
+    let create context principal profile grants =
+        createValue context principal (ProfileValue.Present(Some profile)) grants
 
     let change (context: TaskContext) (state: Person) enabled profile grants =
         {

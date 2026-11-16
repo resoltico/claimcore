@@ -68,14 +68,11 @@ let private authoritativeIdentityAdmission () =
             Expect.equal
                 (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (payload sample)
                  |> Result.mapError _.Reason
-                 |> Result.bind (
-                     Submissions.command
-                     >> function
-                         | OperationInput.People request ->
-                             ClaimCore.Domain.People.parse request
-                             |> Result.mapError (fun _ -> "invalid principal")
-                         | _ -> Error "Expected people request"
-                 )
+                 |> Result.bind (fun submission ->
+                     if OperationSubmission.syntax submission |> Option.isNone then
+                         Ok()
+                     else
+                         Error "invalid principal")
                  |> Result.isOk)
                 (expected.GetBoolean())
                 ("Unchanged authoritative identity admission: " + text "id" sample)
@@ -229,7 +226,13 @@ let private pageBounds () =
             Position =
                 EffectPosition.create ResponseExamples.receipt.Position.Sequence 0 |> Option.get
             OperationHash = ResponseExamples.receipt.Position.EntryHash
-            Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+            Subject =
+                {
+                    PartKind = ClaimCore.Domain.Changes.PartKind.Case
+                    PartId = CaseId.value ResponseExamples.snapshot.CaseId
+                    Revision = Revision.first
+                }
+            Task = TaskId.ofLiteral "case.open"
             RecordedAt = Inputs.workBasis.ObservedAt
             RecordedBy = directory.Actor.Actor
             Changes = TimelineChanges.Withheld
@@ -257,6 +260,7 @@ let private pageBounds () =
                             Items =
                                 [
                                     {
+                                        GrantReadModel.Controls = []
                                         Role = Role.CaseReader
                                         Scope = GrantScope.Installation
                                         GrantedAt = Inputs.workBasis.ObservedAt

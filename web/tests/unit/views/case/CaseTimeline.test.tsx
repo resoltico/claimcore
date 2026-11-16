@@ -109,7 +109,7 @@ it("uses the supplied event timeline and appends pages in core order", async () 
   const first = {
     ...openedTimelineEntry,
     key: "2/0",
-    summary: { messageId: "timeline.event.registrationAmended", arguments: [] },
+    summary: { messageId: "task.case.amendRegistration.done", arguments: [] },
     highlights: [
       {
         titleId: "field.claimantName.label",
@@ -133,7 +133,14 @@ it("uses the supplied event timeline and appends pages in core order", async () 
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(response("case.timeline", timelineDocument([first], "issued")))
-    .mockResolvedValueOnce(response("case.timeline", timelineDocument([openedTimelineEntry])));
+    .mockResolvedValueOnce(
+      response(
+        "case.timeline",
+        timelineDocument([
+          { ...openedTimelineEntry, summary: { messageId: "task.case.open.done", arguments: [] } },
+        ]),
+      ),
+    );
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
@@ -148,7 +155,7 @@ it("uses the supplied event timeline and appends pages in core order", async () 
     ).toHaveLength(2);
   });
   const rows = view.container.querySelectorAll(".case-timeline-panel .region-timeline > li");
-  expect(rows[0]).toHaveTextContent("Claim details updated");
+  expect(rows[0]).toHaveTextContent("Registration updated.");
   expect(rows[1]).toHaveTextContent("Case opened");
 });
 

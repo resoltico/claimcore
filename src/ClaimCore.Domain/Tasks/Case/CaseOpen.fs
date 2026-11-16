@@ -16,7 +16,7 @@ let declaration =
         Consequence.Routine
         [ Capability.Register ]
         (operation
-         :: required (field BusinessField.CaseReference)
+         :: (required (field BusinessField.CaseReference) |> retained)
          :: revision
          :: group TaskInputMode.Required RecordGroup.Registration)
 
@@ -107,14 +107,7 @@ let decide
             else
                 Error(Refusal.revisionConflict Revision.zero))
         |> Result.bind (fun () ->
-            let parsed =
-                parse
-                    (if decision.Lifetime = DecisionLifetime.Recorded then
-                         fun _ -> Ok
-                     else
-                         CaseAdmission.fieldAdmission today None)
-                    reference
-                    fields
+            let parsed = parse (CaseAdmission.fieldAdmission today None) reference fields
 
             Admission.map2
                 (fun command () -> command)
@@ -151,13 +144,53 @@ let decide
     | _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained (context: TaskContext) (environment: FamilyEnvironment) state binding inputs =
+    match binding with
+    | Binding.CaseNew expected when expected = Revision.zero ->
+        DecisionContext.admit
+            { context.Decision with
+                Access = environment.Requester
+                Maintenance = environment.Maintenance
+            }
+            context.Stamp.OperationId
+            (FamilyRules.permission environment Scope.Installation capability)
+            (fun () -> gate state |> Option.map Error |> Option.defaultValue (Ok()))
+        |> Result.bind (fun () -> reference inputs)
+        |> Result.map (fun reference ->
+            let id = CaseId.ofOperationId context.Stamp.OperationId
+
+            [
+                { FamilyRules.change
+                      context
+                      id
+                      (CaseId.value id)
+                      Revision.first
+                      (PartValue.Case
+                          {
+                              Reference = Some reference
+                              Lifecycle = Lifecycle.Active
+                              Status = CaseStatus.Opened
+                              Content = None
+                              Disposition = None
+                          }) with
+                    NaturalKey = Some(CaseReference.format reference)
+                }
+            ])
+        |> Parsing.reject
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment _ _ ->
+                    FamilyRules.permission environment Scope.Installation capability
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

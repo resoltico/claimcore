@@ -34,28 +34,26 @@ let frame endpoint =
     | EndpointId.Host HostEndpoint.Logout -> Frames.create Api.logout ()
     | EndpointId.Actor(ActorEndpoint.Operation _) ->
         let input =
-            Inputs.caseOperation
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = CliReplyFixtures.id
-                    CaseReference = "x"
-                    ExpectedRevision = 0L
-                    Act = AuthoredCaseAct.Open(Inputs.registrationOn "2026-01-01" "2026-01-01")
-                }
+            Submissions.create
+                "case.open"
+                CliReplyFixtures.id
+                (Binding.CaseNew Revision.zero)
+                (Submissions.fields (
+                    RegistrationInput.values (Inputs.registrationOn "2026-01-01" "2026-01-01")
+                 )
+                 |> Map.add
+                     (Submissions.field BusinessField.CaseReference)
+                     (SubmissionValue.Text "x"))
 
         if endpoint = "operation.execute" then
-            (Frames.create Api.operationExecute
-             << ClaimCore.TestSupport.Submissions.ofCommand None)
-                input
+            Frames.create Api.operationExecute input
         else
-            (Frames.create Api.operationPreview
-             << ClaimCore.TestSupport.Submissions.ofCommand None)
-                input
+            Frames.create Api.operationPreview input
     | EndpointId.Actor((ActorEndpoint.Query _ | ActorEndpoint.Command _) as actor) ->
         let task =
             match actor with
-            | ActorEndpoint.Query query -> ApplicationTaskId.Query query
-            | ActorEndpoint.Command command -> ApplicationTaskId.Command command
+            | ActorEndpoint.Query query -> QueryTaskId.key query
+            | ActorEndpoint.Command command -> command
             | ActorEndpoint.Operation _ -> failtest "Expected an endpoint task"
 
         CliExamples.queryArguments task
@@ -72,11 +70,7 @@ let peopleFrame () =
     ClaimCore.Json.JsonValue.Object
         [
             "endpoint", ClaimCore.Json.JsonValue.String "operation.execute"
-            "input",
-            (Api.operationExecute.Input.Write
-             << ClaimCore.TestSupport.Submissions.ofCommand None) (
-                OperationInput.People CliReplyFixtures.peopleRequest
-            )
+            "input", Api.operationExecute.Input.Write CliReplyFixtures.peopleRequest
         ]
     |> WireWriter.bytes
     |> Frames.admit

@@ -18,9 +18,9 @@ module internal DiagnosticText =
 
     let reference request =
         let target (input: OperationSubmission) =
-            match input.Binding with
+            match input.Envelope.Binding with
             | OperationBinding.CaseNew _ ->
-                input.Inputs
+                input.Envelope.Inputs
                 |> Map.tryFind (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
                 |> Option.bind (function
                     | SubmissionValue.Text reference -> Some(CaseSelector.Reference reference)

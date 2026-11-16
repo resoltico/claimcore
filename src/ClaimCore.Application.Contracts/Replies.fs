@@ -5,71 +5,16 @@ open ClaimCore.Domain
 
 open System
 
-type PeopleState =
-    {
-        Profile: ActorProfile option
-        Enabled: bool
-        Grants: ScopedGrant list
-        Access: CapabilityAccess list
-    }
-
-[<RequireQualifiedAccess>]
-type PeopleReviewEffect =
-    | Register of PrincipalKey
-    | ProvisionOwner of PrincipalKey
-    | SetProfile of ActorProfile
-    | EraseProfile
-    | Grant of ScopedGrant
-    | Revoke of ScopedGrant
-    | Enable
-    | Disable
-
-type PeopleReview =
-    {
-        Basis: WorkDateBasis
-        Effects: PeopleReviewEffect list
-        Target: ActorReviewItem option
-        AccessScope: GrantScope
-        Before: PeopleState
-        After: PeopleState
-    }
-
-type WorkReview =
-    {
-        Parent: CaseSnapshot
-        Reference: CaseReference
-        Before: CaseWorkReadModel
-        Proposed: CaseWorkReadModel
-        Context: RuntimeContext
-    }
-
-type ReminderReview =
-    {
-        Parent: CaseSnapshot
-        Reference: CaseReference
-        CaseId: CaseId
-        Before: Reminder option
-        Effects: ReminderEffects
-        Context: RuntimeContext
-    }
-
-type NoteReview =
-    {
-        Parent: CaseSnapshot
-        Reference: CaseReference
-        Before: Note option
-        Proposed: Note
-        Act: NoteActKind
-        Context: RuntimeContext
-    }
-
-[<RequireQualifiedAccess>]
+/// Reviews describe accepted part changes, independently of task-specific command representations.
 type OperationReview =
-    | Case of AdvisoryReview
-    | People of PeopleReview
-    | Work of WorkReview
-    | Reminder of ReminderReview
-    | Note of NoteReview
+    {
+        Task: TaskId
+        Target: ReviewTarget
+        References: ChangeReferences
+        Binding: Binding
+        Changes: ClaimCore.Domain.Changes.DescribedPart list
+        Context: RuntimeContext
+    }
 
 [<RequireQualifiedAccess>]
 type Previewed =

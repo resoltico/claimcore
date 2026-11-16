@@ -265,7 +265,7 @@ const fact = (revision: number): RegionTimelineEntry => ({
     availability: "AVAILABLE",
   },
   summary: {
-    messageId: "timeline.event.registrationAmended",
+    messageId: "change.CASE.recorded",
     arguments: [],
   },
   highlights: [

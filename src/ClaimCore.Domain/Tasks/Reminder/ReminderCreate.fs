@@ -63,13 +63,46 @@ let decide context environment (state: CaseFamily option) binding inputs =
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+    match state, binding with
+    | Some state, Binding.ReminderNew _ ->
+        FamilyRules.admit context environment state binding capability (FamilyRules.active true)
+        |> Result.bind (fun () ->
+            let id = ReminderId.ofOperationId context.Stamp.OperationId
+
+            if Map.containsKey id state.Reminders then
+                Error Refusal.IdempotencyConflict
+            else
+                Ok
+                    [
+                        ReminderRules.change
+                            context
+                            state
+                            id
+                            Revision.first
+                            {
+                                State = ReminderState.Pending
+                                Plan = None
+                            }
+                    ])
+        |> Parsing.reject
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

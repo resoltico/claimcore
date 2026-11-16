@@ -48,12 +48,13 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                         )
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = CaseFixtures.revision 1L
-                    Act = CaseActKind.Open
+                    Act = (TaskId.ofLiteral "case.open")
                     Snapshot =
                         ClaimCore.Application.Contracts.SnapshotDisclosure.Disclosed(
                             {
                                 State =
-                                    LiveCase.ofState (Case.snapshot (opened ())).State |> Option.get
+                                    LiveCase.ofState (familySnapshot (opened ())).State
+                                    |> Option.get
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payment = None
                             }
@@ -73,12 +74,12 @@ let internal people =
     let effects =
         [
             {
-                PeopleReceiptEffect.Act = PeopleActKind.Register
+                PeopleReceiptEffect.Act = (TaskId.ofLiteral "people.register")
                 Id = EffectId.create receipt.OperationId 0 |> Option.get
                 Position = EffectPosition.create receipt.Position.Sequence 0 |> Option.get
             }
             {
-                PeopleReceiptEffect.Act = PeopleActKind.SetProfile
+                PeopleReceiptEffect.Act = (TaskId.ofLiteral "people.setProfile")
                 Id = EffectId.create receipt.OperationId 1 |> Option.get
                 Position = EffectPosition.create receipt.Position.Sequence 1 |> Option.get
             }
@@ -89,7 +90,7 @@ let internal people =
             ReceiptSubject.People
                 {
                     TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId id)
-                    Act = PeopleActKind.Register
+                    Act = (TaskId.ofLiteral "people.register")
                     Effects = effects
                 }
     }
@@ -105,14 +106,15 @@ let internal admitted codec value =
     use document = JsonDocument.Parse(encoded.AsMemory())
     document.RootElement.Clone()
 
-let internal caseRequest values : ClaimCore.Domain.UnvalidatedCaseRequest =
-    {
-        ExpectedFamilySequence = None
-        OperationId = id
-        CaseReference = "UNIT-001"
-        ExpectedRevision = 0L
-        Act = ClaimCore.Domain.AuthoredCaseAct.Open values
-    }
+let internal caseRequest values =
+    Submissions.create
+        "case.open"
+        id
+        (Binding.CaseNew Revision.zero)
+        (Submissions.fields (RegistrationInput.values values)
+         |> Map.add
+             (Submissions.field BusinessField.CaseReference)
+             (SubmissionValue.Text "UNIT-001"))
 
 let internal artifact name =
     JsonDocument.Parse(

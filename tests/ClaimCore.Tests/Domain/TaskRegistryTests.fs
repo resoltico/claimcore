@@ -83,56 +83,69 @@ let tests =
                 Expect.isFalse
                     (declaration "case.close").ReviewsFamilySequence
                     "Closing reviews the case part")
-            testCase "creation reference and scope selection have distinct retention" (fun () ->
-                let reference = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
-                let created = declaration "case.open" |> input reference
+            testCase
+                "creation references and scope selection retain their public identities"
+                (fun () ->
+                    let reference =
+                        TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
 
-                Expect.equal
-                    created.Source
-                    InputSource.Authored
-                    "The creation reference is authored"
+                    let created = declaration "case.open" |> input reference
 
-                Expect.equal
-                    created.Retention
-                    InputRetention.Erasable
-                    "Authored creation inputs follow their declared retention"
+                    Expect.equal
+                        created.Source
+                        InputSource.Authored
+                        "The creation reference is authored"
 
-                let bound = declaration "case.close" |> input reference
+                    Expect.equal
+                        created.Retention
+                        InputRetention.Retained
+                        "The reference stays reserved and disclosed after family erasure"
 
-                Expect.equal
-                    bound.Source
-                    InputSource.Binding
-                    "Existing selection stays in the binding"
+                    let claimant =
+                        declaration "case.open"
+                        |> input (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
 
-                let scoped = declaration "people.grant" |> input reference
+                    Expect.equal
+                        claimant.Retention
+                        InputRetention.Erasable
+                        "Private authored registration remains erasable"
 
-                Expect.equal
-                    scoped.Retention
-                    InputRetention.Retained
-                    "Role scope selection survives profile erasure"
+                    let bound = declaration "case.close" |> input reference
 
-                let role =
-                    declaration "people.grant" |> input (TaskInputId.Target InputTarget.Role)
+                    Expect.equal
+                        bound.Source
+                        InputSource.Binding
+                        "Existing selection stays in the binding"
 
-                let whenCase = role.ChoicesWhen |> Option.get
+                    let scoped = declaration "people.grant" |> input reference
 
-                Expect.equal
-                    (whenCase.Input, whenCase.Value)
-                    (TaskInputId.Scope, "CASE")
-                    "The condition names the authored scope"
+                    Expect.equal
+                        scoped.Retention
+                        InputRetention.Retained
+                        "Role scope selection survives profile erasure"
 
-                Expect.equal
-                    (Set.ofList whenCase.Choices)
-                    (Set.ofList
-                        [
-                            "CASE_READER"
-                            "CASE_REGISTRAR"
-                            "CASE_HANDLER"
-                            "PAYMENT_RECORDER"
-                            "DATA_STEWARD"
-                            "AUDITOR"
-                        ])
-                    "Owner is installation-wide; the other roles have case capabilities")
+                    let role =
+                        declaration "people.grant" |> input (TaskInputId.Target InputTarget.Role)
+
+                    let whenCase = role.ChoicesWhen |> Option.get
+
+                    Expect.equal
+                        (whenCase.Input, whenCase.Value)
+                        (TaskInputId.Scope, "CASE")
+                        "The condition names the authored scope"
+
+                    Expect.equal
+                        (Set.ofList whenCase.Choices)
+                        (Set.ofList
+                            [
+                                "CASE_READER"
+                                "CASE_REGISTRAR"
+                                "CASE_HANDLER"
+                                "PAYMENT_RECORDER"
+                                "DATA_STEWARD"
+                                "AUDITOR"
+                            ])
+                        "Owner is installation-wide; the other roles have case capabilities")
             testCase
                 "null and omission stay distinct and rows retain their submitted ordinals"
                 (fun () ->

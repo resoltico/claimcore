@@ -28,7 +28,10 @@ let private verbArguments verb (bytes: byte array) =
         [ "--" + name; value.Value.GetString() |> nonNull ]
 
     let values (element: JsonElement) =
-        element.EnumerateObject() |> Seq.collect flag |> Seq.toList
+        element.EnumerateObject()
+        |> Seq.filter (fun field -> field.Name <> "field:caseReference")
+        |> Seq.collect flag
+        |> Seq.toList
 
     let details = values (input.GetProperty "inputs")
 
@@ -41,7 +44,10 @@ let private verbArguments verb (bytes: byte array) =
     [
         "case"
         verb
-        binding.GetProperty("target").GetProperty("caseReference").GetString()
+        (match binding.TryGetProperty "target" with
+         | true, target -> target.GetProperty("caseReference")
+         | _ -> input.GetProperty("inputs").GetProperty("field:caseReference"))
+            .GetString()
         |> nonNull
     ]
     @ (match input.TryGetProperty "operationId" with
@@ -184,13 +190,33 @@ let private erasedHistory fixture =
         |> require "SUCCEEDED"
 
     let entries = history.GetProperty("items")
-    Expect.equal (entries.GetArrayLength()) 9 "All nine accepted acts retain metadata"
+
+    Expect.equal
+        (entries.GetArrayLength())
+        10
+        "Nine case versions and the separate payment retain metadata"
+
+    let subjects =
+        entries.EnumerateArray()
+        |> Seq.map (fun entry -> entry.GetProperty("subject"))
+        |> Seq.toList
+
+    Expect.equal
+        (subjects
+         |> List.map (fun subject -> subject.GetProperty("partKind").GetString())
+         |> List.countBy (fun kind -> kind)
+         |> Map.ofList)
+        (Map.ofList [ "CASE", 9; "PAYMENT", 1 ])
+        "Independent accepted part identities"
+
+    Expect.equal
+        (subjects
+         |> List.filter (fun subject -> subject.GetProperty("partKind").GetString() = "CASE")
+         |> List.map (fun subject -> subject.GetProperty("revision").GetInt64()))
+        [ 9L .. (-1L) .. 1L ]
+        "All erased case revisions remain in order"
 
     for entry in entries.EnumerateArray() do
-        Expect.equal
-            (entry.GetProperty("kind").GetString())
-            "CASE_FACT"
-            "Erased facts retain their entry identity"
 
         let changes = entry.GetProperty("changes")
 
@@ -511,7 +537,14 @@ let private supplementary fixture =
             ClaimCore.TestSupport.Inputs.registration
 
     let operation = id ()
-    let input = caseSubmission operation reference 0L None (CaseAct.Open values)
+
+    let input =
+        caseSubmission
+            operation
+            reference
+            0L
+            "case.open"
+            (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values values))
 
     automation fixture "operation.preview" input 0 |> require "REVIEWED" |> ignore
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"

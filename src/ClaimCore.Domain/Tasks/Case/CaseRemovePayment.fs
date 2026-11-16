@@ -104,13 +104,44 @@ let decisionFactsAvailable (state: CaseFamily option) (_: Binding) =
         && (state.Payments
             |> Map.forall (fun _ part -> part.Value.Removed || part.Value.Entry.IsSome)))
 
+let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+    match state, binding with
+    | Some state, Binding.CasePayment(_, _, id) ->
+        CaseRules.admit context environment state binding capability (FamilyRules.active true)
+        |> Parsing.reject
+        |> Result.bind (fun () ->
+            match Map.tryFind id state.Payments with
+            | Some payment when
+                not payment.Value.Removed && Revision.value payment.Revision < Revision.Maximum
+                ->
+                Ok
+                    [
+                        FamilyRules.change
+                            context
+                            state.Id
+                            (OperationId.value id)
+                            (Revision.successor payment.Revision)
+                            (PartValue.Payment { Removed = true; Entry = None })
+                        CaseRules.change context state { state.Case.Value with Content = None }
+                    ]
+            | _ -> Error(Rejection.Refused FamilyRules.unavailable))
+        |> Result.map (TaskContext.changes context)
+    | _ -> Error(Rejection.Refused FamilyRules.unavailable)
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = decisionFactsAvailable
             Describe = PartDescriptions.family
         }

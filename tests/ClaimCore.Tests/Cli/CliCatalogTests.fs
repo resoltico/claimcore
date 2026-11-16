@@ -127,22 +127,16 @@ let private replacement () =
         |> Fixtures.accepted
         |> ClaimCore.TestSupport.Submissions.command
 
-    match request with
-    | OperationInput.Case {
-                              Act = AuthoredCaseAct.Correct {
-                                                                Registration = Amendment.Update value
-                                                            }
-                          } ->
-        Expect.equal
-            (RegistrationUpdateInput.tryValue BusinessField.ClaimedAmount value |> Option.get)
-            "1.0000"
-            "Authored amount spelling is preserved"
+    Expect.equal
+        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount)]
+        (InputValue.Text "1.0000")
+        "Authored amount spelling is preserved"
 
-        Expect.equal
-            (RegistrationUpdateInput.tryValue BusinessField.ClaimantName value |> Option.get)
-            "Synthetic claimant"
-            "Replacement fields follow their selected branch"
-    | _ -> failtest "The requested replacement must remain in the prepared frame"
+    Expect.equal
+        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)]
+        (InputValue.Text "Synthetic claimant")
+        "Selected replacement fields"
+
 
 [<Tests>]
 let tests =

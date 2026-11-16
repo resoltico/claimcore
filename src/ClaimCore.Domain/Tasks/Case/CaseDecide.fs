@@ -35,7 +35,17 @@ let check inputs =
 let private gate = FamilyRules.active true
 
 let availability environment state binding =
-    CaseRules.availability declaration environment state binding capability gate
+    let offered =
+        CaseRules.availability declaration environment state binding capability gate
+
+    let recommendation =
+        state
+        |> Option.bind (fun state -> state.Case.Value.Content)
+        |> Option.bind (fun content -> if content.Finance.Decision.IsNone then Some 0 else None)
+
+    { offered with
+        Recommendation = recommendation
+    }
 
 let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
     let fields = CaseParsing.values inputs
@@ -50,11 +60,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
 
             let before = state.Case.Value.Content
 
-            let admit =
-                if context.Decision.Lifetime = DecisionLifetime.Recorded then
-                    fun _ -> Ok
-                else
-                    CaseAdmission.fieldAdmission today before
+            let admit = CaseAdmission.fieldAdmission today before
 
             let! command =
                 Admission.map2
@@ -98,13 +104,23 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
+let decideRetained context environment state binding (_: InputMap) =
+    CaseRules.retained context environment state binding capability (FamilyRules.active true) id
+
 let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decideRetained
             DecisionFactsAvailable = CaseRules.contentAvailable
             Describe = PartDescriptions.family
         }

@@ -72,30 +72,22 @@ let private scalarAdmission () =
     let id = "10000000-0000-7000-8000-000000000001"
 
     let request =
-        (OperationSubmissionCodecs.submission.Write
-         << ClaimCore.TestSupport.Submissions.ofCommand None) (
-            ClaimCore.TestSupport.Inputs.caseOperation
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = Guid.Parse id
-                    CaseReference = ""
-                    ExpectedRevision = 0L
-                    Act =
-                        AuthoredCaseAct.Open(
-                            Inputs.registrationWith
-                                [
-                                    BusinessField.IncidentDate, "not-a-date"
-                                    BusinessField.IncidentNotificationDate, ""
-                                    BusinessField.IncidentCountry, "lowercase"
-                                    BusinessField.ClaimantName, ""
-                                    BusinessField.InsurerName, ""
-                                    BusinessField.ClaimedAmount, "not-money"
-                                    BusinessField.ClaimedCurrency, "eur"
-                                ]
-                                Inputs.registration
-                        )
-                }
-        )
+        Inputs.registrationWith
+            [
+                BusinessField.IncidentDate, "not-a-date"
+                BusinessField.IncidentNotificationDate, ""
+                BusinessField.IncidentCountry, "lowercase"
+                BusinessField.ClaimantName, ""
+                BusinessField.InsurerName, ""
+                BusinessField.ClaimedAmount, "not-money"
+                BusinessField.ClaimedCurrency, "eur"
+            ]
+            Inputs.registration
+        |> RegistrationInput.values
+        |> Submissions.fields
+        |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "")
+        |> Submissions.create "case.open" (Guid.Parse id) (Binding.CaseNew Revision.zero)
+        |> OperationSubmissionCodecs.submission.Write
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
 

@@ -9,10 +9,15 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Tests.TaskBuilders
 
 let private restored (name: string) =
     let encoded =
-        opened () |> Case.snapshot |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot
+        ClaimCore.Tests.Fixtures.opened ()
+        |> CaseFamily.snapshot
+        |> Option.get
+        |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot
 
     let root =
         System.Text.Json.Nodes.JsonNode.Parse(Text.Encoding.UTF8.GetString encoded)
@@ -28,13 +33,22 @@ let private restored (name: string) =
     |> Text.Encoding.UTF8.GetBytes
     |> ClaimCore.RecordFormat.CaseRecord.decodeSnapshot
 
-let private format name =
-    let input =
-        (ClaimCore.TestSupport.Inputs.registrationWith
-            [ BusinessField.ClaimantName, (name); BusinessField.InsurerName, (name) ]
-            (registration))
+let private authored name =
+    let values =
+        openingInputs.Values
+        |> Map.add
+            (TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName))
+            (InputValue.Text name)
+        |> Map.add
+            (TaskInputId.Target(InputTarget.Field BusinessField.InsurerName))
+            (InputValue.Text name)
 
-    CaseFixtures.validate (request 0L (AuthoredCaseAct.Open input))
+    InputMap.create values Map.empty |> Option.get
+
+let private format name =
+    match ClaimCore.Domain.Tasks.Case.Open.check (authored name) with
+    | [] -> Ok()
+    | issues -> Error issues
 
 let private formatBoundaries () =
     for value in [ String('a', 1024); String.replicate 256 "😀"; String('\u0001', 1024) ] do
@@ -56,41 +70,34 @@ let private admissionInsideFormat () =
 
     let name = String.replicate 200 "😀"
 
-    let input =
-        (ClaimCore.TestSupport.Inputs.registrationWith
-            [ BusinessField.ClaimantName, (name); BusinessField.InsurerName, (name) ]
-            (registration))
+    let decide value =
+        ClaimCore.Domain.Tasks.Case.Open.decide
+            (context 1)
+            environment
+            None
+            (Binding.CaseNew Revision.zero)
+            (authored value)
 
-    Expect.isOk
-        (CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open input)) None)
-        "800 UTF-8 bytes admit"
-
-    let input =
-        (ClaimCore.TestSupport.Inputs.registrationWith
-            [ BusinessField.ClaimantName, (name + "😀") ]
-            (input))
-
-    Expect.isOk
-        (CaseFixtures.validate (request 0L (AuthoredCaseAct.Open input)))
-        "Format still admits"
-
-    Expect.isError
-        (CaseFixtures.decide today Map.empty (request 0L (AuthoredCaseAct.Open input)) None)
-        "Admission refuses"
+    Expect.isOk (decide name) "800 UTF-8 bytes admit"
+    Expect.isOk (format (name + "😀")) "Format still admits"
+    Expect.isError (decide (name + "😀")) "Admission refuses"
 
 let private stewardshipBoundaries () =
-    for act in [ AuthoredCaseAct.Void; AuthoredCaseAct.Reinstate ] do
+    for check in
+        [
+            ClaimCore.Domain.Tasks.Case.Void.check
+            ClaimCore.Domain.Tasks.Case.Reinstate.check
+        ] do
         let proposed value =
-            { request 1L (AuthoredCaseAct.Bare BareAct.Close) with
-                Act = (act value)
-            }
+            InputMap.create
+                (Map.ofList [ TaskInputId.Target InputTarget.Reason, InputValue.Text value ])
+                Map.empty
+            |> Option.get
 
-        Expect.isOk
-            (CaseFixtures.validate (proposed (String('a', 1024))))
-            "Reason format boundary admits"
+        Expect.isEmpty (check (proposed (String('a', 1024)))) "Reason format boundary admits"
 
-        Expect.isError
-            (CaseFixtures.validate (proposed (String('a', 1025))))
+        Expect.isFalse
+            (check (proposed (String('a', 1025))) |> List.isEmpty)
             "Reason format boundary refuses"
 
 [<Tests>]

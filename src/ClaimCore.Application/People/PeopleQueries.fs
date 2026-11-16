@@ -8,6 +8,7 @@ open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -241,11 +242,62 @@ module internal PeopleQueries =
                                                                 viewer
                                                                 maintenance
 
+                                                        let mutable controls = []
+
+                                                        for id in offers do
+                                                            let selected =
+                                                                ClaimCore.Domain.Tasks.Registry.find
+                                                                    id
+                                                                |> Option.get
+
+                                                            let binding =
+                                                                Binding.People(actorId, revision)
+
+                                                            let! snapshot =
+                                                                ExecutionEnvironment.fromStorage
+                                                                    tx
+                                                                    services.Principal
+                                                                    maintenance.Active
+                                                                    selected
+                                                                    binding
+                                                                    (Some InputMap.empty)
+
+                                                            let available =
+                                                                snapshot.Availability binding
+
+                                                            if available.Blocked.IsNone then
+                                                                controls <-
+                                                                    TaskOffer.Available(
+                                                                        id,
+                                                                        binding,
+                                                                        available
+                                                                    )
+                                                                    :: controls
+
+                                                        let controls = List.rev controls
+
                                                         let profileSeed =
                                                             if
-                                                                List.contains
-                                                                    PeopleActKind.SetProfile
-                                                                    offers
+                                                                offers
+                                                                |> List.exists (fun id ->
+                                                                    ClaimCore.Domain.Tasks
+                                                                        .Registry.findDeclaration
+                                                                        id
+                                                                    |> Option.exists
+                                                                        (fun declaration ->
+                                                                            declaration.Inputs
+                                                                            |> List.exists
+                                                                                (fun input ->
+                                                                                    input.Input =
+                                                                                        TaskInputId
+                                                                                            .Target
+                                                                                            InputTarget
+                                                                                                .ProfileDisplayName
+                                                                                    && input
+                                                                                        .Source
+                                                                                        =
+                                                                                        InputSource
+                                                                                            .Authored)))
                                                             then
                                                                 target.Profile
                                                                 |> Option.map ActorProfile.authored
@@ -283,6 +335,62 @@ module internal PeopleQueries =
                                                                      |> List.map _.GrantedBy
                                                                      |> List.distinct)
 
+                                                            let rowControls (grant: ScopedGrant) =
+                                                                let selection =
+                                                                    [
+                                                                        TaskInputId.Target
+                                                                            InputTarget.Role,
+                                                                        InputValue.Text(
+                                                                            Role.token grant.Role
+                                                                        )
+                                                                        TaskInputId.Scope,
+                                                                        InputValue.Text(
+                                                                            ScopeKind.token (
+                                                                                match
+                                                                                    grant.Scope
+                                                                                with
+                                                                                | GrantScope.Installation ->
+                                                                                    ScopeKind
+                                                                                        .Installation
+                                                                                | GrantScope.Case _ ->
+                                                                                    ScopeKind.Case
+                                                                            )
+                                                                        )
+                                                                        match grant.Scope with
+                                                                        | GrantScope.Case(id, _) ->
+                                                                            TaskInputId.CaseId,
+                                                                            InputValue.Text(
+                                                                                CaseId.format id
+                                                                            )
+                                                                        | GrantScope.Installation ->
+                                                                            ()
+                                                                    ]
+                                                                    |> Map.ofList
+
+                                                                controls
+                                                                |> List.choose (function
+                                                                    | TaskOffer.Available(task,
+                                                                                          binding,
+                                                                                          available) when
+                                                                        Set.contains
+                                                                            selection
+                                                                            available.Selections
+                                                                        ->
+                                                                        Some(
+                                                                            TaskOffer.Available(
+                                                                                task,
+                                                                                binding,
+                                                                                { available with
+                                                                                    Seeds =
+                                                                                        selection
+                                                                                    Editable = []
+                                                                                    Selections =
+                                                                                        Set.empty
+                                                                                }
+                                                                            )
+                                                                        )
+                                                                    | _ -> None)
+
                                                             let items =
                                                                 page.Items
                                                                 |> List.map (fun row ->
@@ -291,8 +399,10 @@ module internal PeopleQueries =
                                                                         authors
                                                                     |> Option.map (fun author ->
                                                                         {
-                                                                            GrantReadModel.Role =
-                                                                                row.Grant.Role
+                                                                            GrantReadModel.Controls =
+                                                                                rowControls
+                                                                                    row.Grant
+                                                                            Role = row.Grant.Role
                                                                             Scope =
                                                                                 row.Grant.Scope
                                                                             GrantedAt =
@@ -327,6 +437,8 @@ module internal PeopleQueries =
                                                                                 Revision =
                                                                                     revision
                                                                                 Offers = offers
+                                                                                Controls =
+                                                                                    controls
                                                                                 ProfileSeed =
                                                                                     profileSeed
                                                                                 Items = items
@@ -365,41 +477,6 @@ module internal PeopleQueries =
             |> Result.bind (fun _ ->
                 cursor (Cursors.decodePeopleHistory installation target) request.AfterCursor)
 
-    let private historyEntries
-        installation
-        (query: TransactionPages.PeopleHistoryQuery)
-        cases
-        actors
-        (page: Page<StoredEffect, EffectPosition>)
-        =
-        let ordered =
-            page.Items
-            |> List.pairwise
-            |> List.forall (fun (first, second) -> first.Position > second.Position)
-
-        let continued =
-            page.Next
-            |> Option.forall (fun next ->
-                page.Items |> List.tryLast |> Option.exists (fun entry -> entry.Position = next))
-
-        if page.Items.Length > query.Limit || not ordered || not continued then
-            Error CoreFault.StoreIntegrityError
-        else
-            page.Items
-            |> List.map (fun entry ->
-                LedgerEntries.validate installation entry
-                |> Result.bind (LedgerEntries.peopleHistory cases actors)
-                |> Result.bind (fun value ->
-                    if
-                        (query.TargetActorId |> Option.forall ((=) value.Target.ActorId))
-                        && (query.BeforePosition
-                            |> Option.forall (fun before -> value.Position < before))
-                    then
-                        Ok value
-                    else
-                        Error CoreFault.StoreIntegrityError))
-            |> collect
-
     let history (services: ServiceContext) (request: PeopleHistoryRequest) token =
         task {
             if not (validLimit request.Limit) then
@@ -436,56 +513,61 @@ module internal PeopleQueries =
 
                                             let! page = PeopleReads.peopleHistoryPage tx query
 
-                                            let ids =
+                                            let ordered =
                                                 page.Items
-                                                |> List.collect (fun entry ->
-                                                    entry.ActorId
-                                                    :: (match entry.Subject with
-                                                        | EntryTarget.People(id, _) -> [ id ]
-                                                        | _ -> []))
-                                                |> List.distinct
+                                                |> List.pairwise
+                                                |> List.forall (fun (first, second) ->
+                                                    first.Position > second.Position)
 
-                                            let! actors = PeopleReads.actorRefs tx ids
+                                            let continued =
+                                                page.Next
+                                                |> Option.forall (fun next ->
+                                                    page.Items
+                                                    |> List.tryLast
+                                                    |> Option.exists (fun entry ->
+                                                        entry.Position = next))
 
-                                            let caseIds =
+                                            let inScope =
                                                 page.Items
-                                                |> List.collect LedgerEntries.peopleCases
-                                                |> List.distinct
+                                                |> List.forall (fun entry ->
+                                                    (query.BeforePosition
+                                                     |> Option.forall (fun before ->
+                                                         entry.Position < before))
+                                                    && (match entry.Change.Aggregate with
+                                                        | AggregateReference.Person id ->
+                                                            query.TargetActorId
+                                                            |> Option.forall ((=) id)
+                                                        | _ -> false))
 
-                                            let mutable cases = Map.empty
+                                            if
+                                                page.Items.Length > query.Limit
+                                                || not ordered
+                                                || not continued
+                                                || not inScope
+                                            then
+                                                return Outcome.Failed CoreFault.StoreIntegrityError
+                                            else
+                                                let! described =
+                                                    PeopleHistoryReads.read tx page.Items
 
-                                            for id in caseIds do
-                                                let! current = FamilyReads.findCase tx id
-
-                                                match current with
-                                                | Some current ->
-                                                    cases <-
-                                                        Map.add id current.Snapshot.Reference cases
-                                                | None -> ()
-
-                                            return
-                                                historyEntries
-                                                    services.InstallationId
-                                                    query
-                                                    cases
-                                                    actors
-                                                    page
-                                                |> Result.map (fun entries ->
-                                                    {
-                                                        PeopleHistoryPage.Basis =
-                                                            ServiceContext.basis
-                                                                services
-                                                                tx.ObservedAt
-                                                        Entries = entries
-                                                        NextCursor =
-                                                            page.Next
-                                                            |> Option.map (
-                                                                Cursors.encodePeopleHistory
-                                                                    services.InstallationId
-                                                                    target
-                                                            )
-                                                    })
-                                                |> succeeded
+                                                return
+                                                    described
+                                                    |> Result.map (fun entries ->
+                                                        {
+                                                            PeopleHistoryPage.Basis =
+                                                                ServiceContext.basis
+                                                                    services
+                                                                    tx.ObservedAt
+                                                            Entries = entries
+                                                            NextCursor =
+                                                                page.Next
+                                                                |> Option.map (
+                                                                    Cursors.encodePeopleHistory
+                                                                        services.InstallationId
+                                                                        target
+                                                                )
+                                                        })
+                                                    |> succeeded
                                     }
                             CancellationToken = token
                         }

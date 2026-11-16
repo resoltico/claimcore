@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.LedgerFindingScenarios
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.Application.Administration
@@ -33,7 +34,7 @@ let internal link database =
 let internal operationEffectGroup database =
     corruption
         VerificationFinding.PayloadFormat
-        "DELETE FROM claimcore.ledger_effects WHERE operation_sequence=1 AND effect_index=1"
+        "DELETE FROM claimcore.ledger_effects WHERE operation_sequence=1 AND effect_index=0"
         database
 
 let internal entryHash database =
@@ -58,17 +59,14 @@ let internal format (database: PostgresFixture.Database) =
                 let nonce = Compartment.content content |> Option.get |> fst
 
                 let changed =
-                    Compartment.seal
-                        database.Fixture.InstallationId
-                        value.OperationId
-                        content.Descriptor
-                        nonce
-                        [| 0x7Fuy |]
+                    Compartment.seal content.Descriptor nonce [| 0x7Fuy |]
                     |> Result.defaultWith (string >> failtest)
 
                 OperationRoot.append
                     value.Root.Header
-                    value.Root.Structure.Command
+                    value.Root.Structure.Task
+                    value.Root.Structure.Binding
+                    value.Root.Structure.Retained
                     value.Root.Structure.Effects
                     [ changed ]
                 |> Result.defaultWith (string >> failtest))
@@ -79,11 +77,9 @@ let internal format (database: PostgresFixture.Database) =
 let private close (database: PostgresFixture.Database) actor =
     task {
         let! reply =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)
-                ))
+                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
                 token
 
         return accepted reply
@@ -96,10 +92,19 @@ let internal revision (database: PostgresFixture.Database) =
 
         do!
             rewrite database receipt.Position.Sequence (fun value ->
-                let request, snapshot = livePayload value
+                let request, snapshot = livePayload (CaseFixtures.reference "synthetic-a") value
 
                 updateCase
-                    { request with ExpectedRevision = 2L }
+                    (Submissions.createRaw
+                        (TaskId.token request.Task)
+                        request.OperationId
+                        (OperationBinding.Case(
+                            CaseSelector.Reference "synthetic-a",
+                            2L,
+                            None,
+                            None
+                        ))
+                        request.Envelope.Inputs)
                     { snapshot with
                         Revision = CaseFixtures.revision 3L
                     }
@@ -113,20 +118,26 @@ let internal start (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! reply =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 12 "other-reference" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("other-reference")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let second = accepted reply
 
-        do! sql database "DROP INDEX claimcore.ledger_creation_reference" [||]
+        do! sql database "DROP INDEX claimcore.ledger_natural_key" [||]
 
         do!
             rewrite database second.Position.Sequence (fun value ->
-                let request, snapshot = livePayload value
+                let request, snapshot = livePayload (CaseFixtures.reference "synthetic-a") value
                 let reference = CaseFixtures.reference "synthetic-a"
 
                 let snapshot =
@@ -142,9 +153,14 @@ let internal start (database: PostgresFixture.Database) =
                     }
 
                 updateCase
-                    { request with
-                        CaseReference = "synthetic-a"
-                    }
+                    (Submissions.createRaw
+                        (TaskId.token request.Task)
+                        request.OperationId
+                        request.Envelope.Binding
+                        (request.Envelope.Inputs
+                         |> Map.add
+                             (Submissions.field BusinessField.CaseReference)
+                             (SubmissionValue.Text "synthetic-a")))
                     snapshot
                     value)
 
@@ -171,12 +187,18 @@ let internal stateSequence (database: PostgresFixture.Database) =
 
         do!
             rewrite database receipt.Position.Sequence (fun value ->
-                let request, snapshot = livePayload value
+                let request, snapshot = livePayload (CaseFixtures.reference "synthetic-a") value
 
                 updateCase
-                    { request with
-                        Act = CaseAct.Reinstate "Confirmed"
-                    }
+                    (Submissions.createRaw
+                        "case.reinstate"
+                        request.OperationId
+                        request.Envelope.Binding
+                        (Map.ofList
+                            [
+                                Submissions.input InputTarget.Reason,
+                                SubmissionValue.Text "Confirmed"
+                            ]))
                     snapshot
                     value)
 
@@ -208,11 +230,9 @@ let internal erasure (database: PostgresFixture.Database) =
         acceptedPeople granted
 
         let! erased =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 31 "synthetic-a" 1L (CaseAct.Bare BareAct.Erase)
-                ))
+                (((request (database.Fixture) (31) ("synthetic-a") (1L) "case.erase" (Map.empty))))
                 token
 
         accepted erased |> ignore
@@ -256,8 +276,15 @@ let internal people (database: PostgresFixture.Database) =
                 true
 
         let receipt = accepted reply
-        do! rewrite database receipt.Position.Sequence (updatePeople PeopleAct.Disable)
-        do! finding VerificationFinding.PeopleFold database
+
+        do!
+            rewrite
+                database
+                receipt.Position.Sequence
+                (updatePeople "people.disable" Map.empty (fun person ->
+                    { person with Enabled = false }))
+
+        do! finding VerificationFinding.StateSequence database
     }
 
 let internal executor (database: PostgresFixture.Database) =
@@ -297,11 +324,19 @@ let internal human (database: PostgresFixture.Database) =
         acceptedPeople grant
 
         let! voided =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 32 "synthetic-a" 1L (CaseAct.Void "Entered in error")
-                ))
+                (((request
+                    (database.Fixture)
+                    (32)
+                    ("synthetic-a")
+                    (1L)
+                    "case.void"
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("Entered in error")
+                        ]))))
                 token
 
         do!
@@ -320,16 +355,18 @@ let internal owner (database: PostgresFixture.Database) =
         do! register database.Fixture actor 30 reader
 
         let! changed =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 31)
-                        reader
-                        PeopleAct.Enable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 31))
+                        (reader)
+                        (None)
+                        "people.enable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         do!
             rewrite
@@ -337,7 +374,7 @@ let internal owner (database: PostgresFixture.Database) =
                 (accepted changed).Position.Sequence
                 (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 30)))
 
-        do! finding VerificationFinding.PeopleFold database
+        do! finding VerificationFinding.OwnerRequired database
     }
 
 let internal caseProjection (database: PostgresFixture.Database) =
@@ -413,16 +450,17 @@ let private payableIndexFinding expected statement database =
         let! actor = populated database
 
         let! decided =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.Decide Inputs.decision)
-                ))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-a")
+                    (1L)
+                    "case.decide"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        DecisionInput.values (Inputs.decision)
+                    )))))
                 token
 
         accepted decided |> ignore
@@ -457,10 +495,10 @@ let internal findingCases =
         VerificationFinding.ErasureIncomplete, erasure
         VerificationFinding.PayloadWithoutErasure, missingPayload
         VerificationFinding.PeopleProfileProjection, profileProjection
-        VerificationFinding.PeopleFold, people
+        VerificationFinding.StateSequence, people
         VerificationFinding.ActorNotEnabled, executor
         VerificationFinding.HumanRequired, human
-        VerificationFinding.PeopleFold, owner
+        VerificationFinding.OwnerRequired, owner
         VerificationFinding.CaseProjection, caseProjection
         VerificationFinding.CaseStatusProjection,
         indexFinding

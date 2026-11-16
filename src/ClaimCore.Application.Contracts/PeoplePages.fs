@@ -51,6 +51,7 @@ type GrantReadModel =
         Scope: GrantScope
         GrantedAt: DateTimeOffset
         GrantedBy: ActorRef
+        Controls: TaskOffer list
     }
 
 type PeopleGrantPage =
@@ -58,34 +59,12 @@ type PeopleGrantPage =
         Basis: WorkDateBasis
         Actor: ActorReviewItem
         Revision: Revision
-        Offers: PeopleActKind list
+        Offers: TaskId list
+        Controls: TaskOffer list
         ProfileSeed: ActorProfileInput option
         Items: GrantReadModel list
         NextCursor: string option
     }
-
-[<RequireQualifiedAccess>]
-type PeopleHistoryFacts =
-    | OwnerProvisioned of PrincipalKey
-    | Registered of PrincipalKey
-    | Granted of ScopedGrant
-    | Revoked of ScopedGrant
-    | Enabled
-    | Disabled
-    | ProfileSet of ActorProfile option
-    | ProfileErased
-
-module PeopleHistoryFacts =
-    let kind =
-        function
-        | PeopleHistoryFacts.OwnerProvisioned _ -> PeopleActKind.ProvisionOwner
-        | PeopleHistoryFacts.Registered _ -> PeopleActKind.Register
-        | PeopleHistoryFacts.Granted _ -> PeopleActKind.Grant
-        | PeopleHistoryFacts.Revoked _ -> PeopleActKind.Revoke
-        | PeopleHistoryFacts.Enabled -> PeopleActKind.Enable
-        | PeopleHistoryFacts.Disabled -> PeopleActKind.Disable
-        | PeopleHistoryFacts.ProfileSet _ -> PeopleActKind.SetProfile
-        | PeopleHistoryFacts.ProfileErased -> PeopleActKind.EraseProfile
 
 type PeopleHistoryEntry =
     {
@@ -95,7 +74,10 @@ type PeopleHistoryEntry =
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
         Target: ActorRef
-        Facts: PeopleHistoryFacts
+        Task: TaskId
+        Changes: ClaimCore.Domain.Changes.PersonPartDescription
+        PrivateAvailable: bool
+        References: ChangeReferences
     }
 
 type PeopleHistoryPage =

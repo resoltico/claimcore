@@ -9,6 +9,8 @@ open Expecto
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
+open ClaimCore.TestSupport
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Application
@@ -365,114 +367,141 @@ let private peoplePreviewInvocation verb =
     Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
 
 
-let private peoplePreviewFrame input enabledBefore enabledAfter grantBefore grantAfter =
-    let request =
-        match input with
-        | OperationInput.People request -> request
-        | _ -> failtest "People input required"
-
-    let registering, profile =
-        match request.Act with
-        | PeopleAct.Register profile -> true, (ActorProfile.parse profile |> Fixtures.accepted)
-        | _ ->
-            false,
-            (ActorProfile.parse
-                {
-                    DisplayName = "Synthetic account"
-                    Contact = None
-                }
-             |> Fixtures.accepted)
+let private peoplePreviewFrame
+    (input: OperationSubmission)
+    enabledBefore
+    enabledAfter
+    grantBefore
+    grantAfter
+    =
+    let registering = input.Task = TaskId.ofLiteral "people.register"
 
     let principal =
-        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
+        if registering then
+            let text target =
+                input.Envelope.Inputs[TaskInputId.Target target]
+                |> function
+                    | SubmissionValue.Text text -> text
+                    | _ -> failtest "Text expected"
+
+            PrincipalKey.human
+                (text InputTarget.PrincipalIssuer)
+                (text InputTarget.PrincipalSubject)
+            |> Fixtures.accepted
+        else
+            PrincipalKey.human "https://issuer.example/" "synthetic" |> Fixtures.accepted
+
+    let profile =
+        ActorProfile.parse
+            {
+                DisplayName = if registering then "Authored" else "Synthetic account"
+                Contact = None
+            }
         |> Fixtures.accepted
 
-    let grants present : ScopedGrant list =
-        if present then
-            [
-                {
-                    Role = Role.CaseReader
-                    Scope = GrantScope.Installation
-                }
-            ]
+    let target =
+        if registering then
+            None
         else
-            []
+            Some(
+                Inputs.namedActorReference
+                    CliReplyFixtures.receipt.RecordedBy.ActorId
+                    "Synthetic account"
+            )
+
+    let change before after =
+        if before = after then
+            None
+        else
+            Some
+                {
+                    ValueChange.Before = before
+                    After = after
+                }
+
+    let description =
+        {
+            PersonPartDescription.Profiles =
+                {
+                    Before = if registering then None else Some profile
+                    After = Some profile
+                }
+            Principal =
+                if registering then
+                    Some
+                        {
+                            Before = None
+                            After = Some principal
+                        }
+                else
+                    None
+            Enabled = change (Some enabledBefore) (Some enabledAfter)
+            ProfilePresent = change (Some(not registering)) (Some true)
+            DisplayName =
+                if registering then
+                    Some
+                        {
+                            ValueChange.Before = None
+                            After = Some profile.DisplayName
+                        }
+                else
+                    None
+            Contact = None
+            Grants =
+                if grantBefore <> grantAfter then
+                    [
+                        {
+                            Grant =
+                                {
+                                    Role = Role.CaseReader
+                                    Scope = Scope.Installation
+                                }
+                            Before = grantBefore
+                            After = grantAfter
+                        }
+                    ]
+                else
+                    []
+        }
+
+    let id =
+        match (Submissions.command input).Binding with
+        | Binding.People(id, _) -> ActorId.value id
+        | _ -> input.OperationId
+
+    let review =
+        {
+            OperationReview.Task = input.Task
+            Binding = (Submissions.command input).Binding
+            Target = ReviewTarget.Person target
+            References =
+                {
+                    Actors = target |> Option.toList
+                    Cases = []
+                }
+            Context =
+                {
+                    ProductVersion = "fixture"
+                    Basis = Inputs.workBasis
+                }
+            Changes =
+                [
+                    {
+                        PartId = id
+                        Revision =
+                            if registering then
+                                Revision.first
+                            else
+                                Revision.create 2L |> Option.get
+                        Description = PartDescription.Person description
+                    }
+                ]
+        }
 
     let response =
         {
-            PreviewReply.OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
-            Outcome =
-                (Previewed.Reviewed >> Outcome.Succeeded) (
-                    OperationReview.People
-                        {
-                            Basis = ClaimCore.TestSupport.Inputs.workBasis
-                            Effects =
-                                (if registering then
-                                     [
-                                         PeopleReviewEffect.Register principal
-                                         PeopleReviewEffect.SetProfile profile
-                                     ]
-                                 elif enabledBefore <> enabledAfter then
-                                     [
-                                         if enabledAfter then
-                                             PeopleReviewEffect.Enable
-                                         else
-                                             PeopleReviewEffect.Disable
-                                     ]
-                                 elif grantBefore <> grantAfter then
-                                     [
-                                         if grantAfter then
-                                             PeopleReviewEffect.Grant
-                                                 {
-                                                     Role = Role.CaseReader
-                                                     Scope = GrantScope.Installation
-                                                 }
-                                         else
-                                             PeopleReviewEffect.Revoke
-                                                 {
-                                                     Role = Role.CaseReader
-                                                     Scope = GrantScope.Installation
-                                                 }
-                                     ]
-                                 else
-                                     [
-                                         if enabledAfter then
-                                             PeopleReviewEffect.Enable
-                                         else
-                                             PeopleReviewEffect.Disable
-                                     ])
-                            Target =
-                                if registering then
-                                    None
-                                else
-                                    Some(
-                                        ActorReviewItem.ofActor
-                                            []
-                                            {
-                                                ActorId =
-                                                    CliReplyFixtures.receipt.RecordedBy.ActorId
-                                                Principal = principal
-                                                Enabled = enabledBefore
-                                                Profile = Some profile
-                                            }
-                                    )
-                            AccessScope = GrantScope.Installation
-                            Before =
-                                {
-                                    Enabled = enabledBefore
-                                    Profile = if registering then None else Some profile
-                                    Access = []
-                                    Grants = grants grantBefore
-                                }
-                            After =
-                                {
-                                    Enabled = enabledAfter
-                                    Profile = Some profile
-                                    Access = []
-                                    Grants = grants grantAfter
-                                }
-                        }
-                )
+            PreviewReply.OperationId = input.OperationId
+            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
         }
 
     let frame =
@@ -489,18 +518,7 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
     let invocation = peoplePreviewInvocation verb
 
     let input =
-        (Frames.value Api.operationPreview
-         >> Option.map (fun submission ->
-             match submission.Operation with
-             | Ok(SubmittedOperation.ActorPeople value) ->
-                 OperationInput.People
-                     { CliReplyFixtures.peopleRequest with
-                         OperationId = value.OperationId
-                         ExpectedRevision = value.ExpectedRevision
-                         Act = value.Act
-                     }
-             | _ -> ClaimCore.TestSupport.Submissions.command submission))
-            invocation
+        Frames.value Api.operationPreview invocation
         |> Option.defaultWith (fun () -> failtest "Preview input required")
 
     let frame =
@@ -624,10 +642,7 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
                 else
                     absent + " → " + role
 
-            Expect.stringContains
-                rendered
-                (expected reader)
-                "The role is displayed in the correct direction"
+            Expect.stringContains rendered reader "The stable assignment identifies the role"
 
             Expect.stringContains
                 rendered

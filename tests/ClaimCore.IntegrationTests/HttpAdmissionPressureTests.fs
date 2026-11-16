@@ -186,16 +186,20 @@ let private qualify () =
                 |> Result.defaultWith (string >> failtest)
 
             let! registered =
-                Service.execute
-                    actor
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            database.Fixture.Store
-                            (id database.Fixture 10)
-                            other
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    CancellationToken.None
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (database.Fixture.Store)
+                            ((id database.Fixture 10))
+                            (other)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (
+                                ClaimCore.TestSupport.Inputs.actorProfile
+                            ))
+
+                    return! Service.executeSubmission (actor) submission (CancellationToken.None)
+                })
 
             acceptedPeople registered
 
@@ -213,16 +217,17 @@ let private qualify () =
             acceptedPeople granted
 
             let! opened =
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            50
-                            "PRESSURE-CASE"
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (50)
+                        ("PRESSURE-CASE")
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     CancellationToken.None
 
             accepted opened |> ignore

@@ -132,8 +132,7 @@ module private FrameInvocation =
                     ActorId = ActorId.value context.ActorId
                     AttemptId = Frames.attemptId frame
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
-                    Subject = ActKind.subject kind
-                    Act = ActKind.token kind
+                    Task = TaskId.token kind
                     Refused = false
                 }
 

@@ -79,7 +79,7 @@ module Grammar =
     let private build
         incomplete
         allocate
-        (entry: ApplicationTaskId)
+        (entry: string)
         options
         operands
         (problems: ResizeArray<UsageError>)

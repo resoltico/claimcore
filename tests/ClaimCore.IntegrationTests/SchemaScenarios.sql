@@ -28,7 +28,7 @@ $$;
 SELECT actor_id::text AS owner FROM claimcore.actors WHERE subject='synthetic-owner' \gset
 SELECT case_id::text AS case1 FROM claimcore.cases WHERE case_reference='synthetic-a' \gset
 SELECT pg_temp.expect('erasure requires an accepted ERASE',
-    format('SELECT claimcore.erase_case_payload(%L)', :'case1'), 'CC002');
+    format('SELECT claimcore.clear_owner(''FAMILY'',%L)', :'case1'), 'CC002');
 
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
     $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,notified_on,claimed_amount,claimed_currency,payable_amount,payable_currency) VALUES ('c0000000-0000-4000-8000-000000000002', 'SYNTHETIC-A', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL)$s$, '23505');

@@ -39,11 +39,17 @@ let private checkpoints () =
         let older = administration.Head token |> sync
 
         let opened =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation (
-                    actRequest fixture 20 "CHECKPOINT" 0L (AuthoredCaseAct.Open Inputs.registration)
-                ))
+                (((request
+                    (fixture)
+                    (20)
+                    ("CHECKPOINT")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (Inputs.registration)
+                    )))))
                 token
             |> sync
             |> accepted

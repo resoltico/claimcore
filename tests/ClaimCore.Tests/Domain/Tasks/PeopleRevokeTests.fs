@@ -12,6 +12,32 @@ let tests =
     testList
         "task people.revoke"
         [
+            testCase "current grant rows receive fixed authored selections from the task" (fun () ->
+                let state = owner ()
+                let environment = peopleEnvironment state.Actor.Principal
+                let offered = Revoke.availability environment (Some state) (personBinding state)
+
+                let selection =
+                    Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Role, InputValue.Text "OWNER"
+                            TaskInputId.Scope, InputValue.Text "INSTALLATION"
+                        ]
+
+                Expect.contains
+                    offered.Selections
+                    selection
+                    "The active owner grant has a fixed row selection"
+
+                let denied =
+                    Revoke.availability
+                        { environment with
+                            Requester = AccessView.empty
+                        }
+                        (Some state)
+                        (personBinding state)
+
+                Expect.isEmpty denied.Selections "An unauthorized reader receives no row actions")
             testCase
                 "revoking an absent grant is an accepted assignment without active-grant admission"
                 (fun () ->

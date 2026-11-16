@@ -26,7 +26,21 @@ let private gate =
     CaseRules.gate false (fun state -> state.Case.Value.Status = CaseStatus.Opened)
 
 let availability environment state binding =
-    CaseRules.availability declaration environment state binding capability gate
+    let offered =
+        CaseRules.availability declaration environment state binding capability gate
+
+    let recommendation =
+        state
+        |> Option.bind (fun state -> state.Case.Value.Content)
+        |> Option.bind (fun content ->
+            if CaseProgress.ofFinancial content.Finance = CaseProgress.Paid then
+                Some 0
+            else
+                None)
+
+    { offered with
+        Recommendation = recommendation
+    }
 
 let decide context environment (state: CaseFamily option) binding (_: InputMap) =
     match state, binding with
@@ -51,9 +65,16 @@ let task =
     Task.Family
         {
             Declaration = declaration
+            Authorize =
+                fun environment state _ ->
+                    match state with
+                    | Some state ->
+                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                    | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability
             Decide = decide
+            DecideRetained = decide
             DecisionFactsAvailable = fun _ _ -> true
             Describe = PartDescriptions.family
         }

@@ -176,7 +176,7 @@ module EndpointDeclarations =
     let commands =
         [
             {
-                Id = CommandTaskId.key CommandTaskId.PeopleRequestsDismiss
+                Id = "people.requests.dismiss"
                 Kind = EndpointKind.Command
                 Inputs =
                     principal

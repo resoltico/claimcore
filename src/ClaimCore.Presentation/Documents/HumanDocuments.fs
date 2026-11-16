@@ -187,167 +187,35 @@ module HumanDocument =
 module HumanCaseDocument =
     let ofCore (value: CaseReadModel) =
         let disclosed = CaseState.lifecycle value.Snapshot.State <> Lifecycle.Erased
-        let current = CaseState.fields value.Snapshot.State
-        let taskInputs task = TaskAffordances.authored task
-
-        let canCorrect group =
-            value.Advice.Correction
-            |> Option.exists (fun choices ->
-                let choices =
-                    if group = RecordGroup.Registration then
-                        choices.Registration
-                    else
-                        choices.Decision
-
-                List.contains CorrectionGroupAction.Update choices)
 
         let actions =
             if not disclosed then
                 []
             else
-                let offered =
-                    value.Advice.Acts
-                    |> List.filter ((<>) CaseActKind.RemovePayment)
-                    |> List.map (fun kind ->
-                        let task = ApplicationTaskId.Operation(ActKind.Case kind)
+                let controls =
+                    value.Advice.Offers
+                    |> List.choose (function
+                        | TaskOffer.Available(task, binding, availability) ->
+                            let action =
+                                TaskAffordances.offered
+                                    task
+                                    (Some binding)
+                                    (availability.Seeds
+                                     |> Map.map (fun _ value -> TaskAffordances.seed value))
+                                    availability.Editable
+                                    availability.Choices
 
-                        let registration =
-                            if
-                                kind = CaseActKind.AmendRegistration
-                                || (kind = CaseActKind.Correct
-                                    && canCorrect RecordGroup.Registration)
-                            then
-                                current
-                                |> Option.map (fun fields ->
-                                    Registration.authored fields.Registration
-                                    |> RegistrationInput.values
-                                    |> TaskAffordances.fields)
-                                |> Option.defaultValue Map.empty
-                            else
-                                Map.empty
+                            Some
+                                { action with
+                                    Primary = value.Advice.Recommended = Some task
+                                    Blocked =
+                                        availability.Blocked
+                                        |> Option.map TaskAffordances.availability
+                                }
+                        | TaskOffer.Declared _ -> None)
 
-                        let decision =
-                            if
-                                kind = CaseActKind.Decide
-                                || (kind = CaseActKind.Correct && canCorrect RecordGroup.Decision)
-                            then
-                                current
-                                |> Option.bind _.Decision
-                                |> Option.map (
-                                    Decision.authored
-                                    >> DecisionInput.values
-                                    >> TaskAffordances.fields
-                                )
-                                |> Option.defaultValue Map.empty
-                            else
-                                Map.empty
-
-                        let seeds =
-                            Map.fold
-                                (fun seed input value -> Map.add input value seed)
-                                registration
-                                decision
-
-                        let seeds =
-                            if kind = CaseActKind.Correct then
-                                seeds
-                                |> Map.add
-                                    (TaskAffordances.input (
-                                        InputTarget.Group RecordGroup.Registration
-                                    ))
-                                    (TaskAffordances.text "KEEP")
-                                |> Map.add
-                                    (TaskAffordances.input (InputTarget.Group RecordGroup.Decision))
-                                    (TaskAffordances.text "KEEP")
-                            else
-                                seeds
-
-                        let seeds =
-                            if kind = CaseActKind.RecordPayment then
-                                current
-                                |> Option.bind (fun fields -> fields.Finance.Decision)
-                                |> Option.map (fun decision ->
-                                    seeds
-                                    |> Map.add
-                                        (TaskAffordances.field BusinessField.PaidCurrency)
-                                        (TaskAffordances.text (
-                                            Money.currency (Decision.payable decision)
-                                        )))
-                                |> Option.defaultValue seeds
-                            else
-                                seeds
-
-                        let choices =
-                            if kind = CaseActKind.Correct then
-                                value.Advice.Correction
-                                |> Option.map (fun choices ->
-                                    Map.ofList
-                                        [
-                                            TaskAffordances.input (
-                                                InputTarget.Group RecordGroup.Registration
-                                            ),
-                                            choices.Registration
-                                            |> List.map CorrectionGroupAction.token
-                                            TaskAffordances.input (
-                                                InputTarget.Group RecordGroup.Decision
-                                            ),
-                                            choices.Decision
-                                            |> List.map CorrectionGroupAction.token
-                                        ])
-                                |> Option.defaultValue Map.empty
-                            else
-                                Map.empty
-
-                        let editable =
-                            taskInputs task
-                            |> List.filter (fun input ->
-                                match kind, input, value.Advice.Correction with
-                                | CaseActKind.Correct,
-                                  TaskInputId.Target(InputTarget.Field field),
-                                  Some choices ->
-                                    match (BusinessField.describe field).Group with
-                                    | Some RecordGroup.Registration ->
-                                        List.contains
-                                            CorrectionGroupAction.Update
-                                            choices.Registration
-                                    | Some RecordGroup.Decision ->
-                                        List.contains
-                                            CorrectionGroupAction.Update
-                                            choices.Decision
-                                    | _ -> true
-                                | _ -> true)
-
-                        let action =
-                            TaskAffordances.caseAction
-                                kind
-                                value.Snapshot.CaseId
-                                value.Snapshot.Revision
-                                value.FamilySequence
-                                seeds
-                                editable
-                                choices
-
-                        { action with
-                            Primary = value.Advice.Recommended = Some kind
-                        })
-
-                let blocked =
-                    value.Advice.Blocked
-                    |> List.filter (fun value -> value.Act <> CaseActKind.RemovePayment)
-                    |> List.map (fun blocked ->
-                        let action =
-                            TaskAffordances.caseAction
-                                blocked.Act
-                                value.Snapshot.CaseId
-                                value.Snapshot.Revision
-                                value.FamilySequence
-                                Map.empty
-                                []
-                                Map.empty
-
-                        { action with
-                            Blocked = Some(TaskAffordances.availability blocked.Reason)
-                        })
+                let offered, blocked =
+                    controls |> List.partition (fun control -> control.Blocked.IsNone)
 
                 let work =
                     if value.Work.CanUpdateSummary || value.Work.CanAssign then
@@ -466,21 +334,25 @@ module HumanReadDocuments =
     let private installationOffer issuer =
         function
         | InstallationOffer.Open ->
-            let task = ApplicationTaskId.Operation(ActKind.Case CaseActKind.Open)
+            let task =
+                ClaimCore.Domain.Tasks.Registry.clientDeclarations
+                |> List.find (fun declaration ->
+                    TaskDeclaration.bindingShape declaration = BindingShape.CaseNew)
+                |> _.Id
 
             TaskAffordances.offered
                 task
-                (OperationBinding.CaseNew 0L)
+                (Some(Binding.CaseNew Revision.zero))
                 Map.empty
                 (TaskAffordances.authored task)
                 Map.empty
         | InstallationOffer.PeopleAct kind ->
-            let task = ApplicationTaskId.Operation(ActKind.People kind)
+            let task = kind
 
             let seeds =
                 [
                     TaskAffordances.input InputTarget.PrincipalKind, TaskAffordances.text "HUMAN"
-                    if kind = PeopleActKind.Admit then
+                    if not (TaskDeclarations.describe (TaskId.token kind)).Collections.IsEmpty then
                         TaskAffordances.input InputTarget.Grants, TaskAffordances.initialGrantRows
                     match issuer with
                     | Some value ->
@@ -492,7 +364,7 @@ module HumanReadDocuments =
 
             TaskAffordances.offered
                 task
-                (OperationBinding.People(None, 0L))
+                (Some(Binding.PeopleNew Revision.zero))
                 seeds
                 (TaskAffordances.authored task)
                 Map.empty
@@ -721,60 +593,7 @@ module HumanReadDocuments =
     let grants (value: PeopleGrantPage) =
         let actor = value.Actor.Actor.ActorId
 
-        let primary =
-            [
-                PeopleActKind.Grant
-                PeopleActKind.Enable
-                PeopleActKind.Revoke
-                PeopleActKind.Disable
-            ]
-            |> List.tryFind (fun kind -> List.contains kind value.Offers)
-
-        let actions =
-            value.Offers
-            |> List.map (fun kind ->
-                let task = ApplicationTaskId.Operation(ActKind.People kind)
-
-                let seeds =
-                    if kind = PeopleActKind.SetProfile then
-                        value.ProfileSeed
-                        |> Option.map TaskAffordances.profile
-                        |> Option.defaultValue Map.empty
-                    else
-                        Map.empty
-
-                let seeds =
-                    if kind = PeopleActKind.Grant || kind = PeopleActKind.Revoke then
-                        seeds |> Map.add TaskInputId.Scope TaskAffordances.initialGrantScope
-                    else
-                        seeds
-
-                let choices =
-                    if kind = PeopleActKind.Grant then
-                        Map.ofList
-                            [
-                                TaskAffordances.input InputTarget.Role,
-                                Role.all
-                                |> List.filter (fun role ->
-                                    PrincipalKey.isHuman value.Actor.Principal
-                                    || not (Access.humanOnlyRole role))
-                                |> List.map Role.token
-                            ]
-                    else
-                        Map.empty
-
-                let action =
-                    TaskAffordances.person
-                        kind
-                        actor
-                        value.Revision
-                        seeds
-                        (TaskAffordances.authored task)
-                        choices
-
-                { action with
-                    Primary = primary = Some kind
-                })
+        let actions = value.Controls |> List.choose TaskAffordances.fromOffer
 
         let links =
             value.Actor.ResponsibleCases

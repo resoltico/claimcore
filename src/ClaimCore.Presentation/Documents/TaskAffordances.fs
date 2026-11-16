@@ -32,8 +32,11 @@ module TaskAffordances =
         ]
         |> Map.ofList
 
+    let private definition task =
+        TaskDeclarations.describe (TaskId.token task)
+
     let authored task =
-        let declaration = TaskDeclarations.describe task
+        let declaration = definition task
 
         (declaration.Inputs
          |> List.filter (fun input -> input.Source = InputSource.Authored)
@@ -44,46 +47,33 @@ module TaskAffordances =
     let offered task binding seeds editable choices =
         Affordance.create task binding seeds editable choices false None
 
-    let caseAction kind id revision family seeds editable choices =
-        let task = ApplicationTaskId.Operation(ActKind.Case kind)
+    let private selected shape =
+        ClaimCore.Domain.Tasks.Registry.clientDeclarations
+        |> List.find (fun declaration -> TaskDeclaration.bindingShape declaration = shape)
+        |> _.Id
 
-        offered
-            task
-            (if (TaskConsequences.declaration (ActKind.Case kind)).Creates then
-                 OperationBinding.CaseNew 0L
-             else
-                 OperationBinding.Case(
-                     CaseSelector.Id id,
-                     (if kind = CaseActKind.Open then
-                          0L
-                      else
-                          Revision.value revision),
-                     None,
-                     (if kind = CaseActKind.Erase then
-                          Some(Sequence.value family)
-                      else
-                          None)
-                 ))
-            seeds
-            editable
-            choices
+    let caseAction task id revision family seeds editable choices =
+        let declaration = TaskConsequences.declaration task
+
+        let binding =
+            match TaskDeclaration.bindingShape declaration with
+            | BindingShape.CaseNew -> Binding.CaseNew Revision.zero
+            | BindingShape.CaseErase -> Binding.CaseErase(CaseSelector.Id id, revision, family)
+            | BindingShape.Case -> Binding.Case(CaseSelector.Id id, revision)
+            | _ -> invalidArg (nameof task) "A row selection is required for this action."
+
+        offered task (Some binding) seeds editable choices
 
     let noteAdd id =
-        let task = ApplicationTaskId.Operation(ActKind.Note NoteActKind.AddNote)
-
-        offered
-            task
-            (OperationBinding.Note(CaseSelector.Id id, None))
-            Map.empty
-            (authored task)
-            Map.empty
+        let task = selected BindingShape.NoteNew
+        offered task (Some(Binding.NoteNew(CaseSelector.Id id))) Map.empty (authored task) Map.empty
 
     let noteRemove id (item: NoteReadModel) =
         if item.CanRemove then
             [
                 offered
-                    (ApplicationTaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
-                    (OperationBinding.Note(CaseSelector.Id id, Some(NoteId.value item.NoteId)))
+                    (selected BindingShape.Note)
+                    (Some(Binding.Note(CaseSelector.Id id, item.NoteId)))
                     Map.empty
                     []
                     Map.empty
@@ -93,87 +83,61 @@ module TaskAffordances =
 
     let paymentRemoveEntry id revision entry =
         offered
-            (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
-            (OperationBinding.Case(
-                CaseSelector.Id id,
-                Revision.value revision,
-                Some(OperationId.value (PaymentEntry.id entry)),
-                None
-            ))
+            (selected BindingShape.CasePayment)
+            (Some(Binding.CasePayment(CaseSelector.Id id, revision, PaymentEntry.id entry)))
             Map.empty
             []
             Map.empty
 
     let paymentRemove id revision (item: CasePaymentItem) =
         if item.CanRemove then
-            [
-                offered
-                    (ApplicationTaskId.Operation(ActKind.Case CaseActKind.RemovePayment))
-                    (OperationBinding.Case(
-                        CaseSelector.Id id,
-                        Revision.value revision,
-                        Some(OperationId.value (PaymentEntry.id item.Entry)),
-                        None
-                    ))
-                    Map.empty
-                    []
-                    Map.empty
-            ]
+            [ paymentRemoveEntry id revision item.Entry ]
         else
             []
 
-    let reminder (value: ReminderReadModel) =
-        value.Acts
-        |> List.map (fun kind ->
-            let task = ApplicationTaskId.Operation(ActKind.Reminder kind)
+    let seed =
+        function
+        | InputValue.Text value -> SubmissionValue.Text value
+        | InputValue.Integer value -> SubmissionValue.Integer value
+        | InputValue.Boolean value -> SubmissionValue.Boolean value
+        | InputValue.Null -> SubmissionValue.Clear
 
-            let seeds =
-                [
-                    if kind = ReminderActKind.Update then
-                        input InputTarget.ReminderAction,
-                        text (ReminderAction.format (Reminder.action value.Reminder))
-                    if kind = ReminderActKind.Update || kind = ReminderActKind.Reopen then
-                        input InputTarget.ReminderDueDate,
-                        text (CalendarDate.format (Reminder.due value.Reminder))
-                ]
-                |> Map.ofList
+    let fromOffer =
+        function
+        | TaskOffer.Declared _ -> None
+        | TaskOffer.Available(task, binding, availability) when availability.Blocked.IsNone ->
+            Some(
+                offered
+                    task
+                    (Some binding)
+                    (availability.Seeds |> Map.map (fun _ value -> seed value))
+                    availability.Editable
+                    availability.Choices
+            )
+        | TaskOffer.Available _ -> None
 
-            let current =
-                Some(
-                    ReminderId.value (Reminder.id value.Reminder),
-                    Revision.value (Reminder.revision value.Reminder)
-                )
-
-            let binding =
-                OperationBinding.Reminder(CaseSelector.Id(Reminder.caseId value.Reminder), current)
-
-            offered task binding seeds (authored task) Map.empty)
+    let reminder (value: ReminderReadModel) = value.Offers |> List.choose fromOffer
 
     let reminderCreate id =
-        let task = ApplicationTaskId.Operation(ActKind.Reminder ReminderActKind.Create)
+        let task = selected BindingShape.ReminderNew
 
         offered
             task
-            (OperationBinding.Reminder(CaseSelector.Id id, None))
+            (Some(Binding.ReminderNew(CaseSelector.Id id)))
             Map.empty
             (authored task)
             Map.empty
 
     let work id revision seeds editable =
         offered
-            (ApplicationTaskId.Operation(ActKind.Work WorkActKind.UpdateWork))
-            (OperationBinding.Work(CaseSelector.Id id, Revision.value revision))
+            (selected BindingShape.Work)
+            (Some(Binding.Work(CaseSelector.Id id, revision)))
             seeds
             editable
             Map.empty
 
-    let person kind actor revision seeds editable choices =
-        offered
-            (ApplicationTaskId.Operation(ActKind.People kind))
-            (OperationBinding.People(Some(ActorId.value actor), Revision.value revision))
-            seeds
-            editable
-            choices
+    let person task actor revision seeds editable choices =
+        offered task (Some(Binding.People(actor, revision))) seeds editable choices
 
     let collectionDefaults collection =
         TaskCollectionId.defaultValues collection
@@ -191,22 +155,6 @@ module TaskAffordances =
         collectionDefaults TaskCollectionId.PeopleGrants
         |> List.replicate (PeopleAdmission.MinimumGrants)
         |> SubmissionValue.Rows
-
-    let grantSeeds role scope =
-        [
-            input InputTarget.Role, text (Role.token role)
-            TaskInputId.Scope,
-            text (
-                match scope with
-                | GrantScope.Installation -> ScopeKind.token ScopeKind.Installation
-                | _ -> "CASE"
-            )
-            match scope with
-            | GrantScope.Case(_, reference) ->
-                field BusinessField.CaseReference, text (CaseReference.format reference)
-            | _ -> ()
-        ]
-        |> Map.ofList
 
     let availability refusal =
         let message, args =
@@ -257,26 +205,23 @@ module TaskAffordances =
                 (principal value.Principal)
                 (profile hints)
 
-        let seeds = seeds |> Map.add (input InputTarget.Grants) initialGrantRows
+        let declaration =
+            ClaimCore.Domain.Tasks.Registry.clientDeclarations
+            |> List.find (fun declaration ->
+                declaration.Target = ActSubject.People
+                && declaration.Creates
+                && not declaration.Collections.IsEmpty)
+
+        let editable =
+            authored declaration.Id
+            |> List.filter (fun input -> not (Map.containsKey input (principal value.Principal)))
 
         let admit =
-            offered
-                (ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit))
-                (OperationBinding.People(None, 0L))
-                seeds
-                [
-                    input InputTarget.ProfileDisplayName
-                    input InputTarget.ProfileContact
-                    input InputTarget.Grants
-                ]
-                Map.empty
+            offered declaration.Id (Some(Binding.PeopleNew Revision.zero)) seeds editable Map.empty
+
+        let command = EndpointDeclarations.commands |> List.exactlyOne
 
         let dismiss =
-            offered
-                (ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss)
-                (OperationBinding.People(None, 0L))
-                (principal value.Principal)
-                []
-                Map.empty
+            offered (TaskId.ofLiteral command.Id) None (principal value.Principal) [] Map.empty
 
         [ admit; dismiss ]

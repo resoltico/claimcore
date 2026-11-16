@@ -21,7 +21,7 @@ module internal TimelineQueries =
             if not (QueryResults.validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -32,12 +32,7 @@ module internal TimelineQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case
-                                                    services
-                                                    tx
-                                                    None
-                                                    request.Target
-                                                    None
+                                                CaseReadContext.load services tx request.Target
 
                                             match view.Case with
                                             | Some parent when
@@ -110,6 +105,7 @@ module internal TimelineQueries =
                                                             entries
                                                                 services
                                                                 tx
+                                                                parent.Snapshot.Reference
                                                                 erased
                                                                 full
                                                                 range

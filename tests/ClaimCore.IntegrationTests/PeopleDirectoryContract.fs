@@ -27,16 +27,18 @@ let private principal subject =
     PrincipalKey.human "https://issuer.example/" subject |> required
 
 let private register fixture owner operation principal =
-    Service.execute
-        owner
-        (OperationInput.People(
-            ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                fixture.Store
-                (id fixture operation)
-                principal
-                (PeopleAct.Register Inputs.actorProfile)
-        ))
-        token
+    (task {
+        let! submission =
+            ClaimCore.TestSupport.StoreFixtures.personSubmission
+                (fixture.Store)
+                ((id fixture operation))
+                (principal)
+                (None)
+                "people.register"
+                (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+
+        return! Service.executeSubmission (owner) submission (token)
+    })
 
 let private directory owner principal =
     task {
@@ -67,21 +69,33 @@ let internal summaries fixture =
         let! owner = caseWorker fixture
 
         let! a =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 1001 "PEOPLE-A" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (1001)
+                    ("PEOPLE-A")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let a = accepted a |> caseReceipt
 
         let! b =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 1002 "PEOPLE-B" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (1002)
+                    ("PEOPLE-B")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let b = accepted b |> caseReceipt
@@ -159,16 +173,18 @@ let internal summaries fixture =
             "Scope detail is not flattened into an unbounded actor row"
 
         let! disabled =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1015)
-                        person
-                        PeopleAct.Disable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1015))
+                        (person)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople disabled
         let! blocked = directory owner person
@@ -184,30 +200,45 @@ let internal summaries fixture =
             "Disabling never hides assigned role facts from people review"
 
         let! preview =
-            Service.preview
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 1016)
-                        person
-                        PeopleAct.Enable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 1016))
+                        (person)
+                        (None)
+                        "people.enable"
+                        (Map.empty)
+
+                return! Service.previewSubmission (owner) submission (token)
+            })
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
-            let target = review.Target |> Option.get
-
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
             Expect.equal
-                target.State
-                AccountState.Disabled
-                "People review carries the actual target assignment state"
+                review.Target
+                (ReviewTarget.Person(
+                    Some
+                        { assigned.Actor with
+                            Availability = ActorAvailability.Disabled
+                        }
+                ))
+                "Current target identity"
 
-            Expect.equal
-                target.Roles
-                assigned.Roles
-                "People review sees all target roles, not only its selected scope"
+            match review.Changes.Head.Description with
+            | ClaimCore.Domain.Changes.PartDescription.Person description ->
+                Expect.equal
+                    description.Enabled
+                    (Some
+                        {
+                            Before = Some false
+                            After = Some true
+                        })
+                    "Review explicitly enables the disabled target"
+
+                Expect.isEmpty description.Grants "Enabling preserves all directory assignments"
+            | _ -> failtest "Person part description required"
+
         | other -> failtestf "Disabled target remains reviewable: %A" other
 
         do! grantRole fixture owner 1017 person Role.CaseReader (GrantTarget.CaseId a.CaseId) false
@@ -224,11 +255,17 @@ let internal corruptAssignment fixture =
         let! owner = caseWorker fixture
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 1030 "PEOPLE-CORRUPT" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (1030)
+                    ("PEOPLE-CORRUPT")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let case = accepted opened |> caseReceipt
@@ -259,8 +296,13 @@ let internal corruptAssignment fixture =
                         fun tx ->
                             task {
                                 let! actor = PeopleReads.findActor tx actorId
-                                let! state = PeopleReads.peopleState tx actor.Value.Principal
-                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+                                let! state = AggregateStorage.principal tx actor.Value.Principal
+
+                                let rows =
+                                    state
+                                    |> Option.get
+                                    |> ProjectionRows.person
+                                    |> Result.defaultWith (fun error -> failtestf "%A" error)
 
                                 let grant =
                                     {
@@ -268,15 +310,18 @@ let internal corruptAssignment fixture =
                                         Scope = Scope.Case case.CaseId
                                     }
 
+                                let! origin =
+                                    LedgerReads.findOperation
+                                        tx
+                                        (CaseFixtures.operationId (ActorId.value actorId))
+
+                                let acceptingPosition =
+                                    origin |> Option.get |> _.Changes.Head.Stamp.Position
+
                                 do!
-                                    tx.ProjectPeople
+                                    tx.ProjectPerson
                                         { rows with
-                                            Grants =
-                                                Map.add
-                                                    grant
-                                                    (EffectPosition.create Sequence.first 0
-                                                     |> Option.get)
-                                                    rows.Grants
+                                            Grants = Map.add grant acceptingPosition rows.Grants
                                         }
 
                                 return Verdict.Proceed()

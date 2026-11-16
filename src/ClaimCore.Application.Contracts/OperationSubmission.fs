@@ -27,31 +27,19 @@ type OperationBinding<'revision> =
 type SubmissionEnvelope<'revision, 'operation> =
     {
         OperationId: 'operation
-        Task: ActKind
+        Task: TaskId
         Binding: OperationBinding<'revision>
         Inputs: Map<TaskInputId, SubmissionValue>
     }
 
-/// Principal resolution is immutable identity selection, performed in the action's transaction.
-type ActorPeopleSubmission =
-    {
-        OperationId: Guid
-        ActorId: Guid
-        ExpectedRevision: int64
-        Act: AuthoredPeopleAct
-    }
-
-[<RequireQualifiedAccess>]
-type SubmittedOperation =
-    | Command of OperationInput
-    | ActorPeople of ActorPeopleSubmission
+type SubmittedOperation = { Binding: Binding; Inputs: InputMap }
 
 [<RequireQualifiedAccess>]
 type SubmissionProblem =
     | Shape
     | Rejected of Refusal
 
-/// Shape admission preserves the already assembled typed operation without reparsing it in the service.
+/// Authored atoms and reviewed binding survive admission without a per-subject command layer.
 type OperationSubmission =
     private
         {
@@ -61,12 +49,34 @@ type OperationSubmission =
 
     member this.OperationId = this.EnvelopeValue.OperationId
     member this.Task = this.EnvelopeValue.Task
-    member this.Binding = this.EnvelopeValue.Binding
-    member this.Inputs = this.EnvelopeValue.Inputs
     member this.Envelope = this.EnvelopeValue
     member this.Operation = this.OperationValue
 
 module OperationSubmission =
+    let rawBinding =
+        function
+        | Binding.CaseNew revision -> OperationBinding.CaseNew(Revision.value revision)
+        | Binding.Case(target, revision) ->
+            OperationBinding.Case(target, Revision.value revision, None, None)
+        | Binding.CasePayment(target, revision, id) ->
+            OperationBinding.Case(target, Revision.value revision, Some(OperationId.value id), None)
+        | Binding.CaseErase(target, revision, sequence) ->
+            OperationBinding.Case(
+                target,
+                Revision.value revision,
+                None,
+                Some(Sequence.value sequence)
+            )
+        | Binding.Work(target, revision) -> OperationBinding.Work(target, Revision.value revision)
+        | Binding.ReminderNew target -> OperationBinding.Reminder(target, None)
+        | Binding.Reminder(target, id, revision) ->
+            OperationBinding.Reminder(target, Some(ReminderId.value id, Revision.value revision))
+        | Binding.NoteNew target -> OperationBinding.Note(target, None)
+        | Binding.Note(target, id) -> OperationBinding.Note(target, Some(NoteId.value id))
+        | Binding.PeopleNew revision -> OperationBinding.People(None, Revision.value revision)
+        | Binding.People(id, revision) ->
+            OperationBinding.People(Some(ActorId.value id), Revision.value revision)
+
     let private target input = TaskInputId.Target input
     let private field input = target (InputTarget.Field input)
 
@@ -138,13 +148,16 @@ module OperationSubmission =
             | Some issues -> Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues))
             | None -> errors |> List.tryHead |> Option.map Error |> Option.defaultValue (Ok())
 
-    let rec private validate (declaration: ApplicationTaskDeclaration) values =
+    let rec private validate
+        (inputs: TaskInputDeclaration list)
+        (declaredCollections: TaskCollectionDeclaration list)
+        values
+        =
         let allowed =
-            declaration.Inputs
-            |> List.filter (fun input -> input.Source = InputSource.Authored)
+            inputs |> List.filter (fun input -> input.Source = InputSource.Authored)
 
         let collections =
-            declaration.Collections
+            declaredCollections
             |> List.map (fun collection -> TaskCollectionId.input collection.Collection, collection)
 
         let keys =
@@ -196,388 +209,167 @@ module OperationSubmission =
             collect (scalars @ rows)
 
     and private validateRow (collection: TaskCollectionDeclaration) row =
-        let declaration =
-            {
-                Task = ApplicationTaskId.Operation(ActKind.People PeopleActKind.Admit)
-                Inputs = collection.Inputs
-                Collections = []
-            }
+        validate collection.Inputs [] row
 
-        validate declaration row
+    let private mapInputs
+        (declaredCollections: TaskCollectionDeclaration list)
+        (values: Map<TaskInputId, SubmissionValue>)
+        =
+        let atom =
+            function
+            | SubmissionValue.Text text -> Some(InputValue.Text text)
+            | SubmissionValue.Integer value -> Some(InputValue.Integer value)
+            | SubmissionValue.Boolean value -> Some(InputValue.Boolean value)
+            | SubmissionValue.Clear -> Some InputValue.Null
+            | SubmissionValue.Rows _ -> None
 
-    let private group values group =
-        CaseFields.ofGroup group
-        |> List.choose (fun name ->
-            match Map.tryFind (field name) values with
-            | Some(SubmissionValue.Text value) -> Some(name, value)
-            | _ -> None)
+        let scalars =
+            values
+            |> Map.toList
+            |> List.choose (fun (key, value) -> atom value |> Option.map (fun value -> key, value))
+            |> Map.ofList
 
-    let private updates values group =
-        CaseFields.ofGroup group
-        |> List.choose (fun name ->
-            match Map.tryFind (field name) values with
-            | None -> None
-            | Some SubmissionValue.Clear -> Some(name, None)
-            | Some(SubmissionValue.Text value) -> Some(name, Some value)
-            | _ -> None)
+        let collections =
+            values
+            |> Map.toList
+            |> List.choose (fun (key, value) ->
+                match value with
+                | SubmissionValue.Rows rows ->
+                    declaredCollections
+                    |> List.map _.Collection
+                    |> List.tryFind (fun collection -> TaskCollectionId.input collection = key)
+                    |> Option.map (fun collection ->
+                        collection,
+                        rows
+                        |> List.map (
+                            Map.toList
+                            >> List.choose (fun (key, value) ->
+                                atom value |> Option.map (fun value -> key, value))
+                            >> Map.ofList
+                        ))
+                | _ -> None)
+            |> Map.ofList
 
-    let private principal values =
-        let kind =
-            text values (target InputTarget.PrincipalKind)
-            |> bind (fun value ->
-                Vocabulary.tryParse PrincipalKind.vocabulary value
-                |> Option.map Ok
-                |> Option.defaultValue (Error SubmissionProblem.Shape))
+        InputMap.create scalars collections
+        |> (function
+        | Some value -> Ok value
+        | None -> Error SubmissionProblem.Shape)
 
-        map2
-            (fun kind (issuer, subject) ->
-                {
-                    PrincipalInput.Kind = kind
-                    Issuer = issuer
-                    Subject = subject
-                })
-            kind
-            (map2
-                (fun issuer subject -> issuer, subject)
-                (text values (target InputTarget.PrincipalIssuer))
-                (text values (target InputTarget.PrincipalSubject)))
+    let private version minimum input raw =
+        Revision.create raw
+        |> Option.filter (fun value -> Revision.value value >= minimum)
+        |> Option.map Ok
+        |> Option.defaultValue (Error(issue (target input) Violation.ExpectedRevisionRange))
 
-    let private profile values =
-        map2
-            (fun name contact ->
-                {
-                    ActorProfileInput.DisplayName = name
-                    Contact = contact
-                })
-            (text values (target InputTarget.ProfileDisplayName))
-            (optional values (target InputTarget.ProfileContact))
+    let private creationVersion raw =
+        if raw = 0L then
+            Ok Revision.zero
+        else
+            Error(issue (target InputTarget.ExpectedRevision) Violation.ExpectedRevisionRange)
 
-    let private grant values =
-        let role =
-            text values (target InputTarget.Role)
-            |> bind (fun value ->
-                Role.all
-                |> List.tryFind (fun role -> Role.token role = value)
-                |> Option.map Ok
-                |> Option.defaultValue (Error SubmissionProblem.Shape))
+    let private identity create input violation raw =
+        create raw
+        |> Option.map Ok
+        |> Option.defaultValue (Error(issue (target input) violation))
 
-        let scope =
-            text values TaskInputId.Scope
-            |> bind (function
-                | "INSTALLATION" ->
-                    if
-                        Map.containsKey (field BusinessField.CaseReference) values
-                        || Map.containsKey TaskInputId.CaseId values
-                    then
-                        Error(
-                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
-                        )
-                    else
-                        Ok GrantTarget.Installation
-                | "CASE" ->
-                    match
-                        Map.tryFind (field BusinessField.CaseReference) values,
-                        Map.tryFind TaskInputId.CaseId values
-                    with
-                    | Some(SubmissionValue.Text reference), None ->
-                        Ok(GrantTarget.CaseReference reference)
-                    | None, Some(SubmissionValue.Text id) ->
-                        match Guid.TryParseExact(id, "D") with
-                        | true, id ->
-                            CaseId.create id
-                            |> Option.map (GrantTarget.CaseId >> Ok)
-                            |> Option.defaultValue (
-                                Error(issue TaskInputId.CaseId Violation.CaseIdRequired)
+    let private actorIdentity id =
+        ActorId.create id
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(SubmissionProblem.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+        )
+
+    let admitBinding (declaration: TaskDeclaration) raw =
+        let binds input =
+            declaration.Inputs
+            |> List.exists (fun item ->
+                item.Input = target input && item.Source = InputSource.Binding)
+
+        match declaration.Target, raw with
+        | ActSubject.Case, OperationBinding.CaseNew expected when declaration.Creates ->
+            creationVersion expected |> Result.map Binding.CaseNew
+        | ActSubject.Case, OperationBinding.Case(selection, expected, payment, family) when
+            not declaration.Creates
+            ->
+            version 1L InputTarget.ExpectedRevision expected
+            |> bind (fun expected ->
+                if binds InputTarget.PaymentId then
+                    match payment, family with
+                    | Some id, None ->
+                        identity
+                            OperationId.create
+                            InputTarget.PaymentId
+                            Violation.PaymentIdRequired
+                            id
+                        |> Result.map (fun id -> Binding.CasePayment(selection, expected, id))
+                    | _ -> Error SubmissionProblem.Shape
+                elif declaration.ReviewsFamilySequence then
+                    match payment, family with
+                    | None, Some sequence ->
+                        Sequence.create sequence
+                        |> Option.filter (fun value -> value >= Sequence.first)
+                        |> Option.map (fun sequence ->
+                            Ok(Binding.CaseErase(selection, expected, sequence)))
+                        |> Option.defaultValue (
+                            Error(
+                                issue
+                                    (target InputTarget.ExpectedFamilySequence)
+                                    Violation.ExpectedRevisionRange
                             )
-                        | _ -> Error(issue TaskInputId.CaseId Violation.CaseIdRequired)
-                    | Some(SubmissionValue.Text _), Some(SubmissionValue.Text _) ->
-                        Error(
-                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
-                        )
-                    | None, None ->
-                        Error(
-                            issue (field BusinessField.CaseReference) Violation.CaseSelectionInvalid
                         )
                     | _ -> Error SubmissionProblem.Shape
-                | _ -> Error SubmissionProblem.Shape)
-
-        map2
-            (fun role scope ->
-                {
-                    AuthoredGrant.Role = role
-                    Scope = scope
-                })
-            role
-            scope
-
-    let private workValue values input =
-        match Map.tryFind input values with
-        | None -> Ok WorkValue.Keep
-        | Some SubmissionValue.Clear -> Ok WorkValue.Clear
-        | Some(SubmissionValue.Text value) -> Ok(WorkValue.Set value)
+                elif payment.IsNone && family.IsNone then
+                    Ok(Binding.Case(selection, expected))
+                else
+                    Error SubmissionProblem.Shape)
+        | ActSubject.Work, OperationBinding.Work(selection, expected) ->
+            version 0L InputTarget.ExpectedWorkRevision expected
+            |> Result.map (fun expected -> Binding.Work(selection, expected))
+        | ActSubject.Note, OperationBinding.Note(selection, None) when declaration.Creates ->
+            Ok(Binding.NoteNew selection)
+        | ActSubject.Note, OperationBinding.Note(selection, Some id) when not declaration.Creates ->
+            identity NoteId.create InputTarget.NoteId Violation.NoteIdRequired id
+            |> Result.map (fun id -> Binding.Note(selection, id))
+        | ActSubject.Reminder, OperationBinding.Reminder(selection, None) when declaration.Creates ->
+            Ok(Binding.ReminderNew selection)
+        | ActSubject.Reminder, OperationBinding.Reminder(selection, Some(id, expected)) when
+            not declaration.Creates
+            ->
+            map2
+                (fun id expected -> Binding.Reminder(selection, id, expected))
+                (identity ReminderId.create InputTarget.ReminderId Violation.ReminderIdRequired id)
+                (version 1L InputTarget.ExpectedReminderRevision expected)
+        | ActSubject.People, OperationBinding.People(None, expected) when declaration.Creates ->
+            creationVersion expected |> Result.map Binding.PeopleNew
+        | ActSubject.People, OperationBinding.People(Some id, expected) when not declaration.Creates ->
+            map2
+                (fun id expected -> Binding.People(id, expected))
+                (actorIdentity id)
+                (version 1L InputTarget.ExpectedRevision expected)
         | _ -> Error SubmissionProblem.Shape
 
-    let private caseAct values kind : Result<AuthoredCaseAct, SubmissionProblem> =
-        match kind with
-        | CaseActKind.Open ->
-            group values RecordGroup.Registration
-            |> RegistrationInput.create
-            |> structure
-            |> Result.map CaseAct.Open
-        | CaseActKind.AmendRegistration ->
-            updates values RecordGroup.Registration
-            |> RegistrationUpdateInput.create
-            |> structure
-            |> Result.map CaseAct.AmendRegistration
-        | CaseActKind.Decide ->
-            group values RecordGroup.Decision
-            |> DecisionInput.create
-            |> structure
-            |> Result.map CaseAct.Decide
-        | CaseActKind.RecordPayment ->
-            group values RecordGroup.Payment
-            |> PaymentInput.create
-            |> structure
-            |> Result.map CaseAct.RecordPayment
-        | CaseActKind.Void -> text values (target InputTarget.Reason) |> Result.map CaseAct.Void
-        | CaseActKind.Reinstate ->
-            text values (target InputTarget.Reason) |> Result.map CaseAct.Reinstate
-        | CaseActKind.Correct ->
-            let registration =
-                text values (target (InputTarget.Group RecordGroup.Registration))
-                |> bind (function
-                    | "KEEP" when (updates values RecordGroup.Registration).IsEmpty ->
-                        Ok Amendment.Keep
-                    | "UPDATE" ->
-                        updates values RecordGroup.Registration
-                        |> RegistrationUpdateInput.create
-                        |> structure
-                        |> Result.map Amendment.Update
-                    | _ -> Error SubmissionProblem.Shape)
+    let private declared task =
+        ClaimCore.Domain.Tasks.Registry.findDeclaration task
+        |> Option.filter (fun declaration -> declaration.Exposure = TaskExposure.Client)
+        |> (function
+        | Some value -> Ok value
+        | None -> Error SubmissionProblem.Shape)
 
-            let decision =
-                text values (target (InputTarget.Group RecordGroup.Decision))
-                |> bind (function
-                    | "KEEP" when (updates values RecordGroup.Decision).IsEmpty -> Ok Change.Keep
-                    | "CLEAR" when (updates values RecordGroup.Decision).IsEmpty -> Ok Change.Clear
-                    | "UPDATE" ->
-                        updates values RecordGroup.Decision
-                        |> DecisionUpdateInput.create
-                        |> structure
-                        |> Result.map Change.Update
-                    | _ -> Error SubmissionProblem.Shape)
-
-            map2
-                (fun registration decision ->
-                    CaseAct.Correct
+    let assemble (submission: SubmissionEnvelope<int64, Guid>) =
+        declared submission.Task
+        |> bind (fun declaration ->
+            validate declaration.Inputs declaration.Collections submission.Inputs
+            |> bind (fun () ->
+                map2
+                    (fun binding inputs ->
                         {
-                            Registration = registration
-                            Decision = decision
+                            SubmittedOperation.Binding = binding
+                            Inputs = inputs
                         })
-                registration
-                decision
-        | CaseActKind.RemovePayment -> Error SubmissionProblem.Shape
-        | _ ->
-            match (CaseActKind.describe kind).Payload with
-            | ActPayload.Bare act -> Ok(CaseAct.Bare act)
-            | _ -> Error SubmissionProblem.Shape
+                    (admitBinding declaration submission.Binding)
+                    (mapInputs declaration.Collections submission.Inputs)))
 
-    let private peopleAct values kind : Result<AuthoredPeopleAct, SubmissionProblem> =
-        match kind with
-        | PeopleActKind.Register -> profile values |> Result.map PeopleAct.Register
-        | PeopleActKind.Admit ->
-            let grants =
-                match Map.tryFind (target InputTarget.Grants) values with
-                | Some(SubmissionValue.Rows rows) ->
-                    rows
-                    |> List.mapi (fun ordinal values -> ordinal, values)
-                    |> List.fold
-                        (fun result (ordinal, values) ->
-                            map2
-                                (fun grants grant -> grants @ [ grant ])
-                                result
-                                (grant values |> Result.mapError (rowProblem ordinal)))
-                        (Ok [])
-                | _ -> Error SubmissionProblem.Shape
-
-            map2
-                (fun profile grants -> PeopleAct.Admit { Profile = profile; Grants = grants })
-                (profile values)
-                grants
-        | PeopleActKind.SetProfile -> profile values |> Result.map PeopleAct.SetProfile
-        | PeopleActKind.Grant -> grant values |> Result.map PeopleAct.Grant
-        | PeopleActKind.Revoke -> grant values |> Result.map PeopleAct.Revoke
-        | PeopleActKind.Enable -> Ok PeopleAct.Enable
-        | PeopleActKind.Disable -> Ok PeopleAct.Disable
-        | PeopleActKind.EraseProfile -> Ok PeopleAct.EraseProfile
-        | PeopleActKind.ProvisionOwner -> Error SubmissionProblem.Shape
-
-    let private reminderAct values kind current =
-        let plan =
-            map2
-                (fun action due ->
-                    {
-                        ReminderPlanInput.Action = action
-                        Due = due
-                    })
-                (text values (target InputTarget.ReminderAction))
-                (text values (target InputTarget.ReminderDueDate))
-
-        let act =
-            match kind, current with
-            | ReminderActKind.Create, None -> plan |> Result.map ReminderAct.Create
-            | ReminderActKind.Update, Some(id, revision) ->
-                plan |> Result.map (fun plan -> ReminderAct.Update(id, revision, plan))
-            | ReminderActKind.CompleteAndPlanNext, Some(id, revision) ->
-                plan
-                |> Result.map (fun plan -> ReminderAct.CompleteAndPlanNext(id, revision, plan))
-            | ReminderActKind.Reopen, Some(id, revision) ->
-                text values (target InputTarget.ReminderDueDate)
-                |> Result.map (fun due -> ReminderAct.Reopen(id, revision, due))
-            | ReminderActKind.Complete, Some(id, revision) -> Ok(ReminderAct.Complete(id, revision))
-            | ReminderActKind.Cancel, Some(id, revision) -> Ok(ReminderAct.Cancel(id, revision))
-            | _ -> Error SubmissionProblem.Shape
-
-        act
-
-    let private assembleDeclared (submission: SubmissionEnvelope<int64, Guid>) =
-        let declaration =
-            TaskDeclarations.describe (ApplicationTaskId.Operation submission.Task)
-
-        validate declaration submission.Inputs
-        |> bind (fun () ->
-            let values = submission.Inputs
-            let command input = Ok(SubmittedOperation.Command input)
-
-            match submission.Task, submission.Binding with
-            | ActKind.Case CaseActKind.Open, OperationBinding.CaseNew expected ->
-                map2
-                    (fun reference act ->
-                        OperationInput.Case
-                            {
-                                OperationId = submission.OperationId
-                                Target = CaseSelector.Reference reference
-                                ExpectedRevision = expected
-                                ExpectedFamilySequence = None
-                                Act = act
-                            }
-                        |> SubmittedOperation.Command)
-                    (text values (field BusinessField.CaseReference))
-                    (caseAct values CaseActKind.Open)
-            | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) when
-                kind <> CaseActKind.Open
-                ->
-                let act =
-                    match kind, payment with
-                    | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
-                    | CaseActKind.RemovePayment, None
-                    | _, Some _ -> Error SubmissionProblem.Shape
-                    | _ -> caseAct values kind
-
-                act
-                |> bind (fun act ->
-                    command (
-                        OperationInput.Case
-                            {
-                                OperationId = submission.OperationId
-                                Target = selection
-                                ExpectedRevision = expected
-                                ExpectedFamilySequence = family
-                                Act = act
-                            }
-                    ))
-            | ActKind.Work WorkActKind.UpdateWork, OperationBinding.Work(selection, expected) ->
-                map2
-                    (fun responsible summary ->
-                        WorkAct.UpdateWork(
-                            {
-                                Responsible = responsible
-                                Summary = summary
-                            }
-                            : CaseWorkInput
-                        ))
-                    (workValue values (field BusinessField.ResponsibleActor))
-                    (workValue values (field BusinessField.HandlingSummary))
-                |> bind (fun act ->
-                    command (
-                        OperationInput.Work
-                            {
-                                OperationId = submission.OperationId
-                                Target = selection
-                                ExpectedRevision = expected
-                                Act = act
-                            }
-                    ))
-            | ActKind.Note NoteActKind.AddNote, OperationBinding.Note(selection, None) ->
-                text values (target InputTarget.NoteText)
-                |> bind (fun text ->
-                    command (
-                        OperationInput.Note
-                            {
-                                OperationId = submission.OperationId
-                                Target = selection
-                                Act = AuthoredNoteAct.AddNote text
-                            }
-                    ))
-            | ActKind.Note NoteActKind.RemoveNote, OperationBinding.Note(selection, Some id) ->
-                command (
-                    OperationInput.Note
-                        {
-                            OperationId = submission.OperationId
-                            Target = selection
-                            Act = AuthoredNoteAct.RemoveNote id
-                        }
-                )
-            | ActKind.Reminder kind, OperationBinding.Reminder(selection, current) ->
-                let act = reminderAct values kind current
-
-                act
-                |> bind (fun act ->
-                    command (
-                        OperationInput.Reminder
-                            {
-                                OperationId = submission.OperationId
-                                Target = selection
-                                Act = act
-                            }
-                    ))
-            | ActKind.People kind, OperationBinding.People(actorId, expected) ->
-                peopleAct values kind
-                |> bind (fun act ->
-                    match kind, actorId with
-                    | (PeopleActKind.Register | PeopleActKind.Admit), None ->
-                        principal values
-                        |> bind (fun target ->
-                            command (
-                                OperationInput.People
-                                    {
-                                        OperationId = submission.OperationId
-                                        ExpectedRevision = expected
-                                        Target = target
-                                        Act = act
-                                    }
-                            ))
-                    | (PeopleActKind.Register | PeopleActKind.Admit), Some _
-                    | _, None -> Error SubmissionProblem.Shape
-                    | _, Some actorId ->
-                        Ok(
-                            SubmittedOperation.ActorPeople
-                                {
-                                    OperationId = submission.OperationId
-                                    ActorId = actorId
-                                    ExpectedRevision = expected
-                                    Act = act
-                                }
-                        ))
-            | _ -> Error SubmissionProblem.Shape)
-
-    let assemble submission =
-        if submission.Task = ActKind.People PeopleActKind.ProvisionOwner then
-            Error SubmissionProblem.Shape
-        else
-            assembleDeclared submission
-
-    let admit (envelope: SubmissionEnvelope<int64, Guid>) =
+    let admit envelope =
         match assemble envelope with
         | Error SubmissionProblem.Shape -> Error()
         | Error(SubmissionProblem.Rejected refusal) ->
@@ -593,123 +385,139 @@ module OperationSubmission =
                     OperationValue = Ok operation
                 }
 
-    let syntaxDraft (draft: SubmissionEnvelope<int64 option, Guid option>) =
-        let reference =
+    let private domainIssues issues =
+        let convert (issue: TaskInputIssue) =
+            let input =
+                match issue.Input with
+                | TaskInputId.Target input -> input
+                | TaskInputId.Scope -> InputTarget.Scope
+                | TaskInputId.CaseId -> InputTarget.CaseId
+                | _ -> invalidOp "A ledger task returned a query-only issue target."
+
+            {
+                InputIssue.Target = input
+                Violation = issue.Violation
+                RelatedDate = issue.RelatedDate
+                GrantRow = issue.Row |> Option.bind (TaskRowTarget.ordinal >> GrantOrdinal.create)
+            }
+
+        issues |> List.map convert |> InputIssues.ofList
+
+    let refusal =
+        function
+        | ClaimCore.Domain.Rejection.Refused refusal -> Some refusal
+        | ClaimCore.Domain.Rejection.Input issues ->
+            TaskInputIssues.toList issues |> domainIssues |> Option.map Refusal.InvalidInput
+        | ClaimCore.Domain.Rejection.InvalidState _ -> None
+
+    let private draftBinding declaration binding =
+        let optional check =
             function
-            | CaseSelector.Reference value -> Some value
-            | CaseSelector.Id _ -> None
+            | None -> Ok()
+            | Some value -> check value |> Result.map ignore
 
-        let syntax intent = Ok(Validation.syntaxIntent intent)
+        let revision minimum target = optional (version minimum target)
 
-        if draft.Task = ActKind.People PeopleActKind.ProvisionOwner then
-            Error SubmissionProblem.Shape
-        else
-            validate
-                (TaskDeclarations.describe (ApplicationTaskId.Operation draft.Task))
-                draft.Inputs
-            |> bind (fun () ->
-                let values = draft.Inputs
+        let identifier create target violation =
+            optional (identity create target violation)
 
-                match draft.Task, draft.Binding with
-                | ActKind.Case CaseActKind.Open, OperationBinding.CaseNew expected ->
-                    map2
-                        (fun reference act -> reference, act)
-                        (text values (field BusinessField.CaseReference))
-                        (caseAct values CaseActKind.Open)
-                    |> bind (fun (reference, act) ->
-                        syntax (
-                            AuthoredIntent.Case(
-                                draft.OperationId,
-                                Some reference,
-                                expected,
-                                None,
-                                act
-                            )
-                        ))
-                | ActKind.Case kind, OperationBinding.Case(selection, expected, payment, family) when
-                    kind <> CaseActKind.Open
-                    ->
-                    let act =
-                        match kind, payment with
-                        | CaseActKind.RemovePayment, Some id -> Ok(CaseAct.RemovePayment id)
-                        | CaseActKind.RemovePayment, None
-                        | _, Some _ -> Error SubmissionProblem.Shape
-                        | _ -> caseAct values kind
+        let family =
+            optional (fun raw ->
+                Sequence.create raw
+                |> Option.filter (fun value -> value >= Sequence.first)
+                |> Option.map Ok
+                |> Option.defaultValue (
+                    Error(
+                        issue
+                            (target InputTarget.ExpectedFamilySequence)
+                            Violation.ExpectedRevisionRange
+                    )
+                ))
 
-                    act
-                    |> bind (fun act ->
-                        syntax (
-                            AuthoredIntent.Case(
-                                draft.OperationId,
-                                reference selection,
-                                expected,
-                                family,
-                                act
-                            )
-                        ))
-                | ActKind.Work _, OperationBinding.Work(selection, expected) ->
-                    map2
-                        (fun responsible summary ->
-                            {
-                                CaseWorkInput.Responsible = responsible
-                                Summary = summary
-                            })
-                        (workValue values (field BusinessField.ResponsibleActor))
-                        (workValue values (field BusinessField.HandlingSummary))
-                    |> bind (fun work ->
-                        syntax (
-                            AuthoredIntent.Work(
-                                draft.OperationId,
-                                reference selection,
-                                expected,
-                                work
-                            )
-                        ))
-                | ActKind.Note kind, OperationBinding.Note(selection, selected) ->
-                    let act =
-                        match kind, selected with
-                        | NoteActKind.AddNote, None ->
-                            text values (target InputTarget.NoteText)
-                            |> Result.map AuthoredNoteAct.AddNote
-                        | NoteActKind.RemoveNote, Some id -> Ok(AuthoredNoteAct.RemoveNote id)
-                        | _ -> Error SubmissionProblem.Shape
+        match TaskDeclaration.bindingShape declaration, binding with
+        | BindingShape.CaseNew, OperationBinding.CaseNew expected ->
+            optional creationVersion expected
+        | BindingShape.Case, OperationBinding.Case(_, expected, None, None) ->
+            revision 1L InputTarget.ExpectedRevision expected
+        | BindingShape.CasePayment, OperationBinding.Case(_, expected, payment, None) ->
+            collect
+                [
+                    revision 1L InputTarget.ExpectedRevision expected
+                    identifier
+                        OperationId.create
+                        InputTarget.PaymentId
+                        Violation.PaymentIdRequired
+                        payment
+                ]
+        | BindingShape.CaseErase, OperationBinding.Case(_, expected, None, sequence) ->
+            collect [ revision 1L InputTarget.ExpectedRevision expected; family sequence ]
+        | BindingShape.Work, OperationBinding.Work(_, expected) ->
+            revision 0L InputTarget.ExpectedWorkRevision expected
+        | BindingShape.ReminderNew, OperationBinding.Reminder(_, None)
+        | BindingShape.NoteNew, OperationBinding.Note(_, None) -> Ok()
+        | BindingShape.Reminder, OperationBinding.Reminder(_, Some(id, expected)) ->
+            collect
+                [
+                    identity
+                        ReminderId.create
+                        InputTarget.ReminderId
+                        Violation.ReminderIdRequired
+                        id
+                    |> Result.map ignore
+                    revision 1L InputTarget.ExpectedReminderRevision expected
+                ]
+        | BindingShape.Note, OperationBinding.Note(_, note) ->
+            identifier NoteId.create InputTarget.NoteId Violation.NoteIdRequired note
+        | BindingShape.PeopleNew, OperationBinding.People(None, expected) ->
+            optional creationVersion expected
+        | BindingShape.People, OperationBinding.People(Some id, expected) ->
+            collect
+                [
+                    actorIdentity id |> Result.map ignore
+                    revision 1L InputTarget.ExpectedRevision expected
+                ]
+        | _ -> Error SubmissionProblem.Shape
 
-                    act
-                    |> bind (fun act ->
-                        syntax (AuthoredIntent.Note(draft.OperationId, reference selection, act)))
-                | ActKind.Reminder kind, OperationBinding.Reminder(selection, current) ->
-                    reminderAct values kind current
-                    |> bind (fun act ->
-                        syntax (
-                            AuthoredIntent.Reminder(draft.OperationId, reference selection, act)
-                        ))
-                | ActKind.People kind, OperationBinding.People(actor, expected) ->
-                    peopleAct values kind
-                    |> bind (fun act ->
-                        match kind, actor with
-                        | (PeopleActKind.Register | PeopleActKind.Admit), None ->
-                            principal values
-                            |> bind (fun principal ->
-                                syntax (
-                                    AuthoredIntent.People(
-                                        draft.OperationId,
-                                        principal,
-                                        expected,
-                                        act
-                                    )
-                                ))
-                        | (PeopleActKind.Register | PeopleActKind.Admit), Some _
-                        | _, None -> Error SubmissionProblem.Shape
-                        | _, Some actor ->
-                            if ActorId.create actor |> Option.isNone then
-                                Error SubmissionProblem.Shape
-                            else
-                                let result = People.syntaxAction draft.OperationId expected act
+    let private checkInputs (declaration: TaskDeclaration) inputs =
+        let selected = ClaimCore.Domain.Tasks.Registry.find declaration.Id |> Option.get
 
-                                match result with
-                                | Error(Refusal.InvalidInput issues) -> Ok(Some issues)
-                                | _ -> Ok None)
-                | _ -> Error SubmissionProblem.Shape)
+        let issues =
+            match selected with
+            | ClaimCore.Domain.Tasks.Task.Family selected -> selected.Check inputs
+            | ClaimCore.Domain.Tasks.Task.Person selected -> selected.Check inputs
+
+        match domainIssues issues with
+        | None -> Ok()
+        | Some issues -> Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues))
+
+    let private operationIdentity =
+        function
+        | None -> Ok()
+        | Some id ->
+            identity OperationId.create InputTarget.OperationId Violation.OperationIdRequired id
+            |> Result.map ignore
+
+    let private syntaxResult =
+        function
+        | Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues)) -> Ok(Some issues)
+        | Error problem -> Error problem
+        | Ok() -> Ok None
+
+    let syntaxDraft (draft: SubmissionEnvelope<int64 option, Guid option>) =
+        declared draft.Task
+        |> bind (fun declaration ->
+            let authored =
+                validate declaration.Inputs declaration.Collections draft.Inputs
+                |> bind (fun () -> mapInputs declaration.Collections draft.Inputs)
+                |> bind (checkInputs declaration)
+
+            collect
+                [
+                    operationIdentity draft.OperationId
+                    draftBinding declaration draft.Binding
+                    authored
+                ]
+            |> syntaxResult)
 
     let completeDraft (draft: SubmissionEnvelope<int64 option, Guid option>) =
         let binding =
@@ -741,13 +549,14 @@ module OperationSubmission =
         | _ -> None
 
     let syntax (submission: OperationSubmission) =
-        match submission.Operation with
-        | Error(Refusal.InvalidInput issues) -> Some issues
-        | Ok(SubmittedOperation.Command command) -> OperationInput.syntax command
-        | Ok(SubmittedOperation.ActorPeople input) ->
-            match
-                People.syntaxAction (Some input.OperationId) (Some input.ExpectedRevision) input.Act
-            with
-            | Error(Refusal.InvalidInput issues) -> Some issues
-            | _ -> None
-        | _ -> None
+        let authored =
+            match submission.Operation with
+            | Error refusal -> Error(SubmissionProblem.Rejected refusal)
+            | Ok operation ->
+                declared submission.Task
+                |> bind (fun declaration -> checkInputs declaration operation.Inputs)
+
+        collect [ operationIdentity (Some submission.OperationId); authored ]
+        |> syntaxResult
+        |> Result.toOption
+        |> Option.flatten

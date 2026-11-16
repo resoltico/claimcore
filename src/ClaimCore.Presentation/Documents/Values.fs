@@ -86,8 +86,8 @@ type HumanAdvice =
 /// Ready selection and authored controls share one declaration-owned shape.
 type Affordance =
     {
-        Task: ApplicationTaskId
-        Binding: OperationBinding<int64>
+        Task: TaskId
+        Binding: Binding option
         Seeds: Map<TaskInputId, SubmissionValue>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
@@ -97,26 +97,18 @@ type Affordance =
 
 module Affordance =
     let valid value =
-        let subject =
-            match value.Binding with
-            | OperationBinding.CaseNew _
-            | OperationBinding.Case _ -> ActSubject.Case
-            | OperationBinding.Work _ -> ActSubject.Work
-            | OperationBinding.Note _ -> ActSubject.Note
-            | OperationBinding.Reminder _ -> ActSubject.Reminder
-            | OperationBinding.People _ -> ActSubject.People
+        let definition = TaskDeclarations.find (TaskId.token value.Task)
 
         let matches =
-            match value.Task with
-            | ApplicationTaskId.Operation task -> ActKind.subject task = subject
-            | ApplicationTaskId.Command CommandTaskId.PeopleRequestsDismiss ->
-                subject = ActSubject.People
-            | ApplicationTaskId.Query _ -> false
+            match definition, value.Binding with
+            | Some definition, Some binding ->
+                definition.Ledger
+                |> Option.exists (fun task ->
+                    TaskDeclaration.bindingShape task = BindingShape.ofValue binding)
+            | Some definition, None -> definition.Kind = ClientTaskKind.Command
+            | _ -> false
 
-        match
-            TaskDeclarations.all
-            |> List.tryFind (fun declaration -> declaration.Task = value.Task)
-        with
+        match definition with
         | None -> false
         | Some declaration ->
             let scalarKeys = declaration.Inputs |> List.map _.Input |> Set.ofList

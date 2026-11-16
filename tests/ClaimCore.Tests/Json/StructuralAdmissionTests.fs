@@ -206,15 +206,9 @@ let tests =
 
                     match Codec.decode 8192 OperationSubmissionCodecs.submission raw with
                     | Ok submission ->
-                        let request =
-                            match ClaimCore.TestSupport.Submissions.command submission with
-                            | ClaimCore.Application.Contracts.OperationInput.People request ->
-                                request
-                            | _ -> failtest "People required"
-
-                        Expect.isError
-                            (People.parse request)
-                            "Canonical principal admission remains at the core"
+                        Expect.isSome
+                            (ClaimCore.Application.Contracts.OperationSubmission.syntax submission)
+                            "Canonical principal admission remains in the core task"
                     | other ->
                         failtestf "Expected structurally admitted people input, got %A" other
 

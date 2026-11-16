@@ -28,20 +28,23 @@ let internal lifecycle fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 88000)
-                        other
-                        (PeopleAct.Register
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 88000))
+                        (other)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
                             {
                                 DisplayName = "Summary editor"
                                 Contact = None
-                            })
-                ))
-                token
+                            }
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         accepted registered |> ignore
 
@@ -63,31 +66,35 @@ let internal lifecycle fixture =
         let editor = { owner with Principal = other }
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 88003 "SUMMARY-AUTHOR" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (88003)
+                    ("SUMMARY-AUTHOR")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let parent = accepted opened |> caseReceipt |> _.CaseId
         let target = CaseSelector.Id parent
 
         let change actor number revision responsible summary =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture number
-                        Target = target
-                        ExpectedRevision = revision
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = responsible
-                                    Summary = summary
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture number)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (revision)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = responsible
+                            Summary = summary
+                        }
+                    )))
                 token
 
         let get () =
@@ -184,16 +191,18 @@ let internal lifecycle fixture =
         accepted final |> ignore
 
         let! erasedProfile =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 88010)
-                        other
-                        PeopleAct.EraseProfile
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 88010))
+                        (other)
+                        (None)
+                        "people.eraseProfile"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople erasedProfile
         let! current = get ()
@@ -204,11 +213,9 @@ let internal lifecycle fixture =
             "Summary attribution uses current profile erasure"
 
         let! erasedCase =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request fixture 88011 "SUMMARY-AUTHOR" 1L (AuthoredCaseAct.Bare BareAct.Erase)
-                ))
+                (((request (fixture) (88011) ("SUMMARY-AUTHOR") (1L) "case.erase" (Map.empty))))
                 token
 
         accepted erasedCase |> ignore

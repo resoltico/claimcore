@@ -25,32 +25,34 @@ let private summaries () =
 
             for number, reference in [ 100, "VISIBLE"; 101, "PRIVATE" ] do
                 let! result =
-                    Service.execute
+                    Service.executeSubmission
                         owner
-                        (ClaimCore.TestSupport.Inputs.caseOperation (
-                            request
-                                database.Fixture
-                                number
-                                reference
-                                0L
-                                (AuthoredCaseAct.Open Inputs.registration)
-                        ))
+                        (((request
+                            (database.Fixture)
+                            (number)
+                            (reference)
+                            (0L)
+                            "case.open"
+                            (ClaimCore.TestSupport.Submissions.fields (
+                                RegistrationInput.values (Inputs.registration)
+                            )))))
                         token
                     |> Async.AwaitTask
 
                 accepted result |> ignore
 
             let! decided =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            102
-                            "VISIBLE"
-                            1L
-                            (AuthoredCaseAct.Decide Inputs.decision)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (102)
+                        ("VISIBLE")
+                        (1L)
+                        "case.decide"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            DecisionInput.values (Inputs.decision)
+                        )))))
                     token
                 |> Async.AwaitTask
 
@@ -61,16 +63,20 @@ let private summaries () =
                 |> Result.defaultWith (fun _ -> failtest "Valid principal")
 
             let! registered =
-                Service.execute
-                    owner
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            database.Fixture.Store
-                            (id database.Fixture 200)
-                            reader
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    token
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (database.Fixture.Store)
+                            ((id database.Fixture 200))
+                            (reader)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (
+                                ClaimCore.TestSupport.Inputs.actorProfile
+                            ))
+
+                    return! Service.executeSubmission (owner) submission (token)
+                })
                 |> Async.AwaitTask
 
             acceptedPeople registered

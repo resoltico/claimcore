@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.TimelineStorageTests
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
 open ClaimCore.Application.Storage
 open ClaimCore.Application.Reads
@@ -28,77 +29,69 @@ let tests =
             task {
                 let! owner = caseWorker fixture
 
-                for number, revision, act in
+                for number, revision, taskName, values in
                     [
-                        99100, 0L, AuthoredCaseAct.Open registration
-                        99101, 1L, AuthoredCaseAct.Bare BareAct.Close
-                        99102, 2L, AuthoredCaseAct.Bare BareAct.Reopen
+                        99100,
+                        0L,
+                        "case.open",
+                        Submissions.fields (RegistrationInput.values registration)
+                        99101, 1L, "case.close", Map.empty
+                        99102, 2L, "case.reopen", Map.empty
                     ] do
                     let! reply =
-                        Service.execute
+                        Service.executeSubmission
                             owner
-                            (Inputs.caseOperation (
-                                request fixture number "TIMELINE-1" revision act
-                            ))
+                            (request fixture number "TIMELINE-1" revision taskName values)
                             token
 
                     accepted reply |> ignore
 
                 let! work =
-                    Service.execute
+                    Service.executeSubmission
                         owner
-                        (OperationInput.Work
-                            {
-                                OperationId = id fixture 99103
-                                Target = CaseSelector.Reference "TIMELINE-1"
-                                ExpectedRevision = 0L
-                                Act =
-                                    WorkAct.UpdateWork
-                                        {
-                                            Responsible = WorkValue.Keep
-                                            Summary = WorkValue.Set "Timeline summary"
-                                        }
-                            })
+                        ((ClaimCore.TestSupport.Submissions.createRaw)
+                            "work.update"
+                            (id fixture 99103)
+                            (ClaimCore.Application.Contracts.OperationBinding.Work(
+                                (CaseSelector.Reference "TIMELINE-1"),
+                                (0L)
+                            ))
+                            (ClaimCore.TestSupport.Submissions.work (
+                                {
+                                    Responsible = WorkValue.Keep
+                                    Summary = WorkValue.Set "Timeline summary"
+                                }
+                            )))
                         token
 
                 accepted work |> ignore
 
-                for number, act in
+                for number, taskName, selected, values in
                     [
                         99104,
-                        AuthoredReminderAct.Create
-                            {
-                                Action = "First action"
-                                Due = "2027-12-30"
-                            }
+                        "reminder.create",
+                        None,
+                        Submissions.reminderPlan "First action" "2027-12-30"
                         99105,
-                        AuthoredReminderAct.CompleteAndPlanNext(
-                            id fixture 99104,
-                            1L,
-                            {
-                                Action = "Next action"
-                                Due = "2027-12-31"
-                            }
-                        )
+                        "reminder.completeAndPlanNext",
+                        Some(id fixture 99104, 1L),
+                        Submissions.reminderPlan "Next action" "2027-12-31"
                         99106,
-                        AuthoredReminderAct.Update(
-                            id fixture 99105,
-                            1L,
-                            {
-                                Action = "Updated next action"
-                                Due = "2027-12-31"
-                            }
-                        )
+                        "reminder.update",
+                        Some(id fixture 99105, 1L),
+                        Submissions.reminderPlan "Updated next action" "2027-12-31"
                     ] do
                     let! reply =
-                        Service.execute
+                        Service.executeSubmission
                             owner
-                            (OperationInput.Reminder
-                                {
-                                    OperationId = id fixture number
-                                    Target = CaseSelector.Reference "TIMELINE-1"
-                                    Act = act
-                                })
+                            (Submissions.createRaw
+                                taskName
+                                (id fixture number)
+                                (OperationBinding.Reminder(
+                                    CaseSelector.Reference "TIMELINE-1",
+                                    selected
+                                ))
+                                values)
                             token
 
                     accepted reply |> ignore
@@ -158,7 +151,8 @@ let tests =
                                         Expect.equal
                                             (firstPrevious
                                              |> Map.find first.Items.Head.Position
-                                             |> fun entry -> OperationId.value entry.OperationId)
+                                             |> fun entry ->
+                                                 OperationId.value entry.Stamp.OperationId)
                                             (id fixture 99105)
                                             "Paging does not truncate next-reminder creation context"
 
@@ -169,46 +163,38 @@ let tests =
                                                     BeforePosition = first.Next
                                                 }
 
-                                        let content entry =
-                                            LedgerEntries.validate owner.InstallationId entry
-                                            |> required
-                                            |> LedgerEntries.content
-
-                                        let! actors =
-                                            PeopleReads.actorRefs
+                                        let! described =
+                                            TimelineHistory.entries
+                                                owner
                                                 tx
-                                                (all.Items |> List.map _.ActorId |> List.distinct)
+                                                parent.Snapshot.Reference
+                                                false
+                                                true
+                                                None
+                                                all
 
                                         let differences =
-                                            all.Items
+                                            described
+                                            |> required
                                             |> List.map (fun entry ->
-                                                let before =
-                                                    previous
-                                                    |> Map.tryFind entry.Position
-                                                    |> Option.map content
+                                                let values =
+                                                    match entry.Changes with
+                                                    | TimelineChanges.Disclosed value ->
+                                                        value.Items
+                                                    | _ -> failtest "Full history required"
 
-                                                entry.Id,
-                                                (TimelineDifferences.describeEffect
-                                                    entry.Subject
-                                                    (match entry.Subject with
-                                                     | EntryTarget.Case(_, _, _, date) -> date
-                                                     | EntryTarget.Work value ->
-                                                         value.BusinessDate
-                                                     | EntryTarget.Reminder value ->
-                                                         value.BusinessDate
-                                                     | _ -> failtest "Case timeline entry")
-                                                    actors
-                                                    (content entry)
-                                                    before
-                                                 |> required))
+                                                EffectId.create
+                                                    entry.OperationId
+                                                    (EffectPosition.index entry.Position)
+                                                |> Option.get,
+                                                values)
                                             |> Map.ofList
 
                                         Expect.isError
-                                            (TimelineDifferences.describe
-                                                (System.DateOnly(2026, 9, 7))
-                                                actors
-                                                (content all.Items.Head)
-                                                None)
+                                            (PartDescriptions.familyVersions
+                                                parent.Snapshot.Reference
+                                                Map.empty
+                                                all.Items.Head.Operation.Changes)
                                             "A missing predecessor cannot turn a revision-two update into creation"
 
                                         return all, previous, facts, work, first, rest, differences
@@ -301,26 +287,24 @@ let tests =
                     let origin = Map.find updated.Position previous
 
                     Expect.equal
-                        (OperationId.value origin.OperationId)
+                        (OperationId.value origin.Stamp.OperationId)
                         (id fixture 99105)
                         "A reminder's predecessor can be its complete-and-plan-next creation effect"
 
-                    match origin.Subject with
-                    | EntryTarget.Reminder subject ->
-                        Expect.equal
-                            subject.ReminderId
-                            (ReminderId.create (id fixture 99105) |> Option.get)
-                            "The predecessor is the next reminder's own creation effect"
+                    Expect.equal origin.Kind PartKind.Reminder "Reminder predecessor"
 
-                        Expect.equal
-                            subject.Act
-                            ReminderActKind.Create
-                            "Birth is distinct from completing the original reminder"
+                    Expect.equal
+                        origin.PartId
+                        (id fixture 99105)
+                        "Next reminder owns its creation part"
 
-                        Expect.equal
-                            origin.Index
-                            1
-                            "The second effect of the paired operation owns the new reminder"
-                    | _ -> failtest "Expected a reminder birth effect"
+                    Expect.equal
+                        (Revision.value origin.Revision)
+                        1L
+                        "Creation part is first revision"
 
+                    Expect.equal
+                        (EffectPosition.index origin.Stamp.Position)
+                        1
+                        "The second part of the paired operation owns the next reminder"
             }))

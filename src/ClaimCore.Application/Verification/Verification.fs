@@ -134,12 +134,7 @@ module internal Verification =
 
     let private payments connection (state: Replay.Scan) token =
         task {
-            let expected =
-                state.Cases
-                |> Map.values
-                |> Seq.collect (fun history -> history.PaymentProjections |> Map.values)
-                |> Seq.map (fun payment -> payment.PaymentId, payment)
-                |> Map.ofSeq
+            let expected = Replay.payments state
 
             try
                 let! rows = PaymentStorage.projections connection token
@@ -151,7 +146,7 @@ module internal Verification =
                     require
                         None
                         VerificationFinding.CasePaymentsProjection
-                        (rows.Length = actual.Count && expected = actual)
+                        (rows.Length = actual.Count && expected = Ok actual)
             with :? RecordCorruptException ->
                 return Error(divergence None VerificationFinding.CasePaymentsProjection)
         }
