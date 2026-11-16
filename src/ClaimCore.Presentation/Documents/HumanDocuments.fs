@@ -199,6 +199,26 @@ module HumanCaseDocument =
                                     availability.Editable
                                     availability.Choices
 
+                            let action =
+                                let input = TaskAffordances.field BusinessField.PaymentDate
+
+                                if List.contains input action.Editable then
+                                    { action with
+                                        Seeds =
+                                            Map.add
+                                                input
+                                                (InputValue.Text(
+                                                    value.Work.Basis.BusinessDate.ToString(
+                                                        CalendarDate.ExactFormat,
+                                                        System.Globalization.CultureInfo
+                                                            .InvariantCulture
+                                                    )
+                                                ))
+                                                action.Seeds
+                                    }
+                                else
+                                    action
+
                             Some
                                 { action with
                                     Blocked =
@@ -257,12 +277,92 @@ module HumanCaseDocument =
                         yield TaskAffordances.noteAdd value.Snapshot.CaseId
                 ]
 
-        let recommended, actions =
+        let declarationInputs (action: Affordance) =
+            TaskDeclarations.find (TaskId.token action.Task)
+            |> Option.map _.Inputs
+            |> Option.defaultValue []
+
+        let isRecommended (action: Affordance) =
+            action.Blocked.IsNone && value.Advice.Recommended = Some action.Task
+
+        let supplies field mode (action: Affordance) =
+            action.Blocked.IsNone
+            && (declarationInputs action
+                |> List.exists (fun input ->
+                    input.Input = TaskAffordances.field field
+                    && input.Source = InputSource.Authored
+                    && input.Mode = mode))
+
+        let paymentControls =
             actions
-            |> List.partition (fun action ->
-                action.Blocked.IsNone && value.Advice.Recommended = Some action.Task)
+            |> List.filter (supplies BusinessField.PaymentDate TaskInputMode.Required)
+
+        let decisionControls =
+            actions
+            |> List.filter (fun action ->
+                not (isRecommended action)
+                && supplies BusinessField.PayableAmount TaskInputMode.Required action)
+
+        let registrationControls =
+            actions
+            |> List.filter (fun action ->
+                not (isRecommended action)
+                && supplies BusinessField.ClaimantName TaskInputMode.Update action
+                && not (
+                    declarationInputs action
+                    |> List.exists (fun input ->
+                        match input.Input with
+                        | TaskInputId.Target(InputTarget.Group _) -> true
+                        | _ -> false)
+                ))
+
+        let recommended, actions = actions |> List.partition isRecommended
+
+        let placed =
+            registrationControls @ decisionControls |> List.map _.Task |> Set.ofList
+
+        let actions =
+            actions |> List.filter (fun action -> not (Set.contains action.Task placed))
 
         let screen = CaseScreen.view value
+
+        let screen =
+            let regions =
+                screen.Regions
+                |> List.map (fun region ->
+                    match region.Role with
+                    | RegionRole.Facts ->
+                        { region with
+                            Actions = registrationControls
+                        }
+                    | RegionRole.Payments ->
+                        { region with
+                            Actions = decisionControls
+                        }
+                    | _ -> region)
+
+            let context =
+                regions
+                |> List.tryPick (fun region ->
+                    match region.Role, region.Content with
+                    | RegionRole.Payments, RegionContent.Table table when
+                        not paymentControls.IsEmpty
+                        ->
+                        let entries =
+                            table.Sections
+                            |> List.collect _.Entries
+                            |> List.filter (fun entry -> entry.Key = "remaining")
+
+                        let context = ScreenEntries.entryRegion RegionRole.Context None entries
+
+                        Some
+                            { context with
+                                Actions = paymentControls
+                            }
+                    | _ -> None)
+
+            Screen.create (regions @ Option.toList context)
+            |> Screen.withCurrentGroups screen.CurrentGroups
 
         let screen =
             if recommended.IsEmpty then

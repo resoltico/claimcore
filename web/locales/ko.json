@@ -19,14 +19,6 @@
     "text": "강조 색상이 {value}(으)로 설정되었습니다.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "기록된 변경",
-    "source": "595214b94033"
-  },
-  "ui.account": {
-    "text": "계정",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actDescription": {
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
@@ -34,10 +26,6 @@
   "ui.actorRequestRetained": {
     "text": "현재 요청이 유지됩니다. 다른 작업을 시작하기 전에 이 요청을 계속하거나 폐기하세요.",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "역할 추가",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "변경 후: {value}",
@@ -50,10 +38,6 @@
   "ui.appearance": {
     "text": "화면 표시",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "접근 권한 변경",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "청구 건 목록으로 돌아가기",
@@ -70,14 +54,6 @@
   "ui.canonicalCopyHint": {
     "text": "이 값을 복사하세요.",
     "source": "8a31fb4c608d"
-  },
-  "ui.caseDetail": {
-    "text": "청구 건 상세",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "청구 건 목록",
-    "source": "2249bd503ec4"
   },
   "ui.changeActDescription": {
     "text": "이 초안을 폐기하고 다른 작업을 선택할까요?",
@@ -98,10 +74,6 @@
   "ui.checkUnresolvedOperation": {
     "text": "지금 확인",
     "source": "2937cffb37ab"
-  },
-  "ui.chooseRole": {
-    "text": "역할 선택",
-    "source": "a49c49b04c4d"
   },
   "ui.clearFilters": {
     "text": "필터 초기화",
@@ -130,10 +102,6 @@
   "ui.copyFallback": {
     "text": "{label} 수동 복사",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "각 정보 그룹에 수행할 작업을 선택하세요.",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}: {name}",
@@ -206,18 +174,6 @@
   "ui.generalOperationLookup": {
     "text": "일반 작업 조회",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "역할 {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "모든 역할이 표시되었습니다.",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "일부 역할만 표시되었습니다.",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore가 불완전한 응답을 보냈습니다.",
@@ -303,10 +259,6 @@
     "text": "청구 건 더 불러오기",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "권한 부여 내역 더 보기",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "활동 더 불러오기",
     "source": "e3f0587b4839"
@@ -323,29 +275,9 @@
     "text": "다음 달",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "표시할 사람이 없습니다.",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "표시할 청구 건이 없습니다.",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "표시할 활동이 없습니다.",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "이 보기에 맞는 청구 건이 없습니다.",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "이 페이지에 지정 가능한 계정이 없습니다.",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noReminders": {
-    "text": "이 보기에 맞는 후속 조치가 없습니다.",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "사용할 수 있는 업무 보기가 없습니다.",
@@ -383,14 +315,6 @@
     "text": "{first} 및 {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "사람",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "역할",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "환경 설정은 이 세션에서 적용되지만 이 브라우저에 저장하지 못했습니다.",
     "source": "861ebb38b269"
@@ -418,10 +342,6 @@
   "ui.pseudo": {
     "text": "확장 영어(레이아웃 테스트)",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "주의가 필요한 청구 건 업무를 찾아 이어서 처리하세요.",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "{field} 기록(선택 사항)",
@@ -475,10 +395,6 @@
     "text": "현재 청구 건 다시 불러오기",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "권한 부여 내역 다시 불러오기",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "활동 다시 불러오기",
     "source": "10d39b0ca399"
@@ -486,14 +402,6 @@
   "ui.reloadInterface": {
     "text": "인터페이스 다시 불러오기",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "여기의 기한 필터는 각 후속 조치에 적용됩니다. 청구 건 목록은 각 청구 건의 가장 이른 후속 조치를 사용합니다.",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "역할 삭제",
-    "source": "9a1fb81f279f"
   },
   "ui.retryExact": {
     "text": "다시 전송",
@@ -527,14 +435,6 @@
     "text": "오른쪽에서 왼쪽으로",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "선택한 청구 건에는 사용할 수 없습니다",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "서비스 계정에는 사용할 수 없습니다",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "문자 수: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -566,10 +466,6 @@
   "ui.shell.checkNow": {
     "text": "지금 확인",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.people": {
-    "text": "사람 및 접근 권한",
-    "source": "8df747cef67a"
   },
   "ui.shell.searchCases": {
     "text": "청구 건 검색",
@@ -671,33 +567,13 @@
     "text": "더 불러오기",
     "source": "ac8991ef0101"
   },
-  "ui.accessState.title": {
-    "text": "아직 접근 권한이 없습니다",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "이 계정은 비활성화되어 있습니다",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "소유자에게 알렸습니다. 소유자가 이 계정에 접근 권한을 부여할 수 있습니다.",
-    "source": "fbdca8dba390"
-  },
   "ui.accessState.check": {
     "text": "접근 권한 확인",
     "source": "abb9a172a69b"
   },
-  "ui.stage.recorded": {
-    "text": "기록됨",
-    "source": "c7175fa7a0db"
-  },
   "ui.stage.noDate": {
     "text": "날짜 정보 없음",
     "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "이 청구 건이 변경되었습니다",
-    "source": "ae4ec9da2e36"
   },
   "ui.conflict.kept": {
     "text": "초안은 유지됩니다. 최신 버전을 기준으로 준비하기 전에 변경 사항을 검토하세요.",
@@ -723,10 +599,6 @@
     "text": "{when}에 확인함.",
     "source": "e249af3ff82a"
   },
-  "ui.requests.empty": {
-    "text": "대기 중인 접근 요청이 없습니다.",
-    "source": "f258e3645b02"
-  },
   "ui.requests.more": {
     "text": "접근 요청 더 불러오기",
     "source": "ffd6062030c9"
@@ -747,10 +619,6 @@
     "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
     "source": "fc1019052c76"
   },
-  "ui.changeDecision": {
-    "text": "결정 변경",
-    "source": "a77099b9ff99"
-  },
   "ui.changeResponsible": {
     "text": "변경",
     "source": "c0bf75bd78bf"
@@ -762,10 +630,6 @@
   "ui.editSummary": {
     "text": "요약 편집",
     "source": "c04f3d9cb841"
-  },
-  "ui.noPayments": {
-    "text": "기록된 지급 내역이 없습니다.",
-    "source": "131347633495"
   },
   "ui.moreNotes": {
     "text": "메모 더 보기",
@@ -795,10 +659,6 @@
     "text": "여기에는 변경 식별 정보만 저장됩니다. 청구 건 세부 정보와 원래 요청은 저장되지 않습니다.",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "현재 사실로는 사용할 수 없습니다.",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "이 항목을 사용할 수 없습니다.",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "청구 건 선택 기준",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "역할 더 보기",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "참조 번호 또는 ID로 기존 청구 건을 선택하세요.",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "역할 다시 불러오기",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "모든 역할이 표시되었습니다.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "일부 역할만 표시됩니다.",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "역할 추가",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "역할 삭제",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "역할 {number}",
+    "source": "00fa69a81cab"
   }
 }

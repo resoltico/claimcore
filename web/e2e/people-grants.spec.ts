@@ -84,12 +84,12 @@ const checkPresentation = async (page: Page, complete: boolean, count: number, n
     ).toBeVisible();
     await expect(
       view.getByRole("button", {
-        name: ui(language, "ui.reloadGrants"),
+        name: ui(language, "ui.reloadRoles"),
         exact: true,
       }),
     ).toBeEnabled();
     await expect(view.getByRole("status")).toHaveText(
-      ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
+      ui(language, complete ? "ui.rolesEnd" : "ui.rolesPartial"),
     );
     await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
     await noHorizontalOverflow(page, "narrow");

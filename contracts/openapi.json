@@ -2892,23 +2892,23 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "kind": {
+          "input:principal.kind": {
             "enum": [
               "HUMAN",
               "SERVICE"
             ]
           },
-          "issuer": {
+          "input:principal.issuer": {
             "type": "string"
           },
-          "subject": {
+          "input:principal.subject": {
             "type": "string"
           }
         },
         "required": [
-          "kind",
-          "issuer",
-          "subject"
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject"
         ]
       },
       "AccessRequestPage": {
@@ -16929,6 +16929,7 @@
               "PROGRESS",
               "ATTENTION",
               "RECOMMENDATION",
+              "CONTEXT",
               "FACTS",
               "PAYMENTS",
               "WORK",

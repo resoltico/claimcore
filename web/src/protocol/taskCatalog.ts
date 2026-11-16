@@ -1,3 +1,5 @@
+import { productMetadata } from "./productMetadata";
+import type { FieldCatalogEntry } from "./types";
 import {
   taskDefinitions,
   taskInputDefinitions,
@@ -59,4 +61,11 @@ export const queryInput = (
     throw new Error("Missing declared query input.");
   }
   return { ...taskInput(id), choices: input.choices };
+};
+
+export const taskScalar = (id: TaskInputId): FieldCatalogEntry | undefined => {
+  const { key } = taskInput(id);
+  return [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
+    (field): field is FieldCatalogEntry => field.scalar !== null && field.name === key,
+  );
 };

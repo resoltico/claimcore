@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "Piekļuves piešķīrumi",
-    "source": "2fd169b4b39d"
+    "text": "Lomas",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "Izvēlieties no 1 līdz {maximumGrants} piekļuves piešķīrumiem.",
-    "source": "d7a1ec1278fd"
+    "text": "Izvēlieties no 1 līdz {maximumGrants} lomām.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "Katru lomas un tvēruma pāri izvēlieties tikai vienu reizi.",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "Saglabātais profils",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "Izvēlieties, ko darīt ar katru informācijas grupu.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "Nav pieejama atlasītajām lietām",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "Nav pieejama pakalpojuma kontiem",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "Šis konts ir atspējots",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "Jums vēl nav piekļuves",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "Maksājumu ierakstu vēl nav.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "Šim skatam nav atbilstošu atgādinājumu.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "Šeit izpildes datumu filtri attiecas uz katru atgādinājumu. Lietu sarakstos izmanto katras lietas agrāko atgādinājumu.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "Nav personu, ko rādīt.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "Nav lietu, ko rādīt.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "Šim skatam nav atbilstošu lietu.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "Šajā lapā nav atbilstošu kontu.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "Lietas informācija",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "Piekļuves izmaiņa",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "Izvēlieties lomu",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "Izvēlieties esošu lietu pēc tās atsauces vai ID.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "Lietas atlase pēc",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "Atrodiet un turpiniet lietu apstrādi, kam nepieciešama uzmanība.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "Lieta ir mainījusies",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "Nav neizskatītu piekļuves pieprasījumu.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "Šī darbība pašlaik nav pieejama šai lietai.",
+    "source": "78dafa13c3bd"
   }
 }

@@ -18,7 +18,7 @@ export const CaseIdentity = ({
   const reference = entries.find((entry) => entry.value.kind === "REFERENCE");
   const chips = entries.filter((entry) => ["STATE", "CODE", "CODES"].includes(entry.value.kind));
   const facts = entries.filter((entry) => entry !== reference && !chips.includes(entry));
-  let title: Value = { kind: "MESSAGE", messageId: "ui.caseDetail" };
+  let title: Value = { kind: "MESSAGE", messageId: "label.caseDetail" };
   if (reference !== undefined) {
     title = reference.value;
   } else if (requestedReference !== undefined) {

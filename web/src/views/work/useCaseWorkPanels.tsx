@@ -1,4 +1,10 @@
-import { type BoundOperationAffordance, isOperationAffordance } from "../../operation/affordances";
+import { operationTask } from "../../protocol/taskCatalog";
+import { isNarrativeCreationId, narrativeCreationInput } from "../../operation/metadata";
+import {
+  type BoundOperationAffordance,
+  isOperationAffordance,
+  type OperationAffordance,
+} from "../../operation/affordances";
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { RoutedReminder } from "./SelectedReminder";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
@@ -8,8 +14,6 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import type { TaskId, OperationBinding } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
-
-import type { OperationAffordance } from "../../operation/affordances";
 
 import type { FormValues } from "../../protocol/forms";
 import { CaseNextActions } from "./CaseNextActions";
@@ -71,9 +75,7 @@ export const useCaseWorkPanels = ({
     recorded.clear();
     setEditor({
       ...next,
-      ...(next.kind === "reminder.complete" && returnFocus.current !== null
-        ? { anchor: returnFocus.current }
-        : {}),
+      ...(returnFocus.current === null ? {} : { anchor: returnFocus.current }),
     });
   };
   const close = () => {
@@ -104,6 +106,7 @@ export const useCaseWorkPanels = ({
   const noteAdd = current.actions.find(
     (action): action is BoundOperationAffordance<"NOTE"> =>
       isOperationAffordance(action) &&
+      isNarrativeCreationId(action.task) &&
       action.binding.kind === "NOTE" &&
       !("noteId" in action.binding) &&
       action.blocked === null,
@@ -123,7 +126,7 @@ export const useCaseWorkPanels = ({
                 open({
                   subject: "WORK",
                   action: workAction,
-                  kind: "work.update",
+                  kind: workAction.task,
                   identity: "work",
                   prefill: {
                     "field:responsibleActor": workAction.seeds["field:responsibleActor"] ?? "",
@@ -134,7 +137,7 @@ export const useCaseWorkPanels = ({
                 open({
                   subject: "WORK",
                   action: workAction,
-                  kind: "work.update",
+                  kind: workAction.task,
                   identity: "work",
                   prefill: {
                     "field:handlingSummary": workAction.seeds["field:handlingSummary"] ?? "",
@@ -237,16 +240,18 @@ export const useCaseWorkPanels = ({
       authoringAvailable={authoringAvailable}
       editing={editor !== null}
       onAdd={(intent) => {
-        if (!disclosureAvailable || noteAdd === undefined) {
+        const input =
+          noteAdd === undefined ? undefined : narrativeCreationInput(operationTask(noteAdd.task));
+        if (!disclosureAvailable || noteAdd === undefined || input === undefined) {
           return;
         }
         open({
           subject: "NOTE",
           action: noteAdd,
-          kind: "note.add",
+          kind: noteAdd.task,
           identity: "add",
           noteIntent: intent,
-          prefill: { "input:noteText": intent.text },
+          prefill: { [input.id]: intent.text },
         });
       }}
       onRemove={(action) => {

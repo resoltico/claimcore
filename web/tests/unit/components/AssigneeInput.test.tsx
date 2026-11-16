@@ -145,6 +145,8 @@ it("renders saved and offered core captions independently of typed identities an
   const change = vi.fn();
   render(
     <AssigneeInput
+      lookup="case.assignees"
+      seedInput="field:responsibleActor"
       current={current}
       field={field}
       inputName="responsible"
@@ -181,6 +183,8 @@ it("does not infer the selected caption when its permitted input identity is abs
   };
   render(
     <AssigneeInput
+      lookup="case.assignees"
+      seedInput="field:responsibleActor"
       current={withoutSeed}
       field={field}
       inputName="responsible"

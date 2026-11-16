@@ -1,3 +1,4 @@
+import { personLinkActorId } from "../../routing/coreLinks";
 import type { RowLink, ActionPresentation, LinkNavigation } from "./interaction";
 import type { RegionRow, Affordance, RegionContent } from "@contracts/client";
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- The sole named scroll region must support keyboard scrolling, including empty tables. */
@@ -22,7 +23,8 @@ const rowNavigation = (
   navigation: LinkNavigation | undefined,
 ): RowLink | undefined => {
   const link = coreRowLink(row.link, navigation);
-  const kind = row.link?.endpoint === "people.grants" ? "ACTOR" : "REFERENCE";
+  const kind =
+    row.link !== undefined && personLinkActorId(row.link) !== undefined ? "ACTOR" : "REFERENCE";
   const matching = row.values.findIndex((value) => value.kind === kind);
   const primary = columns.findIndex((column) => column.prominence === "PRIMARY");
   const linkColumn = columns[matching < 0 ? Math.max(primary, 0) : matching]?.key;

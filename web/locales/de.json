@@ -19,14 +19,6 @@
     "text": "Akzentfarbe auf {value} gesetzt.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "Erfasste Änderung",
-    "source": "595214b94033"
-  },
-  "ui.account": {
-    "text": "Konto",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actDescription": {
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
@@ -34,10 +26,6 @@
   "ui.actorRequestRetained": {
     "text": "Ihre aktuelle Anfrage bleibt erhalten. Setzen Sie sie fort oder verwerfen Sie sie, bevor Sie eine andere Aktion beginnen.",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "Rolle hinzufügen",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "Nachher: {value}",
@@ -50,10 +38,6 @@
   "ui.appearance": {
     "text": "Darstellung",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "Zugriffsänderung",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "Zurück zu den Fällen",
@@ -70,14 +54,6 @@
   "ui.canonicalCopyHint": {
     "text": "Diesen Wert kopieren.",
     "source": "8a31fb4c608d"
-  },
-  "ui.caseDetail": {
-    "text": "Falldetails",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "Fälle",
-    "source": "2249bd503ec4"
   },
   "ui.changeActDescription": {
     "text": "Diesen Entwurf verwerfen und eine andere Aktion wählen?",
@@ -98,10 +74,6 @@
   "ui.checkUnresolvedOperation": {
     "text": "Jetzt prüfen",
     "source": "2937cffb37ab"
-  },
-  "ui.chooseRole": {
-    "text": "Rolle wählen",
-    "source": "a49c49b04c4d"
   },
   "ui.clearFilters": {
     "text": "Filter zurücksetzen",
@@ -130,10 +102,6 @@
   "ui.copyFallback": {
     "text": "Alternative zum Kopieren von {label}",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "Wählen Sie, was mit jeder Gruppe von Angaben geschehen soll.",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}: {name}",
@@ -206,18 +174,6 @@
   "ui.generalOperationLookup": {
     "text": "Allgemeine Vorgangssuche",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "Rolle {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "Alle Rollen werden angezeigt.",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "Nur einige Rollen werden angezeigt.",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore hat eine unvollständige Antwort gesendet.",
@@ -303,10 +259,6 @@
     "text": "Weitere Fälle laden",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "Weitere Zuweisungen",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "Weitere Aktivität laden",
     "source": "e3f0587b4839"
@@ -323,29 +275,9 @@
     "text": "Nächster Monat",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "Keine Personen anzuzeigen.",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "Keine Fälle anzuzeigen.",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "Keine Aktivität anzuzeigen.",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "Keine Fälle passen zu dieser Ansicht.",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "Keine zuweisbaren Konten auf dieser Seite.",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noReminders": {
-    "text": "Keine Wiedervorlagen passen zu dieser Ansicht.",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "Keine Arbeitsansichten verfügbar.",
@@ -383,14 +315,6 @@
     "text": "{first} und {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "Person",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "Rollen",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "Die Einstellungen gelten für diese Sitzung, konnten aber nicht in diesem Browser gespeichert werden.",
     "source": "861ebb38b269"
@@ -418,10 +342,6 @@
   "ui.pseudo": {
     "text": "Erweitertes Englisch (Layouttest)",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "Finden Sie Fälle mit Handlungsbedarf und setzen Sie ihre Bearbeitung fort.",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "{field} erfassen (optional)",
@@ -475,10 +395,6 @@
     "text": "Aktuellen Fall neu laden",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "Zuweisungen neu laden",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "Aktivität neu laden",
     "source": "10d39b0ca399"
@@ -486,14 +402,6 @@
   "ui.reloadInterface": {
     "text": "Oberfläche neu laden",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "Fälligkeitsfilter gelten hier für jede Wiedervorlage. Falllisten verwenden die früheste Wiedervorlage jedes Falls.",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "Rolle entfernen",
-    "source": "9a1fb81f279f"
   },
   "ui.retryExact": {
     "text": "Erneut senden",
@@ -527,14 +435,6 @@
     "text": "Rechts nach links",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "Für die ausgewählten Fälle nicht verfügbar",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "Für Dienstkonten nicht verfügbar",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "Zeichen: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -566,10 +466,6 @@
   "ui.shell.checkNow": {
     "text": "Jetzt prüfen",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.people": {
-    "text": "Personen und Zugriff",
-    "source": "8df747cef67a"
   },
   "ui.shell.searchCases": {
     "text": "Fälle suchen",
@@ -671,33 +567,13 @@
     "text": "Mehr laden",
     "source": "ac8991ef0101"
   },
-  "ui.accessState.title": {
-    "text": "Sie haben noch keinen Zugriff",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "Dieses Konto ist deaktiviert",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "Wir haben die Inhaber informiert. Ein Inhaber kann diesem Konto Zugriff gewähren.",
-    "source": "fbdca8dba390"
-  },
   "ui.accessState.check": {
     "text": "Zugriff prüfen",
     "source": "abb9a172a69b"
   },
-  "ui.stage.recorded": {
-    "text": "Erfasst",
-    "source": "c7175fa7a0db"
-  },
   "ui.stage.noDate": {
     "text": "Datum nicht verfügbar",
     "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "Dieser Fall hat sich geändert",
-    "source": "ae4ec9da2e36"
   },
   "ui.conflict.kept": {
     "text": "Ihr Entwurf bleibt erhalten. Prüfen Sie die Änderungen, bevor Sie ihn auf Grundlage der neuesten Version vorbereiten.",
@@ -723,10 +599,6 @@
     "text": "Geprüft {when}.",
     "source": "e249af3ff82a"
   },
-  "ui.requests.empty": {
-    "text": "Keine ausstehenden Zugriffsanfragen.",
-    "source": "f258e3645b02"
-  },
   "ui.requests.more": {
     "text": "Weitere Zugriffsanfragen laden",
     "source": "ffd6062030c9"
@@ -747,10 +619,6 @@
     "text": "Noch nicht bestätigt. Die Antwort ist bis {finalAt} endgültig.",
     "source": "fc1019052c76"
   },
-  "ui.changeDecision": {
-    "text": "Entscheidung ändern",
-    "source": "a77099b9ff99"
-  },
   "ui.changeResponsible": {
     "text": "Ändern",
     "source": "c0bf75bd78bf"
@@ -762,10 +630,6 @@
   "ui.editSummary": {
     "text": "Bearbeitungsnotiz bearbeiten",
     "source": "c04f3d9cb841"
-  },
-  "ui.noPayments": {
-    "text": "Keine Zahlungseinträge erfasst.",
-    "source": "131347633495"
   },
   "ui.moreNotes": {
     "text": "Weitere Notizen",
@@ -795,10 +659,6 @@
     "text": "Hier wird nur die Kennung der Änderung gespeichert. Falldetails und die ursprüngliche Anfrage werden nicht gespeichert.",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "Diese Aktion wird für diesen Fall derzeit nicht angeboten.",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "Bei den aktuellen Fakten nicht verfügbar.",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "Dieser Eintrag ist nicht verfügbar.",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "Fall auswählen über",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "Weitere Rollen",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "Wählen Sie einen vorhandenen Fall anhand seiner Referenz oder ID.",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "Rollen neu laden",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "Alle Rollen werden angezeigt.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "Es werden nur einige Rollen angezeigt.",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "Rolle hinzufügen",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "Rolle entfernen",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "Rolle {number}",
+    "source": "00fa69a81cab"
   }
 }

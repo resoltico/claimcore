@@ -213,7 +213,7 @@ it("retains the exact uncertain people request when delayed context removes its 
     delayed.finish(contextFor(["CASES", "OPERATIONS"], ["case.open"]));
     await delayed.promise;
   });
-  expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "People and access", level: 1 })).toBeVisible();
   expect(screen.queryByRole("link", { name: "People and access" })).toBeNull();
   expect(document.body).not.toHaveTextContent("PREVIOUS_ACTOR_CANARY");
   await user.click(screen.getByRole("button", { name: "Continue current request" }));
@@ -347,7 +347,15 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     }
     const self = active.value.outcome.document.subject;
     const inactive: RequesterDocument = {
-      screen: { regions: [] },
+      screen: {
+        regions: [
+          {
+            role: "IDENTITY",
+            titleId: kind === "DISABLED" ? "label.accessDisabled" : "label.accessPending",
+            content: { kind: "ENTRIES", entries: [] },
+          },
+        ],
+      },
       subject: {
         kind: "REQUESTER",
         state: kind,
@@ -428,7 +436,15 @@ it.each(["actor", "installation"] as const)(
     }
     const source = active.value.outcome.document.subject;
     const requester: RequesterDocument = {
-      screen: { regions: [] },
+      screen: {
+        regions: [
+          {
+            role: "IDENTITY",
+            titleId: "label.accessPending",
+            content: { kind: "ENTRIES", entries: [] },
+          },
+        ],
+      },
       subject: {
         kind: "REQUESTER",
         state: "NO_ROLES",
@@ -480,7 +496,7 @@ it.each(["actor", "installation"] as const)(
     expect(document.querySelector(".workspace-shell")).toBeNull();
     expect(execute).toHaveBeenCalledOnce();
     await user.click(screen.getByRole("button", { name: "Check access" }));
-    await screen.findByRole("heading", { name: "People & access", level: 1 });
+    await screen.findByRole("heading", { name: "People and access", level: 1 });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Continue current request" })).toBeNull();
     expect(execute).toHaveBeenCalledOnce();

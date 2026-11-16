@@ -124,7 +124,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
     expect.objectContaining<{ subject: unknown }>({
       subject: expect.objectContaining({ revision: 4 }),
     }),
-    "case.reopen",
+    expect.objectContaining({ task: "case.reopen" }),
   );
   expect(callout.querySelector(".primary")).toBeNull();
 });

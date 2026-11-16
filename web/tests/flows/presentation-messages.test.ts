@@ -27,9 +27,9 @@ it("renders every catalog key in every language and preserves typed interpolatio
     }
   }
   expect(hasMessage("missing.key")).toBe(false);
-  expect(translate(defaults, "ui.cases")).toBe("Cases");
-  expect(translate(defaults, "ui.cases")).toBe("Cases");
-  expect(translate({ ...defaults, language: "lv" }, "ui.cases")).toBe("Lietas");
+  expect(translate(defaults, "label.cases")).toBe("Cases");
+  expect(translate(defaults, "label.cases")).toBe("Cases");
+  expect(translate({ ...defaults, language: "lv" }, "label.cases")).toBe("Lietas");
 });
 
 it("preserves pseudolocalization of literal templates and their arguments", () => {

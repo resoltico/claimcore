@@ -4,9 +4,9 @@ import { exactInteger } from "./format";
 import { productMetadata } from "../protocol/productMetadata";
 import { catalogFor } from "./languageCatalog";
 import { presentationPseudolanguage } from "@contracts/client";
-import { languageDirection } from "./preferences";
+import { languageDirection, type Preferences } from "./preferences";
 import { templateParts, pseudolocalizeLiteral, type TemplatePart } from "./templates";
-import type { Preferences } from "./preferences";
+
 import type { MessageKey, Values } from "./types";
 
 export const messageShapes = { ...coreShapes, ...chromeShapes };
@@ -62,6 +62,11 @@ export const translate = <K extends MessageKey>(
   ...values: Values<K>
 ): string => renderKey(preferences, key, values[0] ?? {});
 export const hasMessage = (key: string): key is MessageKey => Object.hasOwn(shapes, key);
+/** Parameter-free catalog wording can be retained without retaining caller-supplied values. */
+export const hasStaticMessage = (key: string): boolean => {
+  const shape = shapes[key];
+  return shape !== undefined && Object.keys(shape).length === 0;
+};
 
 /** Admit a key arriving in independently loaded catalog metadata. */
 const catalogMessageKey = (key: string): MessageKey | null => (hasMessage(key) ? key : null);

@@ -19,14 +19,6 @@
     "text": "アクセントカラーを{value}に設定しました。",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "記録された変更",
-    "source": "595214b94033"
-  },
-  "ui.account": {
-    "text": "アカウント",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actDescription": {
     "text": "{label}：{meaning}",
     "source": "7216b2a9dae5"
@@ -34,10 +26,6 @@
   "ui.actorRequestRetained": {
     "text": "現在のリクエストは保持されています。別の操作を始める前に、続行するか破棄してください。",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "役割を追加",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "変更後：{value}",
@@ -50,10 +38,6 @@
   "ui.appearance": {
     "text": "外観",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "アクセス変更",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "案件一覧に戻る",
@@ -70,14 +54,6 @@
   "ui.canonicalCopyHint": {
     "text": "この値をコピーしてください。",
     "source": "8a31fb4c608d"
-  },
-  "ui.caseDetail": {
-    "text": "案件の詳細",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "案件",
-    "source": "2249bd503ec4"
   },
   "ui.changeActDescription": {
     "text": "この下書きを破棄して別の操作を選びますか？",
@@ -98,10 +74,6 @@
   "ui.checkUnresolvedOperation": {
     "text": "今すぐ確認",
     "source": "2937cffb37ab"
-  },
-  "ui.chooseRole": {
-    "text": "役割を選択",
-    "source": "a49c49b04c4d"
   },
   "ui.clearFilters": {
     "text": "フィルターを解除",
@@ -130,10 +102,6 @@
   "ui.copyFallback": {
     "text": "{label}の手動コピー",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "各情報グループで行うことを選択してください。",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}：{name}",
@@ -206,18 +174,6 @@
   "ui.generalOperationLookup": {
     "text": "一般の操作照会",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "役割{number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "すべての役割を表示しています。",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "一部の役割だけを表示しています。",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCoreから不完全な応答がありました。",
@@ -303,10 +259,6 @@
     "text": "案件をさらに読み込む",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "権限の割り当てをさらに表示",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "活動をさらに読み込む",
     "source": "e3f0587b4839"
@@ -323,29 +275,9 @@
     "text": "翌月",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "表示する利用者はいません。",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "表示する案件はありません。",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "表示する活動はありません。",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "このビューに一致する案件はありません。",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "このページに割り当て可能なアカウントはありません。",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noReminders": {
-    "text": "このビューに一致するリマインダーはありません。",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "利用できる作業ビューはありません。",
@@ -383,14 +315,6 @@
     "text": "{first}と{second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "利用者",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "役割",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "設定はこのセッションで有効ですが、このブラウザーに保存できませんでした。",
     "source": "861ebb38b269"
@@ -418,10 +342,6 @@
   "ui.pseudo": {
     "text": "拡張英語（レイアウトテスト）",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "対応が必要な案件の業務を探して再開します。",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "{field}を記録（任意）",
@@ -475,10 +395,6 @@
     "text": "現在の案件を再読み込み",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "権限の割り当てを再読み込み",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "活動を再読み込み",
     "source": "10d39b0ca399"
@@ -486,14 +402,6 @@
   "ui.reloadInterface": {
     "text": "画面を再読み込み",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "ここでの期限フィルターは各リマインダーに適用されます。案件一覧では各案件の最も早いリマインダーを使用します。",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "役割を削除",
-    "source": "9a1fb81f279f"
   },
   "ui.retryExact": {
     "text": "再送信",
@@ -527,14 +435,6 @@
     "text": "右から左",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "選択した案件では利用できません",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "サービスアカウントでは利用できません",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "文字数：{count}/{maximum}",
     "source": "907b0d890dff"
@@ -566,10 +466,6 @@
   "ui.shell.checkNow": {
     "text": "今すぐ確認",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.people": {
-    "text": "利用者とアクセス権限",
-    "source": "8df747cef67a"
   },
   "ui.shell.searchCases": {
     "text": "案件を検索",
@@ -671,33 +567,13 @@
     "text": "さらに読み込む",
     "source": "ac8991ef0101"
   },
-  "ui.accessState.title": {
-    "text": "まだアクセス権限がありません",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "このアカウントは無効です",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "所有者に通知しました。所有者はこのアカウントにアクセス権限を付与できます。",
-    "source": "fbdca8dba390"
-  },
   "ui.accessState.check": {
     "text": "アクセス権限を確認",
     "source": "abb9a172a69b"
   },
-  "ui.stage.recorded": {
-    "text": "記録済み",
-    "source": "c7175fa7a0db"
-  },
   "ui.stage.noDate": {
     "text": "日付なし",
     "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "この案件は変更されています",
-    "source": "ae4ec9da2e36"
   },
   "ui.conflict.kept": {
     "text": "下書きは保持されています。最新版に基づいて準備する前に、変更内容を確認してください。",
@@ -723,10 +599,6 @@
     "text": "{when}に確認。",
     "source": "e249af3ff82a"
   },
-  "ui.requests.empty": {
-    "text": "承認待ちのアクセス申請はありません。",
-    "source": "f258e3645b02"
-  },
   "ui.requests.more": {
     "text": "アクセス申請をさらに読み込む",
     "source": "ffd6062030c9"
@@ -747,10 +619,6 @@
     "text": "まだ確認できていません。回答は{finalAt}までに確定します。",
     "source": "fc1019052c76"
   },
-  "ui.changeDecision": {
-    "text": "支払決定を変更",
-    "source": "a77099b9ff99"
-  },
   "ui.changeResponsible": {
     "text": "変更",
     "source": "c0bf75bd78bf"
@@ -762,10 +630,6 @@
   "ui.editSummary": {
     "text": "対応概要を編集",
     "source": "c04f3d9cb841"
-  },
-  "ui.noPayments": {
-    "text": "支払記録はありません。",
-    "source": "131347633495"
   },
   "ui.moreNotes": {
     "text": "さらにメモを表示",
@@ -795,10 +659,6 @@
     "text": "ここには変更の識別情報のみが保存されます。案件の詳細や元のリクエストは保存されません。",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "この案件では現在この操作は利用できません。",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "現在の事実では利用できません。",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "この項目は利用できません。",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "案件の選択方法",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "他のロールを表示",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "参照番号または ID で既存の案件を選択してください。",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "ロールを再読み込み",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "すべてのロールを表示しています。",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "一部のロールのみ表示しています。",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "役割を追加",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "役割を削除",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "役割{number}",
+    "source": "00fa69a81cab"
   }
 }

@@ -111,7 +111,7 @@ test("preserves language and independent display preferences through real logout
   await expectPreferences(page, {
     displayLocale: "lv-LV",
   });
-  await login(page, ui("ar", "ui.cases"), ui("ar", "ui.signIn"));
+  await login(page, ui("ar", "label.cases"), ui("ar", "ui.signIn"));
   await expectPreferences(page, {
     language: "ar",
   });
@@ -120,7 +120,7 @@ test("preserves language and independent display preferences through real logout
   });
   await expect(
     page.getByRole("heading", {
-      name: ui("ar", "ui.cases"),
+      name: ui("ar", "label.cases"),
       exact: true,
       level: 1,
     }),

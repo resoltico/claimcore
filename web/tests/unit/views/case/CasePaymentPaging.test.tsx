@@ -199,7 +199,12 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
       name: "Remove payment entry",
     })[0]!,
   );
-  expect(onAct).toHaveBeenCalledWith("case.removePayment", older);
+  expect(onAct).toHaveBeenCalledWith(
+    expect.objectContaining<{ task: string; binding: unknown }>({
+      task: "case.removePayment",
+      binding: expect.objectContaining({ paymentId: older }),
+    }),
+  );
   expect(onChanged).not.toHaveBeenCalled();
 });
 it("masks earlier payment rows on an erased continuation and refreshes the case disclosure", async () => {

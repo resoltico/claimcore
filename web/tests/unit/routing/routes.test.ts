@@ -141,3 +141,38 @@ it.each(["not-an-actor", "\n10000000-0000-4000-8000-000000000001"])(
     });
   },
 );
+
+it("carries opaque binding selection while acquiring reviewed versions from current controls", () => {
+  const target = { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } as const;
+  const path = actPath(target, "opaque.task", {
+    kind: "EXAMPLE",
+    target,
+    expectedRevision: 7,
+    expectedFamilySequence: 12,
+    itemId: "opaque Ω",
+  });
+  expect(parseRoute(new URL(path, location.origin))).toEqual({
+    screen: "caseAct",
+    target,
+    act: "opaque.task",
+    binding: { kind: "EXAMPLE", itemId: "opaque Ω" },
+  });
+  for (const selection of ["null", "[]", "true", "invalid"]) {
+    expect(
+      parseRoute(
+        new URL(
+          `${casePath(target.caseId)}/acts/opaque.task?${new URLSearchParams({ binding: selection })}`,
+          location.origin,
+        ),
+      ),
+    ).toEqual({ screen: "missing" });
+  }
+  expect(
+    parseRoute(
+      new URL(
+        `${casePath(target.caseId)}/acts/opaque.task?binding=%7B%7D&binding=%7B%7D`,
+        location.origin,
+      ),
+    ),
+  ).toEqual({ screen: "missing" });
+});

@@ -7,10 +7,7 @@ export const PageStatus = ({
 }: {
   empty: boolean;
   cursor: string | null;
-  emptyMessage: Extract<
-    MessageKey,
-    "ui.noAccessibleCases" | "ui.noAccessibleActors" | "ui.noAccessibleHistory"
-  >;
+  emptyMessage: Extract<MessageKey, "label.noCases" | "label.noPeople" | "ui.noAccessibleHistory">;
 }) => {
   const p = usePresentation();
   return (

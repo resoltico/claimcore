@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "منح الوصول",
-    "source": "2fd169b4b39d"
+    "text": "الأدوار",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "اختر من 1 إلى {maximumGrants} من منح الوصول.",
-    "source": "d7a1ec1278fd"
+    "text": "اختر عددًا من الأدوار بين 1 و{maximumGrants}.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "اختر كل زوج من الدور والنطاق مرة واحدة فقط.",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "الملف الشخصي المحفوظ",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "اختر ما ينبغي فعله بكل مجموعة من التفاصيل.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "غير متاح للملفات المحددة",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "غير متاح لحسابات الخدمة",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "هذا الحساب معطّل",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "ليس لديك وصول بعد",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "لا توجد دفعات مسجلة.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "لا توجد تذكيرات تطابق هذا العرض.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "تنطبق عوامل تصفية الاستحقاق هنا على كل تذكير. تستخدم قوائم الملفات أقرب تذكير لكل ملف.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "لا يوجد أشخاص لعرضهم.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "لا توجد ملفات لعرضها.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "لا توجد ملفات تطابق طريقة العرض هذه.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "لا توجد حسابات مؤهلة في هذه الصفحة.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "تفاصيل الملف",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "تغيير الصلاحيات",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "اختر دورًا",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "اختر ملفًا موجودًا باستخدام مرجعه أو معرّفه.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "تحديد الملف بواسطة",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "ابحث عن أعمال الملفات التي تحتاج إلى اهتمام وتابعها.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "تغيّر هذا الملف",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "لا توجد طلبات وصول معلّقة.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
+    "source": "78dafa13c3bd"
   }
 }

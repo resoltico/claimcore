@@ -12,7 +12,7 @@ const primary = operationAffordance(
   {},
 );
 const alternative = operationAffordance("case.decide", primary.binding);
-it("renders the exact supplied primary and invokes its task", async () => {
+it("renders the supplied recommendation and passes its control", async () => {
   const onAct = vi.fn();
   const view = render(
     <CaseActions
@@ -25,7 +25,7 @@ it("renders the exact supplied primary and invokes its task", async () => {
     "case.amendRegistration",
   );
   await userEvent.setup().click(screen.getByRole("button", { name: /^Update claim details:/u }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.amendRegistration");
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(primary);
 });
 it("does not invent a primary", () => {
   const view = render(

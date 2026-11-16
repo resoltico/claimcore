@@ -13,7 +13,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   }) => {
     const clean = await observeRuntime(page);
     await seed(page, { language });
-    await openAuthenticated(page, ui(language, "ui.cases"));
+    await openAuthenticated(page, ui(language, "label.cases"));
     const requests: string[] = [];
     page.on("request", (request) => {
       if (new URL(request.url()).pathname.startsWith("/api/")) {

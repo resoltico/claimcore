@@ -84,7 +84,7 @@ const snapshot: RevisionConflictSnapshot = {
     kind: "CONFLICT",
     advice: {
       message: {
-        messageId: "ui.conflict.title",
+        messageId: "label.caseChanged",
         arguments: [],
       },
       action: "REVIEW_LATEST",
@@ -166,7 +166,7 @@ it("clears disclosed conflict history on a definite HUMAN rejection without inte
           kind: "REFUSED",
           advice: {
             message: {
-              messageId: "ui.conflict.title",
+              messageId: "label.caseChanged",
               arguments: [],
             },
             action: "READ_CURRENT",

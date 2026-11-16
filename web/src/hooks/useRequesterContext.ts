@@ -1,3 +1,5 @@
+import { operationActions } from "../operation/affordances";
+import { operationTask } from "../protocol/taskCatalog";
 import { createContext, useContext } from "react";
 import type { HumanDocument } from "@contracts/client";
 
@@ -23,3 +25,11 @@ export const isActiveRequester = (value: HumanDocument): value is ActiveRequeste
 /** One authorized Core document owns requester controls, presentation and observed calendar. */
 export const RequesterContext = createContext<ActiveRequester | null>(null);
 export const useRequesterContext = () => useContext(RequesterContext);
+
+export const useCaseCreationControl = () => {
+  const requester = useRequesterContext();
+  return operationActions(requester?.actions ?? []).find((action) => {
+    const task = operationTask(action.task);
+    return task.creates && task.subject === "CASE" && action.blocked === null;
+  });
+};

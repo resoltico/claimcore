@@ -1,11 +1,12 @@
-import type {
-  Affordance,
-  HumanDocument,
-  OperationTaskId,
-  OperationTaskDefinition,
-  OperationSubmission,
+import {
+  type Affordance,
+  type HumanDocument,
+  type OperationTaskId,
+  type OperationTaskDefinition,
+  type OperationSubmission,
+  taskDefinitions,
 } from "@contracts/client";
-import { taskDefinitions } from "@contracts/client";
+
 import { operationTask } from "../protocol/taskCatalog";
 import type { FormValue, FormValues } from "../protocol/forms";
 export type OperationAffordance = Affordance & {

@@ -1,3 +1,4 @@
+import type { apiEndpoints } from "../../api/service";
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
 import { ScreenView } from "../../ui/ScreenView";
@@ -12,7 +13,7 @@ import { NoticeView } from "../../presentation/Message";
 import { renderCatalogKey } from "../../presentation/messages";
 
 type ReviewModel = {
-  prepared: PreparedRequest<"operation.execute"> | null;
+  prepared: PreparedRequest<typeof apiEndpoints.operationExecute> | null;
   review: HumanReview | null;
   phase: string;
   busy: boolean;

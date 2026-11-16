@@ -131,6 +131,6 @@ it("focuses the selected person dialog and restores its originating control on r
     expect(origin).toHaveFocus();
   });
   expect(origin).not.toHaveAttribute("tabindex", "-1");
-  expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "People and access", level: 1 })).toBeVisible();
   expect(document.querySelectorAll("h1")).toHaveLength(1);
 });

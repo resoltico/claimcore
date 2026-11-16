@@ -11,18 +11,18 @@ import { isTerm, isVocabulary } from "../presentation/terms";
 import { CatalogField } from "./CatalogField";
 import { AssigneeInput } from "./AssigneeInput";
 import { editGrantInput } from "../operation/operationDraft";
-import { roleAdmitted, roleScopeAdmitted } from "../operation/roleAvailability";
+import { inputChoiceRestriction } from "../operation/inputChoices";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
-import { taskInput } from "../protocol/taskCatalog";
+import { taskInput, taskScalar } from "../protocol/taskCatalog";
 import {
   isFormCollection,
   formValueText,
   type FormValues,
   type FormValue,
 } from "../protocol/forms";
-import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
+import type { CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { OperationTaskDefinition, TaskInputId, OperationBinding } from "@contracts/client";
 
@@ -35,17 +35,11 @@ type Props = {
   values: FormValues;
   disabled: boolean;
   errors: Readonly<Record<string, Notice>>;
-  principalKind?: string | undefined;
+  constraintValues?: FormValues | undefined;
   onChange: (input: string, value: FormValue) => void;
   onFieldsChange: (values: FormValues, remove?: ReadonlyArray<string>) => void;
 };
 import { taskRowInputKey } from "../operation/taskIssues";
-const scalar = (id: TaskInputId) => {
-  const { key } = taskInput(id);
-  return [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
-    (field): field is FieldCatalogEntry => field.scalar !== null && field.name === key,
-  );
-};
 const caption = (p: ReturnType<typeof usePresentation>, id: TaskInputId, value: string): string => {
   const { vocabulary } = taskInput(id);
   if (vocabulary === null || !isVocabulary(vocabulary) || !isTerm(vocabulary, value)) {
@@ -104,22 +98,11 @@ const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, 
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
   }
-  if (input.id !== "input:role" || !["people.grant", "people.admit"].includes(props.task.id)) {
-    return null;
-  }
-  if (props.binding.kind === "PEOPLE" && "actorId" in props.binding) {
-    return roleScopeAdmitted(value, grantScope(props.values) || "INSTALLATION")
-      ? null
-      : "ui.roleNotAvailableAtScope";
-  }
-  const principalKind = props.principalKind ?? formValueText(props.values["input:principal.kind"]);
-  const scope = grantScope(props.values) || "INSTALLATION";
-  if (roleAdmitted(value, principalKind, scope)) {
-    return null;
-  }
-  return roleAdmitted(value, principalKind)
-    ? "ui.roleNotAvailableAtScope"
-    : "ui.roleNotAvailableForService";
+  const restriction = inputChoiceRestriction(input, value, {
+    ...props.constraintValues,
+    ...grantFields(props.values),
+  });
+  return restriction === undefined ? null : (restriction.messageId ?? "ui.choiceNotOffered");
 };
 const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => {
   const p = usePresentation();
@@ -174,11 +157,11 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
               />
               {caption(p, input.id, value)}
             </label>
-            {hint === null ? null : <small id={hintId}>{p.text(hint)}</small>}
+            {hint === null ? null : <small id={hintId}>{renderCatalogKey(p, hint)}</small>}
           </span>
         );
       })}
-      {input.id === "input:role" && selected === "" ? <p>{p.text("ui.chooseRole")}</p> : null}
+      {input.id === "input:role" && selected === "" ? <p>{p.text("label.chooseRole")}</p> : null}
       <TaskInputHelp metadata={metadata} error={error} control={errorKey} />
     </fieldset>
   );
@@ -194,12 +177,12 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
   if (input.choices.length > 0) {
     return <ChoiceInput input={input} errorKey={errorKey} {...props} />;
   }
-  const field = scalar(input.id);
+  const field = taskScalar(input.id);
   if (field !== undefined) {
     const common = {
       field,
       ...(props.task.subject === "PEOPLE" && input.id === "field:caseReference"
-        ? { description: p.text("ui.existingCaseSelectionHint") }
+        ? { description: p.text("label.existingCaseSelectionHint") }
         : {}),
       inputName: errorKey,
       value: formValueText(props.values[input.id]),
@@ -213,8 +196,13 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
         }
       },
     };
-    return input.id === "field:responsibleActor" && props.current !== null ? (
-      <AssigneeInput {...common} current={props.current} />
+    return input.choicesFrom !== null && props.current !== null ? (
+      <AssigneeInput
+        {...common}
+        current={props.current}
+        lookup={input.choicesFrom}
+        seedInput={input.id}
+      />
     ) : (
       <CatalogField {...common} />
     );
@@ -388,7 +376,7 @@ const GrantTargetInput = ({
         <>
           {maySelect ? (
             <Select
-              label={p.text("ui.caseSelection")}
+              label={p.text("label.caseSelection")}
               value={selected.kind}
               disabled={props.disabled}
               options={[
@@ -479,7 +467,7 @@ const GrantRows = ({
       <legend>{renderCatalogKey(p, taskInput(collection.input).labelId)}</legend>
       {rows.map((row, index) => (
         <fieldset key={row.key}>
-          <legend>{p.text("ui.grantNumber", { number: p.integer(index + 1) })}</legend>
+          <legend>{p.text("ui.roleNumber", { number: p.integer(index + 1) })}</legend>
           <GrantTargetInput
             {...props}
             inputs={collection.inputs}
@@ -505,7 +493,7 @@ const GrantRows = ({
                 {...props}
                 input={input}
                 current={null}
-                principalKind={formValueText(props.values["input:principal.kind"])}
+                constraintValues={props.values}
                 values={row.values}
                 errorKey={taskRowInputKey(collection.id, row.key, input.id)}
                 onChange={(id, nextValue) => {
@@ -526,7 +514,7 @@ const GrantRows = ({
               update(rows.filter((previous) => previous.key !== row.key));
             }}
           >
-            {p.text("ui.removeGrant")}
+            {p.text("ui.removeRole")}
           </button>
         </fieldset>
       ))}
@@ -544,7 +532,7 @@ const GrantRows = ({
           ]);
         }}
       >
-        {p.text("ui.addGrant")}
+        {p.text("ui.addRole")}
       </button>
     </fieldset>
   );

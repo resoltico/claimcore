@@ -166,7 +166,7 @@ const setup = (manage: boolean) => {
 };
 it("people read alone never requests or exposes pending principals", async () => {
   const requests = setup(false);
-  await screen.findByRole("heading", { name: "People & access" });
+  await screen.findByRole("heading", { name: "People and access" });
   await waitFor(() => {
     expect(getEndpointMock("people.list")).toHaveBeenCalled();
   });

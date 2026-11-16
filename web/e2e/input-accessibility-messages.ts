@@ -14,7 +14,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "field.caseReference.label": "Case reference",
     "field.caseReference.hint":
       "Your own reference for this case, for example CLM-2026-0001. It cannot be changed later.",
-    "ui.existingCaseSelectionHint": "Choose an existing case by its reference or ID.",
+    "label.existingCaseSelectionHint": "Choose an existing case by its reference or ID.",
     "group.registration.hint": "Choose which details to change.",
     "group.decision.hint": "Choose which details to change.",
     "group.payment.hint": "Choose which details to change.",
@@ -32,7 +32,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "field.caseReference.label": "Lietas atsauce",
     "field.caseReference.hint":
       "Jūsu atsauce šai lietai, piemēram, CLM-2026-0001. Vēlāk to nevar mainīt.",
-    "ui.existingCaseSelectionHint": "Izvēlieties esošu lietu pēc tās atsauces vai ID.",
+    "label.existingCaseSelectionHint": "Izvēlieties esošu lietu pēc tās atsauces vai ID.",
     "group.registration.hint": "Izvēlieties maināmo informāciju.",
     "group.decision.hint": "Izvēlieties maināmo informāciju.",
     "group.payment.hint": "Izvēlieties maināmo informāciju.",
@@ -47,7 +47,7 @@ const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
     "diagnostic.PAYMENT_EXCEEDS_PAYABLE": "لا يجوز أن يتجاوز إجمالي المدفوع المبلغ المستحق.",
     "field.caseReference.label": "مرجع الملف",
     "field.caseReference.hint": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
-    "ui.existingCaseSelectionHint": "اختر ملفًا موجودًا باستخدام مرجعه أو معرّفه.",
+    "label.existingCaseSelectionHint": "اختر ملفًا موجودًا باستخدام مرجعه أو معرّفه.",
     "group.registration.hint": "اختر التفاصيل التي تريد تغييرها.",
     "group.decision.hint": "اختر التفاصيل التي تريد تغييرها.",
     "group.payment.hint": "اختر التفاصيل التي تريد تغييرها.",

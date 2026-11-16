@@ -79,7 +79,9 @@ const preserveChoice = async (page: Page, modes: Modes) => {
   const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(ui(language, "label.correctionSelection"), { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();

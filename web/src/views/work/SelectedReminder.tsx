@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { Actions } from "../../ui/regions/Actions";
@@ -34,7 +35,7 @@ export const SelectedReminder = ({
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
-  const read = useEndpoint("reminder.get", { target, reminderId }, enabled, observation);
+  const read = useEndpoint(apiEndpoints.reminderGet, { target, reminderId }, enabled, observation);
   const notified = useRef(false);
   useEffect(() => {
     if (!enabled) {

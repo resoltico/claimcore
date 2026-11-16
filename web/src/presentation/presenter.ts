@@ -1,9 +1,9 @@
 import { taskDefinitions } from "@contracts/client";
 import { isTerm, termLabel } from "./terms";
-import type { Terms } from "@contracts/messages";
-import { languageDirection } from "./preferences";
+import { type Terms, ruleArguments, inputRuleArguments } from "@contracts/messages";
+import { languageDirection, type Preferences } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { ruleArguments, inputRuleArguments } from "@contracts/messages";
+
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import {
@@ -17,7 +17,7 @@ import {
 } from "./format";
 import { renderCatalogKey, translate } from "./messages";
 import { renderNotice } from "./notice";
-import type { Preferences } from "./preferences";
+
 import type { MessageKey, Values } from "./types";
 
 type CatalogText = Readonly<{

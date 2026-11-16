@@ -1,4 +1,12 @@
-import { useRequesterContext } from "../hooks/useRequesterContext";
+import { operationTask } from "../protocol/taskCatalog";
+import {
+  type Screen,
+  type TaskId,
+  type Link,
+  type PresentedValue as Value,
+} from "@contracts/client";
+import { apiEndpoints } from "../api/service";
+import { useRequesterContext, useCaseCreationControl } from "../hooks/useRequesterContext";
 import { coreLinkPath } from "../routing/coreLinks";
 import { renderCatalogKey } from "../presentation/messages";
 import { useRecovery } from "../recovery/RecoveryContext";
@@ -6,7 +14,7 @@ import { PresentedValue } from "../components/PresentedValue";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useId, useRef, useState } from "react";
-import type { Screen, TaskId, Link, PresentedValue as Value } from "@contracts/client";
+
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { navigate, guardedDeparture } from "../routing/navigation";
@@ -17,10 +25,10 @@ import { Button } from "../ui/Button";
 import {} from "./shell.css";
 
 const areas = [
-  { name: "cases", path: "/cases", label: "ui.cases", icon: "cases" },
+  { name: "cases", path: "/cases", label: "label.cases", icon: "cases" },
   { name: "reminders", path: "/reminders", label: "label.reminders", icon: "reminders" },
   { name: "recovery", path: "/recovery", label: "ui.recovery", icon: "history" },
-  { name: "people", path: "/people", label: "ui.shell.people", icon: "people" },
+  { name: "people", path: "/people", label: "view.PEOPLE.label", icon: "people" },
   {
     name: "peopleHistory",
     path: "/people-history",
@@ -129,22 +137,22 @@ const AccountMenu = ({ locked, view }: { locked: boolean; view: Screen | null })
   const { logout } = useSessionContext();
   return (
     <details className="account-menu">
-      <summary title={p.text("ui.account")}>
+      <summary title={p.text("label.account")}>
         <span className="account-summary-avatar" aria-hidden="true">
           <Icon name="person" />
         </span>
-        <span className="account-summary-name">{p.text("ui.account")}</span>
+        <span className="account-summary-name">{p.text("label.account")}</span>
         <Icon name="chevron-down" />
       </summary>
       <div className="account-menu-items">
         <div className="account-expanded-identity">
           {identity === undefined ? (
-            p.text("ui.account")
+            p.text("label.account")
           ) : (
             <PresentedValue value={identity} timeZone="UTC" avatar />
           )}
           {roles === undefined || (roles.kind === "CODES" && roles.tokens.length === 0) ? null : (
-            <div className="account-roles" aria-label={p.text("ui.people.roles")}>
+            <div className="account-roles" aria-label={p.text("field.grants.label")}>
               <PresentedValue value={roles} timeZone="UTC" />
             </div>
           )}
@@ -262,12 +270,13 @@ export const WorkspaceHeader = ({
   const compact = useCompact();
   const view = presentation;
   const counts = useNavigationCounts();
-  const cases = views.includes("case.list");
+  const creation = useCaseCreationControl();
+  const cases = views.includes(apiEndpoints.caseList);
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
   const admin = areas.filter(
     (area) =>
-      (area.name === "people" && views.includes("people.list")) ||
-      (area.name === "peopleHistory" && tasks.includes("people.history")),
+      (area.name === "people" && views.includes(apiEndpoints.peopleList)) ||
+      (area.name === "peopleHistory" && tasks.includes(apiEndpoints.peopleHistory)),
   );
   const mobile = [
     ...primary,
@@ -276,7 +285,7 @@ export const WorkspaceHeader = ({
   ];
   const title =
     areas.find((area) => area.name === active)?.label ??
-    (route.screen === "recovery" ? "ui.recovery" : "ui.caseDetail");
+    (route.screen === "recovery" ? "ui.recovery" : "label.caseDetail");
   return (
     <>
       <aside className="workspace-sidebar">
@@ -340,7 +349,7 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {route.screen === "cases" && tasks.includes("case.open") ? (
+        {route.screen === "cases" && creation !== undefined ? (
           <a
             id="open-case"
             className="shell-open-case"
@@ -352,7 +361,7 @@ export const WorkspaceHeader = ({
               });
             }}
           >
-            {p.actLabel("case.open")}
+            {renderCatalogKey(p, operationTask(creation.task).labelId)}
           </a>
         ) : null}
       </header>

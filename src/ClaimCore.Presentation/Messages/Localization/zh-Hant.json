@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "角色授權",
-    "source": "2fd169b4b39d"
+    "text": "角色",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "請選擇 1 至 {maximumGrants} 項角色授權。",
-    "source": "d7a1ec1278fd"
+    "text": "請選擇 1 到 {maximumGrants} 個角色。",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "每個角色與範圍組合只能選擇一次。",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "已儲存的個人資料",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "選擇對每組資訊執行的操作。",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "不適用於所選案件",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "不適用於服務帳戶",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "此帳戶已停用",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "您尚無存取權限",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "我們已通知所有者。所有者可為此帳戶授予存取權限。",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "尚無付款記錄。",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "沒有符合此視圖的提醒。",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "這裡的到期篩選適用於每條提醒。案件列表使用每個案件最早的提醒。",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "沒有可顯示的人員。",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "沒有可顯示的案件。",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "沒有符合此視圖的案件。",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "本頁沒有符合條件的帳戶。",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "案件詳情",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "存取權限更改",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "選擇角色",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "使用編號或 ID 選擇現有案件。",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "案件選擇方式",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "查找並繼續處理需要關注的案件工作。",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "此案件已更改",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "沒有待處理的存取申請。",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "此案件目前不提供此操作。",
+    "source": "78dafa13c3bd"
   }
 }

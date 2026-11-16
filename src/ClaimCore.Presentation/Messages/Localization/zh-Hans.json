@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "角色授权",
-    "source": "2fd169b4b39d"
+    "text": "角色",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "请选择 1 至 {maximumGrants} 项角色授权。",
-    "source": "d7a1ec1278fd"
+    "text": "请选择 1 到 {maximumGrants} 个角色。",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "每个角色与范围组合只能选择一次。",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "已保存的个人资料",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "选择对每组信息执行的操作。",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "不适用于所选案件",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "不适用于服务账户",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "此账户已停用",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "您尚无访问权限",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "我们已通知所有者。所有者可为此账户授予访问权限。",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "尚无付款记录。",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "没有符合此视图的提醒。",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "这里的到期筛选适用于每条提醒。案件列表使用每个案件最早的提醒。",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "没有可显示的人员。",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "没有可显示的案件。",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "没有符合此视图的案件。",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "本页没有符合条件的账户。",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "案件详情",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "访问权限更改",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "选择角色",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "使用编号或 ID 选择现有案件。",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "案件选择方式",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "查找并继续处理需要关注的案件工作。",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "此案件已更改",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "没有待处理的访问申请。",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "此案件当前不提供该操作。",
+    "source": "78dafa13c3bd"
   }
 }

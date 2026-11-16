@@ -14,6 +14,7 @@ export const Actions = ({
   onAction,
   actionPresentation,
   compact = false,
+  descriptiveLabel = !compact,
   disabled = false,
   expandOther = false,
   prominent = false,
@@ -22,6 +23,7 @@ export const Actions = ({
   actionPresentation?: ActionPresentation;
   onAction?: (action: Affordance, originId?: string) => void;
   compact?: boolean;
+  descriptiveLabel?: boolean;
   disabled?: boolean;
   expandOther?: boolean;
   prominent?: boolean;
@@ -42,14 +44,15 @@ export const Actions = ({
             id={originId}
             className={prominent ? "primary" : ""}
             data-act={action.task}
+            data-consequence={task.consequence}
             isDisabled={disabled || action.blocked !== null}
             aria-label={
-              compact
-                ? label
-                : p.text("ui.actDescription", {
+              descriptiveLabel
+                ? p.text("ui.actDescription", {
                     label,
                     meaning: renderCatalogKey(p, task.meaningId),
                   })
+                : label
             }
             onPress={() => {
               onAction(action, originId);

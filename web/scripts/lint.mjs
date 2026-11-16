@@ -1,6 +1,8 @@
 // Lints the frontend with oxlint's type-aware rules, one TypeScript project after another, and
 // stops at the first project with a finding, warning, unused disable directive or tool failure.
-import { resolve } from "node:path";
+import { resolve, sep } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { taskDefinitions, endpoints } from "../../contracts/client.ts";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { designFindings } from "./design-lint.mjs";
@@ -17,6 +19,35 @@ const theme = spawnSync(
 if (theme.status !== 0) {
   process.exit(1);
 }
+// Core declarations own task tokens; endpoint bindings belong to the transport and routing adapters.
+/** @type {Set<string>} */
+const identifiers = new Set([...taskDefinitions, ...endpoints].map(({ id }) => id));
+const allowedIdentifiers = new Set(["routing/coreLinks.ts", "api/service.ts", "protocol/types.ts"]);
+const identifierFindings = [];
+for (const path of readdirSync(resolve(root, "src"), { recursive: true, encoding: "utf8" })) {
+  if (!/\.(css|tsx?)$/u.test(path) || allowedIdentifiers.has(path.split(sep).join("/"))) {
+    continue;
+  }
+  const source = readFileSync(resolve(root, "src", path), "utf8");
+  // Read quoted tokens while skipping comments; URL strings remain whole literals.
+  for (const match of source.matchAll(
+    /\/\/[^\n]*|\/\*[\s\S]*?\*\/|(["'\x60])((?:\\.|(?!\1)[^\r\n])*)\1/gu,
+  )) {
+    if (match[2] !== undefined && identifiers.has(match[2])) {
+      const line = source.slice(0, match.index).split("\n").length;
+      identifierFindings.push(
+        `${path}:${line}: task/endpoint token ${
+          match[2]
+        } must come from Core declarations or the transport adapter.`,
+      );
+    }
+  }
+}
+if (identifierFindings.length > 0) {
+  process.stderr.write(`${identifierFindings.join("\n")}\n`);
+  process.exit(1);
+}
+
 const findings = designFindings(root);
 if (findings.length > 0) {
   process.stderr.write(`${findings.join("\n")}\n`);

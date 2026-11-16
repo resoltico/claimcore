@@ -1,3 +1,4 @@
+import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
 import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
 import type { RegionRow, CaseSelector } from "@contracts/client";
@@ -17,7 +18,7 @@ import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-import type { ServiceResponse } from "../api/service";
+
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { navigate } from "../routing/navigation";
@@ -37,7 +38,7 @@ type Props = {
 };
 const ignoreLock = (_locked: boolean): void => undefined;
 export type CaseListControl = BoundOperationAffordance<"WORK">;
-const casePage = (response: ServiceResponse<"case.list">) => {
+const casePage = (response: ServiceResponse<typeof apiEndpoints.caseList>) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -66,11 +67,11 @@ const useWorklist = () => {
   const search = route.screen === "cases" ? route.query : "";
   const query = useMemo(() => parseWorklistQuery(search), [search]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
-  const page = useEndpointPage<"case.list", RegionRow, NonNullable<ReturnType<typeof casePage>>>(
-    "case.list",
-    input,
-    casePage,
-  );
+  const page = useEndpointPage<
+    typeof apiEndpoints.caseList,
+    RegionRow,
+    NonNullable<ReturnType<typeof casePage>>
+  >(apiEndpoints.caseList, input, casePage);
   const change = useCallback((next: WorklistQuery) => {
     navigate(worklistPath(next), true);
   }, []);
@@ -84,7 +85,9 @@ type Page = ReturnType<typeof useWorklist>;
 const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
   const p = usePresentation();
   const emptyMessage =
-    filtered || page.query.view === undefined ? p.text("ui.noCasesForView") : p.text("view.empty");
+    filtered || page.query.view === undefined
+      ? p.text("label.noCasesForView")
+      : p.text("view.empty");
   return (
     <p>
       {emptyMessage}{" "}
@@ -126,7 +129,7 @@ const WorklistFeedback = ({ page }: { page: Page }) => {
             <PageStatus
               empty={page.items.length === 0}
               cursor={page.cursor}
-              emptyMessage="ui.noAccessibleCases"
+              emptyMessage="label.noCases"
             />
           )}
           {page.items.length === 0 && customEmpty ? (
@@ -246,9 +249,9 @@ const ReadyCaseList = ({
         <div>
           <p className="eyebrow">{p.text("ui.workQueue")}</p>
           <h1 id="case-list-title" tabIndex={-1}>
-            {p.text("ui.cases")}
+            {p.text("label.cases")}
           </h1>
-          <p className="page-description">{p.text("ui.queueDescription")}</p>
+          <p className="page-description">{p.text("label.queueDescription")}</p>
         </div>
       </div>
       <WorkspaceViewsStatus area="cases" />

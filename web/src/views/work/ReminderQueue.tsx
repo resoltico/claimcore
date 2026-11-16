@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../../components/PresentedValue";
 import { ViewTabs } from "../../ui/ViewTabs";
@@ -18,8 +19,8 @@ import {
 } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
-const stateChoice = queryInput("reminder.list", "input:reminderState");
-const dueChoice = queryInput("reminder.list", "input:reminderDue");
+const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
+const dueChoice = queryInput(apiEndpoints.reminderList, "input:reminderDue");
 const DefaultReminderView = ({
   query,
   view,

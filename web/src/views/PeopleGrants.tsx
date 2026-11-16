@@ -1,13 +1,14 @@
-import { hasDocumentSubject } from "../protocol/types";
-import { isOperationAffordance } from "../operation/affordances";
+import { apiEndpoints, type ServiceResponse } from "../api/service";
+import { hasDocumentSubject, type PersonDocument } from "../protocol/types";
+import { isOperationAffordance, type OperationAffordance } from "../operation/affordances";
 import type { RegionRow, Screen, Region, PresentedValue as Value } from "@contracts/client";
-import type { OperationAffordance } from "../operation/affordances";
+
 import { ScreenView } from "../ui/ScreenView";
 
 import { useCallback, useEffect, type ReactNode } from "react";
-import type { PersonDocument } from "../protocol/types";
+
 import type { Notice } from "../protocol/notices";
-import type { ServiceResponse } from "../api/service";
+
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -22,7 +23,10 @@ import { RegionView } from "../ui/regions/RegionView";
 import { coreLinkPath } from "../routing/coreLinks";
 
 export type RevocationControl = OperationAffordance;
-const grantPage = (response: ServiceResponse<"people.grants">, actorId: string) => {
+const grantPage = (
+  response: ServiceResponse<typeof apiEndpoints.peopleGrants>,
+  actorId: string,
+) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -63,11 +67,11 @@ const useActorGrants = (actorId: string, onDisclosureRefused: Props["onDisclosur
     [actorId],
   );
   const select = useCallback(
-    (response: ServiceResponse<"people.grants">) => grantPage(response, actorId),
+    (response: ServiceResponse<typeof apiEndpoints.peopleGrants>) => grantPage(response, actorId),
     [actorId],
   );
-  return useEndpointPage<"people.grants", RegionRow, GrantPage>(
-    "people.grants",
+  return useEndpointPage<typeof apiEndpoints.peopleGrants, RegionRow, GrantPage>(
+    apiEndpoints.peopleGrants,
     input,
     select,
     onDisclosureRefused,
@@ -95,7 +99,7 @@ const PersonContents = ({
           timeZone={observed.basis.timeZone}
           roles={["ACCESS"]}
           onAction={(action) => {
-            if (isOperationAffordance(action) && action.task === "people.revoke") {
+            if (isOperationAffordance(action)) {
               onRevoke?.(action);
             }
           }}
@@ -133,14 +137,14 @@ const PersonContents = ({
         </a>
       )}
       {page.page === null ? null : (
-        <p role="status">{p.text(page.cursor === null ? "ui.grantsEnd" : "ui.grantsPartial")}</p>
+        <p role="status">{p.text(page.cursor === null ? "ui.rolesEnd" : "ui.rolesPartial")}</p>
       )}
       <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
-        {p.text("ui.reloadGrants")}
+        {p.text("ui.reloadRoles")}
       </button>
       {page.cursor === null ? null : (
         <button type="button" disabled={page.loading} onClick={() => void page.load(page.cursor)}>
-          {p.text("ui.moreGrants")}
+          {p.text("ui.moreRoles")}
         </button>
       )}
     </>
@@ -148,7 +152,7 @@ const PersonContents = ({
 };
 const responsibilityLink = (document: PersonDocument | null) => {
   const offered = document?.links.find(
-    (named) => named.rel === "VIEW" && named.link.endpoint === "case.list",
+    (named) => named.rel === "VIEW" && named.link.endpoint === apiEndpoints.caseList,
   )?.link;
   const href = offered === undefined ? undefined : coreLinkPath(offered);
   return href === undefined
@@ -219,7 +223,7 @@ export const PeopleGrants = ({
     <Dialog
       title={
         caption === undefined ? (
-          p.text("ui.people.person")
+          p.text("label.account")
         ) : (
           <PresentedValue value={caption} timeZone={zone} avatar />
         )

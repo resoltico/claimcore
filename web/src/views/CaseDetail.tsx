@@ -1,20 +1,21 @@
+import { isNarrativeCreationId, type ActKind } from "../operation/metadata";
+import type { Affordance, CaseSelector, HumanDocument, Screen } from "@contracts/client";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import type { CaseSelector, HumanDocument, Screen } from "@contracts/client";
+
 import { useState, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
 import { ButtonControl as Button } from "../ui/ButtonControl";
-import type { CurrentCase, CatalogDocument } from "../api/service";
-import { isCurrentCase } from "../api/service";
+import { type CurrentCase, type CatalogDocument, isCurrentCase } from "../api/service";
 
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { ScreenView } from "../ui/ScreenView";
 import { CaseActions, CaseActionAlternatives } from "./case/CaseActions";
 import "./case.css";
-import { type ActKind } from "../operation/metadata";
+
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseFactRegions } from "./case/CaseFactRegions";
 import { CaseIdentity } from "./case/CaseIdentity";
@@ -30,7 +31,7 @@ type CaseDetailProps = {
   definition: CatalogDocument;
   onBack: () => void;
   onMutationLockChange?: MutationLockChange;
-  onAct: (current: CurrentCase, act: ActKind, paymentId?: string) => void;
+  onAct: (current: CurrentCase, action: Affordance) => void;
 };
 
 const CurrentFeedback = ({
@@ -94,8 +95,8 @@ const CurrentPresentation = ({
         current={current}
         view={view}
         onChanged={onChanged}
-        onAct={(act, paymentId) => {
-          onAct(current, act, paymentId);
+        onAct={(action) => {
+          onAct(current, action);
         }}
       />
     ) : null;
@@ -186,7 +187,7 @@ const UnavailableAct = ({
   return (
     <aside className="case-action-refusal" role="alert">
       <p>
-        <strong>{p.actLabel(value)}</strong>: {p.text("ui.actionNotOffered")}
+        <strong>{p.actLabel(value)}</strong>: {p.text("label.actionNotOffered")}
       </p>
       {current === null ? null : (
         <CaseActionAlternatives
@@ -237,7 +238,7 @@ const useRetainedNoteOffer = (value: HumanDocument | null, denied: boolean) => {
     value === null
       ? null
       : asCurrentCase(value)?.actions.some(
-          (action) => action.task === "note.add" && action.blocked === null,
+          (action) => isNarrativeCreationId(action.task) && action.blocked === null,
         ) === true;
   const [retained, setRetained] = useState(false);
   const eligible = denied ? false : (offered ?? retained);

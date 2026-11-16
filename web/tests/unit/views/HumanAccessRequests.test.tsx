@@ -101,7 +101,14 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
     .mockResolvedValueOnce(reply(document))
     .mockResolvedValueOnce(
       reply({
-        screen: { regions: [] },
+        screen: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: { kind: "NOTICE", messageId: "label.recordedChange", tone: "INFO" },
+            },
+          ],
+        },
         subject: { kind: "LIST" },
         actions: [],
         links: [],
@@ -129,8 +136,14 @@ it("dismisses only the selected principal and refreshes once after a confirmed H
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
+  expect(screen.getByText("Recorded change")).toBeVisible();
+  expect(screen.queryByText("Access request dismissed.")).toBeNull();
   expect(fetch.mock.calls[1]![0]).toBe("/api/people.requests.dismiss");
-  expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual(principals[1]);
+  expect(JSON.parse(requestText(fetch.mock.calls[1]![1]?.body))).toEqual({
+    "input:principal.kind": principals[1]!.kind,
+    "input:principal.issuer": principals[1]!.issuer,
+    "input:principal.subject": principals[1]!.subject,
+  });
 });
 
 it("shows no-pending only after a successful terminal empty page", async () => {

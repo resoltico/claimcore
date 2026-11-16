@@ -225,7 +225,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                     actualRevision: 12,
                     advice: {
                       message: {
-                        messageId: "ui.conflict.title",
+                        messageId: "label.caseChanged",
                         arguments: [],
                       },
                       action: "REVIEW_LATEST",

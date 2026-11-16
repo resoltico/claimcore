@@ -6,12 +6,9 @@ open ClaimCore.Json
 
 /// Transport member spellings adapt semantic inputs once for codecs and generic acquisition.
 module EndpointInputs =
-    let memberName =
+    let private queryMember =
         function
         | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) -> "target"
-        | TaskInputId.Target InputTarget.PrincipalKind -> "kind"
-        | TaskInputId.Target InputTarget.PrincipalIssuer -> "issuer"
-        | TaskInputId.Target InputTarget.PrincipalSubject -> "subject"
         | TaskInputId.Target InputTarget.DirectorySearch -> "text"
         | TaskInputId.RoleFilter -> "role"
         | TaskInputId.CaseView
@@ -21,6 +18,11 @@ module EndpointInputs =
         | TaskInputId.ReminderState -> "state"
         | TaskInputId.ReminderDue -> "due"
         | input -> TaskInputId.key input
+
+    let memberName (declaration: EndpointDeclaration) input =
+        match declaration.Kind with
+        | EndpointKind.Command -> TaskInputId.token input
+        | EndpointKind.Query -> queryMember input
 
     /// Codec structure and use-case declarations independently describe the same request boundary.
     let check id (codec: Codec<'input>) =
@@ -43,7 +45,8 @@ module EndpointInputs =
             | Schema.Object(properties, _) -> properties |> Map.ofList
             | _ -> invalidOp (id + " requires an object request.")
 
-        let names = declaration.Inputs |> List.map (fun input -> memberName input.Input)
+        let names =
+            declaration.Inputs |> List.map (fun input -> memberName declaration input.Input)
 
         if
             (Set.ofList names).Count <> names.Length
@@ -52,7 +55,7 @@ module EndpointInputs =
             invalidOp (id + " codec members disagree with its endpoint declaration.")
 
         for input in declaration.Inputs do
-            let shape = properties[memberName input.Input] |> resolve
+            let shape = properties[memberName declaration input.Input] |> resolve
 
             let multiple =
                 match shape with

@@ -2671,7 +2671,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     waitUntil: "commit",
   });
   const table = page.getByRole("table", {
-    name: "People & access",
+    name: "People and access",
   });
   const row = table.getByRole("row").filter({
     hasText: "People owner",

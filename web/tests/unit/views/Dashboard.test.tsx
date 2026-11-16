@@ -102,7 +102,7 @@ it("chooses an advertised workspace only for the default entry route", async () 
     value: wireReply("people.requests"),
   });
   render(<Dashboard />);
-  expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "People and access", level: 1 })).toBeVisible();
   expect(window.location.pathname).toBe("/people");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();

@@ -1,3 +1,4 @@
+import { principalCreationTask } from "../../operation/metadata";
 import { grantFields } from "../../operation/grantTargetDraft";
 import { useEndpointCache } from "../EndpointProvider";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -61,7 +62,7 @@ const useActorDisclosure = (revision: number, available: boolean) => {
 };
 const admissionIsBound = (model: OperationModel, principal: Principal | null) =>
   principal !== null &&
-  model.entry.kind === "people.admit" &&
+  model.task.creates &&
   model.values["input:principal.kind"] === principal.kind &&
   model.values["input:principal.issuer"] === principal.issuer &&
   model.values["input:principal.subject"] === principal.subject;
@@ -164,10 +165,7 @@ export const usePeopleTarget = (
   const [intent, setIntent] = useState<Intent | null>(null);
   const admissionBound = admissionIsBound(model, admissionPrincipal);
   const actorBound =
-    source !== null &&
-    boundActor(model) === source.document.subject.actorId &&
-    model.entry.kind !== "people.admit" &&
-    model.entry.kind !== "people.register";
+    source !== null && boundActor(model) === source.document.subject.actorId && !model.task.creates;
   const fixed = admissionBound || actorBound;
   const seeded = useRef<string | null>(null);
   const recommended =
@@ -188,7 +186,7 @@ export const usePeopleTarget = (
     } else if (source === null && seeded.current !== null && model.phase !== "ACCEPTED") {
       seeded.current = null;
       if (boundActor(model) !== undefined) {
-        model.discard(false, "people.admit", {}, { kind: "PEOPLE", expectedRevision: 0 });
+        model.discard(false, principalCreationTask().id, {});
       }
     }
   }, [model, source, recommended, fixed]);

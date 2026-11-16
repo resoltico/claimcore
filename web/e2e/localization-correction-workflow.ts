@@ -1,9 +1,15 @@
 import { prefixedInputs } from "../tests/support/submission-inputs";
-import { type ResponseFor, endpoints, type OperationReceipt } from "@contracts/client";
+import {
+  type ResponseFor,
+  endpoints,
+  type OperationReceipt,
+  type CaseFields,
+  type RequestByEndpoint,
+} from "@contracts/client";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showCaseRecordDetails, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
-import type { CaseFields, RequestByEndpoint } from "@contracts/client";
+
 type CaseSubmission = Extract<
   RequestByEndpoint["operation.execute"],
   { binding: { kind: "CASE" } }

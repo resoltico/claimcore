@@ -10,11 +10,16 @@ import {
   seedPresentation,
   openLabel,
 } from "./localization-support";
-import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
+import {
+  displayLocales,
+  languages,
+  preferenceKey,
+  type Language,
+} from "../src/presentation/preferences";
 import { endpoints, presentationLanguageOptions } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import type { CatalogLanguage } from "../src/presentation/languageCatalog";
-import type { Language } from "../src/presentation/preferences";
+
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
   if (!authenticated) {
     await openApplication(
@@ -42,7 +47,7 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
     });
   await Promise.all([
     initialList,
-    openAuthenticated(page, source === "en-XA" ? "⟦Cààsëës⟧" : ui(source, "ui.cases")),
+    openAuthenticated(page, source === "en-XA" ? "⟦Cààsëës⟧" : ui(source, "label.cases")),
   ]);
   const list = page.locator('section[aria-labelledby="case-list-title"]');
   await expect(list.locator(':scope > p[role="status"]')).toHaveCount(0);
@@ -55,7 +60,7 @@ const visibleLanguage = async (page: Page, language: CatalogLanguage, authentica
   if (authenticated) {
     await expect(
       page.getByRole("heading", {
-        name: ui(language, "ui.cases"),
+        name: ui(language, "label.cases"),
         exact: true,
         level: 1,
       }),

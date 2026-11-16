@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "./affordances";
 import {
   type OperationSubmission,
   type CaseSelector,
@@ -44,19 +45,21 @@ export const rebasedOperationBinding = (
   currentActions: ReadonlyArray<Affordance>,
 ): OperationBinding => {
   const { binding } = input;
-  if (input.task === "case.erase") {
+  if ("expectedFamilySequence" in binding) {
     const current = currentActions.find(
-      (action) => action.task === "case.erase" && action.blocked === null,
+      (action) => action.task === input.task && action.blocked === null,
     );
     if (
-      current?.task !== "case.erase" ||
+      current === undefined ||
+      !isOperationAffordance(current) ||
+      current.task !== input.task ||
       current.binding.kind !== "CASE" ||
       !("expectedFamilySequence" in current.binding)
     ) {
-      throw new Error("A fresh erasure action is required.");
+      throw new Error("A fresh reviewed action is required.");
     }
     return {
-      ...input.binding,
+      ...binding,
       expectedRevision: current.binding.expectedRevision,
       expectedFamilySequence: current.binding.expectedFamilySequence,
     };

@@ -128,9 +128,15 @@ module RequestCodecs =
                 Subject = subject
             })
         : Fields<PrincipalInput, _>)
-        |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
-        |> field "issuer" _.Issuer text
-        |> field "subject" _.Subject text
+        |> field
+            (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalKind))
+            _.Kind
+            (VocabularyCodec.create PrincipalKind.vocabulary)
+        |> field (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalIssuer)) _.Issuer text
+        |> field
+            (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalSubject))
+            _.Subject
+            text
         |> finishRead RequestSchemas.AccessRequestDismissRequest
 
     let private optionalChoices name get vocabulary fields =

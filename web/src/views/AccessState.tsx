@@ -1,3 +1,4 @@
+import { renderCatalogKey } from "../presentation/messages";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { guardedDeparture } from "../routing/navigation";
@@ -28,6 +29,18 @@ export const AccessState = ({
   if (requester.subject.state === "ACTIVE") {
     return null;
   }
+  const identity = requester.screen.regions.find((region) => region.role === "IDENTITY");
+  const titleId = identity?.titleId ?? "label.account";
+  const view = {
+    ...requester.screen,
+    regions: requester.screen.regions.map((region) => {
+      if (region !== identity) {
+        return region;
+      }
+      const { titleId: _title, ...content } = region;
+      return content;
+    }),
+  };
   return (
     <main className="access-state">
       <span className="product-name">
@@ -38,17 +51,10 @@ export const AccessState = ({
       </span>
       <section>
         <h1 tabIndex={-1} ref={heading}>
-          {p.text(
-            requester.subject.state === "DISABLED"
-              ? "ui.accessState.disabled"
-              : "ui.accessState.title",
-          )}
+          {renderCatalogKey(p, titleId)}
         </h1>
-        {requester.subject.state === "NOT_REGISTERED" ? (
-          <p>{p.text("ui.accessState.requested")}</p>
-        ) : null}
         <ScreenView
-          view={requester.screen}
+          view={view}
           timeZone={
             requester.basis.kind === "SNAPSHOT" ? requester.basis.observation.timeZone : "UTC"
           }

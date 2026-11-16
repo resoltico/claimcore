@@ -16,7 +16,10 @@ let declaration =
         ActFamily.Business
         Consequence.Routine
         [ Capability.ManageAccess ]
-        (operation :: (required TaskInputId.ActorId |> bound) :: revision :: grant)
+        (operation
+         :: (required TaskInputId.ActorId |> bound)
+         :: revision
+         :: grantAdmission)
         []
 
 type private Command = { Grant: GrantInput }

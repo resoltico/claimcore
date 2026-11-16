@@ -367,7 +367,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         reducedMotion: "reduce",
       });
       await seedPresentation(page, language, locale);
-      await openAuthenticated(page, ui(language, "ui.cases"));
+      await openAuthenticated(page, ui(language, "label.cases"));
       const caseId = mintOperationId();
       const reference = `LOCAL-WORK-${randomUUID()}`;
       const prefix = "الملخص\n\n";

@@ -304,7 +304,7 @@ const openActor = async (page: Page, actorId: string, name: string) => {
     }
     await dialog
       .getByRole("button", {
-        name: "Reload grants",
+        name: "Reload roles",
         exact: true,
       })
       .click();

@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import { Select } from "../../ui/Select";
 import { Dialog } from "../../ui/Dialog";
 import { useState } from "react";
@@ -27,7 +28,7 @@ const selectSet = (
 };
 const inputs = (
   ["input:lifecycle", "input:status", "input:progress", "input:assignment", "input:due"] as const
-).map((id) => queryInput("case.list", id));
+).map((id) => queryInput(apiEndpoints.caseList, id));
 const selectedValues = (query: WorklistQuery, name: string): ReadonlyArray<string> => {
   switch (name) {
     case "lifecycle":
@@ -118,7 +119,7 @@ const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)
 };
 const OrderControl = ({ query, onChange }: Props) => {
   const p = usePresentation();
-  const options = queryInput("case.list", "input:order").choices;
+  const options = queryInput(apiEndpoints.caseList, "input:order").choices;
   return (
     <Select
       label={p.text("input.order.label")}

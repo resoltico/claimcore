@@ -1,36 +1,37 @@
+import type { Affordance, Region } from "@contracts/client";
 import { useState } from "react";
 import { CasePaymentPages } from "./CasePaymentPages";
 import { PaymentRows, PaymentsShown } from "./PaymentRows";
-import type { Region } from "@contracts/client";
+
 import type { CurrentCase } from "../../protocol/types";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { Entries } from "../../ui/regions/Entries";
 import { MoneyMeter } from "../../ui/regions/MoneyMeter";
 import { Button } from "../../ui/Button";
-import type { ActKind } from "../../operation/metadata";
+import { Actions } from "../../ui/regions/Actions";
 import {} from "./payments.css";
 type PaymentTable = Extract<Region["content"], { kind: "TABLE" }>;
 const PaymentPreview = ({
   content,
   total,
   zone,
-  onRemove,
+  onAction,
   onExpand,
 }: {
   content: PaymentTable;
   total: number | null;
   zone: string;
-  onRemove: (id: string) => void;
+  onAction: (action: Affordance) => void;
   onExpand: () => void;
 }) => {
   const p = usePresentation();
   return (
     <>
       {content.rows.length === 0 ? (
-        <p className="payments-empty">{p.text("ui.noPayments")}</p>
+        <p className="payments-empty">{p.text("label.noPayments")}</p>
       ) : (
-        <PaymentRows content={content} zone={zone} onRemove={onRemove} />
+        <PaymentRows content={content} zone={zone} onAction={onAction} />
       )}
       {total === null ? null : <PaymentsShown shown={content.rows.length} total={total} />}
       {total !== null && total > content.rows.length ? (
@@ -49,7 +50,7 @@ export const CasePayments = ({
 }: {
   region: Region;
   current: CurrentCase;
-  onAct: (act: ActKind, paymentId?: string) => void;
+  onAct: (action: Affordance) => void;
   onChanged: () => void;
 }) => {
   const p = usePresentation();
@@ -75,18 +76,7 @@ export const CasePayments = ({
         <h2 id="case-payments-title">
           {renderCatalogKey(p, region.titleId ?? "label.paymentDecisionAndPayments")}
         </h2>
-        {current.actions.some(
-          (action) => action.task === "case.decide" && action.blocked === null,
-        ) ? (
-          <Button
-            variant="secondary"
-            onPress={() => {
-              onAct("case.decide");
-            }}
-          >
-            {p.text("ui.changeDecision")}
-          </Button>
-        ) : null}
+        <Actions actions={region.actions ?? []} compact descriptiveLabel onAction={onAct} />
       </div>
       <Entries
         entries={(content.sections ?? []).flatMap((section) => section.entries)}
@@ -96,22 +86,13 @@ export const CasePayments = ({
         <MoneyMeter meter={meter} timeZone={zone} label={p.text("label.paid")} />
       )}
       {expanded === owner && total !== null ? (
-        <CasePaymentPages
-          current={current}
-          total={total}
-          onRemove={(id) => {
-            onAct("case.removePayment", id);
-          }}
-          onChanged={onChanged}
-        />
+        <CasePaymentPages current={current} total={total} onAction={onAct} onChanged={onChanged} />
       ) : (
         <PaymentPreview
           content={content}
           total={total}
           zone={zone}
-          onRemove={(id) => {
-            onAct("case.removePayment", id);
-          }}
+          onAction={onAct}
           onExpand={() => {
             setExpanded(owner);
           }}

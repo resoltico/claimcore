@@ -1,3 +1,4 @@
+export type BusinessDateScope = "REQUESTER" | "RESOURCE";
 /** Only the current authenticated workspace may receive dates from validated responses. */
 type DateObserver = {
   credential: string;
@@ -39,30 +40,35 @@ const humanDocument = (outcome: Record<string, unknown> | null) => {
       return null;
   }
 };
-const humanDate = (endpoint: string, envelope: Record<string, unknown>, owner: Registration) => {
+const humanDate = (
+  scope: BusinessDateScope,
+  envelope: Record<string, unknown>,
+  owner: Registration,
+) => {
   const document = humanDocument(object(envelope["outcome"]));
-  if (endpoint === "context" && !humanContextOwned(document, owner)) {
+  if (scope === "REQUESTER" && !humanContextOwned(document, owner)) {
     return undefined;
   }
   const basis = object(document?.["basis"]);
   const observation = basis?.["kind"] === "SNAPSHOT" ? object(basis["observation"]) : null;
   return observation?.["businessDate"];
 };
-const observedDate = (endpoint: string, response: unknown, owner: Registration) => {
+const observedDate = (scope: BusinessDateScope, response: unknown, owner: Registration) => {
   const envelope = object(response);
-  return envelope?.["representation"] === "HUMAN"
-    ? humanDate(endpoint, envelope, owner)
-    : undefined;
+  return envelope?.["representation"] === "HUMAN" ? humanDate(scope, envelope, owner) : undefined;
 };
 /** Capture ownership at dispatch: late replies cannot attach themselves to a newer session. */
-export const captureBusinessDateObserver = (endpoint: string, credential: string | undefined) => {
+export const captureBusinessDateObserver = (
+  scope: BusinessDateScope,
+  credential: string | undefined,
+) => {
   const owner = current?.credential === credential ? current : null;
   const dispatch = owner === null ? 0 : ++owner.dispatched;
   return (response: unknown): void => {
     if (owner === null || current !== owner || dispatch < owner.observedDispatch) {
       return;
     }
-    const date = observedDate(endpoint, response, owner);
+    const date = observedDate(scope, response, owner);
     if (typeof date === "string") {
       owner.observedDispatch = dispatch;
       owner.observed(date);

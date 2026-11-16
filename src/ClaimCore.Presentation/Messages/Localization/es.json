@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "Asignaciones de acceso",
-    "source": "2fd169b4b39d"
+    "text": "Roles",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "Elige entre 1 y {maximumGrants} asignaciones de acceso.",
-    "source": "d7a1ec1278fd"
+    "text": "Elige entre 1 y {maximumGrants} roles.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "Elige cada combinación de rol y ámbito una sola vez.",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "Perfil guardado",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "Elige qué hacer con cada grupo de datos.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "No disponible para los expedientes seleccionados",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "No disponible para cuentas de servicio",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "Esta cuenta está desactivada",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "Aún no tienes acceso",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "No hay asientos de pago registrados.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "No hay recordatorios que coincidan con esta vista.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "Aquí los filtros de vencimiento se aplican a cada recordatorio. Las listas de expedientes usan el recordatorio más próximo de cada expediente.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "No hay personas que mostrar.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "No hay expedientes que mostrar.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "No hay expedientes que coincidan con esta vista.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "No hay cuentas aptas en esta página.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "Detalle del expediente",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "Cambio de acceso",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "Elegir un rol",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "Elige un expediente existente mediante su referencia o ID.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "Seleccionar expediente por",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "Busca y continúa la tramitación de los expedientes que requieren atención.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "Este expediente ha cambiado",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "No hay solicitudes de acceso pendientes.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "Esta acción no está disponible actualmente para este expediente.",
+    "source": "78dafa13c3bd"
   }
 }

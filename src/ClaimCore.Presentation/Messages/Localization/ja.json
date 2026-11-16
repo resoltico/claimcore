@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "アクセス権限の割り当て",
-    "source": "2fd169b4b39d"
+    "text": "役割",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "アクセス権限を1～{maximumGrants}件選択してください。",
-    "source": "d7a1ec1278fd"
+    "text": "ロールを1件から{maximumGrants}件まで選択してください。",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "同じ役割と適用範囲の組み合わせは1回だけ選択してください。",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "保存されたプロフィール",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "各情報グループで行うことを選択してください。",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "選択した案件では利用できません",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "サービスアカウントでは利用できません",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "このアカウントは無効です",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "まだアクセス権限がありません",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "所有者に通知しました。所有者はこのアカウントにアクセス権限を付与できます。",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "支払記録はありません。",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "このビューに一致するリマインダーはありません。",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "ここでの期限フィルターは各リマインダーに適用されます。案件一覧では各案件の最も早いリマインダーを使用します。",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "表示する利用者はいません。",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "表示する案件はありません。",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "このビューに一致する案件はありません。",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "このページに割り当て可能なアカウントはありません。",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "案件の詳細",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "アクセス変更",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "役割を選択",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "参照番号または ID で既存の案件を選択してください。",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "案件の選択方法",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "対応が必要な案件の業務を探して再開します。",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "この案件は変更されています",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "承認待ちのアクセス申請はありません。",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "この案件では現在この操作は利用できません。",
+    "source": "78dafa13c3bd"
   }
 }

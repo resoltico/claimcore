@@ -1,4 +1,4 @@
-import { captureBusinessDateObserver } from "./businessDateObservation";
+import { captureBusinessDateObserver, type BusinessDateScope } from "./businessDateObservation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { sendHttp } from "./transport";
 import { responseBytes } from "./responseBytes";
@@ -20,6 +20,32 @@ import { isHostFailure, isObject } from "../protocol/client";
 export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { resultNotice } from "./outcomes";
+/** Typed endpoint bindings belong to the transport; operation tasks are selected from Core controls. */
+export const apiEndpoints = {
+  session: "session",
+  sessionLogout: "session.logout",
+  operationPreview: "operation.preview",
+  operationExecute: "operation.execute",
+  caseGet: "case.get",
+  caseAssignees: "case.assignees",
+  caseList: "case.list",
+  caseSummary: "case.summary",
+  caseTimeline: "case.timeline",
+  caseNotes: "case.notes",
+  casePayments: "case.payments",
+  reminderList: "reminder.list",
+  reminderGet: "reminder.get",
+  workViews: "work.views",
+  operationGet: "operation.get",
+  peopleList: "people.list",
+  peopleGrants: "people.grants",
+  peopleHistory: "people.history",
+  peopleRequests: "people.requests",
+  context: "context",
+  peopleRequestsDismiss: "people.requests.dismiss",
+} as const satisfies Readonly<Record<string, EndpointId>>;
+const businessDateScope = (id: EndpointId): BusinessDateScope =>
+  id === apiEndpoints.context ? "REQUESTER" : "RESOURCE";
 const responseLimit = strictByteProfile.maximumResponseBytes;
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (
@@ -143,7 +169,7 @@ function send<K extends EndpointId>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  const observeDate = captureBusinessDateObserver(id, credential);
+  const observeDate = captureBusinessDateObserver(businessDateScope(id), credential);
   const network = async (
     deliveredSignal: AbortSignal,
   ): Promise<ApiResult<ServiceResponse<K, Representation>>> => {

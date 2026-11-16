@@ -127,7 +127,8 @@ let tests =
                     let role =
                         declaration "people.grant" |> input (TaskInputId.Target InputTarget.Role)
 
-                    let whenCase = role.ChoicesWhen |> Option.get
+                    let whenCase =
+                        role.ChoicesWhen |> List.find (fun rule -> rule.Input = TaskInputId.Scope)
 
                     Expect.equal
                         (whenCase.Input, whenCase.Value)
@@ -145,7 +146,39 @@ let tests =
                                 "DATA_STEWARD"
                                 "AUDITOR"
                             ])
-                        "Owner is installation-wide; the other roles have case capabilities")
+                        "Owner is installation-wide; the other roles have case capabilities"
+
+                    let service =
+                        role.ChoicesWhen |> List.find (fun rule -> rule.Value = "SERVICE")
+
+                    Expect.equal
+                        (Set.ofList service.Choices)
+                        (Set.ofList
+                            [
+                                "CASE_READER"
+                                "CASE_REGISTRAR"
+                                "CASE_HANDLER"
+                                "PAYMENT_RECORDER"
+                                "AUDITOR"
+                            ])
+                        "Service admission excludes human-only roles"
+
+                    let revoked =
+                        declaration "people.revoke" |> input (TaskInputId.Target InputTarget.Role)
+
+                    Expect.isEmpty
+                        revoked.ChoicesWhen
+                        "Revocation can select recognized stored roles regardless of admission"
+
+                    let admitted =
+                        (declaration "people.admit").Collections.Head.Inputs
+                        |> List.find (fun value ->
+                            value.Input = TaskInputId.Target InputTarget.Role)
+
+                    Expect.equal
+                        admitted.ChoicesWhen
+                        role.ChoicesWhen
+                        "Initial and later assignment share admission constraints")
             testCase
                 "null and omission stay distinct and rows retain their submitted ordinals"
                 (fun () ->

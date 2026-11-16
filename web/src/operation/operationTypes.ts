@@ -1,3 +1,4 @@
+import type { apiEndpoints } from "../api/service";
 import type { OperationAffordance } from "./affordances";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
@@ -26,11 +27,11 @@ export type EffectIdentity = {
   target: string;
 };
 export type LocalSource = {
-  prepared: PreparedRequest<"operation.execute">;
+  prepared: PreparedRequest<typeof apiEndpoints.operationExecute>;
   submittedRows: TaskSubmission["submittedRows"];
 };
 export type ConflictSource = LocalSource & {
-  prepared: PreparedRequest<"operation.execute"> & {
+  prepared: PreparedRequest<typeof apiEndpoints.operationExecute> & {
     input: Extract<OperationSubmission, { binding: { target: CaseSelector } }>;
   };
 };
@@ -135,7 +136,7 @@ export type OperationDelivery = {
   notice: Extract<Notice, { kind: "local" | "pending" | "accepted" }> | null;
 };
 type DisclosureRead =
-  | { resource: "case.get"; identity: EffectIdentity; query: CaseGetRequest }
+  | { resource: typeof apiEndpoints.caseGet; identity: EffectIdentity; query: CaseGetRequest }
   | { resource: "conflict"; identity: EffectIdentity; query: ConflictSource };
 export type DisclosedResource = {
   review: { identity: EffectIdentity; value: HumanReview } | null;

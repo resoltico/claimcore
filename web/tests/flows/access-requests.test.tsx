@@ -179,7 +179,14 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
     status: 200,
     value: {
       ...humanReadReply("people.requests.dismiss", {
-        screen: { regions: [] },
+        screen: {
+          regions: [
+            {
+              role: "NOTICE",
+              content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+            },
+          ],
+        },
         subject: { kind: "LIST" },
         actions: [],
         links: [],
@@ -203,7 +210,11 @@ it("requires dismiss confirmation and sends the actual principal kind, issuer an
   await screen.findByText("Access request dismissed.");
   expect(dismiss).toHaveBeenCalledExactlyOnceWith(
     "token",
-    request.principal,
+    {
+      "input:principal.kind": request.principal.kind,
+      "input:principal.issuer": request.principal.issuer,
+      "input:principal.subject": request.principal.subject,
+    },
     expect.any(AbortSignal),
   );
 });
@@ -268,7 +279,14 @@ it("aborts dismissal and forgets request hints on a session change", async () =>
       status: 200,
       value: {
         ...humanReadReply("people.requests.dismiss", {
-          screen: { regions: [] },
+          screen: {
+            regions: [
+              {
+                role: "NOTICE",
+                content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+              },
+            ],
+          },
           subject: { kind: "LIST" },
           actions: [],
           links: [],
@@ -368,7 +386,14 @@ it("reviews and dismisses the selected page-local request without reusing an ear
     kind: "outcome",
     status: 200,
     value: humanReadReply("people.requests.dismiss", {
-      screen: { regions: [] },
+      screen: {
+        regions: [
+          {
+            role: "NOTICE",
+            content: { kind: "NOTICE", messageId: "label.requestDismissed", tone: "INFO" },
+          },
+        ],
+      },
       subject: { kind: "LIST" },
       actions: [],
       links: [],
@@ -390,5 +415,9 @@ it("reviews and dismisses the selected page-local request without reusing an ear
   await waitFor(() => {
     expect(dismiss).toHaveBeenCalledOnce();
   });
-  expect(dismiss.mock.calls[0]?.[1]).toEqual(later.principal);
+  expect(dismiss.mock.calls[0]?.[1]).toEqual({
+    "input:principal.kind": later.principal.kind,
+    "input:principal.issuer": later.principal.issuer,
+    "input:principal.subject": later.principal.subject,
+  });
 });

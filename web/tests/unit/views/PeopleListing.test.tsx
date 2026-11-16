@@ -108,7 +108,7 @@ const setup = (mayReadGrants: boolean, row = owner, cursor: string | null = null
 it("shows core account state and raw roles with one native person link and no row grant reads", async () => {
   const grants = mockEndpoint("people.grants");
   const select = setup(true);
-  const table = await screen.findByRole("table", { name: "People & access" });
+  const table = await screen.findByRole("table", { name: "People and access" });
   await within(table).findByText(displayName);
   expect(
     within(table)
@@ -152,7 +152,7 @@ it("keeps disclosed table facts when Core omits its person link", async () => {
       owner.values[3]!,
     ],
   });
-  const table = await screen.findByRole("table", { name: "People & access" });
+  const table = await screen.findByRole("table", { name: "People and access" });
   await within(table).findByText(displayName);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
   expect(within(table).queryByRole("link")).toBeNull();

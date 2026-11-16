@@ -1,7 +1,4 @@
-import { consumerContractIdentity } from "@contracts/client";
-import { localNotice } from "../protocol/notices";
-import type { Notice } from "../protocol/notices";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { apiEndpoints } from "../api/service";
 import {
   type ApiResult,
   resultNotice,
@@ -9,6 +6,10 @@ import {
   service,
   type ServiceResponse,
 } from "../api/service";
+import { consumerContractIdentity } from "@contracts/client";
+import { localNotice, type Notice } from "../protocol/notices";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SessionState =
   | { kind: "loading"; epoch: number }
@@ -16,7 +17,8 @@ export type SessionState =
   | { kind: "authenticated"; token: string; epoch: number }
   | { kind: "failure"; message: Notice; epoch: number };
 
-type SessionResponse = ServiceResponse<"session"> | ServiceResponse<"session.logout">;
+type SessionResponse =
+  ServiceResponse<typeof apiEndpoints.session> | ServiceResponse<typeof apiEndpoints.sessionLogout>;
 
 const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
   result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED"

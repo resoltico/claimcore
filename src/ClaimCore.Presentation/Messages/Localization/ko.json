@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "접근 권한 부여",
-    "source": "2fd169b4b39d"
+    "text": "역할",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "접근 권한을 1~{maximumGrants}개 선택하세요.",
-    "source": "d7a1ec1278fd"
+    "text": "역할을 1개에서 {maximumGrants}개까지 선택하세요.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "같은 역할과 적용 범위 쌍은 한 번만 선택하세요.",
@@ -2706,5 +2706,93 @@
   "label.profile": {
     "text": "저장된 프로필",
     "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "각 정보 그룹에 수행할 작업을 선택하세요.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "선택한 청구 건에는 사용할 수 없습니다",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "서비스 계정에는 사용할 수 없습니다",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "이 계정은 비활성화되어 있습니다",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "아직 접근 권한이 없습니다",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "소유자에게 알렸습니다. 소유자가 이 계정에 접근 권한을 부여할 수 있습니다.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "기록된 지급 내역이 없습니다.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "이 보기에 맞는 후속 조치가 없습니다.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "여기의 기한 필터는 각 후속 조치에 적용됩니다. 청구 건 목록은 각 청구 건의 가장 이른 후속 조치를 사용합니다.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "표시할 사람이 없습니다.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "표시할 청구 건이 없습니다.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "이 보기에 맞는 청구 건이 없습니다.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "이 페이지에 지정 가능한 계정이 없습니다.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "청구 건 상세",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "접근 권한 변경",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "역할 선택",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "참조 번호 또는 ID로 기존 청구 건을 선택하세요.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "청구 건 선택 기준",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "주의가 필요한 청구 건 업무를 찾아 이어서 처리하세요.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "이 청구 건이 변경되었습니다",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "대기 중인 접근 요청이 없습니다.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
+    "source": "78dafa13c3bd"
   }
 }

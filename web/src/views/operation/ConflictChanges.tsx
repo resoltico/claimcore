@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState, useId } from "react";
-import type { HistoryDisclosure, Screen, HumanDocument, CaseSelector } from "@contracts/client";
 import {
+  apiEndpoints,
   requestEndpoint,
   resultNotice,
   type ApiResult,
   type ServiceResponse,
 } from "../../api/service";
+import { useEffect, useRef, useState, useId } from "react";
+import type { HistoryDisclosure, Screen, HumanDocument, CaseSelector } from "@contracts/client";
+
 import { permitsHistory } from "../../api/historyDisclosure";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { ScreenView } from "../../ui/ScreenView";
@@ -70,7 +72,7 @@ const ConflictPage = ({
     },
     [],
   );
-  const refusedPage = (result: ApiResult<ServiceResponse<"case.timeline">>) => {
+  const refusedPage = (result: ApiResult<ServiceResponse<typeof apiEndpoints.caseTimeline>>) => {
     const rejected = result.kind === "outcome" && result.value.outcome.kind === "REJECTED";
     const refused = isDisclosureRefused(result);
     if (rejected || refused) {
@@ -92,7 +94,7 @@ const ConflictPage = ({
     setMessage(null);
     try {
       const result = await requestEndpoint(
-        "case.timeline",
+        apiEndpoints.caseTimeline,
         scope.credential,
         { target: scope.target, cursor, limit: 50 },
         controller.signal,
@@ -191,7 +193,7 @@ export const ConflictChanges = ({
   return (
     <section className="revision-conflict" aria-labelledby={title}>
       <h2 ref={heading} id={title} tabIndex={-1}>
-        {p.text("ui.conflict.title")}
+        {p.text("label.caseChanged")}
       </h2>
       <p>{p.text("ui.conflict.kept")}</p>
       {snapshot.latest === null ? null : (

@@ -1,5 +1,6 @@
+import { apiEndpoints, requestEndpoint, resultNotice } from "../../api/service";
 import { hasDocumentSubject } from "../../protocol/types";
-import { requestEndpoint, resultNotice } from "../../api/service";
+
 import { isDisclosureRefused } from "../../api/outcomes";
 import type {
   OperationAction,
@@ -32,7 +33,7 @@ const observe = async (
       return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
     }
     const result = await requestEndpoint(
-      "reminder.get",
+      apiEndpoints.reminderGet,
       effect.identity.credential,
       { target: input.binding.target, reminderId: input.binding.reminderId },
       signal,
@@ -61,7 +62,7 @@ export const readConflict = async (
   const common = { identity: effect.identity, conflictId: effect.conflictId };
   try {
     const result = await requestEndpoint(
-      "case.get",
+      apiEndpoints.caseGet,
       effect.identity.credential,
       { target: effect.source.prepared.input.binding.target },
       controller.signal,

@@ -22,12 +22,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
     ...(props.affordance === undefined ? {} : { affordance: props.affordance }),
     kind: props.initialAct,
     current: props.current,
-    prefill: {
-      ...(props.initialAct === "case.recordPayment" && props.current !== null
-        ? { "field:paymentDate": props.current.basis.observation.businessDate }
-        : {}),
-      ...props.prefill,
-    },
+    prefill: props.prefill ?? {},
     ...(props.binding === undefined ? {} : { binding: props.binding }),
     credential,
     normalizeValues: normalizeAmountValues,

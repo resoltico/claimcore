@@ -182,6 +182,7 @@ type RegionRole =
     | Progress
     | Attention
     | Recommendation
+    | Context
     | Facts
     | Payments
     | Work

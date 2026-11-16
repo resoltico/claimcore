@@ -47,7 +47,7 @@ type TaskInputDeclaration =
         Multiple: bool
         Retention: InputRetention
         ChoicesFrom: string option
-        ChoicesWhen: TaskInputChoicesWhen option
+        ChoicesWhen: TaskInputChoicesWhen list
     }
 
 type TaskCollectionDeclaration =
@@ -85,20 +85,7 @@ module TaskInputDeclaration =
                     Some "case.assignees"
                 else
                     None
-            ChoicesWhen =
-                if input = TaskInputId.Target InputTarget.Role then
-                    Some
-                        {
-                            Input = TaskInputId.Scope
-                            Value = ScopeKind.token ScopeKind.Case
-                            Choices =
-                                Access.roles
-                                |> List.filter (fun role ->
-                                    List.contains ScopeKind.Case (Access.roleScopes role))
-                                |> List.map Role.token
-                        }
-                else
-                    None
+            ChoicesWhen = []
             Atom =
                 if
                     source = InputSource.ExpectedRevision

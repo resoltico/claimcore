@@ -1,14 +1,15 @@
+import { apiEndpoints, type ServiceResponse } from "../../api/service";
 import type { RegionTimelineEntry } from "@contracts/client";
 
 import { PageTables } from "../../ui/PageTables";
 import { useCallback } from "react";
 
 type HistoryControl = RegionTimelineEntry;
-import type { ServiceResponse } from "../../api/service";
+
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-const select = (reply: ServiceResponse<"people.history">) => {
+const select = (reply: ServiceResponse<typeof apiEndpoints.peopleHistory>) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -37,8 +38,8 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
     }),
     [actorId],
   );
-  const page = useEndpointPage<"people.history", HistoryControl, HistoryPage>(
-    "people.history",
+  const page = useEndpointPage<typeof apiEndpoints.peopleHistory, HistoryControl, HistoryPage>(
+    apiEndpoints.peopleHistory,
     input,
     select,
   );

@@ -6,8 +6,11 @@ import { operationTask } from "../../../../src/protocol/taskCatalog";
 import { operationAffordance } from "../../../support/affordances.fixtures";
 import { current } from "../../../support/presentation-state.fixtures";
 import type { FormValues } from "../../../../src/protocol/forms";
-import { initialAffordanceValues } from "../../../../src/operation/affordances";
-import type { OperationAffordance } from "../../../../src/operation/affordances";
+import {
+  initialAffordanceValues,
+  type OperationAffordance,
+} from "../../../../src/operation/affordances";
+
 vi.mock("../../../../src/views/case/InlineNoteDraft", () => ({
   useInlineNoteDraft: () => ({ bind: () => undefined }),
 }));

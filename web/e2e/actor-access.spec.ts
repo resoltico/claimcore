@@ -56,7 +56,9 @@ test("owner-only workspace renders without inventing case people", async ({ page
   await ownerGrants(page, false);
   try {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "People & access", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "People and access", exact: true }),
+    ).toBeVisible();
     await noCaseWorkspace(page);
     await opaqueCaseRefusal(page, fixture.reference);
   } finally {

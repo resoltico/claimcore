@@ -1,13 +1,20 @@
-import { hasDocumentSubject } from "../protocol/types";
-import { useEndpointPage } from "../hooks/useEndpointPage";
-import type { Affordance } from "@contracts/client";
 import {
+  apiEndpoints,
   type ServiceResponse,
   type CurrentCase,
   type CaseLinkedReceipt,
   isCurrentCase,
 } from "../api/service";
-import { allActions, type OperationAffordance } from "../operation/affordances";
+import { useCaseCreationControl } from "../hooks/useRequesterContext";
+import { hasDocumentSubject } from "../protocol/types";
+import { useEndpointPage } from "../hooks/useEndpointPage";
+import type { Affordance } from "@contracts/client";
+
+import {
+  allActions,
+  isOperationAffordance,
+  type OperationAffordance,
+} from "../operation/affordances";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import type { PeopleHistory as PeopleHistoryType } from "./people/PeopleHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
@@ -20,7 +27,7 @@ import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
-import { isCaseAct } from "../operation/metadata";
+import { isCaseAct, type ActKind } from "../operation/metadata";
 import { actPath, casePath, referencePath, type Route } from "../routing/routes";
 import { navigate } from "../routing/navigation";
 import type { PeoplePanel as PeoplePanelType } from "./PeoplePanel";
@@ -60,7 +67,7 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
   const p = usePresentation();
   return (
     <section>
-      <h1>{p.text("ui.caseDetail")}</h1>
+      <h1>{p.text("label.caseDetail")}</h1>
       <p role="alert">
         <NoticeView value={message} />
       </p>
@@ -70,9 +77,8 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
     </section>
   );
 };
-const selectAct = (current: CurrentCase, act: string, paymentId?: string): void => {
-  const path = actPath({ kind: "ID", caseId: current.subject.caseId }, act);
-  navigate(paymentId === undefined ? path : `${path}?${new URLSearchParams({ paymentId })}`);
+const selectAct = (current: CurrentCase, action: Affordance): void => {
+  navigate(actPath({ kind: "ID", caseId: current.subject.caseId }, action.task, action.binding));
 };
 export type EditorCallbacks = {
   setLocked: MutationLockChange;
@@ -89,18 +95,13 @@ const matchesEditorAction = (
   action: Affordance,
   route: EditorRoute,
 ): action is OperationAffordance => {
-  if (
-    action.task !== route.act ||
-    action.task === "people.requests.dismiss" ||
-    action.blocked !== null
-  ) {
+  if (action.task !== route.act || !isOperationAffordance(action) || action.blocked !== null) {
     return false;
   }
-  return (
-    route.paymentId === undefined ||
-    (action.binding.kind === "CASE" &&
-      "paymentId" in action.binding &&
-      action.binding.paymentId === route.paymentId)
+  const binding: Readonly<Record<string, unknown>> = action.binding;
+  return Object.entries(route.binding ?? {}).every(
+    ([key, value]) =>
+      Object.hasOwn(binding, key) && JSON.stringify(binding[key]) === JSON.stringify(value),
   );
 };
 const UnavailableEditor = ({ route, onBack }: Pick<EditorSelectionProps, "route" | "onBack">) => {
@@ -118,7 +119,7 @@ const UnavailableEditor = ({ route, onBack }: Pick<EditorSelectionProps, "route"
     />
   );
 };
-const paymentSelectionPage = (reply: ServiceResponse<"case.payments">) => {
+const paymentSelectionPage = (reply: ServiceResponse<typeof apiEndpoints.casePayments>) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -154,10 +155,17 @@ const PaymentEditorSelection = ({
     [route.target],
   );
   const page = useEndpointPage<
-    "case.payments",
+    typeof apiEndpoints.casePayments,
     Affordance,
     NonNullable<ReturnType<typeof paymentSelectionPage>>
-  >("case.payments", input, paymentSelectionPage, revalidate, undefined, paymentSelectionKey);
+  >(
+    apiEndpoints.casePayments,
+    input,
+    paymentSelectionPage,
+    revalidate,
+    undefined,
+    paymentSelectionKey,
+  );
   const action = page.items.find((candidate): candidate is OperationAffordance =>
     matchesEditorAction(candidate, route),
   );
@@ -216,7 +224,7 @@ const EditorBootstrap = ({
   }
   const { value } = current;
   if (value !== null && action === undefined) {
-    if (route.act === "case.removePayment" && isCurrentCase(value)) {
+    if (route.binding !== undefined && "paymentId" in route.binding && isCurrentCase(value)) {
       return (
         <PaymentEditorSelection
           current={value}
@@ -243,10 +251,7 @@ const RoutedEditor = (
     current: CurrentCase;
     action: OperationAffordance;
   } | null>(null);
-  if (
-    !isCaseAct(props.route.act) ||
-    (props.route.act === "case.removePayment" && props.route.paymentId === undefined)
-  ) {
+  if (!isCaseAct(props.route.act)) {
     return <MissingPage />;
   }
   return opened === null ? (
@@ -258,7 +263,7 @@ const RoutedEditor = (
       initialAct={props.route.act}
       affordance={opened.action}
       {...(opened.action.binding.kind === "CASE" ? { binding: opened.action.binding } : {})}
-      {...(props.route.act === "case.removePayment" && props.route.paymentId !== undefined
+      {...(Object.keys(props.route.binding ?? {}).some((key) => key !== "kind")
         ? {
             autoReview: true,
           }
@@ -282,17 +287,27 @@ const NewCaseEditor = ({
   committed,
   disclosureAvailable,
   onClose,
-}: EditorCallbacks & { disclosureAvailable: boolean; onClose: () => void }) => (
-  <OperationEditor
-    definition={productMetadata}
-    current={null}
-    initialAct="case.open"
-    disclosureAvailable={disclosureAvailable}
-    onClose={onClose}
-    onCommitted={committed}
-    onMutationLockChange={setLocked}
-  />
-);
+}: EditorCallbacks & { disclosureAvailable: boolean; onClose: () => void }) => {
+  const action = useCaseCreationControl();
+  const [initial, setInitial] = useState<ActKind | null>(null);
+  if (initial === null && action !== undefined && isCaseAct(action.task)) {
+    setInitial(action.task);
+  }
+  return initial === null ? (
+    <MissingPage />
+  ) : (
+    <OperationEditor
+      definition={productMetadata}
+      current={null}
+      initialAct={initial}
+      disclosureAvailable={disclosureAvailable}
+      onClose={onClose}
+      onCommitted={committed}
+      onMutationLockChange={setLocked}
+    />
+  );
+};
+
 const AreaContent = ({
   route,
   setLocked,

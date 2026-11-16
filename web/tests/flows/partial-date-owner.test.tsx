@@ -191,7 +191,15 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     }
     const self = active.value.outcome.document;
     const inactive = {
-      screen: { regions: [] },
+      screen: {
+        regions: [
+          {
+            role: "IDENTITY" as const,
+            titleId: kind === "DISABLED" ? "label.accessDisabled" : "label.accessPending",
+            content: { kind: "ENTRIES" as const, entries: [] },
+          },
+        ],
+      },
       subject: {
         kind: "REQUESTER" as const,
         state: kind,

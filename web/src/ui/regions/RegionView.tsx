@@ -64,6 +64,7 @@ const RegionActions = ({
           },
         })}
     compact
+    descriptiveLabel
   />
 );
 export const RegionView = ({

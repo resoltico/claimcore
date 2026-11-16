@@ -232,7 +232,10 @@ it("shows current fields, server act labels, full expandable history and retryab
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
-  expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "case.close");
+  expect(act).toHaveBeenCalledWith(
+    expect.objectContaining(current),
+    expect.objectContaining({ task: "case.close" }),
+  );
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
   expect(entry).toHaveTextContent("Timeline recorder");
   await user.click(getButton("Load more"));

@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import { isOperationAffordance } from "../../operation/affordances";
 import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
 import { queryInput } from "../../protocol/taskCatalog";
@@ -9,7 +10,7 @@ import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
 import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 import { ReminderList } from "./ReminderList";
-const stateChoice = queryInput("reminder.list", "input:reminderState");
+const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
 type State = (typeof taskChoices.reminderState)[number];
 export const CaseNextActions = ({
   current,

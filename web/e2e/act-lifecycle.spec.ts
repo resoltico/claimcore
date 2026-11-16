@@ -7,8 +7,7 @@ import {
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { completeAct, openCase, lookupCase, caseActionButton } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";

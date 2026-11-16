@@ -21,7 +21,7 @@ let declaration =
             {
                 Collection = TaskCollectionId.PeopleGrants
                 MinimumRows = PeopleAdmission.MinimumGrants
-                Inputs = grant
+                Inputs = grantAdmission
             }
         ]
 

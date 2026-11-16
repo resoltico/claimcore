@@ -19,29 +19,9 @@
     "text": "تم تعيين لون التمييز إلى {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "التغيير المسجّل",
-    "source": "595214b94033"
-  },
   "ui.accessState.check": {
     "text": "التحقق من الوصول",
     "source": "abb9a172a69b"
-  },
-  "ui.accessState.disabled": {
-    "text": "هذا الحساب معطّل",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
-    "source": "fbdca8dba390"
-  },
-  "ui.accessState.title": {
-    "text": "ليس لديك وصول بعد",
-    "source": "329f122dcf0f"
-  },
-  "ui.account": {
-    "text": "الحساب",
-    "source": "7e1b0d5641f2"
   },
   "ui.actDescription": {
     "text": "{label}: {meaning}",
@@ -50,10 +30,6 @@
   "ui.actorRequestRetained": {
     "text": "طلبك الحالي محفوظ. تابعه أو تجاهله قبل بدء إجراء آخر.",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "إضافة دور",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "بعد: {value}",
@@ -66,10 +42,6 @@
   "ui.appearance": {
     "text": "المظهر",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "تغيير الصلاحيات",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "العودة إلى الملفات",
@@ -87,14 +59,6 @@
     "text": "انسخ هذه القيمة.",
     "source": "8a31fb4c608d"
   },
-  "ui.caseDetail": {
-    "text": "تفاصيل الملف",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "الملفات",
-    "source": "2249bd503ec4"
-  },
   "ui.changeActDescription": {
     "text": "هل تريد تجاهل هذه المسودة واختيار أمر آخر؟",
     "source": "0db8e85a3b26"
@@ -102,10 +66,6 @@
   "ui.changeActTitle": {
     "text": "تجاهل هذه التغييرات المسودة؟",
     "source": "7dbba5ad2b76"
-  },
-  "ui.changeDecision": {
-    "text": "تغيير القرار",
-    "source": "a77099b9ff99"
   },
   "ui.changeFact": {
     "text": "تغيير {field}",
@@ -127,10 +87,6 @@
     "text": "جارٍ التحقق",
     "source": "0dfe1d63c9d8"
   },
-  "ui.chooseRole": {
-    "text": "اختر دورًا",
-    "source": "a49c49b04c4d"
-  },
   "ui.clearFilters": {
     "text": "مسح عوامل التصفية",
     "source": "7179ea0035fc"
@@ -151,10 +107,6 @@
     "text": "المراجعة وفق أحدث نسخة",
     "source": "f0124537d549"
   },
-  "ui.conflict.title": {
-    "text": "تغيّر هذا الملف",
-    "source": "ae4ec9da2e36"
-  },
   "ui.continuePeopleRequest": {
     "text": "متابعة الطلب الحالي",
     "source": "ec9e7079a21a"
@@ -174,10 +126,6 @@
   "ui.copyFallback": {
     "text": "نسخ {label} يدويًا",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "اختر ما ينبغي فعله بكل مجموعة من التفاصيل.",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}: {name}",
@@ -258,18 +206,6 @@
   "ui.generalOperationLookup": {
     "text": "البحث العام عن العمليات",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "الدور {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "تظهر جميع الأدوار.",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "تظهر بعض الأدوار فقط.",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "أرسل ClaimCore استجابة غير مكتملة.",
@@ -363,10 +299,6 @@
     "text": "تحميل المزيد من الملفات",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "المزيد من الصلاحيات",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "تحميل المزيد من النشاط",
     "source": "e3f0587b4839"
@@ -383,33 +315,9 @@
     "text": "الشهر التالي",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "لا يوجد أشخاص لعرضهم.",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "لا توجد ملفات لعرضها.",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "لا يوجد نشاط لعرضه.",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "لا توجد ملفات تطابق طريقة العرض هذه.",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "لا توجد حسابات مؤهلة في هذه الصفحة.",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noPayments": {
-    "text": "لا توجد دفعات مسجلة.",
-    "source": "131347633495"
-  },
-  "ui.noReminders": {
-    "text": "لا توجد تذكيرات تطابق هذا العرض.",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "لا توجد عروض عمل متاحة.",
@@ -447,14 +355,6 @@
     "text": "{first} و{second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "الشخص",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "الأدوار",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "تعمل التفضيلات لهذه الجلسة، لكن تعذر حفظها في هذا المتصفح.",
     "source": "861ebb38b269"
@@ -482,10 +382,6 @@
   "ui.pseudo": {
     "text": "الإنجليزية الموسعة (اختبار التخطيط)",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "ابحث عن أعمال الملفات التي تحتاج إلى اهتمام وتابعها.",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "تسجيل {field} (اختياري)",
@@ -539,10 +435,6 @@
     "text": "إعادة تحميل الملف الحالي",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "إعادة تحميل الصلاحيات",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "إعادة تحميل النشاط",
     "source": "10d39b0ca399"
@@ -550,18 +442,6 @@
   "ui.reloadInterface": {
     "text": "إعادة تحميل الواجهة",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "تنطبق عوامل تصفية الاستحقاق هنا على كل تذكير. تستخدم قوائم الملفات أقرب تذكير لكل ملف.",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "إزالة الدور",
-    "source": "9a1fb81f279f"
-  },
-  "ui.requests.empty": {
-    "text": "لا توجد طلبات وصول معلّقة.",
-    "source": "f258e3645b02"
   },
   "ui.requests.more": {
     "text": "تحميل المزيد من طلبات الوصول",
@@ -611,14 +491,6 @@
     "text": "من اليمين إلى اليسار",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "غير متاح للملفات المحددة",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "غير متاح لحسابات الخدمة",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "الأحرف: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -651,10 +523,6 @@
     "text": "تحقق الآن",
     "source": "2937cffb37ab"
   },
-  "ui.shell.people": {
-    "text": "الأشخاص والصلاحيات",
-    "source": "8df747cef67a"
-  },
   "ui.shell.searchCases": {
     "text": "البحث عن الملفات",
     "source": "22c2a4061665"
@@ -678,10 +546,6 @@
   "ui.stage.noDate": {
     "text": "التاريخ غير متاح",
     "source": "a0aa75ba71d2"
-  },
-  "ui.stage.recorded": {
-    "text": "مسجّل",
-    "source": "c7175fa7a0db"
   },
   "ui.submitting": {
     "text": "جارٍ التسجيل…",
@@ -795,10 +659,6 @@
     "text": "يُحفظ هنا معرّف التغيير فقط. لا تُحفظ تفاصيل المطالبة ولا الطلب الأصلي.",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "هذا الخيار غير متاح وفقًا للبيانات الحالية.",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "هذا العنصر غير متاح.",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "تحديد الملف بواسطة",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "المزيد من الأدوار",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "اختر ملفًا موجودًا باستخدام مرجعه أو معرّفه.",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "إعادة تحميل الأدوار",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "تم عرض جميع الأدوار.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "يتم عرض بعض الأدوار فقط.",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "إضافة دور",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "إزالة الدور",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "الدور {number}",
+    "source": "00fa69a81cab"
   }
 }

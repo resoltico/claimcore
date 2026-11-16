@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../api/service";
 import { caseLinkView, reminderLinkView } from "../routing/coreLinks";
 import type {
   taskChoices,
@@ -64,13 +65,13 @@ export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) =>
   const requester = useRequesterContext();
   const available =
     requester?.links.some(
-      (named) => named.rel === "VIEW" && named.link.endpoint === "case.list",
+      (named) => named.rel === "VIEW" && named.link.endpoint === apiEndpoints.caseList,
     ) === true;
   const scope =
     requester === null
       ? "unverified"
       : JSON.stringify([requester.subject.installationId, requester.subject.actorId]);
-  const query = useEndpoint("work.views", {}, available, scope);
+  const query = useEndpoint(apiEndpoints.workViews, {}, available, scope);
   const observed = query.value;
   const value = useMemo<WorkspaceViews>(() => {
     const document =

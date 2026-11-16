@@ -19,14 +19,6 @@
     "text": "強調色已設為 {value}。",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "已記錄的更改",
-    "source": "595214b94033"
-  },
-  "ui.account": {
-    "text": "帳戶",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actDescription": {
     "text": "{label}：{meaning}",
     "source": "7216b2a9dae5"
@@ -34,10 +26,6 @@
   "ui.actorRequestRetained": {
     "text": "已保留您當前的請求。開始其他操作前，請繼續或丟棄此請求。",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "添加角色",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "更改後：{value}",
@@ -50,10 +38,6 @@
   "ui.appearance": {
     "text": "外觀",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "存取權限更改",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "返回案件列表",
@@ -70,14 +54,6 @@
   "ui.canonicalCopyHint": {
     "text": "複製此值。",
     "source": "8a31fb4c608d"
-  },
-  "ui.caseDetail": {
-    "text": "案件詳情",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "理賠案件",
-    "source": "2249bd503ec4"
   },
   "ui.changeActDescription": {
     "text": "丟棄此草稿並選擇其他操作嗎？",
@@ -98,10 +74,6 @@
   "ui.checkUnresolvedOperation": {
     "text": "立即檢查",
     "source": "2937cffb37ab"
-  },
-  "ui.chooseRole": {
-    "text": "選擇角色",
-    "source": "a49c49b04c4d"
   },
   "ui.clearFilters": {
     "text": "清除篩選條件",
@@ -130,10 +102,6 @@
   "ui.copyFallback": {
     "text": "{label}的備用複製方式",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "選擇對每組資訊執行的操作。",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}：{name}",
@@ -206,18 +174,6 @@
   "ui.generalOperationLookup": {
     "text": "通用操作查詢",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "角色 {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "已顯示所有角色。",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "僅顯示部分角色。",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore 發送了不完整的響應。",
@@ -303,10 +259,6 @@
     "text": "載入更多案件",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "更多授權",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "載入更多活動",
     "source": "e3f0587b4839"
@@ -323,29 +275,9 @@
     "text": "下個月",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "沒有可顯示的人員。",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "沒有可顯示的案件。",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "沒有可顯示的活動。",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "沒有符合此視圖的案件。",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "本頁沒有符合條件的帳戶。",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noReminders": {
-    "text": "沒有符合此視圖的提醒。",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "沒有可用的工作視圖。",
@@ -383,14 +315,6 @@
     "text": "{first}與{second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "人員",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "角色",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "偏好設定在本次會話中生效，但無法保存在此瀏覽器中。",
     "source": "861ebb38b269"
@@ -418,10 +342,6 @@
   "ui.pseudo": {
     "text": "擴展英語（佈局測試）",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "查找並繼續處理需要關注的案件工作。",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "記錄{field}（可選）",
@@ -475,10 +395,6 @@
     "text": "重新載入當前案件",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "重新載入授權",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "重新載入活動",
     "source": "10d39b0ca399"
@@ -486,14 +402,6 @@
   "ui.reloadInterface": {
     "text": "重新載入介面",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "這裡的到期篩選適用於每條提醒。案件列表使用每個案件最早的提醒。",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "移除角色",
-    "source": "9a1fb81f279f"
   },
   "ui.retryExact": {
     "text": "再次傳送",
@@ -527,14 +435,6 @@
     "text": "從右到左",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "不適用於所選案件",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "不適用於服務帳戶",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "字元數：{count}/{maximum}",
     "source": "907b0d890dff"
@@ -566,10 +466,6 @@
   "ui.shell.checkNow": {
     "text": "立即檢查",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.people": {
-    "text": "人員與存取權限",
-    "source": "8df747cef67a"
   },
   "ui.shell.searchCases": {
     "text": "搜尋案件",
@@ -671,33 +567,13 @@
     "text": "載入更多",
     "source": "ac8991ef0101"
   },
-  "ui.accessState.title": {
-    "text": "您尚無存取權限",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "此帳戶已停用",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "我們已通知所有者。所有者可為此帳戶授予存取權限。",
-    "source": "fbdca8dba390"
-  },
   "ui.accessState.check": {
     "text": "檢查存取權限",
     "source": "abb9a172a69b"
   },
-  "ui.stage.recorded": {
-    "text": "已記錄",
-    "source": "c7175fa7a0db"
-  },
   "ui.stage.noDate": {
     "text": "日期不可用",
     "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "此案件已更改",
-    "source": "ae4ec9da2e36"
   },
   "ui.conflict.kept": {
     "text": "已保留您的草稿。請先審閱更改，再基於最新版本準備請求。",
@@ -723,10 +599,6 @@
     "text": "檢查時間為 {when}。",
     "source": "e249af3ff82a"
   },
-  "ui.requests.empty": {
-    "text": "沒有待處理的存取申請。",
-    "source": "f258e3645b02"
-  },
   "ui.requests.more": {
     "text": "載入更多存取申請",
     "source": "ffd6062030c9"
@@ -747,10 +619,6 @@
     "text": "尚未確認。回答將在 {finalAt} 前確定。",
     "source": "fc1019052c76"
   },
-  "ui.changeDecision": {
-    "text": "更改決定",
-    "source": "a77099b9ff99"
-  },
   "ui.changeResponsible": {
     "text": "更改",
     "source": "c0bf75bd78bf"
@@ -762,10 +630,6 @@
   "ui.editSummary": {
     "text": "編輯摘要",
     "source": "c04f3d9cb841"
-  },
-  "ui.noPayments": {
-    "text": "尚無付款記錄。",
-    "source": "131347633495"
   },
   "ui.moreNotes": {
     "text": "更多備註",
@@ -795,10 +659,6 @@
     "text": "此處僅儲存更改的識別資訊，不儲存案件詳細資料或原始請求。",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "此案件目前不提供此操作。",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "依目前事實無法使用。",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "此項目無法使用。",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "案件選擇方式",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "更多角色",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "使用編號或 ID 選擇現有案件。",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "重新載入角色",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "已顯示所有角色。",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "僅顯示部分角色。",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "添加角色",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "移除角色",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "角色 {number}",
+    "source": "00fa69a81cab"
   }
 }

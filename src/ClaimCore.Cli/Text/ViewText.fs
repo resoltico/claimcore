@@ -194,11 +194,18 @@ module internal ViewText =
             | ObservationBasis.Snapshot basis -> basis.TimeZoneId
             | ObservationBasis.Unavailable -> "UTC"
 
+        let screen =
+            { document.Screen with
+                Regions =
+                    document.Screen.Regions
+                    |> List.filter (fun region -> region.Role <> RegionRole.Context)
+            }
+
         let body =
-            renderWithHeader zone includeHeader includeDetails options language document.Screen
+            renderWithHeader zone includeHeader includeDetails options language screen
 
         let actions =
-            document.Actions
+            (screen.Regions |> List.collect _.Actions) @ document.Actions
             |> List.filter (fun action -> action.Blocked.IsNone)
             |> List.map (fun action ->
                 let key = TaskRouting.labelId (TaskId.token action.Task)

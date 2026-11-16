@@ -159,7 +159,9 @@ module internal QueryArguments =
                         |> Some
                     | _ -> values |> List.tryHead |> Option.bind (scalar input)
 
-                value |> Option.map (fun value -> EndpointInputs.memberName input.Name, value))
+                value
+                |> Option.map (fun value ->
+                    EndpointInputs.memberName declaration input.Name, value))
 
         let members =
             match declaration.Page with
@@ -191,7 +193,7 @@ module internal QueryArguments =
                     supplied
                     |> Seq.tryFind (fun (input, _) ->
                         problem.Path.StartsWith(
-                            "$." + EndpointInputs.memberName input,
+                            "$." + EndpointInputs.memberName declaration input,
                             StringComparison.Ordinal
                         ))
 

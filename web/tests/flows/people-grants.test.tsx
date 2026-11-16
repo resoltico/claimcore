@@ -321,10 +321,10 @@ it("keeps only the same actor's page on a transient error and follows server con
       grants(first, null, "SECOND-PAGE", "20000000-0000-4000-8000-000000000002"),
     );
   render(<PeopleGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={vi.fn()} />);
-  fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
+  fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await screen.findByRole("alert");
   expect(screen.getByText(`GRANT-${first}`)).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
   await screen.findByText("All roles are shown.");
   expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
@@ -343,11 +343,11 @@ it("loads and clears the selected grant page without request-per-row reads", asy
   await screen.findByText("Only some roles are shown.");
   expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(1);
   expect(request).toHaveBeenCalledTimes(1);
-  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
   await screen.findByText("SECOND");
   expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(2);
   expect(request).toHaveBeenCalledTimes(2);
-  fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reload roles" }));
   await waitFor(() => {
     expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(0);
   });
@@ -403,7 +403,7 @@ it.each(["session", "access"])(
     render(<PeoplePanel onLockChange={vi.fn()} />);
     fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
     await screen.findByText(`GRANT-${first}`);
-    fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+    fireEvent.click(screen.getByRole("button", { name: "More roles" }));
     fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
     await chooseAdmissionRole();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -443,7 +443,7 @@ it("ignores an in-flight grant page after an accepted people mutation resets sel
   render(<PeoplePanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
-  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
   fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
   await chooseAdmissionRole();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -471,7 +471,7 @@ it("clears pending pagination on back and never restores it on late completion",
     .mockReturnValueOnce(late.promise);
   render(<PeoplePanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("link", { name: /listed-/u }))[0]!);
-  fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
+  fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await closePersonDetails();
   expect(request.mock.calls[1]?.[2]?.aborted).toBe(true);
   await act(() =>
@@ -506,14 +506,14 @@ it("resets only the selected grant page on invalid continuation and reloads it w
     .mockResolvedValueOnce(grants(first));
   const onRefused = vi.fn();
   render(<PeopleGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={onRefused} />);
-  fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
+  fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await screen.findByRole("alert");
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
   expect(screen.queryByText(`header-${first}`)).toBeNull();
-  expect(screen.queryByRole("button", { name: "More grants" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "More roles" })).toBeNull();
   expect(onRefused).not.toHaveBeenCalled();
   expect(request).toHaveBeenCalledTimes(2);
-  fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "Reload roles" }));
   await screen.findByText(`GRANT-${first}`);
   expect(request.mock.calls[2]?.[1].cursor ?? null).toBeNull();
   expect(onRefused).not.toHaveBeenCalled();
@@ -554,7 +554,7 @@ it("focuses the stable actors heading during a pending reload and keeps it after
   await act(() => Promise.resolve().then(refresh));
   expect(screen.queryByRole("link", { name: /listed-/u })).toBeNull();
   await focusedBack();
-  const heading = screen.getByRole("heading", { name: "People & access" });
+  const heading = screen.getByRole("heading", { name: "People and access" });
   await waitFor(() => {
     expect(heading).toHaveFocus();
   });
@@ -597,7 +597,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
   expect(screen.queryByText(`listed-${second}`)).toBeNull();
   await focusedBack();
   await waitFor(() => {
-    expect(screen.getByRole("heading", { name: "People & access" })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "People and access" })).toHaveFocus();
   });
 });
 it("does not restore actor focus when global disclosure refusal removes the selected pane", async () => {
@@ -610,7 +610,7 @@ it("does not restore actor focus when global disclosure refusal removes the sele
   await screen.findByText(`GRANT-${first}`);
   screen.getAllByRole("button", { name: "Close" })[0]!.focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
-  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
   await waitFor(() => {
     expect(getEndpointMock("people.list")).toHaveBeenCalledTimes(2);
   });
@@ -630,10 +630,10 @@ it("focuses the people route heading without restoring an actor after disclosure
   await screen.findByText(`GRANT-${first}`);
   screen.getAllByRole("button", { name: "Close" })[0]!.focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
-  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
   await waitFor(() => {
     expect(screen.queryByRole("heading", { name: `header-${first}` })).toBeNull();
-    expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "People and access", level: 1 })).toHaveFocus();
   });
   expect(
     focus.mock.contexts.some((target) => target instanceof HTMLElement && target.id === origin.id),
@@ -656,7 +656,7 @@ it("binds a repeated page-local grant key to the selected page's case scope", as
       onRevoke={revoke}
     />,
   );
-  fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
+  fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await screen.findByText("SECOND-SCOPE");
   fireEvent.click(screen.getAllByRole("button", { name: "Revoke role" })[1]!);
   expect(revoke).toHaveBeenCalledExactlyOnceWith(

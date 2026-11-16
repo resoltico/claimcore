@@ -1,3 +1,4 @@
+import { isNarrativeCreationId } from "../../operation/metadata";
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { initialAffordanceSeeds, type OperationAffordance } from "../../operation/affordances";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
@@ -77,7 +78,11 @@ export const WorkOperation = ({
     onDisclosureRefused,
   });
   useLayoutEffect(() => {
-    if (noteIntent !== undefined && model.prepared?.input.task === "note.add") {
+    if (
+      noteIntent !== undefined &&
+      model.prepared !== null &&
+      isNarrativeCreationId(model.prepared.input.task)
+    ) {
       bindNote(noteIntent, model.prepared.input.operationId);
     }
   }, [bindNote, noteIntent, model.prepared]);

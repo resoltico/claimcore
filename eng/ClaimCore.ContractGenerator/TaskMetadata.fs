@@ -21,8 +21,9 @@ module TaskMetadata =
                 choicesFrom = value.ChoicesFrom
                 choicesWhen =
                     value.ChoicesWhen
-                    |> Option.map (fun choices ->
+                    |> List.map (fun choices ->
                         {|
+                            messageId = TaskInputPresentation.choiceConstraintMessage choices.Input
                             input = TaskInputId.token choices.Input
                             value = choices.Value
                             choices = choices.Choices

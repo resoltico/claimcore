@@ -75,7 +75,7 @@ module internal Declarations =
             optional (target InputTarget.ProfileContact)
         ]
 
-    let grant =
+    let grantSelection =
         [
             required (target InputTarget.Role)
             required TaskInputId.Scope
@@ -83,6 +83,36 @@ module internal Declarations =
             optional TaskInputId.CaseId
         ]
         |> List.map retained
+
+    // Admission constraints belong to assigning roles, not selecting stored roles for removal.
+    let grantAdmission =
+        grantSelection
+        |> List.map (fun input ->
+            if input.Input <> target InputTarget.Role then
+                input
+            else
+                { input with
+                    ChoicesWhen =
+                        [
+                            {
+                                Input = TaskInputId.Scope
+                                Value = ScopeKind.token ScopeKind.Case
+                                Choices =
+                                    Role.all
+                                    |> List.filter (fun role ->
+                                        List.contains ScopeKind.Case (Access.roleScopes role))
+                                    |> List.map Role.token
+                            }
+                            {
+                                Input = target InputTarget.PrincipalKind
+                                Value = PrincipalKind.serviceToken
+                                Choices =
+                                    Role.all
+                                    |> List.filter (Access.humanOnlyRole >> not)
+                                    |> List.map Role.token
+                            }
+                        ]
+                })
 
     let authored declaration =
         (declaration.Inputs
