@@ -66,9 +66,6 @@ export const installationActions = (tasks: ReadonlyArray<string>, issuer: string
         { kind: "PEOPLE", expectedRevision: 0 },
         {
           "input:principal.kind": "HUMAN",
-          ...(task === "people.admit"
-            ? { "input:grants": [{ "input:scope": "INSTALLATION" }] }
-            : {}),
           ...(issuer === null ? {} : { "input:principal.issuer": issuer }),
         },
       ),

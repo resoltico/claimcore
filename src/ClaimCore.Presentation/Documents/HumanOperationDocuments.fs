@@ -32,7 +32,10 @@ module HumanReviewDocument =
             submission.Task
             submission.OperationId
             review.Binding
-            submission.Envelope.Inputs
+            (submission.Operation
+             |> Result.map (fun operation -> operation.Inputs.Values)
+             |> Result.defaultWith (fun _ ->
+                 invalidArg (nameof submission) "A reviewed submission has admitted inputs."))
             review
 
 module HumanReceiptDocument =

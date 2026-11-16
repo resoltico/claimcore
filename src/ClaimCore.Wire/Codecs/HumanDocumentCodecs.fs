@@ -31,17 +31,6 @@ module HumanDocumentCodecs =
                     (record id |> field "observation" id ResponseScalars.workDateBasis)
             ]
 
-    let private snapshotBasis =
-        record ObservationBasis.Snapshot
-        |> fixedField "kind" "SNAPSHOT"
-        |> field
-            "observation"
-            (function
-            | ObservationBasis.Snapshot value -> value
-            | _ -> invalidArg "basis" "A receipt or review has an observed snapshot.")
-            ResponseScalars.workDateBasis
-        |> build
-
     let private confirmation =
         tagged
             "ConfirmationTarget"
@@ -131,12 +120,7 @@ module HumanDocumentCodecs =
 
     let private subject = tagged "DocumentSubject" subjectVariants
 
-    let private selectedSubject token =
-        subjectVariants
-        |> List.filter (fun value -> value.Tag = token)
-        |> tagged ("SubjectFor" + token)
-
-    let private documentFor subject selectedBasis name =
+    let document =
         record (fun subject screen actions links cursor basis disclosure history ->
             {
                 HumanDocument.Subject = subject
@@ -153,15 +137,10 @@ module HumanDocumentCodecs =
         |> field
             "actions"
             _.Actions
-            (list TaskDeclarations.all.Length PresentationCodecs.affordance)
-        |> field
-            "links"
-            _.Links
-            (list
-                (CaseView.all.Length + ReminderView.all.Length + QueryTaskId.all.Length)
-                PresentationCodecs.namedLink)
+            (list PresentationCodecs.MaximumActions PresentationCodecs.affordance)
+        |> field "links" _.Links (list PresentationCodecs.MaximumLinks PresentationCodecs.namedLink)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
-        |> field "basis" _.Basis selectedBasis
+        |> field "basis" _.Basis basis
         |> field "disclosure" _.Disclosure disclosure
         |> field
             "history"
@@ -201,12 +180,9 @@ module HumanDocumentCodecs =
                     value.Basis
                     value.Disclosure
                     value.History)
-        |> named name
+        |> named "HumanDocument"
 
-    let document = documentFor subject basis "HumanDocument"
-
-    let receiptDocument =
-        documentFor (selectedSubject "RECEIPT") snapshotBasis "HumanReceiptDocument"
+    let receiptDocument = document
 
     let reviewDocument =
         record (fun document presentation ->
@@ -214,10 +190,7 @@ module HumanDocumentCodecs =
                 HumanReview.Document = document
                 Presentation = presentation
             })
-        |> field
-            "document"
-            _.Document
-            (documentFor (selectedSubject "REVIEW") snapshotBasis "HumanReviewDocument")
+        |> field "document" _.Document document
         |> field "presentation" _.Presentation PresentationCodecs.review
         |> build
         |> named "HumanReview"
@@ -278,23 +251,10 @@ module HumanDocumentCodecs =
                     (record id |> field "advice" id PresentationCodecs.advice)
             ]
 
-    let readReplyFor query =
-        let name = "HumanReadReply_" + query
-
-        let token =
-            match query with
-            | "case.get"
-            | "case.payments" -> "CASE"
-            | "context" -> "REQUESTER"
-            | "people.grants" -> "PERSON"
-            | _ -> "LIST"
-
-        let document =
-            documentFor (selectedSubject token) basis ("HumanReadDocument_" + query)
-
+    let readReply =
         let outcome =
             tagged
-                (name + ".Outcome")
+                "HumanReadReply.Outcome"
                 [
                     variant
                         "SUCCEEDED"
@@ -324,4 +284,4 @@ module HumanDocumentCodecs =
         (record (fun outcome -> { HumanReadReply.Outcome = outcome }): Fields<HumanReadReply, _>)
         |> field "outcome" _.Outcome outcome
         |> build
-        |> named name
+        |> named "HumanReadResult"

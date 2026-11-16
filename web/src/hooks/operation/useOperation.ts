@@ -1,4 +1,8 @@
-import { operationActions, type OperationAffordance } from "../../operation/affordances";
+import {
+  documentActions,
+  operationActions,
+  type OperationAffordance,
+} from "../../operation/affordances";
 
 import { createDraft } from "../../operation/operationDraft";
 import { ownerScope, sameOwnerScope } from "../../protocol/ownerScope";
@@ -130,7 +134,7 @@ const suppliedAffordance = (options: Options, kind: string) => {
   const actions = [
     ...(options.affordance === undefined ? [] : [options.affordance]),
     ...(options.affordances ?? []),
-    ...(options.current?.actions ?? []),
+    ...(options.current === null ? [] : documentActions(options.current)),
   ];
   return actions.find(
     (action): action is OperationAffordance =>
@@ -743,7 +747,7 @@ const reviewLatestDraft = (
       rebasedOperationBinding(
         conflict.source.prepared.input,
         conflict.latest.revision,
-        conflict.latest.current.actions,
+        documentActions(conflict.latest.current),
       ),
     );
     dispatch({
@@ -1116,7 +1120,7 @@ export const useOperation = (supplied: Options) => {
       return;
     }
     requestedReview.current = null;
-    const offered = operationActions(current?.actions ?? []).find(
+    const offered = operationActions(current === null ? [] : documentActions(current)).find(
       (action) => action.task === state.draft.entry.kind && action.blocked === null,
     );
     if (offered !== undefined) {

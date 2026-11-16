@@ -1,3 +1,4 @@
+import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
   type ResponseFor,
@@ -124,11 +125,12 @@ const assertListPresentation = async (
   }
   await expect(rows).toHaveCount(table.rows.length);
   for (const [index, item] of table.rows.entries()) {
-    if (item.link?.endpoint !== "case.get" || item.link.input.target.kind !== "ID") {
+    const caseId = item.link === undefined ? undefined : caseLinkId(item.link);
+    if (caseId === undefined) {
       throw new Error("Case query required");
     }
     const row = rows.nth(index);
-    await expect(row.locator(`a[href="/cases/id/${item.link.input.target.caseId}"]`)).toBeVisible();
+    await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
     await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {

@@ -6,13 +6,13 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { ReminderQueueWork } from "../../src/views/work/ReminderQueueWork";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { service } from "../../src/api/service";
-import type { HumanReceiptDocument } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { current } from "../support/presentation-state.fixtures";
 import { workBasis } from "../support/inputs";
 import { fields } from "../support/service-ui.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 const reminderId = "30000000-0000-4000-8000-000000000003";
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [
       {

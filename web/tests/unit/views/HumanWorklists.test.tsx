@@ -8,7 +8,7 @@ import { WorkspaceViewsProvider } from "../../../src/views/WorkspaceViews";
 import { CaseList } from "../../../src/views/CaseList";
 import { ReminderQueue } from "../../../src/views/work/ReminderQueue";
 import { navigate } from "../../../src/routing/navigation";
-import type { HumanReadDocument_case_list, HumanReadDocument_work_views } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
 const exactId = "00000000-0000-4000-8000-000000000002";
 const basis = {
@@ -19,7 +19,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const counts: HumanReadDocument_work_views = {
+const counts: HumanDocument = {
   screen: {
     regions: [
       {
@@ -82,7 +82,7 @@ const counts: HumanReadDocument_work_views = {
   basis,
   disclosure: "CURRENT",
 };
-const cases: HumanReadDocument_case_list = {
+const cases: HumanDocument = {
   screen: {
     regions: [
       {
@@ -274,7 +274,7 @@ it("renders Core navigation totals instead of adding tab counts in the shell", a
       },
     ],
   });
-  const navigation: HumanReadDocument_work_views = {
+  const navigation: HumanDocument = {
     ...counts,
     screen: {
       regions: [

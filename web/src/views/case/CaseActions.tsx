@@ -11,7 +11,11 @@ export const CaseActions = ({
   onAct: (act: ActKind) => void;
 }) => (
   <Actions
-    actions={caseActions(current)}
+    actions={current.screen.regions
+      .filter((region) => region.role === "RECOMMENDATION")
+      .flatMap((region) => region.actions ?? [])
+      .filter((action) => isCaseAct(action.task))}
+    prominent
     onAction={(action) => {
       if (isCaseAct(action.task)) {
         onAct(action.task);

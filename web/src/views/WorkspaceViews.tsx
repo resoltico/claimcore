@@ -1,7 +1,8 @@
+import { caseLinkView, reminderLinkView } from "../routing/coreLinks";
 import type {
   taskChoices,
   Link,
-  HumanReadDocument_work_views,
+  HumanDocument,
   PresentedValue,
   WorkDateBasis,
 } from "@contracts/client";
@@ -22,7 +23,7 @@ type ViewCounts<V> = {
 export type CaseCounts = ViewCounts<(typeof taskChoices.caseView)[number]>;
 export type ReminderCounts = ViewCounts<(typeof taskChoices.reminderView)[number]>;
 const countData = <V,>(
-  document: HumanReadDocument_work_views | null,
+  document: HumanDocument | null,
   area: "cases" | "reminders",
   selection: (link: Link) => V | undefined,
 ): ViewCounts<V> | null => {
@@ -54,9 +55,8 @@ const countData = <V,>(
     navigation: totals.find((entry) => entry.key === area)?.value ?? null,
   };
 };
-const caseView = (link: Link) => (link.endpoint === "case.list" ? link.input.view : undefined);
-const reminderView = (link: Link) =>
-  link.endpoint === "reminder.list" ? link.input.view : undefined;
+const caseView = caseLinkView;
+const reminderView = reminderLinkView;
 export type WorkspaceViews = { cases: Views<CaseCounts>; reminders: Views<ReminderCounts> };
 export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */

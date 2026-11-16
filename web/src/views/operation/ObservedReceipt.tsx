@@ -15,7 +15,7 @@ export const ObservedReceipt = ({ operationId }: { operationId: string }) => {
         (notice.reason === "unreachable" || notice.reason === "responseTimeout")));
   return (
     <>
-      {observation.receipt === null ? null : (
+      {observation.receipt === null || observation.receipt.basis.kind !== "SNAPSHOT" ? null : (
         <ScreenView
           embedded
           view={observation.receipt.screen}

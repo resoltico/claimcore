@@ -1,5 +1,5 @@
 import type { Link, CaseSelector } from "@contracts/client";
-import { coreLinkPath } from "./coreLinks";
+import { coreLinkPath, reminderLinkTarget } from "./coreLinks";
 import { useState } from "react";
 import { casePath, referencePath } from "./routes";
 import { navigate } from "./navigation";
@@ -23,11 +23,12 @@ export const useCaseNavigation = (owner: object | null) => {
   };
   return {
     linkNavigation: (link: Link) => {
-      if (link.endpoint !== "reminder.get") {
+      const selected = reminderLinkTarget(link);
+      if (selected === undefined) {
         return undefined;
       }
       const path = coreLinkPath(link);
-      const focusId = `reminder-link-${link.input.reminderId}`;
+      const focusId = `reminder-link-${selected.reminderId}`;
       return {
         id: focusId,
         follow: () => {

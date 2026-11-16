@@ -1,3 +1,4 @@
+import { hasDocumentSubject } from "../../protocol/types";
 import { useCallback, useLayoutEffect } from "react";
 import type { HumanResponseByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
@@ -12,6 +13,9 @@ const select = (reply: HumanResponseByEndpoint["case.payments"]) => {
     return null;
   }
   const doc = reply.outcome.document;
+  if (!hasDocumentSubject(doc, "CASE")) {
+    return null;
+  }
   return {
     items: doc.screen.regions.flatMap((region) =>
       region.content.kind === "TABLE" ? region.content.rows : [],

@@ -121,13 +121,8 @@ module HumanDocument =
         disclosure
         (history: HistoryAccess option)
         =
-        if
-            (actions |> List.filter _.Primary |> List.length) > 1
-            || not (List.forall Affordance.valid actions)
-        then
-            invalidArg
-                (nameof actions)
-                "A document requires valid affordances and at most one primary action."
+        if not (List.forall Affordance.valid actions) then
+            invalidArg (nameof actions) "A document requires valid declared input controls."
 
         let screen =
             Screen.create screen.Regions |> Screen.withCurrentGroups screen.CurrentGroups
@@ -200,14 +195,12 @@ module HumanCaseDocument =
                                 TaskAffordances.offered
                                     task
                                     (Some binding)
-                                    (availability.Seeds
-                                     |> Map.map (fun _ value -> TaskAffordances.seed value))
+                                    availability.Seeds
                                     availability.Editable
                                     availability.Choices
 
                             Some
                                 { action with
-                                    Primary = value.Advice.Recommended = Some task
                                     Blocked =
                                         availability.Blocked
                                         |> Option.map TaskAffordances.availability
@@ -264,13 +257,29 @@ module HumanCaseDocument =
                         yield TaskAffordances.noteAdd value.Snapshot.CaseId
                 ]
 
+        let recommended, actions =
+            actions
+            |> List.partition (fun action ->
+                action.Blocked.IsNone && value.Advice.Recommended = Some action.Task)
+
+        let screen = CaseScreen.view value
+
+        let screen =
+            if recommended.IsEmpty then
+                screen
+            else
+                let region = ScreenEntries.entryRegion RegionRole.Recommendation None []
+
+                Screen.create ({ region with Actions = recommended } :: screen.Regions)
+                |> Screen.withCurrentGroups screen.CurrentGroups
+
         HumanDocument.create
             (DocumentSubject.Case(
                 value.Snapshot.CaseId,
                 value.Snapshot.Revision,
                 value.Work.Revision
             ))
-            (CaseScreen.view value)
+            screen
             actions
             []
             None
@@ -352,8 +361,6 @@ module HumanReadDocuments =
             let seeds =
                 [
                     TaskAffordances.input InputTarget.PrincipalKind, TaskAffordances.text "HUMAN"
-                    if not (TaskDeclarations.describe (TaskId.token kind)).Collections.IsEmpty then
-                        TaskAffordances.input InputTarget.Grants, TaskAffordances.initialGrantRows
                     match issuer with
                     | Some value ->
                         TaskAffordances.input InputTarget.PrincipalIssuer,

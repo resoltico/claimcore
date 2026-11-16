@@ -1,5 +1,8 @@
+import { allActions } from "../../src/operation/affordances";
+import type { PersonDocument } from "../../src/protocol/types";
+import { withRecommendation, operationAffordance } from "./affordances.fixtures";
 import { installationActions, requesterLinks } from "./human-requester.fixtures";
-import { operationAffordance } from "./affordances.fixtures";
+
 import { humanReadReply } from "./human-read-reply.fixtures";
 import { workBasis } from "./inputs";
 import { expect } from "vitest";
@@ -7,7 +10,7 @@ import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
 import { peoplePreview } from "./people-operation.fixtures";
-import type { OperationTaskDefinition, HumanReadDocument_people_grants } from "@contracts/client";
+import type { OperationTaskDefinition } from "@contracts/client";
 import { taskForAct } from "../../src/protocol/taskCatalog";
 import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
@@ -33,161 +36,165 @@ export const secondActor = {
   },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
-export const firstPerson: HumanReadDocument_people_grants = {
-  screen: {
-    regions: [
-      {
-        role: "ACCOUNT",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "actor",
-              labelId: "field.profile.displayName.label",
-              prominence: "PRIMARY",
-              value: { kind: "ACTOR", value: firstActor.actor },
-            },
-          ],
+export const firstPerson: PersonDocument = withRecommendation(
+  {
+    screen: {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                value: { kind: "ACTOR", value: firstActor.actor },
+              },
+            ],
+          },
         },
-      },
-      {
-        role: "DETAILS",
-        titleId: "label.recordDetails",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "issuer",
-              labelId: "field.principal.issuer.label",
-              prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
-            },
-            {
-              key: "subject",
-              labelId: "field.principal.subject.label",
-              prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: "server-first" },
-            },
-          ],
+        {
+          role: "DETAILS",
+          titleId: "label.recordDetails",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "issuer",
+                labelId: "field.principal.issuer.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
+              },
+              {
+                key: "subject",
+                labelId: "field.principal.subject.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: "server-first" },
+              },
+            ],
+          },
         },
-      },
+      ],
+    },
+    subject: { kind: "PERSON", actorId: firstActor.actor.actorId },
+    actions: [
+      operationAffordance(
+        "people.grant",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
+        { "input:scope": "INSTALLATION" },
+        undefined,
+        {},
+      ),
+      operationAffordance(
+        "people.revoke",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
+        { "input:scope": "INSTALLATION" },
+      ),
+      operationAffordance("people.enable", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: firstActor.actor.actorId,
+      }),
+      operationAffordance("people.disable", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: firstActor.actor.actorId,
+      }),
+      operationAffordance(
+        "people.setProfile",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
+        { "input:profile.displayName": "server-first" },
+      ),
+      operationAffordance("people.eraseProfile", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: firstActor.actor.actorId,
+      }),
     ],
+    links: [],
+    history: null,
+    nextCursor: null,
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
   },
-  subject: { kind: "PERSON", actorId: firstActor.actor.actorId },
-  actions: [
-    operationAffordance(
-      "people.grant",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
-      { "input:scope": "INSTALLATION" },
-      undefined,
-      {},
-      true,
-    ),
-    operationAffordance(
-      "people.revoke",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
-      { "input:scope": "INSTALLATION" },
-    ),
-    operationAffordance("people.enable", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: firstActor.actor.actorId,
-    }),
-    operationAffordance("people.disable", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: firstActor.actor.actorId,
-    }),
-    operationAffordance(
-      "people.setProfile",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: firstActor.actor.actorId },
-      { "input:profile.displayName": "server-first" },
-    ),
-    operationAffordance("people.eraseProfile", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: firstActor.actor.actorId,
-    }),
-  ],
-  links: [],
-  history: null,
-  nextCursor: null,
-  basis: { kind: "SNAPSHOT", observation: workBasis },
-  disclosure: "CURRENT",
-};
-export const secondPerson: HumanReadDocument_people_grants = {
-  ...firstPerson,
-  screen: {
-    regions: [
-      {
-        role: "ACCOUNT",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "actor",
-              labelId: "field.profile.displayName.label",
-              prominence: "PRIMARY",
-              value: { kind: "ACTOR", value: secondActor.actor },
-            },
-          ],
+  "people.grant",
+);
+export const secondPerson: PersonDocument = withRecommendation(
+  {
+    ...firstPerson,
+    screen: {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                value: { kind: "ACTOR", value: secondActor.actor },
+              },
+            ],
+          },
         },
-      },
-      {
-        role: "DETAILS",
-        titleId: "label.recordDetails",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "issuer",
-              labelId: "field.principal.issuer.label",
-              prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
-            },
-            {
-              key: "subject",
-              labelId: "field.principal.subject.label",
-              prominence: "DETAIL",
-              value: { kind: "IDENTIFIER", value: "server-second" },
-            },
-          ],
+        {
+          role: "DETAILS",
+          titleId: "label.recordDetails",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "issuer",
+                labelId: "field.principal.issuer.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: "https://issuer.example/" },
+              },
+              {
+                key: "subject",
+                labelId: "field.principal.subject.label",
+                prominence: "DETAIL",
+                value: { kind: "IDENTIFIER", value: "server-second" },
+              },
+            ],
+          },
         },
-      },
+      ],
+    },
+    actions: [
+      operationAffordance(
+        "people.grant",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
+        { "input:scope": "INSTALLATION" },
+        undefined,
+        {},
+      ),
+      operationAffordance("people.enable", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: secondActor.actor.actorId,
+      }),
+      operationAffordance("people.disable", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: secondActor.actor.actorId,
+      }),
+      operationAffordance(
+        "people.setProfile",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
+        { "input:profile.displayName": "server-second" },
+      ),
+      operationAffordance("people.eraseProfile", {
+        kind: "PEOPLE",
+        expectedRevision: 1,
+        actorId: secondActor.actor.actorId,
+      }),
     ],
+    subject: { ...firstPerson.subject, actorId: secondActor.actor.actorId },
   },
-  actions: [
-    operationAffordance(
-      "people.grant",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
-      { "input:scope": "INSTALLATION" },
-      undefined,
-      {},
-      true,
-    ),
-    operationAffordance("people.enable", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: secondActor.actor.actorId,
-    }),
-    operationAffordance("people.disable", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: secondActor.actor.actorId,
-    }),
-    operationAffordance(
-      "people.setProfile",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: secondActor.actor.actorId },
-      { "input:profile.displayName": "server-second" },
-    ),
-    operationAffordance("people.eraseProfile", {
-      kind: "PEOPLE",
-      expectedRevision: 1,
-      actorId: secondActor.actor.actorId,
-    }),
-  ],
-  subject: { ...firstPerson.subject, actorId: secondActor.actor.actorId },
-};
+  "people.grant",
+);
 export const grantsFor = (document = firstPerson): ApiResult<ServiceResponse<"people.grants">> => ({
   kind: "outcome",
   status: 200,
@@ -314,29 +321,31 @@ export const setupActorTargets = (
     return Promise.resolve(
       grantsFor(
         (() => {
-          const selected = person.actions.filter((action) =>
+          const selected = allActions(person).filter((action) =>
             offered.some((task) => task === action.task),
           );
           const primary = ["people.grant", "people.enable", "people.revoke", "people.disable"].find(
             (task) => selected.some((action) => action.task === task),
           );
-          return {
-            ...person,
-            actions: selected.flatMap((action) =>
-              action.task === "people.requests.dismiss"
-                ? []
-                : [
-                    operationAffordance(
-                      action.task,
-                      { kind: "PEOPLE", expectedRevision: 1, actorId: person.subject.actorId },
-                      action.seeds,
-                      action.editable,
-                      action.choices,
-                      action.task === primary,
-                    ),
-                  ],
-            ),
-          };
+          return withRecommendation(
+            {
+              ...person,
+              actions: selected.flatMap((action) =>
+                action.task === "people.requests.dismiss"
+                  ? []
+                  : [
+                      operationAffordance(
+                        action.task,
+                        { kind: "PEOPLE", expectedRevision: 1, actorId: person.subject.actorId },
+                        action.seeds,
+                        action.editable,
+                        action.choices,
+                      ),
+                    ],
+              ),
+            },
+            primary,
+          );
         })(),
       ),
     );

@@ -1,9 +1,5 @@
 import { operationAffordance } from "../support/affordances.fixtures";
-import {
-  taskDefinitions,
-  type HumanReceiptDocument,
-  type RequestByEndpoint,
-} from "@contracts/client";
+import { taskDefinitions, type HumanDocument, type RequestByEndpoint } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { chooseOption, optionValues } from "../support/choice-entry";
 import userEvent from "@testing-library/user-event";
@@ -40,7 +36,7 @@ const PeopleBinding = ({
   initialKind?: PeopleInput["task"];
 }) => {
   const credential = useCredential();
-  const [recorded, setRecorded] = useState<HumanReceiptDocument | null>(null);
+  const [recorded, setRecorded] = useState<HumanDocument | null>(null);
   const model = useOperation({
     subject: "PEOPLE",
     kind: initialKind,
@@ -56,9 +52,6 @@ const PeopleBinding = ({
             },
         {
           "input:principal.kind": "HUMAN",
-          ...(kind === "people.admit"
-            ? { "input:grants": [{ "input:scope": "INSTALLATION" }] }
-            : {}),
           ...(["people.grant", "people.revoke"].includes(kind)
             ? { "input:scope": "INSTALLATION" }
             : {}),

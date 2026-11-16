@@ -1,6 +1,8 @@
+import { hasDocumentSubject } from "../protocol/types";
 import { InlineNoteDraftProvider, InlineNoteRecovery } from "./case/InlineNoteDraft";
 import { LinkNavigationContext } from "../routing/LinkNavigationContext";
-import type { Link, HumanReadDocument_context, TaskId } from "@contracts/client";
+import type { Link, TaskId } from "@contracts/client";
+import type { RequesterDocument } from "../protocol/types";
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
 import { ObservedReceipt } from "./operation/ObservedReceipt";
@@ -218,7 +220,10 @@ const AcceptedToast = ({
   );
 };
 const succeededRequester = (response: ServiceResponse<"context"> | null) =>
-  response?.outcome.kind === "SUCCEEDED" ? response.outcome.document : null;
+  response?.outcome.kind === "SUCCEEDED" &&
+  hasDocumentSubject(response.outcome.document, "REQUESTER")
+    ? response.outcome.document
+    : null;
 const workspaceRequester = (context: ReturnType<typeof useEndpoint<"context">>) => {
   const observed = succeededRequester(context.value);
   const previous = succeededRequester(context.previous);
@@ -350,7 +355,7 @@ type WorkspaceOwner = OwnerScope & { credential: string };
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (
   owner: WorkspaceOwner | null,
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
   refused: boolean,
 ) => {
   const [accepted, setAccepted] = useState<{
@@ -431,7 +436,7 @@ const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
 };
 /** Retain local consent only for the same verified actor and authenticated session. */
 const retainInactiveWorkspace = (
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
   owner: WorkspaceOwner | null,
   session: SessionState,
 ) => {
@@ -461,7 +466,7 @@ const WorkspacePresence = ({
   feedback,
   children,
 }: {
-  inactive: HumanReadDocument_context | null;
+  inactive: RequesterDocument | null;
   retained: boolean;
   locked: boolean;
   onCheck: () => void;
@@ -483,7 +488,7 @@ const WorkspacePresence = ({
 const matchingLockOwner = (
   owner: WorkspaceOwner | null,
   session: SessionState,
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
 ): WorkspaceOwner | null => {
   if (
     owner === null ||

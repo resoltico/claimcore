@@ -1,7 +1,7 @@
 import { useReviewEntry } from "./useReviewEntry";
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
-import type { HumanReadDocument_people_grants } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
@@ -126,7 +126,7 @@ type Props = Omit<OperationFormProps, "onAct" | "model"> & {
   model: OperationModel;
   disclosureAvailable?: boolean;
   open?: boolean;
-  person?: HumanReadDocument_people_grants;
+  person?: HumanDocument;
   completionAnchor?: React.RefObject<HTMLElement | null>;
 };
 type DiscardProps = {
@@ -348,7 +348,7 @@ const OperationTarget = ({
 }: {
   current: Props["current"];
   model: OperationModel;
-  person: HumanReadDocument_people_grants | undefined;
+  person: HumanDocument | undefined;
 }) => {
   const document = model.review?.document ?? current ?? person ?? null;
   if (document !== null) {

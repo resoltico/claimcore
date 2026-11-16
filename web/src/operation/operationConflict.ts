@@ -48,7 +48,11 @@ export const rebasedOperationBinding = (
     const current = currentActions.find(
       (action) => action.task === "case.erase" && action.blocked === null,
     );
-    if (current?.task !== "case.erase") {
+    if (
+      current?.task !== "case.erase" ||
+      current.binding.kind !== "CASE" ||
+      !("expectedFamilySequence" in current.binding)
+    ) {
       throw new Error("A fresh erasure action is required.");
     }
     return {

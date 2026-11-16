@@ -134,7 +134,6 @@ const setup = (manage: boolean) => {
                           "input:principal.subject": request.principal.subject,
                           "input:profile.displayName": request.claims.name,
                           "input:profile.contact": request.claims.email,
-                          "input:grants": [{ "input:scope": "INSTALLATION" }],
                         },
                         ["input:profile.displayName", "input:profile.contact", "input:grants"],
                       ),

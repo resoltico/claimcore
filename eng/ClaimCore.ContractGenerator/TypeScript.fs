@@ -31,6 +31,7 @@ module TypeScript =
 
     let rec private value =
         function
+        | Schema.JsonObject -> "Readonly<Record<string, unknown>>"
         | Schema.Object(properties, optional) -> objectType value properties optional
         | Schema.Array(item, _, _) -> "ReadonlyArray<" + value item + ">"
         | Schema.String _ -> "string"

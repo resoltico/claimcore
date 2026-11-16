@@ -364,11 +364,14 @@ module PresentationCodecs =
 
     let link =
         let query task inject extract codec =
-            variant (QueryTaskId.key task) inject extract (record id |> field "input" id codec)
+            task,
+            codec
+            |> map inject (fun value ->
+                extract value
+                |> Option.defaultWith (fun () ->
+                    invalidArg "link" "The link input does not match its endpoint."))
 
-        taggedOn
-            "endpoint"
-            "Link"
+        let payloads =
             [
                 query
                     QueryTaskId.Context
@@ -486,6 +489,24 @@ module PresentationCodecs =
                     | _ -> None)
                     RequestCodecs.accessRequestsRequest
             ]
+            |> Map.ofList
+
+        let endpoint = VocabularyCodec.create QueryTaskId.vocabulary
+
+        record (fun endpoint input -> endpoint, input)
+        |> field "endpoint" fst endpoint
+        |> field "input" snd jsonObject
+        |> build
+        |> interpret
+            (fun path (endpoint, input) ->
+                let codec = Map.find endpoint payloads
+
+                codec.Validate (path + ".input") input
+                |> Result.bind (fun () -> codec.Read (path + ".input") input))
+            (fun value ->
+                let endpoint = Link.endpoint value
+                endpoint, (Map.find endpoint payloads).Write value)
+        |> named "Link"
 
     let namedLink =
         record (fun relation label link ->
@@ -500,96 +521,113 @@ module PresentationCodecs =
         |> build
         |> named "NamedLink"
 
+    [<Literal>]
+    // Shared grammar bounds preserve the preceding endpoint maxima (46 actions, 34 links).
+    let MaximumActions = 46
+
+    [<Literal>]
+    let MaximumLinks = 34
+
     let affordance =
-        let variants =
+        let inputs =
+            Vocabulary.define TaskInputId.vocabularyName TaskInputId.all TaskInputId.token
+            |> VocabularyCodec.create
+
+        let tasks =
             TaskDeclarations.all
-            |> List.choose (fun declaration ->
-                let binding =
-                    match declaration.Kind with
-                    | ClientTaskKind.Operation ->
-                        let task = TaskId.ofLiteral declaration.Id
-                        let owned = declaration.Ledger |> Option.get
+            |> List.filter (fun declaration -> declaration.Kind <> ClientTaskKind.Query)
+            |> List.map (fun declaration -> TaskId.ofLiteral declaration.Id)
 
-                        Some(
-                            OperationSubmissionCodecs.binding task
-                            |> map
-                                (fun raw ->
-                                    OperationSubmission.admitBinding owned raw
-                                    |> Result.toOption
-                                    |> Option.get
-                                    |> Some)
-                                (Option.get >> OperationSubmission.rawBinding)
-                        )
-                    | ClientTaskKind.Command -> Some(record None |> build |> named "Binding.Empty")
-                    | ClientTaskKind.Query -> None
+        let task =
+            Vocabulary.define "offeredTask" tasks TaskId.token |> VocabularyCodec.create
 
-                binding
-                |> Option.map (fun binding ->
-                    let allowed = declaration.Inputs |> List.map _.Input
+        let bindings =
+            ClaimCore.Domain.Tasks.Registry.clientDeclarations
+            |> List.distinctBy TaskDeclaration.bindingShape
+            |> List.map (fun declaration ->
+                let shape = TaskDeclaration.bindingShape declaration
 
-                    let identifiers =
-                        allowed
-                        @ (declaration.Collections
-                           |> List.map (fun collection ->
-                               TaskCollectionId.input collection.Collection))
+                OperationSubmissionCodecs.binding declaration.Id
+                |> map
+                    (fun raw ->
+                        OperationSubmission.admitBinding declaration raw
+                        |> Result.defaultWith (fun _ ->
+                            invalidArg "binding" "Invalid reviewed binding.")
+                        |> Some)
+                    (fun binding -> binding |> Option.get |> OperationSubmission.rawBinding)
+                |> branch id (fun binding ->
+                    match binding with
+                    | Some binding when BindingShape.ofValue binding = shape -> Some(Some binding)
+                    | _ -> None))
 
-                    let input =
-                        Vocabulary.define
-                            TaskInputId.vocabularyName
-                            TaskInputId.all
-                            TaskInputId.token
-                        |> VocabularyCodec.select (fun input -> List.contains input identifiers)
+        let binding =
+            choice
+                "AffordanceBinding"
+                (bindings
+                 @ [
+                     branch
+                         (fun () -> None)
+                         (function
+                         | None -> Some()
+                         | _ -> None)
+                         RequestCodecs.empty
+                 ])
 
-                    let choices =
-                        allowed
-                        |> List.choose (fun input ->
-                            TaskChoiceId.ofInput input
-                            |> Option.map (fun choice ->
-                                let tokens = TaskChoiceId.tokens choice
+        let seeds =
+            TaskInputId.all
+            |> List.map (fun input ->
+                input, TaskInputId.token input, true, ClaimCore.RecordFormat.InputMapCodecs.atom)
+            |> fieldMapWithPresence
 
-                                input,
-                                TaskInputId.token input,
-                                true,
-                                list
-                                    tokens.Length
-                                    (Vocabulary.define
-                                        (Vocabulary.token TaskChoiceId.vocabulary choice)
-                                        tokens
-                                        id
-                                     |> VocabularyCodec.create)))
-                        |> fieldMapWithPresence
+        let choices =
+            TaskInputId.all
+            |> List.choose (fun input ->
+                TaskChoiceId.ofInput input
+                |> Option.map (fun choice ->
+                    let tokens = TaskChoiceId.tokens choice
 
-                    variant
-                        (declaration.Id)
-                        id
-                        (fun value ->
-                            if TaskId.token value.Task = declaration.Id then
-                                Some value
-                            else
-                                None)
-                        (record (fun binding seeds editable choices primary blocked ->
-                            {
-                                Affordance.Task = TaskId.ofLiteral declaration.Id
-                                Binding = binding
-                                Seeds = seeds
-                                Editable = editable
-                                Choices = choices
-                                Primary = primary
-                                Blocked = blocked
-                            })
-                         |> field "binding" _.Binding binding
-                         |> field
-                             "seeds"
-                             _.Seeds
-                             (OperationSubmissionCodecs.seedInputs declaration)
-                         |> field "editable" _.Editable (list identifiers.Length input)
-                         |> field "choices" _.Choices choices
-                         |> field "primary" _.Primary boolean
-                         |> field "blocked" _.Blocked (nullable advice))))
+                    input,
+                    TaskInputId.token input,
+                    true,
+                    list
+                        tokens.Length
+                        (Vocabulary.define
+                            (Vocabulary.token TaskChoiceId.vocabulary choice)
+                            tokens
+                            id
+                         |> VocabularyCodec.create)))
+            |> fieldMapWithPresence
 
-        taggedOn "task" "Affordance" variants
+        record (fun task binding seeds editable choices blocked ->
+            {
+                Affordance.Task = task
+                Binding = binding
+                Seeds = seeds
+                Editable = editable
+                Choices = choices
+                Blocked = blocked
+            })
+        |> field "task" _.Task task
+        |> field "binding" _.Binding binding
+        |> field "seeds" _.Seeds seeds
+        |> field "editable" _.Editable (list TaskInputId.all.Length inputs)
+        |> field "choices" _.Choices choices
+        |> field "blocked" _.Blocked (nullable advice)
+        |> build
+        |> interpret
+            (fun path value ->
+                if Affordance.valid value then
+                    Ok value
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Undeclared input controls or mismatched reviewed binding."
+                        })
+            id
+        |> named "Affordance"
 
-    let private actions = list TaskDeclarations.all.Length affordance
+    let private actions = list MaximumActions affordance
 
     let entry =
         (record (fun key label prominence value recorded ->

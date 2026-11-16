@@ -1,3 +1,5 @@
+import { hasDocumentSubject } from "../protocol/types";
+import { isOperationAffordance } from "../operation/affordances";
 import type { RegionRow, Screen, Region, PresentedValue as Value } from "@contracts/client";
 import type { OperationAffordance } from "../operation/affordances";
 import { ScreenView } from "../ui/ScreenView";
@@ -19,13 +21,17 @@ import { navigate } from "../routing/navigation";
 import { RegionView } from "../ui/regions/RegionView";
 import { coreLinkPath } from "../routing/coreLinks";
 
-export type RevocationControl = Extract<OperationAffordance, { task: "people.revoke" }>;
+export type RevocationControl = OperationAffordance;
 const grantPage = (response: ServiceResponse<"people.grants">, actorId: string) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
   const { document } = response.outcome;
-  if (document.basis.kind !== "SNAPSHOT" || document.subject.actorId !== actorId) {
+  if (
+    !hasDocumentSubject(document, "PERSON") ||
+    document.basis.kind !== "SNAPSHOT" ||
+    document.subject.actorId !== actorId
+  ) {
     return null;
   }
   return {
@@ -89,7 +95,7 @@ const PersonContents = ({
           timeZone={observed.basis.timeZone}
           roles={["ACCESS"]}
           onAction={(action) => {
-            if (action.task === "people.revoke") {
+            if (isOperationAffordance(action) && action.task === "people.revoke") {
               onRevoke?.(action);
             }
           }}

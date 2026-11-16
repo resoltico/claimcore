@@ -62,19 +62,19 @@ let tests =
 
                     Expect.equal
                         (Map.find (TaskAffordances.input InputTarget.PrincipalSubject) admit.Seeds)
-                        (SubmissionValue.Text "request-handle")
+                        (InputValue.Text "request-handle")
                         "Identity comes from the row's action"
 
                     Expect.equal
                         (Map.find
                             (TaskAffordances.input InputTarget.ProfileDisplayName)
                             admit.Seeds)
-                        (SubmissionValue.Text "preferred input hint")
+                        (InputValue.Text "preferred input hint")
                         "Name hint precedes username"
 
                     Expect.equal
                         (Map.find (TaskAffordances.input InputTarget.ProfileContact) admit.Seeds)
-                        (SubmissionValue.Text "contact@example.test")
+                        (InputValue.Text "contact@example.test")
                         "Contact remains an unverified input hint"
 
                     Expect.isFalse
@@ -96,7 +96,7 @@ let tests =
                         (Map.find
                             (TaskAffordances.input InputTarget.ProfileDisplayName)
                             fallback.Seeds)
-                        (SubmissionValue.Text "fallback input hint")
+                        (InputValue.Text "fallback input hint")
                         "Missing names use the explicit hint"
 
                     Expect.equal

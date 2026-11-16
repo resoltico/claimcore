@@ -1,16 +1,19 @@
 import { createContext, useContext } from "react";
-import type { HumanReadDocument_context } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 
-export type ActiveRequester = HumanReadDocument_context & {
+import type { RequesterDocument } from "../protocol/types";
+
+export type ActiveRequester = RequesterDocument & {
   readonly disclosure: "CURRENT";
-  readonly subject: HumanReadDocument_context["subject"] & {
+  readonly subject: RequesterDocument["subject"] & {
     readonly state: "ACTIVE";
     readonly installationId: string;
     readonly actorId: string;
   };
-  readonly basis: Extract<HumanReadDocument_context["basis"], { kind: "SNAPSHOT" }>;
+  readonly basis: Extract<HumanDocument["basis"], { kind: "SNAPSHOT" }>;
 };
-export const isActiveRequester = (value: HumanReadDocument_context): value is ActiveRequester =>
+export const isActiveRequester = (value: HumanDocument): value is ActiveRequester =>
+  value.subject.kind === "REQUESTER" &&
   value.disclosure === "CURRENT" &&
   value.subject.state === "ACTIVE" &&
   value.subject.installationId !== null &&

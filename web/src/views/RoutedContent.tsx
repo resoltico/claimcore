@@ -1,3 +1,4 @@
+import { hasDocumentSubject } from "../protocol/types";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import type { Affordance } from "@contracts/client";
 import {
@@ -122,7 +123,7 @@ const paymentSelectionPage = (reply: ServiceResponse<"case.payments">) => {
     return null;
   }
   const { document } = reply.outcome;
-  if (document.basis.kind !== "SNAPSHOT") {
+  if (!hasDocumentSubject(document, "CASE") || document.basis.kind !== "SNAPSHOT") {
     return null;
   }
   return {

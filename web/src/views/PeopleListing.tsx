@@ -1,3 +1,4 @@
+import { personLinkActorId } from "../routing/coreLinks";
 import type { RegionRow, ActorListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 import { PageTables } from "../ui/PageTables";
@@ -77,16 +78,17 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
       <PageTables
         labelledBy={props.titleId ?? "people-actors-title"}
         views={page.views}
-        linkNavigation={(link) =>
-          link.endpoint === "people.grants"
-            ? {
-                id: `actor-grants-${link.input.actorId}`,
+        linkNavigation={(link) => {
+          const actor = personLinkActorId(link);
+          return actor === undefined
+            ? undefined
+            : {
+                id: `actor-grants-${actor}`,
                 follow: () => {
-                  props.onSelect(link.input.actorId);
+                  props.onSelect(actor);
                 },
-              }
-            : undefined
-        }
+              };
+        }}
       />
       {page.message === null ? null : (
         <p role="alert">

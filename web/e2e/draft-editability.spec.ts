@@ -140,7 +140,11 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expectCaseReadsSettled(page);
   const caseGetReply = (await (await disclosed).json()) as ResponseFor<"case.get", "HUMAN">;
-  if (caseGetReply.representation !== "HUMAN" || caseGetReply.outcome.kind !== "SUCCEEDED") {
+  if (
+    caseGetReply.representation !== "HUMAN" ||
+    caseGetReply.outcome.kind !== "SUCCEEDED" ||
+    caseGetReply.outcome.document.subject.kind !== "CASE"
+  ) {
     throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
   }
   expect(caseGetReply.outcome.document.subject.revision).toBe(1);

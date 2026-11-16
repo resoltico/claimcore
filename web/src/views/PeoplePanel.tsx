@@ -330,7 +330,7 @@ const PeopleReceipt = ({ operationId }: { operationId: string }) => {
       <h2 ref={heading} tabIndex={-1}>
         {p.text("ui.acceptedOperation")}
       </h2>
-      {observation.receipt === null ? null : (
+      {observation.receipt === null || observation.receipt.basis.kind !== "SNAPSHOT" ? null : (
         <ScreenView
           view={observation.receipt.screen}
           timeZone={observation.receipt.basis.observation.timeZone}
@@ -597,7 +597,7 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
           const subject = action.seeds["input:principal.subject"];
           const fixed =
             !action.editable.includes("input:principal.subject") &&
-            typeof kind === "string" &&
+            (kind === "HUMAN" || kind === "SERVICE") &&
             typeof issuer === "string" &&
             typeof subject === "string";
           setAdmissionPrincipal(fixed ? { kind, issuer, subject } : null);

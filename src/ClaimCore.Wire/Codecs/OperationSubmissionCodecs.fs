@@ -84,34 +84,6 @@ module OperationSubmissionCodecs =
 
         fieldMapWithPresence (members @ collections)
 
-    /// Prefill is partial, including collection rows that the user has not completed yet.
-    let seedInputs (declaration: ClientTaskDeclaration) =
-        let members =
-            declaration.Inputs
-            |> List.map (fun input ->
-                input.Input, TaskInputId.token input.Input, true, scalar input)
-
-        let collections =
-            declaration.Collections
-            |> List.map (fun collection ->
-                let input = TaskCollectionId.input collection.Collection
-
-                let row =
-                    collection.Inputs
-                    |> List.map (fun input ->
-                        input.Input, TaskInputId.token input.Input, true, scalar input)
-                    |> fieldMapWithPresence
-
-                let codec =
-                    boundedList 0 (TaskCollectionId.maximumRows collection.Collection) row
-                    |> map SubmissionValue.Rows (function
-                        | SubmissionValue.Rows rows -> rows
-                        | _ -> invalidOp "Collection seed required.")
-
-                input, TaskInputId.token input, true, codec)
-
-        fieldMapWithPresence (members @ collections)
-
     let private caseTarget =
         function
         | OperationBinding.Case(target, _, _, _) -> target
@@ -297,7 +269,18 @@ module OperationSubmissionCodecs =
                     |> field
                         "inputs"
                         (fun (_, _, values) -> values)
-                        (inputs declaration |> named ("OperationInputs." + TaskId.token kind))
+                        (inputs declaration
+                         |> named (
+                             if
+                                 declaration.Collections.IsEmpty
+                                 && (declaration.Inputs
+                                     |> List.forall (fun input ->
+                                         input.Source <> InputSource.Authored))
+                             then
+                                 "Empty"
+                             else
+                                 "OperationInputs." + TaskId.token kind
+                         ))
 
                 variant
                     (TaskId.token kind)

@@ -222,11 +222,10 @@ let tests =
                         control.Seeds
                         (Map.ofList
                             [
-                                TaskInputId.Target InputTarget.Role,
-                                SubmissionValue.Text "CASE_READER"
-                                TaskInputId.Scope, SubmissionValue.Text "CASE"
+                                TaskInputId.Target InputTarget.Role, InputValue.Text "CASE_READER"
+                                TaskInputId.Scope, InputValue.Text "CASE"
                                 TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
-                                SubmissionValue.Text(
+                                InputValue.Text(
                                     CaseReference.format ResponseExamples.snapshot.Reference
                                 )
                             ])

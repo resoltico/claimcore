@@ -1,3 +1,5 @@
+import { isOperationAffordance } from "../../operation/affordances";
+import { caseLinkId } from "../../routing/coreLinks";
 import { useInlineNoteDraft, type NoteIntent } from "./InlineNoteDraft";
 import type { OperationAffordance } from "../../operation/affordances";
 import type { RegionRow, HumanResponseByEndpoint, Screen } from "@contracts/client";
@@ -28,10 +30,8 @@ const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
     ),
     caseId:
       doc.links.flatMap((named) =>
-        named.rel === "OPEN_CASE" &&
-        named.link.endpoint === "case.get" &&
-        named.link.input.target.kind === "ID"
-          ? [named.link.input.target.caseId]
+        named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
+          ? [caseLinkId(named.link)!]
           : [],
       )[0] ?? null,
     nextCursor: doc.nextCursor,
@@ -106,6 +106,7 @@ const NoteRows = ({
               compact
               onAction={(action) => {
                 if (
+                  isOperationAffordance(action) &&
                   action.task === "note.remove" &&
                   action.binding.kind === "NOTE" &&
                   "noteId" in action.binding

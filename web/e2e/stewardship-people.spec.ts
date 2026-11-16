@@ -380,7 +380,11 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   // D2 admission records profile and the original case-only grant atomically; no extra installation access is added.
   await openAdmission(page, source.issuer, subject, name, reference);
   const admitted = await submitPeople(page, "ACCEPTED");
-  if (admitted === null || admitted.disclosure !== "CURRENT") {
+  if (
+    admitted === null ||
+    admitted.disclosure !== "CURRENT" ||
+    admitted.subject.kind !== "RECEIPT"
+  ) {
     throw new Error("Missing disclosed admitted service target.");
   }
   const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');

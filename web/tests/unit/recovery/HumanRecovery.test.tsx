@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import { activeRequester } from "../../support/human-requester.fixtures";
-import type { HumanReceiptDocument } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import {
@@ -19,7 +19,7 @@ import type { RecoveryJournal } from "../../../src/protocol/recoveryJournal";
 
 afterEach(() => vi.unstubAllGlobals());
 const record = recoveryRecord();
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [
       {
@@ -84,7 +84,7 @@ const View = () => {
 };
 const setup = (
   kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED",
-  document: HumanReceiptDocument = receipt,
+  document: HumanDocument = receipt,
 ) => {
   const journal: RecoveryJournal = {
     list: vi.fn().mockResolvedValue([record]),

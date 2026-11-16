@@ -1,6 +1,9 @@
 import { chooseOption } from "../../support/choice-entry";
 import { prefixedInputs } from "../../support/submission-inputs";
-import { operationAffordance } from "../../support/affordances.fixtures";
+import {
+  operationAffordance,
+  requireOperationAffordance,
+} from "../../support/affordances.fixtures";
 import { useState } from "react";
 import { within } from "@testing-library/react";
 import { initialOperationValues } from "../../../src/operation/operationForm";
@@ -50,7 +53,9 @@ it("renders only work inputs permitted by Core and preserves explicit clear", as
   const fields = vi.fn();
   const change = vi.fn();
   const props = {
-    affordance: current.actions.find((action) => action.task === "work.update")!,
+    affordance: requireOperationAffordance(
+      current.actions.find((action) => action.task === "work.update"),
+    ),
     task: operationTask("work.update"),
     binding: { kind: "WORK", target, expectedRevision: 2 } as const,
     current,
@@ -88,7 +93,9 @@ it("consumes the current correction choices instead of offering the declaration'
     ],
   };
   const props = {
-    affordance: correction.actions.find((action) => action.task === "case.correct")!,
+    affordance: requireOperationAffordance(
+      correction.actions.find((action) => action.task === "case.correct"),
+    ),
     task: operationTask("case.correct"),
     binding: { kind: "CASE", target, expectedRevision: 7 } as const,
     current: correction,
@@ -385,7 +392,10 @@ it.each([
   currency: string;
   inputs: TaskInputId[];
   values: FormValues;
-  correction: { registration: ReadonlyArray<string>; decision: ReadonlyArray<string> } | null;
+  correction: {
+    registration: ReadonlyArray<"KEEP" | "UPDATE">;
+    decision: ReadonlyArray<"KEEP" | "UPDATE" | "CLEAR">;
+  } | null;
   expected: FormValues;
 }>)(
   "selects $currency only through its one atomic money pair",

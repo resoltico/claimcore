@@ -2607,7 +2607,6 @@
                   "seeds": {},
                   "editable": [],
                   "choices": {},
-                  "primary": true,
                   "blocked": null
                 }
               ],
@@ -2685,7 +2684,7 @@
       "valid": true
     },
     {
-      "name": "human-receipt-rejects-case-resource-subject",
+      "name": "human-document-rejects-unknown-subject",
       "endpoint": "operation.execute",
       "value": {
         "representation": "HUMAN",
@@ -2728,7 +2727,7 @@
             "nextCursor": null,
             "history": "NONE",
             "subject": {
-              "kind": "CASE",
+              "kind": "UNKNOWN",
               "caseId": "20000000-0000-7000-8000-000000000001",
               "revision": 1,
               "workRevision": 0

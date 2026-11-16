@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "../../operation/affordances";
 import type {
   RegionRow,
   CaseSelector,
@@ -79,7 +80,7 @@ export const ReminderList = ({
           ? {}
           : {
               onAction: (action, _row, originId) => {
-                if (action.task !== "people.requests.dismiss") {
+                if (isOperationAffordance(action)) {
                   onAct(action, originId);
                 }
               },

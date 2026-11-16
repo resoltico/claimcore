@@ -6,6 +6,8 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.TestSupport
+open ClaimCore.Wire
+open ClaimCore.Json
 
 let private parent =
     CaseId.create (Guid.Parse "10000000-0000-4000-8000-000000000001") |> Option.get
@@ -51,98 +53,163 @@ let tests =
     testList
         "affordance construction"
         [
-            testCase
-                "bindings and scalar or collection seed keys remain declaration-owned"
-                (fun () ->
-                    let value = action ()
+            testCase "bindings and scalar seed keys remain declaration-owned" (fun () ->
+                let value = action ()
 
-                    Expect.throws
-                        (fun () ->
-                            Affordance.create
-                                value.Task
-                                (Some(Binding.PeopleNew Revision.zero))
-                                Map.empty
-                                []
-                                Map.empty
-                                false
-                                None
-                            |> ignore)
-                        "Another subject cannot bind the task"
+                Expect.throws
+                    (fun () ->
+                        Affordance.create
+                            value.Task
+                            (Some(Binding.PeopleNew Revision.zero))
+                            Map.empty
+                            []
+                            Map.empty
+                            None
+                        |> ignore)
+                    "Another subject cannot bind the task"
 
-                    Expect.throws
-                        (fun () ->
-                            Affordance.create
-                                value.Task
-                                value.Binding
-                                (Map.ofList
-                                    [
-                                        TaskInputId.Target InputTarget.NoteText,
-                                        SubmissionValue.Text "foreign"
-                                    ])
-                                []
-                                Map.empty
-                                false
-                                None
-                            |> ignore)
-                        "A foreign scalar seed refuses"
+                Expect.throws
+                    (fun () ->
+                        Affordance.create
+                            value.Task
+                            value.Binding
+                            (Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.NoteText,
+                                    InputValue.Text "foreign"
+                                ])
+                            []
+                            Map.empty
+                            None
+                        |> ignore)
+                    "A foreign scalar seed refuses"
 
-                    let seed =
-                        Map.ofList
-                            [
-                                TaskInputId.Target InputTarget.Grants,
-                                SubmissionValue.Rows
-                                    [
-                                        Map.ofList
-                                            [
-                                                TaskInputId.Target InputTarget.NoteText,
-                                                SubmissionValue.Text "foreign"
-                                            ]
-                                    ]
-                            ]
+                let seed =
+                    Map.ofList [ TaskInputId.Target InputTarget.Grants, InputValue.Text "foreign" ]
 
-                    Expect.throws
-                        (fun () ->
-                            Affordance.create
-                                (TaskId.ofLiteral "people.admit")
-                                (Some(Binding.PeopleNew Revision.zero))
-                                seed
-                                []
-                                Map.empty
-                                false
-                                None
-                            |> ignore)
-                        "A foreign collection row seed refuses")
-            testCase
-                "duplicate rows and competing regional or document primaries refuse at the producer"
-                (fun () ->
-                    let primary = { action () with Primary = true }
+                Expect.throws
+                    (fun () ->
+                        Affordance.create
+                            (TaskId.ofLiteral "people.admit")
+                            (Some(Binding.PeopleNew Revision.zero))
+                            seed
+                            []
+                            Map.empty
+                            None
+                        |> ignore)
+                    "Collection identifiers are not scalar seed controls")
+            testCase "scalar seed types and choice tokens refuse malformed controls" (fun () ->
+                let control = TaskAffordances.work parent Revision.first Map.empty []
 
-                    Expect.throws
-                        (fun () ->
-                            Screen.create [ region [ row "same" []; row "same" [] ] ] |> ignore)
-                        "Duplicate rendering keys refuse"
+                for seed in [ InputValue.Integer 1L; InputValue.Boolean true ] do
+                    let malformed =
+                        { control with
+                            Seeds =
+                                Map.ofList
+                                    [ TaskAffordances.field BusinessField.HandlingSummary, seed ]
+                        }
 
-                    Expect.throws
-                        (fun () ->
-                            Screen.create [ region [ row "a" [ primary ]; row "b" [ primary ] ] ]
-                            |> ignore)
-                        "A region cannot recommend two actions"
+                    Expect.isFalse
+                        (Affordance.valid malformed)
+                        "Text seeds retain their declared atom"
 
-                    let screen = Screen.create []
+                let role =
+                    { action () with
+                        Task = TaskId.ofLiteral "people.grant"
+                        Binding =
+                            Some(
+                                Binding.People(
+                                    ActorId.create (
+                                        Guid.Parse "10000000-0000-4000-8000-000000000002"
+                                    )
+                                    |> Option.get,
+                                    Revision.first
+                                )
+                            )
+                        Seeds =
+                            Map.ofList
+                                [ TaskInputId.Target InputTarget.Role, InputValue.Text "UNKNOWN" ]
+                    }
 
-                    Expect.throws
-                        (fun () ->
-                            HumanDocument.create
-                                DocumentSubject.List
-                                screen
-                                [ primary; primary ]
-                                []
-                                None
-                                ObservationBasis.Unavailable
-                                HumanDisclosure.Current
-                                None
-                            |> ignore)
-                        "A document cannot recommend two actions")
+                Expect.isFalse (Affordance.valid role) "Closed choice seeds keep their vocabulary"
+                let encoded = PresentationCodecs.affordance.Write(action ())
+
+                let malformed =
+                    match encoded with
+                    | JsonValue.Object fields ->
+                        JsonValue.Object(
+                            fields
+                            |> List.map (fun (key, value) ->
+                                if key = "seeds" then
+                                    key, JsonValue.Object [ "field:closedOn", JsonValue.Array [] ]
+                                else
+                                    key, value)
+                        )
+                    | _ -> failtest "An affordance must be an object"
+
+                Expect.isError
+                    (PresentationCodecs.affordance.Read "$" malformed)
+                    "Collection values are not scalar seeds")
+            testCase "duplicate rows and undeclared document or regional controls refuse" (fun () ->
+                Expect.throws
+                    (fun () -> Screen.create [ region [ row "same" []; row "same" [] ] ] |> ignore)
+                    "Duplicate rendering keys refuse"
+
+                let valid = action ()
+
+                let invalid =
+                    { valid with
+                        Seeds =
+                            Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.NoteText,
+                                    InputValue.Text "foreign"
+                                ]
+                    }
+
+                Expect.throws
+                    (fun () -> Screen.create [ region [ row "a" [ invalid ] ] ] |> ignore)
+                    "A regional control cannot bypass its declaration"
+
+                Expect.throws
+                    (fun () ->
+                        HumanDocument.create
+                            DocumentSubject.List
+                            (Screen.create [])
+                            [ invalid ]
+                            []
+                            None
+                            ObservationBasis.Unavailable
+                            HumanDisclosure.Current
+                            None
+                        |> ignore)
+                    "A document control cannot bypass its declaration"
+
+                let other =
+                    TaskAffordances.caseAction
+                        (TaskId.ofLiteral "case.reopen")
+                        parent
+                        Revision.first
+                        Sequence.zero
+                        Map.empty
+                        []
+                        Map.empty
+
+                let document =
+                    HumanDocument.create
+                        DocumentSubject.List
+                        (Screen.create [])
+                        [ valid; other ]
+                        []
+                        None
+                        ObservationBasis.Unavailable
+                        HumanDisclosure.Current
+                        None
+
+                Expect.equal
+                    document.Actions.Length
+                    2
+                    "Generic action lists carry no competing primary flags")
             testCase "erasure and withheld disclosure cannot retain authoring seeds" (fun () ->
                 for disclosure in [ HumanDisclosure.Erased; HumanDisclosure.Withheld ] do
                     Expect.throws

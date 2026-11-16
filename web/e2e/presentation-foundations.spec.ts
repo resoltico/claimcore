@@ -1,3 +1,4 @@
+import type { RequesterDocument } from "../src/protocol/types";
 import {
   installationActions,
   requesterLinks,
@@ -29,7 +30,7 @@ import {
   presentationLanguageOptions,
   type RequestByEndpoint,
   type ResponseFor,
-  type HumanReadDocument_context,
+  type HumanDocument,
 } from "@contracts/client";
 import { actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../tests/support/themeContrast";
@@ -1199,7 +1200,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
   }) => {
     const clean = await observe(page, true);
     await seed(page);
-    const requester: HumanReadDocument_context = {
+    const requester: HumanDocument = {
       screen: {
         regions: [
           {
@@ -1273,7 +1274,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
 }) => {
   const clean = await observe(page, true);
   await seed(page);
-  const active: HumanReadDocument_context = {
+  const active: RequesterDocument = {
     ...activeRequester,
     actions: installationActions(
       [

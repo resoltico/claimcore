@@ -1,3 +1,4 @@
+import { caseLinkId } from "../routing/coreLinks";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { Screen } from "@contracts/client";
 import {
@@ -71,6 +72,9 @@ const attemptFeedback = (
   }
   if (outcome.kind === "ACCEPTED") {
     const { byRequester, document } = outcome;
+    if (document.basis.kind !== "SNAPSHOT") {
+      return { kind: "notice", notice: { kind: "local", reason: "incomplete" } };
+    }
     return {
       kind: "final",
       outcome: byRequester
@@ -80,10 +84,8 @@ const attemptFeedback = (
             timeZone: document.basis.observation.timeZone,
             caseId:
               document.links.flatMap((named) =>
-                named.rel === "OPEN_CASE" &&
-                named.link.endpoint === "case.get" &&
-                named.link.input.target.kind === "ID"
-                  ? [named.link.input.target.caseId]
+                named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
+                  ? [caseLinkId(named.link)!]
                   : [],
               )[0] ?? null,
           }

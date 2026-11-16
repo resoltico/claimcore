@@ -54,8 +54,8 @@ let tests =
                                  (TaskAffordances.field BusinessField.ResponsibleActor)
                                  action.Seeds))
                         [
-                            SubmissionValue.Text(ActorId.format (actor 1))
-                            SubmissionValue.Text(ActorId.format (actor 2))
+                            InputValue.Text(ActorId.format (actor 1))
+                            InputValue.Text(ActorId.format (actor 2))
                         ]
                         "No row-key join supplies the choice identity"
 

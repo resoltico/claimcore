@@ -91,7 +91,7 @@ const succeeded = (
                   },
                   editable: [],
                   choices: {},
-                  primary: false,
+
                   blocked: null,
                 } satisfies Affordance,
               ],

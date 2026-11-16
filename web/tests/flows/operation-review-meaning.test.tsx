@@ -53,7 +53,8 @@ const review: HumanReview = {
   document: {
     ...closeReview.document,
     subject: {
-      ...closeReview.document.subject,
+      kind: "REVIEW",
+      consequence: "ROUTINE",
       confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
     },
     actions: [
@@ -271,7 +272,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     document: {
       ...closeReview.document,
       subject: {
-        ...closeReview.document.subject,
+        kind: "REVIEW",
         confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
         consequence: "IRREVERSIBLE",
       },

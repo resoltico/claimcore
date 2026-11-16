@@ -1,5 +1,6 @@
+import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import { installationActions, requesterLinks } from "../support/human-requester.fixtures";
-import { operationAffordance } from "../support/affordances.fixtures";
+
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import {
   chooseAdmissionRole,
@@ -34,119 +35,139 @@ const grants = (
 ): ApiResult<ServiceResponse<"people.grants">> => ({
   kind: "outcome",
   status: 200,
-  value: humanReadReply("people.grants", {
-    screen: {
-      regions: [
-        {
-          role: "ACCOUNT",
-          content: {
-            kind: "ENTRIES",
-            entries: [
-              {
-                key: "actor",
-                labelId: "field.profile.displayName.label",
-                prominence: "PRIMARY",
-                value: {
-                  kind: "ACTOR",
-                  value: {
-                    actorId,
-                    displayName: { kind: "NAMED", value: `header-${actorId}` },
-                    principalKind: "SERVICE",
-                    availability: "DISABLED",
-                  },
-                },
-              },
-              {
-                key: "state",
-                labelId: "label.accountState",
-                prominence: "PRIMARY",
-                value: { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
-              },
-            ],
-          },
-        },
-        {
-          role: "ACCESS",
-          content: {
-            kind: "TABLE",
-            columns: [
-              { key: "role", labelId: "field.role.label", prominence: "PRIMARY", isMoney: false },
-              {
-                key: "scope",
-                labelId: "field.caseReference.label",
-                prominence: "PRIMARY",
-                isMoney: false,
-              },
-              { key: "at", labelId: "label.recordedAt", prominence: "SECONDARY", isMoney: false },
-              { key: "who", labelId: "label.recordedBy", prominence: "SECONDARY", isMoney: false },
-            ],
-            rows: [
-              {
-                key: "grant-row",
-                link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
-                actions: [
-                  operationAffordance(
-                    "people.revoke",
-                    { kind: "PEOPLE", actorId, expectedRevision: 1 },
-                    {
-                      "input:role": "CASE_READER",
-                      "input:scope": "CASE",
-                      "field:caseReference": reference,
-                    },
-                    [],
-                  ),
-                ],
-                values: [
-                  { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
-                  { kind: "REFERENCE", value: reference },
-                  { kind: "INSTANT", value: "2026-11-04T12:00:00.000000Z" },
+  value: humanReadReply(
+    "people.grants",
+    withRecommendation(
+      {
+        screen: {
+          regions: [
+            {
+              role: "ACCOUNT",
+              content: {
+                kind: "ENTRIES",
+                entries: [
                   {
-                    kind: "ACTOR",
+                    key: "actor",
+                    labelId: "field.profile.displayName.label",
+                    prominence: "PRIMARY",
                     value: {
-                      actorId: "10000000-0000-4000-8000-000000000099",
-                      displayName: { kind: "NAMED", value: "Grant recorder" },
-                      principalKind: "HUMAN",
-                      availability: "AVAILABLE",
+                      kind: "ACTOR",
+                      value: {
+                        actorId,
+                        displayName: { kind: "NAMED", value: `header-${actorId}` },
+                        principalKind: "SERVICE",
+                        availability: "DISABLED",
+                      },
                     },
+                  },
+                  {
+                    key: "state",
+                    labelId: "label.accountState",
+                    prominence: "PRIMARY",
+                    value: { kind: "CODE", vocabulary: "accountState", token: "DISABLED" },
                   },
                 ],
               },
-            ],
-          },
+            },
+            {
+              role: "ACCESS",
+              content: {
+                kind: "TABLE",
+                columns: [
+                  {
+                    key: "role",
+                    labelId: "field.role.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "scope",
+                    labelId: "field.caseReference.label",
+                    prominence: "PRIMARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "at",
+                    labelId: "label.recordedAt",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                  {
+                    key: "who",
+                    labelId: "label.recordedBy",
+                    prominence: "SECONDARY",
+                    isMoney: false,
+                  },
+                ],
+                rows: [
+                  {
+                    key: "grant-row",
+                    link: { endpoint: "case.get", input: { target: { kind: "ID", caseId } } },
+                    actions: [
+                      operationAffordance(
+                        "people.revoke",
+                        { kind: "PEOPLE", actorId, expectedRevision: 1 },
+                        {
+                          "input:role": "CASE_READER",
+                          "input:scope": "CASE",
+                          "field:caseReference": reference,
+                        },
+                        [],
+                      ),
+                    ],
+                    values: [
+                      { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+                      { kind: "REFERENCE", value: reference },
+                      { kind: "INSTANT", value: "2026-11-04T12:00:00.000000Z" },
+                      {
+                        kind: "ACTOR",
+                        value: {
+                          actorId: "10000000-0000-4000-8000-000000000099",
+                          displayName: { kind: "NAMED", value: "Grant recorder" },
+                          principalKind: "HUMAN",
+                          availability: "AVAILABLE",
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          ],
         },
-      ],
-    },
-    subject: { kind: "PERSON", actorId },
-    actions: [
-      operationAffordance(
-        "people.grant",
-        { kind: "PEOPLE", actorId, expectedRevision: 1 },
-        {},
-        undefined,
-        {},
-        true,
-      ),
-      operationAffordance(
-        "people.revoke",
-        { kind: "PEOPLE", actorId, expectedRevision: 1 },
-        {},
-        undefined,
-        {},
-      ),
-      operationAffordance(
-        "people.enable",
-        { kind: "PEOPLE", actorId, expectedRevision: 1 },
-        {},
-        undefined,
-        {},
-      ),
-    ],
-    links: [],
-    history: null,
-    nextCursor,
-    basis: { kind: "SNAPSHOT", observation: workBasis },
-    disclosure: "CURRENT",
-  }),
+        subject: { kind: "PERSON", actorId },
+        actions: [
+          operationAffordance(
+            "people.grant",
+            { kind: "PEOPLE", actorId, expectedRevision: 1 },
+            {},
+            undefined,
+            {},
+          ),
+          operationAffordance(
+            "people.revoke",
+            { kind: "PEOPLE", actorId, expectedRevision: 1 },
+            {},
+            undefined,
+            {},
+          ),
+          operationAffordance(
+            "people.enable",
+            { kind: "PEOPLE", actorId, expectedRevision: 1 },
+            {},
+            undefined,
+            {},
+          ),
+        ],
+        links: [],
+        history: null,
+        nextCursor,
+        basis: { kind: "SNAPSHOT", observation: workBasis },
+        disclosure: "CURRENT",
+      },
+      "people.grant",
+    ),
+  ),
 });
 const pending = <T,>() => {
   let finish: (value: T) => void = () => undefined;
@@ -212,7 +233,11 @@ const focusedBack = closePersonDetails;
 const reads = (offered = true) => {
   navigate("/people", true);
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.document.subject.state !== "ACTIVE") {
+  if (
+    context.outcome.kind !== "SUCCEEDED" ||
+    context.outcome.document.subject.kind !== "REQUESTER" ||
+    context.outcome.document.subject.state !== "ACTIVE"
+  ) {
     throw new Error("Context fixture absent.");
   }
   mockEndpoint("context").mockResolvedValue({

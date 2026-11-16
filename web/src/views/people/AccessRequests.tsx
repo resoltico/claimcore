@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "../../operation/affordances";
 import type { Affordance, Principal, RegionRow } from "@contracts/client";
 import type { OperationAffordance } from "../../operation/affordances";
 import { ScreenView } from "../../ui/ScreenView";
@@ -6,13 +7,18 @@ import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type AccessRequestControl = Extract<OperationAffordance, { task: "people.admit" }>;
-type DismissControl = Extract<Affordance, { task: "people.requests.dismiss" }>;
-const requestPrincipal = (action: AccessRequestControl | DismissControl): Principal => ({
-  kind: action.seeds["input:principal.kind"]!,
-  issuer: action.seeds["input:principal.issuer"]!,
-  subject: action.seeds["input:principal.subject"]!,
-});
+export type AccessRequestControl = OperationAffordance;
+type DismissControl = Affordance;
+const requestPrincipal = (action: AccessRequestControl | DismissControl): Principal | null => {
+  const kind = action.seeds["input:principal.kind"];
+  const issuer = action.seeds["input:principal.issuer"];
+  const subject = action.seeds["input:principal.subject"];
+  return (kind === "HUMAN" || kind === "SERVICE") &&
+    typeof issuer === "string" &&
+    typeof subject === "string"
+    ? { kind, issuer, subject }
+    : null;
+};
 import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
@@ -125,6 +131,11 @@ const AvailableRequests = ({
     if (busy || selected === null || controller.current !== null) {
       return;
     }
+    const principal = requestPrincipal(selected.control);
+    if (principal === null) {
+      setNotice({ kind: "local", reason: "incomplete" });
+      return;
+    }
     const current = new AbortController();
     controller.current = current;
     setPending(true);
@@ -132,7 +143,7 @@ const AvailableRequests = ({
     const result = await requestEndpoint(
       "people.requests.dismiss",
       credential,
-      requestPrincipal(selected.control),
+      principal,
       current.signal,
     );
     if (current.signal.aborted) {
@@ -176,7 +187,7 @@ const AvailableRequests = ({
             if (disabled) {
               return;
             }
-            if (action.task === "people.admit" && mayAdmit) {
+            if (isOperationAffordance(action) && action.task === "people.admit" && mayAdmit) {
               onAdmit(action);
             }
             if (action.task === "people.requests.dismiss" && row !== undefined) {

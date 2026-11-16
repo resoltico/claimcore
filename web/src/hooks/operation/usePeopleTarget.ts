@@ -6,6 +6,7 @@ import type { PersonDocument } from "../../protocol/types";
 
 import {
   allActions,
+  documentActions,
   initialAffordanceValues,
   operationActions,
   type OperationAffordance,
@@ -169,23 +170,28 @@ export const usePeopleTarget = (
     model.entry.kind !== "people.register";
   const fixed = admissionBound || actorBound;
   const seeded = useRef<string | null>(null);
-  const primary = source?.document.actions.find(
-    (action) => action.primary && action.blocked === null,
-  );
+  const recommended =
+    source === null
+      ? undefined
+      : operationActions(
+          source.document.screen.regions
+            .filter((region) => region.role === "RECOMMENDATION")
+            .flatMap((region) => region.actions ?? []),
+        ).find((action) => action.blocked === null);
   useEffect(() => {
     if (retained(model) || model.busy || fixed) {
       return;
     }
-    if (source !== null && primary !== undefined && primary.task !== "people.requests.dismiss") {
+    if (source !== null && recommended !== undefined) {
       seeded.current = source.key;
-      adopt(model, primary);
+      adopt(model, recommended);
     } else if (source === null && seeded.current !== null && model.phase !== "ACCEPTED") {
       seeded.current = null;
       if (boundActor(model) !== undefined) {
         model.discard(false, "people.admit", {}, { kind: "PEOPLE", expectedRevision: 0 });
       }
     }
-  }, [model, source, primary, fixed]);
+  }, [model, source, recommended, fixed]);
   const begin = (action: OperationAffordance) => {
     if (source === null || !source.actions.includes(action) || model.busy) {
       return;
@@ -203,7 +209,7 @@ export const usePeopleTarget = (
     const action =
       explicit ??
       pending?.action ??
-      source?.actions.find((candidate) => candidate.task === (kind ?? primary?.task));
+      source?.actions.find((candidate) => candidate.task === (kind ?? recommended?.task));
     if (action === undefined) {
       model.discard(acknowledged, kind, values, binding);
     } else {
@@ -232,8 +238,7 @@ export const usePeopleTarget = (
     selectionCurrent,
     observe,
     offered: source?.actions.map((action) => action.task) ?? [],
-    actions: source === null ? [] : source.document.actions,
-    primary: primary?.task,
+    actions: source === null ? [] : documentActions(source.document),
     person: actorBound ? source.document : null,
     mode: targetMode(actorId, fixed, model),
   };

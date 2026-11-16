@@ -206,9 +206,7 @@ let tests =
                         |> HumanDocumentCodecs.document.Write
                         |> fun document -> mutate "document" document wire
 
-                    Expect.isError
-                        (HumanDocumentCodecs.reviewDocument.Validate "$" unrelated)
-                        "A structurally valid unrelated document cannot be a review")
+                    HumanDocumentCodecs.reviewDocument.Validate "$" unrelated |> accepted |> ignore) // HUMAN uses one structural document grammar, including in reviews.
 
             testCase "review rejects a retired context sibling" (fun () ->
                 let input, review, _ = peopleReview ()

@@ -88,10 +88,9 @@ type Affordance =
     {
         Task: TaskId
         Binding: Binding option
-        Seeds: Map<TaskInputId, SubmissionValue>
+        Seeds: Map<TaskInputId, InputValue>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
-        Primary: bool
         Blocked: HumanAdvice option
     }
 
@@ -124,21 +123,18 @@ module Affordance =
             let seedsValid =
                 value.Seeds
                 |> Map.forall (fun input seed ->
-                    match Map.tryFind input collections, seed with
-                    | Some collection, SubmissionValue.Rows rows ->
-                        let keys = collection.Inputs |> List.map _.Input |> Set.ofList
-
-                        rows
-                        |> List.forall (
-                            Map.forall (fun key value ->
-                                Set.contains key keys
-                                && (match value with
-                                    | SubmissionValue.Rows _ -> false
-                                    | _ -> true))
-                        )
-                    | Some _, _
-                    | None, SubmissionValue.Rows _ -> false
-                    | None, _ -> Set.contains input scalarKeys)
+                    declaration.Inputs
+                    |> List.tryFind (fun declared -> declared.Input = input)
+                    |> Option.exists (fun declared ->
+                        match seed, declared.Atom with
+                        | InputValue.Null, _ -> true
+                        | InputValue.Text token, TaskAtom.Text ->
+                            TaskChoiceId.ofInput input
+                            |> Option.forall (fun choice ->
+                                List.contains token (TaskChoiceId.tokens choice))
+                        | InputValue.Integer _, TaskAtom.Integer
+                        | InputValue.Boolean _, TaskAtom.Boolean -> true
+                        | _ -> false))
 
             matches
             && seedsValid
@@ -154,7 +150,7 @@ module Affordance =
                             |> List.forall (fun token ->
                                 List.contains token (TaskChoiceId.tokens choice))))))
 
-    let create task binding seeds editable choices primary blocked =
+    let create task binding seeds editable choices blocked =
         let value =
             {
                 Task = task
@@ -162,7 +158,6 @@ module Affordance =
                 Seeds = seeds
                 Editable = editable
                 Choices = choices
-                Primary = primary
                 Blocked = blocked
             }
 
@@ -352,13 +347,8 @@ module Screen =
         for region in regions do
             let controls = regionAffordances region
 
-            if
-                (controls |> List.filter _.Primary |> List.length) > 1
-                || not (List.forall Affordance.valid controls)
-            then
-                invalidArg
-                    (nameof regions)
-                    "A region requires valid affordances and at most one primary action."
+            if not (List.forall Affordance.valid controls) then
+                invalidArg (nameof regions) "A region requires valid declared input controls."
 
             match region.Content with
             | RegionContent.Table table ->

@@ -80,7 +80,7 @@ let tests =
                         (Map.tryFind
                             (TaskAffordances.input InputTarget.PrincipalIssuer)
                             action.Seeds)
-                        (Some(SubmissionValue.Text "https://issuer.example/"))
+                        (Some(InputValue.Text "https://issuer.example/"))
                         "Issuer default"
 
                 let paused =

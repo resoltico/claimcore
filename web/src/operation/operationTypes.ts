@@ -8,10 +8,9 @@ import type {
   HumanRejection,
   OperationSubmission,
   HumanRejection_CONFLICT,
-  HumanReadDocument_case_get,
   OperationBinding,
 } from "@contracts/client";
-import type { OperationReceipt, CurrentCase } from "../protocol/types";
+import type { OperationReceipt, CurrentCase, CaseDocument } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
@@ -36,7 +35,7 @@ export type ConflictSource = LocalSource & {
   };
 };
 export type ConflictObservation = {
-  readonly current: HumanReadDocument_case_get;
+  readonly current: CaseDocument;
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {

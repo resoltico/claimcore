@@ -2,7 +2,7 @@ import { operationAffordance } from "../../../support/affordances.fixtures";
 import type {
   RequestByEndpoint,
   HumanReview,
-  HumanReceiptDocument,
+  HumanDocument,
   HumanLookupResult,
 } from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
@@ -76,7 +76,7 @@ const review: HumanReview = {
     disclosure: "CURRENT",
   },
 };
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [
       {
@@ -550,7 +550,7 @@ it("does not attribute a colliding operation accepted by another actor to the or
 it.each(["WITHHELD", "ERASED"] as const)(
   "settles acceptance with a %s receipt without reconstructing private facts",
   async (disclosure) => {
-    const masked: HumanReceiptDocument = {
+    const masked: HumanDocument = {
       ...receipt,
       screen: {
         regions: [],

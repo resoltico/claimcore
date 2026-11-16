@@ -1,6 +1,6 @@
 import { allActions } from "../../src/operation/affordances";
 import { prefixedInputs } from "../support/submission-inputs";
-import { operationAffordance } from "../support/affordances.fixtures";
+import { operationAffordance, requireOperationAffordance } from "../support/affordances.fixtures";
 import {
   caseDocumentInput,
   caseIdentityScreen,
@@ -8,7 +8,8 @@ import {
 } from "../support/case-document.fixtures";
 import {
   taskDefinitions,
-  type HumanReceiptDocument,
+  type HumanDocument,
+  type InputAtom,
   type HumanReview,
   type ReviewPresentation,
   type RequestByEndpoint,
@@ -45,7 +46,7 @@ const acts = taskDefinitions.flatMap((task) =>
     : [],
 );
 const currentFor = (kind: ActKind): CurrentCase => {
-  const seedsByAct: Partial<Record<ActKind, Record<string, unknown>>> = {
+  const seedsByAct: Partial<Record<ActKind, Record<string, InputAtom>>> = {
     "case.correct": {
       ...prefixedInputs("field:", caseFields.registration),
       "group:registration": "KEEP",
@@ -152,7 +153,7 @@ const authorCase = (kind: ActKind) => {
       break;
   }
 };
-const caseReceipt = (request: CaseInput): HumanReceiptDocument => {
+const caseReceipt = (request: CaseInput): HumanDocument => {
   const caseId =
     request.task === "case.open" ? request.operationId : "20000000-0000-4000-8000-000000000001";
   return {
@@ -362,9 +363,11 @@ it.each(acts)(
         initialAct={act.kind}
         {...(act.kind === "case.removePayment"
           ? {
-              affordance: allActions(currentFor(act.kind)).find(
-                (action) => action.task === "case.removePayment",
-              )!,
+              affordance: requireOperationAffordance(
+                allActions(currentFor(act.kind)).find(
+                  (action) => action.task === "case.removePayment",
+                ),
+              ),
               binding: {
                 kind: "CASE" as const,
                 target: {

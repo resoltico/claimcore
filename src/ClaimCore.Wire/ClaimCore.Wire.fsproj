@@ -29,6 +29,7 @@
     <Compile Include="Codecs/ListedCaseFieldCodecs.fs" />
     <Compile Include="Codecs/ActorCodecs.fs" />
     <Compile Include="Codecs/LedgerCodecs.fs" />
+    <Compile Include="Codecs/ValueChangeCodecs.fs" />
     <Compile Include="Codecs/TimelineCodecs.fs" />
     <Compile Include="Codecs/PresentationStructure.fs" />
     <Compile Include="Codecs/PresentationCodecs.fs" />

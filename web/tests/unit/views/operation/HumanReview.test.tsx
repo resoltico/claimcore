@@ -175,7 +175,8 @@ it("resets consent when a new Core review supplies a different target", async ()
     document: {
       ...review.document,
       subject: {
-        ...review.document.subject,
+        kind: "REVIEW",
+        consequence: "IRREVERSIBLE",
         confirmation: {
           kind: "CASE_REFERENCE",
           reference: "OTHER-REFERENCE",
@@ -209,7 +210,11 @@ it("records a routine review with one consent action", async () => {
     ...review,
     document: {
       ...review.document,
-      subject: { ...review.document.subject, consequence: "ROUTINE" },
+      subject: {
+        kind: "REVIEW",
+        consequence: "ROUTINE",
+        confirmation: { kind: "CASE_REFERENCE", reference: "CORE-REFERENCE" },
+      },
       actions: [
         operationAffordance(
           "case.close",

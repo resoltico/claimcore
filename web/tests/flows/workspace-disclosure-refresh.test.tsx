@@ -1,3 +1,4 @@
+import type { RequesterDocument } from "../../src/protocol/types";
 import { installationActions, activeRequester } from "../support/human-requester.fixtures";
 import {
   caseSubject,
@@ -7,7 +8,7 @@ import {
 import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 
-import type { HumanReadDocument_context, TaskId } from "@contracts/client";
+import type { TaskId } from "@contracts/client";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -58,7 +59,7 @@ const requesterFor = (
   views: Views,
   tasks: ReadonlyArray<TaskId>,
   issuer: string | null,
-): HumanReadDocument_context => ({
+): RequesterDocument => ({
   ...activeRequester,
   actions: installationActions(tasks, issuer),
   links: activeRequester.links.filter((link) =>
@@ -339,12 +340,13 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
+      active.value.outcome.document.subject.kind !== "REQUESTER" ||
       active.value.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
     const self = active.value.outcome.document.subject;
-    const inactive: HumanReadDocument_context = {
+    const inactive: RequesterDocument = {
       screen: { regions: [] },
       subject: {
         kind: "REQUESTER",
@@ -419,12 +421,13 @@ it.each(["actor", "installation"] as const)(
     if (
       active.kind !== "outcome" ||
       active.value.outcome.kind !== "SUCCEEDED" ||
+      active.value.outcome.document.subject.kind !== "REQUESTER" ||
       active.value.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Expected active requester fixture.");
     }
     const source = active.value.outcome.document.subject;
-    const requester: HumanReadDocument_context = {
+    const requester: RequesterDocument = {
       screen: { regions: [] },
       subject: {
         kind: "REQUESTER",

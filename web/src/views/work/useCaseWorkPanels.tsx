@@ -1,3 +1,4 @@
+import { type BoundOperationAffordance, isOperationAffordance } from "../../operation/affordances";
 import { useInlineNoteDraft, type NoteIntent } from "../case/InlineNoteDraft";
 import { RoutedReminder } from "./SelectedReminder";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
@@ -90,16 +91,22 @@ export const useCaseWorkPanels = ({
     onChanged();
   };
   const workAction = current.actions.find(
-    (action): action is Extract<OperationAffordance, { task: "work.update" }> =>
-      action.task === "work.update" && action.blocked === null,
+    (action): action is BoundOperationAffordance<"WORK"> =>
+      isOperationAffordance(action) && action.binding.kind === "WORK" && action.blocked === null,
   );
   const reminderCreate = current.actions.find(
-    (action): action is Extract<OperationAffordance, { task: "reminder.create" }> =>
-      action.task === "reminder.create" && action.blocked === null,
+    (action): action is BoundOperationAffordance<"REMINDER"> =>
+      isOperationAffordance(action) &&
+      action.binding.kind === "REMINDER" &&
+      !("reminderId" in action.binding) &&
+      action.blocked === null,
   );
   const noteAdd = current.actions.find(
-    (action): action is Extract<OperationAffordance, { task: "note.add" }> =>
-      action.task === "note.add" && action.blocked === null,
+    (action): action is BoundOperationAffordance<"NOTE"> =>
+      isOperationAffordance(action) &&
+      action.binding.kind === "NOTE" &&
+      !("noteId" in action.binding) &&
+      action.blocked === null,
   );
   const work = disclosureAvailable ? (
     <>

@@ -318,9 +318,9 @@ module Api =
             Effect = EndpointEffect.Read
             Input = EndpointInputs.check task input
             Output =
-                RepresentationCodecs.reply
+                RepresentationCodecs.readReply
                     name
-                    (HumanDocumentCodecs.readReplyFor task)
+                    HumanDocumentCodecs.readReply
                     (ReplyCodecs.dataReadReply (name + ".DATA_RESULT") data)
             Classify =
                 function

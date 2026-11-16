@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "../../operation/affordances";
 import { Actions } from "../../ui/regions/Actions";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
@@ -26,7 +27,7 @@ export const ActorActions = ({
       actions={target.actions}
       expandOther
       onAction={(action) => {
-        if (action.task !== "people.requests.dismiss") {
+        if (isOperationAffordance(action)) {
           target.begin(action);
           onOpen();
         }

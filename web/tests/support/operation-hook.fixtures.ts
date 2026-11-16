@@ -60,7 +60,8 @@ export const preview = (
           document: {
             ...source.document,
             subject: {
-              ...source.document.subject,
+              kind: "REVIEW",
+              consequence: "ROUTINE",
               confirmation: { kind: "CASE_REFERENCE", reference },
             },
             actions: [operationAffordance(input.task, input.binding, input.inputs, [])],

@@ -1,4 +1,4 @@
-import type { taskChoices, HumanReadDocument_work_views, PresentedValue } from "@contracts/client";
+import type { taskChoices, HumanDocument, PresentedValue } from "@contracts/client";
 
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
@@ -143,7 +143,7 @@ export const testWorkspaceViews = {
 export const workViewsDocument = (
   caseItems: ReadonlyArray<CaseViewFixture> = cases,
   reminderItems: ReadonlyArray<ReminderViewFixture> = reminders,
-): HumanReadDocument_work_views => ({
+): HumanDocument => ({
   screen: {
     regions: [
       {

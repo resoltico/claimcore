@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
-import { operationAffordance } from "../../../support/affordances.fixtures";
+import { operationAffordance, withRecommendation } from "../../../support/affordances.fixtures";
 import { current } from "../../../support/operation-form.fixtures";
 import { CaseActions, CaseActionAlternatives } from "../../../../src/views/case/CaseActions";
 const primary = operationAffordance(
@@ -10,13 +10,15 @@ const primary = operationAffordance(
   {},
   [],
   {},
-  true,
 );
 const alternative = operationAffordance("case.decide", primary.binding);
 it("renders the exact supplied primary and invokes its task", async () => {
   const onAct = vi.fn();
   const view = render(
-    <CaseActions current={{ ...current, actions: [alternative, primary] }} onAct={onAct} />,
+    <CaseActions
+      current={withRecommendation({ ...current, actions: [alternative, primary] }, primary.task)}
+      onAct={onAct}
+    />,
   );
   expect(view.container.querySelector("button.primary")).toHaveAttribute(
     "data-act",
@@ -34,7 +36,12 @@ it("does not invent a primary", () => {
 });
 it("withdraws controls when Core withdraws the offer", () => {
   const onAct = vi.fn();
-  const view = render(<CaseActions current={{ ...current, actions: [primary] }} onAct={onAct} />);
+  const view = render(
+    <CaseActions
+      current={withRecommendation({ ...current, actions: [primary] }, primary.task)}
+      onAct={onAct}
+    />,
+  );
   view.rerender(<CaseActions current={{ ...current, actions: [] }} onAct={onAct} />);
   expect(screen.queryByRole("button")).toBeNull();
   expect(onAct).not.toHaveBeenCalled();

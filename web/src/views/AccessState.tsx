@@ -2,7 +2,7 @@ import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { guardedDeparture } from "../routing/navigation";
 import { useEffect, useRef } from "react";
-import type { HumanReadDocument_context } from "@contracts/client";
+import type { RequesterDocument } from "../protocol/types";
 import { ScreenView } from "../ui/ScreenView";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
@@ -14,7 +14,7 @@ export const AccessState = ({
   onCheck,
   feedback,
 }: {
-  requester: HumanReadDocument_context;
+  requester: RequesterDocument;
   locked: boolean;
   onCheck: () => void;
   feedback: { message: Notice | null; loading: boolean };

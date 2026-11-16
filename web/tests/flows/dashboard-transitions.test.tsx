@@ -1,9 +1,10 @@
+import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
   caseDocumentInput,
   caseIdentityScreen,
 } from "../support/case-document.fixtures";
-import { operationAffordance } from "../support/affordances.fixtures";
+
 import type { RequestByEndpoint } from "@contracts/client";
 
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
@@ -28,25 +29,28 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
-const current: CurrentCase = caseDocumentInput(
-  {
-    subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
-    actions: [
-      operationAffordance(
-        "case.close",
-        {
-          kind: "CASE",
-          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-          expectedRevision: 1,
-        },
-        {},
-        undefined,
-        {},
-      ),
-    ],
-    history: "FULL",
-  },
-  caseIdentityScreen,
+const current: CurrentCase = withRecommendation(
+  caseDocumentInput(
+    {
+      subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },
+      actions: [
+        operationAffordance(
+          "case.close",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 1,
+          },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      history: "FULL",
+    },
+    caseIdentityScreen,
+  ),
+  "case.close",
 );
 import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");

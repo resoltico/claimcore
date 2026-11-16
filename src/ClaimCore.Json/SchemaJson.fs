@@ -111,6 +111,9 @@ module SchemaJson =
                         ])
 
             JsonValue.Object [ "allOf", JsonValue.Array(value prefix shape :: rules) ]
+        | Schema.JsonObject ->
+            JsonValue.Object
+                [ "type", text "object"; "additionalProperties", JsonValue.Boolean true ]
         | Schema.Object(properties, optional) ->
             JsonValue.Object
                 [

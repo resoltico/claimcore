@@ -10,18 +10,6 @@ module PartDescriptionCodecs =
     open Codec
     open ResponseScalars
 
-    let private change name value =
-        (record (fun before after ->
-            {
-                ValueChange.Before = before
-                After = after
-            })
-        : Fields<ValueChange<_>, _>)
-        |> field "before" _.Before (nullable value)
-        |> field "after" _.After (nullable value)
-        |> build
-        |> named name
-
     let private scope =
         tagged
             "AcceptedGrantScope"
@@ -70,16 +58,18 @@ module PartDescriptionCodecs =
             _.Cases
             (list
                 100
-                ((record (fun id reference ->
-                    {
-                        CaseReferenceItem.CaseId = id
-                        Reference = reference
-                    })
-                 : Fields<CaseReferenceItem, _>)
-                 |> field "caseId" _.CaseId caseId
-                 |> field "caseReference" _.Reference caseReference
-                 |> build
-                 |> named "CaseReferenceItem"))
+                (ResponseCodecs.caseRef
+                 |> map
+                     (fun value ->
+                         {
+                             CaseReferenceItem.CaseId = value.CaseId
+                             Reference = value.CaseReference
+                         })
+                     (fun value ->
+                         {
+                             CaseRef.CaseId = value.CaseId
+                             CaseReference = value.Reference
+                         })))
         |> build
         |> named "ChangeReferences"
 
@@ -122,19 +112,28 @@ module PartDescriptionCodecs =
                 Grants = v6
             })
         : Fields<PersonPartDescription, _>)
-        |> field "profiles" _.Profiles (change "ProfileValues" ActorCodecs.profile)
-        |> field "principal" _.Principal (nullable (change "PrincipalChange" PrincipalCodecs.key))
-        |> field "enabled" _.Enabled (nullable (change "EnabledChange" boolean))
+        |> field
+            "profiles"
+            _.Profiles
+            (ValueChangeCodecs.change "ProfileValues" ActorCodecs.profile)
+        |> field
+            "principal"
+            _.Principal
+            (nullable (ValueChangeCodecs.change "PrincipalChange" PrincipalCodecs.key))
+        |> field "enabled" _.Enabled (nullable (ValueChangeCodecs.change "EnabledChange" boolean))
         |> field
             "profilePresent"
             _.ProfilePresent
-            (nullable (change "ProfilePresenceChange" boolean))
-        |> field "displayName" _.DisplayName (nullable (change "DisplayNameChange" partyName))
+            (nullable (ValueChangeCodecs.change "ProfilePresenceChange" boolean))
+        |> field
+            "displayName"
+            _.DisplayName
+            (nullable (ValueChangeCodecs.change "DisplayNameChange" partyName))
         |> field
             "contact"
             _.Contact
             (nullable (
-                change
+                ValueChangeCodecs.change
                     "ProfileContactChange"
                     (text
                      |> interpret
@@ -161,11 +160,15 @@ module PartDescriptionCodecs =
                 Disposition = v4
             })
         : Fields<CasePartDescription, _>)
-        |> field "values" _.Values (change "CaseValues" ResponseCodecs.caseFields)
+        |> field "values" _.Values (ValueChangeCodecs.change "CaseValues" ResponseCodecs.caseFields)
         |> field
             "lifecycle"
             _.Lifecycle
-            (nullable (change "CaseLifecycleChange" (VocabularyCodec.create Lifecycle.vocabulary)))
+            (nullable (
+                ValueChangeCodecs.change
+                    "CaseLifecycleChange"
+                    (VocabularyCodec.create Lifecycle.vocabulary)
+            ))
         |> field
             "fields"
             _.Fields
@@ -186,9 +189,12 @@ module PartDescriptionCodecs =
                 Removed = v2
             })
         : Fields<PaymentPartDescription, _>)
-        |> field "totals" _.Totals (change "PaymentTotalValues" totals)
+        |> field "totals" _.Totals (ValueChangeCodecs.change "PaymentTotalValues" totals)
         |> field "entry" _.Entry (nullable ClaimCore.RecordFormat.FinancialCodecs.entry)
-        |> field "removed" _.Removed (nullable (change "PaymentRemovedChange" boolean))
+        |> field
+            "removed"
+            _.Removed
+            (nullable (ValueChangeCodecs.change "PaymentRemovedChange" boolean))
         |> build
         |> named "PaymentPartDescription"
 
@@ -200,9 +206,15 @@ module PartDescriptionCodecs =
                 Summary = v2
             })
         : Fields<WorkPartDescription, _>)
-        |> field "values" _.Values (change "WorkValues" workValues)
-        |> field "responsible" _.Responsible (nullable (change "ResponsibleActorChange" actorId))
-        |> field "summary" _.Summary (nullable (change "SummaryChange" handlingSummary))
+        |> field "values" _.Values (ValueChangeCodecs.change "WorkValues" workValues)
+        |> field
+            "responsible"
+            _.Responsible
+            (nullable (ValueChangeCodecs.change "ResponsibleActorChange" actorId))
+        |> field
+            "summary"
+            _.Summary
+            (nullable (ValueChangeCodecs.change "HandlingSummaryChange" handlingSummary))
         |> build
         |> named "WorkPartDescription"
 
@@ -215,13 +227,20 @@ module PartDescriptionCodecs =
                 State = v3
             })
         : Fields<ReminderPartDescription, _>)
-        |> field "plans" _.Plans (change "ReminderPlans" plan)
-        |> field "action" _.Action (nullable (change "ReminderActionValues" reminderAction))
-        |> field "due" _.Due (nullable (change "ReminderDueValues" calendarDate))
+        |> field "plans" _.Plans (ValueChangeCodecs.change "ReminderPlans" plan)
+        |> field
+            "action"
+            _.Action
+            (nullable (ValueChangeCodecs.change "ReminderActionChange" reminderAction))
+        |> field "due" _.Due (nullable (ValueChangeCodecs.change "ReminderDueChange" calendarDate))
         |> field
             "state"
             _.State
-            (nullable (change "ReminderStates" (VocabularyCodec.create ReminderState.vocabulary)))
+            (nullable (
+                ValueChangeCodecs.change
+                    "ReminderStateChange"
+                    (VocabularyCodec.create ReminderState.vocabulary)
+            ))
         |> build
         |> named "ReminderPartDescription"
 
@@ -232,8 +251,11 @@ module PartDescriptionCodecs =
                 Removed = v1
             })
         : Fields<NotePartDescription, _>)
-        |> field "text" _.Text (nullable (change "NoteTextChange" noteText))
-        |> field "removed" _.Removed (nullable (change "NoteRemovedChange" boolean))
+        |> field "text" _.Text (nullable (ValueChangeCodecs.change "NoteTextChange" noteText))
+        |> field
+            "removed"
+            _.Removed
+            (nullable (ValueChangeCodecs.change "NoteRemovedChange" boolean))
         |> build
         |> named "NotePartDescription"
 

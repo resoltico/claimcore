@@ -1,6 +1,6 @@
 import { useContentRoute } from "../hooks/SettingsDetourContext";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import type { CaseSelector, HumanReadDocument_case_get, Screen } from "@contracts/client";
+import type { CaseSelector, HumanDocument, Screen } from "@contracts/client";
 import { useState, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useSessionContext } from "../session/SessionContext";
 import { NoticeView } from "../presentation/Message";
@@ -118,7 +118,7 @@ const CurrentPresentation = ({
   );
 };
 
-const asCurrentCase = (state: HumanReadDocument_case_get | null) =>
+const asCurrentCase = (state: HumanDocument | null) =>
   state !== null && isCurrentCase(state) ? state : null;
 const CaseHeader = ({
   target,
@@ -126,7 +126,7 @@ const CaseHeader = ({
   state,
   onAct,
 }: Pick<CaseDetailProps, "target" | "onBack" | "onAct"> & {
-  state: HumanReadDocument_case_get | null;
+  state: HumanDocument | null;
 }) => {
   const p = usePresentation();
   const route = useContentRoute();
@@ -178,7 +178,7 @@ const UnavailableAct = ({
   onAct,
 }: {
   value: ActKind;
-  state: HumanReadDocument_case_get;
+  state: HumanDocument;
   onAct: CaseDetailProps["onAct"];
 }) => {
   const p = usePresentation();
@@ -223,7 +223,7 @@ const useTimelineSelection = (access: string) => {
   };
 };
 const timelineDisclosure = (
-  state: HumanReadDocument_case_get | null,
+  state: HumanDocument | null,
   access: string,
 ): "ERASED" | "FULL" | "SUMMARY" => {
   if (state?.disclosure === "ERASED") {
@@ -232,7 +232,7 @@ const timelineDisclosure = (
   return access === "FULL" ? "FULL" : "SUMMARY";
 };
 // Local authoring survives loading; a known denial stays masked until a fresh offer.
-const useRetainedNoteOffer = (value: HumanReadDocument_case_get | null, denied: boolean) => {
+const useRetainedNoteOffer = (value: HumanDocument | null, denied: boolean) => {
   const offered =
     value === null
       ? null
@@ -262,7 +262,7 @@ const useCaseRefresh = (
   }, [reload, available, loading, revalidate]);
 };
 const caseReadPresentation = (
-  state: HumanReadDocument_case_get | null,
+  state: HumanDocument | null,
   available: boolean,
   historyAccess: string,
   target: CaseSelector,

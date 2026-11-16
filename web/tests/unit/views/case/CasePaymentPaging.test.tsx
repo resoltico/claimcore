@@ -6,7 +6,7 @@ import { requestText } from "../../../support/transport-response.fixtures";
 import { current as source } from "../../../support/operation-form.fixtures";
 import { workBasis } from "../../../support/inputs";
 import type { CurrentCase } from "../../../../src/protocol/types";
-import type { HumanReadDocument_case_payments, Region } from "@contracts/client";
+import type { HumanDocument, Region } from "@contracts/client";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
 type Handle = { paymentId: string; canRemove: boolean };
 const ids = [
@@ -90,7 +90,7 @@ const reply = (
   revision = 7,
   disclosure: "CURRENT" | "ERASED" = "CURRENT",
 ) => {
-  const document: HumanReadDocument_case_payments = {
+  const document: HumanDocument = {
     screen: {
       regions: disclosure === "ERASED" ? [] : [table(handles, "USD", 41)],
     },

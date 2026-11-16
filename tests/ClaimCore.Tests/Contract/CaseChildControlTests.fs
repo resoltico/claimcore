@@ -174,7 +174,7 @@ let tests =
 
                     Expect.equal
                         (Map.find (TaskAffordances.field BusinessField.PaidCurrency) record.Seeds)
-                        (SubmissionValue.Text "EUR")
+                        (InputValue.Text "EUR")
                         "Decision currency is the authored default"
 
                     let unavailable = HumanCaseDocument.ofCore value

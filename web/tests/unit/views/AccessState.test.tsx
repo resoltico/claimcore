@@ -12,8 +12,8 @@ import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { Dashboard } from "../../../src/views/Dashboard";
-import type { HumanReadDocument_context } from "@contracts/client";
-const inactive: ReadonlyArray<HumanReadDocument_context> = [
+import type { RequesterDocument } from "../../../src/protocol/types";
+const inactive: ReadonlyArray<RequesterDocument> = [
   {
     subject: { kind: "REQUESTER", state: "NOT_REGISTERED", installationId: null, actorId: null },
     actions: [],

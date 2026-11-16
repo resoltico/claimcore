@@ -48,7 +48,21 @@ claimcore case get DEMO-0001
 claimcore people history
 ```
 
-HUMAN documents carry a subject, actions, typed query links and row controls; DATA exposes automation facts.
+Every HUMAN read uses the shared `HumanReadReply` and `HumanDocument` grammar. Operation outcomes
+embed that same document. Its closed subject identifies the resource; screen regions, actions, links,
+continuation, observation basis, disclosure and history describe the current presentation. DATA replies
+retain endpoint-specific automation types.
+
+An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
+`blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+Operation controls preview and execute; command controls post seeds plus edits to their declared
+endpoint. Collection rows start from the declaration's minimum rows and defaults, rather than nested
+seeds. Recommendations live in `RECOMMENDATION` screen regions. There is no action `primary` flag.
+
+A `Link` carries `endpoint` and an object `input`. Follow its supplied input through that endpoint's
+typed request boundary. Generic HUMAN arrays use shared structural bounds; response byte bounds still
+apply. Bindings share schemas by target, creation and reviewed-family shape; submissions keep typed
+per-task inputs, with empty inputs referencing `Empty`.
 An operation lookup link with empty input opens the ID-entry form; actual `operation.get` calls require `operationId`.
 Choose the representation your consumer needs; neither grants additional permissions.
 

@@ -3,10 +3,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../support/presentation-test-support";
 import { PeopleGrants } from "../../../src/views/PeopleGrants";
-import type { HumanReadDocument_people_grants } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 const actorId = "00000000-0000-4000-8000-000000000001";
 const caseId = "00000000-0000-4000-8000-000000000002";
-const document: HumanReadDocument_people_grants = {
+const document: HumanDocument = {
   screen: {
     regions: [
       {

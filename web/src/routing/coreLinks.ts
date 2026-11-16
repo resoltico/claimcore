@@ -1,46 +1,101 @@
-import type { Link } from "@contracts/client";
+import type { CaseSelector, Link } from "@contracts/client";
+import { isObject } from "../protocol/client";
+import { isTerm } from "../presentation/terms";
 import { casePath, referencePath } from "./routes";
-import { worklistPath } from "./worklistQuery";
-import { remindersPath } from "./reminderQuery";
-const caseTarget = (target: Extract<Link, { endpoint: "case.get" }>["input"]["target"]) =>
+import { parseWorklistQuery, worklistPath } from "./worklistQuery";
+import { parseReminderQuery, remindersPath } from "./reminderQuery";
+const targetInput = (link: Link): CaseSelector | undefined => {
+  const { target } = link.input;
+  if (!isObject(target)) {
+    return undefined;
+  }
+  if (target["kind"] === "ID" && typeof target["caseId"] === "string") {
+    return { kind: "ID", caseId: target["caseId"] };
+  }
+  if (target["kind"] === "REFERENCE" && typeof target["caseReference"] === "string") {
+    return { kind: "REFERENCE", caseReference: target["caseReference"] };
+  }
+  return undefined;
+};
+const caseTargetPath = (target: CaseSelector) =>
   target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference);
-const peopleLinkPath = (
-  link: Extract<
-    Link,
-    { endpoint: "people.grants" | "people.history" | "people.list" | "people.requests" }
-  >,
-): string => {
-  switch (link.endpoint) {
-    case "people.grants":
-      return `/people/${encodeURIComponent(link.input.actorId)}`;
-    case "people.history":
-      return link.input.actorId === undefined
-        ? "/people-history"
-        : `/people-history?actorId=${encodeURIComponent(link.input.actorId)}`;
-    default:
-      return "/people";
-  }
+export const caseLinkTarget = (link: Link) =>
+  link.endpoint === "case.get" ? targetInput(link) : undefined;
+export const caseLinkId = (link: Link) => {
+  const target = caseLinkTarget(link);
+  return target?.kind === "ID" ? target.caseId : undefined;
 };
-/** Core chooses the query; the web interface chooses its corresponding local route. */
-export const coreLinkPath = (link: Link): string | undefined => {
-  switch (link.endpoint) {
-    case "case.get":
-      return caseTarget(link.input.target);
-    case "reminder.get":
-      return `${caseTarget(link.input.target)}/reminders/${encodeURIComponent(link.input.reminderId)}`;
-    case "people.grants":
-    case "people.list":
-    case "people.requests":
-    case "people.history":
-      return peopleLinkPath(link);
-    case "operation.get":
-      return `/recovery/${encodeURIComponent(link.input.operationId ?? "")}`;
-    case "case.list":
-      return worklistPath(link.input);
-    case "reminder.list":
-      return link.input.target === undefined ? remindersPath(link.input) : undefined;
-    default:
-      // Context, view discovery and case subqueries are embedded reads without standalone routes.
-      return undefined;
-  }
+export const personLinkActorId = (link: Link) =>
+  link.endpoint === "people.grants" && typeof link.input["actorId"] === "string"
+    ? link.input["actorId"]
+    : undefined;
+export const reminderLinkTarget = (link: Link) => {
+  const target = targetInput(link);
+  const { reminderId } = link.input;
+  return link.endpoint === "reminder.get" && target !== undefined && typeof reminderId === "string"
+    ? { target, reminderId }
+    : undefined;
 };
+export const caseLinkView = (link: Link) => {
+  const { view } = link.input;
+  return link.endpoint === "case.list" && typeof view === "string" && isTerm("caseView", view)
+    ? view
+    : undefined;
+};
+export const reminderLinkView = (link: Link) => {
+  const { view } = link.input;
+  return link.endpoint === "reminder.list" &&
+    typeof view === "string" &&
+    isTerm("reminderView", view)
+    ? view
+    : undefined;
+};
+const filterQuery = (input: Link["input"]) => {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    const name = key === "text" ? "q" : key;
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (typeof item === "string" || typeof item === "number" || typeof item === "boolean") {
+        params.append(name, String(item));
+      }
+    }
+  }
+  return params.toString();
+};
+/** Core chooses the endpoint and input; this table adapts them to local routes. */
+const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefined>> = {
+  "case.get": (link) => {
+    const target = targetInput(link);
+    return target === undefined ? undefined : caseTargetPath(target);
+  },
+  "reminder.get": (link) => {
+    const selected = reminderLinkTarget(link);
+    return selected === undefined
+      ? undefined
+      : `${caseTargetPath(selected.target)}/reminders/${encodeURIComponent(selected.reminderId)}`;
+  },
+  "people.grants": (link) => {
+    const actor = personLinkActorId(link);
+    return actor === undefined ? undefined : `/people/${encodeURIComponent(actor)}`;
+  },
+  "people.history": (link) => {
+    const actor = link.input["actorId"];
+    return typeof actor === "string"
+      ? `/people-history?actorId=${encodeURIComponent(actor)}`
+      : "/people-history";
+  },
+  "people.list": () => "/people",
+  "people.requests": () => "/people",
+  "operation.get": (link) => {
+    const operation = link.input["operationId"];
+    return typeof operation === "string"
+      ? `/recovery/${encodeURIComponent(operation)}`
+      : "/recovery/";
+  },
+  "case.list": (link) => worklistPath(parseWorklistQuery(filterQuery(link.input))),
+  "reminder.list": (link) =>
+    link.input["target"] === undefined
+      ? remindersPath(parseReminderQuery(filterQuery(link.input)))
+      : undefined,
+};
+export const coreLinkPath = (link: Link): string | undefined => routes[link.endpoint]?.(link);

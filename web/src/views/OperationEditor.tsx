@@ -1,3 +1,4 @@
+import { documentActions } from "../operation/affordances";
 import { isCaseAct } from "../operation/metadata";
 import { linkedCaseReceipt } from "../protocol/types";
 
@@ -101,7 +102,7 @@ const caseOffers = (
 ) =>
   [
     ...(_props.affordance === undefined ? [] : [_props.affordance]),
-    ...(current?.actions ?? requester?.actions ?? []),
+    ...(current === null ? (requester?.actions ?? []) : documentActions(current)),
   ]
     .filter((action) => isCaseAct(action.task) && action.blocked === null)
     .map((action) => action.task);

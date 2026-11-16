@@ -83,6 +83,9 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseReadsSettled(page);
   const receipt = outcome.document;
+  if (receipt.subject.kind !== "RECEIPT") {
+    throw new Error("Receipt subject required");
+  }
   const subject = await acceptedSubject(
     page,
     receipt.subject.operationId,

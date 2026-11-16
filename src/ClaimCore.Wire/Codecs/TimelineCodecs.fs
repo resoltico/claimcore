@@ -10,18 +10,6 @@ module TimelineCodecs =
     open Codec
     open ResponseScalars
 
-    let private valueChange name value =
-        (record (fun before after ->
-            {
-                ValueChange.Before = before
-                After = after
-            })
-        : Fields<ValueChange<_>, _>)
-        |> field "before" _.Before (nullable value)
-        |> field "after" _.After (nullable value)
-        |> build
-        |> named name
-
     let private reminderDifference =
         (record (fun id action due state ->
             {
@@ -32,13 +20,18 @@ module TimelineCodecs =
             })
         : Fields<ReminderDifference, _>)
         |> field "reminderId" _.ReminderId reminderId
-        |> field "action" _.Action (nullable (valueChange "ReminderActionChange" reminderAction))
-        |> field "due" _.Due (nullable (valueChange "ReminderDueChange" calendarDate))
+        |> field
+            "action"
+            _.Action
+            (nullable (ValueChangeCodecs.change "ReminderActionChange" reminderAction))
+        |> field "due" _.Due (nullable (ValueChangeCodecs.change "ReminderDueChange" calendarDate))
         |> field
             "state"
             _.State
             (nullable (
-                valueChange "ReminderStateChange" (VocabularyCodec.create ReminderState.vocabulary)
+                ValueChangeCodecs.change
+                    "ReminderStateChange"
+                    (VocabularyCodec.create ReminderState.vocabulary)
             ))
         |> build
         |> named "ReminderDifference"
@@ -72,7 +65,7 @@ module TimelineCodecs =
                     (BusinessField.describe field).Kind = FieldValueKind.Amount
                     && (BusinessField.describe field).Pairs.IsSome)
                 BusinessField.vocabulary)
-        |> field "change" _.Change (valueChange "MoneyChange" ResponseScalars.money)
+        |> field "change" _.Change (ValueChangeCodecs.change "MoneyChange" ResponseScalars.money)
         |> build
         |> named "CaseMoneyDifference"
 
@@ -115,7 +108,10 @@ module TimelineCodecs =
                     | TimelineChange.Responsibility value -> Some value
                     | _ -> None)
                     (record id
-                     |> field "change" id (valueChange "ResponsibilityChange" ActorCodecs.actorRef))
+                     |> field
+                         "change"
+                         id
+                         (ValueChangeCodecs.change "ResponsibilityChange" ActorCodecs.actorRef))
                 variant
                     "HANDLING_SUMMARY"
                     TimelineChange.HandlingSummary
@@ -123,7 +119,10 @@ module TimelineCodecs =
                     | TimelineChange.HandlingSummary value -> Some value
                     | _ -> None)
                     (record id
-                     |> field "change" id (valueChange "HandlingSummaryChange" handlingSummary))
+                     |> field
+                         "change"
+                         id
+                         (ValueChangeCodecs.change "HandlingSummaryChange" handlingSummary))
                 variant
                     "NOTE"
                     (fun (act, id, text) -> TimelineChange.Note(act, id, text))

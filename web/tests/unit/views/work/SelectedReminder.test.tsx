@@ -8,10 +8,10 @@ import {
   endpointResponse,
 } from "../../../support/transport-response.fixtures";
 import { SelectedReminder } from "../../../../src/views/work/SelectedReminder";
-import type { HumanReadDocument_reminder_get } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 afterEach(() => vi.unstubAllGlobals());
 it("reads the exact terminal reminder directly without scanning a pending list", async () => {
-  const document: HumanReadDocument_reminder_get = {
+  const document: HumanDocument = {
     subject: { kind: "LIST" },
     screen: {
       regions: [
@@ -120,7 +120,7 @@ it("revalidates selected disclosure with its parent and bounds repeated refusal 
 });
 
 it("masks an old selected observation until the refreshed parent-bound read completes", async () => {
-  const document = (value: string): HumanReadDocument_reminder_get => ({
+  const document = (value: string): HumanDocument => ({
     subject: { kind: "LIST" },
     screen: {
       regions: [
@@ -178,7 +178,7 @@ it("masks an old selected observation until the refreshed parent-bound read comp
 });
 
 it("offers explicit retry for a busy exact read without dispatching an operation", async () => {
-  const document: HumanReadDocument_reminder_get = {
+  const document: HumanDocument = {
     subject: { kind: "LIST" },
     screen: { regions: [] },
     actions: [],
@@ -246,7 +246,6 @@ it("renders top-level exact reminder controls with their supplied binding and bl
     { "input:reminderDueDate": "2026-11-15" },
     ["input:reminderDueDate"],
     {},
-    true,
   );
   const blocked = {
     ...operationAffordance("reminder.cancel", action.binding),
@@ -255,7 +254,7 @@ it("renders top-level exact reminder controls with their supplied binding and bl
       message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE" as const, arguments: [] },
     },
   };
-  const document: HumanReadDocument_reminder_get = {
+  const document: HumanDocument = {
     subject: { kind: "LIST" },
     screen: { regions: [] },
     actions: [action, blocked],

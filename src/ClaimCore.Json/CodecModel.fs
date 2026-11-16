@@ -10,6 +10,7 @@ open System.Text.Json
 /// The finite schema vocabulary used by codec declarations and generated transport contracts.
 [<RequireQualifiedAccess>]
 type Schema =
+    | JsonObject
     | Object of properties: (string * Schema) list * optionalMembers: string list
     | Array of items: Schema * minItems: int * maxItems: int
     | String of

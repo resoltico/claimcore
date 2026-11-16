@@ -7,7 +7,7 @@ open ClaimCore.Application.Contracts
 module TaskAffordances =
     let input value = TaskInputId.Target value
     let field value = input (InputTarget.Field value)
-    let text value = SubmissionValue.Text value
+    let text value = InputValue.Text value
 
     let fields values =
         values |> List.map (fun (name, value) -> field name, text value) |> Map.ofList
@@ -45,7 +45,7 @@ module TaskAffordances =
            |> List.map (fun collection -> TaskCollectionId.input collection.Collection))
 
     let offered task binding seeds editable choices =
-        Affordance.create task binding seeds editable choices false None
+        Affordance.create task binding seeds editable choices None
 
     let private selected shape =
         ClaimCore.Domain.Tasks.Registry.clientDeclarations
@@ -95,13 +95,6 @@ module TaskAffordances =
         else
             []
 
-    let seed =
-        function
-        | InputValue.Text value -> SubmissionValue.Text value
-        | InputValue.Integer value -> SubmissionValue.Integer value
-        | InputValue.Boolean value -> SubmissionValue.Boolean value
-        | InputValue.Null -> SubmissionValue.Clear
-
     let fromOffer =
         function
         | TaskOffer.Declared _ -> None
@@ -110,7 +103,7 @@ module TaskAffordances =
                 offered
                     task
                     (Some binding)
-                    (availability.Seeds |> Map.map (fun _ value -> seed value))
+                    availability.Seeds
                     availability.Editable
                     availability.Choices
             )
@@ -138,23 +131,6 @@ module TaskAffordances =
 
     let person task actor revision seeds editable choices =
         offered task (Some(Binding.People(actor, revision))) seeds editable choices
-
-    let collectionDefaults collection =
-        TaskCollectionId.defaultValues collection
-        |> Map.map (fun _ value ->
-            match value with
-            | InputValue.Text value -> SubmissionValue.Text value
-            | InputValue.Integer value -> SubmissionValue.Integer value
-            | InputValue.Boolean value -> SubmissionValue.Boolean value
-            | InputValue.Null -> SubmissionValue.Clear)
-
-    let initialGrantScope =
-        (collectionDefaults TaskCollectionId.PeopleGrants)[TaskInputId.Scope]
-
-    let initialGrantRows =
-        collectionDefaults TaskCollectionId.PeopleGrants
-        |> List.replicate (PeopleAdmission.MinimumGrants)
-        |> SubmissionValue.Rows
 
     let availability refusal =
         let message, args =

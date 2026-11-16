@@ -1,6 +1,6 @@
 import { expectCaseReadsSettled } from "./case-readiness";
 import { acceptedSubject, observedAccess } from "./work-workflow";
-import type { ResponseFor, HumanReceiptDocument } from "@contracts/client";
+import type { ResponseFor, HumanDocument } from "@contracts/client";
 import { settingsNavigation } from "./localization-support";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -199,7 +199,17 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   }
   const { basis: firstBasis, ...acceptedIdentity } = first.document;
   const { basis: replayBasis, ...replayedIdentity } = second.document;
+  if (
+    firstBasis.kind !== "SNAPSHOT" ||
+    replayBasis.kind !== "SNAPSHOT" ||
+    second.document.subject.kind !== "RECEIPT"
+  ) {
+    throw new Error("Observed receipts required");
+  }
   for (const document of [first.document, second.document]) {
+    if (document.basis.kind !== "SNAPSHOT") {
+      throw new Error("Receipt observation required");
+    }
     const observed = document.screen.regions
       .flatMap((region) =>
         region.role === "DETAILS" && region.content.kind === "ENTRIES"
@@ -212,7 +222,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
       value: document.basis.observation.observedAt,
     });
   }
-  const stableScreen = (document: HumanReceiptDocument) => ({
+  const stableScreen = (document: HumanDocument) => ({
     ...document.screen,
     regions: document.screen.regions.map((region) =>
       region.role === "DETAILS" && region.content.kind === "ENTRIES"

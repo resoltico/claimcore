@@ -18,11 +18,12 @@ type OperationLookupProps = {
   initialOperationId?: string;
   onLockChange?: MutationLockChange;
 };
-const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) => (
-  <div className="receipt">
-    <ScreenView view={receipt.screen} timeZone={receipt.basis.observation.timeZone} />
-  </div>
-);
+const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) =>
+  receipt.basis.kind === "SNAPSHOT" ? (
+    <div className="receipt">
+      <ScreenView view={receipt.screen} timeZone={receipt.basis.observation.timeZone} />
+    </div>
+  ) : null;
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
   message === null ? null : (
     <p className="error" role="alert">

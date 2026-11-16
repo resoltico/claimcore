@@ -1,5 +1,6 @@
+import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
+import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
 import type { RegionRow, CaseSelector } from "@contracts/client";
-import type { OperationAffordance } from "../operation/affordances";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../components/PresentedValue";
 import { useSessionContext } from "../session/SessionContext";
@@ -35,7 +36,7 @@ type Props = {
   disclosureAvailable?: boolean;
 };
 const ignoreLock = (_locked: boolean): void => undefined;
-export type CaseListControl = Extract<OperationAffordance, { task: "work.update" }>;
+export type CaseListControl = BoundOperationAffordance<"WORK">;
 const casePage = (response: ServiceResponse<"case.list">) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
@@ -50,10 +51,8 @@ const casePage = (response: ServiceResponse<"case.list">) => {
     ),
     exactCaseId:
       doc.links.flatMap((named) =>
-        named.rel === "OPEN_CASE" &&
-        named.link.endpoint === "case.get" &&
-        named.link.input.target.kind === "ID"
-          ? [named.link.input.target.caseId]
+        named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
+          ? [caseLinkId(named.link)!]
           : [],
       )[0] ?? null,
     nextCursor: doc.nextCursor,
@@ -172,18 +171,19 @@ const WorklistResults = ({
             }
             return { label, id: `reassign-${action.binding.target.caseId}` };
           }}
-          linkNavigation={(link) =>
-            link.endpoint === "case.get" && link.input.target.kind === "ID"
+          linkNavigation={(link) => {
+            const target = caseLinkTarget(link);
+            return target?.kind === "ID"
               ? {
-                  id: `case-${link.input.target.caseId}`,
+                  id: `case-${target.caseId}`,
                   follow: () => {
-                    onSelect(link.input.target);
+                    onSelect(target);
                   },
                 }
-              : undefined
-          }
+              : undefined;
+          }}
           onAction={(action) => {
-            if (!editing && action.task === "work.update") {
+            if (!editing && hasOperationBinding(action, "WORK")) {
               reassign(action);
             }
           }}

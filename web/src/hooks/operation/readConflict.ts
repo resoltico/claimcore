@@ -1,3 +1,4 @@
+import { hasDocumentSubject } from "../../protocol/types";
 import { requestEndpoint, resultNotice } from "../../api/service";
 import { isDisclosureRefused } from "../../api/outcomes";
 import type {
@@ -73,7 +74,16 @@ export const readConflict = async (
         refused: isDisclosureRefused(result),
       };
     }
-    const observation = await observe(effect, result.value.outcome.document, controller.signal);
+    const { document } = result.value.outcome;
+    if (!hasDocumentSubject(document, "CASE")) {
+      return {
+        type: "CONFLICT_READ_FAILED",
+        ...common,
+        notice: { kind: "local", reason: "incomplete" },
+        refused: false,
+      };
+    }
+    const observation = await observe(effect, document, controller.signal);
     return observation.kind === "observed"
       ? { type: "CONFLICT_OBSERVED", ...common, value: observation.value }
       : {

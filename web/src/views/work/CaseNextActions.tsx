@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "../../operation/affordances";
 import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
 import { queryInput } from "../../protocol/taskCatalog";
 import { isTerm } from "../../presentation/terms";
@@ -67,7 +68,7 @@ export const CaseNextActions = ({
           actionPresentation={reminderActionPresentation}
           timeZone={current.basis.observation.timeZone}
           onAction={(action, _row, originId) => {
-            if (action.task !== "people.requests.dismiss") {
+            if (isOperationAffordance(action)) {
               onReminder(action, originId);
             }
           }}

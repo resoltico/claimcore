@@ -22,6 +22,9 @@ type ReviewModel = {
   returnToEdit: () => void;
 };
 const ReviewBody = ({ review }: { review: HumanReview }) => {
+  if (review.document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
   const basis = review.document.basis.observation;
   const ordinary = review.document.screen.regions.filter((region) => region.role !== "DETAILS");
   return (
@@ -47,11 +50,17 @@ const useReviewChallenge = (model: ReviewModel) => {
   }
   return { typed: changed ? "" : challenge.text, setChallenge, operationId, review };
 };
+const canSubmit = (ready: boolean, paused: boolean, busy: boolean) => ready && !paused && !busy;
 const useReviewControls = (model: ReviewModel, paused: boolean) => {
   const p = usePresentation();
   const id = useId();
   const { typed, setChallenge, operationId, review } = useReviewChallenge(model);
-  if (model.prepared === null || review === null) {
+  if (
+    model.prepared === null ||
+    review === null ||
+    review.document.subject.kind !== "REVIEW" ||
+    review.document.basis.kind !== "SNAPSHOT"
+  ) {
     return null;
   }
   const task = taskForCommand(model.prepared.input);
@@ -96,9 +105,9 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
       <Button
         variant={irreversible ? "danger" : "primary"}
         data-confirm-operation
-        isDisabled={!ready || model.busy || paused}
+        isDisabled={!canSubmit(ready, paused, model.busy)}
         onPress={() => {
-          if (ready && !paused && !model.busy) {
+          if (canSubmit(ready, paused, model.busy)) {
             model.confirm(true);
             void model.execute();
           }
@@ -121,6 +130,9 @@ const ReviewContents = ({
   confirmation: ReactNode;
 }) => {
   const p = usePresentation();
+  if (review.document.basis.kind !== "SNAPSHOT") {
+    return null;
+  }
   const basis = review.document.basis.observation;
   return (
     <>

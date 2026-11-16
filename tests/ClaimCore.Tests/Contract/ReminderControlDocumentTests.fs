@@ -91,7 +91,7 @@ let tests =
 
             Expect.equal
                 (Map.find (TaskAffordances.input InputTarget.ReminderAction) update.Seeds)
-                (SubmissionValue.Text "Editable action seed")
+                (InputValue.Text "Editable action seed")
                 "Only update offers the action seed"
 
             Expect.isEmpty controls.Tail.Head.Seeds "Completion carries no editable action or date"

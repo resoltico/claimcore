@@ -173,6 +173,13 @@ module internal InteractiveReview =
             | _ -> return response.ExitCode
         }
 
+    let private submittedSeed =
+        function
+        | InputValue.Text value -> SubmissionValue.Text value
+        | InputValue.Integer value -> SubmissionValue.Integer value
+        | InputValue.Boolean value -> SubmissionValue.Boolean value
+        | InputValue.Null -> SubmissionValue.Clear
+
     let private allActions (document: HumanDocument) =
         document.Actions
         @ (document.Screen.Regions
@@ -216,7 +223,7 @@ module internal InteractiveReview =
                 || (draft.Input.Inputs
                     |> Map.tryFind input
                     |> Option.forall (fun supplied ->
-                        normalize input supplied = normalize input value)))
+                        normalize input supplied = normalize input (submittedSeed value))))
 
         action.Task = draft.Input.Task && sameSelection && sameFixedInputs
 
@@ -226,6 +233,7 @@ module internal InteractiveReview =
         let fixedInputs =
             action.Seeds
             |> Map.filter (fun input _ -> not (List.contains input action.Editable))
+            |> Map.map (fun _ value -> submittedSeed value)
 
         let inputs =
             Map.fold

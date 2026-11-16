@@ -1,24 +1,39 @@
 import type {
   HostFailure,
-  HumanReadDocument_case_get,
-  HumanReadDocument_people_grants,
+  HumanDocument,
+  DocumentSubject,
   Representation,
   ResponseFor,
-  HumanReceiptDocument,
   Screen,
   WorkDateBasis,
   ResponseByEndpoint,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
-export type PersonDocument = HumanReadDocument_people_grants;
-export type OperationReceipt = HumanReceiptDocument;
+export type SubjectDocument<K extends DocumentSubject["kind"]> = HumanDocument & {
+  readonly subject: Extract<DocumentSubject, { kind: K }>;
+};
+export const hasDocumentSubject = <K extends DocumentSubject["kind"]>(
+  value: HumanDocument,
+  kind: K,
+): value is SubjectDocument<K> => value.subject.kind === kind;
+export type CaseDocument = SubjectDocument<"CASE">;
+export type PersonDocument = SubjectDocument<"PERSON">;
+export type RequesterDocument = SubjectDocument<"REQUESTER">;
+export type OperationReceipt = HumanDocument;
 export type PresentedPage = { readonly view: Screen; readonly basis: WorkDateBasis };
 export type CaseLinkedReceipt = { readonly document: OperationReceipt; readonly caseId: string };
 export const linkedCaseReceipt = (document: OperationReceipt): CaseLinkedReceipt | null => {
   const target = document.links.find((link) => link.rel === "OPEN_CASE")?.link;
-  return target?.endpoint === "case.get" && target.input.target.kind === "ID"
-    ? { document, caseId: target.input.target.caseId }
+  const selected = target?.input["target"];
+  return target?.endpoint === "case.get" &&
+    typeof selected === "object" &&
+    selected !== null &&
+    "kind" in selected &&
+    selected.kind === "ID" &&
+    "caseId" in selected &&
+    typeof selected.caseId === "string"
+    ? { document, caseId: selected.caseId }
     : null;
 };
 export type CatalogDocument = typeof productMetadata.catalog;
@@ -40,12 +55,14 @@ type Success<K extends keyof ResponseByEndpoint> =
   }
     ? T
     : never;
-export type CurrentCase = HumanReadDocument_case_get & {
+export type CurrentCase = CaseDocument & {
   readonly disclosure: "CURRENT";
-  readonly basis: Extract<HumanReadDocument_case_get["basis"], { kind: "SNAPSHOT" }>;
+  readonly basis: Extract<HumanDocument["basis"], { kind: "SNAPSHOT" }>;
 };
-export const isCurrentCase = (value: HumanReadDocument_case_get): value is CurrentCase =>
-  value.disclosure === "CURRENT" && value.basis.kind === "SNAPSHOT";
+export const isCurrentCase = (value: HumanDocument): value is CurrentCase =>
+  value.subject.kind === "CASE" &&
+  value.disclosure === "CURRENT" &&
+  value.basis.kind === "SNAPSHOT";
 export type SessionSnapshot = Success<"session">;
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }

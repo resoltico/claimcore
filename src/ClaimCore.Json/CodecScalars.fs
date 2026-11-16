@@ -10,6 +10,24 @@ open System.Text.Json
 module internal CodecScalars =
     let fail path reason = Error { Path = path; Reason = reason }
 
+    let jsonObject: Codec<JsonValue> =
+        let read path =
+            function
+            | JsonValue.Object _ as value -> Ok value
+            | _ -> fail path "expected an object"
+
+        {
+            Reader = read
+            Validation = fun path value -> read path value |> Result.map ignore
+            Writer =
+                fun value ->
+                    read "$" value
+                    |> Result.defaultWith (fun _ ->
+                        invalidArg (nameof value) "Expected a JSON object.")
+            Shape = Schema.JsonObject
+            NamedSchemas = Map.empty
+        }
+
     let text: Codec<string> =
         let read =
             fun path value ->

@@ -1,3 +1,4 @@
+import { type BoundOperationAffordance } from "../../operation/affordances";
 import type { OperationAffordance } from "../../operation/affordances";
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
@@ -19,7 +20,7 @@ import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
 
 type Selection = {
-  action: Extract<OperationAffordance, { binding: { kind: "REMINDER" } }>;
+  action: BoundOperationAffordance<"REMINDER">;
   anchor: string | null;
   readId: string;
 };

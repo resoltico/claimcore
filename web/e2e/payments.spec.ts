@@ -174,7 +174,9 @@ const expandPayments = async (page: Page, sizes: ReadonlyArray<number>) => {
       ...rows.flatMap(
         (row) =>
           row.actions?.flatMap((action) =>
-            action.task === "case.removePayment" ? [action.binding.paymentId] : [],
+            action.task === "case.removePayment" && "paymentId" in action.binding
+              ? [action.binding.paymentId]
+              : [],
           ) ?? [],
       ),
     );

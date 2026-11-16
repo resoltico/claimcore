@@ -1,4 +1,4 @@
-import type { Affordance, HumanReadDocument_people_requests } from "@contracts/client";
+import type { Affordance, HumanDocument } from "@contracts/client";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -34,10 +34,10 @@ const dismiss = (index: number): Affordance => ({
   },
   editable: [],
   choices: {},
-  primary: false,
+
   blocked: null,
 });
-const document: HumanReadDocument_people_requests = {
+const document: HumanDocument = {
   screen: {
     regions: [
       {

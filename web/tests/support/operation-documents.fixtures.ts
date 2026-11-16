@@ -1,5 +1,5 @@
 import { operationAffordance } from "./affordances.fixtures";
-import type { HumanReview, HumanReceiptDocument } from "@contracts/client";
+import type { HumanReview, HumanDocument } from "@contracts/client";
 
 const basis = {
   kind: "SNAPSHOT",
@@ -40,7 +40,7 @@ export const closeReview: HumanReview = {
   presentation: { changes: [], unchanged: [] },
 };
 
-export const closeReceipt: HumanReceiptDocument = {
+export const closeReceipt: HumanDocument = {
   screen: { regions: [] },
   subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
   actions: [],
