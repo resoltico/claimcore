@@ -48,7 +48,7 @@ let private checkpoints () =
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                     )))))
                 token
             |> sync

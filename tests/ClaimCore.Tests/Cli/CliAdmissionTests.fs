@@ -31,7 +31,7 @@ let private prepared tail =
     Grammar.prepare identity (baseArguments @ tail)
 
 let private admission tail =
-    let value = prepared tail |> Fixtures.accepted
+    let value = prepared tail |> CaseBuilders.accepted
 
     Frames.value Api.operationExecute value.Invocation
     |> Option.map (ClaimCore.TestSupport.Submissions.command >> _.Inputs)
@@ -51,7 +51,7 @@ let tests =
                     Grammar.prepare
                         identity
                         [ "people"; "list"; "--text"; "ĀDAMS عادل"; "--limit"; "7" ]
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
 
                 let request = Frames.value Api.peopleList value.Invocation |> Option.get
 
@@ -95,11 +95,11 @@ let tests =
                             ],
                             identity ()
                         ] do
-                        let plain = Grammar.prepare identity words |> Fixtures.accepted
+                        let plain = Grammar.prepare identity words |> CaseBuilders.accepted
 
                         let confirmed =
                             Grammar.prepare identity (words @ [ "--confirm"; target ])
-                            |> Fixtures.accepted
+                            |> CaseBuilders.accepted
 
                         Expect.equal
                             confirmed.Bytes
@@ -162,7 +162,7 @@ let tests =
                         | CliInvocation.Verb words -> words
                         | _ -> failtest "Expected human verb"
 
-                let prepared = Grammar.prepare identity words |> Fixtures.accepted
+                let prepared = Grammar.prepare identity words |> CaseBuilders.accepted
 
                 match
                     (Frames.value Api.operationExecute

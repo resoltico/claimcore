@@ -387,9 +387,10 @@ let private peoplePreviewFrame
             PrincipalKey.human
                 (text InputTarget.PrincipalIssuer)
                 (text InputTarget.PrincipalSubject)
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
         else
-            PrincipalKey.human "https://issuer.example/" "synthetic" |> Fixtures.accepted
+            PrincipalKey.human "https://issuer.example/" "synthetic"
+            |> CaseBuilders.accepted
 
     let profile =
         ActorProfile.parse
@@ -397,14 +398,14 @@ let private peoplePreviewFrame
                 DisplayName = if registering then "Authored" else "Synthetic account"
                 Contact = None
             }
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
 
     let target =
         if registering then
             None
         else
             Some(
-                Inputs.namedActorReference
+                DomainInputs.namedActorReference
                     CliReplyFixtures.receipt.RecordedBy.ActorId
                     "Synthetic account"
             )
@@ -482,7 +483,7 @@ let private peoplePreviewFrame
             Context =
                 {
                     ProductVersion = "fixture"
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                 }
             Changes =
                 [

@@ -274,7 +274,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 102, "GIN-PLAIN", "Ordinary claimant", None
             ] do
             let registration =
-                Inputs.registrationWith
+                DomainInputs.registrationWith
                     ([
                         BusinessField.ClaimantName, claimant
                         BusinessField.ClaimedAmount, "500"
@@ -493,7 +493,7 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
             }
 
         let facts =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [
                     BusinessField.PolicyNumber, "POLICY-UNIQUE-42"
                     BusinessField.InsurerClaimReference, "INSURER-UNIQUE-17"
@@ -542,7 +542,9 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                 (702)
                 (2L)
                 "case.decide"
-                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision)))
+                (ClaimCore.TestSupport.Submissions.fields (
+                    DecisionInput.values (DomainInputs.decision)
+                ))
 
         accepted decided |> ignore
 

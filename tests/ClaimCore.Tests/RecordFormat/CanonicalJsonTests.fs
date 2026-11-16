@@ -21,7 +21,7 @@ let private admitted (text: string) =
     Encoding.UTF8.GetBytes text |> StrictJson.read Int32.MaxValue
 
 let private canonical text =
-    admitted text |> Fixtures.accepted |> CanonicalWriter.bytes
+    admitted text |> CaseBuilders.accepted |> CanonicalWriter.bytes
 
 let private text (element: JsonElement) =
     element.GetString()

@@ -79,12 +79,12 @@ let private registration record =
     (snapshot record).State |> CaseState.fields |> Option.get |> _.Registration
 
 let private facts =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [
             BusinessField.PolicyNumber, "LV / Polise 42"
             BusinessField.InsurerClaimReference, "ملف / 17"
         ]
-        Inputs.registration
+        DomainInputs.registration
 
 [<Tests>]
 let tests =
@@ -99,7 +99,7 @@ let tests =
                             1
                             0L
                             "case.open"
-                            (text (RegistrationInput.values Inputs.registration))
+                            (text (RegistrationInput.values DomainInputs.registration))
                             None
 
                     Expect.isNone
@@ -145,7 +145,7 @@ let tests =
                             4
                             2L
                             "case.decide"
-                            (text (DecisionInput.values Inputs.decision))
+                            (text (DecisionInput.values DomainInputs.decision))
                             (Some amended)
 
                     let corrected =

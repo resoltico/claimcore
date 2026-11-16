@@ -266,7 +266,7 @@ let private offlineDiscovery () =
             helpJson [ "case"; "--language"; language ]
             |> Option.defaultWith (fun () -> failtest "Overview help required")
             |> StrictJson.read Limits.MaximumResponseBytes
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         let text =
             match JsonValue.tryMember "text" document with
@@ -305,10 +305,10 @@ let private exampleFrames () =
     for index, path in Array.indexed files do
         let input =
             StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
             |> WireWriter.bytes
 
-        let invocation = Frames.admit input |> Fixtures.accepted
+        let invocation = Frames.admit input |> CaseBuilders.accepted
 
         Expect.equal
             (frameEndpoint invocation |> Api.id)
@@ -317,7 +317,7 @@ let private exampleFrames () =
 
         let submission =
             Api.operationExecute.Input.Read "$" (Frames.input invocation)
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         let command = Submissions.command submission
         let selected = ClaimCore.Domain.Tasks.Registry.find submission.Task |> Option.get
@@ -354,12 +354,12 @@ let private exampleFrames () =
                 current
                 command.Binding
                 command.Inputs
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         current <-
             changes
             |> List.fold
-                (fun state change -> CaseFamily.apply state change |> Fixtures.accepted |> Some)
+                (fun state change -> CaseFamily.apply state change |> CaseBuilders.accepted |> Some)
                 current
 
         Expect.equal

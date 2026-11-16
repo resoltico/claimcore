@@ -31,7 +31,7 @@ let internal rolelessAuthorship fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (owner) submission (CancellationToken.None)

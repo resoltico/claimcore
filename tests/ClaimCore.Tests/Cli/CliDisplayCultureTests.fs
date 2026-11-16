@@ -81,20 +81,25 @@ let tests =
                         ] do
                         let actual =
                             [
-                                ReplyTextFormat.money language (Inputs.money "1234.5" "EUR")
+                                ReplyTextFormat.money language (DomainInputs.money "1234.5" "EUR")
                                 ReplyTextFormat.moneyWithScale
                                     language
-                                    (Inputs.money "1234.5" "EUR")
+                                    (DomainInputs.money "1234.5" "EUR")
                                     4
-                                ReplyTextFormat.money language (Inputs.money "1234" "JPY")
-                                ReplyTextFormat.money language (Inputs.money "1.2" "JPY")
-                                ReplyTextFormat.money language (Inputs.money "1" "BHD")
-                                ReplyTextFormat.moneyWithScale language (Inputs.money "0" "EUR") 4
+                                ReplyTextFormat.money language (DomainInputs.money "1234" "JPY")
+                                ReplyTextFormat.money language (DomainInputs.money "1.2" "JPY")
+                                ReplyTextFormat.money language (DomainInputs.money "1" "BHD")
                                 ReplyTextFormat.moneyWithScale
                                     language
-                                    (Inputs.money "1234.5678" "EUR")
+                                    (DomainInputs.money "0" "EUR")
+                                    4
+                                ReplyTextFormat.moneyWithScale
+                                    language
+                                    (DomainInputs.money "1234.5678" "EUR")
                                     1
-                                ReplyTextFormat.money language (Inputs.money "1234.5678" "JPY")
+                                ReplyTextFormat.money
+                                    language
+                                    (DomainInputs.money "1234.5678" "JPY")
                             ]
 
                         Expect.equal
@@ -105,8 +110,8 @@ let tests =
                 "forty-digit aggregate money stays exact in every CLI display culture"
                 (fun () ->
                     let canonical = "1234567890123456789012345678901234567890.1234"
-                    let total = DecimalTotal.parse canonical |> Fixtures.accepted
-                    let currency = Currency.parse "EUR" |> Fixtures.accepted
+                    let total = DecimalTotal.parse canonical |> CaseBuilders.accepted
+                    let currency = Currency.parse "EUR" |> CaseBuilders.accepted
 
                     for language, expected in
                         [
@@ -147,7 +152,7 @@ let tests =
                             "رُصد في 2026-11-04 12:00 · تاريخ العمل 4 نوفمبر 2026 (Etc/UTC)"
                         ] do
                         Expect.equal
-                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
+                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-04"))
                             date
                             "The business date is preserved"
 

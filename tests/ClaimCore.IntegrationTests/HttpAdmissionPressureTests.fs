@@ -195,7 +195,7 @@ let private qualify () =
                             (None)
                             "people.register"
                             (ClaimCore.TestSupport.Submissions.profile (
-                                ClaimCore.TestSupport.Inputs.actorProfile
+                                ClaimCore.TestSupport.DomainInputs.actorProfile
                             ))
 
                     return! Service.executeSubmission (actor) submission (CancellationToken.None)

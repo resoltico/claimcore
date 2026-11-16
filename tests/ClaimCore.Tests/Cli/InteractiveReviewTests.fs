@@ -56,9 +56,9 @@ let private caseReply =
                 Count = 0L
                 CanAdd = false
             }
-        ChangedAt = Inputs.workBasis.ObservedAt
+        ChangedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-        Stages = Inputs.stageDisplay current.State
+        Stages = DomainInputs.stageDisplay current.State
         Snapshot = current
         Headline = CaseHeadline.Undecided
         Attention = []
@@ -144,7 +144,7 @@ let private review =
         after
         {
             ProductVersion = "synthetic"
-            Basis = Inputs.workBasis
+            Basis = DomainInputs.workBasis
         }
 
 let private harness language answer scenario =
@@ -155,7 +155,7 @@ let private harness language answer scenario =
     let mutable reads = 0
 
     let response frame (codec: ClaimCore.Json.Codec<'value>) value =
-        CliReply.result frame (codec.Write value) |> Fixtures.accepted
+        CliReply.result frame (codec.Write value) |> CaseBuilders.accepted
 
     let exchange frame (_: CancellationToken) =
         calls.Add frame
@@ -380,7 +380,7 @@ let private harness language answer scenario =
 let private run arguments (harness: Harness) =
     let draft =
         InteractiveReview.prepare harness.Console arguments
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
         |> Option.defaultWith (fun () -> failtest "Expected an interactive draft")
 
     InteractiveReview.run
@@ -395,7 +395,8 @@ let private endpoints (harness: Harness) =
     harness.Calls |> Seq.map (Frames.endpoint >> _.Token) |> Seq.toList
 
 let private caseInput frame =
-    Api.operationExecute.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+    Api.operationExecute.Input.Read "$" (Frames.input frame)
+    |> CaseBuilders.accepted
 
 let private reviewedRevision (input: OperationSubmission) =
     match (Submissions.command input).Binding with
@@ -422,7 +423,7 @@ let tests =
 
                         let arguments =
                             [ "case"; "open"; "x" ]
-                            @ CliExamples.registrationArguments Inputs.registration
+                            @ CliExamples.registrationArguments DomainInputs.registration
 
                         Expect.equal (run arguments h) 0 "Human completion"
 
@@ -671,7 +672,7 @@ let tests =
 
                 let draft =
                     Grammar.prepareOffline [ "case"; "close"; "x"; "--dry-run" ]
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
                     |> Option.get
 
                 Expect.isNone draft.Issues "Offline syntax needs no fabricated version"
@@ -718,10 +719,10 @@ let reminderReviewDetails =
                                     (reminderId number)
                                     current.CaseId
                                     revision
-                                    (ReminderAction.parse action |> Fixtures.accepted)
-                                    (Inputs.date "2026-11-09")
+                                    (ReminderAction.parse action |> CaseBuilders.accepted)
+                                    (DomainInputs.date "2026-11-09")
                                     state
-                                |> Fixtures.accepted
+                                |> CaseBuilders.accepted
 
                             let before =
                                 reminder
@@ -794,7 +795,7 @@ let reminderReviewDetails =
                                     Context =
                                         {
                                             ProductVersion = "fixture"
-                                            Basis = Inputs.workBasis
+                                            Basis = DomainInputs.workBasis
                                         }
                                 }
 
@@ -817,7 +818,7 @@ let reminderReviewDetails =
 
                             let response frame (endpoint: Endpoint<'i, 'o>) value =
                                 CliReply.result frame (endpoint.Output.Write value)
-                                |> Fixtures.accepted
+                                |> CaseBuilders.accepted
 
                             let version reminder =
                                 {
@@ -850,9 +851,10 @@ let reminderReviewDetails =
                                             {
                                                 Reminder = before
                                                 Reference = current.Reference
-                                                ClaimantName = Inputs.name "Reminder claimant"
+                                                ClaimantName =
+                                                    DomainInputs.name "Reminder claimant"
                                                 Responsible = None
-                                                RecordedAt = Inputs.workBasis.ObservedAt
+                                                RecordedAt = DomainInputs.workBasis.ObservedAt
                                                 RecordedBy = CliReplyFixtures.receipt.RecordedBy
                                                 Offers =
                                                     [
@@ -876,7 +878,7 @@ let reminderReviewDetails =
                                                 HumanReadDocuments.reminder
                                                 (Outcome.Succeeded
                                                     {
-                                                        Basis = Inputs.workBasis
+                                                        Basis = DomainInputs.workBasis
                                                         Item = item
                                                     })
                                              |> RepresentationReply.Human)

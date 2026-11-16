@@ -75,7 +75,7 @@ let private actualPayments () =
                 ((Guid.CreateVersion7()))
                 "case.open"
                 (ClaimCore.TestSupport.Submissions.fields (
-                    RegistrationInput.values (Inputs.registration)
+                    RegistrationInput.values (DomainInputs.registration)
                 ))
 
         let _, _ =
@@ -84,12 +84,12 @@ let private actualPayments () =
                 "case.decide"
                 (ClaimCore.TestSupport.Submissions.fields (
                     DecisionInput.values (
-                        (Inputs.decisionWith
+                        (DomainInputs.decisionWith
                             [
                                 BusinessField.PayableAmount, "100"
                                 BusinessField.PaymentDecisionDate, "2026-08-04"
                             ]
-                            Inputs.decision)
+                            DomainInputs.decision)
                     )
                 ))
 
@@ -100,12 +100,12 @@ let private actualPayments () =
                     "case.recordPayment"
                     (ClaimCore.TestSupport.Submissions.fields (
                         PaymentInput.values (
-                            (Inputs.paymentWith
+                            (DomainInputs.paymentWith
                                 [
                                     BusinessField.PaidAmount, "1"
                                     BusinessField.PaymentDate, "2026-08-05"
                                 ]
-                                Inputs.payment)
+                                DomainInputs.payment)
                         )
                     ))
 
@@ -138,7 +138,7 @@ let private actualPayments () =
                     (otherOperation)
                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                      )
                      |> Map.add
                          (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
@@ -441,9 +441,9 @@ let private lockedBounds () =
             | other -> failtestf "Expected accepted bounds witness: %A" other
 
         let payment day =
-            Inputs.paymentWith
+            DomainInputs.paymentWith
                 [ BusinessField.PaymentDate, day; BusinessField.PaidAmount, "1" ]
-                Inputs.payment
+                DomainInputs.payment
             |> PaymentInput.values
             |> Submissions.fields
 
@@ -452,7 +452,7 @@ let private lockedBounds () =
             ((Guid.CreateVersion7()))
             "case.open"
             (ClaimCore.TestSupport.Submissions.fields (
-                RegistrationInput.values (Inputs.registration)
+                RegistrationInput.values (DomainInputs.registration)
             ))
 
         accept
@@ -461,19 +461,19 @@ let private lockedBounds () =
             "case.decide"
             (ClaimCore.TestSupport.Submissions.fields (
                 DecisionInput.values (
-                    (Inputs.decisionWith
+                    (DomainInputs.decisionWith
                         [
                             BusinessField.PaymentDecisionDate, "2026-08-04"
                             BusinessField.PayableAmount, "100"
                         ]
-                        Inputs.decision)
+                        DomainInputs.decision)
                 )
             ))
 
         let mutable entries =
             [
                 for day in [ "2026-08-05"; "2026-08-06"; "2026-08-06"; "2026-08-08" ] ->
-                    Guid.CreateVersion7(), Inputs.date day
+                    Guid.CreateVersion7(), DomainInputs.date day
             ]
 
         for identity, date in entries do
@@ -506,7 +506,7 @@ let private lockedBounds () =
                 "A new payment cannot reuse an accepted future date"
         | other -> failtestf "Expected calendar rollback refusal: %A" other
 
-        let earlier = Guid.CreateVersion7(), Inputs.date "2026-08-04"
+        let earlier = Guid.CreateVersion7(), DomainInputs.date "2026-08-04"
         accept rolledBack (fst earlier) "case.recordPayment" (payment "2026-08-04")
         entries <- earlier :: entries
 

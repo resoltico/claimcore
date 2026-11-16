@@ -100,7 +100,7 @@ let private duplicateHistory (database: PostgresFixture.Database) =
                         (principal)
                         (None)
                         "people.admit"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile)
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile)
                          |> Map.add
                              (TaskInputId.Target InputTarget.Grants)
                              (ClaimCore.Application.Contracts.SubmissionValue.Rows(

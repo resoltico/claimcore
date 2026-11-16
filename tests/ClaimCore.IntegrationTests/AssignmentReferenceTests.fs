@@ -148,12 +148,12 @@ let tests =
 
                 Expect.equal
                     (account parent alice).DisplayName
-                    (DisplayName.Named(Inputs.name "Alice"))
+                    (DisplayName.Named(DomainInputs.name "Alice"))
                     "Current saved names are retained"
 
                 Expect.equal
                     (account parent bob).DisplayName
-                    (DisplayName.Named(Inputs.name "Bob"))
+                    (DisplayName.Named(DomainInputs.name "Bob"))
                     "Disabled actors keep their actual current name"
 
                 Expect.equal

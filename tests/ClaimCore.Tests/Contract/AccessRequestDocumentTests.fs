@@ -16,14 +16,14 @@ let private principal =
 let private document name =
     HumanReadDocuments.requests
         {
-            Basis = Inputs.workBasis
+            Basis = DomainInputs.workBasis
             NextCursor = Some "request-next"
             Items =
                 [
                     {
                         Principal = principal
-                        FirstSeen = Inputs.workBasis.ObservedAt
-                        LastSeen = Inputs.workBasis.ObservedAt
+                        FirstSeen = DomainInputs.workBasis.ObservedAt
+                        LastSeen = DomainInputs.workBasis.ObservedAt
                         Claims =
                             RequesterClaims.admit
                                 name

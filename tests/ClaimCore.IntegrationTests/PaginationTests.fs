@@ -64,7 +64,7 @@ let private setup (database: PostgresFixture.Database) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((token))

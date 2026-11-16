@@ -315,7 +315,7 @@ let tests =
                     let bait =
                         RegistrationInput.replace
                             [ BusinessField.ClaimantName, "Input bait must not display" ]
-                            Inputs.registration
+                            DomainInputs.registration
                         |> required
 
                     let action =
@@ -384,7 +384,8 @@ let tests =
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
                             Sequence.zero
-                            (RegistrationInput.values Inputs.registration |> TaskAffordances.fields)
+                            (RegistrationInput.values DomainInputs.registration
+                             |> TaskAffordances.fields)
                             []
                             Map.empty
 

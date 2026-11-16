@@ -151,7 +151,7 @@ let internal lifecycle fixture =
             "Erased registration profile prevents exact replay"
 
         let! replay =
-            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -222,7 +222,7 @@ let internal lifecycle fixture =
             "Later profile content survives"
 
         let! replay =
-            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -416,7 +416,7 @@ let internal atomicWrites fixture =
                     target
                     (Some 0L)
                     "people.register"
-                    (Submissions.profile Inputs.actorProfile)
+                    (Submissions.profile DomainInputs.actorProfile)
 
             let! failed = fail input phase
 
@@ -462,6 +462,6 @@ let internal atomicWrites fixture =
 
         Expect.equal
             current.DisplayName
-            (DisplayName.Named(PartyName.parse Inputs.ownerProfile.DisplayName |> required))
+            (DisplayName.Named(PartyName.parse DomainInputs.ownerProfile.DisplayName |> required))
             "Rollback restores the current profile"
     }

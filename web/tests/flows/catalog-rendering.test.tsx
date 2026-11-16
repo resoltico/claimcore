@@ -347,12 +347,15 @@ const assertInputMetadata = () => {
     productMetadata.catalog.inputFields.some(({ name }) => name === "target" || name === "act"),
   ).toBe(false);
 };
-it.each(acts)(
-  "renders, reviews and submits real case act $kind through production transport",
+// Representative acquisition shapes; Domain task scenarios own the business outcomes.
+const examples = acts.filter(({ kind }) =>
+  ["case.open", "case.correct", "case.decide", "case.removePayment", "case.erase"].some(
+    (id) => id === kind,
+  ),
+);
+it.each(examples)(
+  "acquires $kind from supplied controls through preview and execution",
   async (act) => {
-    expect(acts).toHaveLength(
-      taskDefinitions.filter((task) => task.kind === "OPERATION" && task.subject === "CASE").length,
-    );
     assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));

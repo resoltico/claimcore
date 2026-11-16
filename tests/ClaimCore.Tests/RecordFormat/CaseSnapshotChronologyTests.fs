@@ -26,7 +26,8 @@ let tests =
                         {
                             CaseReference = reference
                             Status = CaseStatus.Opened
-                            Registration = Inputs.admittedRegistration Inputs.registration
+                            Registration =
+                                DomainInputs.admittedRegistration DomainInputs.registration
                             Finance = FinancialPosition.undecided
                         }
             }

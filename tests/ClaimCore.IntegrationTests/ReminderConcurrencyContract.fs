@@ -108,7 +108,7 @@ let internal independentRevisions fixture =
         let patch =
             (RegistrationUpdateInput.replace
                 [ BusinessField.ClaimantName, Some "Financial preview remains valid" ]
-                (Inputs.registrationUpdate registration)
+                (DomainInputs.registrationUpdate registration)
              |> Result.defaultWith failtest)
 
         let financial =
@@ -477,7 +477,7 @@ let internal revocationAndCompound fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission (token)

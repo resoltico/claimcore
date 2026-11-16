@@ -22,8 +22,8 @@ let private document () =
         {
             CaseId = parent
             WorkRevision = Revision.first
-            Basis = Inputs.workBasis
-            Items = [ Inputs.actorReference (actor 1); Inputs.actorReference (actor 2) ]
+            Basis = DomainInputs.workBasis
+            Items = [ DomainInputs.actorReference (actor 1); DomainInputs.actorReference (actor 2) ]
             NextCursor = Some "choice-next"
         }
 

@@ -96,11 +96,13 @@ let private idleConfirmation () =
                                                 Count = 0L
                                                 CanAdd = false
                                             }
-                                        ChangedAt = Inputs.workBasis.ObservedAt
+                                        ChangedAt = DomainInputs.workBasis.ObservedAt
                                         RecordedBy =
                                             ClaimCore.TestSupport.ResponseExamples
                                                 .caseRead.RecordedBy
-                                        Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
+                                        Stages =
+                                            DomainInputs.stageDisplay
+                                                CliReplyFixtures.snapshot.State
                                         Snapshot = CliReplyFixtures.snapshot
                                         Headline = CaseHeadline.Undecided
                                         Attention = []

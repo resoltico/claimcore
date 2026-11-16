@@ -244,7 +244,7 @@ let private qualify fixture =
                     scoped
                     None
                     "people.register"
-                    (Submissions.profile (Inputs.actorProfile)))
+                    (Submissions.profile (DomainInputs.actorProfile)))
                     .GetAwaiter()
                     .GetResult())
 

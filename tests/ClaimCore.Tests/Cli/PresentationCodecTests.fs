@@ -30,7 +30,7 @@ let tests =
         [
             testCase "provided scale survives admission reencoding and human rendering" (fun () ->
                 let provided = money "1" (JsonValue.Integer 4L)
-                let value = read provided |> Fixtures.accepted
+                let value = read provided |> CaseBuilders.accepted
 
                 match value with
                 | PresentedValue.Money value ->
@@ -50,7 +50,7 @@ let tests =
                     "1.0000 EUR"
                     "The human consumer uses supplied scale"
 
-                let lower = read (money "1.2345" (JsonValue.Integer 0L)) |> Fixtures.accepted
+                let lower = read (money "1.2345" (JsonValue.Integer 0L)) |> CaseBuilders.accepted
 
                 Expect.equal
                     (TextDescriptorValue.render "en" lower)
@@ -97,8 +97,8 @@ let tests =
                             (JsonValue.Object [ "changes", JsonValue.Array [] ]))
                         "Unchanged identity list is required")
             testCase "server builder retains the authoritative typed case change values" (fun () ->
-                let before = PartyName.parse "Authoritative᠎Before" |> Fixtures.accepted
-                let after = PartyName.parse "Authoritative👩‍💻After" |> Fixtures.accepted
+                let before = PartyName.parse "Authoritative᠎Before" |> CaseBuilders.accepted
+                let after = PartyName.parse "Authoritative👩‍💻After" |> CaseBuilders.accepted
 
                 let original =
                     Reviews.caseReview
@@ -111,7 +111,7 @@ let tests =
                         CliReplyFixtures.snapshot
                         {
                             ProductVersion = "fixture"
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                         }
 
                 let changes =
@@ -182,7 +182,7 @@ let producerBudgets =
             let context =
                 {
                     ProductVersion = "fixture"
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                 }
 
             let encode review =
@@ -201,10 +201,11 @@ let producerBudgets =
                         DisplayName = String.replicate PartyName.MaximumCharacters "😀"
                         Contact = Some(String.replicate PartyName.MaximumCharacters "😀")
                     }
-                |> Fixtures.accepted
+                |> CaseBuilders.accepted
 
             let principal =
-                PrincipalKey.human "https://budget.example/" "new-person" |> Fixtures.accepted
+                PrincipalKey.human "https://budget.example/" "new-person"
+                |> CaseBuilders.accepted
 
             let grants =
                 [
@@ -321,10 +322,10 @@ let producerBudgets =
                     (ReminderId.create id |> Option.get)
                     CliReplyFixtures.snapshot.CaseId
                     (CaseFixtures.revision revision)
-                    (ReminderAction.parse action |> Fixtures.accepted)
-                    (Inputs.date "2026-11-04")
+                    (ReminderAction.parse action |> CaseBuilders.accepted)
+                    (DomainInputs.date "2026-11-04")
                     state
-                |> Fixtures.accepted
+                |> CaseBuilders.accepted
 
             let old =
                 reminder CliReplyFixtures.id 1L (String.replicate 200 "😀") ReminderState.Pending
@@ -437,7 +438,7 @@ let primaryPeopleChanges =
                         (TaskId.ofLiteral "people.grant")
                         (Binding.People(actor, Revision.first))
                         (Some
-                            { Inputs.actorReference actor with
+                            { DomainInputs.actorReference actor with
                                 Availability =
                                     if enabled then
                                         ActorAvailability.Available
@@ -450,7 +451,7 @@ let primaryPeopleChanges =
                         { Actors = []; Cases = [] }
                         {
                             ProductVersion = "fixture"
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                         }
 
                 let input =
@@ -484,7 +485,7 @@ let primaryPeopleChanges =
 
                 let provided =
                     ReplyCodecs.review.Read "$" (ReplyCodecs.review.Write value)
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
 
                 match provided.Changes.Head.Description with
                 | PartDescription.Person provided ->

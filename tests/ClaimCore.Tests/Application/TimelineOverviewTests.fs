@@ -24,7 +24,7 @@ let private summary text = HandlingSummary.parse text |> required
 let private date = CaseFixtures.date
 
 let private primary =
-    Inputs.namedActorReference (CaseFixtures.actorId (id 2)) "Current authored name"
+    DomainInputs.namedActorReference (CaseFixtures.actorId (id 2)) "Current authored name"
 
 let private originalId = ReminderId.create (id 10) |> Option.get
 

@@ -22,7 +22,7 @@ let private actor =
         Runtime =
             {
                 ProductVersion = "synthetic"
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
             }
         Capability = [ Capability.ReadAccess ]
         View = [ View.People; View.Operations ]

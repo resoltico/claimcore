@@ -93,7 +93,7 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((CancellationToken.None))
@@ -171,7 +171,7 @@ let internal advisedCase fixture reference =
         accepted opened |> ignore
 
         let decision =
-            (ClaimCore.TestSupport.Inputs.decisionFrom
+            (ClaimCore.TestSupport.DomainInputs.decisionFrom
                 [
                     BusinessField.PaymentDecisionDate, ("2026-08-15")
                     BusinessField.PayableAmount, ("750.0000")
@@ -246,8 +246,8 @@ let internal revokedAdvice fixture =
         let correction =
             Submissions.updates (
                 RegistrationUpdateInput.values (
-                    Inputs.registrationUpdate (
-                        Inputs.registrationWith
+                    DomainInputs.registrationUpdate (
+                        DomainInputs.registrationWith
                             [ BusinessField.ClaimedAmount, "1001.0000" ]
                             registration
                     )
@@ -314,7 +314,7 @@ let internal scopedWorker fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((CancellationToken.None))
@@ -438,7 +438,7 @@ let internal scopedPeople fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission (CancellationToken.None)
@@ -496,7 +496,7 @@ let internal scopedPeople fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission (CancellationToken.None)
@@ -587,7 +587,7 @@ let internal scopedPeople fixture =
                 (1L)
                 "case.amendRegistration"
                 (ClaimCore.TestSupport.Submissions.updates (
-                    RegistrationUpdateInput.values ((Inputs.registrationUpdate registration))
+                    RegistrationUpdateInput.values ((DomainInputs.registrationUpdate registration))
                 ))
 
         let! conflict =

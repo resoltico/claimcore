@@ -23,7 +23,7 @@ let private notes =
                     Text =
                         NoteText.parse "Core note narrative Ω"
                         |> Result.defaultWith (string >> failtest)
-                    RecordedAt = Inputs.workBasis.ObservedAt
+                    RecordedAt = DomainInputs.workBasis.ObservedAt
                     RecordedBy = ResponseExamples.caseRead.RecordedBy
                     CanRemove = true
                 }
@@ -36,7 +36,7 @@ let private documents () =
     [
         HumanReadDocuments.notes
             {
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 CaseId = ResponseExamples.caseRead.Snapshot.CaseId
                 Reference = ResponseExamples.caseRead.Snapshot.Reference
                 Notes = notes
@@ -97,7 +97,7 @@ let tests =
                 let document =
                     HumanReadDocuments.notes
                         {
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId
                             Reference = ResponseExamples.snapshot.Reference
                             Notes = readOnly

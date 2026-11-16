@@ -89,7 +89,7 @@ let private receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 10, 22)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.People
                 {
@@ -142,7 +142,7 @@ let private peopleReview =
         { Actors = []; Cases = [] }
         {
             ProductVersion = "fixture"
-            Basis = Inputs.workBasis
+            Basis = DomainInputs.workBasis
         }
 
 let private mutationReplies () =

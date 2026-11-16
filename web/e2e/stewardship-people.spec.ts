@@ -437,7 +437,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
     outcome: {
       kind: "REJECTED",
       rejection: {
-        code: "RESOURCE_UNAVAILABLE",
+        code: "ACTOR_UNKNOWN",
       },
     },
   });

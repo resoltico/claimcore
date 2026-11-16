@@ -35,7 +35,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                 "case.open"
                 (Submissions.fields (
                     RegistrationInput.values (
-                        Inputs.registrationWith
+                        DomainInputs.registrationWith
                             [ BusinessField.ClaimantName, claimant ]
                             registration
                     )
@@ -95,15 +95,17 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                                         Some
                                                             {
                                                                 Registration =
-                                                                    Inputs.admittedRegistration (
-                                                                        Inputs.registrationWith
-                                                                            [
-                                                                                BusinessField
-                                                                                    .ClaimantName,
-                                                                                claimant
-                                                                            ]
-                                                                            registration
-                                                                    )
+                                                                    DomainInputs
+                                                                        .admittedRegistration (
+                                                                            DomainInputs
+                                                                                .registrationWith
+                                                                                [
+                                                                                    BusinessField
+                                                                                        .ClaimantName,
+                                                                                    claimant
+                                                                                ]
+                                                                                registration
+                                                                        )
                                                                 Finance =
                                                                     FinancialPosition.undecided
                                                             }
@@ -174,7 +176,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
         | _ -> failtest "Historical record could not be read"
 
         let values =
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.ClaimantName, (name)
                     BusinessField.InsurerName, ("Corrected Insurer")
@@ -191,7 +193,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                     (1L)
                     "case.amendRegistration"
                     (ClaimCore.TestSupport.Submissions.updates (
-                        RegistrationUpdateInput.values ((Inputs.registrationUpdate values))
+                        RegistrationUpdateInput.values ((DomainInputs.registrationUpdate values))
                     )))))
                 (token))
 
@@ -208,8 +210,8 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                     "case.amendRegistration"
                     (ClaimCore.TestSupport.Submissions.updates (
                         RegistrationUpdateInput.values (
-                            (Inputs.registrationUpdate (
-                                ClaimCore.TestSupport.Inputs.registrationWith
+                            (DomainInputs.registrationUpdate (
+                                ClaimCore.TestSupport.DomainInputs.registrationWith
                                     [ BusinessField.ClaimantName, (name + "B") ]
                                     (values)
                             ))

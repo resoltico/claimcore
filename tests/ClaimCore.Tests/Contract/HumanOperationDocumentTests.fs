@@ -36,7 +36,7 @@ let private containsMember name value =
 
 let private peopleReview () =
     let actor =
-        Inputs.namedActorReference
+        DomainInputs.namedActorReference
             (CaseFixtures.actorId (Guid.Parse "78280331-c97d-4be4-8031-f5dbd4a65282"))
             "Reviewed actor🪙"
 
@@ -76,7 +76,7 @@ let private peopleReview () =
             { Actors = [ actor ]; Cases = [] }
             {
                 ProductVersion = "fixture"
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
             }
 
     input, review, actor
@@ -291,7 +291,7 @@ let tests =
                             parent
                             Revision.first
                             (ReminderAction.parse "Permitted next reminder" |> accepted)
-                            (Inputs.date "2026-11-10")
+                            (DomainInputs.date "2026-11-10")
                             ReminderState.Pending
                         |> accepted
 
@@ -487,12 +487,14 @@ let receiptStatusAndProgress =
 
     let decided =
         FinancialPosition.undecided
-        |> FinancialPosition.withDecision (Some(Inputs.admittedDecision Inputs.decision))
+        |> FinancialPosition.withDecision (
+            Some(DomainInputs.admittedDecision DomainInputs.decision)
+        )
         |> accepted
 
     let payment =
-        Inputs.paymentWith [ BusinessField.PaidAmount, "100" ] Inputs.payment
-        |> Inputs.admittedPayment
+        DomainInputs.paymentWith [ BusinessField.PaidAmount, "100" ] DomainInputs.payment
+        |> DomainInputs.admittedPayment
 
     let partlyPaid =
         decided |> FinancialPosition.record (DateOnly(2026, 8, 20)) payment |> accepted

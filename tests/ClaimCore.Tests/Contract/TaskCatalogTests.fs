@@ -126,7 +126,7 @@ let tests =
 
                     Expect.equal
                         (fields (task [ "case"; "open" ]))
-                        (Inputs.fieldKeys "registration")
+                        (DomainInputs.fieldKeys "registration")
                         "Registration acquisition"
 
                     Expect.equal
@@ -136,7 +136,7 @@ let tests =
 
                     Expect.equal
                         (fields (task [ "case"; "correct" ]))
-                        (Inputs.fieldKeys "registration" @ Inputs.fieldKeys "decision")
+                        (DomainInputs.fieldKeys "registration" @ DomainInputs.fieldKeys "decision")
                         "Correction does not rewrite payment entries"
 
                     for task in CommandGrammar.operations do

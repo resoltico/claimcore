@@ -11,8 +11,8 @@ open ClaimCore.Json
 
 let private prepared arguments =
     Grammar.prepare (fun () -> "10000000-0000-4000-8000-000000000001") (arguments @ [ "--dry-run" ])
-    |> Fixtures.accepted
-    |> fun prepared -> Frames.admit prepared.Bytes |> Fixtures.accepted
+    |> CaseBuilders.accepted
+    |> fun prepared -> Frames.admit prepared.Bytes |> CaseBuilders.accepted
 
 [<Tests>]
 let tests =
@@ -25,7 +25,7 @@ let tests =
                     let frame = prepared [ "case"; "list"; "--view"; "needs-attention" ]
 
                     let case =
-                        Api.caseList.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+                        Api.caseList.Input.Read "$" (Frames.input frame) |> CaseBuilders.accepted
 
                     Expect.equal case.Filter.View (Some CaseView.NeedsAttention) "CASE uses --view"
 
@@ -43,7 +43,7 @@ let tests =
                     let frame = prepared [ "reminder"; "list"; "--view"; "completed" ]
 
                     let reminder =
-                        Api.reminders.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+                        Api.reminders.Input.Read "$" (Frames.input frame) |> CaseBuilders.accepted
 
                     Expect.equal
                         reminder.View
@@ -64,7 +64,7 @@ let tests =
 
                     let explicit =
                         Codec.decode Limits.MaximumRequestBytes Api.reminders.Input raw
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
 
                     Expect.equal
                         explicit.IncludeInactive
@@ -100,7 +100,8 @@ let tests =
                             "recent"
                         ]
 
-                let request = Api.caseList.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+                let request =
+                    Api.caseList.Input.Read "$" (Frames.input frame) |> CaseBuilders.accepted
 
                 Expect.equal
                     request.Filter.Lifecycles
@@ -139,7 +140,7 @@ let tests =
                             ]
 
                     let request =
-                        Api.caseList.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+                        Api.caseList.Input.Read "$" (Frames.input frame) |> CaseBuilders.accepted
 
                     Expect.equal
                         request.Filter.Lifecycles
@@ -168,7 +169,8 @@ let tests =
                             "--progress=paid"
                         ]
 
-                let request = Api.caseList.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+                let request =
+                    Api.caseList.Input.Read "$" (Frames.input frame) |> CaseBuilders.accepted
 
                 Expect.equal
                     request.Filter.Text

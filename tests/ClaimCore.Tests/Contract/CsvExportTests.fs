@@ -42,7 +42,7 @@ let tests =
     testCase "CSV exports preserve operation proof and distinct effect provenance" (fun () ->
         let raw = Guid.Parse "019a6b00-0000-7000-8000-000000000001"
         let operation = CaseFixtures.operationId raw
-        let actor = Inputs.actorReference (CaseFixtures.actorId raw)
+        let actor = DomainInputs.actorReference (CaseFixtures.actorId raw)
         let hash = EntryHash.ofBytes (Array.create 32 0xabuy) |> Option.get
         let position = EffectPosition.create (CaseFixtures.sequence 7L) 3 |> Option.get
 
@@ -105,9 +105,9 @@ let tests =
                 (TimelineCsv.csvRows
                     {
                         Disclosure = HistoryDisclosure.Full
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         CaseId = CaseFixtures.caseId raw
-                        Reference = Inputs.reference "CASE-PROOF"
+                        Reference = DomainInputs.reference "CASE-PROOF"
                         Items = [ timeline ]
                         NextCursor = None
                     })

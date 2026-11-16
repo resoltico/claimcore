@@ -26,21 +26,25 @@ let private facts =
                     BusinessField.ClaimantName,
                     Some(
                         CaseFieldValue.Business(
-                            Admitted.Name(Inputs.name "Synthetic, \"quoted\"\r\nclaimant")
+                            Admitted.Name(DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant")
                         )
                     )
                     BusinessField.InsurerName,
-                    Some(CaseFieldValue.Business(Admitted.Name(Inputs.name "Synthetic insurer")))
+                    Some(
+                        CaseFieldValue.Business(
+                            Admitted.Name(DomainInputs.name "Synthetic insurer")
+                        )
+                    )
                     BusinessField.ClaimedAmount,
                     Some(
                         CaseFieldValue.Business(
-                            Admitted.Amount(Amount.parse "1000.00" |> Fixtures.accepted)
+                            Admitted.Amount(Amount.parse "1000.00" |> CaseBuilders.accepted)
                         )
                     )
                     BusinessField.ClaimedCurrency,
                     Some(
                         CaseFieldValue.Business(
-                            Admitted.Currency(Currency.parse "EUR" |> Fixtures.accepted)
+                            Admitted.Currency(Currency.parse "EUR" |> CaseBuilders.accepted)
                         )
                     )
                     BusinessField.PayableAmount, None
@@ -54,10 +58,10 @@ let private parties claimant insurer =
             facts.Fields
             |> Map.add
                 BusinessField.ClaimantName
-                (Some(CaseFieldValue.Business(Admitted.Name(Inputs.name claimant))))
+                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name claimant))))
             |> Map.add
                 BusinessField.InsurerName
-                (Some(CaseFieldValue.Business(Admitted.Name(Inputs.name insurer))))
+                (Some(CaseFieldValue.Business(Admitted.Name(DomainInputs.name insurer))))
     }
 
 let private row reference =
@@ -66,7 +70,7 @@ let private row reference =
         PaymentCount = 0L
         LastPaymentDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
-        Reference = Inputs.reference reference
+        Reference = DomainInputs.reference reference
         Revision = CaseFixtures.revision 1L
         WorkRevision = Revision.zero
         CanAssign = false
@@ -87,7 +91,7 @@ let private row reference =
 
 let private page items next =
     {
-        Basis = Inputs.workBasis
+        Basis = DomainInputs.workBasis
         Items = items
         Offers = []
         NextCursor = next
@@ -96,7 +100,7 @@ let private page items next =
 
 let private prepared arguments =
     Grammar.prepare (fun () -> "unused") ([ "case"; "list" ] @ arguments)
-    |> Fixtures.accepted
+    |> CaseBuilders.accepted
 
 let private run arguments (replies: Outcome<CaseSummaryPage> list) =
     use output = new MemoryStream()
@@ -121,7 +125,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                                 |> RepresentationReply.Human
                             | Representation.Data -> RepresentationReply.Data response
                         ))
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
                     |> Task.FromResult
             Deliver =
                 fun frame reply ->
@@ -233,7 +237,7 @@ let private declaredPages () =
                                 JsonValue.Null
 
                         let reply = replace [ "outcome"; "data"; "nextCursor" ] cursor example
-                        CliReply.result frame reply |> Fixtures.accepted |> Task.FromResult
+                        CliReply.result frame reply |> CaseBuilders.accepted |> Task.FromResult
                 Deliver = fun _ _ -> ()
                 Output = ignore
                 Errors = ignore
@@ -315,7 +319,7 @@ let tests =
                     "No client-side filtering")
             testCase "CSV exports paid amount entry count and last payment date" (fun () ->
                 let original = row "PAY-CSV"
-                let payable = Inputs.money "100" "EUR"
+                let payable = DomainInputs.money "100" "EUR"
 
                 let values =
                     facts.Fields
@@ -331,9 +335,9 @@ let tests =
                 let exported =
                     { original with
                         Headline = CaseHeadline.PartlyPaid
-                        Paid = Some(Inputs.money "60.25" "EUR")
+                        Paid = Some(DomainInputs.money "60.25" "EUR")
                         PaymentCount = 2L
-                        LastPaymentDate = Some(Inputs.date "2026-08-21")
+                        LastPaymentDate = Some(DomainInputs.date "2026-08-21")
                         State = CaseState.Active { facts with Fields = values }
                     }
 
@@ -400,7 +404,7 @@ let tests =
                                     Guid.Parse "30000000-0000-4000-8000-000000000001"
                                 )
                             DisplayName =
-                                DisplayName.Named(PartyName.parse raw |> Fixtures.accepted)
+                                DisplayName.Named(PartyName.parse raw |> CaseBuilders.accepted)
                             PrincipalKind = PrincipalKind.Human
                             Availability = ActorAvailability.Available
                         }
@@ -447,7 +451,7 @@ let tests =
                         Frames.decode (
                             Encoding.UTF8.GetString(bytes).TrimEnd() |> Encoding.UTF8.GetBytes
                         )
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
 
                     match decoded.Result with
                     | FrameResult.Reply reply ->
@@ -620,7 +624,8 @@ let tests =
                                 )
                             DisplayName =
                                 DisplayName.Named(
-                                    PartyName.parse "=authored display name" |> Fixtures.accepted
+                                    PartyName.parse "=authored display name"
+                                    |> CaseBuilders.accepted
                                 )
                             PrincipalKind = PrincipalKind.Human
                             Availability = ActorAvailability.NotEligible
@@ -639,8 +644,8 @@ let tests =
                                             |> Option.get
                                         Action =
                                             ReminderAction.parse "Review evidence"
-                                            |> Fixtures.accepted
-                                        Due = Inputs.date "2026-08-31"
+                                            |> CaseBuilders.accepted
+                                        Due = DomainInputs.date "2026-08-31"
                                         DueState = CaseDue.Today
                                     }
                             PendingReminders = 1L
@@ -685,10 +690,10 @@ let tests =
                 Expect.equal calls.Length 2 "One request per snapshot"
 
                 let first =
-                    Api.caseList.Input.Read "$" (Frames.input calls[0]) |> Fixtures.accepted
+                    Api.caseList.Input.Read "$" (Frames.input calls[0]) |> CaseBuilders.accepted
 
                 let second =
-                    Api.caseList.Input.Read "$" (Frames.input calls[1]) |> Fixtures.accepted
+                    Api.caseList.Input.Read "$" (Frames.input calls[1]) |> CaseBuilders.accepted
 
                 Expect.equal first.Page.AfterCursor None "Start from the requested page"
 

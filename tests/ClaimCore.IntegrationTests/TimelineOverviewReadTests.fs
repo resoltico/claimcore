@@ -209,7 +209,7 @@ let private fixture () =
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                     )))
 
         let parent =
@@ -241,7 +241,9 @@ let private fixture () =
                 (11)
                 (1L)
                 "case.decide"
-                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision))))
+                (ClaimCore.TestSupport.Submissions.fields (
+                    DecisionInput.values (DomainInputs.decision)
+                )))
         |> ignore
 
         for number, action, due in

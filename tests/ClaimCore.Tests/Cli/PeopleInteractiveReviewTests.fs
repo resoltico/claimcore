@@ -22,7 +22,7 @@ let private command (submission: OperationSubmission) = submission
 
 let private targetActor =
     { CliReplyFixtures.receipt.RecordedBy with
-        DisplayName = DisplayName.Named(Inputs.name "Current person")
+        DisplayName = DisplayName.Named(DomainInputs.name "Current person")
     }
 
 let private profile =
@@ -31,7 +31,7 @@ let private profile =
             DisplayName = "Current person"
             Contact = None
         }
-    |> Fixtures.accepted
+    |> CaseBuilders.accepted
 
 let private run words (answer: string option) =
     let calls = ResizeArray<Invocation>()
@@ -46,7 +46,7 @@ let private run words (answer: string option) =
         }
 
     let response frame (endpoint: Endpoint<'input, 'output>) (value: 'output) =
-        CliReply.result frame (endpoint.Output.Write value) |> Fixtures.accepted
+        CliReply.result frame (endpoint.Output.Write value) |> CaseBuilders.accepted
 
     let transport: InteractiveTransport =
         {
@@ -63,7 +63,7 @@ let private run words (answer: string option) =
                                     ActorReviewItem.Actor = targetActor
                                     Principal =
                                         PrincipalKey.human "https://intent.example/" "person"
-                                        |> Fixtures.accepted
+                                        |> CaseBuilders.accepted
                                     Contact = None
                                     State = AccountState.Active
                                     Roles = []
@@ -106,7 +106,7 @@ let private run words (answer: string option) =
                                                                 Revision.first
                                                             ))
                                                             seeds)
-                                                Basis = Inputs.workBasis
+                                                Basis = DomainInputs.workBasis
                                                 Actor = person
                                                 Offers =
                                                     [
@@ -146,7 +146,7 @@ let private run words (answer: string option) =
                                                 DisplayName = text InputTarget.ProfileDisplayName
                                                 Contact = None
                                             }
-                                        |> Fixtures.accepted
+                                        |> CaseBuilders.accepted
                                     ),
                                     true
                                 | "people.disable" -> Some profile, false
@@ -190,7 +190,7 @@ let private run words (answer: string option) =
                                     Context =
                                         {
                                             ProductVersion = "fixture"
-                                            Basis = Inputs.workBasis
+                                            Basis = DomainInputs.workBasis
                                         }
                                     Changes =
                                         [
@@ -275,7 +275,7 @@ let private run words (answer: string option) =
 
     let draft =
         InteractiveReview.prepare console words
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
         |> Option.defaultWith (fun () -> failtest "Expected interactive draft")
 
     let code =
@@ -310,14 +310,14 @@ let tests =
                         [ "case"; "erase"; "CASE-1"; "--expected-family-sequence"; "10" ]
                     ] do
                     Expect.isNone
-                        (InteractiveReview.prepare console words |> Fixtures.accepted)
+                        (InteractiveReview.prepare console words |> CaseBuilders.accepted)
                         "Explicit preconditions use the ordinary automation grammar"
 
                 let prepared =
                     Grammar.prepare
                         (fun () -> operation.ToString("D"))
                         (baseWords "disable" @ [ "--expected-revision"; "2" ])
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
 
                 let input = Frames.value Api.operationExecute prepared.Invocation |> Option.get
 
@@ -444,7 +444,7 @@ let tests =
 
                     let issues =
                         OperationSubmission.syntaxDraft invalid
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
                         |> Option.get
                         |> InputIssues.toList
 

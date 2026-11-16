@@ -41,7 +41,7 @@ let private reset database =
 let private owner (database: PostgresFixture.Database) : InitialOwner =
     {
         Principal = database.Fixture.Owner
-        Profile = Inputs.ownerProfile
+        Profile = DomainInputs.ownerProfile
         Roles = [ Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward; Role.Auditor ]
     }
 
@@ -69,7 +69,7 @@ let private initialization (database: PostgresFixture.Database) =
 
         Expect.equal
             initial.DisplayName
-            (DisplayName.Named(Inputs.name Inputs.ownerProfile.DisplayName))
+            (DisplayName.Named(DomainInputs.name DomainInputs.ownerProfile.DisplayName))
             "Status identifies the authored owner"
 
         let settings =
@@ -115,7 +115,7 @@ let private initialization (database: PostgresFixture.Database) =
                     (Guid.CreateVersion7())
                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                      )
                      |> Map.add
                          (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))

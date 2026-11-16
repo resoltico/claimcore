@@ -62,7 +62,7 @@ let private opening operation values =
     Submissions.create "case.open" operation (Binding.CaseNew Revision.zero) values
 
 let private registration =
-    Inputs.registration
+    DomainInputs.registration
     |> RegistrationInput.values
     |> Submissions.fields
     |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "BOUNDARY")
@@ -77,7 +77,7 @@ let private inputs () =
             (Map.fold
                 (fun result key value -> Map.add key value result)
                 (Submissions.principal other)
-                (Submissions.profile Inputs.actorProfile))
+                (Submissions.profile DomainInputs.actorProfile))
     ]
 
 let private malformed () =
@@ -108,7 +108,7 @@ let private malformed () =
                     (Map.fold
                         (fun result key value -> Map.add key value result)
                         (Submissions.principal other)
-                        (Submissions.profile Inputs.actorProfile))
+                        (Submissions.profile DomainInputs.actorProfile))
             ]
 
         for input in invalid do

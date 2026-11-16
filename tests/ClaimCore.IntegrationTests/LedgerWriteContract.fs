@@ -41,7 +41,7 @@ let internal genesis fixture =
                                         (core fixture fixture.Owner)
                                         tx
                                         (id fixture 1)
-                                        Inputs.ownerProfile
+                                        DomainInputs.ownerProfile
                                         []
                             })
                     CancellationToken = CancellationToken.None

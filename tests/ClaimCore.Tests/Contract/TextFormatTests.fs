@@ -8,13 +8,13 @@ open ClaimCore.Presentation
 open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Tests.TaskBuilders
 
 let private restored (name: string) =
     let encoded =
-        ClaimCore.Tests.Fixtures.opened ()
+        ClaimCore.Tests.CaseBuilders.opened ()
         |> CaseFamily.snapshot
         |> Option.get
         |> ClaimCore.RecordFormat.CaseRecord.encodeSnapshot

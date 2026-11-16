@@ -437,7 +437,7 @@ let private replayPermission (database: PostgresFixture.Database) =
         replayReceipt replay |> ignore
 
         let! bootstrap =
-            Service.provisionOwner first (id fixture 1) Inputs.ownerProfile [] token
+            Service.provisionOwner first (id fixture 1) DomainInputs.ownerProfile [] token
 
         match bootstrap with
         | Ok(Verdict.Replay _) -> ()

@@ -14,12 +14,12 @@ open ClaimCore.TestSupport
 let private context =
     {
         ProductVersion = "fixture"
-        Basis = Inputs.workBasis
+        Basis = DomainInputs.workBasis
     }
 
 let private account =
-    { Inputs.actorReference (CaseFixtures.actorId CliReplyFixtures.id) with
-        DisplayName = DisplayName.Named(Inputs.name "Tess")
+    { DomainInputs.actorReference (CaseFixtures.actorId CliReplyFixtures.id) with
+        DisplayName = DisplayName.Named(DomainInputs.name "Tess")
     }
 
 let private rendered language value =
@@ -34,15 +34,15 @@ let kindGoldens =
                 [
                     PresentedValue.money (
                         Money.create
-                            (Amount.parse "100" |> Fixtures.accepted)
-                            (Currency.parse "EUR" |> Fixtures.accepted)
+                            (Amount.parse "100" |> CaseBuilders.accepted)
+                            (Currency.parse "EUR" |> CaseBuilders.accepted)
                     ),
                     [ "100.00 EUR"; "100,00 EUR"; "100.00 EUR" ]
                     PresentedValue.moneyTotal
-                        (Currency.parse "USD" |> Fixtures.accepted)
-                        (DecimalTotal.parse "0" |> Fixtures.accepted),
+                        (Currency.parse "USD" |> CaseBuilders.accepted)
+                        (DecimalTotal.parse "0" |> CaseBuilders.accepted),
                     [ "0.00 USD"; "0,00 USD"; "0.00 USD" ]
-                    PresentedValue.Date(Inputs.date "2026-11-04"),
+                    PresentedValue.Date(DomainInputs.date "2026-11-04"),
                     [ "4 Nov 2026"; "4 nov. 2026"; "4 نوفمبر 2026" ]
                     PresentedValue.Instant(DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)),
                     [
@@ -50,7 +50,7 @@ let kindGoldens =
                         "4 nov. 2026 12:00 +00:00"
                         "4 نوفمبر 2026 12:00 +00:00"
                     ]
-                    PresentedValue.Party(Inputs.name "Tess"), List.replicate 3 "Tess"
+                    PresentedValue.Party(DomainInputs.name "Tess"), List.replicate 3 "Tess"
                     PresentedValue.Text "Text", List.replicate 3 "Text"
                     PresentedValue.Narrative "First\nSecond", List.replicate 3 "First\nSecond"
                     PresentedValue.Message "label.recorded",
@@ -61,7 +61,7 @@ let kindGoldens =
                     PresentedValue.Actor account, List.replicate 3 "Tess"
                     PresentedValue.State CaseHeadline.Erased, [ "Erased"; "Dzēsta"; "تم المحو" ]
                     PresentedValue.Count 42L, List.replicate 3 "42"
-                    PresentedValue.Reference(Inputs.reference "R-1"), List.replicate 3 "R-1"
+                    PresentedValue.Reference(DomainInputs.reference "R-1"), List.replicate 3 "R-1"
                     PresentedValue.Identifier "ID-1", List.replicate 3 "ID-1"
                     PresentedValue.Absent "label.notRecorded",
                     [ "Not recorded"; "Nav ierakstīts"; "غير مسجّل" ]
@@ -170,9 +170,9 @@ let reviews =
                         "Unchanged person does not become a fake change")
             testCase "case money changes are atomic and erasure removes retained fields" (fun () ->
                 let input =
-                    Inputs.registrationWith
+                    DomainInputs.registrationWith
                         [ BusinessField.ClaimedAmount, "0"; BusinessField.ClaimedCurrency, "EUR" ]
-                        Inputs.registration
+                        DomainInputs.registration
 
                 let fields = CaseState.fields CliReplyFixtures.snapshot.State |> Option.get
 
@@ -192,7 +192,7 @@ let reviews =
                                 { fields with
                                     Registration =
                                         CaseFixtures.registration (
-                                            Inputs.registrationWith
+                                            DomainInputs.registrationWith
                                                 [ BusinessField.ClaimedAmount, "12.3400" ]
                                                 input
                                         )
@@ -276,7 +276,7 @@ let reviews =
                                             ]
                                     }
                             Basis =
-                                { Inputs.workBasis with
+                                { DomainInputs.workBasis with
                                     // November has a stable abbreviation across the supported ICU versions.
                                     // Keep observation on a different day from both business and recording dates.
                                     BusinessDate = DateOnly(2026, 10, 31)

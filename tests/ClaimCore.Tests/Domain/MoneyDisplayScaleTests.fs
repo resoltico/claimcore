@@ -40,13 +40,13 @@ let tests =
                             "1.2345", "JPY", 4
                         ] do
                         Expect.equal
-                            (Money.displayScale (Inputs.money amount currency))
+                            (Money.displayScale (DomainInputs.money amount currency))
                             expected
                             "ISO scale never rounds away accepted meaningful digits"
 
                     for code in [ "EUR"; "JPY"; "BHD" ] do
                         Expect.equal
-                            (Money.displayScale (Inputs.money "100.0000" code))
-                            (Money.displayScale (Inputs.money "100" code))
+                            (Money.displayScale (DomainInputs.money "100.0000" code))
+                            (Money.displayScale (DomainInputs.money "100" code))
                             "Trailing-zero input is an independent negative witness against stored decimal scale")
         ]

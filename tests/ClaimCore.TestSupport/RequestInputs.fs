@@ -104,7 +104,7 @@ let all () : IEndpointInput list =
                     Limit = 50
                 }
         yield EndpointValues.input Api.peopleRequests page
-        yield EndpointValues.input Api.peopleRequestsDismiss Inputs.principal
+        yield EndpointValues.input Api.peopleRequestsDismiss DomainInputs.principal
         yield EndpointValues.input Api.operationGet { OperationId = targetId }
         for preview in [ true; false ] do
             let bind value =
@@ -120,7 +120,7 @@ let all () : IEndpointInput list =
                 create
                     "case.open"
                     (Binding.CaseNew Revision.zero)
-                    (Submissions.fields (RegistrationInput.values Inputs.registration)
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                      |> Map.add
                          (Submissions.field BusinessField.CaseReference)
                          (SubmissionValue.Text "CASE-1"))
@@ -152,7 +152,7 @@ let all () : IEndpointInput list =
                      )
                      |> Map.fold
                          (fun values key value -> Map.add key value values)
-                         (Submissions.profile Inputs.actorProfile))
+                         (Submissions.profile DomainInputs.actorProfile))
 
             yield
                 create

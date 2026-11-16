@@ -16,9 +16,9 @@ let registrationArguments input =
         [ "--" + CommandGrammar.kebab (BusinessField.key field); value ])
 
 let private fieldSamples =
-    (RegistrationInput.values Inputs.registration
-     @ DecisionInput.values Inputs.decision
-     @ PaymentInput.values Inputs.payment)
+    (RegistrationInput.values DomainInputs.registration
+     @ DecisionInput.values DomainInputs.decision
+     @ PaymentInput.values DomainInputs.payment)
     |> List.map (fun (field, value) ->
         // Captured argv columns are space-delimited. Only omitted inputs use this synthetic
         // single-word default; arguments explicitly authored by a test remain untouched.

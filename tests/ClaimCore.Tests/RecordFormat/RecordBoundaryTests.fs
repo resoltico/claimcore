@@ -7,7 +7,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 let private utf8 (value: string) = Encoding.UTF8.GetBytes value
 
@@ -54,7 +54,7 @@ let tests =
                     let oldFields =
                         { fields with
                             Registration =
-                                Inputs.registrationStateWith
+                                DomainInputs.registrationStateWith
                                     [
                                         BusinessField.ClaimantName,
                                         Admitted.Name(CaseFixtures.name "A\u202eB")

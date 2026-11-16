@@ -148,7 +148,7 @@ let private prepare (database: PostgresFixture.Database) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((token))
@@ -292,7 +292,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((token))

@@ -114,7 +114,7 @@ let private repairs database =
                         ActorId = CaseFixtures.actorId (id database.Fixture 1)
                         DisplayName =
                             DisplayName.Named(
-                                PartyName.parse Inputs.ownerProfile.DisplayName
+                                PartyName.parse DomainInputs.ownerProfile.DisplayName
                                 |> Result.defaultWith (string >> failtest)
                             )
                         PrincipalKind = PrincipalKind.Human
@@ -124,7 +124,7 @@ let private repairs database =
 
             Expect.equal
                 current.Work.FollowUp
-                (Some(Inputs.date "2027-12-31"))
+                (Some(DomainInputs.date "2027-12-31"))
                 "Planned date survives replacement"
         | _ -> failtest "Rebuilt work must remain readable"
 

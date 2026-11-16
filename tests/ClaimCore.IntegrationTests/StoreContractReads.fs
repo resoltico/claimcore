@@ -88,7 +88,7 @@ let internal casePage fixture principal visibility after limit =
                                 ({
                                     TransactionPages.CaseQuery.Selection =
                                         {
-                                            DateBasis = Inputs.workBasis
+                                            DateBasis = DomainInputs.workBasis
                                             Visibility = visibility
                                             ActorId = actor.Actor.Value.ActorId
                                             ReadRoles = Access.readRoles principal
@@ -138,7 +138,7 @@ let internal assignedReader fixture (actor: ServiceContext) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((CancellationToken.None))
@@ -174,7 +174,7 @@ let internal registerReader fixture (owner: ServiceContext) target =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (owner) submission ((CancellationToken.None))

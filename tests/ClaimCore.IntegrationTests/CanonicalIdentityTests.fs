@@ -15,7 +15,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private values amount claimant =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [ BusinessField.ClaimedAmount, amount; BusinessField.ClaimantName, claimant ]
         registration
 
@@ -112,7 +112,7 @@ let private peoplePairs (database: PostgresFixture.Database) =
                         (target)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                 return! Service.executeSubmission (actor) submission (token)
             })
@@ -198,7 +198,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((token))
@@ -339,7 +339,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
                 principal
                 None
                 "people.register"
-                (Submissions.profile Inputs.actorProfile)
+                (Submissions.profile DomainInputs.actorProfile)
 
         let! registered = Service.executeSubmission actor ((command)) token
 

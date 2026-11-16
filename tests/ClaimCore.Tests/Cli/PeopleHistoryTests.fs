@@ -51,8 +51,8 @@ let private csvSubjects () =
             Position = EffectPosition.create Sequence.first 0 |> Option.get
             OperationHash = EntryHash.zero
             RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-            RecordedBy = Inputs.actorReference actor
-            Target = Inputs.actorReference actor
+            RecordedBy = DomainInputs.actorReference actor
+            Target = DomainInputs.actorReference actor
             Task = TaskId.ofLiteral "people.register"
             PrivateAvailable = true
             References = { Actors = []; Cases = [] }
@@ -107,7 +107,7 @@ let private csvSubjects () =
 
     let page =
         {
-            PeopleHistoryPage.Basis = Inputs.workBasis
+            PeopleHistoryPage.Basis = DomainInputs.workBasis
             Entries = [ entry ]
             NextCursor = None
         }

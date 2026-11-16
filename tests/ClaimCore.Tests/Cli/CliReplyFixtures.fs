@@ -23,7 +23,7 @@ let peopleRequest =
          )
          |> Map.fold
              (fun values key value -> Map.add key value values)
-             (Submissions.profile Inputs.actorProfile))
+             (Submissions.profile DomainInputs.actorProfile))
 
 let snapshot =
     let fields: CaseFields =
@@ -32,13 +32,13 @@ let snapshot =
             Status = CaseStatus.Opened
             Registration =
                 CaseFixtures.registration (
-                    ClaimCore.TestSupport.Inputs.registrationWith
+                    ClaimCore.TestSupport.DomainInputs.registrationWith
                         [
                             BusinessField.ClaimantName, ("x")
                             BusinessField.InsurerName, ("x")
                             BusinessField.ClaimedAmount, ("0")
                         ]
-                        ((Inputs.registrationOn "2026-01-01" "2026-01-01"))
+                        ((DomainInputs.registrationOn "2026-01-01" "2026-01-01"))
                 )
             Finance = FinancialPosition.undecided
         }
@@ -78,5 +78,5 @@ let receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
     }

@@ -11,18 +11,28 @@ export const CaseActions = ({
   current: CurrentCase;
   onAct: (action: Affordance) => void;
 }) => (
-  <Actions
-    actions={current.screen.regions
-      .filter((region) => region.role === "RECOMMENDATION")
-      .flatMap((region) => region.actions ?? [])
-      .filter((action) => isCaseAct(action.task))}
-    prominent
-    onAction={(action) => {
-      if (isCaseAct(action.task)) {
-        onAct(action);
-      }
-    }}
-  />
+  <>
+    <Actions
+      actions={current.screen.regions
+        .filter((region) => region.role === "RECOMMENDATION")
+        .flatMap((region) => region.actions ?? [])
+        .filter((action) => isCaseAct(action.task))}
+      prominent
+      onAction={(action) => {
+        if (isCaseAct(action.task)) {
+          onAct(action);
+        }
+      }}
+    />
+    <Actions
+      actions={caseActions(current)}
+      onAction={(action) => {
+        if (isCaseAct(action.task)) {
+          onAct(action);
+        }
+      }}
+    />
+  </>
 );
 export const CaseActionAlternatives = ({
   current,

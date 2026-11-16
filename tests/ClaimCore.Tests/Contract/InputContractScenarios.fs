@@ -22,7 +22,7 @@ open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 open ClaimCore.Tests.ContractScenarioInputs
 open ClaimCore.Tests.OutcomeContractScenarios
 
@@ -110,7 +110,7 @@ let internal retainedText () =
         let fields =
             { viewFields original with
                 Registration =
-                    (ClaimCore.TestSupport.Inputs.registrationStateWith
+                    (ClaimCore.TestSupport.DomainInputs.registrationStateWith
                         [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name name) ]
                         ((viewFields original).Registration))
             }
@@ -137,9 +137,9 @@ let internal retainedText () =
                                 Count = 0L
                                 CanAdd = false
                             }
-                        ChangedAt = Inputs.workBasis.ObservedAt
+                        ChangedAt = DomainInputs.workBasis.ObservedAt
                         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-                        Stages = Inputs.stageDisplay snapshot.State
+                        Stages = DomainInputs.stageDisplay snapshot.State
                         Snapshot = snapshot
                         Headline = CaseHeadline.Undecided
                         Attention = []

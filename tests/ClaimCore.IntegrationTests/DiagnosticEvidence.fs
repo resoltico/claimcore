@@ -215,7 +215,9 @@ let internal stateScenarios () =
     let payment =
         "case.recordPayment",
         Submissions.fields (
-            PaymentInput.values (Inputs.paymentFrom [ BusinessField.PaymentDate, "2026-08-20" ])
+            PaymentInput.values (
+                DomainInputs.paymentFrom [ BusinessField.PaymentDate, "2026-08-20" ]
+            )
         )
 
     let correct registrationChoice decisionChoice fields =
@@ -230,11 +232,11 @@ let internal stateScenarios () =
 
     let registration =
         Submissions.updates (
-            RegistrationUpdateInput.values (Inputs.registrationUpdate registration)
+            RegistrationUpdateInput.values (DomainInputs.registrationUpdate registration)
         )
 
     let decisionUpdate value =
-        Submissions.updates (DecisionUpdateInput.values (Inputs.decisionUpdate value))
+        Submissions.updates (DecisionUpdateInput.values (DomainInputs.decisionUpdate value))
 
     [
         [], ("case.open", Submissions.fields (RegistrationInput.values StoreFixtures.registration))
@@ -256,7 +258,7 @@ let internal stateScenarios () =
         ("case.recordPayment",
          Submissions.fields (
              PaymentInput.values (
-                 Inputs.paymentFrom
+                 DomainInputs.paymentFrom
                      [
                          BusinessField.PaymentDate, "2026-08-20"
                          BusinessField.PaidAmount, "751"
@@ -269,7 +271,7 @@ let internal stateScenarios () =
             "case.decide",
             Submissions.fields (
                 DecisionInput.values (
-                    Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
+                    DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
                 )
             )
         ],
@@ -289,7 +291,9 @@ let internal stateScenarios () =
         correct
             "KEEP"
             "UPDATE"
-            (decisionUpdate (Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision))
+            (decisionUpdate (
+                DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
+            ))
     ]
 
 let internal stateEvidence (setup, final) =
@@ -401,13 +405,13 @@ let internal peopleEvidence fixture actor =
             }
 
         let! registered =
-            send 30 owner "people.register" (Submissions.profile Inputs.actorProfile)
+            send 30 owner "people.register" (Submissions.profile DomainInputs.actorProfile)
 
         let! unknown = send 31 service "people.disable" Map.empty
         let! last = send 32 owner "people.disable" Map.empty
 
         let! admitted =
-            send 33 service "people.register" (Submissions.profile Inputs.actorProfile)
+            send 33 service "people.register" (Submissions.profile DomainInputs.actorProfile)
 
         acceptedPeople admitted
 
@@ -460,7 +464,7 @@ let internal identityEvidence fixture actor =
                     "case.open"
                     (Submissions.fields (
                         RegistrationInput.values (
-                            Inputs.registrationWith
+                            DomainInputs.registrationWith
                                 [ BusinessField.ClaimantName, "Different claimant" ]
                                 registration
                         )
@@ -483,7 +487,7 @@ let internal identityEvidence fixture actor =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((ct))
@@ -516,7 +520,7 @@ let internal identityEvidence fixture actor =
                         (reader)
                         (None)
                         "people.setProfile"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                 return! Service.executeSubmission (actor) submission (ct)
             })
@@ -598,7 +602,7 @@ let internal principalEvidence fixture (actor: ServiceContext) =
                     "people.register"
                     (id fixture (60 + index))
                     (OperationBinding.People(None, 0L))
-                    (Submissions.profile Inputs.actorProfile
+                    (Submissions.profile DomainInputs.actorProfile
                      |> Map.add
                          (Submissions.input InputTarget.PrincipalKind)
                          (SubmissionValue.Text "HUMAN")
@@ -694,7 +698,7 @@ let private profileAndDirectoryEvidence fixture actor =
                             (target)
                             (None)
                             "people.admit"
-                            (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile)
+                            (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile)
                              |> Map.add
                                  (TaskInputId.Target InputTarget.Grants)
                                  (ClaimCore.Application.Contracts.SubmissionValue.Rows(

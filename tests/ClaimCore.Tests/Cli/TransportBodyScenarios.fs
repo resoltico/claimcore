@@ -244,7 +244,7 @@ let internal frameResponseBounds () =
                 Limits.MaximumResponseBytes
                 "The delivered frame stays bounded."
 
-            let frame = Frames.decode reply.Bytes |> Fixtures.accepted
+            let frame = Frames.decode reply.Bytes |> CaseBuilders.accepted
 
             match frame.Result with
             | FrameResult.LocalFailure CliFailure.InvalidResponse -> ()

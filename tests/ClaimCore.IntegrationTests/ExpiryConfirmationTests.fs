@@ -25,7 +25,7 @@ let private owner fixture =
         Service.provisionOwner
             service
             (id fixture 1)
-            Inputs.ownerProfile
+            DomainInputs.ownerProfile
             ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
             token
         |> sync
@@ -53,7 +53,9 @@ let private openCase identity reference =
         "case.open"
         (identity)
         (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-        (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (Inputs.registration))
+        (ClaimCore.TestSupport.Submissions.fields (
+            RegistrationInput.values (DomainInputs.registration)
+         )
          |> Map.add
              (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
              (ClaimCore.Application.Contracts.SubmissionValue.Text(reference))))
@@ -196,7 +198,7 @@ let private confirmed () =
                     fixture.Owner
                     None
                     "people.setProfile"
-                    (Submissions.profile Inputs.actorProfile)
+                    (Submissions.profile DomainInputs.actorProfile)
                  |> sync)
 
             ]

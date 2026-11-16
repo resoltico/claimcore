@@ -26,7 +26,7 @@ open ClaimCore.IntegrationTests.ApplicationFixtures
 let internal ct = CancellationToken.None
 
 let internal decision: DecisionInput =
-    (ClaimCore.TestSupport.Inputs.decisionFrom
+    (ClaimCore.TestSupport.DomainInputs.decisionFrom
         [
             BusinessField.PaymentDecisionDate, ("2026-08-15")
             BusinessField.PayableAmount, ("750.00")
@@ -143,37 +143,37 @@ let internal textRequests fixture () =
     [
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (String(char 0xD800, 1)) ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (" Synthetic") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (String('x', 201)) ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic\nParty") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic​Party") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.InsurerName, ("") ]
                 (registration))
     ]
@@ -182,22 +182,22 @@ let internal registrationRequests fixture () =
     [
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentNotificationDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentDate, ("2026-08-05") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, ("2027-01-01")
                     BusinessField.IncidentNotificationDate, ("2027-01-02")
@@ -205,17 +205,17 @@ let internal registrationRequests fixture () =
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentCountry, ("Latvia") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimedAmount, ("-1") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimedCurrency, ("Euro") ]
                 (registration))
     ]
@@ -246,7 +246,7 @@ let internal progressRequests fixture () =
             "case.decide"
             (ClaimCore.TestSupport.Submissions.fields (
                 DecisionInput.values (
-                    (ClaimCore.TestSupport.Inputs.decisionWith
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
                         [ BusinessField.PaymentDecisionDate, ("bad") ]
                         (decision))
                 )
@@ -259,7 +259,7 @@ let internal progressRequests fixture () =
             "case.decide"
             (ClaimCore.TestSupport.Submissions.fields (
                 DecisionInput.values (
-                    (ClaimCore.TestSupport.Inputs.decisionWith
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
                         [ BusinessField.PayableAmount, ("bad") ]
                         (decision))
                 )
@@ -272,7 +272,7 @@ let internal progressRequests fixture () =
             "case.decide"
             (ClaimCore.TestSupport.Submissions.fields (
                 DecisionInput.values (
-                    (ClaimCore.TestSupport.Inputs.decisionWith
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
                         [ BusinessField.PayableCurrency, ("bad") ]
                         (decision))
                 )
@@ -285,7 +285,8 @@ let internal progressRequests fixture () =
             "case.recordPayment"
             (ClaimCore.TestSupport.Submissions.fields (
                 PaymentInput.values (
-                    (ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("bad") ])
+                    (ClaimCore.TestSupport.DomainInputs.paymentFrom
+                        [ BusinessField.PaymentDate, ("bad") ])
                 )
             ))
         request
@@ -314,7 +315,9 @@ let internal scalarRequests fixture () =
             "case.open"
             (ClaimCore.TestSupport.Submissions.fields (
                 RegistrationInput.values (
-                    (Inputs.registrationWith [ BusinessField.IncidentDescription, "" ] registration)
+                    (DomainInputs.registrationWith
+                        [ BusinessField.IncidentDescription, "" ]
+                        registration)
                 )
             ))
     ]

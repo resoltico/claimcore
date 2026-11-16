@@ -66,3 +66,18 @@ it("disables an offered action with Core refusal advice", () => {
   );
   expect(screen.getByRole("button", { name: /^Record payment decision:/u })).toBeDisabled();
 });
+
+it("keeps a supplied nonrecommended action reachable through the overflow control", async () => {
+  const onAct = vi.fn();
+  render(
+    <CaseActions
+      current={{ ...current, screen: { regions: [] }, actions: [alternative] }}
+      onAct={onAct}
+    />,
+  );
+  await userEvent.setup().click(screen.getByText("More actions", { selector: "summary" }));
+  const action = screen.getByRole("button", { name: /^Record payment decision:/u });
+  expect(action).toBeVisible();
+  await userEvent.setup().click(action);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(alternative);
+});

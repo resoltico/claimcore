@@ -21,7 +21,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.Domain
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 open ClaimCore.Tests.ContractScenarioInputs
 open ClaimCore.Tests.OutcomeContractScenarios
 open ClaimCore.Tests.InputContractScenarios

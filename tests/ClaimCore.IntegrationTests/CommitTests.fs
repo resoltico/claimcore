@@ -191,7 +191,7 @@ let private lostPeople drop landed (database: PostgresFixture.Database) =
                 target
                 None
                 "people.register"
-                (Submissions.profile Inputs.actorProfile)
+                (Submissions.profile DomainInputs.actorProfile)
 
         let! unknown =
             (Service.executeSubmission (proxyCore database source) ((request)) (token))

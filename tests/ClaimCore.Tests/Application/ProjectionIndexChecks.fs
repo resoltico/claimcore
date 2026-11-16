@@ -11,7 +11,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 let checks _installation instant =
     let snapshot =
@@ -67,7 +67,7 @@ let checks _installation instant =
             (fun row -> row.Index.Responsible, row.Index.FollowUp, row.Index.WorkSearchText)
             (fun index ->
                 { index with
-                    FollowUp = Some(Inputs.date "2027-12-31")
+                    FollowUp = Some(DomainInputs.date "2027-12-31")
                 })
         check
             VerificationFinding.CaseWorkProjection
@@ -81,34 +81,34 @@ let checks _installation instant =
             (fun row -> row.Index.NotifiedOn)
             (fun index ->
                 { index with
-                    NotifiedOn = Some(Inputs.date "2026-08-04")
+                    NotifiedOn = Some(DomainInputs.date "2026-08-04")
                 })
         check
             VerificationFinding.CaseClaimedAmountProjection
             (fun row -> row.Index.Claimed |> Option.map Money.value)
             (fun index ->
                 { index with
-                    Claimed = Some(Inputs.money "1" "EUR")
+                    Claimed = Some(DomainInputs.money "1" "EUR")
                 })
         check
             VerificationFinding.CaseClaimedCurrencyProjection
             (fun row -> row.Index.Claimed |> Option.map Money.currency)
             (fun index ->
                 { index with
-                    Claimed = Some(Inputs.money "1000" "USD")
+                    Claimed = Some(DomainInputs.money "1000" "USD")
                 })
         check
             VerificationFinding.CasePayableAmountProjection
             (fun row -> row.Index.Payable |> Option.map Money.value)
             (fun index ->
                 { index with
-                    Payable = Some(Inputs.money "1" "EUR")
+                    Payable = Some(DomainInputs.money "1" "EUR")
                 })
         check
             VerificationFinding.CasePayableCurrencyProjection
             (fun row -> row.Index.Payable |> Option.map Money.currency)
             (fun index ->
                 { index with
-                    Payable = Some(Inputs.money "750" "USD")
+                    Payable = Some(DomainInputs.money "750" "USD")
                 })
     ]

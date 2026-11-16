@@ -29,7 +29,7 @@ let tests =
                         "1", "BHD", "1.000 BHD"
                     ] do
                     Expect.equal
-                        (ReplyTextFormat.money "en" (Inputs.money amount currency))
+                        (ReplyTextFormat.money "en" (DomainInputs.money amount currency))
                         expected
                         "Independent literal human-output golden")
             testCase
@@ -38,7 +38,7 @@ let tests =
                     for language, displayLocale in [ "en", "en-GB"; "lv", "lv-LV"; "ar", "ar-AE" ] do
                         for amount in [ "0"; "0.0001"; "10.0100"; "999999999999999999.9999" ] do
                             for currency in [ "EUR"; "JPY"; "BHD"; "XOF"; "XCG" ] do
-                                let value = Inputs.money amount currency
+                                let value = DomainInputs.money amount currency
                                 let rendered = ReplyTextFormat.money language value
                                 let number = rendered.Substring(0, rendered.Length - 4)
 
@@ -51,7 +51,7 @@ let tests =
                                     (Money.value value)
                                     "Human grouping and padding never pass through floating point or round the value")
             testCase "canonical Money and JSON representations are unchanged" (fun () ->
-                let value = Inputs.money "100.0000" "EUR"
+                let value = DomainInputs.money "100.0000" "EUR"
 
                 Expect.equal
                     (Money.format value)

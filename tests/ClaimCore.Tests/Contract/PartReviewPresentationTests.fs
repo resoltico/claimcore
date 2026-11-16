@@ -64,7 +64,7 @@ let tests =
             testCase
                 "a currency-only correction changes money rather than labeling its currency unchanged"
                 (fun () ->
-                    let decision = Inputs.admittedDecision Inputs.decision
+                    let decision = DomainInputs.admittedDecision DomainInputs.decision
 
                     let finance =
                         FinancialPosition.withDecision (Some decision) fields.Finance

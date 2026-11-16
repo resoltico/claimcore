@@ -70,7 +70,7 @@ let internal peopleReviewRefusals fixture =
             [
                 10,
                 "people.register",
-                Submissions.profile Inputs.actorProfile,
+                Submissions.profile DomainInputs.actorProfile,
                 Refusal.People PeopleRefusal.ActorAlreadyRegistered
                 11, "people.disable", Map.empty, Refusal.People PeopleRefusal.LastOwner
                 12,
@@ -121,7 +121,7 @@ let internal peopleReadIsNotManage fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((CancellationToken.None))
@@ -186,7 +186,7 @@ let internal peopleReviewReplay fixture =
                 target
                 (Some 0L)
                 "people.register"
-                (Submissions.profile Inputs.actorProfile)
+                (Submissions.profile DomainInputs.actorProfile)
 
         let! before = ledgerHead fixture
         let! preview, _ = peopleReview fixture fixture.Owner input
@@ -206,7 +206,7 @@ let internal peopleReviewReplay fixture =
 
                 Expect.equal
                     (changes.Profiles.After |> Option.map ActorProfile.authored)
-                    (Some Inputs.actorProfile)
+                    (Some DomainInputs.actorProfile)
                     "Authored profile remains exact"
 
                 Expect.isEmpty changes.Grants "Registration grants no roles"
@@ -277,7 +277,7 @@ let internal grantReviewTarget fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((CancellationToken.None))
@@ -349,7 +349,7 @@ let internal assertGrantRevocation fixture (review: OperationReview) =
 
         Expect.equal
             (changes.Profiles.After |> Option.map ActorProfile.authored)
-            (Some Inputs.actorProfile)
+            (Some DomainInputs.actorProfile)
             "The current profile remains available"
     | _ -> failtest "Person description required"
 
@@ -423,7 +423,7 @@ let internal peopleReviewRechecks fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission ((CancellationToken.None))
@@ -522,7 +522,7 @@ let internal meaningfulScopeAdmission fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission (CancellationToken.None)

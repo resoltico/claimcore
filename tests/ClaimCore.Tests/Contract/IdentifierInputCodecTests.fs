@@ -40,12 +40,12 @@ let tests =
         "declared input maps preserve optional identifiers and reject half-asserted or nested money"
         (fun () ->
             let facts =
-                Inputs.registrationWith
+                DomainInputs.registrationWith
                     [
                         BusinessField.PolicyNumber, "LV / Polise 42"
                         BusinessField.InsurerClaimReference, "ملف / 17"
                     ]
-                    Inputs.registration
+                    DomainInputs.registration
 
             let input =
                 Submissions.create

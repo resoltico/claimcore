@@ -68,7 +68,9 @@ let tests =
                                     (target)
                                     (None)
                                     "people.register"
-                                    (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                                    (ClaimCore.TestSupport.Submissions.profile (
+                                        DomainInputs.actorProfile
+                                    ))
 
                             return! Service.executeSubmission (admin) submission (token)
                         })

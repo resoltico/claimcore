@@ -34,7 +34,7 @@ let private payment date amount currency =
         ]
 
 let private decision amount currency =
-    Inputs.decisionFrom
+    DomainInputs.decisionFrom
         [ BusinessField.PayableAmount, amount; BusinessField.PayableCurrency, currency ]
     |> DecisionInput.values
     |> Submissions.fields
@@ -71,12 +71,12 @@ let internal lifecycle fixture =
                 "case.open"
                 (ClaimCore.TestSupport.Submissions.fields (
                     RegistrationInput.values (
-                        (Inputs.registrationWith
+                        (DomainInputs.registrationWith
                             [
                                 BusinessField.ClaimedAmount, "100"
                                 BusinessField.ClaimedCurrency, "EUR"
                             ]
-                            Inputs.registration)
+                            DomainInputs.registration)
                     )
                 ))
 
@@ -126,12 +126,12 @@ let internal lifecycle fixture =
                 "case.open"
                 (ClaimCore.TestSupport.Submissions.fields (
                     RegistrationInput.values (
-                        (Inputs.registrationWith
+                        (DomainInputs.registrationWith
                             [
                                 BusinessField.ClaimedAmount, "50"
                                 BusinessField.ClaimedCurrency, "USD"
                             ]
-                            Inputs.registration)
+                            DomainInputs.registration)
                     )
                 ))
 

@@ -527,14 +527,14 @@ let private supplementary fixture =
     let name = String.replicate 200 "🙂"
 
     let values =
-        ClaimCore.TestSupport.Inputs.registrationWith
+        ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentCountry, "LT"
                 BusinessField.ClaimantName, name
                 BusinessField.InsurerName, name
                 BusinessField.ClaimedAmount, "1.0000"
             ]
-            ClaimCore.TestSupport.Inputs.registration
+            ClaimCore.TestSupport.DomainInputs.registration
 
     let operation = id ()
 

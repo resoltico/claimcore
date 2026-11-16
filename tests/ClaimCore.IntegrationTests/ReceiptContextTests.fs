@@ -35,7 +35,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((CancellationToken.None))
@@ -67,8 +67,8 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                         "case.amendRegistration"
                         (ClaimCore.TestSupport.Submissions.updates (
                             RegistrationUpdateInput.values (
-                                (Inputs.registrationUpdate (
-                                    ClaimCore.TestSupport.Inputs.registrationWith
+                                (DomainInputs.registrationUpdate (
+                                    ClaimCore.TestSupport.DomainInputs.registrationWith
                                         [ BusinessField.ClaimantName, ("Later Party") ]
                                         (registration)
                                 ))

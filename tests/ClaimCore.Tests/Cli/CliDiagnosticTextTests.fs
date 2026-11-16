@@ -273,12 +273,13 @@ let nextAndConflicts =
                                             Revision = CaseFixtures.revision (int64 number)
                                         }
                                     Task = TaskId.ofLiteral "case.amendRegistration"
-                                    RecordedAt = ClaimCore.TestSupport.Inputs.workBasis.ObservedAt
+                                    RecordedAt =
+                                        ClaimCore.TestSupport.DomainInputs.workBasis.ObservedAt
                                     RecordedBy =
                                         { CliReplyFixtures.receipt.RecordedBy with
                                             DisplayName =
                                                 DisplayName.Named(
-                                                    ClaimCore.TestSupport.Inputs.name (
+                                                    ClaimCore.TestSupport.DomainInputs.name (
                                                         sprintf "Editor %d" number
                                                     )
                                                 )
@@ -303,7 +304,8 @@ let nextAndConflicts =
                                                                                     "Change %d"
                                                                                     number
                                                                             )
-                                                                            |> Fixtures.accepted
+                                                                            |> CaseBuilders
+                                                                                .accepted
                                                                         )
                                                                 }
                                                         ]
@@ -325,7 +327,7 @@ let nextAndConflicts =
                                 ConflictChanges.Page
                                     {
                                         Basis =
-                                            { ClaimCore.TestSupport.Inputs.workBasis with
+                                            { ClaimCore.TestSupport.DomainInputs.workBasis with
                                                 TimeZoneId = "Europe/Riga"
                                             }
                                         Disclosure = HistoryDisclosure.Full
@@ -409,7 +411,7 @@ let nextAndConflicts =
 
                     let custom =
                         ServiceReply.read admitted.Route (replace admitted.Wire)
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
 
                     let customText =
                         ReplyText.resultLines "en" None (FrameResult.Reply custom)

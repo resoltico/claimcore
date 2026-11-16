@@ -43,7 +43,7 @@ let entriesEvidence () =
             "case.recordPayment",
             Submissions.fields (
                 PaymentInput.values (
-                    Inputs.paymentFrom
+                    DomainInputs.paymentFrom
                         [
                             BusinessField.PaymentDate, "2026-08-20"
                             BusinessField.PaidAmount, amount
@@ -157,13 +157,13 @@ let entriesEvidence () =
                 "case.decide",
                 Submissions.fields (
                     DecisionInput.values (
-                        Inputs.decisionWith [ BusinessField.PayableCurrency, "USD" ] decision
+                        DomainInputs.decisionWith [ BusinessField.PayableCurrency, "USD" ] decision
                     )
                 )
                 "case.decide",
                 Submissions.fields (
                     DecisionInput.values (
-                        Inputs.decisionWith [ BusinessField.PayableAmount, "99" ] decision
+                        DomainInputs.decisionWith [ BusinessField.PayableAmount, "99" ] decision
                     )
                 )
             ] do
@@ -223,8 +223,8 @@ let technicalCountEvidence () =
     let date = CaseFixtures.date "2026-08-20"
 
     let decision =
-        Inputs.decisionWith [ BusinessField.PayableAmount, "999999999999999999" ] decision
-        |> Inputs.admittedDecision
+        DomainInputs.decisionWith [ BusinessField.PayableAmount, "999999999999999999" ] decision
+        |> DomainInputs.admittedDecision
 
     let finance =
         FinancialPosition.create
@@ -235,13 +235,13 @@ let technicalCountEvidence () =
         |> valid
 
     let payment =
-        Inputs.paymentFrom
+        DomainInputs.paymentFrom
             [
                 BusinessField.PaymentDate, "2026-08-20"
                 BusinessField.PaidAmount, "0.0001"
                 BusinessField.PaidCurrency, "EUR"
             ]
-        |> Inputs.admittedPayment
+        |> DomainInputs.admittedPayment
 
     Expect.equal
         (FinancialPosition.record (DateOnly(2026, 9, 7)) payment finance)

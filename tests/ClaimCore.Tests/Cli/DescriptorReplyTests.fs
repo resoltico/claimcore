@@ -54,7 +54,7 @@ let private peopleReview () =
             { Actors = []; Cases = [] }
             {
                 ProductVersion = "fixture"
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
             }
 
     let input =
@@ -88,10 +88,10 @@ let rec private unknownPeople =
 let private account =
     {
         ActorReviewItem.Actor =
-            Inputs.actorReference (
+            DomainInputs.actorReference (
                 CaseFixtures.actorId (Guid.Parse "10000000-0000-7000-8000-000000000001")
             )
-        Principal = PrincipalKey.human "https://fixture.example/" "person" |> Fixtures.accepted
+        Principal = PrincipalKey.human "https://fixture.example/" "person" |> CaseBuilders.accepted
         State = AccountState.Active
         Contact = None
         Roles =
@@ -167,7 +167,7 @@ let tests =
                                         HumanReadDocuments.actors
                                         (Outcome.Succeeded
                                             {
-                                                Basis = Inputs.workBasis
+                                                Basis = DomainInputs.workBasis
                                                 Items = [ account ]
                                                 NextCursor = Some "opaque-cursor"
                                             })
@@ -179,7 +179,7 @@ let tests =
                                         (Outcome.Succeeded
                                             {
                                                 Revision = Revision.first
-                                                Basis = Inputs.workBasis
+                                                Basis = DomainInputs.workBasis
                                                 Actor = account
                                                 Offers = []
                                                 Controls = []
@@ -190,7 +190,8 @@ let tests =
                                                             GrantReadModel.Controls = []
                                                             Role = Role.CaseReader
                                                             Scope = GrantScope.Installation
-                                                            GrantedAt = Inputs.workBasis.ObservedAt
+                                                            GrantedAt =
+                                                                DomainInputs.workBasis.ObservedAt
                                                             GrantedBy =
                                                                 ResponseExamples.caseRead
                                                                     .RecordedBy
@@ -205,13 +206,15 @@ let tests =
                                         HumanReadDocuments.requests
                                         (Outcome.Succeeded
                                             {
-                                                Basis = Inputs.workBasis
+                                                Basis = DomainInputs.workBasis
                                                 Items =
                                                     [
                                                         {
                                                             Principal = account.Principal
-                                                            FirstSeen = Inputs.workBasis.ObservedAt
-                                                            LastSeen = Inputs.workBasis.ObservedAt
+                                                            FirstSeen =
+                                                                DomainInputs.workBasis.ObservedAt
+                                                            LastSeen =
+                                                                DomainInputs.workBasis.ObservedAt
                                                             Claims =
                                                                 RequesterClaims.admit
                                                                     (Some "Request name")
@@ -337,14 +340,14 @@ let assigneePresentation =
                                 DisplayName = "Anna Ozola"
                                 Contact = None
                             }
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
                     ))
 
             let page: AssigneePage =
                 {
                     CaseId = ResponseExamples.snapshot.CaseId
                     WorkRevision = Revision.zero
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Items = [ actor ]
                     NextCursor = Some "next-page"
                 }
@@ -419,11 +422,11 @@ let fullDirectoryAndAuditDetails =
                         DisplayName = "Earlier profile"
                         Contact = Some "historical-only@example.test"
                     }
-                |> Fixtures.accepted
+                |> CaseBuilders.accepted
 
             let principal =
                 PrincipalKey.human "https://historical-issuer.example/" "historical-subject"
-                |> Fixtures.accepted
+                |> CaseBuilders.accepted
 
             let blank =
                 {
@@ -486,7 +489,7 @@ let fullDirectoryAndAuditDetails =
                             EffectPosition.create (CaseFixtures.sequence (int64 (index + 1))) 0
                             |> Option.get
                         OperationHash = EntryHash.zero
-                        RecordedAt = Inputs.workBasis.ObservedAt
+                        RecordedAt = DomainInputs.workBasis.ObservedAt
                         RecordedBy = account.Actor
                         Target = account.Actor
                         Task = TaskId.ofLiteral task
@@ -497,7 +500,7 @@ let fullDirectoryAndAuditDetails =
 
             let history: PeopleHistoryPage =
                 {
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Entries = entries
                     NextCursor = None
                 }
@@ -572,7 +575,7 @@ let fullDirectoryAndAuditDetails =
 
             let page: ActorReviewPage =
                 {
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Items = [ mixed ]
                     NextCursor = None
                 }
@@ -612,13 +615,14 @@ let emptyGrantPageDetails =
     testCase "empty grant pages retain their account presentation through wire and CLI" (fun () ->
         let target =
             { account with
-                Contact = Some(ContactText.parse "empty-grants@example.test" |> Fixtures.accepted)
+                Contact =
+                    Some(ContactText.parse "empty-grants@example.test" |> CaseBuilders.accepted)
             }
 
         let page: PeopleGrantPage =
             {
                 Revision = Revision.first
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 Actor = target
                 Offers = []
                 Controls = []

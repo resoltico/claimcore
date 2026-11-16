@@ -48,7 +48,7 @@ let private sessions (fixture: PublishedFixture.Fixture) =
 
 let private openFrame operationId reference =
     let registration =
-        ClaimCore.TestSupport.Inputs.registrationWith
+        ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "2026-09-01"
                 BusinessField.IncidentNotificationDate, "2026-09-02"
@@ -58,7 +58,7 @@ let private openFrame operationId reference =
                 BusinessField.ClaimedAmount, "10"
                 BusinessField.ClaimedCurrency, "EUR"
             ]
-            ClaimCore.TestSupport.Inputs.registration
+            ClaimCore.TestSupport.DomainInputs.registration
 
     frame
         "operation.execute"

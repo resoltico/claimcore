@@ -17,7 +17,7 @@ let private entry index task changes =
         PeopleHistoryEntry.OperationId = ResponseExamples.receipt.OperationId
         Position = EffectPosition.create Sequence.first index |> Option.get
         OperationHash = EntryHash.zero
-        RecordedAt = Inputs.workBasis.ObservedAt
+        RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy
         Target = ResponseExamples.caseRead.RecordedBy
         Task = TaskId.ofLiteral task
@@ -46,7 +46,7 @@ let tests =
         let document =
             HumanReadDocuments.history
                 {
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Entries =
                         [
                             entry

@@ -61,7 +61,7 @@ let internal malformedOptionalDate (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let decision: DecisionInput =
-            (ClaimCore.TestSupport.Inputs.decisionFrom
+            (ClaimCore.TestSupport.DomainInputs.decisionFrom
                 [
                     BusinessField.PaymentDecisionDate, ("2026-08-15")
                     BusinessField.PayableAmount, ("1")

@@ -33,7 +33,7 @@ let private runtime () =
             Service.provisionOwner
                 service
                 (id fixture 1)
-                Inputs.ownerProfile
+                DomainInputs.ownerProfile
                 ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
                 token
             |> sync

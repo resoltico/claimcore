@@ -33,13 +33,13 @@ let position: LedgerPosition =
     }
 
 let private registration =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [
             BusinessField.ClaimantName, "Synthetic claimant"
             BusinessField.InsurerName, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.00"
         ]
-        Inputs.registration
+        DomainInputs.registration
 
 let private request reference =
     Submissions.create
@@ -66,7 +66,7 @@ let view reference : CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration = Inputs.admittedRegistration registration
+                    Registration = DomainInputs.admittedRegistration registration
                     Finance = FinancialPosition.undecided
                 }
     }
@@ -102,7 +102,7 @@ let receipt id (reference: string) : OperationReceipt =
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)
+        RecordedBy = DomainInputs.actorReference (CaseFixtures.actorId operationId)
         Basis =
             {
                 ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)

@@ -100,7 +100,7 @@ let private projection (database: PostgresFixture.Database) =
             Expect.equal
                 context.Self.DisplayName
                 (DisplayName.Named(
-                    PartyName.parse Inputs.ownerProfile.DisplayName
+                    PartyName.parse DomainInputs.ownerProfile.DisplayName
                     |> Result.defaultWith (string >> failtest)
                 ))
                 "Rebuild restores authored profile instead of identity-provider names"

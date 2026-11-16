@@ -47,7 +47,7 @@ let private malformedIdentity () =
                 "case.open"
                 (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
                 (Binding.CaseNew Revision.zero)
-                (Submissions.fields (RegistrationInput.values Inputs.registration)
+                (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                  |> Map.add
                      (Submissions.field BusinessField.CaseReference)
                      (ClaimCore.Application.Contracts.SubmissionValue.Text "IDENTITY-1")
@@ -59,7 +59,7 @@ let private malformedIdentity () =
 
         let admitted =
             OperationSubmissionCodecs.submission.Read "$" wire
-            |> ClaimCore.Tests.Fixtures.accepted
+            |> ClaimCore.Tests.CaseBuilders.accepted
 
         Expect.equal
             admitted.Envelope.Inputs[Submissions.field BusinessField.ClaimedAmount]

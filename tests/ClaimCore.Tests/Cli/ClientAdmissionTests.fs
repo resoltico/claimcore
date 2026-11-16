@@ -138,7 +138,7 @@ let private reminderRevisionAdmission () =
         RemoteServiceCall.send client access frame beforeSend cancelled
 
     let zeroCode, zeroBytes, _ = CliTransportFixture.call (raw 0) invoke
-    let zero = Frames.decode zeroBytes |> Fixtures.accepted
+    let zero = Frames.decode zeroBytes |> CaseBuilders.accepted
     Expect.equal zeroCode 2 "An invalid raw reminder frame refuses cleanly"
     Expect.equal zero.Delivery DeliveryState.NotSent "Invalid revision never dispatches"
 
@@ -148,7 +148,7 @@ let private reminderRevisionAdmission () =
 
     Expect.equal exchanges 0 "Actual in-memory HTTP handler sees no exchange"
     let oneCode, oneBytes, _ = CliTransportFixture.call (raw 1) invoke
-    let one = Frames.decode oneBytes |> Fixtures.accepted
+    let one = Frames.decode oneBytes |> CaseBuilders.accepted
     Expect.equal oneCode 2 "A genuine delivered service refusal retains its exit code"
     Expect.equal one.Delivery DeliveryState.Delivered "Positive revision reaches the transport"
 
@@ -208,7 +208,7 @@ let private reminderRevisionAdmission () =
             Grammar.prepare
                 (fun () -> operationId.ToString("D"))
                 (arguments |> List.filter ((<>) "--dry-run"))
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         Expect.isOk
             (Frames.admit prepared.Bytes)
@@ -233,7 +233,7 @@ let private pageBounds () =
                     Revision = Revision.first
                 }
             Task = TaskId.ofLiteral "case.open"
-            RecordedAt = Inputs.workBasis.ObservedAt
+            RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = directory.Actor.Actor
             Changes = TimelineChanges.Withheld
         }
@@ -246,7 +246,7 @@ let private pageBounds () =
                 (RepresentationReply.Data(
                     Outcome.Succeeded
                         {
-                            ActorReviewPage.Basis = Inputs.workBasis
+                            ActorReviewPage.Basis = DomainInputs.workBasis
                             Items = [ directory.Actor ]
                             NextCursor = None
                         }
@@ -263,7 +263,7 @@ let private pageBounds () =
                                         GrantReadModel.Controls = []
                                         Role = Role.CaseReader
                                         Scope = GrantScope.Installation
-                                        GrantedAt = Inputs.workBasis.ObservedAt
+                                        GrantedAt = DomainInputs.workBasis.ObservedAt
                                         GrantedBy = ResponseExamples.caseRead.RecordedBy
                                     }
                                 ]
@@ -276,7 +276,7 @@ let private pageBounds () =
                     Outcome.Succeeded
                         {
                             CaseTimelinePage.Disclosure = HistoryDisclosure.Full
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId
                             Reference = ResponseExamples.snapshot.Reference
                             Items = [ timeline ]

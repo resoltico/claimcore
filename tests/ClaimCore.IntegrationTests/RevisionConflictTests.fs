@@ -34,8 +34,8 @@ let private page (conflict: RevisionConflictInfo) =
     | other -> failtestf "Expected observed change page: %A" other
 
 let private update amount =
-    Inputs.registrationWith [ BusinessField.ClaimedAmount, amount ] registration
-    |> Inputs.registrationUpdate
+    DomainInputs.registrationWith [ BusinessField.ClaimedAmount, amount ] registration
+    |> DomainInputs.registrationUpdate
     |> RegistrationUpdateInput.values
     |> Submissions.updates
 
@@ -179,7 +179,9 @@ let tests =
                                 (registrar)
                                 (None)
                                 "people.register"
-                                (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                                (ClaimCore.TestSupport.Submissions.profile (
+                                    DomainInputs.actorProfile
+                                ))
 
                         return! Service.executeSubmission (owner) submission (token)
                     })

@@ -56,7 +56,7 @@ let createFor issuer subject =
                     (Submissions.principal service
                      |> Map.fold
                          (fun values key value -> Map.add key value values)
-                         (Submissions.profile Inputs.actorProfile))
+                         (Submissions.profile DomainInputs.actorProfile))
 
             let! registered =
                 Service.executeSubmission owner registrationInput CancellationToken.None

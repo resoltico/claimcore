@@ -15,15 +15,17 @@ let private accepted result =
     result |> Result.defaultWith (string >> failtest)
 
 let private read () =
-    let payment = Inputs.admittedPayment Inputs.payment
+    let payment = DomainInputs.admittedPayment DomainInputs.payment
 
     let finance =
         FinancialPosition.undecided
-        |> FinancialPosition.withDecision (Some(Inputs.admittedDecision Inputs.decision))
+        |> FinancialPosition.withDecision (
+            Some(DomainInputs.admittedDecision DomainInputs.decision)
+        )
         |> accepted
 
     let finance =
-        FinancialPosition.record Inputs.workBasis.BusinessDate payment finance
+        FinancialPosition.record DomainInputs.workBasis.BusinessDate payment finance
         |> accepted
 
     let snapshot =
@@ -52,7 +54,7 @@ let private read () =
             snapshot.CaseId
             Revision.first
             (ReminderAction.parse "Core action seed" |> accepted)
-            (CalendarDate.ofDate Inputs.workBasis.BusinessDate)
+            (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
             ReminderState.Pending
         |> accepted
 
@@ -60,9 +62,9 @@ let private read () =
         {
             ReminderReadModel.Reminder = reminder
             Reference = snapshot.Reference
-            ClaimantName = Inputs.name "Core claimant"
+            ClaimantName = DomainInputs.name "Core claimant"
             Responsible = None
-            RecordedAt = Inputs.workBasis.ObservedAt
+            RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = ResponseExamples.caseRead.RecordedBy
             Offers =
                 [

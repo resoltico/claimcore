@@ -95,7 +95,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                         (human)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.ownerProfile))
 
                 return! Service.executeSubmission (owner) submission (token)
             })
@@ -243,7 +243,7 @@ let private lockRace (database: PostgresFixture.Database) =
                         (target)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.ownerProfile))
 
                 return! Service.executeSubmission ((core fixture fixture.Owner)) submission (token)
             })
@@ -312,7 +312,7 @@ let private administration (database: PostgresFixture.Database) =
                         (audit)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.ownerProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.ownerProfile))
 
                 return! Service.executeSubmission (owner) submission (token)
             })

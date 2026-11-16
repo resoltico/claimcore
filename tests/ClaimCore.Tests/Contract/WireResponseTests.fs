@@ -141,7 +141,7 @@ let private malformed () =
             "{\"acts\":[],\"history\":\""
             + token
             + "\",\"maintenance\":{\"active\":false},\"recommended\":null}"
-            |> Fixtures.completeAdviceWire
+            |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
         let advice = Codec.decode 4096 ResponseCodecs.caseAdvice raw |> accepted
@@ -152,7 +152,7 @@ let private malformed () =
             "{\"acts\":[],\"history\":"
             + oldShape
             + ",\"maintenance\":{\"active\":false},\"recommended\":null}"
-            |> Fixtures.completeAdviceWire
+            |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
         Expect.isError
@@ -174,12 +174,15 @@ let private malformed () =
             (Codec.decode
                 4096
                 ResponseCodecs.caseAdvice
-                (Fixtures.completeAdviceWire valid |> bytes))
+                (ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire valid |> bytes))
             "The matching complete advice admits"
 
     for raw in [ ordinary; missing ] do
         Expect.isError
-            (Codec.decode 4096 ResponseCodecs.caseAdvice (Fixtures.completeAdviceWire raw |> bytes))
+            (Codec.decode
+                4096
+                ResponseCodecs.caseAdvice
+                (ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire raw |> bytes))
             "Correction advice is conditional"
 
     Expect.isError

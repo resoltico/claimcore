@@ -38,7 +38,7 @@ let tests =
                 "case.open"
                 operation
                 (Binding.CaseNew Revision.zero)
-                (Submissions.fields (RegistrationInput.values Inputs.registration)
+                (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                  |> Map.add
                      (Submissions.field BusinessField.CaseReference)
                      (SubmissionValue.Text "ECHO-1"))

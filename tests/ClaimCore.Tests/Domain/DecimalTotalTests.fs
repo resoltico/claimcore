@@ -2,9 +2,6 @@ module ClaimCore.Tests.DecimalTotalTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Wire
-open ClaimCore.Presentation
-open ClaimCore.Json
 
 let private accepted result =
     result |> Result.defaultWith (fun value -> failtestf "%A" value)
@@ -39,15 +36,4 @@ let tests =
                 for invalid in
                     [ "-1"; "+1"; "01"; "1e2"; ".1"; "1."; "1.00001"; String.replicate 41 "1" ] do
                     Expect.isError (DecimalTotal.parse invalid) "Closed unsigned exact grammar")
-            testCase "wire totals require canonical decimal spelling" (fun () ->
-                for raw in [ "1.0"; "0.0000"; "01"; "-1" ] do
-                    Expect.isError
-                        (CaseTotalsCodecs.total.Read "$" (JsonValue.String raw))
-                        "No alternate wire spelling"
-
-                Expect.isOk
-                    (CaseTotalsCodecs.total.Read
-                        "$"
-                        (JsonValue.String "123456789012345678901234567890.1234"))
-                    "The wire scalar reaches beyond System.Decimal")
         ]

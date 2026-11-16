@@ -10,7 +10,7 @@ let tests =
         "complete typed business groups"
         [
             testCase "registration constructors reject reversed chronology" (fun () ->
-                let original = Inputs.admittedRegistration Inputs.registration
+                let original = DomainInputs.admittedRegistration DomainInputs.registration
                 let values = Registration.values original
 
                 let set field date =
@@ -32,7 +32,7 @@ let tests =
 
             )
             testCase "authored constructors reject missing duplicate and foreign fields" (fun () ->
-                let values = RegistrationInput.values Inputs.registration
+                let values = RegistrationInput.values DomainInputs.registration
 
                 Expect.isError
                     (RegistrationInput.create (
@@ -54,14 +54,17 @@ let tests =
                     (RegistrationInput.create values)
                     "A complete authored group remains constructible")
             testCase "admitted constructors enforce value kinds and completeness" (fun () ->
-                let values = Registration.values (Inputs.admittedRegistration Inputs.registration)
+                let values =
+                    Registration.values (
+                        DomainInputs.admittedRegistration DomainInputs.registration
+                    )
 
                 let wrongKind =
                     values
                     |> List.map (fun (field, value) ->
                         field,
                         if field = BusinessField.IncidentDate then
-                            Admitted.Name(Inputs.name "Synthetic")
+                            Admitted.Name(DomainInputs.name "Synthetic")
                         else
                             value)
 

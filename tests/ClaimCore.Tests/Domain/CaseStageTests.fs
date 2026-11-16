@@ -5,7 +5,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 open ClaimCore.TestSupport
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 let private date text = CalendarDate.parse text |> accepted
 let private openedOn = date "2026-08-02"

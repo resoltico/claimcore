@@ -1,6 +1,4 @@
-module ClaimCore.Tests.TypedBusinessApiTests
-
-open ClaimCore.CommandLine
+module ClaimCore.Tests.Architecture.DomainApiTests
 
 open System
 open System.IO

@@ -459,7 +459,7 @@ let private payableIndexFinding expected statement database =
                     (1L)
                     "case.decide"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        DecisionInput.values (Inputs.decision)
+                        DecisionInput.values (DomainInputs.decision)
                     )))))
                 token
 

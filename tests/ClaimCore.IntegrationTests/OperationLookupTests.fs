@@ -86,7 +86,7 @@ let private owner fixture =
             Service.provisionOwner
                 service
                 (OperationIds.fresh ())
-                Inputs.ownerProfile
+                DomainInputs.ownerProfile
                 []
                 CancellationToken.None
 
@@ -115,7 +115,7 @@ let private request operation =
         (Map.fold
             (fun values key value -> Map.add key value values)
             (Submissions.principal principal)
-            (Submissions.profile Inputs.ownerProfile))
+            (Submissions.profile DomainInputs.ownerProfile))
 
 let private headWaiter (db: PostgresFixture.Database) =
     task {
@@ -600,7 +600,7 @@ let tests =
                                         (Some 0L)
                                         "people.register"
                                         (ClaimCore.TestSupport.Submissions.profile (
-                                            Inputs.actorProfile
+                                            DomainInputs.actorProfile
                                         ))
 
                                 return!

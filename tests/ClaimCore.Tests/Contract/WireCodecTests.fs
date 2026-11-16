@@ -258,7 +258,8 @@ let paymentCountIssue =
                 Encoding.UTF8.GetBytes
                     """{"code":"PAYMENT_COUNT_LIMIT","input":"group:payment","row":null}"""
 
-            let issue = Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> Fixtures.accepted
+            let issue =
+                Codec.decode 4096 DiagnosticCodecs.inputIssue raw |> CaseBuilders.accepted
 
             Expect.equal
                 issue.Target

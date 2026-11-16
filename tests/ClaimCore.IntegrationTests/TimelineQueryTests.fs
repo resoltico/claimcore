@@ -41,7 +41,7 @@ let tests =
                     }
 
                 let facts =
-                    Inputs.registrationWith
+                    DomainInputs.registrationWith
                         [
                             BusinessField.ClaimedAmount, "1000"
                             BusinessField.ClaimedCurrency, "EUR"
@@ -183,7 +183,7 @@ let tests =
                         principal
                         None
                         "people.register"
-                        (Submissions.profile Inputs.actorProfile)
+                        (Submissions.profile DomainInputs.actorProfile)
 
                 let! _ = execute owner registration
 

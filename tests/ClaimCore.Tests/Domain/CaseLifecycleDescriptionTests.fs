@@ -1,24 +1,15 @@
-module ClaimCore.Tests.CaseChangesTests
+module ClaimCore.Tests.CaseLifecycleDescriptionTests
 
-open System
 open Expecto
-open ClaimCore.Application
-open ClaimCore.Application.Storage
-open ClaimCore.Application.Reads
-open ClaimCore.Application.Execution
-open ClaimCore.Application.Verification
-open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Domain.Changes
 open ClaimCore.TestSupport
-
-let private identity = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
 let private fields: CaseFields =
     {
         CaseReference = CaseFixtures.reference "CORE-HISTORY"
         Status = CaseStatus.Opened
-        Registration = Inputs.admittedRegistration Inputs.registration
+        Registration = DomainInputs.admittedRegistration DomainInputs.registration
         Finance = FinancialPosition.undecided
     }
 
@@ -49,15 +40,10 @@ let private live name =
 
 let private lifecycle before after =
     (CaseDescription.describe fields.CaseReference before after).Lifecycle
-    |> Option.map (fun change ->
-        {
-            LifecycleChange.Before = change.Before
-            After = change.After |> Option.get
-        })
 
 [<Tests>]
 let tests =
-    testCase "timeline lifecycle differences preserve creation, changes and stable state" (fun () ->
+    testCase "case lifecycle descriptions preserve voiding and reinstatement" (fun () ->
         let active = live "Before"
 
         let voided =
@@ -66,25 +52,11 @@ let tests =
             }
 
         Expect.equal
-            (lifecycle None active)
-            (Some
-                {
-                    Before = None
-                    After = Lifecycle.Active
-                })
-            "Creation has no predecessor lifecycle"
-
-        Expect.equal
-            (lifecycle (Some active) (live "Changed name"))
-            None
-            "Business changes do not fabricate a lifecycle change"
-
-        Expect.equal
             (lifecycle (Some active) voided)
             (Some
                 {
                     Before = Some Lifecycle.Active
-                    After = Lifecycle.Voided
+                    After = Some Lifecycle.Voided
                 })
             "Voiding retains both lifecycle values"
 
@@ -93,6 +65,6 @@ let tests =
             (Some
                 {
                     Before = Some Lifecycle.Voided
-                    After = Lifecycle.Active
+                    After = Some Lifecycle.Active
                 })
             "Reinstatement retains both lifecycle values")

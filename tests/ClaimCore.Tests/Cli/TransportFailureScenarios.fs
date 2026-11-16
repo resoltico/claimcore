@@ -299,7 +299,7 @@ let internal malformedBusinessInput () =
     let invocation =
         bytes ($"{{\"endpoint\":\"operation.execute\",\"input\":{malformed}}}")
         |> Frames.admit
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
 
     let rejected =
         samples "operation.execute"
@@ -325,7 +325,7 @@ let internal malformedBusinessInput () =
     let reply = send handler invocation
     Expect.equal reply.ExitCode 2 "A typed business rejection exits two after dispatch."
 
-    let frame = Frames.decode reply.Bytes |> Fixtures.accepted
+    let frame = Frames.decode reply.Bytes |> CaseBuilders.accepted
 
     match frame.Result with
     | FrameResult.Reply value ->

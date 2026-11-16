@@ -127,7 +127,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (id fixture 7)
                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                      )
                      |> Map.add
                          (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
@@ -186,12 +186,12 @@ let private scenario (database: PostgresFixture.Database) =
 
             Expect.equal
                 (label responsibility.Before)
-                (Some(DisplayName.Named(Inputs.name "Alice")))
+                (Some(DisplayName.Named(DomainInputs.name "Alice")))
                 "The SQL batch retains the previous actor on the same case"
 
             Expect.equal
                 (label responsibility.After)
-                (Some(DisplayName.Named(Inputs.name "Bob")))
+                (Some(DisplayName.Named(DomainInputs.name "Bob")))
                 "The SQL batch retains the proposed actor independently"
         | other -> failtestf "%A" other
 
@@ -223,7 +223,7 @@ let private scenario (database: PostgresFixture.Database) =
                                                            _)) ->
             Expect.equal
                 (view.Responsible |> Option.map _.DisplayName)
-                (Some(DisplayName.Named(Inputs.name "Current Alice")))
+                (Some(DisplayName.Named(DomainInputs.name "Current Alice")))
                 "Historical work resolves the current saved name"
         | other -> failtestf "%A" other
 
@@ -276,7 +276,7 @@ let private scenario (database: PostgresFixture.Database) =
         | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.DisplayName
-                (DisplayName.Named(Inputs.name "Saved Bob"))
+                (DisplayName.Named(DomainInputs.name "Saved Bob"))
                 "Accepted profile updates reflect the new saved name"
         | other -> failtestf "%A" other
 
@@ -347,7 +347,7 @@ let private scenario (database: PostgresFixture.Database) =
         | PeopleTargetDisclosure.Disclosed actor ->
             Expect.equal
                 actor.DisplayName
-                (DisplayName.Named(Inputs.name "Current private Bob"))
+                (DisplayName.Named(DomainInputs.name "Current private Bob"))
                 "Regrant resolves the current account name"
         | other -> failtestf "%A" other
 

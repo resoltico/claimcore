@@ -50,7 +50,7 @@ let private handover (database: PostgresFixture.Database) =
                         (principal)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                 return! Service.executeSubmission (owner) submission (token)
             })
@@ -82,7 +82,7 @@ let private handover (database: PostgresFixture.Database) =
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                     )))))
                 token
 
@@ -113,7 +113,7 @@ let private handover (database: PostgresFixture.Database) =
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (Inputs.registration)
+                        RegistrationInput.values (DomainInputs.registration)
                     )))))
                 token
 

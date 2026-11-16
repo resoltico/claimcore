@@ -241,7 +241,7 @@ let internal malformedWrites fixture =
             (principal "new-person")
             None
             "people.register"
-            (Submissions.profile Inputs.actorProfile))
+            (Submissions.profile DomainInputs.actorProfile))
             .GetAwaiter()
             .GetResult()
         (personSubmission
@@ -313,7 +313,7 @@ let internal lifecycle fixture =
                             (target)
                             (None)
                             "people.register"
-                            (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                            (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                     return! Service.executeSubmission (owner) submission (token)
                 })
@@ -422,7 +422,7 @@ let internal targetPrivacy fixture =
                         (reader)
                         (None)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                 return! Service.executeSubmission (owner) submission (token)
             })

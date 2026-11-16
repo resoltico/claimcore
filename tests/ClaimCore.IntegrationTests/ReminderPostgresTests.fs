@@ -235,7 +235,7 @@ let private dates database =
         accepted cancelled |> ignore
 
         let minimumRegistration =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, "0001-01-01"
                     BusinessField.IncidentNotificationDate, "0001-01-01"
@@ -534,7 +534,7 @@ let private causalEffect database =
                                         Plan =
                                             Some
                                                 { plan with
-                                                    Due = Inputs.date "2027-01-02"
+                                                    Due = DomainInputs.date "2027-01-02"
                                                 }
                                     }
                         }
@@ -889,7 +889,7 @@ let private currentLookup database =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (actor) submission (token)

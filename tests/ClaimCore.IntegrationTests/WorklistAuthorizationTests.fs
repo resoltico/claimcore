@@ -62,7 +62,7 @@ let tests =
                         (operationId (3 + index))
                         (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                         (ClaimCore.TestSupport.Submissions.fields (
-                            RegistrationInput.values (Inputs.registration)
+                            RegistrationInput.values (DomainInputs.registration)
                          )
                          |> Map.add
                              (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
@@ -89,7 +89,7 @@ let tests =
                         (servicePrincipal)
                         (Some 0L)
                         "people.register"
-                        (ClaimCore.TestSupport.Submissions.profile (Inputs.actorProfile))
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
 
                 return! Service.executeSubmission (admin) submission (CancellationToken.None)
             })

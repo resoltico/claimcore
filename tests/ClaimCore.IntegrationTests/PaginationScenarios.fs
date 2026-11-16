@@ -60,7 +60,7 @@ let internal reader fixture (admin: ServiceContext) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (admin) submission ((CancellationToken.None))
@@ -95,7 +95,7 @@ let internal createHistory fixture (actor: ServiceContext) =
 
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
-                (ClaimCore.TestSupport.Inputs.registrationWith
+                (ClaimCore.TestSupport.DomainInputs.registrationWith
                     [ BusinessField.ClaimantName, ("Party " + string n) ]
                     (registration))
 
@@ -109,7 +109,9 @@ let internal createHistory fixture (actor: ServiceContext) =
                         (revision)
                         "case.amendRegistration"
                         (ClaimCore.TestSupport.Submissions.updates (
-                            RegistrationUpdateInput.values ((Inputs.registrationUpdate values))
+                            RegistrationUpdateInput.values (
+                                (DomainInputs.registrationUpdate values)
+                            )
                         )))))
                     (CancellationToken.None))
 
@@ -133,7 +135,7 @@ let internal registerActors fixture (actor: ServiceContext) =
                             (None)
                             "people.register"
                             (ClaimCore.TestSupport.Submissions.profile (
-                                ClaimCore.TestSupport.Inputs.actorProfile
+                                ClaimCore.TestSupport.DomainInputs.actorProfile
                             ))
 
                     return! Service.executeSubmission (actor) submission ((CancellationToken.None))

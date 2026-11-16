@@ -251,7 +251,8 @@ let private storage () =
                                 Content =
                                     Some
                                         {
-                                            Registration = Inputs.admittedRegistration registration
+                                            Registration =
+                                                DomainInputs.admittedRegistration registration
                                             Finance = FinancialPosition.undecided
                                         }
                             }
@@ -566,7 +567,7 @@ let familyMarkers =
                             "CASE-MARKERS"
                             0L
                             "case.open"
-                            (Submissions.fields (RegistrationInput.values Inputs.registration)))
+                            (Submissions.fields (RegistrationInput.values DomainInputs.registration)))
                         token
                     |> Async.AwaitTask
 
@@ -581,7 +582,7 @@ let familyMarkers =
                             "CASE-MARKERS"
                             1L
                             "case.decide"
-                            (Submissions.fields (DecisionInput.values Inputs.decision)))
+                            (Submissions.fields (DecisionInput.values DomainInputs.decision)))
                         token
                     |> Async.AwaitTask
 
@@ -589,7 +590,9 @@ let familyMarkers =
 
                 for number, revision, amount in [ 12, 2L, "10"; 13, 3L, "5" ] do
                     let input =
-                        Inputs.paymentWith [ BusinessField.PaidAmount, amount ] Inputs.payment
+                        DomainInputs.paymentWith
+                            [ BusinessField.PaidAmount, amount ]
+                            DomainInputs.payment
                         |> PaymentInput.values
                         |> Submissions.fields
 

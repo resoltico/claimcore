@@ -39,7 +39,7 @@ let frame endpoint =
                 CliReplyFixtures.id
                 (Binding.CaseNew Revision.zero)
                 (Submissions.fields (
-                    RegistrationInput.values (Inputs.registrationOn "2026-01-01" "2026-01-01")
+                    RegistrationInput.values (DomainInputs.registrationOn "2026-01-01" "2026-01-01")
                  )
                  |> Map.add
                      (Submissions.field BusinessField.CaseReference)

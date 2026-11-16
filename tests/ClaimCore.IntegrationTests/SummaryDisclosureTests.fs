@@ -34,7 +34,7 @@ let private summaries () =
                             (0L)
                             "case.open"
                             (ClaimCore.TestSupport.Submissions.fields (
-                                RegistrationInput.values (Inputs.registration)
+                                RegistrationInput.values (DomainInputs.registration)
                             )))))
                         token
                     |> Async.AwaitTask
@@ -51,7 +51,7 @@ let private summaries () =
                         (1L)
                         "case.decide"
                         (ClaimCore.TestSupport.Submissions.fields (
-                            DecisionInput.values (Inputs.decision)
+                            DecisionInput.values (DomainInputs.decision)
                         )))))
                     token
                 |> Async.AwaitTask
@@ -72,7 +72,7 @@ let private summaries () =
                             (None)
                             "people.register"
                             (ClaimCore.TestSupport.Submissions.profile (
-                                ClaimCore.TestSupport.Inputs.actorProfile
+                                ClaimCore.TestSupport.DomainInputs.actorProfile
                             ))
 
                     return! Service.executeSubmission (owner) submission (token)

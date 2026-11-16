@@ -99,10 +99,10 @@ let private example kind =
                 Registration.replace
                     [
                         BusinessField.ClaimantName,
-                        Admitted.Name(PartyName.parse "After" |> Fixtures.accepted)
+                        Admitted.Name(PartyName.parse "After" |> CaseBuilders.accepted)
                     ]
                     fields.Registration
-                |> Fixtures.accepted
+                |> CaseBuilders.accepted
 
             let after =
                 { before with
@@ -129,7 +129,7 @@ let private example kind =
                     after
                     {
                         ProductVersion = "fixture"
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                     }
 
             "operation.preview",

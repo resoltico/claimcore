@@ -15,7 +15,7 @@ open ClaimCore.TestSupport
 
 let private keys group =
     match group with
-    | Some value -> Inputs.fieldKeys (RecordGroup.token value)
+    | Some value -> DomainInputs.fieldKeys (RecordGroup.token value)
     | None ->
         CaseFields.declarations
         |> List.filter (fun field -> field.Group.IsNone && field.Section.IsNone)
@@ -96,7 +96,7 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        Inputs.fieldKeys (RecordGroup.token group)
+        DomainInputs.fieldKeys (RecordGroup.token group)
         |> List.map (fun key -> Vocabulary.tryParse BusinessField.vocabulary key |> Option.get)
 
     let fields inputs =

@@ -27,7 +27,7 @@ let tests =
                         Statuses = [ CaseStatus.Closed ]
                     }
 
-                let filter = CaseListFilter.admit input |> Fixtures.accepted
+                let filter = CaseListFilter.admit input |> CaseBuilders.accepted
 
                 Expect.equal
                     filter.ResponsibleActor
@@ -61,7 +61,7 @@ let tests =
                     + String('=', (4 - cursor.Length % 4) % 4)
                     |> Convert.FromBase64String
                     |> StrictJson.read 8192
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
 
                 Expect.equal
                     (JsonValue.tryMember "v" raw)
@@ -81,9 +81,9 @@ let tests =
                                 "all"
                                 "--dry-run"
                             ]
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
 
-                    let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
+                    let frame = Frames.admit prepared.Bytes |> CaseBuilders.accepted
 
                     let filter =
                         if verb = "list" then
@@ -106,12 +106,12 @@ let tests =
                         ActorId = actorId
                         Principal =
                             PrincipalKey.human "https://issuer.example/" "target"
-                            |> Fixtures.accepted
+                            |> CaseBuilders.accepted
                         Enabled = true
                         Profile =
                             Some
                                 {
-                                    DisplayName = Inputs.name "Target"
+                                    DisplayName = DomainInputs.name "Target"
                                     Contact = None
                                 }
                     }

@@ -8,11 +8,11 @@ open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
 
-let private id = OperationIds.numberedAt Inputs.workBasis.ObservedAt 1
+let private id = OperationIds.numberedAt DomainInputs.workBasis.ObservedAt 1
 let private actorId = CaseFixtures.actorId id
-let private actor = Inputs.namedActorReference actorId "Synthetic recorder"
-let private reference = Inputs.reference "CASE-1"
-let private basis = Inputs.workBasis
+let private actor = DomainInputs.namedActorReference actorId "Synthetic recorder"
+let private reference = DomainInputs.reference "CASE-1"
+let private basis = DomainInputs.workBasis
 
 let private position =
     LedgerPosition.create Sequence.first (EntryHash.ofBytes (Array.zeroCreate 32) |> Option.get)
@@ -27,7 +27,7 @@ let snapshot: CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration = Inputs.admittedRegistration Inputs.registration
+                    Registration = DomainInputs.admittedRegistration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
     }
@@ -84,7 +84,7 @@ let caseRead: CaseReadModel =
         Work = Inputs.workView snapshot.State
         Headline = CaseHeadline.Undecided
         Attention = []
-        Stages = Inputs.stageDisplay snapshot.State
+        Stages = DomainInputs.stageDisplay snapshot.State
         Disposition = None
         NextActions = []
         Notes =

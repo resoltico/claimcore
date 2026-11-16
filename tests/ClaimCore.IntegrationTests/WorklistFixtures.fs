@@ -208,12 +208,12 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
             }
 
         let registration =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [
                     BusinessField.ClaimantName, expected.Claimant
                     BusinessField.InsurerName, expected.Insurer
                 ]
-                Inputs.registration
+                DomainInputs.registration
 
         do!
             apply
@@ -225,7 +225,7 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
                 apply
                     "case.decide"
                     (ClaimCore.TestSupport.Submissions.fields (
-                        DecisionInput.values (Inputs.decision)
+                        DecisionInput.values (DomainInputs.decision)
                     ))
 
         if
@@ -235,7 +235,9 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
             do!
                 apply
                     "case.recordPayment"
-                    (ClaimCore.TestSupport.Submissions.fields (PaymentInput.values (Inputs.payment)))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        PaymentInput.values (DomainInputs.payment)
+                    ))
 
         if expected.Status = Some CaseStatus.Closed then
             do! apply "case.close" (Map.empty)

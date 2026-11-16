@@ -7,14 +7,14 @@ let private accepted result =
     result
     |> Result.defaultWith (fun _ -> failtest "The fixture requires a permanently valid value.")
 
-let date = Inputs.date
-let country = Inputs.country
-let name = Inputs.name
-let reference = Inputs.reference
-let money = Inputs.money
-let registration = Inputs.admittedRegistration
-let decision = Inputs.admittedDecision
-let payment = Inputs.admittedPayment
+let date = DomainInputs.date
+let country = DomainInputs.country
+let name = DomainInputs.name
+let reference = DomainInputs.reference
+let money = DomainInputs.money
+let registration = DomainInputs.admittedRegistration
+let decision = DomainInputs.admittedDecision
+let payment = DomainInputs.admittedPayment
 
 /// Construct validated fixture inputs; behavior expectations stay with their owner tests.
 let finance (decision: Decision option) (payments: PaymentEntry list) =

@@ -50,7 +50,7 @@ let private caller (database: PostgresFixture.Database) =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (owner) submission ((token))
@@ -115,7 +115,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         do! readRetained host csrf name
 
         let values =
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.ClaimantName, (name)
                     BusinessField.InsurerName, ("Corrected insurer")
@@ -130,7 +130,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 (1L)
                 "case.amendRegistration"
                 (ClaimCore.TestSupport.Submissions.updates (
-                    RegistrationUpdateInput.values ((Inputs.registrationUpdate values))
+                    RegistrationUpdateInput.values ((DomainInputs.registrationUpdate values))
                 ))
 
         let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
@@ -151,8 +151,8 @@ let private retainedHistory (database: PostgresFixture.Database) =
                 "case.amendRegistration"
                 (ClaimCore.TestSupport.Submissions.updates (
                     RegistrationUpdateInput.values (
-                        (Inputs.registrationUpdate (
-                            ClaimCore.TestSupport.Inputs.registrationWith
+                        (DomainInputs.registrationUpdate (
+                            ClaimCore.TestSupport.DomainInputs.registrationWith
                                 [ BusinessField.ClaimantName, (name + "B") ]
                                 (values)
                         ))

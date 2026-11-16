@@ -24,7 +24,7 @@ let private parent fixture = CaseFixtures.caseId (id fixture 10)
 let private identicalOther fixture actor =
     task {
         let registration =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [ BusinessField.IncidentDescription, "Restorable incident\nSecond paragraph" ]
                 registration
 
@@ -183,7 +183,7 @@ let private seeded database =
                 [
                     BusinessField.IncidentDescription, Some("Restorable incident\nSecond paragraph")
                 ]
-                (Inputs.registrationUpdate registration)
+                (DomainInputs.registrationUpdate registration)
              |> Result.defaultWith failtest)
 
         let! description =

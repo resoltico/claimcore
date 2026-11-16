@@ -33,7 +33,7 @@ let private item active state timing : ReminderReadModel =
         RecordedBy =
             ActorId.create identity
             |> Option.get
-            |> ClaimCore.TestSupport.Inputs.actorReference
+            |> ClaimCore.TestSupport.DomainInputs.actorReference
         Offers = []
         Active = active
         Timing = timing

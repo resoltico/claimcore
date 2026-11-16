@@ -318,7 +318,7 @@ let tests =
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]
                 (fun () -> data Api.context |> ContextScreen.view)
             matches "operation pending" [ RegionRole.Notice ] (fun () ->
-                OperationScreen.pending Inputs.workBasis.ObservedAt)
+                OperationScreen.pending DomainInputs.workBasis.ObservedAt)
             matches "operation not accepted" [ RegionRole.Notice ] OperationScreen.notAccepted
             testCase "receipt separates done facts and technical details" (fun () ->
                 let screen = ReceiptScreen.view ResponseExamples.receipt

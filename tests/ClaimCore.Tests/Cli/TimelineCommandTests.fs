@@ -24,7 +24,7 @@ let optionalLimit =
         let raw =
             Encoding.UTF8.GetBytes """{"target":{"kind":"REFERENCE","caseReference":"R-1"}}"""
 
-        let decoded = Codec.decode 4096 Api.caseTimeline.Input raw |> Fixtures.accepted
+        let decoded = Codec.decode 4096 Api.caseTimeline.Input raw |> CaseBuilders.accepted
         Expect.equal decoded.Limit 50 "Omission keeps the public default"
 
         let canonical =
@@ -38,7 +38,7 @@ let optionalLimit =
 let private actor =
     {
         ActorId = CaseFixtures.actorId CliReplyFixtures.id
-        DisplayName = DisplayName.Named(Inputs.name "Timeline author")
+        DisplayName = DisplayName.Named(DomainInputs.name "Timeline author")
         PrincipalKind = PrincipalKind.Human
         Availability = ActorAvailability.Available
     }
@@ -63,7 +63,7 @@ let private entry revision =
 let private page revision next =
     {
         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
-        Basis = Inputs.workBasis
+        Basis = DomainInputs.workBasis
         CaseId = CliReplyFixtures.snapshot.CaseId
         Reference = CliReplyFixtures.snapshot.Reference
         Items = [ entry revision ]
@@ -73,7 +73,7 @@ let private page revision next =
 let private run arguments (replies: Outcome<CaseTimelinePage> list) =
     let prepared =
         Grammar.prepare (fun () -> "unused") ([ "case"; "timeline"; "x" ] @ arguments)
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
 
     let calls = ResizeArray<Invocation>()
     let pending = Collections.Generic.Queue<Outcome<CaseTimelinePage>>(replies)
@@ -97,7 +97,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                                 |> RepresentationReply.Human
                             | Representation.Data -> RepresentationReply.Data outcome
                         ))
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
                     |> Task.FromResult
             Deliver =
                 fun frame reply ->
@@ -140,8 +140,8 @@ let tests =
                                 FieldName = BusinessField.ClaimedAmount
                                 Change =
                                     {
-                                        Before = Some(Inputs.money "1234.5678" "EUR")
-                                        After = Some(Inputs.money "100.0000" "EUR")
+                                        Before = Some(DomainInputs.money "1234.5678" "EUR")
+                                        After = Some(DomainInputs.money "100.0000" "EUR")
                                     }
                             }
 
@@ -402,8 +402,8 @@ let tests =
                                     FieldName = BusinessField.PayableAmount
                                     Change =
                                         {
-                                            Before = Some(Inputs.money "123456789.12" "EUR")
-                                            After = Some(Inputs.money "0" "USD")
+                                            Before = Some(DomainInputs.money "123456789.12" "EUR")
+                                            After = Some(DomainInputs.money "0" "USD")
                                         }
                                 }
                             TimelineChange.Lifecycle
@@ -418,7 +418,7 @@ let tests =
                                     After =
                                         Some(
                                             HandlingSummary.parse "First\nsecond"
-                                            |> Fixtures.accepted
+                                            |> CaseBuilders.accepted
                                         )
                                 }
                             TimelineChange.Reminder
@@ -429,8 +429,8 @@ let tests =
                                     Due =
                                         Some
                                             {
-                                                Before = Some(Inputs.date "2026-11-03")
-                                                After = Some(Inputs.date "2026-11-04")
+                                                Before = Some(DomainInputs.date "2026-11-03")
+                                                After = Some(DomainInputs.date "2026-11-04")
                                             }
                                     State =
                                         Some
@@ -477,23 +477,26 @@ let tests =
                             text
                             (ReplyTextFormat.moneyWithScale
                                 language
-                                (Inputs.money "123456789.12" "EUR")
+                                (DomainInputs.money "123456789.12" "EUR")
                                 2)
                             "Exact old money survives the endpoint wire view."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.moneyWithScale language (Inputs.money "0" "USD") 2)
+                            (ReplyTextFormat.moneyWithScale
+                                language
+                                (DomainInputs.money "0" "USD")
+                                2)
                             "Exact new money survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (Inputs.date "2026-11-03"))
+                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-03"))
                             "Old date survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
+                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-04"))
                             "New date survives."
 
                         Expect.stringContains

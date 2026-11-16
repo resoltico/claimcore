@@ -72,7 +72,7 @@ let private scalarAdmission () =
     let id = "10000000-0000-7000-8000-000000000001"
 
     let request =
-        Inputs.registrationWith
+        DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "not-a-date"
                 BusinessField.IncidentNotificationDate, ""
@@ -82,7 +82,7 @@ let private scalarAdmission () =
                 BusinessField.ClaimedAmount, "not-money"
                 BusinessField.ClaimedCurrency, "eur"
             ]
-            Inputs.registration
+            DomainInputs.registration
         |> RegistrationInput.values
         |> Submissions.fields
         |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "")

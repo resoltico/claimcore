@@ -53,7 +53,7 @@ let internal factsAndPaging fixture =
                 (target)
                 "people.register"
                 (ClaimCore.TestSupport.Submissions.profile (
-                    ClaimCore.TestSupport.Inputs.actorProfile
+                    ClaimCore.TestSupport.DomainInputs.actorProfile
                 ))
 
         let targetId =
@@ -205,7 +205,7 @@ let internal permissions fixture =
                 (handler)
                 "people.register"
                 (ClaimCore.TestSupport.Submissions.profile (
-                    ClaimCore.TestSupport.Inputs.actorProfile
+                    ClaimCore.TestSupport.DomainInputs.actorProfile
                 ))
 
         let! _ =
@@ -230,7 +230,7 @@ let internal permissions fixture =
                 (scoped)
                 "people.register"
                 (ClaimCore.TestSupport.Submissions.profile (
-                    ClaimCore.TestSupport.Inputs.actorProfile
+                    ClaimCore.TestSupport.DomainInputs.actorProfile
                 ))
 
         let! _ =
@@ -255,7 +255,7 @@ let internal permissions fixture =
                 (auditor)
                 "people.register"
                 (ClaimCore.TestSupport.Submissions.profile (
-                    ClaimCore.TestSupport.Inputs.actorProfile
+                    ClaimCore.TestSupport.DomainInputs.actorProfile
                 ))
 
         let! _ =

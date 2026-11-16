@@ -5,7 +5,7 @@ open ClaimCore.TestSupport
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 let private snapshot state =
     ClaimCore.Domain.Aggregates.CaseFamily.snapshot state |> Option.get

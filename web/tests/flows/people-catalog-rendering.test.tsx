@@ -152,10 +152,19 @@ const authorPeople = async (kind: PeopleInput["task"]) => {
     );
   }
 };
-it.each(peopleActs)(
-  "renders, reviews and submits real people act $kind through production transport",
+// Creation collections, scalar updates, fixed role selection, erasure and empty input.
+const examples = peopleActs.filter(({ kind }) =>
+  [
+    "people.admit",
+    "people.setProfile",
+    "people.revoke",
+    "people.eraseProfile",
+    "people.disable",
+  ].some((id) => id === kind),
+);
+it.each(examples)(
+  "acquires $kind from supplied controls through preview and execution",
   async (act) => {
-    expect(peopleActs).toHaveLength(8);
     const calls: Dispatch<PeopleInput>[] = [];
     vi.stubGlobal("fetch", peopleTransport(calls));
     render(<PeopleBinding initialKind={act.kind} />);

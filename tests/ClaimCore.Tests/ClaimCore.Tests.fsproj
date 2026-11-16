@@ -13,7 +13,8 @@
     <Compile Include="Support/DecoderCorpora.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
     <Compile Include="Domain/Tasks/TaskBuilders.fs" />
-    <Compile Include="Support/Fixtures.fs" />
+    <Compile Include="Domain/CaseBuilders.fs" />
+    <Compile Include="Support/AdviceWireFixtures.fs" />
     <Compile Include="Support/CliReplies.fs" />
     <Compile Include="Architecture/ProjectReferences.fs" />
     <Compile Include="Architecture/NegativeFixtures.fs" />
@@ -49,6 +50,7 @@
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Application/OperationReplayTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
+    <Compile Include="Contract/FinancialStateCodecTests.fs" />
     <Compile Include="Cli/OutcomeTests.fs" />
     <Compile Include="Contract/InputIdentityTests.fs" />
     <Compile Include="Domain/TaskRegistryTests.fs" />
@@ -100,15 +102,17 @@
     <Compile Include="Domain/FinancialPositionTests.fs" />
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
-    <Compile Include="Domain/TypedBusinessApiTests.fs" />
+    <Compile Include="Architecture/DomainApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
     <Compile Include="Domain/CaseStageTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
+    <Compile Include="Contract/DecimalTotalCodecTests.fs" />
     <Compile Include="Domain/MoneyDisplayScaleTests.fs" />
     <Compile Include="Domain/CaseWorkValueTests.fs" />
     <Compile Include="Domain/RegistrationIdentifiersTests.fs" />
     <Compile Include="Domain/ActorProfileTests.fs" />
+    <Compile Include="Contract/ActorReferenceContractTests.fs" />
     <Compile Include="Domain/ExpiryFrontierTests.fs" />
     <Compile Include="Contract/TextFormatTests.fs" />
     <Compile Include="Domain/DomainValidationTests.fs" />
@@ -160,7 +164,7 @@
     <Compile Include="Domain/AccessPolicyInputs.fs" />
     <Compile Include="Domain/AccessPolicyTests.fs" />
     <Compile Include="Application/CursorTests.fs" />
-    <Compile Include="Application/CaseChangesTests.fs" />
+    <Compile Include="Domain/CaseLifecycleDescriptionTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
     <Compile Include="Application/SubjectTimelineTests.fs" />
     <Compile Include="Application/InstallationOfferTests.fs" />

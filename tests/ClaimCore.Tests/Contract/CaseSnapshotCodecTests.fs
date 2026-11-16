@@ -6,7 +6,7 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.TestSupport
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 let private snapshot state = CaseFamily.snapshot state |> Option.get
 

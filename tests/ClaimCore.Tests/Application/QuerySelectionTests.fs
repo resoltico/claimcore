@@ -32,7 +32,7 @@ let private peopleAndCursor () =
         (Queries.selectCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            Inputs.workBasis
+            DomainInputs.workBasis
             (ClaimCore.TestSupport.Inputs.caseListPage (page))
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
@@ -169,8 +169,8 @@ let private resources () =
             tx
             read
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay current.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
             []
          |> fun pending -> pending.GetAwaiter().GetResult())
@@ -183,8 +183,8 @@ let private resources () =
             tx
             { read with Case = None }
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay current.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
             []
          |> fun pending -> pending.GetAwaiter().GetResult())
@@ -205,8 +205,8 @@ let private resources () =
             tx
             { read with Case = Some erased }
             (Inputs.workView erased.Snapshot.State)
-            (Inputs.stageDisplay erased.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay erased.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
             []
          |> fun pending -> pending.GetAwaiter().GetResult())

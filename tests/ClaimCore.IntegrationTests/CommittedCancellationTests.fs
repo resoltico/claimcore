@@ -38,7 +38,7 @@ let tests =
                         (Map.fold
                             (fun values key value -> Map.add key value values)
                             (Submissions.principal target)
-                            (Submissions.profile Inputs.actorProfile))
+                            (Submissions.profile DomainInputs.actorProfile))
                 ]
 
             for input in inputs do

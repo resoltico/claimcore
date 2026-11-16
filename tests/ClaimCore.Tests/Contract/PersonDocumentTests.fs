@@ -56,7 +56,7 @@ let private document offers seed =
                                  ]
                          else
                              Map.empty))
-            Basis = Inputs.workBasis
+            Basis = DomainInputs.workBasis
             Actor = ActorReviewItem.ofActor [] actor
             Offers = offers
             ProfileSeed = seed
@@ -133,7 +133,7 @@ let tests =
                             GrantReadModel.Controls = []
                             Role = Role.CaseReader
                             Scope = GrantScope.Case(parent, ResponseExamples.snapshot.Reference)
-                            GrantedAt = Inputs.workBasis.ObservedAt
+                            GrantedAt = DomainInputs.workBasis.ObservedAt
                             GrantedBy = ResponseExamples.caseRead.RecordedBy
                         }
 
@@ -172,7 +172,7 @@ let tests =
                         HumanReadDocuments.grants
                             {
                                 Revision = Revision.first
-                                Basis = Inputs.workBasis
+                                Basis = DomainInputs.workBasis
                                 Actor = ActorReviewItem.ofActor [] actor
                                 Offers = offers
                                 Controls =

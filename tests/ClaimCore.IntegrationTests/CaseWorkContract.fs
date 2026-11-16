@@ -82,7 +82,7 @@ let internal assignmentAndDisclosure fixture =
                             (None)
                             "people.register"
                             (ClaimCore.TestSupport.Submissions.profile (
-                                ClaimCore.TestSupport.Inputs.actorProfile
+                                ClaimCore.TestSupport.DomainInputs.actorProfile
                             ))
 
                     return! Service.executeSubmission (owner) submission (token)
@@ -100,7 +100,7 @@ let internal assignmentAndDisclosure fixture =
                 "case.open"
                 (ClaimCore.TestSupport.Submissions.fields (
                     RegistrationInput.values (
-                        (Inputs.registrationWith
+                        (DomainInputs.registrationWith
                             [ BusinessField.ClaimantName, "Reminder parent claimant" ]
                             registration)
                     )
@@ -186,7 +186,7 @@ let internal assignmentAndDisclosure fixture =
                     ActorId = CaseFixtures.actorId (id fixture 10)
                     DisplayName =
                         DisplayName.Named(
-                            PartyName.parse Inputs.actorProfile.DisplayName
+                            PartyName.parse DomainInputs.actorProfile.DisplayName
                             |> Result.defaultWith (string >> failtest)
                         )
                     PrincipalKind = PrincipalKind.Human
@@ -381,7 +381,7 @@ let internal assignmentAndDisclosure fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (owner) submission (token)
@@ -589,7 +589,9 @@ let internal dueFiltersAndOrder fixture =
             ] do
             let facts =
                 if operation = 50 then
-                    Inputs.registrationWith [ BusinessField.ClaimedAmount, "500.00" ] registration
+                    DomainInputs.registrationWith
+                        [ BusinessField.ClaimedAmount, "500.00" ]
+                        registration
                 else
                     registration
 
@@ -1135,7 +1137,7 @@ let internal lifecycleAndErasure fixture =
         acceptedPeople stewardship
 
         let facts =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [ BusinessField.IncidentDescription, "Erase incident narrative" ]
                 registration
 
@@ -1485,7 +1487,9 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 ("PARTIAL-FACTS")
                 (2L)
                 "case.decide"
-                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (Inputs.decision)))
+                (ClaimCore.TestSupport.Submissions.fields (
+                    DecisionInput.values (DomainInputs.decision)
+                ))
 
         accepted decided |> ignore
 
@@ -1497,7 +1501,9 @@ let internal partialUpdatesAndPaymentPeople fixture =
                 ("PARTIAL-FACTS")
                 (3L)
                 "case.recordPayment"
-                (ClaimCore.TestSupport.Submissions.fields (PaymentInput.values (Inputs.payment)))
+                (ClaimCore.TestSupport.Submissions.fields (
+                    PaymentInput.values (DomainInputs.payment)
+                ))
 
         accepted paid |> ignore
 

@@ -23,16 +23,16 @@ let private item =
             Revision.first
             (ReminderAction.parse "Editable action seed"
              |> Result.defaultWith (string >> failtest))
-            (CalendarDate.ofDate Inputs.workBasis.BusinessDate)
+            (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
             ReminderState.Pending
         |> Result.defaultWith failtest
 
     {
         ReminderReadModel.Reminder = reminder
         Reference = ResponseExamples.caseRead.Snapshot.Reference
-        ClaimantName = Inputs.name "Read-only claimant"
+        ClaimantName = DomainInputs.name "Read-only claimant"
         Responsible = None
-        RecordedAt = Inputs.workBasis.ObservedAt
+        RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy
         Offers =
             [
@@ -63,7 +63,7 @@ let tests =
             let document =
                 HumanReadDocuments.reminders
                     {
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Items = [ item ]
                         NextCursor = None
                     }
@@ -99,7 +99,7 @@ let tests =
             let detail =
                 HumanReadDocuments.reminder
                     {
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Item = item
                     }
 

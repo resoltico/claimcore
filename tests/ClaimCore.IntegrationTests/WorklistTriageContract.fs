@@ -38,13 +38,13 @@ type private CaseSeed =
 
 let private openCase fixture owner number (seed: CaseSeed) =
     let values =
-        Inputs.registrationWith
+        DomainInputs.registrationWith
             [
                 BusinessField.IncidentNotificationDate, seed.Notification
                 BusinessField.ClaimedAmount, seed.Amount
                 BusinessField.ClaimedCurrency, seed.Currency
             ]
-            Inputs.registration
+            DomainInputs.registration
 
     execute
         (fixture)
@@ -146,7 +146,7 @@ let private setup fixture =
             accepted changed |> ignore
 
         let decision =
-            Inputs.decisionWith [ BusinessField.PayableAmount, maximum ] Inputs.decision
+            DomainInputs.decisionWith [ BusinessField.PayableAmount, maximum ] DomainInputs.decision
 
         do!
             execute
@@ -372,7 +372,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                         (None)
                         "people.register"
                         (ClaimCore.TestSupport.Submissions.profile (
-                            ClaimCore.TestSupport.Inputs.actorProfile
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
                         ))
 
                 return! Service.executeSubmission (owner) submission (token)

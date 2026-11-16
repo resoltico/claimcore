@@ -122,7 +122,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                         "case.open"
                         opening
                         (Binding.CaseNew Revision.zero)
-                        (Submissions.fields (RegistrationInput.values Inputs.registration)
+                        (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                          |> Map.add
                              (Submissions.field BusinessField.CaseReference)
                              (SubmissionValue.Text reference)))

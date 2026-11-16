@@ -30,13 +30,13 @@ let private fields length : CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration (
-                ClaimCore.TestSupport.Inputs.registrationWith
+                ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
                         BusinessField.ClaimantName, (String(char 1, length))
                         BusinessField.InsurerName, (String(char 1, length))
                         BusinessField.ClaimedAmount, ("999999999999999999.9999")
                     ]
-                    (Inputs.registration)
+                    (DomainInputs.registration)
             )
         Finance = FinancialPosition.undecided
     }
@@ -68,7 +68,7 @@ let private receipt disclosure : OperationReceipt =
                 BusinessDate = DateOnly.FromDateTime instant.UtcDateTime
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Case
                 {
@@ -115,7 +115,7 @@ let private boundedPeople () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Items = List.replicate count (ActorReviewItem.ofActor [] actor)
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
@@ -128,7 +128,7 @@ let private boundedPeople () =
                 Outcome.Succeeded
                     {
                         Revision = Revision.first
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
                         Offers = []
                         Controls = []
@@ -140,8 +140,8 @@ let private boundedPeople () =
                                     GrantReadModel.Controls = []
                                     Role = grant.Role
                                     Scope = grant.Scope
-                                    GrantedAt = Inputs.workBasis.ObservedAt
-                                    GrantedBy = Inputs.actorReference actor.ActorId
+                                    GrantedAt = DomainInputs.workBasis.ObservedAt
+                                    GrantedBy = DomainInputs.actorReference actor.ActorId
                                 }
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
@@ -239,7 +239,7 @@ let private timelineLimit () =
                 Outcome.Succeeded
                     {
                         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         CaseId = CaseFixtures.caseId id
                         Reference = CaseFixtures.reference reference
                         Items = List.replicate Paging.MaximumTimelinePageSize entry
@@ -262,7 +262,7 @@ let private timelineLimit () =
             |> RevisionConflictInfo.explain (
                 ConflictChanges.Page
                     {
-                        Basis = ClaimCore.TestSupport.Inputs.workBasis
+                        Basis = ClaimCore.TestSupport.DomainInputs.workBasis
                         Disclosure = HistoryDisclosure.Full
                         Entries = List.replicate Paging.MaximumTimelinePageSize entry
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
@@ -410,7 +410,7 @@ let private reminderTimelineLimit () =
             Outcome.Succeeded
                 {
                     CaseTimelinePage.Disclosure = HistoryDisclosure.Full
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference reference
                     Items = List.replicate Paging.MaximumTimelinePageSize entry

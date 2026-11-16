@@ -180,7 +180,7 @@ let internal personSubmission (store: IStore) operation target expected taskName
         return Submissions.createRaw taskName operation binding authored
     }
 
-let internal registration: RegistrationInput = Inputs.registration
+let internal registration: RegistrationInput = DomainInputs.registration
 
 let internal accepted (reply: ExecuteReply) =
     match reply.Outcome with
@@ -251,7 +251,7 @@ let internal bootstrap fixture =
             Service.provisionOwner
                 (core fixture fixture.Owner)
                 (id fixture 1)
-                Inputs.ownerProfile
+                DomainInputs.ownerProfile
                 []
                 CancellationToken.None
 

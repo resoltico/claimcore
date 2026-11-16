@@ -33,7 +33,7 @@ let tests =
                     let template = ResponseExamples.peopleReceipt
 
                     let actor =
-                        Inputs.namedActorReference
+                        DomainInputs.namedActorReference
                             (CaseFixtures.actorId (
                                 Guid.Parse "10000000-0000-4000-8000-000000000009"
                             ))

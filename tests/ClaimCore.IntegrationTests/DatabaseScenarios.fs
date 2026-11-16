@@ -160,7 +160,7 @@ let internal exec (database: PostgresFixture.Database) arguments =
 let internal initialOwner (database: PostgresFixture.Database) : InitialOwner =
     {
         Principal = database.Fixture.Owner
-        Profile = Inputs.ownerProfile
+        Profile = DomainInputs.ownerProfile
         Roles = []
     }
 

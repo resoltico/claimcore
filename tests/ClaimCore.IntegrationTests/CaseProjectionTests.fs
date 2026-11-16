@@ -31,7 +31,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration = CaseFixtures.registration Inputs.registration
+                    Registration = CaseFixtures.registration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
             )
@@ -127,7 +127,7 @@ let private liveState () =
                             CaseState.Active(
                                 { fields with
                                     Registration =
-                                        (ClaimCore.TestSupport.Inputs.registrationStateWith
+                                        (ClaimCore.TestSupport.DomainInputs.registrationStateWith
                                             [
                                                 BusinessField.ClaimedAmount,
                                                 Admitted.Amount(
@@ -194,18 +194,18 @@ let private projectionFields: CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration (
-                ClaimCore.TestSupport.Inputs.registrationWith
+                ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
                         BusinessField.ClaimantName, ("Synthetic claimant")
                         BusinessField.InsurerName, ("Synthetic insurer")
                         BusinessField.ClaimedAmount, ("1234.5678")
                     ]
-                    (Inputs.registration)
+                    (DomainInputs.registration)
             )
         Finance =
             ClaimCore.TestSupport.CaseFixtures.finance
                 (Some(
-                    ClaimCore.TestSupport.Inputs.decisionStateFrom
+                    ClaimCore.TestSupport.DomainInputs.decisionStateFrom
                         [
                             BusinessField.PaymentDecisionDate,
                             Admitted.Date(CaseFixtures.date "2026-08-04")
@@ -220,7 +220,7 @@ let private projectionFields: CaseFields =
                 [
                     CaseFixtures.paymentEntry
                         (System.Guid.Parse "20000000-0000-7000-8000-000000000003")
-                        (Inputs.paymentFrom
+                        (DomainInputs.paymentFrom
                             [
                                 BusinessField.PaymentDate, "2026-08-05"
                                 BusinessField.PaidAmount, "987.6543"
@@ -448,10 +448,10 @@ let private roundTrips database =
                 "case.amendRegistration",
                 Submissions.updates (
                     RegistrationUpdateInput.values (
-                        Inputs.registrationUpdate (
-                            Inputs.registrationWith
+                        DomainInputs.registrationUpdate (
+                            DomainInputs.registrationWith
                                 [ BusinessField.ClaimantName, "Changed synthetic" ]
-                                Inputs.registration
+                                DomainInputs.registration
                         )
                     )
                 ),

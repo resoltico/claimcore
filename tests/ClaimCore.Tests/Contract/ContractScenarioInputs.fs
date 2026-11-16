@@ -22,7 +22,7 @@ open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 
 
 let internal bytes (value: string) = Encoding.UTF8.GetBytes value
@@ -67,7 +67,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                 BusinessDate = DateOnly(2026, 10, 13)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
     }
 
 let internal people =

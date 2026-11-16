@@ -70,7 +70,7 @@ let private completeRecords (errors: MemoryStream) original =
          |> Array.last
          |> bytes
          |> Frames.admit
-         |> Fixtures.accepted
+         |> CaseBuilders.accepted
          |> Frames.inputBytes)
         (Frames.inputBytes original)
         "The last line remains an exact retry frame."
