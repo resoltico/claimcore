@@ -53,7 +53,7 @@ module Link =
             {
                 View = None
                 Target = Some target
-                State = None
+                State = Some ReminderStateSelection.Any
                 Due = None
                 Assignment = None
                 Text = None

@@ -318,7 +318,7 @@ module RequestCodecs =
             })
         : Fields<ReminderListRequest, _>)
         |> optionalField "target" _.Target caseSelector
-        |> optionalField "state" _.State (VocabularyCodec.create ReminderState.vocabulary)
+        |> optionalField "state" _.State (VocabularyCodec.create ReminderStateSelection.vocabulary)
         |> optionalField "view" _.View (VocabularyCodec.create ReminderView.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
         |> optionalField

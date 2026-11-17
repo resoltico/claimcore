@@ -223,6 +223,19 @@ module TaskMetadata =
                 |}
             )
             + " as const;"
+            "export const reminderSelectionDefaults = "
+            + JsonSerializer.Serialize(
+                [ false; true ]
+                |> List.map (fun hasView ->
+                    let selection = ReminderSelection.defaults hasView
+
+                    {|
+                        hasView = hasView
+                        state = ReminderStateSelection.token selection.State
+                        includeInactive = selection.IncludeInactive
+                    |})
+            )
+            + " as const;"
             "export const taskDefinitions = " + declarationSource () + " as const;"
             "export type TaskId = (typeof taskDefinitions)[number]['id'];"
             "export type TaskDefinition = (typeof taskDefinitions)[number];"

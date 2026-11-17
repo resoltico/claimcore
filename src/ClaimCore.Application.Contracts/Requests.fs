@@ -61,7 +61,7 @@ type ReminderListRequest =
     {
         View: ReminderView option
         Target: CaseSelector option
-        State: ReminderState option
+        State: ReminderStateSelection option
         Due: ReminderDue option
         Assignment: CaseAssignment option
         Text: string option

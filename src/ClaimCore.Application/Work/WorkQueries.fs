@@ -247,15 +247,16 @@ module internal WorkQueries =
                                                             }
                                                     }
 
-                                                let state =
-                                                    match request.State, request.View with
-                                                    | None, None -> Some ReminderState.Pending
-                                                    | value, _ -> value
-
-                                                let includeInactive =
-                                                    defaultArg
-                                                        request.IncludeInactive
+                                                let effective =
+                                                    ReminderSelection.resolve
                                                         request.View.IsSome
+                                                        request.State
+                                                        request.IncludeInactive
+
+                                                let state =
+                                                    ReminderStateSelection.state effective.State
+
+                                                let includeInactive = effective.IncludeInactive
 
                                                 let parentId = parent |> Option.map _.CaseId
 
