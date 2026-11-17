@@ -53,6 +53,41 @@ module internal VerbOptions =
         else
             None
 
+    [<RequireQualifiedAccess>]
+    type OptionValue =
+        | Assigned of string
+        | Supplied of string
+        | Switch
+        | Missing
+
+    [<RequireQualifiedAccess>]
+    type Argument =
+        | Option of name: string * value: OptionValue
+        | Operand of string
+
+    /// Classify consumption once, before callers attach validation or help meaning.
+    let classify switches arguments =
+        let rec scan completed =
+            function
+            | [] -> List.rev completed
+            | "--" :: rest -> List.rev completed @ (rest |> List.map Argument.Operand)
+            | (argument: string) :: rest when argument.StartsWith("--", StringComparison.Ordinal) ->
+                match assigned argument with
+                | Some(name, value) ->
+                    scan (Argument.Option(name, OptionValue.Assigned value) :: completed) rest
+                | None when List.contains argument switches ->
+                    scan (Argument.Option(argument, OptionValue.Switch) :: completed) rest
+                | None ->
+                    match rest with
+                    | value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
+                        scan
+                            (Argument.Option(argument, OptionValue.Supplied value) :: completed)
+                            tail
+                    | _ -> scan (Argument.Option(argument, OptionValue.Missing) :: completed) rest
+            | value :: rest -> scan (Argument.Operand value :: completed) rest
+
+        scan [] arguments
+
     let tokenize known available switches repeated arguments (problems: ResizeArray<UsageError>) =
         let options = Dictionary<string, string option list>()
         let operands = ResizeArray<string>()
@@ -66,46 +101,25 @@ module internal VerbOptions =
             else
                 options.Add(name, [ value ])
 
-        let rec scan =
-            function
-            | [] -> ()
-            | "--" :: rest -> operands.AddRange rest
-            | (argument: string) :: rest when argument.StartsWith("--", StringComparison.Ordinal) ->
-                let name, explicit =
-                    match assigned argument with
-                    | Some(name, value) -> name, Some value
-                    | None -> argument, None
-
+        for argument in classify switches arguments do
+            match argument with
+            | Argument.Operand value -> operands.Add value
+            | Argument.Option(name, value) ->
                 if not (List.contains name known) then
                     problems.Add(
                         UsageError.UnknownOption(name, suggestions name available |> List.tryHead)
                     )
 
-                match explicit with
-                | Some value ->
-                    if List.contains name switches then
-                        problems.Add(UsageError.InvalidValue(name, value))
-                    else
-                        add name (Some value)
+                match value with
+                | OptionValue.Assigned value when List.contains name switches ->
+                    problems.Add(UsageError.InvalidValue(name, value))
+                | OptionValue.Assigned value
+                | OptionValue.Supplied value -> add name (Some value)
+                | OptionValue.Switch -> add name (Some "true")
+                | OptionValue.Missing ->
+                    if List.contains name known then
+                        problems.Add(UsageError.MissingValue name)
 
-                    scan rest
-                | None when List.contains name switches ->
-                    add name (Some "true")
-                    scan rest
-                | None ->
-                    match rest with
-                    | value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
-                        add name (Some value)
-                        scan tail
-                    | _ ->
-                        if List.contains name known then
-                            problems.Add(UsageError.MissingValue name)
+                    add name None
 
-                        add name None
-                        scan rest
-            | value :: rest ->
-                operands.Add value
-                scan rest
-
-        scan arguments
         options, List.ofSeq operands

@@ -147,8 +147,8 @@ module internal TextInputs =
             None
 
     let private sourceOperand suffix explicit (remaining: string list) =
-        match suffix, explicit, remaining with
-        | "-file", None, value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
+        match CommandGrammar.sourceHasOperand suffix, explicit, remaining with
+        | true, None, value :: tail when not (value.StartsWith("--", StringComparison.Ordinal)) ->
             Some value, tail
         | _ -> explicit, remaining
 
@@ -173,7 +173,7 @@ module internal TextInputs =
                             let flag =
                                 "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 
-                            [ "-file"; "-stdin"; "-editor" ]
+                            CommandGrammar.textSourceSuffixes
                             |> List.tryPick (fun suffix ->
                                 source (flag + suffix) argument
                                 |> Option.map (fun value -> flag, suffix, value, constraints)))
@@ -183,16 +183,16 @@ module internal TextInputs =
                     | Some(flag, suffix, value, constraints) ->
                         let operand, tail = sourceOperand suffix value rest
 
-                        if suffix = "-file" && operand.IsNone then
+                        if CommandGrammar.sourceHasOperand suffix && operand.IsNone then
                             Error [ UsageError.MissingValue(flag + suffix) ]
-                        elif suffix <> "-file" && value.IsSome then
+                        elif not (CommandGrammar.sourceHasOperand suffix) && value.IsSome then
                             Error [ UsageError.InvalidValue(flag + suffix, value.Value) ]
                         elif
                             (List.rev completed @ tail)
                             |> VerbOptions.beforeTerminator
                             |> List.exists (fun argument ->
                                 source flag argument |> Option.isSome
-                                || [ "-file"; "-stdin"; "-editor" ]
+                                || CommandGrammar.textSourceSuffixes
                                    |> List.exists (fun suffix ->
                                        source (flag + suffix) argument |> Option.isSome))
                         then

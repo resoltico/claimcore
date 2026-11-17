@@ -255,6 +255,7 @@
     <Compile Include="Cli/CliOfflineLanguageTests.fs" />
     <Compile Include="Cli/CliHelpTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
+    <Compile Include="Cli/CliOwnedHelpTests.fs" />
     <Compile Include="Cli/CliAdmissionTests.fs" />
     <Compile Include="Cli/CliDiscoveryTests.fs" />
     <Compile Include="Cli/WorklistGrammarTests.fs" />

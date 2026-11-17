@@ -40,6 +40,14 @@ type CommandCollection =
         MaximumItems: int
     }
 
+type CommandOptionGrammar =
+    {
+        Known: string list
+        Available: string list
+        Switches: string list
+        Repeated: string list
+    }
+
 module CommandGrammar =
     let operations = (TaskDeclarations.all |> List.map _.Id)
 
@@ -252,6 +260,49 @@ module CommandGrammar =
 
     let canClear (_operation: string) (input: CommandInput) = input.Declaration.Clearable
 
+    /// Source acquisition and option lexing share the same interface-owned arity.
+    let textSourceSuffixes = [ "-file"; "-stdin"; "-editor" ]
+    let sourceHasOperand suffix = suffix = "-file"
+
+    /// The outer executable sees source switches before text acquisition expands them.
+    let textSourceSwitches operation =
+        plainTextInputs operation
+        |> List.collect (fun (input, _) ->
+            textSourceSuffixes
+            |> List.filter (sourceHasOperand >> not)
+            |> List.map (fun suffix -> "--" + kebab (inputName input.Name) + suffix))
+
+    let optionGrammar operation =
+        let flag input = "--" + kebab (inputName input)
+
+        let named =
+            inputs operation
+            |> List.filter (fun input -> input.Argument = CommandArgument.Named)
+
+        let clears =
+            named
+            |> List.choose (fun input ->
+                if canClear operation input then
+                    Some("--clear-" + kebab (inputName input.Name))
+                else
+                    None)
+
+        let rows = collections operation |> List.map collectionFlag
+        let flags = (named |> List.map (fun input -> flag input.Name)) @ clears @ rows
+
+        {
+            Known = globalFlags @ flags
+            Available = (globalOptions operation |> List.map fst) @ flags
+            Switches = globalSwitches @ clears
+            Repeated =
+                (named
+                 |> List.choose (fun input ->
+                     match input.Atom with
+                     | CommandAtom.Choices _ -> Some(flag input.Name)
+                     | _ -> None))
+                @ rows
+        }
+
     let synopsisForDraft draft (operation: string) =
         let placeholder =
             function
@@ -263,10 +314,21 @@ module CommandGrammar =
 
         let declarations = inputs operation
 
+        let positional =
+            declarations
+            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
+
+        let positionalCaseAlternative =
+            match positional with
+            | [ input ] ->
+                input.Name = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+                && selectsExistingCase operation
+            | _ -> false
+
         let arguments =
             declarations
             |> List.filter (fun input ->
-                not (input.Name = TaskInputId.CaseId && selectsExistingCase operation))
+                not (input.Name = TaskInputId.CaseId && positionalCaseAlternative))
             |> List.choose (fun input ->
                 match input.Argument with
                 | CommandArgument.Implicit
@@ -296,7 +358,12 @@ module CommandGrammar =
             plainTextInputs operation
             |> List.map (fun (input, _) ->
                 let flag = "--" + kebab (inputName input.Name)
-                "[" + flag + "-file PATH | " + flag + "-stdin | " + flag + "-editor]")
+
+                textSourceSuffixes
+                |> List.map (fun suffix ->
+                    flag + suffix + (if sourceHasOperand suffix then " PATH" else ""))
+                |> String.concat " | "
+                |> fun choices -> "[" + choices + "]")
 
         let clears =
             declarations
@@ -328,15 +395,13 @@ module CommandGrammar =
                 + "...")
 
         let operands =
-            declarations
-            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
+            positional
             |> List.map (fun input -> kebab (inputName input.Name) |> _.ToUpperInvariant())
 
         let operands =
             match operands with
             | [] -> []
-            | [ "CASE-REFERENCE" ] when selectsExistingCase operation ->
-                [ "(--case-id UUID | [--] CASE-REFERENCE)" ]
+            | [ _ ] when positionalCaseAlternative -> [ "(--case-id UUID | [--] CASE-REFERENCE)" ]
             | values -> "[--]" :: values
 
         String.concat
