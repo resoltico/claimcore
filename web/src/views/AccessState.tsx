@@ -8,6 +8,7 @@ import { ScreenView } from "../ui/ScreenView";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { Button } from "../ui/Button";
+import { BrowserSessionCommands } from "../features/settings/BrowserSessions";
 import {} from "./access-state.css";
 export const AccessState = ({
   requester,
@@ -68,6 +69,7 @@ export const AccessState = ({
         <Button isDisabled={locked || feedback.loading} onPress={onCheck} variant="secondary">
           {p.text("ui.accessState.check")}
         </Button>
+        <BrowserSessionCommands actions={requester.actions} disabled={locked || feedback.loading} />
         <Button
           isDisabled={locked}
           onPress={() => {

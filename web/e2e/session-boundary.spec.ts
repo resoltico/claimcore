@@ -148,7 +148,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
   await page.goto("/", { waitUntil: "commit" });
-  await login(page);
+  await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
   const other = await browser.newContext({
     baseURL,
     ignoreHTTPSErrors: true,
@@ -157,8 +157,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   try {
     const second = await other.newPage();
     await second.goto("/", { waitUntil: "commit" });
-    await login(second);
-    await page.goto("/settings");
+    await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await page
       .getByRole("button", { name: "End my ClaimCore browser sessions", exact: true })
       .click();
@@ -199,7 +198,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
       second.getByRole("heading", { name: "Sign in to the case register", exact: true }),
     ).toBeVisible();
     // ClaimCore deletion did not revoke the identity-provider session or prevent later login.
-    await login(page);
+    await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
     await expect(readSession(page)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
     });

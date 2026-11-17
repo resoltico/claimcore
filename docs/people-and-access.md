@@ -105,9 +105,9 @@ bytes; starting a different change requires a new identifier and a fresh review.
 
 ## End browser sessions
 
-In Settings, **End my ClaimCore browser sessions** ends all of your ClaimCore browser sessions,
-including the current one. This is available to an authenticated person before registration and
-without roles. Ordinary **Sign out** still ends only the current browser session.
+In Settings or on the access screen, **End my ClaimCore browser sessions** ends all of your
+ClaimCore browser sessions, including the current one. The access screen exposes this action before
+registration and without roles. Ordinary **Sign out** still ends only the current browser session.
 
 An owner can select a person and choose **End this person’s ClaimCore browser sessions**. Permission
 is checked again when deletion runs. A confirmed result reports the number of stored session tickets
