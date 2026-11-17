@@ -106,7 +106,9 @@ module internal WorkQueries =
                                                     let! work = CaseWorkReads.view tx basis parent
 
                                                     let! currentFamilies =
-                                                        CaseWorkReads.families tx [ parent.CaseId ]
+                                                        CaseWorkReads.families
+                                                            tx
+                                                            [ parent.CaseId, Reminder.id reminder ]
 
                                                     return
                                                         match work with
@@ -324,7 +326,8 @@ module internal WorkQueries =
                                                             tx
                                                             (page.Items
                                                              |> List.map (fun row ->
-                                                                 row.Stored.CaseId))
+                                                                 row.Stored.CaseId,
+                                                                 row.Stored.ReminderId))
 
                                                     let! pageActor =
                                                         AccessReads.accessCases

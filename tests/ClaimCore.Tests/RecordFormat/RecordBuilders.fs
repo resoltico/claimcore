@@ -52,11 +52,16 @@ let create token binding inputs changes =
                 (byte (Sequence.value (EffectPosition.sequence first.Stamp.Position) % 256L)))
     |> required
 
-let family token number state binding inputs =
+let family token number (state: CaseFamily) binding inputs =
     match Registry.find (TaskId.ofLiteral token) with
     | Some(Task.Family task) ->
         let changes =
-            task.Decide (Tasks.context number) Tasks.environment (Some state) binding inputs
+            task.Decide
+                (Tasks.context number)
+                Tasks.environment
+                (Some(DecisionFacts.fromReplay state))
+                binding
+                inputs
             |> required
 
         create token binding inputs changes

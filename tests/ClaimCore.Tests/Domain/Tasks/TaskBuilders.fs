@@ -180,7 +180,7 @@ let reminder () =
         ClaimCore.Domain.Tasks.Reminder.Create.decide
             (context 2)
             environment
-            (Some state)
+            (Some(DecisionFacts.fromReplay state))
             (Binding.ReminderNew(target state))
             (planInputs "Request photographs" "2026-11-16")
         |> accepted
@@ -311,17 +311,17 @@ let decided () =
     ClaimCore.Domain.Tasks.Case.Decide.decide
         (context 2)
         environment
-        (Some state)
+        (Some(DecisionFacts.fromReplay state))
         (caseBinding state)
         (decisionInputs "2026-02-01" "1000" "EUR")
     |> accepted
     |> apply state
 
-let pay number date amount state =
+let pay number date amount (state: CaseFamily) =
     ClaimCore.Domain.Tasks.Case.RecordPayment.decide
         (context number)
         environment
-        (Some state)
+        (Some(DecisionFacts.fromReplay state))
         (caseBinding state)
         (paymentInputs date amount "EUR")
     |> accepted

@@ -42,6 +42,7 @@
     <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="LiveAcquisitionTests.fs" />
     <Compile Include="VerificationScenarioInputs.fs" />
     <Compile Include="RootVerificationTests.fs" />
     <Compile Include="StructuralBaselineTests.fs" />

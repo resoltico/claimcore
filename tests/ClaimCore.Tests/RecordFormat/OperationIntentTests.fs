@@ -1,5 +1,6 @@
 module ClaimCore.Tests.OperationIntentTests
 
+open ClaimCore.Domain.Aggregates
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Domain.Changes

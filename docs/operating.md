@@ -337,6 +337,11 @@ reloading cannot reconstruct a discarded request body.
 
 ## Verification and reconstruction
 
+Ordinary live checks authenticate the roots and selected facts they consume, with scalar projection
+agreement for money and next due. They do not prove that the database supplied a complete child set.
+Their bounded acquisition does not replace complete replay, verification, reconstruction or trusted
+checkpoint custody, and aggregate queries can still scan a growing history.
+
 Accepted writes serialize at one ledger head. Verification replays retained requests through the same
 Domain decisions, using each entry's stored business date and authority at that position. It checks
 hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes

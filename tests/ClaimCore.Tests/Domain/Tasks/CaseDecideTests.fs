@@ -21,7 +21,7 @@ let tests =
                         Decide.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "1200" "EUR")
                         |> accepted
@@ -43,7 +43,7 @@ let tests =
                         Decide.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "1000" "USD")
                         |> expectInputs
@@ -58,7 +58,7 @@ let tests =
                         Decide.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "20" "EUR")
                         |> expectInputs
@@ -75,7 +75,7 @@ let tests =
                     Decide.decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (decisionInputs "2026-01-01" "not-money" "EUR")
                     |> expectInputs
@@ -101,7 +101,7 @@ let tests =
                     Decide.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Case(target state, Revision.zero))
                         (decisionInputs "not-a-date" "bad-money" "EUR")
                     |> expectInputs
@@ -117,7 +117,7 @@ let tests =
                 Decide.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (Binding.Case(target state, Revision.zero))
                     (decisionInputs "2026-11-16" "1000" "EUR")
                 |> expectRefusal (Refusal.revisionConflict state.Case.Revision))
@@ -130,7 +130,7 @@ let tests =
                         Decide.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "1500" "USD")
                         |> accepted
@@ -153,7 +153,7 @@ let tests =
                         Decide.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "0" "EUR")
                         |> accepted
@@ -181,7 +181,7 @@ let tests =
                         Decide.decide
                             early
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "1200" "EUR")
                         |> accepted
@@ -198,7 +198,7 @@ let tests =
                         Decide.decide
                             early
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-02" "1200" "EUR")
                         |> expectInputs
@@ -212,7 +212,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.WithdrawDecision.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
@@ -222,7 +222,7 @@ let tests =
                         Decide.decide
                             early
                             environment
-                            (Some withdrawn)
+                            (Some(DecisionFacts.fromReplay withdrawn))
                             (caseBinding withdrawn)
                             (decisionInputs "2026-02-01" "1000" "EUR")
                         |> expectInputs

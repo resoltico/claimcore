@@ -110,6 +110,7 @@ module internal Engine =
                         selected
                         binding
                         (Some inputs)
+                        (Some operation)
 
                 if
                     declaration.Exposure <> TaskExposure.Operator
@@ -311,7 +312,7 @@ module internal Engine =
                                 plan.Changes
 
                         match
-                            ProjectionRows.family
+                            ProjectionRows.decision
                                 family
                                 plan.Changes
                                 origins

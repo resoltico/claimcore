@@ -21,7 +21,7 @@ let tests =
                         Create.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.ReminderNew(target state))
                             (planInputs "Request photographs" "2026-11-01")
                         |> accepted
@@ -56,7 +56,7 @@ let tests =
                     Create.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.ReminderNew(target state))
                         (planInputs "Action" "2026-11-16")
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline))
@@ -66,7 +66,7 @@ let tests =
                 Create.decide
                     (context 2)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (Binding.ReminderNew(target state))
                     (planInputs "Action" "2026-11-16")
                 |> expectRefusal Refusal.IdempotencyConflict)

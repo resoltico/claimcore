@@ -156,7 +156,7 @@ module internal Fold =
             DecisionSnapshot.family
                 task
                 (familyEnvironment state principal maintenance (before |> Option.map _.Id))
-                before
+                (before |> Option.map DecisionFacts.fromReplay)
                 (state.Parts
                  |> Map.values
                  |> Seq.filter (fun change ->

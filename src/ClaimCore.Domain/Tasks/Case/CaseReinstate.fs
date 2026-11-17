@@ -28,7 +28,7 @@ let private parse inputs =
 
 let check inputs = Parsing.check parse inputs
 
-let private gate (state: CaseFamily) =
+let private gate (state: DecisionFacts) =
     if state.Case.Value.Lifecycle = Lifecycle.Voided then
         None
     else
@@ -37,7 +37,7 @@ let private gate (state: CaseFamily) =
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let parsed = parse inputs
 
     match state, binding with

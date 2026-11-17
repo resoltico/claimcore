@@ -7,7 +7,7 @@ open ClaimCore.Domain.Tasks
 
 [<RequireQualifiedAccess>]
 type internal AggregateState =
-    | Family of CaseFamily option
+    | Family of DecisionFacts option
     | Person of Person option
 
 /// The state and environment are captured from the same transaction or historical fold position.
@@ -66,13 +66,14 @@ module internal DecisionSnapshot =
         }
 
     let apply snapshot changes =
-        changes
-        |> List.fold
-            (fun result change ->
-                result
-                |> Result.bind (function
-                    | AggregateState.Family state ->
-                        CaseFamily.apply state change |> Result.map (Some >> AggregateState.Family)
-                    | AggregateState.Person state ->
-                        Person.apply state change |> Result.map (Some >> AggregateState.Person)))
-            (Ok snapshot.State)
+        match snapshot.State with
+        | AggregateState.Family state ->
+            DecisionFacts.apply state changes |> Result.map (Some >> AggregateState.Family)
+        | AggregateState.Person state ->
+            changes
+            |> List.fold
+                (fun result change ->
+                    result
+                    |> Result.bind (fun state -> Person.apply state change |> Result.map Some))
+                (Ok state)
+            |> Result.map AggregateState.Person

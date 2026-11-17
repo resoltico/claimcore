@@ -21,7 +21,12 @@ let tests =
                         Binding.CasePayment(target state, state.Case.Revision, operation 3)
 
                     let after =
-                        Remove.decide (context 5) environment (Some state) binding InputMap.empty
+                        Remove.decide
+                            (context 5)
+                            environment
+                            (Some(DecisionFacts.fromReplay state))
+                            binding
+                            InputMap.empty
                         |> accepted
                         |> apply state
 
@@ -47,7 +52,7 @@ let tests =
                     Remove.decide
                         (context 6)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (Binding.CasePayment(target after, after.Case.Revision, operation 3))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case CaseRefusal.PaymentNotFound))
@@ -60,7 +65,7 @@ let tests =
                         Remove.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.CasePayment(target state, state.Case.Revision, operation 3))
                             InputMap.empty
                         |> accepted
@@ -79,7 +84,7 @@ let tests =
                     Remove.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.CasePayment(target state, state.Case.Revision, operation 9))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))

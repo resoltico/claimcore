@@ -109,7 +109,7 @@ let availability environment state binding =
         }
     | Some _ -> offered
 
-let decide context environment (state: CaseFamily option) binding inputs =
+let decide context environment (state: DecisionFacts option) binding inputs =
     match state, binding with
     | Some state, Binding.Work(_, expected) ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active false)
@@ -169,10 +169,10 @@ let decide context environment (state: CaseFamily option) binding inputs =
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decisionFactsAvailable (state: CaseFamily option) (_: Binding) =
+let decisionFactsAvailable (state: DecisionFacts option) (_: Binding) =
     state |> Option.bind _.Work |> Option.forall (fun part -> part.Value.IsSome)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Work(_, expected) ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active false)

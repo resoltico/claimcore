@@ -1,5 +1,6 @@
 module ClaimCore.Tests.AccessPolicyTests
 
+open ClaimCore.Domain.Aggregates
 open System
 open Expecto
 open ClaimCore.Domain
@@ -250,7 +251,7 @@ let tests =
                                 ])
 
                     Expect.equal
-                        (decide readable (Some state))
+                        (decide readable (Some(DecisionFacts.fromReplay state)))
                         (Error(
                             Rejection.Refused(
                                 Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
@@ -273,7 +274,10 @@ let tests =
                             readable, None
                         ] do
                         Expect.equal
-                            (decide access target)
+                            (decide
+                                access
+                                (target
+                                 |> Option.map ClaimCore.Domain.Aggregates.DecisionFacts.fromReplay))
                             (Error(
                                 Rejection.Refused(Refusal.Access AccessRefusal.ResourceUnavailable)
                             ))

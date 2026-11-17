@@ -8,7 +8,7 @@ open ClaimCore.Application.Storage
 
 /// Live facts are acquired inside the snapshot used for the action, independently of prior offers.
 module internal ExecutionEnvironment =
-    let fromStorage (tx: ReadTx) principal maintenance selected binding inputs =
+    let fromStorage (tx: ReadTx) principal maintenance selected binding inputs operation =
         task {
             let! requester = AggregateStorage.principal tx principal
             let access = requester |> Option.map Person.access |> AccessView.ofActor
@@ -35,14 +35,14 @@ module internal ExecutionEnvironment =
                             | Some id when
                                 Access.can principal access Capability.ReadCase (Scope.Case id)
                                 ->
-                                return! AggregateStorage.familyForDecision tx id binding
+                                return! AggregateStorage.familyForDecision tx id binding operation
                             | Some _ -> return None
                     }
 
                 let! responsible =
                     task {
                         match family, InputSelection.responsible inputs with
-                        | Some(family, _, _), Some id when
+                        | Some { Facts = family }, Some id when
                             Access.can
                                 principal
                                 access
@@ -61,7 +61,7 @@ module internal ExecutionEnvironment =
                         AssigneeEligible =
                             fun id ->
                                 match family, responsible with
-                                | Some(family, _, _), Some person when person.Id = id ->
+                                | Some { Facts = family }, Some person when person.Id = id ->
                                     let view = Person.access person |> Some |> AccessView.ofActor
 
                                     Access.eligibleAssignee person.Actor.Principal view family.Id
@@ -70,7 +70,7 @@ module internal ExecutionEnvironment =
 
                 let state, parts, origins =
                     match family with
-                    | Some(state, parts, origins) -> Some state, parts, origins
+                    | Some acquired -> Some acquired.Facts, acquired.Parts, acquired.Origins
                     | None -> None, [], Map.empty
 
                 return DecisionSnapshot.family selected environment state parts origins

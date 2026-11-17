@@ -22,7 +22,7 @@ let tests =
                         Void.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (inputs [ text InputTarget.Reason "Documented reason" ])
                         |> accepted
@@ -49,7 +49,7 @@ let tests =
                     Void.decide
                         (context 4)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (caseBinding after)
                         (inputs [ text InputTarget.Reason "Again" ])
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided)))
@@ -60,7 +60,7 @@ let tests =
                     Void.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (inputs [ text InputTarget.Reason "" ])
                     |> expectInputs

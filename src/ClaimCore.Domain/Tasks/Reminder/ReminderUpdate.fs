@@ -32,7 +32,7 @@ let private current = ReminderRules.current true [ ReminderState.Pending ]
 let availability environment state binding =
     ReminderRules.availability declaration current environment state binding
 
-let decide context environment (state: CaseFamily option) binding inputs =
+let decide context environment (state: DecisionFacts option) binding inputs =
     match state with
     | None -> Error(Rejection.Refused FamilyRules.unavailable)
     | Some state ->

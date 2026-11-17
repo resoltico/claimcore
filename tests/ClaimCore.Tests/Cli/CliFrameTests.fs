@@ -351,7 +351,7 @@ let private exampleFrames () =
             task.Decide
                 context
                 ClaimCore.Tests.TaskBuilders.environment
-                current
+                (current |> Option.map DecisionFacts.fromReplay)
                 command.Binding
                 command.Inputs
             |> CaseBuilders.accepted

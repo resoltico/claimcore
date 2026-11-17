@@ -138,11 +138,11 @@ module internal ReceiptReads =
                                     )
                         | AggregateReference.Family id ->
                             let! projected = FamilyReads.findCase tx id
-                            let! current = AggregateStorage.family tx id
+                            let! current = AggregateStorage.familyForParts tx id record.Changes
 
                             match projected, current with
-                            | Some projected, Some(current, _, _) when
-                                CaseFamily.snapshot current = Some projected.Snapshot
+                            | Some projected, Some { Facts = current } when
+                                DecisionFacts.snapshot current = Some projected.Snapshot
                                 ->
                                 let erased = current.Case.Value.Lifecycle = Lifecycle.Erased
 

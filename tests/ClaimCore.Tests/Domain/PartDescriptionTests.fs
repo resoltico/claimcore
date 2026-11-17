@@ -162,13 +162,13 @@ let tests =
                         task.Decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
 
                     match
-                        (task.Describe (Some state) Map.empty changes
+                        (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
                          |> accepted
                          |> List.exactlyOne)
                             .Description
@@ -191,12 +191,14 @@ let tests =
                         task.Decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (paymentInputs "2026-02-02" "25.50" "EUR")
                         |> accepted
 
-                    let descriptions = task.Describe (Some state) Map.empty changes |> accepted
+                    let descriptions =
+                        task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
+                        |> accepted
 
                     match descriptions |> List.map _.Description with
                     | [ PartDescription.Payment entry; PartDescription.Case finance ] ->
@@ -228,7 +230,7 @@ let tests =
                     task.Decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Work(target state, Revision.zero))
                         (inputs
                             [
@@ -240,7 +242,9 @@ let tests =
                     |> accepted
 
                 match
-                    (task.Describe (Some state) Map.empty changes |> accepted |> List.exactlyOne)
+                    (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
+                     |> accepted
+                     |> List.exactlyOne)
                         .Description
                 with
                 | PartDescription.Work change ->
@@ -264,13 +268,13 @@ let tests =
                         task.Decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id Revision.first)
                             InputMap.empty
                         |> accepted
 
                     match
-                        (task.Describe (Some state) Map.empty changes
+                        (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes
                          |> accepted
                          |> List.exactlyOne)
                             .Description
@@ -298,7 +302,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Note.Add.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.NoteNew(target state))
                             (inputs [ text InputTarget.NoteText (NoteText.format textValue) ])
                         |> accepted
@@ -311,13 +315,13 @@ let tests =
                         task.Decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.Note(target state, id))
                             InputMap.empty
                         |> accepted
 
                     Expect.isError
-                        (task.Describe (Some state) Map.empty changes)
+                        (task.Describe (Some(DecisionFacts.fromReplay state)) Map.empty changes)
                         "The description cannot silently drop required preceding values"
 
                     let prior =
@@ -331,7 +335,9 @@ let tests =
                             ]
 
                     match
-                        (task.Describe (Some state) prior changes |> accepted |> List.exactlyOne)
+                        (task.Describe (Some(DecisionFacts.fromReplay state)) prior changes
+                         |> accepted
+                         |> List.exactlyOne)
                             .Description
                     with
                     | PartDescription.Note change ->
@@ -422,7 +428,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.Decide.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (decisionInputs "2026-02-01" "1000" "EUR")
                         |> accepted
@@ -433,7 +439,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.RecordPayment.decide
                             (context 3)
                             environment
-                            (Some decided)
+                            (Some(DecisionFacts.fromReplay decided))
                             (caseBinding decided)
                             (paymentInputs "2026-02-02" "25" "EUR")
                         |> accepted
@@ -468,20 +474,24 @@ let tests =
                         "The task has no authored inputs to lose"
 
                     Expect.isFalse
-                        (remove.DecisionFactsAvailable (Some historical) binding)
+                        (remove.DecisionFactsAvailable
+                            (Some(DecisionFacts.fromReplay historical))
+                            binding)
                         "Private amounts and date bounds are still necessary"
 
                     let close = ClaimCore.Domain.Tasks.Case.Close.task |> familyTask
 
                     Expect.isTrue
-                        (close.DecisionFactsAvailable (Some historical) (caseBinding historical))
+                        (close.DecisionFactsAvailable
+                            (Some(DecisionFacts.fromReplay historical))
+                            (caseBinding historical))
                         "A retained status transition needs no private financial facts"
 
                     let changes =
                         close.Decide
                             (context 4)
                             environment
-                            (Some historical)
+                            (Some(DecisionFacts.fromReplay historical))
                             (caseBinding historical)
                             InputMap.empty
                         |> accepted
@@ -500,7 +510,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.Erase.decide
                             (context 4)
                             environment
-                            (Some historical)
+                            (Some(DecisionFacts.fromReplay historical))
                             (Binding.CaseErase(
                                 target historical,
                                 historical.Case.Revision,

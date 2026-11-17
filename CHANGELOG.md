@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Ordinary case reads and selected child operations acquire bounded live facts and write projection deltas; full verification and rebuild still reconstruct complete history.
+
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
 - Correct erroneous payment entries atomically on open cases, including fully paid cases; receipts retain removed and replacement entry identities.

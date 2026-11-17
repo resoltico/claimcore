@@ -88,10 +88,20 @@ codec records and interpretation predicates do not establish schema equivalence.
 not an integrator custom-store contract. It supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.
-Live family acquisition reads note headers and reminder dates; it opens preceding private text/plans
-only for selected parts. Public roots and acquired private values retain their hash checks. Reminder
-query controls acquire the plans they present. Live child projections consume accepted changed parts;
-owner erasure clears all related private projections. Replay/rebuild still reconstruct the full rows.
+Live decisions and availability use [DecisionFacts](../src/ClaimCore.Domain/Aggregates/DecisionFacts.fs),
+which cannot enter complete `CaseFamily` APIs. Acquisition loads the current case/work roots, scoped
+children and their origin anchors, plus financial/date/due aggregates from the same snapshot or locked
+action state. It checks consumed projections against those roots. Queried identities distinguish known absence from
+unacquired children, and authoring facts are tied to their operation identity. Core admission rejects
+reuse outside that explicit scope. No ordinary loader falls back to
+complete family acquisition. Pages acquire the bounded child rows whose controls they present.
+
+Materialized rows, roots and round trips are bounded by the selected scope rather than unrelated child
+counts. Aggregate SQL may scan many rows; this is not constant SQL effort or a latency budget. Scalar
+projection agreement and selected anchors do not authenticate completeness of the whole child set.
+Complete replay, verification and rebuild still reconstruct every child independently. Live projection
+deltas preserve unrelated money, work, search and next-due state; erasure clears all owned private
+records with guarded bulk writes without acquiring per-child application roots.
 
 Pre-1.0 durable changes require a fresh installation. There are no migrations or cross-version readers.
 The [SQL baseline](../db/baseline.sql) enforces structure, append-only storage and erasure authorization;

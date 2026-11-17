@@ -88,7 +88,7 @@ let internal failure =
         )
     | _ -> Rejection.InvalidState RecordViolation.InvalidFinancialPosition
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
     let syntax = parse (fun _ -> Ok) fields
 
@@ -145,7 +145,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
         CaseRules.admit context environment state binding capability (FamilyRules.active true)

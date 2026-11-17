@@ -49,7 +49,7 @@ let availability environment state binding =
             |> Option.defaultValue Map.empty
     }
 
-let private selected (state: CaseFamily) id =
+let private selected (state: DecisionFacts) id =
     match Map.tryFind id state.Payments with
     | Some part when not part.Value.Removed && Revision.value part.Revision < Revision.Maximum ->
         Ok part
@@ -57,7 +57,7 @@ let private selected (state: CaseFamily) id =
         Error(Rejection.InvalidState RecordViolation.InvalidRevisionSequence)
     | _ -> Error(Rejection.Refused(Refusal.Case CaseRefusal.PaymentNotFound))
 
-let decide context environment (state: CaseFamily option) binding inputs =
+let decide context environment (state: DecisionFacts option) binding inputs =
     match state, binding, context.Decision.BusinessDate with
     | Some state, Binding.CasePayment(_, _, id), Some today ->
         result {
@@ -93,26 +93,9 @@ let decide context environment (state: CaseFamily option) binding inputs =
                 else
                     Ok()
 
-            let others =
-                state.Payments
-                |> Map.remove id
-                |> Map.values
-                |> Seq.filter (fun part -> not part.Value.Removed)
-                |> Seq.toList
-
-            do!
-                if others |> List.exists (fun part -> part.Value.Entry.IsNone) then
-                    Error(Rejection.InvalidState RecordViolation.InvalidPaymentState)
-                else
-                    Ok()
-
-            let dates =
-                others |> List.choose _.Value.Entry |> List.map PaymentEntry.date |> List.sort
-
-            let bounds =
-                match dates with
-                | [] -> None
-                | first :: _ -> PaymentDateBounds.create first (List.last dates)
+            let! bounds =
+                DecisionFacts.remainingPaymentDates id state
+                |> Result.mapError Rejection.InvalidState
 
             let! removed =
                 FinancialPosition.remove entry bounds before.Finance
@@ -155,7 +138,7 @@ let decide context environment (state: CaseFamily option) binding inputs =
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.CasePayment(_, _, id) ->
         result {

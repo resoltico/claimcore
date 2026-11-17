@@ -94,11 +94,11 @@ let private gate =
         || (state.Case.Value.Content
             |> Option.exists (fun content -> content.Finance.Decision.IsSome)))
 
-let private can environment (state: CaseFamily) capability =
+let private can environment (state: DecisionFacts) capability =
     FamilyRules.permission environment (Scope.Case state.Id) capability
     |> Result.isOk
 
-let private anyPermission environment (state: CaseFamily) =
+let private anyPermission environment (state: DecisionFacts) =
     if
         can environment state Capability.Register
         || can environment state Capability.Decide
@@ -107,7 +107,7 @@ let private anyPermission environment (state: CaseFamily) =
     else
         FamilyRules.permission environment (Scope.Case state.Id) Capability.Register
 
-let private permissions environment (state: CaseFamily) inputs =
+let private permissions environment (state: DecisionFacts) inputs =
     anyPermission environment state
     |> Result.bind (fun () ->
         [
@@ -275,7 +275,7 @@ let private apply (before: CaseContent) command =
             else
                 Ok after))
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
     let syntax = parse (fun _ -> Ok) inputs fields
 
@@ -323,7 +323,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
         FamilyRules.admitPermission

@@ -1,5 +1,6 @@
 module ClaimCore.Tests.Tasks.CaseCorrectPaymentTests
 
+open ClaimCore.Domain.Aggregates
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Domain.Changes
@@ -7,11 +8,11 @@ open ClaimCore.Tests.TaskBuilders
 
 module Correct = ClaimCore.Domain.Tasks.Case.CorrectPayment
 
-let private correct number selected date amount state =
+let private correct number selected date amount (state: CaseFamily) =
     Correct.decide
         (context number)
         environment
-        (Some state)
+        (Some(DecisionFacts.fromReplay state))
         (Binding.CasePayment(target state, state.Case.Revision, operation selected))
         (paymentInputs date amount "EUR")
 
@@ -112,7 +113,7 @@ let tests =
                     ClaimCore.Domain.Tasks.Case.RemovePayment.decide
                         (context 4)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.CasePayment(target state, state.Case.Revision, operation 3))
                         InputMap.empty
                     |> accepted

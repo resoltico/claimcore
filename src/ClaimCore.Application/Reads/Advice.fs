@@ -60,11 +60,15 @@ module internal Advice =
         (record: StoredCase)
         =
         task {
-            let! current = AggregateStorage.family tx record.CaseId
+            let! current =
+                AggregateStorage.familyForPayments
+                    tx
+                    record.CaseId
+                    (latestPayments |> List.map PaymentEntry.id)
 
             match current, CaseRecords.current services.InstallationId record with
-            | Some(state, _, _), Ok snapshot when
-                CaseFamily.snapshot state = Some snapshot && state.Sequence = familySequence
+            | Some { Facts = state }, Ok snapshot when
+                DecisionFacts.snapshot state = Some snapshot && state.Sequence = familySequence
                 ->
                 let environment =
                     {

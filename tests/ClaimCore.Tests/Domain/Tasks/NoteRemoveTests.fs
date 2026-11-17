@@ -20,7 +20,7 @@ let tests =
                     Add.decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.NoteNew(target state))
                         (inputs [ text InputTarget.NoteText "private note" ])
                     |> accepted
@@ -30,7 +30,12 @@ let tests =
                 let binding = Binding.Note(target state, id)
 
                 let changes =
-                    Remove.decide (context 3) environment (Some state) binding InputMap.empty
+                    Remove.decide
+                        (context 3)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        binding
+                        InputMap.empty
                     |> accepted
 
                 let after = apply state changes
@@ -46,13 +51,23 @@ let tests =
                     (Revision.create 2L |> Option.get)
                     "The note has its own chain"
 
-                Remove.decide (context 4) environment (Some after) binding InputMap.empty
+                Remove.decide
+                    (context 4)
+                    environment
+                    (Some(DecisionFacts.fromReplay after))
+                    binding
+                    InputMap.empty
                 |> expectRefusal (Refusal.Access AccessRefusal.ResourceUnavailable))
             testCase "missing notes and foreign parent selections remain unavailable" (fun () ->
                 let state = family ()
                 let missing = Binding.Note(target state, NoteId.ofOperationId (operation 7))
 
-                Remove.decide (context 3) environment (Some state) missing InputMap.empty
+                Remove.decide
+                    (context 3)
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    missing
+                    InputMap.empty
                 |> expectRefusal (Refusal.Access AccessRefusal.ResourceUnavailable)
 
                 let foreign = CaseSelector.Id(CaseId.ofOperationId (operation 9))
@@ -60,7 +75,7 @@ let tests =
                 Remove.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (Binding.Note(foreign, NoteId.ofOperationId (operation 7)))
                     InputMap.empty
                 |> expectRefusal (Refusal.Access AccessRefusal.ResourceUnavailable))

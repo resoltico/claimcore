@@ -42,7 +42,7 @@ let availability environment state binding =
         Recommendation = recommendation
     }
 
-let decide context environment (state: CaseFamily option) binding (_: InputMap) =
+let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
         CaseRules.admit context environment state binding capability gate

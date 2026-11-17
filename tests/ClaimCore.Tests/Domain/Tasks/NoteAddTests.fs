@@ -22,7 +22,7 @@ let tests =
                         Add.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.NoteNew(target state))
                             (inputs [ text InputTarget.NoteText "Exact\nprivate text" ])
                         |> accepted
@@ -51,7 +51,7 @@ let tests =
                     Add.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.NoteNew(target state))
                         (inputs [ text InputTarget.NoteText "note" ])
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
@@ -63,7 +63,7 @@ let tests =
                     Add.decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         (inputs [ text InputTarget.NoteText "\r" ])
 
@@ -71,10 +71,20 @@ let tests =
                 let values = inputs [ text InputTarget.NoteText "note" ]
 
                 let state =
-                    Add.decide (context 2) environment (Some state) binding values
+                    Add.decide
+                        (context 2)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        binding
+                        values
                     |> accepted
                     |> apply state
 
-                Add.decide (context 2) environment (Some state) binding values
+                Add.decide
+                    (context 2)
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    binding
+                    values
                 |> expectRefusal Refusal.IdempotencyConflict)
         ]

@@ -261,6 +261,7 @@ module internal PeopleQueries =
                                                                     selected
                                                                     binding
                                                                     (Some InputMap.empty)
+                                                                    None
 
                                                             let available =
                                                                 snapshot.Availability binding

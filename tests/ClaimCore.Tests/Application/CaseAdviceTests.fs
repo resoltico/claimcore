@@ -1,5 +1,6 @@
 module ClaimCore.Tests.CaseAdviceTests
 
+open ClaimCore.Domain.Aggregates
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -83,7 +84,10 @@ let model =
             | _ -> failtest "Expected void task."
 
         let offered =
-            task.Availability ClaimCore.Tests.TaskBuilders.environment (Some family) binding
+            task.Availability
+                ClaimCore.Tests.TaskBuilders.environment
+                (Some(DecisionFacts.fromReplay family))
+                binding
 
         let advice =
             advice

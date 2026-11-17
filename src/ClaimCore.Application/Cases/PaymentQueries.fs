@@ -89,27 +89,25 @@ module internal PaymentQueries =
                                                                     }
 
                                                         let! family =
-                                                            AggregateStorage.family tx parent.CaseId
+                                                            AggregateStorage.familyForPayments
+                                                                tx
+                                                                parent.CaseId
+                                                                (rows.Items
+                                                                 |> List.map (
+                                                                     fst >> PaymentEntry.id
+                                                                 ))
 
                                                         let removable =
-                                                            ClaimCore.Domain.Tasks.Registry.all
-                                                            |> List.tryPick (function
-                                                                | ClaimCore.Domain.Tasks.Task.Family task when
-                                                                    task.Declaration.Inputs
-                                                                    |> List.exists (fun input ->
-                                                                        input.Input =
-                                                                            TaskInputId.Target
-                                                                                InputTarget
-                                                                                    .PaymentId
-                                                                        && input.Source =
-                                                                            InputSource.Binding)
-                                                                    ->
+                                                            ClaimCore.Domain.Tasks.Registry.find
+                                                                ClientCompositions.paymentRemoval
+                                                            |> Option.bind (function
+                                                                | ClaimCore.Domain.Tasks.Task.Family task ->
                                                                     Some task
                                                                 | _ -> None)
 
                                                         let canRemove =
                                                             match family, removable with
-                                                            | Some(family, _, _), Some task ->
+                                                            | Some { Facts = family }, Some task ->
                                                                 let environment =
                                                                     {
                                                                         FamilyEnvironment.Requester =

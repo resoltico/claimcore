@@ -64,7 +64,12 @@ let private run number revision task members previous =
         | Some(ClaimCore.Domain.Tasks.Task.Family task) -> task
         | _ -> failtest "Expected family task."
 
-    selected.Decide context ClaimCore.Tests.TaskBuilders.environment previous binding input
+    selected.Decide
+        context
+        ClaimCore.Tests.TaskBuilders.environment
+        (previous |> Option.map ClaimCore.Domain.Aggregates.DecisionFacts.fromReplay)
+        binding
+        input
     |> required
     |> List.fold
         (fun state change ->

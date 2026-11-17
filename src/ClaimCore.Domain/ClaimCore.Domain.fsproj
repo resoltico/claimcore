@@ -52,6 +52,7 @@
     <Compile Include="Changes/PartChange.fs" />
     <Compile Include="Inputs/CaseAdmission.fs" />
     <Compile Include="Aggregates/CaseFamily.fs" />
+    <Compile Include="Aggregates/DecisionFacts.fs" />
     <Compile Include="Aggregates/Person.fs" />
     <Compile Include="Aggregates/Environment.fs" />
     <Compile Include="Changes/Descriptions.fs" />

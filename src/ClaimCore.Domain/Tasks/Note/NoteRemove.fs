@@ -36,7 +36,7 @@ let private gate binding state =
 let availability environment state binding =
     FamilyRules.availability declaration environment state binding capability (gate binding)
 
-let decide context environment (state: CaseFamily option) binding (_: InputMap) =
+let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Note(_, id) ->
         let command = { NoteId = id }

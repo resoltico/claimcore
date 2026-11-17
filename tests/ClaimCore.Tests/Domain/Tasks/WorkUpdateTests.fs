@@ -28,7 +28,7 @@ let tests =
                         Update.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.Work(target state, Revision.zero))
                             values
                         |> expectInputs
@@ -56,7 +56,7 @@ let tests =
                     Update.decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Work(target state, Revision.zero))
                         values
                     |> accepted
@@ -74,7 +74,7 @@ let tests =
                     Update.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Work(target state, Revision.first))
                         clear
                     |> accepted
@@ -92,7 +92,7 @@ let tests =
                     (Update.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         (inputs
                             [
@@ -105,7 +105,7 @@ let tests =
                 Update.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     binding
                     (inputs
                         [
@@ -115,7 +115,8 @@ let tests =
                         ])
                 |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed))
 
-                let offer = Update.availability environment (Some state) binding
+                let offer =
+                    Update.availability environment (Some(DecisionFacts.fromReplay state)) binding
 
                 Expect.isFalse
                     (List.contains
@@ -141,28 +142,43 @@ let tests =
                         { environment with
                             AssigneeEligible = fun _ -> false
                         }
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         assignment
                     |> expectRefusal (Refusal.Case CaseRefusal.AssigneeUnavailable)
 
                     Expect.isNonEmpty
-                        (Update.decide (context 2) environment (Some state) binding InputMap.empty
+                        (Update.decide
+                            (context 2)
+                            environment
+                            (Some(DecisionFacts.fromReplay state))
+                            binding
+                            InputMap.empty
                          |> expectInputs)
                         "No authored change"
 
                     let state =
-                        Update.decide (context 2) environment (Some state) binding assignment
+                        Update.decide
+                            (context 2)
+                            environment
+                            (Some(DecisionFacts.fromReplay state))
+                            binding
+                            assignment
                         |> accepted
                         |> apply state
 
-                    Update.decide (context 3) environment (Some state) binding assignment
+                    Update.decide
+                        (context 3)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        binding
+                        assignment
                     |> expectRefusal (Refusal.revisionConflict Revision.first)
 
                     Update.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Work(target state, Revision.first))
                         assignment
                     |> expectRefusal (Refusal.Case CaseRefusal.WorkNoChanges))
@@ -180,7 +196,7 @@ let tests =
                         { environment with
                             Requester = AccessView.empty
                         }
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         values
                     |> expectRefusal (Refusal.Access AccessRefusal.ResourceUnavailable)
@@ -188,7 +204,7 @@ let tests =
                     Update.decide
                         (context 2)
                         { environment with Maintenance = true }
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         values
                     |> expectRefusal Refusal.RegisterMaintenance
@@ -204,7 +220,7 @@ let tests =
                                 }
                         }
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         values
                     |> expectRefusal (Refusal.Access AccessRefusal.ResourceUnavailable))

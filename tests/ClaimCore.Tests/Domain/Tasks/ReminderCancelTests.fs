@@ -22,7 +22,7 @@ let tests =
                         Cancel.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id Revision.first)
                             InputMap.empty
                         |> accepted
@@ -42,7 +42,7 @@ let tests =
                     Cancel.decide
                         (context 4)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (reminderBinding after id after.Reminders[id].Revision)
                         InputMap.empty
                     |> expectRefusal (
@@ -55,7 +55,7 @@ let tests =
                 Cancel.decide
                     (context 3)
                     environment
-                    (Some blocked)
+                    (Some(DecisionFacts.fromReplay blocked))
                     (reminderBinding blocked id Revision.first)
                     InputMap.empty
                 |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
@@ -63,7 +63,7 @@ let tests =
                 Cancel.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (Binding.Reminder(
                         CaseSelector.Id(CaseId.ofOperationId (operation 9)),
                         id,
@@ -75,7 +75,7 @@ let tests =
                 Cancel.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (reminderBinding state id Revision.zero)
                     InputMap.empty
                 |> expectRefusal (Refusal.revisionConflict Revision.first))

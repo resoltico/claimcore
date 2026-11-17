@@ -31,7 +31,10 @@ let private offered environment state =
     |> List.choose (function
         | Task.Family task when task.Declaration.Target = ActSubject.Case ->
             if
-                (task.Availability environment (Some state) (binding task.Declaration state))
+                (task.Availability
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    (binding task.Declaration state))
                     .Blocked.IsNone
             then
                 Some(TaskId.token task.Declaration.Id)
@@ -56,7 +59,9 @@ let tests =
                             ClaimCore.Domain.Tasks.Reminder.Complete.availability
                             ClaimCore.Domain.Tasks.Reminder.Cancel.availability
                         ] do
-                        let offered = available environment (Some state) binding
+                        let offered =
+                            available environment (Some(DecisionFacts.fromReplay state)) binding
+
                         Expect.isNone offered.Blocked "Terminal work is available"
 
                         Expect.isEmpty
@@ -78,7 +83,8 @@ let tests =
                             ClaimCore.Domain.Tasks.Reminder.CompleteAndPlanNext.availability
                         ] do
                         Expect.equal
-                            (available environment (Some state) binding).Seeds
+                            (available environment (Some(DecisionFacts.fromReplay state)) binding)
+                                .Seeds
                             plan
                             "Planning tasks acquire both current plan values"
 
@@ -86,7 +92,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Reminder.Complete.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             binding
                             InputMap.empty
                         |> accepted
@@ -95,7 +101,7 @@ let tests =
                     let reopened =
                         ClaimCore.Domain.Tasks.Reminder.Reopen.availability
                             environment
-                            (Some completed)
+                            (Some(DecisionFacts.fromReplay completed))
                             (reminderBinding completed id (Revision.create 2L |> Option.get))
 
                     Expect.equal
@@ -123,7 +129,7 @@ let tests =
                     selected.Decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (decisionInputs "2027-01-01" "1000" "EUR")
                     |> expectInputs
@@ -138,7 +144,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.Decide.decide
                             (context 2)
                             environment
-                            (Some zeroBase)
+                            (Some(DecisionFacts.fromReplay zeroBase))
                             (caseBinding zeroBase)
                             (decisionInputs "2026-02-01" "0" "EUR")
                         |> accepted
@@ -230,7 +236,10 @@ let private ranked state =
         | Task.Family task when task.Declaration.Target = ActSubject.Case ->
             Some(
                 task.Declaration,
-                task.Availability environment (Some state) (binding task.Declaration state)
+                task.Availability
+                    environment
+                    (Some(DecisionFacts.fromReplay state))
+                    (binding task.Declaration state)
             )
         | _ -> None)
 

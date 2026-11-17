@@ -52,7 +52,7 @@ let availability environment state binding =
         Recommendation = Some 1
     }
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
     let syntax = parse (fun _ -> Ok) fields
 

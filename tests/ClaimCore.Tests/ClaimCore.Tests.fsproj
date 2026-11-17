@@ -80,6 +80,7 @@
     <Compile Include="Domain/Tasks/CaseRecordPaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseRemovePaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseCorrectPaymentTests.fs" />
+    <Compile Include="Domain/Tasks/DecisionFactsTests.fs" />
     <Compile Include="Domain/Tasks/CaseCorrectTests.fs" />
     <Compile Include="Domain/Tasks/CaseCloseTests.fs" />
     <Compile Include="Domain/Tasks/CaseReopenTests.fs" />

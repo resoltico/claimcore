@@ -75,7 +75,7 @@ let apply task inputs (family: CaseFamily) =
         task.Decide
             context
             TaskBuilders.environment
-            (Some family)
+            (Some(DecisionFacts.fromReplay family))
             (Binding.Case(CaseSelector.Id family.Id, family.Case.Revision))
             inputs
         |> Result.map (TaskBuilders.apply family)
@@ -105,7 +105,7 @@ let paid () =
         task.Decide
             context
             TaskBuilders.environment
-            (Some family)
+            (Some(DecisionFacts.fromReplay family))
             (Binding.Case(CaseSelector.Id family.Id, family.Case.Revision))
             inputs
         |> accepted
