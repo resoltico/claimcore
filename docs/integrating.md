@@ -256,7 +256,9 @@ supplied binding and do not allocate an operation ID or refresh a reviewed versi
 represented by acquisition placeholders. The CLI renders the supplied semantic receipt.
 
 Named option values can use `--flag=value`. Use this spelling when a value begins with `--`;
-shell quoting alone does not change option classification. For example,
+shell quoting alone does not change option classification. A separate named value such as
+`--text -h` remains text; `-h` and `--help` request command help only when not consumed as a
+value and before the `--` marker. For example,
 `claimcore people list --text='--urgent'` preserves the exact text filter. Repeated choices and
 collection rows use repeated assigned options, such as `--lifecycle=ACTIVE --lifecycle=VOIDED`.
 
@@ -267,6 +269,21 @@ collection rows use repeated assigned options, such as `--lifecycle=ACTIVE --lif
 profile defaults are inserted before the marker. Text acquired from files, stdin or an editor is
 passed as an assigned value and cannot become an option. Contextual read-form hints include required
 acquisition placeholders such as `<operation-id>`; replace the placeholder with the intended value.
+
+### Reminder query selections
+
+`reminder.list` distinguishes an omitted state from explicit `state: "ANY"`. With no standard view,
+omission retains the Pending default; `ANY` adds no state constraint and includes Pending,
+Completed and Cancelled rows permitted by the remaining selection. A standard view retains its own
+predicates, so an explicit state filter intersects rather than replaces the view.
+
+Omitted `includeInactive` defaults to false without a view and true with a view. Explicit false and
+true always remain explicit, including in Core links, URL serialization, page requests and CSV
+export selections. The browser renders effective defaults from generated owner metadata rather than
+reimplementing those rules. Case reminder links supply explicit `ANY` and `includeInactive: true`.
+Regenerate clients for the query-only `reminderStateSelection` vocabulary; stored reminder states
+remain Pending, Completed and Cancelled. These are exchange-contract changes, not a durable-format
+change or a migration.
 
 ### CLI language and display locale
 

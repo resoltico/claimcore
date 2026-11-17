@@ -5,7 +5,9 @@
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
 - DATA payment-page items replace canRemove with independently available task IDs in actions; removal and correction controls follow exactly those supplied IDs.
+- Regenerate reminder query clients for explicit ANY state selection; omitted ordinary state remains Pending, and explicit inactive-parent false survives links and filters.
 - CLI hints preserve option-looking values with assigned options; `--` protects reference operands, and lookup hints show required input placeholders.
+- CLI help retains optional reminder --case-id and treats help-like named option values as data.
 - Task choice controls retain explicit empty or invalid selections and use declared defaults only when input is missing.
 - Open a case’s reminder queue from its workspace link, see the case restriction, and clear it without losing other filters.
 - Ordinary case reads and selected child operations acquire bounded live facts and write projection deltas; full verification and rebuild still reconstruct complete history.
