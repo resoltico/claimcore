@@ -99,7 +99,14 @@ let tests =
                         do! finding VerificationFinding.CaseWorkProjection database
 
                         let! rebuilt =
-                            ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+                            ProjectionRebuild.rebuild
+                                database.OwnerSource
+                                checkpoint
+                                (MaintenanceHandle.create
+                                    1L
+                                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                                 |> Option.get)
+                                token
 
                         Expect.isOk rebuilt "Trusted ledger edit reconstructs the summary metadata"
                         let! _ = verified database

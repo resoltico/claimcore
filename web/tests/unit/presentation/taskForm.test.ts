@@ -213,3 +213,29 @@ it("keeps existing scalar-list text while structured grant drafts stay outside s
     formValueText({ kind: "GRANT_TARGET", selection: { kind: "REFERENCE", text: "PRIVATE" } }),
   ).toBe("");
 });
+
+it("fixed Core inputs win while the explicit reviewed binding stays unchanged", () => {
+  const action = operationAffordance(
+    "people.grant",
+    { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000001", expectedRevision: 2 },
+    { "input:role": "CASE_READER", "input:scope": "INSTALLATION" },
+    [],
+  );
+  const value = assembleTask(
+    "people.grant",
+    { "input:role": "OWNER", "input:scope": "CASE", "field:caseReference": "OTHER" },
+    { kind: "PEOPLE", actorId: "10000000-0000-4000-8000-000000000099", expectedRevision: 9 },
+    operationId,
+    action,
+  );
+  expect(value.command.binding).toEqual({
+    kind: "PEOPLE",
+    actorId: "10000000-0000-4000-8000-000000000099",
+    expectedRevision: 9,
+  });
+  expect(value.command.inputs).toMatchObject({
+    "input:role": "CASE_READER",
+    "input:scope": "INSTALLATION",
+  });
+  expect(value.command.inputs).not.toHaveProperty("field:caseReference");
+});

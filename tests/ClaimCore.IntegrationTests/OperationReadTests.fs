@@ -286,13 +286,27 @@ let private runtime () =
                 "Wrong accepting part is detected independently of valid source FK"
         | other -> failtestf "Poisoned grant provenance must diverge: %A" other
 
-        administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
+        administration.Maintenance(
+            (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099")),
+            token
+        )
+        |> sync
+        |> ignore
 
         let checkpoint =
             InstallationCheckpoint.create fixture.InstallationId finalReceipt.Position None
             |> Option.get
 
-        let rebuilt = administration.Rebuild(checkpoint, token) |> sync
+        let rebuilt =
+            administration.Rebuild(
+                checkpoint,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
 
         let rebuilt =
             rebuilt

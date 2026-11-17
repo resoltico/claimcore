@@ -44,7 +44,13 @@ let sql (database: PostgresFixture.Database) statement parameters =
 let enterMaintenance (database: PostgresFixture.Database) =
     task {
         let! mode =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+                token
 
         Expect.isTrue mode.State.Active "The owner explicitly pauses register writes"
     }

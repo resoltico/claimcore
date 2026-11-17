@@ -108,7 +108,6 @@ type CliMessage =
         subject: string *
         act: string *
         operationId: string
-    | [<MessageKey("cli.text.operationPending")>] OperationPending of finalAt: string
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel

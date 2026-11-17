@@ -27,7 +27,15 @@ let private lostEntry drop landed (database: PostgresFixture.Database) =
         let mutable unknown = false
 
         try
-            let! _ = RegisterMaintenanceStore.change source MaintenanceChange.On token
+            let! _ =
+                RegisterMaintenanceStore.change
+                    source
+                    (MaintenanceChange.Acquire(
+                        0L,
+                        System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                    ))
+                    token
+
             ()
         with :? AdministrationOutcomeUnknownException ->
             unknown <- true

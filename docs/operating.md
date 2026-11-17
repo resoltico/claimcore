@@ -15,7 +15,7 @@ server and its assets; the human CLI is distributed separately.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-Use installation format 5 and CLI recovery journal format 4 with matching builds. Initialization
+Use installation format 6 and CLI recovery journal format 4 with matching builds. Initialization
 requires an empty database; the runtime refuses unsupported baseline identities and formats without
 converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
 and recovery records rather than attempting to initialize or convert them in place.
@@ -42,11 +42,11 @@ uncertain result. Remote database connections require verified TLS.
 | `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
 | `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
-| `maintenance on` | Serialize with earlier writes and pause register writes. |
-| `maintenance off` | End the current pause after inspecting status. |
+| `maintenance acquire GENERATION PAUSE_ID` | Serialize with earlier writes and pause register writes. |
+| `maintenance resume GENERATION PAUSE_ID` | End the current pause after inspecting status. |
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
-| `rebuild --checkpoint FILE` | Rebuild projections during explicit maintenance. |
-| `admit-restored-installation --checkpoint FILE` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
+| `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Rebuild projections during explicit maintenance. |
+| `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
 Help/version are offline. Owner failures use a separate bounded envelope,
 `{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
@@ -80,17 +80,26 @@ replace a confirmed result or the primary failure. See `claimcore help exit-code
 
 ## Register-write maintenance
 
+Read the inactive generation from `status` before acquiring a pause and supply a fresh nonzero UUID.
+Retain the returned generation and pause ID for resume, takeover, rebuild and restore admission.
+`maintenance takeover GENERATION PAUSE_ID NEW_PAUSE_ID` compares the exact current handle.
+Successful changes advance the generation; an exact active acquisition can be retried. A released
+acquisition and an old resume are stale and have no effect. There is no expiry or automatic resume
+on process exit. After an uncertain acknowledgement, inspect current status; it does not establish
+historical command execution. Rebuild and restore check the expected handle after acquiring the
+ledger serialization lock. The handle does not prove that external traffic is isolated.
+
 Use database-owner credentials to pause register writes before a repair:
 
 ```sh
 claimcore-server status
-claimcore-server maintenance on
+claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-server status
-claimcore-server maintenance off
+claimcore-server maintenance resume PAUSE_GENERATION PAUSE_ID
 ```
 
 Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
@@ -188,11 +197,11 @@ With traffic still isolated, use the independently retained checkpoint, not a re
 the restored database:
 
 ```sh
-claimcore-server maintenance on
-claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
+claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # If authoritative history is sound and only projections diverge:
-claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-server status
 ```

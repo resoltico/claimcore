@@ -17,6 +17,7 @@ let private acts =
         (TaskId.ofLiteral "case.withdrawDecision"), Consequence.Routine
         (TaskId.ofLiteral "case.recordPayment"), Consequence.Routine
         (TaskId.ofLiteral "case.removePayment"), Consequence.Routine
+        (TaskId.ofLiteral "case.correctPayment"), Consequence.Routine
         (TaskId.ofLiteral "case.close"), Consequence.Routine
         (TaskId.ofLiteral "case.reopen"), Consequence.Routine
         (TaskId.ofLiteral "case.void"), Consequence.Stewardship

@@ -395,10 +395,6 @@
     "text": "Weitere Änderungen — führen Sie {command} aus.",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "Warte bis {finalAt} auf eine endgültige Antwort.",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "Fallnotizen",
     "source": "54c2a0df2066"

@@ -395,10 +395,6 @@
     "text": "ほかにも変更があります。{command}を実行してください。",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "{finalAt}まで回答の確定を待ちます。",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "案件のメモ",
     "source": "54c2a0df2066"

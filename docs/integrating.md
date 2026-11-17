@@ -218,3 +218,25 @@ trusts the same server that supplies its JavaScript and keeps transport identity
 
 For implementation and verification commands, see [Contributing](contributing.md#verification).
 For the business workflow and terminology, see [Case work](case-work.md) and the [Glossary](glossary.md).
+
+### Current foundation contracts
+
+Use a fresh format 6 installation with matching builds. Case receipts expose `payments`, an ordered
+list of entry differences; there is no singular `payment` member. `case.correctPayment` binds the
+selected `paymentId` and one case revision, then returns both removed and recorded differences in
+one accepted operation. HUMAN controls include their shared `labelId`. Command bindings use a
+closed `COMMAND` branch containing the complete validated operational request rather than seeds.
+
+Browser response admission is generated from the finite Wire codec schemas. It rejects malformed
+structure before date observation or recovery. Structural admission does not establish every native
+interpretation predicate. JSON parsing loses duplicate-member and numeric-lexeme evidence; those
+byte-level guarantees are not claimed by the browser. Precise timestamp strings remain unchanged.
+
+CLI existing-case reads and actions accept `--case-id UUID` as an alternative to a reference operand.
+References that look like UUIDs remain references. Grant/revoke ID selectors select case scope;
+`ROLE@REFERENCE` retains reference semantics. ID-based erasure previews the authoritative reference
+and confirms that reference before sending the identical prepared operation.
+
+Copied ledger action hints use `--preview`; operational hints use `--dry-run`. Hints retain the
+supplied binding and do not allocate an operation ID or refresh a reviewed version. Private text is
+represented by acquisition placeholders. The CLI renders the supplied semantic receipt.

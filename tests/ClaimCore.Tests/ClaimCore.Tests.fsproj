@@ -25,6 +25,7 @@
     <Compile Include="Json/StructuralAdmissionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
     <Compile Include="Contract/MaintenanceContractTests.fs" />
+    <Compile Include="Contract/MaintenanceFencingTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Contract/RepresentationNegotiationTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
@@ -78,6 +79,7 @@
     <Compile Include="Domain/Tasks/CaseDecideTests.fs" />
     <Compile Include="Domain/Tasks/CaseRecordPaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseRemovePaymentTests.fs" />
+    <Compile Include="Domain/Tasks/CaseCorrectPaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseCorrectTests.fs" />
     <Compile Include="Domain/Tasks/CaseCloseTests.fs" />
     <Compile Include="Domain/Tasks/CaseReopenTests.fs" />

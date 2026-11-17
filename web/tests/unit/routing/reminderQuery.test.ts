@@ -28,11 +28,11 @@ it("round trips independently chosen filters and authored text without cursors",
   );
 });
 it("does not alias retired or unknown vocabulary", () => {
-  expect(
+  expect(() =>
     parseReminderQuery(
       "?view=mine&state=unknown&due=INACTIVE&assignment=unknown&includeInactive=false",
     ),
-  ).toEqual({});
+  ).toThrow("Invalid reminder selection.");
 });
 
 it("keeps manual interface mode separate from the Core filter and drops only a selected view", () => {
@@ -56,5 +56,20 @@ it("keeps manual interface mode separate from the Core filter and drops only a s
     "/reminders?view=PENDING&state=PENDING&due=TODAY&assignment=MINE&q=A%26B&includeInactive=true",
   );
   expect(parseReminderPageQuery("?filters=manual")).toEqual({ manual: true, query: {} });
-  expect(parseReminderPageQuery("?filters=unknown")).toEqual({ manual: false, query: {} });
+  expect(() => parseReminderPageQuery("?filters=unknown")).toThrow("Invalid reminder selection.");
+});
+
+it("round trips an explicit case selector and refuses conflicting or duplicate selection", () => {
+  const target = { kind: "ID" as const, caseId: "10000000-0000-4000-8000-000000000001" };
+  expect(
+    parseReminderQuery(remindersPath({ target, assignment: "MINE", due: "TODAY" }).split("?")[1]!),
+  ).toEqual({ target, assignment: "MINE", due: "TODAY" });
+  for (const query of [
+    "?view=MINE&view=PENDING",
+    "?caseId=bad",
+    "?caseReference=A&caseReference=B",
+    "?caseReference=A&caseId=10000000-0000-4000-8000-000000000001",
+  ]) {
+    expect(() => parseReminderQuery(query)).toThrow();
+  }
 });

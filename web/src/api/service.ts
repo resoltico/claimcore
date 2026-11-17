@@ -14,6 +14,7 @@ import {
   strictByteProfile,
   consumerContractIdentity,
   correlationOf,
+  isEndpointResponse,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
 import { isHostFailure, isObject } from "../protocol/client";
@@ -73,6 +74,9 @@ const echoesOperationId = <K extends EndpointId>(
     isObject(reply) &&
     input.operationId === reply["operationId"]);
 
+const structurallyValid = (id: EndpointId, value: unknown): boolean =>
+  isEndpointResponse(id, value);
+
 const result = async <K extends EndpointId, R extends Representation>(
   id: K,
   response: Response,
@@ -89,9 +93,10 @@ const result = async <K extends EndpointId, R extends Representation>(
     response.status === 200 &&
     isObject(value) &&
     (!requiresRepresentation || value["representation"] === representation) &&
-    echoesOperationId(id, input, value)
+    echoesOperationId(id, input, value) &&
+    structurallyValid(id, value)
   ) {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This client trusts its server's declared payload after the transport checks.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generated structural admission plus representation and operation correlation establish this endpoint response.
     return { kind: "outcome", value: value as ServiceResponse<K, R>, status: response.status };
   }
   if (isHostFailure(value, response.status)) {

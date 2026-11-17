@@ -228,18 +228,18 @@ module internal InteractiveReview =
         action.Task = draft.Input.Task && sameSelection && sameFixedInputs
 
     let private complete newId (draft: InteractiveDraft) (action: Affordance) =
-        let binding = action.Binding |> Option.get |> OperationSubmission.rawBinding
+        let binding =
+            action.Binding
+            |> Option.get
+            |> OperationSubmission.rawBinding
+            |> SubmissionAssembly.completeBinding draft.Input.Binding
 
         let fixedInputs =
             action.Seeds
             |> Map.filter (fun input _ -> not (List.contains input action.Editable))
             |> Map.map (fun _ value -> submittedSeed value)
 
-        let inputs =
-            Map.fold
-                (fun values input value -> Map.add input value values)
-                draft.Input.Inputs
-                fixedInputs
+        let inputs = SubmissionAssembly.merge action.Editable fixedInputs draft.Input.Inputs
 
         OperationSubmission.admit
             {

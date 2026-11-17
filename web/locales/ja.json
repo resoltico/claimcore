@@ -615,10 +615,6 @@
     "text": "対象外の業務を含めるには、手動フィルターを使用してください。",
     "source": "dc4f2d354574"
   },
-  "ui.unconfirmedUntil": {
-    "text": "まだ確認できていません。回答は{finalAt}までに確定します。",
-    "source": "fc1019052c76"
-  },
   "ui.changeResponsible": {
     "text": "変更",
     "source": "c0bf75bd78bf"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "すべてのメモを表示",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "担当を変更",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "案件を開く",

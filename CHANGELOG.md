@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
+- Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
+- Correct erroneous payment entries atomically on open cases, including fully paid cases; receipts retain removed and replacement entry identities.
+- Browser response decoding rejects malformed structures before recovery or date observation; uncertain delivery keeps its recovery identity.
+- CLI case selectors accept explicit IDs; ID-based erasure confirms the previewed reference, and grant/revoke IDs select case scope.
+- CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
+- The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.
+- Worklist view predicates share a Domain selection plan; structural SQL safeguards require accepted erasure evidence when clearing private projections.
+
 ## [0.19.0] - 2026-11-17
 
 - Use a fresh installation for format 5; format 4 databases have no migration or cross-version reader. Use fresh CLI state for recovery journal format 4.

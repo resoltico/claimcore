@@ -111,7 +111,7 @@ let private actualPayments () =
 
             match body.Snapshot with
             | SnapshotDisclosure.Disclosed {
-                                               Payment = Some(PaymentDifference.Recorded entry)
+                                               Payments = [ PaymentDifference.Recorded entry ]
                                            } when index = 1 -> first <- Some(input, entry)
             | _ -> ()
 
@@ -277,7 +277,10 @@ let private actualPayments () =
 
         let checkpoint = verified ()
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
+            token
         |> awaitResult
         |> ignore
 
@@ -322,6 +325,10 @@ let private actualPayments () =
                 database.OwnerSource
                 (InstallationCheckpoint.create fixture.InstallationId checkpoint None
                  |> Option.get)
+                (ClaimCore.Application.Contracts.MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
                 token
             |> awaitResult
             |> value
@@ -334,7 +341,15 @@ let private actualPayments () =
 
             check checkpoint (verified ()) "Projection repair changed the ledger checkpoint."
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Resume(
+                MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                |> Option.get
+            ))
+            token
         |> awaitResult
         |> ignore
 
@@ -387,7 +402,10 @@ let private actualPayments () =
             "Erasure retains the exact accepted removal marker."
 
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Acquire(2L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
+            token
         |> awaitResult
         |> ignore
 
@@ -396,6 +414,10 @@ let private actualPayments () =
         ProjectionRebuild.rebuild
             database.OwnerSource
             (InstallationCheckpoint.create fixture.InstallationId erasedCheckpoint None
+             |> Option.get)
+            (ClaimCore.Application.Contracts.MaintenanceHandle.create
+                3L
+                (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
              |> Option.get)
             token
         |> awaitResult

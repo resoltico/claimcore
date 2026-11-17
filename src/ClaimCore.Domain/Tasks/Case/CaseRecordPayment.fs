@@ -59,7 +59,7 @@ let availability environment state binding =
             |> Option.defaultValue Map.empty
     }
 
-let private failure =
+let internal failure =
     function
     | FinancialPositionIssue.CurrencyMismatch ->
         Rejection.ofRefusal (

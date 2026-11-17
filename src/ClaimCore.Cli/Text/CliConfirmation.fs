@@ -55,6 +55,7 @@ module internal CliConfirmation =
         | Some input when TaskConsequences.ofTask input.Task = Consequence.Irreversible ->
             match input.Envelope.Binding with
             | OperationBinding.Case(CaseSelector.Reference reference, _, _, _) -> Some reference
+            | OperationBinding.Case(CaseSelector.Id _, _, _, _) -> None
             | OperationBinding.People _ -> Some(input.OperationId.ToString("D"))
             | _ -> invalidOp "Human irreversible commands require their confirmation target."
         | _ -> None
@@ -67,3 +68,11 @@ module internal CliConfirmation =
                 Some(UsageError.InvalidChoice("--confirm", value, [ target ]))
             | None when not isInteractive -> Some(UsageError.MissingOption "--confirm")
             | _ -> None)
+
+    let needsReferencePreview invocation =
+        match Frames.value Api.operationExecute invocation with
+        | Some input when TaskConsequences.ofTask input.Task = Consequence.Irreversible ->
+            match input.Envelope.Binding with
+            | OperationBinding.Case(CaseSelector.Id _, _, _, _) -> true
+            | _ -> false
+        | _ -> false

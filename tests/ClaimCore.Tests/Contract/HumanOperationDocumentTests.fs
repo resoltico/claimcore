@@ -372,7 +372,7 @@ let mutationSummary =
         let text = OperationText.executeLines "en" reply |> String.concat "\n"
         Expect.stringContains text "Closed" "The accepted snapshot supplies the case status"
         Expect.isFalse (text.Contains "Status filter") "A case field is not a view filter"
-        Expect.isFalse (text.Contains "Policy number:") "Unrelated saved facts are omitted"
+        Expect.stringContains text "Policy number:" "The supplied semantic receipt is preserved"
         let full = ViewText.renderDocument false "en" document |> String.concat "\n"
 
         Expect.stringContains
@@ -510,14 +510,14 @@ let receiptStatusAndProgress =
                         ->
                         SnapshotDisclosure.Disclosed
                             { shown with
-                                Payment =
-                                    Some(
+                                Payments =
+                                    [
                                         PaymentDifference.Recorded(
                                             PaymentEntry.recorded
                                                 ResponseExamples.receipt.OperationId
                                                 payment
                                         )
-                                    )
+                                    ]
                             }
                     | _ -> disclosure
 
@@ -546,7 +546,7 @@ let receiptStatusAndProgress =
                 State = state
                 Disposition = None
                 RecordedFields = recorded
-                Payment = None
+                Payments = []
             }
 
     testList

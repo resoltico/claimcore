@@ -1,3 +1,4 @@
+import { ScreenView } from "../ui/ScreenView";
 import { PresentedValue } from "../components/PresentedValue";
 import { renderCatalogKey } from "./messages";
 import { SuppliedMessage } from "../ui/SuppliedMessage";
@@ -20,6 +21,7 @@ export const Message = <K extends MessageKey>({ id, values }: Props<K>) => {
 };
 export const NoticeView = ({ value }: { value: Notice }) => {
   const p = usePresentation();
+  if (value.kind === "pending") {return <ScreenView view={value.screen} timeZone="UTC" />;}
   if (value.kind === "humanIssues") {
     return (
       <>

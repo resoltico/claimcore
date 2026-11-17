@@ -753,7 +753,13 @@ let internal boundaryEvidence () =
         let! behindFrontier = execute actor pending
 
         let! maintenance =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On ct
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+                ct
 
         Expect.isTrue maintenance.State.Active "The owner explicitly pauses actual register writes"
 

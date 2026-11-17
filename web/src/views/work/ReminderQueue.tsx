@@ -20,6 +20,7 @@ import {
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
 import { ReminderQueueWork } from "./ReminderQueueWork";
 const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
+const assignmentChoice = queryInput(apiEndpoints.reminderList, "input:assignment");
 const dueChoice = queryInput(apiEndpoints.reminderList, "input:reminderDue");
 const DefaultReminderView = ({
   query,
@@ -130,6 +131,21 @@ const ReminderFilters = ({
           } else if (isTerm("reminderDue", value)) {
             change({ ...rest, due: value });
           }
+        }}
+      />
+      <Select
+        label={renderCatalogKey(p, assignmentChoice.labelId)}
+        value={query.assignment ?? ""}
+        options={[
+          { value: "", label: p.text("ui.anyFilter") },
+          ...assignmentChoice.choices
+            .filter((value): value is "MINE" | "UNASSIGNED" => isTerm("assignment", value))
+            .map((value) => ({ value, label: p.term("assignment", value) })),
+        ]}
+        onChange={(value) => {
+          const { assignment: _assignment, ...rest } = query;
+          if (value === "") {change(rest);}
+          else if (isTerm("assignment", value)) {change({ ...rest, assignment: value });}
         }}
       />
       <label className="field-toggle">

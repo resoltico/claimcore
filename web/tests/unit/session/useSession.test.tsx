@@ -113,7 +113,9 @@ it("refuses an invalid refresh and clears credentials after confirmed logout", a
     expect(result.current.state.kind).toBe("authenticated");
   });
   fetch.mockResolvedValueOnce(
-    endpointResponse("session.logout", { outcome: { kind: "SUCCEEDED", data: null } }),
+    endpointResponse("session.logout", {
+      outcome: { kind: "SUCCEEDED", data: null, view: { regions: [] } },
+    }),
   );
   await result.current.logout();
   await waitFor(() => {

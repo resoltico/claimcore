@@ -1,6 +1,6 @@
 # Synthetic case walkthrough
 
-Use a fresh format 5 installation, fresh CLI state and matching service/CLI. [Getting started](../docs/getting-started.md) supplies
+Use a fresh format 6 installation, fresh CLI state and matching service/CLI. [Getting started](../docs/getting-started.md) supplies
 local HTTPS, identity and owner setup. Configure the CLI using
 [CLI use](../docs/integrating.md#cli-use); it receives no database credential.
 Use synthetic data only. The selected account needs Case handler and Payment recorder for all cases;

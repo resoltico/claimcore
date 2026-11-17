@@ -613,13 +613,13 @@ module HumanReadDocuments =
             (value.CaseViews
              |> List.map (fun item ->
                  named
-                     (Vocabulary.messageKey CaseView.vocabulary item.View "label")
+                     (WorkViewsScreen.labelId (CaseView.token item.View))
                      LinkRelation.View
                      (caseList (Some item.View))))
             @ (value.ReminderViews
                |> List.map (fun item ->
                    named
-                       (Vocabulary.messageKey ReminderView.vocabulary item.View "label")
+                       (WorkViewsScreen.labelId (ReminderView.token item.View))
                        LinkRelation.View
                        (reminderList item.View)))
 

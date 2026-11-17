@@ -1,7 +1,7 @@
 import type { Notice } from "../protocol/notices";
 import { diagnosticMessageKeys } from "@contracts/messages";
-import { exactInteger } from "./format";
-import { renderKey, translate } from "./messages";
+import { exactInteger, recordedTime } from "./format";
+import { renderKey, translate, renderCatalogKey } from "./messages";
 import type { MessageKey } from "./types";
 import type { Preferences } from "./preferences";
 
@@ -39,7 +39,18 @@ export const renderNotice = (
         status: exactInteger(String(notice.status), preferences.displayLocale),
       });
     case "pending":
-      return translate(preferences, "ui.unconfirmedUntil", { finalAt: notice.finalAt });
+      return notice.screen.regions
+        .flatMap((region) =>
+          region.content.kind === "NOTICE"
+            ? [
+                renderCatalogKey(preferences, region.content.messageId),
+                ...(region.content.reason?.kind === "INSTANT"
+                  ? [recordedTime(region.content.reason.value, "UTC", preferences.displayLocale)]
+                  : []),
+              ]
+            : [],
+        )
+        .join(" ");
     case "accepted":
       return translate(preferences, "notice.accepted", { operationId: notice.operationId });
   }

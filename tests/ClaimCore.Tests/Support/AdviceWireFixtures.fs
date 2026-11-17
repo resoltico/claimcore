@@ -14,7 +14,7 @@ let completeAdviceWire (raw: string) =
         |> Set.ofSeq
 
     let maintenance = value["maintenance"] |> nonNull
-    let paused = (maintenance["active"] |> nonNull).GetValue<bool>()
+    let paused = maintenance["pauseId"] <> null
     let blocked = JsonArray()
 
     for token in

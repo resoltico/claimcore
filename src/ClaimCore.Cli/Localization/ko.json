@@ -395,10 +395,6 @@
     "text": "변경 사항이 더 있습니다. {command}를 실행하세요.",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "{finalAt}까지 최종 답변을 기다립니다.",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "청구 건 메모",
     "source": "54c2a0df2066"

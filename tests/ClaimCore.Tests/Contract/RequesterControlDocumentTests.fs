@@ -86,7 +86,10 @@ let tests =
                 let paused =
                     document
                         { manager with
-                            Maintenance = RegisterMaintenance.create true
+                            Maintenance =
+                                RegisterMaintenance.create
+                                    1L
+                                    (Some(System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
                         }
 
                 Expect.isEmpty paused.Actions "No authoring during maintenance"

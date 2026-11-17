@@ -89,7 +89,7 @@ let tests =
                         (Set.ofList expected)
                         "Every actor-exposed ledger declaration"
 
-                    Expect.equal acts.Length 29 "Provisioning is operator-only"
+                    Expect.equal acts.Length 30 "Provisioning is operator-only"
 
                     Expect.equal
                         acts.Length

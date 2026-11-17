@@ -160,10 +160,23 @@ let private qualify () =
         do! stop fixture
 
         do! fixture.RestoreDatabase missingHistoryBackup
-        operator fixture [ "maintenance"; "on" ] 0 |> ignore
+
+        operator fixture [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ] 0
+        |> ignore
 
         let missing =
-            operator fixture [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 5
+            operator
+                fixture
+                [
+                    "admit-restored-installation"
+                    "--checkpoint"
+                    checkpoint
+                    "--pause-generation"
+                    "1"
+                    "--pause-id"
+                    "10000000-0000-4000-8000-000000000099"
+                ]
+                5
 
         Expect.equal
             (missing.GetProperty("finding").GetString())
@@ -179,7 +192,10 @@ let private qualify () =
             "Missing acceptance is independently observed"
 
         do! fixture.RestoreDatabase completeBackup
-        operator fixture [ "maintenance"; "on" ] 0 |> ignore
+
+        operator fixture [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ] 0
+        |> ignore
+
         let lowered = operator fixture [ "verify"; "--checkpoint"; checkpoint ] 5
 
         Expect.equal
@@ -188,7 +204,18 @@ let private qualify () =
             "Backup loses only the later trusted expiry observation"
 
         let admitted =
-            operator fixture [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 0
+            operator
+                fixture
+                [
+                    "admit-restored-installation"
+                    "--checkpoint"
+                    checkpoint
+                    "--pause-generation"
+                    "1"
+                    "--pause-id"
+                    "10000000-0000-4000-8000-000000000099"
+                ]
+                0
 
         Expect.equal
             (admitted.GetProperty("invalidatedSessions").GetInt64())
@@ -203,7 +230,10 @@ let private qualify () =
             "Admission preserves accepted history and raises the exact trusted frontier"
 
         operator fixture [ "verify"; "--checkpoint"; checkpoint ] 0 |> ignore
-        operator fixture [ "maintenance"; "off" ] 0 |> ignore
+
+        operator fixture [ "maintenance"; "resume"; "1"; "10000000-0000-4000-8000-000000000099" ] 0
+        |> ignore
+
         do! fixture.RestartWeb()
         PublishedSessionTests.browserPhase fixture "stale" "restore-stale-cookie"
 

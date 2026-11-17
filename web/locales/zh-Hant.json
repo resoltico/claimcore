@@ -615,10 +615,6 @@
     "text": "使用手動篩選以包括非活動工作。",
     "source": "dc4f2d354574"
   },
-  "ui.unconfirmedUntil": {
-    "text": "尚未確認。回答將在 {finalAt} 前確定。",
-    "source": "fc1019052c76"
-  },
   "ui.changeResponsible": {
     "text": "更改",
     "source": "c0bf75bd78bf"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "顯示所有備註",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "重新指派",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "開啟案件",

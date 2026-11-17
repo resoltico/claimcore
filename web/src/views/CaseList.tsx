@@ -168,11 +168,10 @@ const WorklistResults = ({
         <PageTables
           views={page.views}
           actionPresentation={(action) => {
-            const label = p.text("ui.reassign");
             if (action.binding.kind !== "WORK" || action.binding.target.kind !== "ID") {
-              return { label };
+              return {};
             }
-            return { label, id: `reassign-${action.binding.target.caseId}` };
+            return { id: `reassign-${action.binding.target.caseId}` };
           }}
           linkNavigation={(link) => {
             const target = caseLinkTarget(link);

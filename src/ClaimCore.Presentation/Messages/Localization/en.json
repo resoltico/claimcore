@@ -697,5 +697,9 @@
   "label.queueDescription": "Find and continue the case work that needs attention.",
   "label.caseChanged": "This case has changed",
   "label.noAccessRequests": "No pending access requests.",
-  "label.actionNotOffered": "This action is not currently offered for this case."
+  "label.actionNotOffered": "This action is not currently offered for this case.",
+  "task.case.correctPayment.label": "Correct payment entry",
+  "task.case.correctPayment.meaning": "Replace a payment entry recorded in error with the correct date and amount. This does not refund or execute a transfer. Earlier history remains.",
+  "task.case.correctPayment.done": "Payment entry corrected.",
+  "label.assignmentAction": "Reassign"
 }

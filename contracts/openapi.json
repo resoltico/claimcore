@@ -3387,6 +3387,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -3411,6 +3412,11 @@
               "reminder.completeAndPlanNext",
               "people.requests.dismiss"
             ]
+          },
+          "labelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
           },
           "binding": {
             "$ref": "#/components/schemas/AffordanceBinding"
@@ -3926,6 +3932,7 @@
         },
         "required": [
           "task",
+          "labelId",
           "binding",
           "seeds",
           "editable",
@@ -3969,7 +3976,7 @@
             "$ref": "#/components/schemas/Binding.REMINDER"
           },
           {
-            "$ref": "#/components/schemas/Empty"
+            "$ref": "#/components/schemas/CommandBinding"
           }
         ]
       },
@@ -4549,6 +4556,7 @@
                     "case.withdrawDecision",
                     "case.recordPayment",
                     "case.removePayment",
+                    "case.correctPayment",
                     "case.void",
                     "case.reinstate",
                     "case.close",
@@ -4557,7 +4565,7 @@
                   ]
                 },
                 "minItems": 0,
-                "maxItems": 12
+                "maxItems": 13
               },
               "correction": {
                 "$ref": "#/components/schemas/CorrectionAdvice"
@@ -4583,6 +4591,7 @@
                       "case.withdrawDecision",
                       "case.recordPayment",
                       "case.removePayment",
+                      "case.correctPayment",
                       "case.void",
                       "case.reinstate",
                       "case.close",
@@ -4601,7 +4610,7 @@
                   "$ref": "#/components/schemas/CaseTaskRefusal"
                 },
                 "minItems": 0,
-                "maxItems": 12
+                "maxItems": 13
               }
             },
             "required": [
@@ -4973,6 +4982,59 @@
                       "properties": {
                         "act": {
                           "const": "case.removePayment"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.correctPayment"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.correctPayment"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "case.correctPayment"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "case.correctPayment"
                         }
                       }
                     },
@@ -7042,6 +7104,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -7097,6 +7160,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -7883,6 +7947,75 @@
         "required": [
           "actors",
           "cases"
+        ]
+      },
+      "CommandBinding": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CommandBinding.COMMAND"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "COMMAND": "#/components/schemas/CommandBinding.COMMAND"
+          }
+        }
+      },
+      "CommandBinding.COMMAND": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "COMMAND"
+          },
+          "request": {
+            "$ref": "#/components/schemas/CommandControl"
+          }
+        },
+        "required": [
+          "kind",
+          "request"
+        ]
+      },
+      "CommandControl": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CommandControl.people.requests.dismiss"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "command",
+          "mapping": {
+            "people.requests.dismiss": "#/components/schemas/CommandControl.people.requests.dismiss"
+          }
+        }
+      },
+      "CommandControl.people.requests.dismiss": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "const": "people.requests.dismiss"
+          },
+          "input:principal.kind": {
+            "enum": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "input:principal.issuer": {
+            "type": "string"
+          },
+          "input:principal.subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "command",
+          "input:principal.kind",
+          "input:principal.issuer",
+          "input:principal.subject"
         ]
       },
       "ConfirmationTarget": {
@@ -11813,6 +11946,47 @@
           "group:decision"
         ]
       },
+      "OperationInputs.case.correctPayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "field:paymentDate": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:paidAmount": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field:paidCurrency": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "field:paymentDate",
+          "field:paidAmount",
+          "field:paidCurrency"
+        ]
+      },
       "OperationInputs.case.decide": {
         "type": "object",
         "additionalProperties": false,
@@ -12718,6 +12892,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -12797,6 +12972,9 @@
             "$ref": "#/components/schemas/OperationSubmission.case.removePayment"
           },
           {
+            "$ref": "#/components/schemas/OperationSubmission.case.correctPayment"
+          },
+          {
             "$ref": "#/components/schemas/OperationSubmission.case.void"
           },
           {
@@ -12873,6 +13051,7 @@
             "case.withdrawDecision": "#/components/schemas/OperationSubmission.case.withdrawDecision",
             "case.recordPayment": "#/components/schemas/OperationSubmission.case.recordPayment",
             "case.removePayment": "#/components/schemas/OperationSubmission.case.removePayment",
+            "case.correctPayment": "#/components/schemas/OperationSubmission.case.correctPayment",
             "case.void": "#/components/schemas/OperationSubmission.case.void",
             "case.reinstate": "#/components/schemas/OperationSubmission.case.reinstate",
             "case.close": "#/components/schemas/OperationSubmission.case.close",
@@ -12961,6 +13140,30 @@
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.correct"
+          }
+        },
+        "required": [
+          "task",
+          "operationId",
+          "binding",
+          "inputs"
+        ]
+      },
+      "OperationSubmission.case.correctPayment": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "task": {
+            "const": "case.correctPayment"
+          },
+          "operationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/Binding.CASE.payment"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/OperationInputs.case.correctPayment"
           }
         },
         "required": [
@@ -14955,6 +15158,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -15116,7 +15320,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15144,7 +15348,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15176,7 +15380,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15204,7 +15408,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15241,7 +15445,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15271,7 +15475,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15300,7 +15504,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15331,7 +15535,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15360,7 +15564,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15388,7 +15592,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15418,7 +15622,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15447,7 +15651,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15476,7 +15680,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15506,7 +15710,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15539,7 +15743,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15567,7 +15771,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15595,7 +15799,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15625,6 +15829,7 @@
                 "case.withdrawDecision",
                 "case.recordPayment",
                 "case.removePayment",
+                "case.correctPayment",
                 "case.void",
                 "case.reinstate",
                 "case.close",
@@ -15651,7 +15856,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -15680,7 +15885,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 30
+            "maxItems": 31
           }
         },
         "required": [
@@ -16746,6 +16951,7 @@
               "case.withdrawDecision",
               "case.recordPayment",
               "case.removePayment",
+              "case.correctPayment",
               "case.void",
               "case.reinstate",
               "case.close",
@@ -17377,12 +17583,25 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "active": {
-            "type": "boolean"
+          "generation": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pauseId": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "active"
+          "generation",
+          "pauseId"
         ]
       },
       "RelatedDate": {
@@ -18858,15 +19077,13 @@
             "minItems": 0,
             "maxItems": 20
           },
-          "payment": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PaymentDifference"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentDifference"
+            },
+            "minItems": 0,
+            "maxItems": 2
           }
         },
         "required": [
@@ -18874,7 +19091,7 @@
           "state",
           "disposition",
           "recordedFields",
-          "payment"
+          "payments"
         ]
       },
       "SnapshotDisclosure.ERASED": {

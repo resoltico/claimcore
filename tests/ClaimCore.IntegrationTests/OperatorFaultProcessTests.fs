@@ -249,7 +249,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=5; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=5)"
+                    "UPDATE claimcore.installation SET installation_format=6; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=6)"
                     [||]
 
             do! sql "DELETE FROM claimcore.installation" [||]
@@ -257,7 +257,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(5,$1,'Etc/UTC')"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(6,$1,'Etc/UTC')"
                     [| box database.Fixture.InstallationId |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
@@ -366,7 +366,17 @@ let private publishedFaults () =
             proxySettings.GssEncryptionMode <- GssEncryptionMode.Disable
             proxySettings.Pooling <- false
             let lostCommit = privateText "lost-commit" proxySettings.ConnectionString
-            let command = AdministrationProcess.start [ binary; "maintenance"; "on" ]
+
+            let command =
+                AdministrationProcess.start
+                    [
+                        binary
+                        "maintenance"
+                        "acquire"
+                        "0"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
+
             command.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- lostCommit
 
             let! commitExit, commitReply, commitErrors =

@@ -1,3 +1,4 @@
+import type { Screen } from "@contracts/client";
 import {
   deliveryBusy,
   deliveryEditable,
@@ -585,7 +586,7 @@ const notAccepted = (
 const stillUnresolved = (
   state: OperationState,
   identity: EffectIdentity,
-  finalAt: string,
+  screen: Screen,
 ): OperationState =>
   completing(state, identity) && state.delivery.phase.kind === "UNRESOLVED"
     ? {
@@ -596,7 +597,7 @@ const stillUnresolved = (
             ...state.delivery.phase,
             pending: null,
           },
-          notice: { kind: "pending", finalAt },
+          notice: { kind: "pending", screen },
         },
       }
     : state;
@@ -843,7 +844,7 @@ export const operationReducer = (
     case "RECORD":
       return record(state, action);
     case "OPERATION_PENDING":
-      return stillUnresolved(state, action.identity, action.finalAt);
+      return stillUnresolved(state, action.identity, action.screen);
     case "REVIEW":
       return reviewed(state, action);
     default:

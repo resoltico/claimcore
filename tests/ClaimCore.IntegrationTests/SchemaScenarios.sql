@@ -49,16 +49,16 @@ SELECT pg_temp.expect('infinite follow-up refused',
 UPDATE claimcore.cases SET follow_up=DATE '2027-12-31';
 SELECT pg_temp.expect('erasure must clear follow-up',
     $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL$s$, '23514');
-SELECT pg_temp.expect('negative claimed amount refused',
-    $s$UPDATE claimcore.cases SET claimed_amount=-1$s$, '23514');
+SELECT pg_temp.expect('money sign is domain admission rather than structural SQL policy',
+    $s$UPDATE claimcore.cases SET claimed_amount=-1$s$, '00000');
 SELECT pg_temp.expect('lowercase claimed currency refused',
     $s$UPDATE claimcore.cases SET claimed_currency='eur'$s$, '23514');
 SELECT pg_temp.expect('payable amount without currency refused',
     $s$UPDATE claimcore.cases SET payable_amount=1$s$, '23514');
 SELECT pg_temp.expect('payable currency without amount refused',
     $s$UPDATE claimcore.cases SET payable_currency='EUR'$s$, '23514');
-SELECT pg_temp.expect('erased projection with snapshot refused',
-    $s$UPDATE claimcore.cases SET state='ERASED'$s$, '23514');
+SELECT pg_temp.expect('domain lifecycle tokens do not independently decide SQL clearing',
+    $s$UPDATE claimcore.cases SET state='ERASED'$s$, '00000');
 SELECT pg_temp.expect('live projection without snapshot refused',
     $s$UPDATE claimcore.cases SET snapshot=NULL$s$, '23514');
 SELECT pg_temp.expect('empty snapshot refused',
@@ -67,12 +67,13 @@ SELECT pg_temp.expect('oversized snapshot refused',
     $s$UPDATE claimcore.cases SET snapshot=decode(repeat('00',32769),'hex')$s$, '23514');
 SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
-UPDATE claimcore.cases SET follow_up=NULL,responsible_actor=NULL,revision=3,state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,changed_at=TIMESTAMPTZ '2026-09-02T00:00:00Z' WHERE case_id=:'case1';
-SELECT snapshot IS NULL AND notified_on IS NULL AND claimed_amount IS NULL AND claimed_currency IS NULL AND payable_amount IS NULL AND payable_currency IS NULL AND case_reference='synthetic-a' AND revision=3 AND state='ERASED' AS erased_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
-\if :erased_projection
-\echo PASS erased projection keeps only reference, revision and state
+SELECT pg_temp.expect('projection clearing requires accepted matching erasure evidence',
+    $s$UPDATE claimcore.cases SET follow_up=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL$s$, 'CC003');
+SELECT snapshot IS NOT NULL AND notified_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference='synthetic-a' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
+\if :retained_projection
+\echo PASS unmatched erasure leaves private projections intact
 \else
-\echo FAIL erased projection retained snapshot bytes
+\echo FAIL unmatched erasure cleared private projections
 \quit 3
 \endif
 

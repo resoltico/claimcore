@@ -55,6 +55,26 @@ module TaskMetadata =
                 creates = creates
                 paged = paged
                 csv = csv
+                defaults =
+                    (if kind = "OPERATION" then
+                         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral id)
+                     else
+                         None)
+                    |> Option.map SubmissionAssembly.defaults
+                    |> Option.defaultValue Map.empty
+                    |> Map.toList
+                    |> List.map (fun (key, value) ->
+                        let atom: obj | null =
+                            match value with
+                            | SubmissionValue.Text value -> box value
+                            | SubmissionValue.Integer value -> box value
+                            | SubmissionValue.Boolean value -> box value
+                            | SubmissionValue.Clear -> null
+                            | SubmissionValue.Rows _ ->
+                                invalidOp "Scalar defaults cannot contain rows."
+
+                        TaskInputId.token key, atom)
+                    |> Map.ofList
                 inputs = inputs |> List.map input
                 collections =
                     collections
@@ -133,6 +153,17 @@ module TaskMetadata =
 
     let source () =
         [
+            "export const clientCompositions = "
+            + JsonSerializer.Serialize(
+                {|
+                    accountRegistration = TaskId.token ClientCompositions.accountRegistration
+                    admission = TaskId.token ClientCompositions.admission
+                    noteEntry = TaskId.token ClientCompositions.noteEntry
+                    assignment = TaskId.token ClientCompositions.assignment
+                    reminderCreation = TaskId.token ClientCompositions.reminderCreation
+                |}
+            )
+            + " as const;"
             "export const taskDefinitions = " + declarationSource () + " as const;"
             "export type TaskId = (typeof taskDefinitions)[number]['id'];"
             "export type TaskDefinition = (typeof taskDefinitions)[number];"

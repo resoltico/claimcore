@@ -85,6 +85,7 @@ const View = () => {
 const setup = (
   kind: "ACCEPTED" | "NOT_ACCEPTED" | "PENDING" = "ACCEPTED",
   document: HumanDocument = receipt,
+  requester: unknown = true,
 ) => {
   const journal: RecoveryJournal = {
     list: vi.fn().mockResolvedValue([record]),
@@ -100,7 +101,7 @@ const setup = (
           operationId: record.operationId,
           outcome:
             kind === "ACCEPTED"
-              ? { kind, byRequester: true, document }
+              ? { kind, byRequester: requester, document }
               : {
                   kind,
                   ...(kind === "PENDING" ? { finalAt: "2026-11-09T12:15:00.000000Z" } : {}),
@@ -311,3 +312,16 @@ it("masks a previously recovered receipt when a fresh lookup refuses disclosure"
   expect(screen.queryByText("Core people outcome Ω")).not.toBeInTheDocument();
   expect(journal.remove).toHaveBeenCalledTimes(1);
 });
+
+it.each([null, "false", 0])(
+  "keeps recovery journal when byRequester is malformed: %s",
+  async (byRequester) => {
+    const journal = setup("ACCEPTED", receipt, byRequester);
+    await waitFor(() => {
+      expect(screen.getByTestId("notice")).toHaveTextContent("invalidHttp");
+    });
+    expect(journal.remove).not.toHaveBeenCalled();
+    expect(screen.getByTestId("answer").textContent).toBe("");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  },
+);

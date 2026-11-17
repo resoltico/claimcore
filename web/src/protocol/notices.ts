@@ -1,4 +1,4 @@
-import type { HostFailure, HumanAdvice, HumanInputIssue } from "@contracts/client";
+import type { HostFailure, HumanAdvice, HumanInputIssue, Screen } from "@contracts/client";
 export type LocalNoticeReason =
   | "responseTimeout"
   | "unreachable"
@@ -18,7 +18,7 @@ export type LocalNoticeReason =
 export type Notice =
   | { readonly kind: "human"; readonly advice: HumanAdvice }
   | { readonly kind: "humanIssues"; readonly issues: ReadonlyArray<HumanInputIssue> }
-  | { readonly kind: "pending"; readonly finalAt: string }
+  | { readonly kind: "pending"; readonly screen: Screen }
   | { readonly kind: "local"; readonly reason: LocalNoticeReason }
   | { readonly kind: "diagnostic"; readonly diagnostic: HostFailure }
   | { readonly kind: "invalidHttp"; readonly status: number }

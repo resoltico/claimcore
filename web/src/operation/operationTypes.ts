@@ -3,6 +3,7 @@ import type { OperationAffordance } from "./affordances";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
+  Screen,
   CaseGetRequest,
   CaseSelector,
   HumanReview,
@@ -275,7 +276,7 @@ export type OperationAction =
   | {
       type: "OPERATION_PENDING";
       identity: EffectIdentity;
-      finalAt: string;
+      screen: Screen;
     }
   | {
       type: "NOT_ACCEPTED";

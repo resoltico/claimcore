@@ -70,6 +70,7 @@ it("preserves the complete numeric date and exact amount display scale", () => {
 it("renders supplied stage controls and follows its supplied query link", async () => {
   const action = {
     task: "case.close",
+    labelId: "task.case.close.label",
     binding: {
       kind: "CASE",
       target: { kind: "REFERENCE", caseReference: "CASE-1" },
@@ -137,6 +138,7 @@ it("keeps a supplied blocked stage action disabled", async () => {
               actions: [
                 {
                   task: "case.close",
+                  labelId: "task.case.close.label",
                   binding: {
                     kind: "CASE",
                     target: { kind: "REFERENCE", caseReference: "CASE-1" },

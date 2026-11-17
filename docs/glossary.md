@@ -133,3 +133,6 @@ nonempty set of targeted violations, and one field can have multiple issues. Sho
 Public outcomes distinguish success, refusal and failure. Execution distinguishes acceptance, replay
 and unknown delivery. A failure does not disprove a prior uncertain commit. A ledger position is a
 sequence and 32-byte entry hash; an independently retained checkpoint supplies external comparison evidence.
+
+The new payment-correction wording is agent-translated in all offered languages and awaits fluent
+review. Moving the existing assignment label to shared Presentation preserves its prior translations.

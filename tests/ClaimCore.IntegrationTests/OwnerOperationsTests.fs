@@ -29,17 +29,32 @@ let private statusAndModes (database: PostgresFixture.Database) =
         let! initial = InstallationStatus.read database.OwnerSource token
         Expect.equal initial.InstallationId database.Fixture.InstallationId "Exact installation"
         Expect.equal initial.BusinessTimeZone "Etc/UTC" "Immutable zone"
-        Expect.equal initial.InstallationFormat 5 "Fresh installations use adopted format five"
+        Expect.equal initial.InstallationFormat 6 "Fresh installations use the consolidated grammar"
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"
 
         Expect.isNone
             initial.InitialOwner
             "The internal unprovisioned fixture has no invented owner"
 
-        let! on = changed database MaintenanceChange.On
+        let! on =
+            changed
+                database
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         Expect.isTrue on.State.Active "On pauses register writes"
         Expect.isTrue on.Changed "First on changes mode"
-        let! repeated = changed database MaintenanceChange.On
+
+        let! repeated =
+            changed
+                database
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         Expect.isFalse repeated.Changed "On is idempotent"
 
         let! provisioned =
@@ -55,15 +70,42 @@ let private statusAndModes (database: PostgresFixture.Database) =
             (Ok(Verdict.Refuse Refusal.RegisterMaintenance))
             "Paused schema cannot record an owner"
 
-        let! off = changed database MaintenanceChange.Off
+        let! off =
+            changed
+                database
+                (MaintenanceChange.Resume(
+                    MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                    |> Option.get
+                ))
+
         Expect.isFalse off.State.Active "Off reopens writes"
         Expect.isTrue off.Changed "First off changes mode"
-        let! repeatedOff = changed database MaintenanceChange.Off
-        Expect.isFalse repeatedOff.Changed "Off is idempotent"
-        let! next = changed database MaintenanceChange.On
-        Expect.isTrue next.State.Active "A later pause is independent of old mode observations"
-        let! finalOff = changed database MaintenanceChange.Off
-        Expect.isFalse finalOff.State.Active "The single operator explicitly ends the later pause"
+        let mutable stale = false
+
+        try
+            let! _ = changed database (MaintenanceChange.Resume(on.State.Handle |> Option.get))
+            ()
+        with :? OperatorFaultException as error ->
+            stale <- error.Fault = OperatorFault.MaintenanceConflict
+
+        Expect.isTrue stale "Repeated old resume has no historical success claim"
+
+        let! next =
+            changed
+                database
+                (MaintenanceChange.Acquire(
+                    off.State.Generation,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000098"
+                ))
+
+        Expect.equal next.State.Generation 3L "Later acquisition advances the generation"
+
+        let! finalOff =
+            changed database (MaintenanceChange.Resume(next.State.Handle |> Option.get))
+
+        Expect.isFalse finalOff.State.Active "Only the exact later handle resumes"
         let! final = InstallationStatus.read database.OwnerSource token
 
         Expect.equal
@@ -100,7 +142,15 @@ let private actionState (database: PostgresFixture.Database) =
         | other -> failtestf "Positive pre-maintenance preview: %A" other
 
         let! before = InstallationStatus.read database.OwnerSource token
-        let! _ = changed database MaintenanceChange.On
+
+        let! _ =
+            changed
+                database
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         let! refused = Service.executeSubmission actor close token
 
         Expect.equal
@@ -216,7 +266,16 @@ let private actionState (database: PostgresFixture.Database) =
             before.Position
             "Refusals, passive status, replay and authentication append nothing"
 
-        let! _ = changed database MaintenanceChange.Off
+        let! _ =
+            changed
+                database
+                (MaintenanceChange.Resume(
+                    MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                    |> Option.get
+                ))
+
         let! recorded = Service.executeSubmission actor close token
 
         Expect.equal
@@ -232,7 +291,16 @@ let private rebuildMode (database: PostgresFixture.Database) =
         let mutable refused = false
 
         try
-            let! _ = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+            let! _ =
+                ProjectionRebuild.rebuild
+                    database.OwnerSource
+                    checkpoint
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    token
+
             ()
         with :? MaintenanceRequiredException ->
             refused <- true
@@ -242,7 +310,17 @@ let private rebuildMode (database: PostgresFixture.Database) =
             "Owner credentials alone cannot silently enter maintenance for rebuild"
 
         do! enterMaintenance database
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk rebuilt "Maintenance plus the trusted checkpoint permits atomic reconstruction"
         let! after = InstallationStatus.read database.OwnerSource token
         Expect.isTrue after.Maintenance.Active "Reconstruction never auto-resumes"
@@ -331,7 +409,13 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
         do! staged.Task.WaitAsync(TimeSpan.FromSeconds 3.)
 
         let entering =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+                token
 
         try
             use! observer = database.OwnerSource.OpenConnectionAsync()

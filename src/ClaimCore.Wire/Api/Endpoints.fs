@@ -308,7 +308,7 @@ module Api =
         let task =
             match endpoint with
             | ActorEndpoint.Query query -> QueryTaskId.key query
-            | ActorEndpoint.Command command -> command
+            | ActorEndpoint.Command command -> CommandTaskId.key command
             | ActorEndpoint.Operation _ ->
                 invalidArg (nameof endpoint) "Operations have their own replies."
 
@@ -547,7 +547,7 @@ module Api =
 
     let peopleRequestsDismiss =
         { actorEndpoint
-              (ActorEndpoint.Command (EndpointDeclarations.commands |> List.exactlyOne).Id)
+              (ActorEndpoint.Command CommandTaskId.DismissAccessRequest)
               RequestCodecs.accessRequestDismissRequest
               "AccessRequestDismissReply"
               Codec.nullValue with
@@ -583,13 +583,8 @@ module Api =
         | (ActorEndpoint.Query QueryTaskId.PeopleHistory) -> EndpointDefinition.create peopleHistory
         | (ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
             EndpointDefinition.create peopleRequests
-        | (ActorEndpoint.Command command) when
-            command = (EndpointDeclarations.commands |> List.exactlyOne).Id
-            ->
+        | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             EndpointDefinition.create peopleRequestsDismiss
-
-        | ActorEndpoint.Command command ->
-            invalidArg (nameof command) "The command endpoint is not declared."
 
     let definitions =
         ((HostEndpoint.all |> List.map defineHost)

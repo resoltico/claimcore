@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "تصحيح قيد دفعة",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "استبدل قيد دفعة سُجّل بالخطأ بالتاريخ والمبلغ الصحيحين. لا يؤدي ذلك إلى رد أموال أو تنفيذ تحويل. يبقى السجل السابق محفوظًا.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "تم تصحيح قيد الدفعة.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "إعادة الإسناد",
+    "source": "4591c339cfa6"
   }
 }

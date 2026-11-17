@@ -69,68 +69,6 @@ module internal OperationText =
     let previewLines language request reply =
         previewLinesWithDetails false language request reply
 
-    let private mutationReceiptLines details language alreadyRecorded (receipt: HumanDocument) =
-        let recordedEntries entries =
-            entries
-            |> List.filter (fun (entry: Entry) -> entry.Recorded)
-            |> List.map _.LabelId
-
-        let selected =
-            receipt.Screen.Regions
-            |> List.collect (fun region ->
-                match region.Content with
-                | RegionContent.Entries entries -> recordedEntries entries
-                | RegionContent.Table table ->
-                    (table.Columns |> List.filter _.Recorded |> List.map _.LabelId)
-                    @ (table.Sections
-                       |> List.collect (fun section -> recordedEntries section.Entries))
-                | _ -> [])
-            |> Set.ofList
-
-        let recordedFinancials =
-            [ RecordGroup.Decision; RecordGroup.Payment ]
-            |> List.collect BusinessField.ofGroup
-            |> List.exists (fun field -> Set.contains (FieldPresentation.labelId field) selected)
-
-        let screen =
-            { receipt.Screen with
-                Regions =
-                    receipt.Screen.Regions
-                    |> List.choose (fun region ->
-                        match region.Role, region.Content with
-                        | _ when
-                            receipt.Disclosure = HumanDisclosure.Withheld
-                            || receipt.Disclosure = HumanDisclosure.Erased
-                            ->
-                            Some region
-                        | (RegionRole.Notice | RegionRole.Identity | RegionRole.Details), _ ->
-                            Some region
-                        | _, RegionContent.Entries entries ->
-                            let entries =
-                                entries
-                                |> List.filter (fun entry ->
-                                    Set.contains entry.LabelId selected
-                                    || List.contains
-                                        entry.LabelId
-                                        [
-                                            "field.claimantName.label"
-                                            "field.insurerName.label"
-                                            "field.claimedAmount.label"
-                                        ])
-
-                            if entries.IsEmpty then
-                                None
-                            else
-                                Some
-                                    { region with
-                                        Content = RegionContent.Entries entries
-                                    }
-                        | RegionRole.Payments, _ when recordedFinancials -> Some region
-                        | _ -> None)
-            }
-
-        receiptLinesWithDetails details language alreadyRecorded { receipt with Screen = screen }
-
     let executeLinesForWithDetails
         details
         language
@@ -141,9 +79,9 @@ module internal OperationText =
         | RepresentationReply.Human value ->
             match value.Outcome with
             | HumanExecuteResult.Accepted receipt ->
-                mutationReceiptLines details language false receipt
+                receiptLinesWithDetails details language false receipt
             | HumanExecuteResult.AlreadyAccepted receipt ->
-                mutationReceiptLines details language true receipt
+                receiptLinesWithDetails details language true receipt
             | HumanExecuteResult.Rejected rejection ->
                 HumanText.rejection details language rejection
             | HumanExecuteResult.Failed fault -> HumanText.fault language fault

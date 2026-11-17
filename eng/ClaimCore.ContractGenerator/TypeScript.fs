@@ -190,6 +190,7 @@ module TypeScript =
             yield! presentationConstants ()
             "export const consumerContractIdentity = " + quote identity + ";"
             "export const strictByteProfile = " + profile () + " as const;"
+            ResponseDecoders.source ()
             "export const limits = { maximumPageSize: "
             + string Paging.MaximumPageSize
             + ", requestBytes: "

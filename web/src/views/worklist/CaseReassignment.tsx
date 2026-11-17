@@ -44,7 +44,7 @@ export const CaseReassignment = ({
   if (parent === null) {
     return (
       <Dialog
-        title={p.text("ui.reassign")}
+        title={p.text("label.assignmentAction")}
         closeLabel={p.text("ui.close")}
         isOpen
         isDismissable

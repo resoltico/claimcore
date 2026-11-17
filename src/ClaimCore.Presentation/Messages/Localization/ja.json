@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "この案件では現在この操作は利用できません。",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "支払記録を訂正",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "誤って記録した支払を正しい日付と金額に置き換えます。返金や送金は実行されません。以前の履歴は保持されます。",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "支払記録を訂正しました。",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "担当を変更",
+    "source": "4591c339cfa6"
   }
 }

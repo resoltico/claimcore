@@ -292,7 +292,8 @@
               "acts": [],
               "history": "NONE",
               "maintenance": {
-                "active": false
+                "generation": 0,
+                "pauseId": null
               },
               "recommended": null,
               "blocked": [
@@ -390,6 +391,14 @@
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
                     "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "case.correctPayment",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
                   }
                 }
               ]
@@ -1116,7 +1125,8 @@
               "actorId": "10000000-0000-7000-8000-000000000001",
               "installationId": "90000000-0000-7000-8000-000000000001",
               "maintenance": {
-                "active": false
+                "generation": 0,
+                "pauseId": null
               },
               "self": {
                 "actorId": "10000000-0000-7000-8000-000000000001",
@@ -1197,7 +1207,6 @@
                     }
                   }
                 },
-                "payment": null,
                 "disposition": null,
                 "recordedFields": [
                   "incidentDate",
@@ -1210,7 +1219,8 @@
                   "insurerName",
                   "claimedAmount",
                   "claimedCurrency"
-                ]
+                ],
+                "payments": []
               },
               "caseId": "10000000-0000-7000-8000-000000000001"
             },
@@ -1281,7 +1291,6 @@
                       }
                     }
                   },
-                  "payment": null,
                   "disposition": null,
                   "recordedFields": [
                     "incidentDate",
@@ -1294,7 +1303,8 @@
                     "insurerName",
                     "claimedAmount",
                     "claimedCurrency"
-                  ]
+                  ],
+                  "payments": []
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
               },
@@ -2609,7 +2619,8 @@
                   "seeds": {},
                   "editable": [],
                   "choices": {},
-                  "blocked": null
+                  "blocked": null,
+                  "labelId": "task.case.close.label"
                 }
               ],
               "links": [],

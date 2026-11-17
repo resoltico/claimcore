@@ -35,10 +35,10 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
     return human;
   }
   const { outcome } = value;
-  if (outcome.kind === "PENDING") {
+  if (outcome.kind === "PENDING" && "document" in outcome) {
     return {
       kind: "pending",
-      finalAt: "finalAt" in outcome ? outcome.finalAt : outcome.data.finalAt,
+      screen: outcome.document.screen,
     };
   }
   if (outcome.kind === "NOT_ACCEPTED") {

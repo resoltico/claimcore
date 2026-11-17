@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "지급 기록 정정",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "잘못 기록한 지급 항목을 올바른 날짜와 금액으로 대체합니다. 환불이나 송금을 실행하지 않습니다. 이전 이력은 유지됩니다.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "지급 기록이 정정되었습니다.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "담당자 변경",
+    "source": "4591c339cfa6"
   }
 }

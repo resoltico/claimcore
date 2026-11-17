@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "Esta acción no está disponible actualmente para este expediente.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "Corregir asiento de pago",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "Sustituya un asiento de pago registrado por error por la fecha y el importe correctos. Esto no reembolsa ni ejecuta una transferencia. Se conserva el historial anterior.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "Asiento de pago corregido.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "Reasignar",
+    "source": "4591c339cfa6"
   }
 }

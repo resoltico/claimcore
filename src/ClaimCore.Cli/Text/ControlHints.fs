@@ -1,0 +1,190 @@
+namespace ClaimCore.Cli
+
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
+open ClaimCore.Wire
+open ClaimCore.Json
+
+/// Command spelling and quoting belong to the terminal; selection and availability are supplied.
+module internal ControlHints =
+    let private flag input =
+        "--" + CommandGrammar.kebab (CommandGrammar.inputName input)
+
+    let private target input = TaskInputId.Target input
+    let private reference = target (InputTarget.Field BusinessField.CaseReference)
+
+    let private argument value =
+        // An unsafe terminal scalar is represented by an explicit acquisition placeholder.
+        (if TerminalText.data value = value then value else "<value>")
+        |> CommandGrammar.quoteArgument
+
+    let private atom =
+        function
+        | InputValue.Text value -> value
+        | InputValue.Integer value -> string value
+        | InputValue.Boolean value -> if value then "true" else "false"
+        | InputValue.Null -> "<clear>"
+
+    let private selection =
+        function
+        | CaseSelector.Id id -> [ TaskInputId.CaseId, CaseId.format id ]
+        | CaseSelector.Reference value -> [ reference, value ]
+
+    let private version input value = target input, Revision.format value
+
+    let private binding =
+        function
+        | Binding.CaseNew _ -> []
+        | Binding.Case(value, revision) ->
+            selection value @ [ version InputTarget.ExpectedRevision revision ]
+        | Binding.CasePayment(value, revision, payment) ->
+            selection value
+            @ [
+                version InputTarget.ExpectedRevision revision
+                target InputTarget.PaymentId, OperationId.format payment
+            ]
+        | Binding.CaseErase(value, revision, family) ->
+            selection value
+            @ [
+                version InputTarget.ExpectedRevision revision
+                target InputTarget.ExpectedFamilySequence, Sequence.format family
+            ]
+        | Binding.Work(value, revision) ->
+            selection value @ [ version InputTarget.ExpectedWorkRevision revision ]
+        | Binding.NoteNew value
+        | Binding.ReminderNew value -> selection value
+        | Binding.Note(value, id) ->
+            selection value @ [ target InputTarget.NoteId, NoteId.format id ]
+        | Binding.Reminder(value, id, revision) ->
+            selection value
+            @ [
+                target InputTarget.ReminderId, ReminderId.format id
+                version InputTarget.ExpectedReminderRevision revision
+            ]
+        | Binding.PeopleNew _ -> []
+        | Binding.People(id, revision) ->
+            [
+                TaskInputId.ActorId, ActorId.format id
+                version InputTarget.ExpectedRevision revision
+            ]
+
+    let private command task values suffix =
+        let values = Map.ofList values
+        let inputs = CommandGrammar.inputs task
+
+        let args =
+            inputs
+            |> List.collect (fun input ->
+                match Map.tryFind input.Name values with
+                | None -> []
+                | Some value ->
+                    if input.Argument = CommandArgument.Operand then
+                        [ argument value ]
+                    elif input.Argument = CommandArgument.Implicit then
+                        []
+                    else
+                        [ flag input.Name; argument value ])
+
+        String.concat " " (CommandGrammar.commandText task :: args @ suffix)
+
+    let action language (value: Affordance) =
+        let task = TaskId.token value.Task
+        let label = ReplyTextFormat.label language value.LabelId
+
+        match value.Blocked with
+        | Some advice ->
+            let args =
+                advice.Message.Arguments
+                |> Map.map (fun _ -> TextDescriptorValue.render language)
+
+            [ label + ": " + MessageCatalogs.render language advice.Message.MessageId args ]
+        | None ->
+            let values, suffix =
+                match value.Control with
+                | ActionControl.Operation bound ->
+                    let fixedValues =
+                        value.Seeds
+                        |> Map.toList
+                        |> List.filter (fun (key, _) -> not (List.contains key value.Editable))
+                        |> List.map (fun (key, value) ->
+                            let declared =
+                                (TaskDeclarations.describe task).Inputs
+                                |> List.tryFind (fun input -> input.Input = key)
+
+                            let privateText =
+                                declared
+                                |> Option.exists (fun input ->
+                                    input.Retention = InputRetention.Erasable
+                                    && (match key with
+                                        | TaskInputId.Target(InputTarget.Field field) ->
+                                            match FieldPresentation.descriptor field with
+                                            | ScalarRule.Text _
+                                            | ScalarRule.PlainText _ -> true
+                                            | _ -> false
+                                        | _ -> input.Atom = TaskAtom.Text))
+
+                            key,
+                            if privateText then
+                                "<" + CommandGrammar.inputName key + ">"
+                            else
+                                atom value)
+
+                    let editable =
+                        value.Editable
+                        |> List.choose (fun input ->
+                            (TaskDeclarations.describe task).Inputs
+                            |> List.tryFind (fun item ->
+                                item.Input = input && item.Mode = TaskInputMode.Required)
+                            |> Option.map (fun _ ->
+                                input, "<" + CommandGrammar.inputName input + ">"))
+
+                    binding bound @ fixedValues @ editable, [ "--preview" ]
+                | ActionControl.Command(CommandRequest.DismissAccessRequest principal) ->
+                    let principal = PrincipalKey.toInput principal
+
+                    [
+                        target InputTarget.PrincipalKind,
+                        Vocabulary.token PrincipalKind.vocabulary principal.Kind
+                        target InputTarget.PrincipalIssuer, principal.Issuer
+                        target InputTarget.PrincipalSubject, principal.Subject
+                    ],
+                    [ "--dry-run" ]
+
+            [ label + ": " + command task values suffix ]
+
+    let link (value: Link) =
+        let task = QueryTaskId.key (Link.endpoint value)
+        let encoded = PresentationCodecs.link.Write value
+
+        match JsonValue.tryMember "input" encoded with
+        | Some(JsonValue.Object members) ->
+            let declaration = EndpointDeclarations.find task |> Option.get
+
+            let values =
+                members
+                |> List.collect (fun (name, value) ->
+                    if name = "target" then
+                        match RequestCodecs.caseSelector.Read "$" value with
+                        | Ok value -> selection value
+                        | Error _ -> []
+                    else
+                        declaration.Inputs
+                        |> List.tryFind (fun input ->
+                            EndpointInputs.memberName declaration input.Input = name)
+                        |> Option.map (fun input ->
+                            let scalar =
+                                function
+                                | JsonValue.String value -> value
+                                | JsonValue.Integer value -> string value
+                                | JsonValue.Boolean value -> (if value then "true" else "false")
+                                | _ -> "<value>"
+
+                            match value with
+                            | JsonValue.Array values ->
+                                values |> List.map (fun value -> input.Input, scalar value)
+                            | _ -> [ input.Input, scalar value ])
+                        |> Option.defaultValue [])
+
+            command task values []
+        | _ -> command task [] [ "'<operation-id>'" ]

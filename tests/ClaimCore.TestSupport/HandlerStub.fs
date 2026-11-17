@@ -99,7 +99,7 @@ let receipt id (reference: string) : OperationReceipt =
                                 State = LiveCase.ofState (view reference).State |> Option.get
                                 Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
-                                Payment = None
+                                Payments = []
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)

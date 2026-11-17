@@ -113,6 +113,33 @@ module internal VerbRunner =
             ExitCode = Frames.exitCode frame
         }
 
+    let private confirmationReference (processor: RemoteFrameProcessor) prepared token =
+        task {
+            let input = Frames.value Api.operationExecute prepared.Invocation |> Option.get
+
+            let preview =
+                Frames.create Api.operationPreview input
+                |> Result.defaultWith (fun _ -> invalidOp "A prepared operation must preview.")
+                |> Frames.withRepresentation Representation.Human
+
+            let! reply = processor.Exchange(preview, token)
+            processor.Deliver(render prepared preview, reply)
+
+            match reply.Frame.Result with
+            | FrameResult.Reply value ->
+                match ServiceReply.value Api.operationPreview value with
+                | Some(RepresentationReply.Human {
+                                                     Outcome = HumanPreviewResult.Reviewed review
+                                                 }) ->
+                    match review.Document.Subject with
+                    | DocumentSubject.Review(ConfirmationTarget.CaseReference reference,
+                                             Consequence.Irreversible) ->
+                        return Ok(CaseReference.format reference)
+                    | _ -> return Error(ExitCode.value ExitCode.Failed)
+                | _ -> return Error reply.ExitCode
+            | _ -> return Error reply.ExitCode
+        }
+
     let rec private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
             match
@@ -150,6 +177,37 @@ module internal VerbRunner =
                 return ExitCode.value ExitCode.Usage
             | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
+            | Ok(prepared, None) when CliConfirmation.needsReferencePreview prepared.Invocation ->
+                match! confirmationReference processor prepared token with
+                | Error exit -> return exit
+                | Ok reference ->
+                    let issue =
+                        match prepared.Confirmation with
+                        | Some supplied when supplied <> reference ->
+                            Some(UsageError.InvalidChoice("--confirm", supplied, [ reference ]))
+                        | None when not io.Review.IsInteractive ->
+                            Some(UsageError.MissingOption "--confirm")
+                        | _ -> None
+
+                    match issue with
+                    | Some issue ->
+                        CliDiscovery.writeText
+                            io.Errors
+                            (UsageText.render prepared.Language arguments [ issue ])
+
+                        return ExitCode.value ExitCode.Usage
+                    | None ->
+                        if
+                            prepared.Confirmation.IsSome
+                            || CliConfirmation.exactTarget io.Review prepared.Language reference
+                        then
+                            return! execute processor prepared prepared.Invocation token
+                        else
+                            CliDiscovery.writeText
+                                io.Output
+                                (MessageCatalogs.renderCli prepared.Language CliMessage.NotRecorded)
+
+                            return ExitCode.value ExitCode.Success
             | Ok(prepared, None) ->
                 let frame = prepared.Invocation
 

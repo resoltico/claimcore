@@ -96,7 +96,17 @@ let private corruptHistory mutation database =
         do! guardedSql database mutation [||]
 
         let! before = image database
-        let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isError result "Corrupt authoritative history cannot authorize reconstruction"
         let! after = image database
         Expect.equal after before "Refusal changes no retained or derived bytes"
@@ -113,7 +123,16 @@ let private corruptHead database =
                 [||]
 
         let! before = image database
-        let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         match result with
         | Error finding ->
@@ -141,7 +160,17 @@ let private unsupportedBaseline database =
         let mutable refused = false
 
         try
-            let! _ = ProjectionRebuild.rebuild database.OwnerSource checkpoint token in ()
+            let! _ =
+                ProjectionRebuild.rebuild
+                    database.OwnerSource
+                    checkpoint
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    token in
+
+            ()
         with :? InvalidOperationException ->
             refused <- true
 
@@ -159,7 +188,17 @@ let private stagingFailure database =
         let mutable refused = false
 
         try
-            let! _ = ProjectionRebuild.rebuild database.OwnerSource checkpoint token in ()
+            let! _ =
+                ProjectionRebuild.rebuild
+                    database.OwnerSource
+                    checkpoint
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    token in
+
+            ()
         with :? PostgresException as error ->
             refused <- error.SqlState = "P0001"
 
@@ -177,7 +216,16 @@ let private validationFailure database =
         let! _, checkpoint = seed database
         do! trigger database "NEW.status := 'CLOSED';"
         let! before = image database
-        let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         match result with
         | Error finding ->
@@ -205,7 +253,14 @@ let private cancelledStaging database =
         use cancelled = new CancellationTokenSource()
 
         let rebuilding =
-            ProjectionRebuild.rebuild database.OwnerSource checkpoint cancelled.Token
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                cancelled.Token
 
         do! waitFor database advisoryWait
         cancelled.Cancel()
@@ -232,7 +287,16 @@ let private writerRace database =
         let! _ =
             DatabaseSession.rows blocker "SELECT pg_advisory_xact_lock(734114)" [||] token
 
-        let rebuilding = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        let rebuilding =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         do! waitFor database advisoryWait
 
         let writing =
@@ -297,7 +361,17 @@ let private commitLoss drop landed database =
         let mutable unknown = false
 
         try
-            let! _ = ProjectionRebuild.rebuild source checkpoint token in ()
+            let! _ =
+                ProjectionRebuild.rebuild
+                    source
+                    checkpoint
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    token in
+
+            ()
         with :? AdministrationOutcomeUnknownException ->
             unknown <- true
 

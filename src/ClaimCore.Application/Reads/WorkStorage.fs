@@ -342,7 +342,7 @@ module internal WorkStorage =
                 |> Option.defaultValue "TRUE"
 
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($13::uuid IS NULL OR r.case_id=$13) AND ($14::text IS NULL OR r.state=$14) AND ({view}) AND ($15 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($16::text IS NULL OR r.search_text LIKE '%%'||$16||'%%' ESCAPE chr(92)) AND ($17::date IS NULL OR (r.due,r.reminder_id)>($17::date,$18::uuid)) ORDER BY r.due,r.reminder_id LIMIT $19"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($17::uuid IS NULL OR r.case_id=$17) AND ($18::text IS NULL OR r.state=$18) AND ({view}) AND ($19 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($20::text IS NULL OR r.search_text LIKE '%%'||$20||'%%' ESCAPE chr(92)) AND ($21::date IS NULL OR (r.due,r.reminder_id)>($21::date,$22::uuid)) ORDER BY r.due,r.reminder_id LIMIT $23"
 
             let parameters =
                 Array.append

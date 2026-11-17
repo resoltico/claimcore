@@ -205,18 +205,27 @@ module internal ViewText =
             renderWithHeader zone includeHeader includeDetails options language screen
 
         let actions =
-            (screen.Regions |> List.collect _.Actions) @ document.Actions
-            |> List.filter (fun action -> action.Blocked.IsNone)
-            |> List.map (fun action ->
-                let key = TaskRouting.labelId (TaskId.token action.Task)
+            Screen.affordances screen @ document.Actions
+            |> List.collect (ControlHints.action language)
 
-                ReplyTextFormat.label language key)
+        let links =
+            (document.Links |> List.map (fun value -> value.LabelId, value.Link))
+            @ (screen.Regions
+               |> List.collect (fun region ->
+                   let children =
+                       match region.Content with
+                       | RegionContent.Table table -> table.Rows |> List.choose _.Link
+                       | RegionContent.Timeline entries -> entries |> List.choose _.Link
+                       | RegionContent.Stages stages -> stages.Steps |> List.choose _.Link
+                       | _ -> []
 
-        body
-        @ (if actions.IsEmpty then
-               []
-           else
-               [ String.concat ", " actions ])
+                   (region.Link |> Option.toList) @ children
+                   |> List.map (fun link -> CliMessages.key CliMessage.NextLabel, link)))
+            |> List.distinct
+            |> List.map (fun (label, link) ->
+                ReplyTextFormat.label language label + ": " + ControlHints.link link)
+
+        body @ actions @ links
 
     let renderDocument includeDetails language document =
         renderDocumentWithHeader (TextTable.environment ()) true includeDetails language document

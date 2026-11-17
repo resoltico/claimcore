@@ -560,3 +560,127 @@ module OperationSubmission =
         |> syntaxResult
         |> Result.toOption
         |> Option.flatten
+
+/// Pure draft acquisition policy shared by native interfaces and generated browser assembly.
+module SubmissionAssembly =
+    let private target input = TaskInputId.Target input
+    let private reference = target (InputTarget.Field BusinessField.CaseReference)
+
+    /// Authored selection owns scope. Absence alone permits the installation default.
+    let scope inputs =
+        if Map.containsKey TaskInputId.Scope inputs then
+            inputs
+        else
+            let selected =
+                Map.containsKey reference inputs || Map.containsKey TaskInputId.CaseId inputs
+
+            Map.add
+                TaskInputId.Scope
+                (SubmissionValue.Text(if selected then "CASE" else "INSTALLATION"))
+                inputs
+
+    let defaults (declaration: TaskDeclaration) =
+        declaration.Inputs
+        |> List.choose (fun input ->
+            match input.Input with
+            | TaskInputId.Target(InputTarget.Group _) when input.Source = InputSource.Authored ->
+                Some(input.Input, SubmissionValue.Text "KEEP")
+            | _ -> None)
+        |> Map.ofList
+
+    let withDefaults (declaration: TaskDeclaration) inputs =
+        let values =
+            Map.fold
+                (fun values key value ->
+                    if Map.containsKey key values then
+                        values
+                    else
+                        Map.add key value values)
+                inputs
+                (defaults declaration)
+
+        if declaration.Inputs |> List.exists (fun input -> input.Input = TaskInputId.Scope) then
+            scope values
+        else
+            values
+
+    /// Fixed controls always win; editable UPDATE seeds never become authored values.
+    let merge
+        (editable: TaskInputId list)
+        (fixedValues: Map<TaskInputId, SubmissionValue>)
+        authored
+        =
+        let editable = Set.ofList editable
+
+        Map.fold
+            (fun values key value ->
+                if Set.contains key editable then
+                    values
+                else
+                    Map.add key value values)
+            (Map.filter (fun key _ -> Set.contains key editable) authored)
+            fixedValues
+
+    let draftBinding (declaration: TaskDeclaration) selection revision identity =
+        match TaskDeclaration.bindingShape declaration with
+        | BindingShape.CaseNew -> OperationBinding.CaseNew(Some 0L)
+        | BindingShape.Case ->
+            OperationBinding.Case(selection, revision InputTarget.ExpectedRevision, None, None)
+        | BindingShape.CasePayment ->
+            OperationBinding.Case(
+                selection,
+                revision InputTarget.ExpectedRevision,
+                identity (target InputTarget.PaymentId),
+                None
+            )
+        | BindingShape.CaseErase ->
+            OperationBinding.Case(
+                selection,
+                revision InputTarget.ExpectedRevision,
+                None,
+                revision InputTarget.ExpectedFamilySequence
+            )
+        | BindingShape.Work ->
+            OperationBinding.Work(selection, revision InputTarget.ExpectedWorkRevision)
+        | BindingShape.NoteNew -> OperationBinding.Note(selection, None)
+        | BindingShape.Note ->
+            OperationBinding.Note(selection, identity (target InputTarget.NoteId))
+        | BindingShape.ReminderNew -> OperationBinding.Reminder(selection, None)
+        | BindingShape.Reminder ->
+            OperationBinding.Reminder(
+                selection,
+                identity (target InputTarget.ReminderId)
+                |> Option.map (fun id -> id, revision InputTarget.ExpectedReminderRevision)
+            )
+        | BindingShape.PeopleNew -> OperationBinding.People(None, Some 0L)
+        | BindingShape.People ->
+            OperationBinding.People(
+                identity TaskInputId.ActorId,
+                revision InputTarget.ExpectedRevision
+            )
+
+    /// Complete only missing draft basis; an explicitly reviewed version is never refreshed.
+    let completeBinding draft offered =
+        match draft, offered with
+        | OperationBinding.CaseNew expected, OperationBinding.CaseNew revision ->
+            OperationBinding.CaseNew(Option.defaultValue revision expected)
+        | OperationBinding.Case(target, expected, payment, family),
+          OperationBinding.Case(_, revision, _, offeredFamily) ->
+            OperationBinding.Case(
+                target,
+                Option.defaultValue revision expected,
+                payment,
+                Option.orElse offeredFamily family
+            )
+        | OperationBinding.Work(target, expected), OperationBinding.Work(_, revision) ->
+            OperationBinding.Work(target, Option.defaultValue revision expected)
+        | OperationBinding.People(id, expected), OperationBinding.People(_, revision) ->
+            OperationBinding.People(id, Option.defaultValue revision expected)
+        | OperationBinding.Reminder(target, Some(id, expected)),
+          OperationBinding.Reminder(_, Some(_, revision)) ->
+            OperationBinding.Reminder(target, Some(id, Option.defaultValue revision expected))
+        | OperationBinding.Note(target, id), OperationBinding.Note _ ->
+            OperationBinding.Note(target, id)
+        | OperationBinding.Reminder(target, None), OperationBinding.Reminder(_, None) ->
+            OperationBinding.Reminder(target, None)
+        | _ -> invalidArg "offered" "A draft requires the matching offered binding."

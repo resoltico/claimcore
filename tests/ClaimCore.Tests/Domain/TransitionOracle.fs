@@ -119,6 +119,9 @@ let samples =
         bare "case.withdrawDecision"
         payment
         bare "case.removePayment"
+        { payment with
+            Task = "case.correctPayment"
+        }
         bare "case.close"
         bare "case.reopen"
         reason "case.void"
@@ -166,7 +169,8 @@ let private activeEligible (fields: CaseFields) witness =
         fields.Decision.IsSome
         && fields.Finance.PaymentCount = 0L
         && (fields.Decision |> Option.map (Decision.payable >> Money.value)) = Some 750M
-    | "case.removePayment" -> fields.Finance.PaymentCount > 0L
+    | "case.removePayment"
+    | "case.correctPayment" -> fields.Finance.PaymentCount > 0L
     | _ -> false
 
 let private eligible (fields: CaseFields) witness =
@@ -227,7 +231,8 @@ let private changed (fields: CaseFields) witness =
         { fields with
             Finance = FinancialPosition.undecided
         }
-    | "case.recordPayment" ->
+    | "case.recordPayment"
+    | "case.correctPayment" ->
         let date = CalendarDate.parse "2026-08-20" |> required
 
         { fields with
@@ -273,7 +278,8 @@ let advance (before: Model) stale witness operation sequence =
                         }
                     Payment =
                         match witness.Task with
-                        | "case.recordPayment" -> Some operation
+                        | "case.recordPayment"
+                        | "case.correctPayment" -> Some operation
                         | "case.removePayment"
                         | "case.erase" -> None
                         | _ -> before.Payment

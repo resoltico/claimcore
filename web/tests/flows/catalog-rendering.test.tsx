@@ -242,17 +242,13 @@ const caseReview = (request: CaseInput) => {
       actions: [
         operationAffordance(
           task.id,
-          {
-            kind: "CASE",
-            target: {
-              kind: "ID",
-              caseId:
-                request.task === "case.open"
-                  ? request.operationId
-                  : "20000000-0000-4000-8000-000000000001",
-            },
-            expectedRevision: request.binding.expectedRevision,
-          },
+          request.task === "case.open"
+            ? { kind: "CASE", expectedRevision: 0 }
+            : {
+                kind: "CASE",
+                target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+                expectedRevision: request.binding.expectedRevision,
+              },
           {},
           [],
         ),

@@ -25,6 +25,7 @@ export const operationAffordance = <
     .map((value) => value.id);
   const control: Affordance = {
     task,
+    labelId: declaration.labelId,
     binding,
     seeds,
     editable: editable ?? [...authored, ...declaration.collections.map((value) => value.input)],

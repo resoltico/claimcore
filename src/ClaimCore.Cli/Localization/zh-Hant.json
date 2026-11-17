@@ -395,10 +395,6 @@
     "text": "還有更多更改；請執行 {command}。",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "等待最終回答，截止時間為 {finalAt}。",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "案件備註",
     "source": "54c2a0df2066"

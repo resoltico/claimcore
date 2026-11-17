@@ -243,9 +243,9 @@ module internal ReceiptReads =
                                                                                         record
                                                                                             .Inputs
                                                                                         description
-                                                                                Payment =
+                                                                                Payments =
                                                                                     record.Changes
-                                                                                    |> List.tryPick
+                                                                                    |> List.choose
                                                                                         PartChange
                                                                                             .paymentDifference
                                                                             }

@@ -87,7 +87,17 @@ let private projection (database: PostgresFixture.Database) =
 
         do! finding VerificationFinding.PeopleProfileProjection database
         do! enterMaintenance database
-        let! result = ProjectionRebuild.rebuild database.OwnerSource before token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                before
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk result "Verified profile history rebuilds the projection"
         let! after = verified database
         Expect.equal after before.Position "Rebuild changes no retained proof"

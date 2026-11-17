@@ -307,7 +307,7 @@ const runNetwork = async (
         return {
           type: "OPERATION_PENDING",
           identity: effect.identity,
-          finalAt: result.value.outcome.finalAt,
+          screen: result.value.outcome.document.screen,
         };
       }
       if (result.value.outcome.kind === "NOT_ACCEPTED") {
@@ -724,6 +724,7 @@ const prepareValues = (
     options.normalizeValues?.(values, task) ?? values,
     binding,
     mintOperationId(),
+    affordance,
   );
   return {
     prepared: prepareRequest(apiEndpoints.operationExecute, submission.command),

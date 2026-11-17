@@ -22,6 +22,7 @@ type OperatorFault =
     | InstallationInvalid
     | HeadMismatch
     | MaintenanceRequired
+    | MaintenanceConflict
     | CheckpointFileRefused
     | CheckpointInvalid
     | Unavailable

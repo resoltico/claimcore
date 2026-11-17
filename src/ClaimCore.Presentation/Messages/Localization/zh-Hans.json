@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "此案件当前不提供该操作。",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "更正付款记录",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "将错误登记的付款记录替换为正确的日期和金额。此操作不会退款或执行转账。此前的历史记录将保留。",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "付款记录已更正。",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "重新分配",
+    "source": "4591c339cfa6"
   }
 }

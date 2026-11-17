@@ -339,13 +339,7 @@ module ReceiptScreen =
                     | LiveCase.Active fields
                     | LiveCase.Voided fields -> fields
 
-                Some(
-                    PaymentsScreen.table
-                        fields.Finance
-                        (live.Payment
-                         |> Option.map (PaymentDifference.entry >> List.singleton)
-                         |> Option.defaultValue [])
-                )
+                Some(PaymentsScreen.changes fields.Finance live.Payments)
             | _ -> None
 
         let facts =

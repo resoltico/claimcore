@@ -61,3 +61,4 @@ note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-55555555555
 note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
 case notes R-1 --limit 1
 case payments CASE-001 --limit 20
+case correct-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --payment-date 2026-03-01 --paid-amount 2 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555

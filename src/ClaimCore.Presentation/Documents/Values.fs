@@ -83,28 +83,41 @@ type HumanAdvice =
         Action: RecommendedAction
     }
 
+[<RequireQualifiedAccess>]
+type ActionControl =
+    | Operation of Binding
+    | Command of CommandRequest
+
 /// Ready selection and authored controls share one declaration-owned shape.
 type Affordance =
     {
         Task: TaskId
-        Binding: Binding option
+        LabelId: string
+        Control: ActionControl
         Seeds: Map<TaskInputId, InputValue>
         Editable: TaskInputId list
         Choices: Map<TaskInputId, string list>
         Blocked: HumanAdvice option
     }
 
+    member this.Binding =
+        match this.Control with
+        | ActionControl.Operation binding -> Some binding
+        | ActionControl.Command _ -> None
+
 module Affordance =
     let valid value =
         let definition = TaskDeclarations.find (TaskId.token value.Task)
 
         let matches =
-            match definition, value.Binding with
-            | Some definition, Some binding ->
+            match definition, value.Control with
+            | Some definition, ActionControl.Operation binding ->
                 definition.Ledger
                 |> Option.exists (fun task ->
                     TaskDeclaration.bindingShape task = BindingShape.ofValue binding)
-            | Some definition, None -> definition.Kind = ClientTaskKind.Command
+            | Some definition, ActionControl.Command command ->
+                definition.Kind = ClientTaskKind.Command
+                && definition.Id = CommandTaskId.key (CommandRequest.task command)
             | _ -> false
 
         match definition with
@@ -150,11 +163,21 @@ module Affordance =
                             |> List.forall (fun token ->
                                 List.contains token (TaskChoiceId.tokens choice))))))
 
-    let create task binding seeds editable choices blocked =
+    let private validated task control seeds editable choices blocked =
         let value =
             {
                 Task = task
-                Binding = binding
+                LabelId =
+                    (if
+                         TaskDeclarations.describe (TaskId.token task) |> _.Kind =
+                             ClientTaskKind.Command
+                     then
+                         "endpoint."
+                     else
+                         "task.")
+                    + TaskId.token task
+                    + ".label"
+                Control = control
                 Seeds = seeds
                 Editable = editable
                 Choices = choices
@@ -167,6 +190,23 @@ module Affordance =
                 "Affordances require a matching subject and declared input controls."
 
         value
+
+    let create task binding seeds editable choices blocked =
+        let binding =
+            binding
+            |> Option.defaultWith (fun () ->
+                invalidArg "binding" "An operation requires a reviewed binding.")
+
+        validated task (ActionControl.Operation binding) seeds editable choices blocked
+
+    let command request =
+        validated
+            (TaskId.ofLiteral (CommandTaskId.key (CommandRequest.task request)))
+            (ActionControl.Command request)
+            Map.empty
+            []
+            Map.empty
+            None
 
 type RowDetail =
     {

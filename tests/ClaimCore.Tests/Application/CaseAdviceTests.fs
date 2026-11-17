@@ -21,6 +21,7 @@ let private kinds =
         (TaskId.ofLiteral "case.withdrawDecision")
         (TaskId.ofLiteral "case.recordPayment")
         (TaskId.ofLiteral "case.removePayment")
+        (TaskId.ofLiteral "case.correctPayment")
         (TaskId.ofLiteral "case.close")
         (TaskId.ofLiteral "case.reopen")
         (TaskId.ofLiteral "case.void")
@@ -88,10 +89,14 @@ let model =
             advice
             |> CaseAdvice.withOffers [ TaskOffer.Available(taskId, binding, offered) ]
 
-        let maintenance = RegisterMaintenance.create true
+        let maintenance =
+            RegisterMaintenance.create
+                1L
+                (Some(System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
+
         let current = CaseAdvice.duringMaintenance maintenance advice
         Expect.isEmpty current.Acts "Maintenance offers no new writes"
-        Expect.equal current.Blocked.Length 12 "Every unavailable act still has one reason"
+        Expect.equal current.Blocked.Length 13 "Every unavailable act still has one reason"
 
         Expect.equal
             (current.Blocked

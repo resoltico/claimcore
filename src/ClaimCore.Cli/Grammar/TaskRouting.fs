@@ -15,7 +15,7 @@ module TaskRouting =
             QueryTaskId.all
             |> List.find (fun query -> QueryTaskId.key query = task)
             |> ActorEndpoint.Query
-        | ClientTaskKind.Command -> ActorEndpoint.Command task
+        | ClientTaskKind.Command -> CommandTaskId.parse task |> Option.get |> ActorEndpoint.Command
 
     let act task =
         (TaskDeclarations.describe task).Ledger |> Option.map _.Id

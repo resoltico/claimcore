@@ -19,6 +19,7 @@ module internal RestoreAdmission =
     let admit
         (source: NpgsqlDataSource)
         (trusted: InstallationCheckpoint)
+        (handle: MaintenanceHandle)
         (token: CancellationToken)
         =
         DatabaseSession.transaction
@@ -30,7 +31,7 @@ module internal RestoreAdmission =
                     ServerSupport.require connection.PostgreSqlVersion
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! _ = Transactions.head connection token
-                    do! RegisterMaintenanceStore.requireActive connection token
+                    do! RegisterMaintenanceStore.requireActive handle connection token
                     let! installation, _ = Baseline.require connection token
 
                     match CheckpointEvidence.installation installation trusted with

@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "Diese Aktion wird für diesen Fall derzeit nicht angeboten.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "Zahlungseintrag korrigieren",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "Ersetzen Sie einen irrtümlich erfassten Zahlungseintrag durch das richtige Datum und den richtigen Betrag. Dies erstattet kein Geld und führt keine Überweisung aus. Der bisherige Verlauf bleibt erhalten.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "Zahlungseintrag korrigiert.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "Neu zuweisen",
+    "source": "4591c339cfa6"
   }
 }

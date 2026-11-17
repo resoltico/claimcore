@@ -1,7 +1,5 @@
+import type { OperationAffordance } from "./affordances";
 import {
-  taskDefinitions,
-  type Affordance,
-  type RequestByEndpoint,
   type OperationBinding,
   type OperationSubmission,
   type OperationTaskId,
@@ -32,7 +30,8 @@ const authoredScalars = (declaration: OperationTaskDefinition, values: FormValue
       inputs[input.id] = values[input.id];
     }
   }
-  return inputs;
+  const defaults: Readonly<Record<string, unknown>> = declaration.defaults;
+  return { ...defaults, ...inputs };
 };
 const authoredCollections = (declaration: OperationTaskDefinition, values: FormValues) => {
   const inputs: Record<string, unknown> = {};
@@ -61,30 +60,31 @@ export const assembleTask = (
   values: FormValues,
   binding: OperationBinding,
   operationId: string,
+  control?: OperationAffordance,
 ): TaskSubmission => {
   const declaration = operationTask(task);
+  if (control !== undefined) {
+    if (control.task !== task)
+      {throw new Error("The selected task does not match its Core control.");}
+    const editable = new Set<string>(control.editable);
+    const merged: Record<string, FormValues[string]> = Object.fromEntries(
+      Object.entries(grantFields(values)).filter(
+        ([key]) =>
+          editable.has(key) ||
+          declaration.collections.some(
+            (collection) => collection.id === key && editable.has(collection.input),
+          ),
+      ),
+    );
+    for (const [key, value] of Object.entries(control.seeds)) {
+      if (!editable.has(key)) {merged[key] = value;}
+    }
+    values = merged;
+  }
   const collection = authoredCollections(declaration, values);
   const inputs = { ...authoredScalars(declaration, values), ...collection.inputs };
   // Acquisition builds a declared envelope; Core performs closed admission and business validation.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generic declaration acquisition preserves tokens; Core owns admission of the envelope.
   const command = { operationId, task, binding, inputs } as OperationSubmission;
   return { command, submittedRows: collection.submittedRows };
-};
-
-/** Nonledger controls use the same declared input identities as their endpoint request. */
-export const assembleCommand = (action: Affordance) => {
-  const definition = taskDefinitions.find(
-    (task) => task.kind === "COMMAND" && task.id === action.task,
-  );
-  if (definition === undefined || definition.kind !== "COMMAND") {
-    return null;
-  }
-  const values = Object.fromEntries(
-    definition.inputs
-      .filter((input) => input.source === "AUTHORED")
-      .map((input) => [input.id, action.seeds[input.id]]),
-  );
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Core declares the command's closed input keys; its endpoint independently admits the supplied values.
-  const input = values as RequestByEndpoint[typeof definition.endpoint];
-  return { endpoint: definition.endpoint, input };
 };

@@ -162,9 +162,15 @@ let tests =
                                 "case.decide"
                                 "case.recordPayment"
                                 "case.removePayment"
+                                "case.correctPayment"
                             ]
                             decided () |> pay 3 "2026-02-02" "1000",
-                            [ "case.correct"; "case.decide"; "case.removePayment" ]
+                            [
+                                "case.correct"
+                                "case.decide"
+                                "case.removePayment"
+                                "case.correctPayment"
+                            ]
                             zero, [ "case.correct"; "case.decide"; "case.withdrawDecision" ]
                         ]
 

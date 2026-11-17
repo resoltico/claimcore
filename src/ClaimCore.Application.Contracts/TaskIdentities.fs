@@ -46,3 +46,26 @@ module QueryTaskId =
 
     let all = Vocabulary.all vocabulary
     let key = Vocabulary.token vocabulary
+
+
+[<RequireQualifiedAccess>]
+type CommandTaskId = | DismissAccessRequest
+
+module CommandTaskId =
+    let vocabulary =
+        Vocabulary.ofEntries
+            "commandTask"
+            [ CommandTaskId.DismissAccessRequest, "people.requests.dismiss" ]
+
+    let all = Vocabulary.all vocabulary
+    let key = Vocabulary.token vocabulary
+    let parse = Vocabulary.tryParse vocabulary
+
+/// Operational requests are complete at the control boundary; they have no ledger identity.
+[<RequireQualifiedAccess>]
+type CommandRequest = DismissAccessRequest of PrincipalKey
+
+module CommandRequest =
+    let task =
+        function
+        | CommandRequest.DismissAccessRequest _ -> CommandTaskId.DismissAccessRequest

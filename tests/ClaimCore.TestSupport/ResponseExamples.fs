@@ -52,7 +52,7 @@ let receipt: OperationReceipt =
                                 State = LiveCase.ofState snapshot.State |> Option.get
                                 Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
-                                Payment = None
+                                Payments = []
                             }
                 }
     }

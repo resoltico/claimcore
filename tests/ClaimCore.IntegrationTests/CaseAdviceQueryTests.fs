@@ -145,6 +145,7 @@ let tests =
                             "case.withdrawDecision"
                             "case.recordPayment"
                             "case.removePayment"
+                            "case.correctPayment"
                             "case.void"
                             "case.reinstate"
                             "case.close"
@@ -213,7 +214,13 @@ let tests =
                     "A payment-only actor cannot correct a closed case with no financial group"
 
                 let! entered =
-                    RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+                    RegisterMaintenanceStore.change
+                        database.OwnerSource
+                        (MaintenanceChange.Acquire(
+                            0L,
+                            System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                        ))
+                        token
                     |> Async.AwaitTask
 
                 Expect.isTrue entered.State.Active "The owner pauses register writes"

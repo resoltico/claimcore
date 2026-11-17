@@ -14,7 +14,7 @@ type OperationEndpoint =
 type ActorEndpoint =
     | Operation of OperationEndpoint
     | Query of QueryTaskId
-    | Command of string
+    | Command of CommandTaskId
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module ActorEndpoint =
@@ -26,13 +26,12 @@ module ActorEndpoint =
                 ActorEndpoint.Operation OperationEndpoint.Execute
              ]
              @ (QueryTaskId.all |> List.map ActorEndpoint.Query)
-             @ ((EndpointDeclarations.commands |> List.map _.Id)
-                |> List.map ActorEndpoint.Command))
+             @ (CommandTaskId.all |> List.map ActorEndpoint.Command))
             (function
              | ActorEndpoint.Operation OperationEndpoint.Preview -> "operation.preview"
              | ActorEndpoint.Operation OperationEndpoint.Execute -> "operation.execute"
              | ActorEndpoint.Query query -> QueryTaskId.key query
-             | ActorEndpoint.Command command -> command)
+             | ActorEndpoint.Command command -> CommandTaskId.key command)
 
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary

@@ -83,7 +83,16 @@ let private repairs database =
         do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
         do! sql database "UPDATE claimcore.actors SET enabled=false" [||]
         do! sql database "DELETE FROM claimcore.grants" [||]
-        let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         match result with
         | Error error -> failtestf "Expected reconstruction: %A" error
@@ -148,7 +157,15 @@ let private checkpointRefusal database =
                 checkpoint.ExpiredBefore
             |> Option.get
 
-        let! refused = ProjectionRebuild.rebuild database.OwnerSource wrong token
+        let! refused =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                wrong
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         Expect.equal
             (refused |> Result.map ignore)
@@ -176,7 +193,17 @@ let private readerSnapshot database =
             DatabaseSession.rows reader "SELECT sequence FROM claimcore.ledger_head" [||] token
         // The snapshot exists but has never accessed the projection table.
         do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk rebuilt "Rebuild repairs the later projection damage"
 
         let! oldRows =
@@ -288,7 +315,17 @@ let private erasedIdentity database =
         do! sql database "DELETE FROM claimcore.reminders" [||]
         do! sql database "DELETE FROM claimcore.case_work" [||]
         do! sql database "DELETE FROM claimcore.cases" [||]
-        let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk result "Retained OPEN identity reconstructs erased cases"
 
         let! returned =
@@ -375,7 +412,15 @@ let private databaseCommands database =
                 AdministrationProcess.invoke
                     binary
                     connection
-                    [ "rebuild"; "--checkpoint"; expected ]
+                    [
+                        "rebuild"
+                        "--checkpoint"
+                        expected
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
                     0
 
             Expect.equal
@@ -427,7 +472,17 @@ let private grantSource database =
         | _ -> failtest "Grant-source corruption must diverge"
 
         do! enterMaintenance database
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk rebuilt "Shared replay reconstructs grant sources"
         let! restored = rows database "grants"
         Expect.equal restored original "Every immutable granting position is restored"

@@ -229,7 +229,10 @@ let run (database: PostgresFixture.Database) =
             let! maintenance =
                 RegisterMaintenanceStore.change
                     database.OwnerSource
-                    MaintenanceChange.On
+                    (MaintenanceChange.Acquire(
+                        0L,
+                        System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                    ))
                     cancellation
 
             Expect.isTrue
@@ -252,7 +255,15 @@ let run (database: PostgresFixture.Database) =
                         "/tmp/foundation-sessions.sql"
                     |]
 
-            let! admitted = RestoreAdmission.admit database.OwnerSource trusted cancellation
+            let! admitted =
+                RestoreAdmission.admit
+                    database.OwnerSource
+                    trusted
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    cancellation
 
             let admitted =
                 admitted
@@ -308,7 +319,14 @@ let run (database: PostgresFixture.Database) =
             do! unsafeRestoredHost.StopAsync()
 
             let! restoredAdmission =
-                RestoreAdmission.admit database.OwnerSource trusted cancellation
+                RestoreAdmission.admit
+                    database.OwnerSource
+                    trusted
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    cancellation
 
             let restoredAdmission =
                 restoredAdmission

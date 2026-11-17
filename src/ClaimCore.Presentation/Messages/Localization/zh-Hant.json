@@ -2794,5 +2794,21 @@
   "label.actionNotOffered": {
     "text": "此案件目前不提供此操作。",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "更正付款紀錄",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "將錯誤登記的付款紀錄替換為正確的日期和金額。此操作不會退款或執行轉帳。先前的歷史紀錄將保留。",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "付款紀錄已更正。",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "重新指派",
+    "source": "4591c339cfa6"
   }
 }

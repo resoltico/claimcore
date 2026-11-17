@@ -182,7 +182,8 @@ module ResponseCodecs =
 
     let registerMaintenance =
         (record RegisterMaintenance.create: Fields<RegisterMaintenance, _>)
-        |> field "active" _.Active boolean
+        |> field "generation" _.Generation (integer 0L SafeInteger.Maximum)
+        |> field "pauseId" _.PauseId (nullable uuid)
         |> build
         |> named "RegisterMaintenance"
 

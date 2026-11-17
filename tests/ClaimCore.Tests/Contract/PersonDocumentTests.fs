@@ -82,7 +82,12 @@ let tests =
                         Advice.actorOffers
                             principal
                             (viewer roles)
-                            (RegisterMaintenance.create maintenance)
+                            (RegisterMaintenance.create
+                                (if maintenance then 1L else 0L)
+                                (if maintenance then
+                                     Some(System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                                 else
+                                     None))
 
                     Expect.equal
                         (offers [ Role.Owner ] false)

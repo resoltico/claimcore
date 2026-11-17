@@ -132,22 +132,38 @@ let tests =
                         (issue (flags @ [ "--owner-name"; "Second" ]))
                         (UsageError.DuplicateOption "--owner-name")
                         "A scalar flag has one value")
-            testCase
-                "maintenance is idempotent on/off syntax and retired generation flags refuse"
-                (fun () ->
-                    Expect.equal
-                        (Inputs.command [ "maintenance"; "on" ])
-                        (Ok(Maintenance ClaimCore.Application.Contracts.MaintenanceChange.On))
-                        "On"
+            testCase "maintenance commands require exact generation and pause selection" (fun () ->
+                Expect.equal
+                    (Inputs.command
+                        [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ])
+                    (Ok(
+                        Maintenance(
+                            ClaimCore.Application.Contracts.MaintenanceChange.Acquire(
+                                0L,
+                                System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                            )
+                        )
+                    ))
+                    "On"
 
-                    Expect.equal
-                        (Inputs.command [ "maintenance"; "off" ])
-                        (Ok(Maintenance ClaimCore.Application.Contracts.MaintenanceChange.Off))
-                        "Off"
+                Expect.equal
+                    (Inputs.command
+                        [ "maintenance"; "resume"; "1"; "10000000-0000-4000-8000-000000000099" ])
+                    (Ok(
+                        Maintenance(
+                            ClaimCore.Application.Contracts.MaintenanceChange.Resume(
+                                ClaimCore.Application.Contracts.MaintenanceHandle.create
+                                    1L
+                                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                                |> Option.get
+                            )
+                        )
+                    ))
+                    "Off"
 
-                    Expect.isTrue
-                        (match Inputs.command [ "maintenance"; "resume"; "--generation"; "1" ] with
-                         | Error _ -> true
-                         | _ -> false)
-                        "No generation contract remains")
+                Expect.isTrue
+                    (match Inputs.command [ "maintenance"; "resume"; "--generation"; "1" ] with
+                     | Error _ -> true
+                     | _ -> false)
+                    "No generation contract remains")
         ]

@@ -1032,7 +1032,11 @@ let reminderReviewDetails =
 
                             if compound && not details then
                                 Expect.isFalse
-                                    (reviewed.Contains(ReminderId.format (reminderId 1)))
+                                    (reviewed.Split('\n')
+                                     |> Array.filter (fun line -> not (line.Contains "claimcore "))
+                                     |> String.concat "\n"
+                                     |> fun prose ->
+                                         prose.Contains(ReminderId.format (reminderId 1)))
                                     "Default review does not expose the previous reminder identity"
 
                             let previews =

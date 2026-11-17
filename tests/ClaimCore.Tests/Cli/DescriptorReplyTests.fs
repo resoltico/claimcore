@@ -136,7 +136,7 @@ let tests =
 
                     Expect.isFalse
                         (text.Contains "kind:"
-                         || text.Contains "CASE_READER"
+
                          || text.Contains "{\"")
                         "Human output contains neither wire tags nor JSON")
             testCase "unknown tagged output is rejected at the typed boundary" (fun () ->

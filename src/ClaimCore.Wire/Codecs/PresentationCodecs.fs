@@ -553,12 +553,51 @@ module PresentationCodecs =
                         OperationSubmission.admitBinding declaration raw
                         |> Result.defaultWith (fun _ ->
                             invalidArg "binding" "Invalid reviewed binding.")
-                        |> Some)
-                    (fun binding -> binding |> Option.get |> OperationSubmission.rawBinding)
-                |> branch id (fun binding ->
-                    match binding with
-                    | Some binding when BindingShape.ofValue binding = shape -> Some(Some binding)
+                        |> ActionControl.Operation)
+                    (function
+                     | ActionControl.Operation binding -> OperationSubmission.rawBinding binding
+                     | _ -> invalidOp "An operation binding is required.")
+                |> branch id (function
+                    | ActionControl.Operation binding as control when
+                        BindingShape.ofValue binding = shape
+                        ->
+                        Some control
                     | _ -> None))
+
+        let command =
+            Codec.taggedOn
+                "command"
+                "CommandControl"
+                [
+                    variant
+                        "people.requests.dismiss"
+                        CommandRequest.DismissAccessRequest
+                        (function
+                        | CommandRequest.DismissAccessRequest value -> Some value)
+                        (record (fun kind issuer subject ->
+                            PrincipalKey.ofKind kind issuer subject
+                            |> Result.toOption
+                            |> Option.get)
+                         |> field
+                             "input:principal.kind"
+                             (PrincipalKey.toInput >> _.Kind)
+                             (VocabularyCodec.create PrincipalKind.vocabulary)
+                         |> field "input:principal.issuer" (PrincipalKey.toInput >> _.Issuer) text
+                         |> field "input:principal.subject" (PrincipalKey.toInput >> _.Subject) text)
+                ]
+
+        let commandBinding =
+            Codec.tagged
+                "CommandBinding"
+                [
+                    variant
+                        "COMMAND"
+                        ActionControl.Command
+                        (function
+                        | ActionControl.Command value -> Some value
+                        | _ -> None)
+                        (record id |> field "request" id command)
+                ]
 
         let binding =
             choice
@@ -566,11 +605,11 @@ module PresentationCodecs =
                 (bindings
                  @ [
                      branch
-                         (fun () -> None)
+                         id
                          (function
-                         | None -> Some()
+                         | ActionControl.Command _ as value -> Some value
                          | _ -> None)
-                         RequestCodecs.empty
+                         commandBinding
                  ])
 
         let seeds =
@@ -598,17 +637,19 @@ module PresentationCodecs =
                          |> VocabularyCodec.create)))
             |> fieldMapWithPresence
 
-        record (fun task binding seeds editable choices blocked ->
+        record (fun task label binding seeds editable choices blocked ->
             {
                 Affordance.Task = task
-                Binding = binding
+                LabelId = label
+                Control = binding
                 Seeds = seeds
                 Editable = editable
                 Choices = choices
                 Blocked = blocked
             })
         |> field "task" _.Task task
-        |> field "binding" _.Binding binding
+        |> field "labelId" _.LabelId (boundedText 1 160)
+        |> field "binding" _.Control binding
         |> field "seeds" _.Seeds seeds
         |> field "editable" _.Editable (list TaskInputId.all.Length inputs)
         |> field "choices" _.Choices choices
