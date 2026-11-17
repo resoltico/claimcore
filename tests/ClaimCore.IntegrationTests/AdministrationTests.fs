@@ -146,61 +146,145 @@ let private checkpoints binary connection =
             (JsonElement.DeepEquals(status.GetProperty("position"), position))
             "Status reports the observed head without verification claims"
 
-        let! required = invoke binary connection [ "rebuild"; "--checkpoint"; checkpoint ] 2
+        let pause = "10000000-0000-4000-8000-000000000099"
+        let replacement = "10000000-0000-4000-8000-000000000098"
+        let fresh = "10000000-0000-4000-8000-000000000097"
 
-        fault "MAINTENANCE_REQUIRED" required
+        let checkpointArguments act generation pauseId =
+            [
+                act
+                "--checkpoint"
+                checkpoint
+                "--pause-generation"
+                generation
+                "--pause-id"
+                pauseId
+            ]
 
-        let! maintenance = invoke binary connection [ "maintenance"; "on" ] 0
+        let maintenanceState generation pauseId (reply: JsonElement) =
+            let state = reply.GetProperty("maintenance")
 
-        Expect.equal
-            (kind maintenance)
-            "MAINTENANCE"
-            "Owner maintenance is explicit before reconstruction"
+            Expect.equal
+                (state.GetProperty("generation").GetInt64())
+                generation
+                "Exact published maintenance generation"
 
-        let! rebuilt = invoke binary connection [ "rebuild"; "--checkpoint"; checkpoint ] 0
+            let actual = state.GetProperty("pauseId")
 
-        Expect.equal
-            (kind rebuilt)
-            "REBUILT"
-            "The owner process exposes checkpoint-bound reconstruction"
+            let actual =
+                if actual.ValueKind = JsonValueKind.Null then
+                    None
+                else
+                    Some(actual.GetString() |> nonNull)
+
+            Expect.equal actual pauseId "Exact current pause ownership"
+
+        maintenanceState 0L None status
+
+        for act in [ "rebuild"; "admit-restored-installation" ] do
+            let! missing = invoke binary connection [ act; "--checkpoint"; checkpoint ] 64
+            Expect.equal (kind missing) "USAGE_ERROR" "An omitted handle is a usage failure"
+            let! inactive = invoke binary connection (checkpointArguments act "1" pause) 2
+            fault "MAINTENANCE_REQUIRED" inactive
+
+        let! acquired = invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 0
+        Expect.equal (kind acquired) "MAINTENANCE" "Owner acquisition commits an explicit pause"
+
+        Expect.isTrue
+            (acquired.GetProperty("changed").GetBoolean())
+            "Initial acquisition changes state"
+
+        maintenanceState 1L (Some pause) acquired
+        let! repeated = invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 0
+
+        Expect.isFalse
+            (repeated.GetProperty("changed").GetBoolean())
+            "Only the same active acquisition is retryable"
+
+        maintenanceState 1L (Some pause) repeated
+
+        let! rebuilt = invoke binary connection (checkpointArguments "rebuild" "1" pause) 0
+        Expect.equal (kind rebuilt) "REBUILT" "Reconstruction consumes the exact active handle"
 
         Expect.isTrue
             (JsonElement.DeepEquals(rebuilt.GetProperty("position"), position))
             "Owner rebuild preserves the head"
 
-        let! resumed = invoke binary connection [ "maintenance"; "off" ] 0
-        Expect.equal (kind resumed) "MAINTENANCE" "Off is explicit and generation-free"
-        let! repeatedOff = invoke binary connection [ "maintenance"; "off" ] 0
+        let! takeover =
+            invoke binary connection [ "maintenance"; "takeover"; "1"; pause; replacement ] 0
 
-        Expect.isFalse
-            (repeatedOff.GetProperty("changed").GetBoolean())
-            "Repeated off is idempotent"
+        maintenanceState 2L (Some replacement) takeover
 
-        let! retiredPrune = invoke binary connection [ "prune-sessions" ] 2
-        fault "INVOCATION_INVALID" retiredPrune
+        Expect.isTrue
+            (takeover.GetProperty("changed").GetBoolean())
+            "Takeover transfers pause ownership"
 
-        let! requiredAdmission =
-            invoke binary connection [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 2
+        for act in [ "rebuild"; "admit-restored-installation" ] do
+            let! stale = invoke binary connection (checkpointArguments act "1" pause) 2
+            fault "MAINTENANCE_CONFLICT" stale
 
-        fault "MAINTENANCE_REQUIRED" requiredAdmission
-
-        let! _ = invoke binary connection [ "maintenance"; "on" ] 0
+        let! staleResume = invoke binary connection [ "maintenance"; "resume"; "1"; pause ] 2
+        fault "MAINTENANCE_CONFLICT" staleResume
+        let! current = invoke binary connection [ "status" ] 0
+        maintenanceState 2L (Some replacement) current
 
         let! admitted =
-            invoke binary connection [ "admit-restored-installation"; "--checkpoint"; checkpoint ] 0
+            invoke
+                binary
+                connection
+                (checkpointArguments "admit-restored-installation" "2" replacement)
+                0
 
         Expect.equal
             (kind admitted)
             "RESTORED_INSTALLATION_ADMITTED"
-            "Restore admission consumes trusted installation evidence"
+            "Restore admission consumes the exact current pause and trusted evidence"
 
         Expect.isTrue
             (JsonElement.DeepEquals(admitted.GetProperty("checkpoint"), head))
             "Admission preserves the trusted root and frontier"
 
-        let! _ = invoke binary connection [ "maintenance"; "off" ] 0
-        let! retired = invoke binary connection [ "invalidate-restored-sessions" ] 2
-        fault "INVOCATION_INVALID" retired
+        let! resumed =
+            invoke binary connection [ "maintenance"; "resume"; "2"; replacement ] 0
+
+        maintenanceState 3L None resumed
+
+        Expect.isTrue
+            (resumed.GetProperty("changed").GetBoolean())
+            "An exact resume releases the pause"
+
+        let! repeatedResume =
+            invoke binary connection [ "maintenance"; "resume"; "2"; replacement ] 2
+
+        fault "MAINTENANCE_CONFLICT" repeatedResume
+
+        let! releasedAcquire =
+            invoke binary connection [ "maintenance"; "acquire"; "0"; pause ] 2
+
+        fault "MAINTENANCE_CONFLICT" releasedAcquire
+
+        for act in [ "rebuild"; "admit-restored-installation" ] do
+            let! inactive = invoke binary connection (checkpointArguments act "2" replacement) 2
+            fault "MAINTENANCE_REQUIRED" inactive
+
+        let! inactive = invoke binary connection [ "status" ] 0
+        maintenanceState 3L None inactive
+        let! reacquired = invoke binary connection [ "maintenance"; "acquire"; "3"; fresh ] 0
+        maintenanceState 4L (Some fresh) reacquired
+        let! released = invoke binary connection [ "maintenance"; "resume"; "4"; fresh ] 0
+        maintenanceState 5L None released
+
+        for retired in [ "prune-sessions"; "invalidate-restored-sessions" ] do
+            let! refused = invoke binary connection [ retired ] 2
+            fault "INVOCATION_INVALID" refused
+
+        for retired in [ "on"; "off" ] do
+            let! refused = invoke binary connection [ "maintenance"; retired ] 64
+
+            Expect.equal
+                (kind refused)
+                "USAGE_ERROR"
+                "Retired generation-free maintenance syntax is not accepted"
 
         let! _ = invoke binary connection [ "rebuild" ] 64
 

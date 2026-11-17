@@ -25,14 +25,14 @@ let tests =
                 (fun () ->
                     let output =
                         TextObservation.line
-                            "en"
+                            (RenderingContext.forLanguage "en")
                             { basis with
                                 TimeZoneId = "unavailable-test-zone"
                             }
 
                     Expect.equal
                         output
-                        "Observed 2026-11-04 12:00 UTC · business date 4 Nov 2026 (unavailable-test-zone)"
+                        "Observed 4 Nov 2026 12:00 +00:00 UTC · business date 4 Nov 2026 (unavailable-test-zone)"
                         "The supplied business zone is retained and the instant is never relabelled as that zone")
             testCase "aggregate money preserves forty integer digits and ISO minor units" (fun () ->
                 let total raw =
@@ -45,7 +45,7 @@ let tests =
 
                 let actual =
                     TextDescriptorValue.render
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (PresentedValue.moneyTotal (currency "EUR") (total large))
 
                 Expect.equal
@@ -62,7 +62,7 @@ let tests =
                     ] do
                     Expect.equal
                         (TextDescriptorValue.render
-                            "en"
+                            (RenderingContext.forLanguage "en")
                             (PresentedValue.moneyTotal (currency code) (total raw)))
                         expected
                         "Currency minimums retain all meaningful fractional digits"
@@ -81,7 +81,11 @@ let tests =
 
                 for width in [ 1; 10; 100 ] do
                     let rendered =
-                        TextTable.rows "en" { Width = width; BoldHeader = false } columns [ () ]
+                        TextTable.rows
+                            (RenderingContext.forLanguage "en")
+                            { Width = width; BoldHeader = false }
+                            columns
+                            [ () ]
                         |> String.concat "\n"
 
                     Expect.stringContains
@@ -92,31 +96,44 @@ let tests =
                 let date = DomainInputs.date "2026-11-04"
 
                 Expect.equal
-                    (TextDescriptorValue.render "en" (PresentedValue.Date date))
+                    (TextDescriptorValue.render
+                        (RenderingContext.forLanguage "en")
+                        (PresentedValue.Date date))
                     "4 Nov 2026"
                     "Human dates are localized rather than wire literals"
 
                 for language, expected in
                     [ "en", "Latvia (LV)"; "lv", "Latvija (LV)"; "ar", "لاتفيا (LV)" ] do
                     Expect.equal
-                        (TextDescriptorValue.render language (PresentedValue.Code("country", "LV")))
+                        (TextDescriptorValue.render
+                            (RenderingContext.forLanguage language)
+                            (PresentedValue.Code("country", "LV")))
                         expected
                         "Country names retain their identifying code without ambient culture mutation")
             testCase
                 "observation uses the snapshot installation zone and localized business date"
                 (fun () ->
                     Expect.equal
-                        (TextObservation.line "en" basis)
-                        "Observed 2026-11-04 14:00 · business date 4 Nov 2026 (Europe/Riga)"
+                        (TextObservation.line (RenderingContext.forLanguage "en") basis)
+                        "Observed 4 Nov 2026 14:00 +02:00 · business date 4 Nov 2026 (Europe/Riga)"
                         "The actual basis timestamp is converted using the installation zone, with no client clock"
 
-                    for language in [ "en"; "lv"; "ar" ] do
-                        let output = TextObservation.line language basis
+                    for language, observations in
+                        [
+                            "en", [ "4 Nov 2026 14:00 +02:00" ]
+                            "lv", [ "4 nov. 2026 14:00 +02:00" ]
+                            "ar",
+                            [ "4 نوفمبر 2026 2:00\u00a0م +02:00"; "4 نوفمبر 2026 2:00 م +02:00" ]
+                        ] do
+                        let output =
+                            TextObservation.line (RenderingContext.forLanguage language) basis
 
-                        Expect.stringContains
-                            output
-                            "2026-11-04 14:00"
-                            "The same observation instant is used in every language"
+                        Expect.isTrue
+                            (observations |> List.exists (fun observed -> output.Contains observed))
+                            (sprintf
+                                "The same exact observation instant is localized in every language. Expected one of %A in %s"
+                                observations
+                                output)
 
                         Expect.isFalse
                             (output.Contains "cli.text." || output.Contains "{observed}")
@@ -263,7 +280,7 @@ let tests =
                 | _ -> failtest "Expected identity entries"
 
                 Expect.isFalse
-                    (ViewText.render "en" (CaseScreen.view reply)
+                    (ViewText.render (RenderingContext.forLanguage "en") (CaseScreen.view reply)
                      |> List.exists (fun line -> line.Contains "SECRET"))
                     "Actual human output cannot disclose stale work")
             testCase "reminder descriptor preserves actor and due date as typed values" (fun () ->

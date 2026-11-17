@@ -23,8 +23,12 @@ export const isActiveRequester = (value: HumanDocument): value is ActiveRequeste
   value.basis.kind === "SNAPSHOT";
 
 /** One authorized Core document owns requester controls, presentation and observed calendar. */
-export const RequesterContext = createContext<ActiveRequester | null>(null);
-export const useRequesterContext = () => useContext(RequesterContext);
+export const RequesterContext = createContext<RequesterDocument | null>(null);
+export const useRequesterDocument = () => useContext(RequesterContext);
+export const useRequesterContext = () => {
+  const requester = useRequesterDocument();
+  return requester !== null && isActiveRequester(requester) ? requester : null;
+};
 
 export const useCaseCreationControl = () => {
   const requester = useRequesterContext();

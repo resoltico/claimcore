@@ -28,7 +28,7 @@ module ReceiptCodecs =
                             DisclosedCaseReceipt.State = state
                             Disposition = disposition
                             RecordedFields = fields
-                            Payment = payment
+                            Payments = payment
                         })
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
@@ -40,9 +40,9 @@ module ReceiptCodecs =
                              (Vocabulary.all BusinessField.vocabulary).Length
                              (VocabularyCodec.create BusinessField.vocabulary))
                      |> field
-                         "payment"
-                         _.Payment
-                         (nullable ClaimCore.RecordFormat.FinancialCodecs.difference))
+                         "payments"
+                         _.Payments
+                         (list 2 ClaimCore.RecordFormat.FinancialCodecs.difference))
                 unitVariant "WITHHELD" SnapshotDisclosure.Withheld
                 unitVariant "ERASED" SnapshotDisclosure.Erased
             ]

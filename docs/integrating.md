@@ -7,8 +7,13 @@ current verbs and flags from task declarations; use these sources instead of cop
 
 Use matching server, browser and CLI builds. Regenerate integrations when the contract identity changes.
 The generated [TypeScript client](../contracts/client.ts) provides types, endpoint/task metadata and
-transport constants. It does not provide request or response validators. The native CLI decodes complete
-replies with its codecs.
+transport constants and structural response guards derived from Wire schemas. Invoke them after strict
+byte admission; interpretation, ownership and operation correlation remain consumer checks. They preserve
+strings and check declared Gregorian dates, scalar/UTF-8 bounds and complete pattern consumption. The
+generator refuses unsupported scalar formats and regex syntax rather than emitting an unchecked browser
+pattern. Its supported syntax is deliberately finite; it does not translate arbitrary native regexes.
+These guards cannot recover duplicate members or numeric lexemes already lost by `JSON.parse`. The
+native CLI decodes complete replies with its codecs.
 
 ## Authenticate
 
@@ -55,6 +60,13 @@ retain endpoint-specific automation types.
 
 An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
 `blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+Operation bindings, creation basis, revision bounds, fixed-seed policy, correction-field activation and
+scope-selection defaults are supplied by shared declarations. Native acquisition uses the pure
+`SubmissionAssembly` facade; browser acquisition interprets generated `taskDefinitions.binding`,
+`defaults`, input policies and `submissionSelection`. Explicit authored atoms, including null, false,
+zero and empty text, retain their presence. UPDATE seeds stay display hints until explicitly authored;
+noneditable fixed inputs remain immutable. Missing scope may acquire a default; contradictory selectors
+or explicit installation scope with a case selector refuse instead of widening the grant.
 Operation controls preview and execute; command controls post seeds plus edits to their declared
 endpoint. Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
 `RECOMMENDATION` screen regions.
@@ -218,3 +230,91 @@ trusts the same server that supplies its JavaScript and keeps transport identity
 
 For implementation and verification commands, see [Contributing](contributing.md#verification).
 For the business workflow and terminology, see [Case work](case-work.md) and the [Glossary](glossary.md).
+
+### Current foundation contracts
+
+Use a fresh format 6 installation with matching builds. Case receipts expose `payments`, an ordered
+list of entry differences; there is no singular `payment` member. `case.correctPayment` binds the
+selected `paymentId` and one case revision, then returns both removed and recorded differences in
+one accepted operation. DATA payment-page items expose `actions`, a finite list of independently
+available task IDs, replacing `canRemove`; consumers must not infer correction from removal.
+Presentation attaches exactly those supplied actions to the selected entry. HUMAN controls include their shared `labelId`. Command bindings use a
+closed `COMMAND` branch containing the complete validated operational request rather than seeds.
+
+Browser response admission is generated from the finite Wire codec schemas. It rejects malformed
+structure before date observation or recovery. Structural admission does not establish every native
+interpretation predicate. JSON parsing loses duplicate-member and numeric-lexeme evidence; those
+byte-level guarantees are not claimed by the browser. Precise timestamp strings remain unchanged.
+
+CLI existing-case reads and actions accept `--case-id UUID` as an alternative to a reference operand.
+References that look like UUIDs remain references. Grant/revoke ID selectors select case scope;
+`ROLE@REFERENCE` retains reference semantics. ID-based erasure previews the authoritative reference
+and confirms that reference before sending the identical prepared operation.
+
+Copied ledger action hints use `--preview`; operational hints use `--dry-run`. Hints retain the
+supplied binding and do not allocate an operation ID or refresh a reviewed version. Private text is
+represented by acquisition placeholders. The CLI renders the supplied semantic receipt.
+
+### CLI language and display locale
+
+Human CLI output selects wording independently from dates, times, numbers and money. Use
+`--display-locale` on a human verb or recovery command, `CLAIMCORE_DISPLAY_LOCALE`, or
+`claimcore configure --display-locale de-DE`. The finite shared display-locale catalog is printed
+in command help. Selection uses flag, environment, profile `displayLocale`, then the selected
+language's regional default. An explicit unsupported selected locale refuses visibly, including
+offline preparation. `claimcore configure --show` reports the effective display locale and its source.
+
+Language retains its existing precedence: `--language`, `CLAIMCORE_LANGUAGE`, profile `language`,
+then `LC_ALL`, `LC_MESSAGES` and `LANG` through supported language matching. For example,
+`claimcore case get REF --language en --display-locale lv-LV` uses English wording with Latvian
+date and numeric conventions. Each shell
+command resolves a fresh immutable presentation context; review, paging, receipts and recovery keep
+that command's context. If the client's timezone database lacks the supplied installation zone,
+observation output shows the same instant explicitly labelled UTC; the server's business date is
+retained. Changing a preference does not reinterpret a previously authored amount or
+date. JSON requests/replies, DATA output, CSV, identifiers and protocol tokens remain canonical.
+
+A ledger request's identity and installation are frozen at its first preview. A long confirmation
+cannot silently allocate another operation or switch installations. Expiry requires an explicit new
+review. Operational commands do not acquire ledger recovery identities; uncertain delivery is
+reported without a journal retry frame or automatic repeat.
+### Browser-session termination transport
+
+`session.terminateOwn` accepts `{}`. `people.terminateSessions` accepts the selected registered person
+as `{"input:actorId":"UUID"}` and requires current ManageAccess. Both are authenticated operational
+writes, with the existing origin/antiforgery/contract/body gates. They do not require an installation
+header, but any supplied `ClaimCore-Installation` header must be one valid matching UUID. The same
+optional binding rule applies to preview and other actor routes; absent optional preview bindings
+remain valid. OpenAPI declares required versus optional installation headers.
+
+DATA returns `SUCCEEDED` with `data.count` and `data.self`, or typed `REJECTED`, `FAILED` or
+`OUTCOME_UNKNOWN`. HUMAN carries the supplied completion/uncertainty document; confirmed success also
+has a required boolean `self` so clients clear the right current browser ownership. Unknown results
+have no count or operation identity. They are not safe automatic retries relative to later sessions.
+
+HUMAN task controls now form a closed, task-discriminated union. Each operation carries its own binding
+shape; each command carries its complete validated request and empty seeds/editable/choices. Dismissal
+retains distinct HUMAN/SERVICE principals with bounded issuer/subject fields and fallible decoding.
+Mismatched task/command bindings fail structural admission instead of reaching a seed-map cast.
+### Bounded CSV download
+
+`POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
+`case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
+without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
+authentication/origin/antiforgery and installation headers. CSV is not a representation token.
+
+A success is complete UTF-8 `text/csv` with identity content encoding, exact `Content-Length`, a fixed
+safe attachment filename and the confirmed `ClaimCore-Installation`. JSON failures retain typed
+Core refusal/fault meaning or bounded-export resource advice. OpenAPI describes both media bodies.
+The complete CSV is buffered before success delivery, bounded by the shared response-byte limit.
+The Server cancels processing after 15 seconds, independently of the browser's response deadline;
+request abort and host shutdown also cancel it. Read admission remains held through actual cleanup
+and delivery. A later-page refusal, storage failure, impossible continuation or size overflow does
+not produce a successful partial file. Narrow the selection or use existing CLI traversal when the
+bounded download is insufficient.
+
+Every page reauthorizes through the existing Core query in a fresh snapshot. An export is not a
+cross-page database snapshot and does not promise retroactive withdrawal of bytes authorized in
+an earlier snapshot. CSV scalar formatting is canonical; shared fallback account captions use the
+source English catalog. Browser downloads validate media, identity encoding, complete declared byte
+length and owner/installation scope before creating a Blob, then release temporary object URLs.

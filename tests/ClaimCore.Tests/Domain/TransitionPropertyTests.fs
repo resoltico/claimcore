@@ -89,13 +89,13 @@ let private binding (model: Oracle.Model) stale witness =
     | BindingShape.CaseErase -> Binding.CaseErase(target, expected, model.Sequence)
     | _ -> failtest "The sequence vocabulary contains only case tasks."
 
-let private execute number sequence current model stale witness =
+let private execute number sequence (current: CaseFamily) model stale witness =
     let task = selected witness
 
     task.Decide
         (context number sequence)
         ClaimCore.Tests.TaskBuilders.environment
-        (Some current)
+        (Some(DecisionFacts.fromReplay current))
         (binding model stale witness)
         witness.Inputs
     |> Result.bind (fun changes ->
@@ -139,7 +139,7 @@ let private checkSequence steps =
                     task.Decide
                         (context number sequence)
                         ClaimCore.Tests.TaskBuilders.environment
-                        (Some current)
+                        (Some(DecisionFacts.fromReplay current))
                         (binding model step.Stale step.Witness)
                         step.Witness.Inputs
 
@@ -318,7 +318,7 @@ let private availabilityProperty =
                     if
                         (task.Availability
                             ClaimCore.Tests.TaskBuilders.environment
-                            (Some actual)
+                            (Some(DecisionFacts.fromReplay actual))
                             binding)
                             .Blocked.IsNone
                     then

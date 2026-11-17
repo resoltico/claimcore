@@ -446,7 +446,15 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                 "UPDATE claimcore.cases SET search_text='wrong financial projection',work_search_text='wrong work projection' WHERE case_reference=$1"
                 [| box "GIN-WORK" |]
 
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         Expect.isOk
             rebuilt

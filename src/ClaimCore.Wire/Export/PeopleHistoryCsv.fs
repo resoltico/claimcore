@@ -113,8 +113,8 @@ module PeopleHistoryCsv =
                 ]
             ]
 
+    let csvChunks render entries =
+        entries |> Seq.collect (values render) |> Seq.map Csv.row
+
     let csvRows render entries =
-        if List.isEmpty entries then
-            Array.empty<byte>
-        else
-            entries |> List.collect (values render) |> Csv.rows
+        csvChunks render entries |> Seq.toArray |> Array.concat

@@ -538,6 +538,29 @@
         },
         "limit": 20
       }
+    },
+    {
+      "id": "session.terminateOwn-request",
+      "endpoint": "session.terminateOwn",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "people.terminateSessions-request",
+      "endpoint": "people.terminateSessions",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "input:actorId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "people.terminateSessions-missing-target",
+      "endpoint": "people.terminateSessions",
+      "direction": "request",
+      "valid": false,
+      "value": {}
     }
   ]
 }

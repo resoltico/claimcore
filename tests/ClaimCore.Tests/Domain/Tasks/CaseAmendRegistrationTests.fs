@@ -54,7 +54,7 @@ let tests =
                         Amend.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             unchanged
                         |> accepted
@@ -76,7 +76,7 @@ let tests =
                             Amend.decide
                                 (context 2)
                                 environment
-                                (Some state)
+                                (Some(DecisionFacts.fromReplay state))
                                 (caseBinding state)
                                 changed
                             |> expectInputs
@@ -100,7 +100,7 @@ let tests =
                         Amend.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             values
                         |> accepted
@@ -110,7 +110,7 @@ let tests =
                         Amend.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (inputs
                                 [
@@ -145,7 +145,7 @@ let tests =
                     Amend.decide
                         (context 4)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (inputs [ text (InputTarget.Field BusinessField.ClaimantName) "Changed" ])
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
@@ -157,7 +157,7 @@ let tests =
                     Amend.decide
                         (context 2)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.Case(target state, Revision.zero))
                         (inputs [ text (InputTarget.Field BusinessField.ClaimantName) "Changed" ])
                     |> expectRefusal (Refusal.revisionConflict Revision.first)
@@ -166,7 +166,7 @@ let tests =
                         Amend.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (inputs
                                 [
@@ -209,7 +209,7 @@ let tests =
                         Amend.decide
                             context
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (inputs
                                 [
@@ -234,7 +234,7 @@ let tests =
                         Amend.decide
                             context
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (inputs
                                 [
@@ -257,7 +257,7 @@ let tests =
                         Amend.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.Case(target state, Revision.zero))
                             InputMap.empty
                         |> expectInputs
@@ -287,7 +287,7 @@ let tests =
                         Amend.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             values
                         |> accepted
@@ -310,7 +310,7 @@ let tests =
                         Amend.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             values
                         |> accepted

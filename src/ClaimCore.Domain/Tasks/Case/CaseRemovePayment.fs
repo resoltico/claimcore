@@ -36,7 +36,7 @@ let private gate =
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
 
-let decide context environment (state: CaseFamily option) binding (_: InputMap) =
+let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.CasePayment(_, _, id) ->
         let command = { PaymentId = id }
@@ -53,58 +53,41 @@ let decide context environment (state: CaseFamily option) binding (_: InputMap) 
                 match part.Value.Entry with
                 | None -> Error(Rejection.InvalidState RecordViolation.InvalidPaymentState)
                 | Some entry ->
-                    let others =
-                        state.Payments
-                        |> Map.remove command.PaymentId
-                        |> Map.values
-                        |> Seq.filter (fun part -> not part.Value.Removed)
-                        |> Seq.toList
-
-                    if others |> List.exists (fun part -> part.Value.Entry.IsNone) then
-                        Error(Rejection.InvalidState RecordViolation.InvalidPaymentState)
-                    elif Revision.value part.Revision = Revision.Maximum then
+                    if Revision.value part.Revision = Revision.Maximum then
                         Error(Rejection.InvalidState RecordViolation.InvalidRevisionSequence)
                     else
-                        let dates =
-                            others
-                            |> List.choose _.Value.Entry
-                            |> List.map PaymentEntry.date
-                            |> List.sort
-
-                        let bounds =
-                            match dates with
-                            | [] -> None
-                            | earliest :: _ -> PaymentDateBounds.create earliest (List.last dates)
-
-                        FinancialPosition.remove entry bounds before.Finance
-                        |> Result.mapError (fun _ ->
-                            Rejection.InvalidState RecordViolation.InvalidPaymentState)
-                        |> Result.map (fun finance ->
-                            [
-                                FamilyRules.change
-                                    context
-                                    state.Id
-                                    (OperationId.value id)
-                                    (Revision.successor part.Revision)
-                                    (PartValue.Payment { Removed = true; Entry = Some entry })
-                                CaseRules.change
-                                    context
-                                    state
-                                    { state.Case.Value with
-                                        Content = Some { before with Finance = finance }
-                                    }
-                            ]))
+                        DecisionFacts.remainingPaymentDates command.PaymentId state
+                        |> Result.mapError Rejection.InvalidState
+                        |> Result.bind (fun bounds ->
+                            FinancialPosition.remove entry bounds before.Finance
+                            |> Result.mapError (fun _ ->
+                                Rejection.InvalidState RecordViolation.InvalidPaymentState)
+                            |> Result.map (fun finance ->
+                                [
+                                    FamilyRules.change
+                                        context
+                                        state.Id
+                                        (OperationId.value id)
+                                        (Revision.successor part.Revision)
+                                        (PartValue.Payment { Removed = true; Entry = Some entry })
+                                    CaseRules.change
+                                        context
+                                        state
+                                        { state.Case.Value with
+                                            Content = Some { before with Finance = finance }
+                                        }
+                                ])))
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decisionFactsAvailable (state: CaseFamily option) (_: Binding) =
+let decisionFactsAvailable (state: DecisionFacts option) (_: Binding) =
     state
     |> Option.forall (fun state ->
         state.Case.Value.Content.IsSome
         && (state.Payments
             |> Map.forall (fun _ part -> part.Value.Removed || part.Value.Entry.IsSome)))
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.CasePayment(_, _, id) ->
         CaseRules.admit context environment state binding capability (FamilyRules.active true)
@@ -133,10 +116,10 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment state _ ->
-                    match state with
-                    | Some state ->
-                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                fun principal access caseId _ ->
+                    match caseId with
+                    | Some id ->
+                        FamilyRules.permissionFor principal access (Scope.Case id) capability
                     | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability

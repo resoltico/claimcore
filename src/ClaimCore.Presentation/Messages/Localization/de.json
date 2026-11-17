@@ -2794,5 +2794,65 @@
   "label.actionNotOffered": {
     "text": "Diese Aktion wird für diesen Fall derzeit nicht angeboten.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "Zahlungseintrag korrigieren",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "Ersetzen Sie einen irrtümlich erfassten Zahlungseintrag durch das richtige Datum und den richtigen Betrag. Dies erstattet kein Geld und führt keine Überweisung aus. Der bisherige Verlauf bleibt erhalten.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "Zahlungseintrag korrigiert.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "Neu zuweisen",
+    "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "Meine ClaimCore-Browsersitzungen beenden",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "Beenden Sie alle Ihre ClaimCore-Browsersitzungen, einschließlich dieser. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "ClaimCore-Browsersitzungen dieser Person beenden",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "Beenden Sie alle ClaimCore-Browsersitzungen dieser Person. Sitzungen beim Identitätsanbieter, Zugangsdaten und unabhängige Bearer-Token bleiben gültig. Nach Abschluss erstellte Sitzungen können bestehen bleiben; bereits zugelassene Arbeit kann abgeschlossen werden.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore-Browsersitzungen beendet.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "Beendete Browsersitzungen",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "Die Anfrage wurde nicht bestätigt. Möglicherweise wurden die ClaimCore-Browsersitzungen beendet. Eine Wiederholung kann auch neuere Sitzungen beenden.",
+    "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "Der Export überschreitet die Größenbegrenzung für Downloads. Schränken Sie die Auswahl ein oder verwenden Sie die CLI-Seitennavigation.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "Der Export wurde nicht innerhalb des Verarbeitungslimits abgeschlossen. Versuchen Sie es erneut oder schränken Sie die Auswahl ein.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "Der Export hat eine ungültige Fortsetzung festgestellt. Es wurde keine CSV-Datei heruntergeladen.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "CSV herunterladen",
+    "source": "a4023b89022f"
   }
 }

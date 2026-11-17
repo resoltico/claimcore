@@ -27,7 +27,12 @@ let tests =
                         ]
 
                 let after =
-                    Correct.decide (context 3) environment (Some state) (caseBinding state) values
+                    Correct.decide
+                        (context 3)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        (caseBinding state)
+                        values
                     |> accepted
                     |> apply state
 
@@ -52,7 +57,7 @@ let tests =
                     Correct.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (correction "KEEP" "KEEP" [])
                     |> expectRefusal (Refusal.Case CaseRefusal.CorrectionNoChanges)
@@ -62,7 +67,7 @@ let tests =
                     Correct.decide
                         (context 3)
                         environment
-                        (Some closed)
+                        (Some(DecisionFacts.fromReplay closed))
                         (caseBinding closed)
                         (correction "KEEP" "CLEAR" [])
                     |> expectRefusal (Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
@@ -72,12 +77,16 @@ let tests =
                     Correct.decide
                         (context 4)
                         environment
-                        (Some paid)
+                        (Some(DecisionFacts.fromReplay paid))
                         (caseBinding paid)
                         (correction "KEEP" "CLEAR" [])
                     |> expectRefusal (Refusal.Case CaseRefusal.DecisionHasPayments)
 
-                    let offer = Correct.availability environment (Some paid) (caseBinding paid)
+                    let offer =
+                        Correct.availability
+                            environment
+                            (Some(DecisionFacts.fromReplay paid))
+                            (caseBinding paid)
 
                     Expect.equal
                         offer.Choices[TaskInputId.Target(InputTarget.Group RecordGroup.Decision)]
@@ -110,7 +119,7 @@ let tests =
                     (Correct.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         (correction
                             "UPDATE"
@@ -121,7 +130,7 @@ let tests =
                 Correct.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (caseBinding state)
                     (correction "KEEP" "CLEAR" [])
                 |> expectRefusal (Refusal.Access(AccessRefusal.NotAuthorized Capability.Decide)))
@@ -147,7 +156,7 @@ let tests =
                         Correct.decide
                             context
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (correction
                                 "KEEP"
@@ -192,7 +201,7 @@ let tests =
                         Correct.decide
                             (ClaimCore.Tests.TaskBuilders.context 5)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             invalid
                         |> expectInputs
@@ -217,7 +226,7 @@ let tests =
                 Correct.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (caseBinding state)
                     (correction
                         "KEEP"
@@ -241,7 +250,12 @@ let tests =
                         ]
 
                 let after =
-                    Correct.decide (context 4) environment (Some state) (caseBinding state) values
+                    Correct.decide
+                        (context 4)
+                        environment
+                        (Some(DecisionFacts.fromReplay state))
+                        (caseBinding state)
+                        values
                     |> accepted
                     |> apply state
 

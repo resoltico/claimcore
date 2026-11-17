@@ -17,10 +17,14 @@ let private descriptions () =
 
             Expect.equal
                 (CliInvocations.admit ([ "help" ] @ words @ [ "--language"; language ]))
-                (Ok(CliInvocation.CommandHelp(words, language, false)))
+                (Ok(
+                    CliInvocation.CommandHelp(words, (RenderingContext.forLanguage language), false)
+                ))
                 "Every declared verb resolves through help before rendering"
 
-            let output = Discovery.commandHelp language words |> Option.get
+            let output =
+                Discovery.commandHelp (RenderingContext.forLanguage language) words
+                |> Option.get
 
             Expect.stringContains
                 output
@@ -47,7 +51,10 @@ let semanticHelp =
     testCase
         "JSON command help supplies semantic task controls without wire paths or catalog aliases"
         (fun () ->
-            let bytes = Discovery.commandHelpJson "en" [ "people"; "admit" ] |> Option.get
+            let bytes =
+                Discovery.commandHelpJson (RenderingContext.forLanguage "en") [ "people"; "admit" ]
+                |> Option.get
+
             use document = System.Text.Json.JsonDocument.Parse(bytes: byte array)
             let operation = document.RootElement.GetProperty("operations")[0]
 
@@ -96,7 +103,11 @@ let legalNotice =
     testCase
         "offline CLI help carries public rights and the actual build source location"
         (fun () ->
-            let text = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Overview)
+            let text =
+                ContractDiscovery.helpTopic
+                    (RenderingContext.forLanguage "en")
+                    (CliTopic.Help HelpTopic.Overview)
+
             Expect.stringContains text "AGPL-3.0-only" "Public license is explicit"
             Expect.stringContains text "No warranty" "Warranty notice is visible"
 
@@ -118,17 +129,25 @@ let documentedHelpForms =
             for words in [ [ "case"; "open" ]; [ "people"; "requests"; "dismiss" ] ] do
                 Expect.equal
                     (CliInvocations.admit ("help" :: words))
-                    (Ok(CliInvocation.CommandHelp(words, "en", false)))
+                    (Ok(
+                        CliInvocation.CommandHelp(
+                            words,
+                            (RenderingContext.forLanguage "en"),
+                            false
+                        )
+                    ))
                     "Existing documented form is admitted"
 
-                Expect.isSome (Discovery.commandHelp "en" words) "Existing command help renders")
+                Expect.isSome
+                    (Discovery.commandHelp (RenderingContext.forLanguage "en") words)
+                    "Existing command help renders")
 
 
 [<Tests>]
 let dryRunUsage =
     testCase "verb help shows the dry-run usage once, labelled, and only when it differs" (fun () ->
         let usageLines words =
-            Discovery.commandHelp "en" words
+            Discovery.commandHelp (RenderingContext.forLanguage "en") words
             |> Option.get
             |> fun (text: string) -> text.Split '\n'
             |> Array.filter (fun line ->
@@ -180,7 +199,10 @@ let usageRequiredness =
         let usage =
             UsageText.renderHost "en" [ "schema" ] (UsageError.MissingOperand "SCHEMA")
 
-        let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Schema)
+        let help =
+            ContractDiscovery.helpTopic
+                (RenderingContext.forLanguage "en")
+                (CliTopic.Help HelpTopic.Schema)
 
         for name in CliSchemas.names do
             Expect.stringContains usage name "Missing schema lists every named export"

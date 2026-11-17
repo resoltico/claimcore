@@ -39,17 +39,8 @@ module internal ViewCountStorage =
                     })
         }
 
-    let reminderPredicate =
-        let actionable = "r.state='PENDING' AND c.state='ACTIVE' AND c.status='OPENED'"
-
-        function
-        | ReminderView.Pending -> actionable
-        | ReminderView.Mine -> $"{actionable} AND c.responsible_actor=$2"
-        | ReminderView.Overdue -> $"{actionable} AND r.due<$11::date"
-        | ReminderView.Today -> $"{actionable} AND r.due=$11::date"
-        | ReminderView.Upcoming -> $"{actionable} AND r.due>$11::date"
-        | ReminderView.Completed -> "c.state<>'ERASED' AND r.state='COMPLETED'"
-        | ReminderView.Cancelled -> "c.state<>'ERASED' AND r.state='CANCELLED'"
+    let reminderPredicate view =
+        ReminderView.plan view |> CaseSelectionSql.selectionPredicate
 
     let reminders connection (selection: CaseSelection) token =
         task {
@@ -58,7 +49,7 @@ module internal ViewCountStorage =
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    ($"SELECT {columns} FROM claimcore.reminders r JOIN claimcore.cases c USING(case_id) WHERE c.state<>'ERASED' AND {CaseSelectionSql.predicate selection}")
+                    ($"SELECT {columns} FROM claimcore.reminders r JOIN claimcore.cases c USING(case_id) WHERE {CaseSelectionSql.predicate selection}")
                     (CaseSelectionSql.parameters selection)
                     token
 

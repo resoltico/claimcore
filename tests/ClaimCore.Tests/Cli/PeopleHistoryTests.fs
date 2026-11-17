@@ -113,7 +113,7 @@ let private csvSubjects () =
         }
 
     let text =
-        ViewText.render "en" (AccessHistoryScreen.rows page.Entries)
+        ViewText.render (RenderingContext.forLanguage "en") (AccessHistoryScreen.rows page.Entries)
         |> String.concat "\n"
 
     Expect.isFalse

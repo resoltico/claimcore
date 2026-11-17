@@ -25,11 +25,11 @@ type internal InteractiveDraft =
     private
         {
             Input: SubmissionEnvelope<int64 option, Guid option>
-            DisplayLanguage: string
+            Rendering: RenderingContext
             PreviewOnly: bool
         }
 
-    member this.Language = this.DisplayLanguage
+    member this.Language = this.Rendering.Language
 
 module internal InteractiveReview =
     let private hasOption name arguments =
@@ -89,7 +89,7 @@ module internal InteractiveReview =
                     Some
                         {
                             Input = input
-                            DisplayLanguage = language
+                            Rendering = language
                             PreviewOnly = preview
                         })
 
@@ -117,6 +117,9 @@ module internal InteractiveReview =
             let preview =
                 invocation Api.operationPreview input
                 |> Frames.withRepresentation Representation.Human
+                |> Frames.bindInstallation installation
+                |> Result.defaultWith (fun _ ->
+                    invalidOp "Preview must retain the observed installation.")
 
             let! response = transport.Exchange preview token
             transport.Deliver preview response
@@ -151,11 +154,6 @@ module internal InteractiveReview =
                     let execute =
                         invocation Api.operationExecute input
                         |> Frames.withRepresentation Representation.Human
-                        |> (fun frame ->
-                            if draft.Input.OperationId.IsNone then
-                                Frames.provisional frame
-                            else
-                                frame)
                         |> Frames.bindInstallation installation
                         |> Result.defaultWith (fun _ ->
                             invalidOp "Reviewed scope must bind the request.")
@@ -228,18 +226,20 @@ module internal InteractiveReview =
         action.Task = draft.Input.Task && sameSelection && sameFixedInputs
 
     let private complete newId (draft: InteractiveDraft) (action: Affordance) =
-        let binding = action.Binding |> Option.get |> OperationSubmission.rawBinding
+        let binding =
+            action.Binding
+            |> Option.get
+            |> OperationSubmission.rawBinding
+            |> SubmissionAssembly.completeBinding draft.Input.Binding
 
         let fixedInputs =
             action.Seeds
-            |> Map.filter (fun input _ -> not (List.contains input action.Editable))
             |> Map.map (fun _ value -> submittedSeed value)
+            |> SubmissionAssembly.fixedInputs
+                (TaskRouting.operationDeclaration action.Task)
+                action.Editable
 
-        let inputs =
-            Map.fold
-                (fun values input value -> Map.add input value values)
-                draft.Input.Inputs
-                fixedInputs
+        let inputs = SubmissionAssembly.merge action.Editable fixedInputs draft.Input.Inputs
 
         OperationSubmission.admit
             {
@@ -430,7 +430,7 @@ module internal InteractiveReview =
         match issues with
         | None -> runValidated newId console transport draft token
         | Some issues ->
-            DiagnosticText.refusalLines draft.Language (Refusal.InvalidInput issues)
+            DiagnosticText.refusalLines draft.Rendering (Refusal.InvalidInput issues)
             |> String.concat "\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n") |> console.Write
 

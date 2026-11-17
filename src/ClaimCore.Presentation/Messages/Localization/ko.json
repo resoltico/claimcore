@@ -2794,5 +2794,65 @@
   "label.actionNotOffered": {
     "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "지급 기록 정정",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "잘못 기록한 지급 항목을 올바른 날짜와 금액으로 대체합니다. 환불이나 송금을 실행하지 않습니다. 이전 이력은 유지됩니다.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "지급 기록이 정정되었습니다.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "담당자 변경",
+    "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "내 ClaimCore 브라우저 세션 종료",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "이 세션을 포함한 모든 내 ClaimCore 브라우저 세션을 종료합니다. ID 공급자 세션, 자격 증명 및 독립적인 전달자 토큰은 계속 유효합니다. 완료 후 생성된 세션은 유지될 수 있으며 이미 허용된 작업은 완료될 수 있습니다.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "이 사람의 ClaimCore 브라우저 세션 종료",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "이 사람의 모든 ClaimCore 브라우저 세션을 종료합니다. ID 공급자 세션, 자격 증명 및 독립적인 전달자 토큰은 계속 유효합니다. 완료 후 생성된 세션은 유지될 수 있으며 이미 허용된 작업은 완료될 수 있습니다.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore 브라우저 세션이 종료되었습니다.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "종료된 브라우저 세션",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "요청이 확인되지 않았습니다. ClaimCore 브라우저 세션이 종료되었을 수 있습니다. 반복하면 새 세션도 종료될 수 있습니다.",
+    "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "내보내기가 다운로드 크기 제한을 초과합니다. 선택 범위를 좁히거나 CLI 페이지 탐색을 사용하세요.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "처리 제한 시간 내에 내보내기를 마치지 못했습니다. 다시 시도하거나 선택 범위를 좁히세요.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "내보내기에서 잘못된 연속 정보가 발견되었습니다. CSV를 다운로드하지 않았습니다.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "CSV 다운로드",
+    "source": "a4023b89022f"
   }
 }

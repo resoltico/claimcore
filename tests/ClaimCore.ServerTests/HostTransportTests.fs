@@ -653,6 +653,7 @@ let installationBinding =
             for endpoint, input in
                 [
                     "operation.execute", body "operation.execute"
+                    "operation.preview", body "operation.preview"
                     "operation.get",
                     Encoding.UTF8.GetBytes
                         "{\"operationId\":\"10000000-0000-7000-8000-000000000099\"}"
@@ -693,4 +694,65 @@ let installationBinding =
             Expect.equal status 200 "Matching installation positive control"
 
             Expect.equal fixture.EntryCount before "The matching lookup appends nothing"
+
+            let headers =
+                [
+                    "Origin", origin.GetLeftPart(UriPartial.Authority)
+                    "X-ClaimCore-Antiforgery", token
+                    "ClaimCore-Contract", ContractIdentity.value
+                ]
+
+            for supplied in
+                [
+                    [ "not-a-uuid" ]
+                    [ fixture.InstallationId.ToString("D"); fixture.InstallationId.ToString("D") ]
+                ] do
+                let! status, bytes =
+                    host.Send(
+                        HttpMethod.Post,
+                        "/api/operation.preview",
+                        Some(body "operation.preview"),
+                        headers
+                        @ (supplied |> List.map (fun value -> "ClaimCore-Installation", value))
+                    )
+                    |> Async.AwaitTask
+
+                Expect.equal
+                    status
+                    400
+                    "Malformed or duplicate optional installation binding refuses"
+
+                use payload = JsonDocument.Parse bytes
+
+                Expect.equal
+                    (payload.RootElement.GetProperty("hostFailure").GetProperty("code").GetString())
+                    "INPUT_INVALID"
+                    "Malformed binding is a host input failure"
+
+            let! absent, _ =
+                host.Send(
+                    HttpMethod.Post,
+                    "/api/operation.preview",
+                    Some(body "operation.preview"),
+                    headers
+                )
+                |> Async.AwaitTask
+
+            Expect.equal
+                absent
+                200
+                "Existing browser preview without the optional binding remains supported"
+
+            let! matching, _ =
+                host.Call(
+                    "operation.preview",
+                    body "operation.preview",
+                    token,
+                    installation = fixture.InstallationId.ToString("D")
+                )
+                |> Async.AwaitTask
+
+            Expect.equal matching 200 "Explicit matching preview binding reaches the core"
+            Expect.equal fixture.EntryCount before "No preview path can append an acceptance"
+
         })

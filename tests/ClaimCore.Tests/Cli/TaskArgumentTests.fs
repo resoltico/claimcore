@@ -26,6 +26,56 @@ let tests =
     testList
         "typed task argv assembly"
         [
+            testCase "case ID grants and revocations retain explicit case scope" (fun () ->
+                for verb in [ "grant"; "revoke" ] do
+                    let submitted =
+                        input
+                            [
+                                "people"
+                                verb
+                                "10000000-0000-4000-8000-000000000001"
+                                "--role"
+                                "case-reader"
+                                "--case-id"
+                                "10000000-0000-4000-8000-000000000002"
+                                "--expected-revision"
+                                "1"
+                            ]
+                        |> Submissions.command
+
+                    Expect.equal
+                        submitted.Inputs.Values[TaskInputId.Scope]
+                        (InputValue.Text "CASE")
+                        "An explicit ID is a case scope"
+
+                    Expect.equal
+                        submitted.Inputs.Values[TaskInputId.CaseId]
+                        (InputValue.Text "10000000-0000-4000-8000-000000000002")
+                        "ID stays tagged")
+            testCase
+                "existing-case reads and operations accept explicit IDs and refuse dual selection"
+                (fun () ->
+                    let id = "10000000-0000-4000-8000-000000000002"
+                    let query = prepare [ "case"; "get"; "--case-id"; id ]
+
+                    Expect.equal
+                        (Frames.value Api.caseGet query.Invocation |> Option.map _.Target)
+                        (Some(CaseSelector.Id(Guid.Parse id |> CaseId.create |> Option.get)))
+                        "Read selection"
+
+                    let submitted =
+                        input [ "case"; "close"; "--case-id"; id; "--expected-revision"; "3" ]
+
+                    match submitted.Envelope.Binding with
+                    | OperationBinding.Case(CaseSelector.Id actual, 3L, None, None) ->
+                        Expect.equal (CaseId.format actual) id "Operation selection"
+                    | _ -> failtest "ID binding required"
+
+                    Expect.isError
+                        (Grammar.prepare
+                            (fun () -> operation)
+                            [ "case"; "get"; "REFERENCE"; "--case-id"; id ])
+                        "Conflicting selectors refuse")
             testCase "payment task retains exact precision and explicit reviewed version" (fun () ->
                 let value =
                     input

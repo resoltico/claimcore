@@ -253,7 +253,11 @@ let tests =
                 let document = HumanReceiptDocument.ofCore receipt
 
                 let rendered =
-                    ViewText.renderSelected true "en" document.Screen |> String.concat "\n"
+                    ViewText.renderSelected
+                        true
+                        (RenderingContext.forLanguage "en")
+                        document.Screen
+                    |> String.concat "\n"
 
                 Expect.stringContains
                     rendered
@@ -369,11 +373,17 @@ let mutationSummary =
                     Outcome = HumanExecuteResult.Accepted document
                 }
 
-        let text = OperationText.executeLines "en" reply |> String.concat "\n"
+        let text =
+            OperationText.executeLines (RenderingContext.forLanguage "en") reply
+            |> String.concat "\n"
+
         Expect.stringContains text "Closed" "The accepted snapshot supplies the case status"
         Expect.isFalse (text.Contains "Status filter") "A case field is not a view filter"
-        Expect.isFalse (text.Contains "Policy number:") "Unrelated saved facts are omitted"
-        let full = ViewText.renderDocument false "en" document |> String.concat "\n"
+        Expect.stringContains text "Policy number:" "The supplied semantic receipt is preserved"
+
+        let full =
+            ViewText.renderDocument false (RenderingContext.forLanguage "en") document
+            |> String.concat "\n"
 
         Expect.stringContains
             full
@@ -382,7 +392,7 @@ let mutationSummary =
 
         Expect.equal
             (ReplyTextFormat.instantIn
-                "en"
+                (RenderingContext.forLanguage "en")
                 "Europe/Riga"
                 (DateTimeOffset.Parse "2026-01-01T23:30:00Z"))
             "2 Jan 2026 01:30 +02:00"
@@ -442,7 +452,8 @@ let mutationSummary =
                 }
 
         let decisionText =
-            OperationText.executeLines "en" decisionReply |> String.concat "\n"
+            OperationText.executeLines (RenderingContext.forLanguage "en") decisionReply
+            |> String.concat "\n"
 
         Expect.stringContains
             decisionText
@@ -469,7 +480,9 @@ let mutationSummary =
                         Outcome = HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore redacted)
                     }
 
-            let output = OperationText.executeLines "en" reply |> String.concat "\n"
+            let output =
+                OperationText.executeLines (RenderingContext.forLanguage "en") reply
+                |> String.concat "\n"
 
             Expect.stringContains
                 output
@@ -510,14 +523,14 @@ let receiptStatusAndProgress =
                         ->
                         SnapshotDisclosure.Disclosed
                             { shown with
-                                Payment =
-                                    Some(
+                                Payments =
+                                    [
                                         PaymentDifference.Recorded(
                                             PaymentEntry.recorded
                                                 ResponseExamples.receipt.OperationId
                                                 payment
                                         )
-                                    )
+                                    ]
                             }
                     | _ -> disclosure
 
@@ -538,7 +551,8 @@ let receiptStatusAndProgress =
                     Outcome = HumanExecuteResult.Accepted(HumanReceiptDocument.ofCore receipt)
                 }
 
-        OperationText.executeLines "en" reply |> String.concat "\n"
+        OperationText.executeLines (RenderingContext.forLanguage "en") reply
+        |> String.concat "\n"
 
     let disclosed state recorded =
         SnapshotDisclosure.Disclosed
@@ -546,7 +560,7 @@ let receiptStatusAndProgress =
                 State = state
                 Disposition = None
                 RecordedFields = recorded
-                Payment = None
+                Payments = []
             }
 
     testList

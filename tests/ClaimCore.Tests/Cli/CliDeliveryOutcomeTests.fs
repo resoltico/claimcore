@@ -57,7 +57,7 @@ let tests =
                 let accepted =
                     OperationText.getLinesWithDetails
                         true
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (HumanReplies.lookup
                             {
                                 OperationReply.OperationId = CliReplyFixtures.id
@@ -83,7 +83,7 @@ let tests =
 
                 Expect.equal
                     (OperationText.getLines
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (HumanReplies.lookup
                             {
                                 OperationReply.OperationId = CliReplyFixtures.id
@@ -95,7 +95,7 @@ let tests =
 
                 Expect.equal
                     (OperationText.getLines
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (HumanReplies.lookup
                             {
                                 OperationReply.OperationId = CliReplyFixtures.id

@@ -26,8 +26,8 @@ let private parser () =
 
     Expect.equal
         ((nonNull result.Document).Paths.Keys |> Set.ofSeq)
-        (Api.all |> List.map Api.path |> Set.ofList)
-        "Exactly the current registry paths are present"
+        (ExportTransport.path :: (Api.all |> List.map Api.path) |> Set.ofList)
+        "Exactly the JSON registry and declared CSV media path are present"
 
     let broken = OpenApiDocument.Parse("{\"openapi\":\"3.1.0\",\"paths\":{}}", "json")
 

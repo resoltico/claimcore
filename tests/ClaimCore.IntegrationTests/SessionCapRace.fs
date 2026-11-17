@@ -29,12 +29,12 @@ let private prepare database =
         do!
             execute
                 database
-                "INSERT INTO claimcore.sessions SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800 FROM generate_series(1,10000) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64) FROM generate_series(1,10000) n"
 
         do!
             execute
                 database
-                "INSERT INTO claimcore.sessions VALUES (repeat('f',64),decode('01','hex'),1,clock_timestamp()-interval '2 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800)"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) VALUES (repeat('f',64),decode('01','hex'),1,clock_timestamp()-interval '2 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64))"
 
         do!
             execute
@@ -86,7 +86,14 @@ let run (database: PostgresFixture.Database) =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let creation =
-            store.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+            store.Create(
+                SessionResults.principal,
+                [| 1uy |],
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
 
         do! waitForCleanup database
         // These are ordinary valid UTC touches after the creator's captured instant, not a clock rollback.

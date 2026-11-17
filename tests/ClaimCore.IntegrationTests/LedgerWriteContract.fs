@@ -140,7 +140,7 @@ let internal replayAndRefusal fixture =
                                 BusinessField.ClaimedAmount
                                 BusinessField.ClaimedCurrency
                             ]
-                        Payment = None
+                        Payments = []
                     })
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"

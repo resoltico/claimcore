@@ -113,7 +113,9 @@ it("refuses an invalid refresh and clears credentials after confirmed logout", a
     expect(result.current.state.kind).toBe("authenticated");
   });
   fetch.mockResolvedValueOnce(
-    endpointResponse("session.logout", { outcome: { kind: "SUCCEEDED", data: null } }),
+    endpointResponse("session.logout", {
+      outcome: { kind: "SUCCEEDED", data: null, view: { regions: [] } },
+    }),
   );
   await result.current.logout();
   await waitFor(() => {
@@ -157,4 +159,34 @@ it("shows logout transport failure as retriable and clears it after a session re
       message: null,
     });
   });
+});
+
+it("confirmed session termination advances privacy state without a second deletion and cannot clear a replacement epoch", async () => {
+  const fetch = vi.mocked(globalThis.fetch);
+  fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: "first" }));
+  const { result } = renderHook(() => useSession());
+  await waitFor(() => {
+    expect(result.current.state.kind).toBe("authenticated");
+  });
+  const original = result.current.state.epoch;
+  fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: "replacement" }));
+  await act(() => result.current.refresh());
+  const replacement = result.current.state.epoch;
+  act(() => {
+    result.current.endedBrowserSessions(original);
+  });
+  expect(result.current.state).toMatchObject({
+    kind: "authenticated",
+    token: "replacement",
+    epoch: replacement,
+  });
+  act(() => {
+    result.current.endedBrowserSessions(replacement);
+  });
+  expect(result.current.state).toMatchObject({
+    kind: "anonymous",
+    token: null,
+    epoch: replacement + 1,
+  });
+  expect(fetch).toHaveBeenCalledTimes(2);
 });

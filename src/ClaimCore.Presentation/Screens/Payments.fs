@@ -121,6 +121,55 @@ module PaymentsScreen =
     let table position entries =
         tableWithControls id (fun _ -> None, []) position entries
 
+    /// Receipts retain the direction and identity of every accepted payment change.
+    let changes position differences =
+        let table =
+            tableWithControls PaymentDifference.entry (fun _ -> None, []) position differences
+
+        { table with
+            Columns =
+                table.Columns
+                @ [
+                    {
+                        Key = "direction"
+                        LabelId = "label.action"
+                        Prominence = Prominence.Primary
+                        IsMoney = false
+                        Recorded = true
+                    }
+                    {
+                        Key = "paymentId"
+                        LabelId = "field.paymentId.label"
+                        Prominence = Prominence.Primary
+                        IsMoney = false
+                        Recorded = true
+                    }
+                ]
+            Rows =
+                List.map2
+                    (fun row difference ->
+                        let direction =
+                            match difference with
+                            | PaymentDifference.Recorded _ -> "task.case.recordPayment.done"
+                            | PaymentDifference.Removed _ -> "task.case.removePayment.done"
+
+                        { row with
+                            Values =
+                                row.Values
+                                @ [
+                                    PresentedValue.Message direction
+                                    PresentedValue.Identifier(
+                                        difference
+                                        |> PaymentDifference.entry
+                                        |> PaymentEntry.id
+                                        |> OperationId.format
+                                    )
+                                ]
+                        })
+                    table.Rows
+                    differences
+        }
+
     let page (value: ClaimCore.Application.Contracts.CasePaymentPage) =
         let body =
             match CaseState.fields value.State with
@@ -147,7 +196,14 @@ module PaymentsScreen =
                                 (fun (item: CasePaymentItem) -> item.Entry)
                                 (fun item ->
                                     None,
-                                    TaskAffordances.paymentRemove value.CaseId value.Revision item)
+                                    TaskAffordances.paymentEntryActions
+                                        value.CaseId
+                                        value.Revision
+                                        (position.Decision
+                                         |> Option.map (Decision.payable >> Money.currency)
+                                         |> Option.defaultWith (fun () ->
+                                             invalidOp "A payment requires a decision."))
+                                        item)
                                 position
                                 value.Items
                         ))

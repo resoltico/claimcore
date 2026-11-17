@@ -87,7 +87,17 @@ let private projection (database: PostgresFixture.Database) =
 
         do! finding VerificationFinding.PeopleProfileProjection database
         do! enterMaintenance database
-        let! result = ProjectionRebuild.rebuild database.OwnerSource before token
+
+        let! result =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                before
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk result "Verified profile history rebuilds the projection"
         let! after = verified database
         Expect.equal after before.Position "Rebuild changes no retained proof"
@@ -114,11 +124,183 @@ let private rollback (database: PostgresFixture.Database) =
         return ()
     }
 
+let private actorSnapshot (source: NpgsqlDataSource) actorId =
+    task {
+        use! connection = source.OpenConnectionAsync()
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "SELECT row_to_json(a)::text FROM claimcore.actors a WHERE actor_id=$1"
+                [| box actorId |]
+                token
+
+        return rows |> List.map (DatabaseSession.value<string> 0)
+    }
+
+let private clearingRefused (database: PostgresFixture.Database) actorId =
+    task {
+        let! before = actorSnapshot database.OwnerSource actorId
+        Expect.hasLength before 1 "The negative control targets an existing actor"
+
+        for source in [ database.OwnerSource; database.RuntimeSource ] do
+            use! connection = source.OpenConnectionAsync()
+            use! transaction = connection.BeginTransactionAsync()
+
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=$1"
+                    [| box actorId |]
+                    token
+
+            Expect.equal changed 1 "The real row was tentatively cleared before the deferred gate"
+            let mutable state = None
+
+            try
+                do! transaction.CommitAsync()
+            with :? PostgresException as error ->
+                state <- Some error.SqlState
+
+            Expect.equal
+                state
+                (Some "CC003")
+                "Commit refuses structurally unsupported private clearing"
+
+            let! after = actorSnapshot database.OwnerSource actorId
+            Expect.equal after before "The entire original actor row remains after refused commit"
+    }
+
+let private currentProfileGuard (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = bootstrap fixture
+        let actorId = id fixture 1
+        do! clearingRefused database actorId
+
+        let executeFor principal number taskName values =
+            task {
+                let! input =
+                    personSubmission
+                        fixture.Store
+                        (id fixture number)
+                        principal
+                        None
+                        taskName
+                        values
+
+                let! reply = Service.executeSubmission owner input token
+                accepted reply |> ignore
+            }
+
+        let execute = executeFor fixture.Owner
+        // Clearing contact is ordinary profile replacement, not a private-data erasure.
+        do!
+            execute
+                351
+                "people.setProfile"
+                (Submissions.profile
+                    {
+                        DisplayName = "Contact cleared"
+                        Contact = None
+                    })
+
+        do!
+            execute
+                352
+                "people.grant"
+                (Submissions.grant
+                    {
+                        Role = Role.Auditor
+                        Scope = GrantTarget.Installation
+                    })
+
+        do! clearingRefused database actorId
+        do! execute 353 "people.eraseProfile" Map.empty
+        let! erased = actorSnapshot database.OwnerSource actorId
+        Expect.hasLength erased 1 "A real accepted erase retains the structural actor identity"
+        // A grant after erasure carries the absent profile without requiring another erasure.
+        do!
+            execute
+                354
+                "people.revoke"
+                (Submissions.grant
+                    {
+                        Role = Role.Auditor
+                        Scope = GrantTarget.Installation
+                    })
+
+        let! _ = verified database
+
+        do!
+            execute
+                355
+                "people.setProfile"
+                (Submissions.profile
+                    {
+                        DisplayName = "Replacement after erasure"
+                        Contact = Some "synthetic-contact"
+                    })
+        // An old retained erasure cannot authorize clearing a later private revision.
+        do! clearingRefused database actorId
+        let! _ = verified database
+        do! execute 356 "people.eraseProfile" Map.empty
+
+        let other =
+            PrincipalKey.human "https://issuer.example/" "profile-guard-other"
+            |> Result.defaultWith (string >> failtest)
+
+        let otherExecute = executeFor other
+
+        do!
+            otherExecute
+                357
+                "people.register"
+                (Submissions.profile
+                    {
+                        DisplayName = "Synthetic profile"
+                        Contact = None
+                    })
+
+        do! otherExecute 358 "people.disable" Map.empty
+        do! otherExecute 359 "people.eraseProfile" Map.empty
+        do! otherExecute 360 "people.enable" Map.empty
+
+        do!
+            otherExecute
+                361
+                "people.grant"
+                (Submissions.grant
+                    {
+                        Role = Role.Auditor
+                        Scope = GrantTarget.Installation
+                    })
+
+        let! _ = verified database
+        let! before = checkpoint database
+        do! enterMaintenance database
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                before
+                (MaintenanceHandle.create 1L (Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
+        Expect.isOk rebuilt "Deletion and reconstruction preserve the current erased shape"
+        let! after = verified database
+        Expect.equal after before.Position "Reconstruction keeps accepted evidence intact"
+    }
+
 [<Tests>]
 let tests =
     testList
         "people profile SQL and fold boundaries"
         [
+            testCaseAsync
+                "latest immutable person compartment guards direct profile clearing and stale erasures"
+                (run currentProfileGuard)
             testCaseAsync
                 "erasure frontier preserves later profile and rejects unauthorized holes"
                 (run lifecycle)

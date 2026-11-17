@@ -19,7 +19,7 @@ let tests =
 
         let valid =
             read
-                """{"acts":[],"history":"FULL","recommended":null,"maintenance":{"active":true}}"""
+                """{"acts":[],"history":"FULL","recommended":null,"maintenance":{"generation":1,"pauseId":"10000000-0000-4000-8000-000000000099"}}"""
 
         match valid with
         | Ok advice ->
@@ -35,10 +35,10 @@ let tests =
 
         Expect.isError
             (read
-                """{"acts":["case.close"],"history":"FULL","recommended":null,"maintenance":{"active":true}}""")
+                """{"acts":["case.close"],"history":"FULL","recommended":null,"maintenance":{"generation":1,"pauseId":"10000000-0000-4000-8000-000000000099"}}""")
             "A structurally valid write offer contradicts maintenance and is rejected semantically"
 
         Expect.isError
             (read
-                """{"acts":[],"history":"NONE","recommended":null,"maintenance":{"active":true,"generation":0}}""")
-            "Retired generation metadata is not accepted")
+                """{"acts":[],"history":"NONE","recommended":null,"maintenance":{"generation":1,"pauseId":"10000000-0000-4000-8000-000000000099","unexpected":0}}""")
+            "Undeclared maintenance metadata is not accepted")

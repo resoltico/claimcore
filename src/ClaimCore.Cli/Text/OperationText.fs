@@ -7,17 +7,22 @@ open ClaimCore.Application.Contracts
 
 /// Human operation text renders supplied core documents and messages, never DATA results.
 module internal OperationText =
-    let receiptLinesWithDetails details language alreadyRecorded (receipt: HumanDocument) =
+    let receiptLinesWithDetails
+        details
+        (rendering: RenderingContext)
+        alreadyRecorded
+        (receipt: HumanDocument)
+        =
         (if alreadyRecorded then
-             [ ReplyTextFormat.label language "label.alreadyRecorded" ]
+             [ ReplyTextFormat.label rendering "label.alreadyRecorded" ]
          else
              [])
-        @ ViewText.renderDocument details language receipt
+        @ ViewText.renderDocument details rendering receipt
 
-    let receiptLines language alreadyRecorded receipt =
-        receiptLinesWithDetails false language alreadyRecorded receipt
+    let receiptLines (rendering: RenderingContext) alreadyRecorded receipt =
+        receiptLinesWithDetails false rendering alreadyRecorded receipt
 
-    let private reviewLines details language (review: HumanReview) =
+    let private reviewLines details (rendering: RenderingContext) (review: HumanReview) =
         let changes =
             review.Presentation.Changes
             |> List.filter (fun change ->
@@ -27,113 +32,51 @@ module internal OperationText =
                 | _ -> true)
             |> List.map (fun change ->
                 ReplyTextFormat.line
-                    language
+                    rendering
                     change.LabelId
-                    (TextDescriptorValue.render language change.Before
+                    (TextDescriptorValue.render rendering change.Before
                      + " → "
-                     + TextDescriptorValue.render language change.After))
+                     + TextDescriptorValue.render rendering change.After))
 
         let unchanged =
             if review.Presentation.Unchanged.IsEmpty then
                 "—"
             else
                 review.Presentation.Unchanged
-                |> List.map (fun entry -> ReplyTextFormat.label language entry.LabelId)
+                |> List.map (fun entry -> ReplyTextFormat.label rendering entry.LabelId)
                 |> List.distinct
                 |> String.concat ", "
 
         changes
-        @ [ ReplyTextFormat.line language "label.unchanged" unchanged ]
-        @ ViewText.renderDocument details language review.Document
+        @ [ ReplyTextFormat.line rendering "label.unchanged" unchanged ]
+        @ ViewText.renderDocument details rendering review.Document
         @ (match review.Document.Basis with
-           | ObservationBasis.Snapshot basis -> [ TextObservation.line language basis ]
+           | ObservationBasis.Snapshot basis -> [ TextObservation.line rendering basis ]
            | ObservationBasis.Unavailable -> [])
 
     let previewLinesWithDetails
         details
-        language
+        rendering
         _request
         (reply: RepresentationReply<HumanOperationReply<HumanPreviewResult>, PreviewReply>)
         =
         match reply with
         | RepresentationReply.Human value ->
             match value.Outcome with
-            | HumanPreviewResult.Reviewed review -> reviewLines details language review
+            | HumanPreviewResult.Reviewed review -> reviewLines details rendering review
             | HumanPreviewResult.AlreadyAccepted receipt ->
-                receiptLinesWithDetails details language true receipt
+                receiptLinesWithDetails details rendering true receipt
             | HumanPreviewResult.Rejected rejection ->
-                HumanText.rejection details language rejection
-            | HumanPreviewResult.Failed fault -> HumanText.fault language fault
+                HumanText.rejection details rendering rejection
+            | HumanPreviewResult.Failed fault -> HumanText.fault rendering fault
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."
 
-    let previewLines language request reply =
-        previewLinesWithDetails false language request reply
-
-    let private mutationReceiptLines details language alreadyRecorded (receipt: HumanDocument) =
-        let recordedEntries entries =
-            entries
-            |> List.filter (fun (entry: Entry) -> entry.Recorded)
-            |> List.map _.LabelId
-
-        let selected =
-            receipt.Screen.Regions
-            |> List.collect (fun region ->
-                match region.Content with
-                | RegionContent.Entries entries -> recordedEntries entries
-                | RegionContent.Table table ->
-                    (table.Columns |> List.filter _.Recorded |> List.map _.LabelId)
-                    @ (table.Sections
-                       |> List.collect (fun section -> recordedEntries section.Entries))
-                | _ -> [])
-            |> Set.ofList
-
-        let recordedFinancials =
-            [ RecordGroup.Decision; RecordGroup.Payment ]
-            |> List.collect BusinessField.ofGroup
-            |> List.exists (fun field -> Set.contains (FieldPresentation.labelId field) selected)
-
-        let screen =
-            { receipt.Screen with
-                Regions =
-                    receipt.Screen.Regions
-                    |> List.choose (fun region ->
-                        match region.Role, region.Content with
-                        | _ when
-                            receipt.Disclosure = HumanDisclosure.Withheld
-                            || receipt.Disclosure = HumanDisclosure.Erased
-                            ->
-                            Some region
-                        | (RegionRole.Notice | RegionRole.Identity | RegionRole.Details), _ ->
-                            Some region
-                        | _, RegionContent.Entries entries ->
-                            let entries =
-                                entries
-                                |> List.filter (fun entry ->
-                                    Set.contains entry.LabelId selected
-                                    || List.contains
-                                        entry.LabelId
-                                        [
-                                            "field.claimantName.label"
-                                            "field.insurerName.label"
-                                            "field.claimedAmount.label"
-                                        ])
-
-                            if entries.IsEmpty then
-                                None
-                            else
-                                Some
-                                    { region with
-                                        Content = RegionContent.Entries entries
-                                    }
-                        | RegionRole.Payments, _ when recordedFinancials -> Some region
-                        | _ -> None)
-            }
-
-        receiptLinesWithDetails details language alreadyRecorded { receipt with Screen = screen }
+    let previewLines (rendering: RenderingContext) request reply =
+        previewLinesWithDetails false rendering request reply
 
     let executeLinesForWithDetails
         details
-        language
+        rendering
         _request
         (reply: RepresentationReply<HumanOperationReply<HumanExecuteResult>, ExecuteReply>)
         =
@@ -141,26 +84,26 @@ module internal OperationText =
         | RepresentationReply.Human value ->
             match value.Outcome with
             | HumanExecuteResult.Accepted receipt ->
-                mutationReceiptLines details language false receipt
+                receiptLinesWithDetails details rendering false receipt
             | HumanExecuteResult.AlreadyAccepted receipt ->
-                mutationReceiptLines details language true receipt
+                receiptLinesWithDetails details rendering true receipt
             | HumanExecuteResult.Rejected rejection ->
-                HumanText.rejection details language rejection
-            | HumanExecuteResult.Failed fault -> HumanText.fault language fault
+                HumanText.rejection details rendering rejection
+            | HumanExecuteResult.Failed fault -> HumanText.fault rendering fault
             | HumanExecuteResult.OutcomeUnknown ->
                 [
-                    ReplyTextFormat.label language (CliMessages.key CliMessage.UncertainDelivery)
+                    ReplyTextFormat.label rendering (CliMessages.key CliMessage.UncertainDelivery)
                 ]
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."
 
-    let executeLinesFor language request reply =
-        executeLinesForWithDetails false language request reply
+    let executeLinesFor (rendering: RenderingContext) request reply =
+        executeLinesForWithDetails false rendering request reply
 
-    let executeLines language reply = executeLinesFor language None reply
+    let executeLines (rendering: RenderingContext) reply = executeLinesFor rendering None reply
 
     let getLinesWithDetails
         details
-        language
+        rendering
         (reply:
             RepresentationReply<
                 HumanOperationReply<HumanLookupResult>,
@@ -171,13 +114,14 @@ module internal OperationText =
         | RepresentationReply.Human value ->
             match value.Outcome with
             | HumanLookupResult.Accepted(receipt, _) ->
-                receiptLinesWithDetails details language false receipt
+                receiptLinesWithDetails details rendering false receipt
             | HumanLookupResult.NotAccepted document
             | HumanLookupResult.Pending(_, document) ->
-                ViewText.renderDocument details language document
-            | HumanLookupResult.Rejected rejection -> HumanText.rejection details language rejection
-            | HumanLookupResult.Failed fault -> HumanText.fault language fault
+                ViewText.renderDocument details rendering document
+            | HumanLookupResult.Rejected rejection ->
+                HumanText.rejection details rendering rejection
+            | HumanLookupResult.Failed fault -> HumanText.fault rendering fault
         | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response."
 
-    let getLines language reply =
-        getLinesWithDetails false language reply
+    let getLines (rendering: RenderingContext) reply =
+        getLinesWithDetails false rendering reply

@@ -284,6 +284,7 @@ it.each(["credential", "epoch", "actor", "installation"])(
     const baseSession = {
       state: { kind: "authenticated" as const, token: "token", epoch: 0 },
       logout: () => Promise.resolve(),
+      endedBrowserSessions: vi.fn(),
       refresh: () => Promise.resolve(),
     };
     const replacedSession = {

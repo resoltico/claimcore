@@ -137,3 +137,78 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace @engine", 
   await logout(page);
   await expectAnonymousSession(page);
 });
+
+test("ends all ClaimCore browser sessions while allowing a fresh login afterward @engine", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout * 2);
+  if (baseURL === undefined) {
+    throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
+  }
+  await page.goto("/", { waitUntil: "commit" });
+  await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+  const other = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors: true,
+    storageState: { cookies: [], origins: [] },
+  });
+  try {
+    const second = await other.newPage();
+    await second.goto("/", { waitUntil: "commit" });
+    await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await page
+      .getByRole("button", { name: "End my ClaimCore browser sessions", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", {
+      name: "End my ClaimCore browser sessions",
+      exact: true,
+    });
+    await expect(dialog).toContainText(
+      "Identity-provider sessions, credentials and independent bearer tokens remain valid.",
+    );
+    const acknowledgement = page.waitForResponse((response) =>
+      response.url().endsWith("/api/session.terminateOwn"),
+    );
+    await dialog
+      .getByRole("button", { name: "End my ClaimCore browser sessions", exact: true })
+      .click();
+    const response = await acknowledgement;
+    expect(response.status()).toBe(200);
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    expect(response.request().postDataJSON()).toEqual({});
+    const payload: unknown = await response.json();
+    expect(payload).toMatchObject({
+      representation: "HUMAN",
+      outcome: {
+        kind: "SUCCEEDED",
+        self: true,
+        document: { screen: { regions: expect.any(Array) } },
+      },
+    });
+    expect(payload).not.toHaveProperty("operationId");
+    await expect(
+      page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+    ).toBeVisible();
+    await expectAnonymousSession(page);
+    await expectAnonymousSession(second);
+    await second.reload({ waitUntil: "commit" });
+    await expect(
+      second.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+    ).toBeVisible();
+    // ClaimCore deletion did not revoke the identity-provider session or prevent later login.
+    await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await expect(readSession(page)).resolves.toMatchObject({
+      payload: { outcome: { data: { authenticated: true } } },
+    });
+    const signedOut = page.waitForResponse(
+      (reply) => new URL(reply.url()).pathname === "/api/session.logout",
+    );
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    expect((await signedOut).status()).toBe(200);
+    await expectAnonymousSession(page);
+  } finally {
+    await other.close();
+  }
+});

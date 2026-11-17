@@ -6,7 +6,7 @@ open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Inputs
 
 module internal ReminderRules =
-    let planAvailable (state: CaseFamily option) binding =
+    let planAvailable (state: DecisionFacts option) binding =
         match state, binding with
         | Some state, Binding.Reminder(_, id, _) ->
             Map.tryFind id state.Reminders
@@ -36,7 +36,7 @@ module internal ReminderRules =
             Declarations.required (Declarations.target InputTarget.ExpectedReminderRevision)
         ]
 
-    let current requireOpen allowed (state: CaseFamily) binding =
+    let current requireOpen allowed (state: DecisionFacts) binding =
         match FamilyRules.active false state with
         | Some refusal -> Error refusal
         | None ->
@@ -53,20 +53,13 @@ module internal ReminderRules =
                             Error(
                                 Refusal.Reminder(ReminderRuleRefusal.NotOffered part.Value.State)
                             )
-                        | None ->
-                            Ok(
-                                id,
-                                {
-                                    Revision = part.Revision
-                                    Stamp = part.Stamp
-                                    Value = part.Value.Value
-                                }
-                            ))
+                        | None -> Ok(id, part))
             | _ -> Error FamilyRules.unavailable
 
     let availability
         declaration
-        (resolve: CaseFamily -> Binding -> Result<ReminderId * AcceptedPart<ReminderValue>, Refusal>)
+        (resolve:
+            DecisionFacts -> Binding -> Result<ReminderId * AcceptedPart<ReminderValue>, Refusal>)
         environment
         state
         binding
@@ -111,7 +104,7 @@ module internal ReminderRules =
             |> Parsing.at InputTarget.ReminderAction
             |> Result.map (fun _ -> plan)
 
-    let change context (state: CaseFamily) id revision value =
+    let change context (state: DecisionFacts) id revision value =
         FamilyRules.change
             context
             state.Id

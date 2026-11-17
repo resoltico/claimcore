@@ -11,4 +11,5 @@ export const assembleOperation = (
   values: FormValues,
   binding: OperationBinding,
   operationId: string,
-) => assembleTask(task.id, values, binding, operationId);
+  control?: OperationAffordance,
+) => assembleTask(task.id, values, binding, operationId, control);

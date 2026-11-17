@@ -25,7 +25,7 @@ module internal RecoveryCommand =
         {
             Bytes =
                 if options.Text then
-                    ReplyText.bytes options.Language value.Frame
+                    ReplyText.bytes options.Rendering value.Frame
                 else
                     Array.append value.Bytes [| byte '\n' |]
             ExitCode = value.ExitCode

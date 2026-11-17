@@ -2794,5 +2794,65 @@
   "label.actionNotOffered": {
     "text": "هذا الإجراء غير متاح حالياً لهذا الملف.",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "تصحيح قيد دفعة",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "استبدل قيد دفعة سُجّل بالخطأ بالتاريخ والمبلغ الصحيحين. لا يؤدي ذلك إلى رد أموال أو تنفيذ تحويل. يبقى السجل السابق محفوظًا.",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "تم تصحيح قيد الدفعة.",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "إعادة الإسناد",
+    "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "إنهاء جلساتي في متصفح ClaimCore",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "أنه جميع جلساتك في متصفح ClaimCore، بما فيها هذه الجلسة. تظل جلسات موفر الهوية وبيانات الاعتماد ورموز الحامل المستقلة صالحة. قد تبقى الجلسات المنشأة بعد الإكمال، وقد يكتمل العمل الذي سُمح به.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "إنهاء جلسات هذا الشخص في متصفح ClaimCore",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "أنه جميع جلسات هذا الشخص في متصفح ClaimCore. تظل جلسات موفر الهوية وبيانات الاعتماد ورموز الحامل المستقلة صالحة. قد تبقى الجلسات المنشأة بعد الإكمال، وقد يكتمل العمل الذي سُمح به.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "انتهت جلسات متصفح ClaimCore.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "جلسات المتصفح المنتهية",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "لم يتم تأكيد الطلب. ربما أنهى جلسات متصفح ClaimCore. قد يؤدي تكراره أيضًا إلى إنهاء جلسات أحدث.",
+    "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "يتجاوز التصدير حد حجم التنزيل. ضيّق نطاق الاختيار أو استخدم التصفح عبر سطر الأوامر.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "لم يكتمل التصدير ضمن حد وقت المعالجة. حاول مجددًا أو ضيّق نطاق الاختيار.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "واجه التصدير متابعة غير صالحة. لم يتم تنزيل ملف CSV.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "تنزيل CSV",
+    "source": "a4023b89022f"
   }
 }

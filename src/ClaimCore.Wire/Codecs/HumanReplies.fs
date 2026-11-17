@@ -174,3 +174,13 @@ module HumanReplies =
                 | Outcome.Rejected value -> HumanLookupResult.Rejected(rejection value)
                 | Outcome.Failed value -> HumanLookupResult.Failed value
         }
+
+    let sessionTermination =
+        function
+        | SessionTerminationResult.Succeeded value ->
+            HumanSessionTerminationResult.Succeeded(value.Self, HumanReadDocuments.terminated value)
+        | SessionTerminationResult.Rejected refusal ->
+            HumanSessionTerminationResult.Rejected(rejection refusal)
+        | SessionTerminationResult.Failed fault -> HumanSessionTerminationResult.Failed fault
+        | SessionTerminationResult.OutcomeUnknown ->
+            HumanSessionTerminationResult.OutcomeUnknown(HumanReadDocuments.terminationUnknown ())

@@ -151,14 +151,18 @@ module RemoteConfiguration =
                         else
                             Ok(service, issuer, clientId))))
 
-    let private language read =
+    let private presentation read =
         match read CliSetting.Language with
         | Some value when not (List.contains value LocalizationPolicy.languages) ->
             invalid CliSetting.Language
-        | _ -> Ok()
+        | _ ->
+            match read CliSetting.DisplayLocale with
+            | Some value when not (List.contains value LocalizationPolicy.displayLocales) ->
+                invalid CliSetting.DisplayLocale
+            | _ -> Ok()
 
     let internal fromSettings read =
-        language read
+        presentation read
         |> Result.bind (fun () -> connection read)
         |> Result.bind (fun (service, issuer, clientId) ->
             configureMode read service issuer clientId |> Result.bind (trust read))
@@ -176,12 +180,16 @@ module RemoteConfiguration =
             |> List.exists (fun setting -> Map.containsKey setting values)
 
         let admittedConnection =
-            if not connectionPresent && Map.containsKey CliSetting.Language values then
+            if
+                not connectionPresent
+                && (Map.containsKey CliSetting.Language values
+                    || Map.containsKey CliSetting.DisplayLocale values)
+            then
                 Ok()
             else
                 connection read |> Result.map ignore
 
-        language read
+        presentation read
         |> Result.bind (fun () -> admittedConnection)
         |> Result.bind (fun () ->
             (if connectionPresent then

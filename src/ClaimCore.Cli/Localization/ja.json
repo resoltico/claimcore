@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "公開接続設定と言語設定をプロフィールに保存します。\n`claimcore configure --show`で有効な値と取得元を確認できます。\n秘密情報はファイルで指定し、プロフィールには保存しません。\ndocs/integrating.md#cli-useを参照してください。",
-    "source": "2e791425e501"
+    "text": "公開接続設定、言語、表示ロケールをプロファイルに保存します。\\n言語は文言を、--display-locale は日付と数値の形式を指定します。優先順位はオプション、CLAIMCORE_DISPLAY_LOCALE、プロファイル、言語の既定値です。\\n`claimcore configure --show` で有効な値と取得元を確認できます。\\n秘密情報はファイルで指定し、プロファイルには保存されません。\\ndocs/integrating.md#cli-use を参照してください。",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "送信結果が未確認の場合、終了コード4で再送信用の正確な要求を出力します。\n再送信しても二重に記録されることはありません。\n`claimcore recovery list`と`claimcore recovery check`で確認してください。回答は{window}以内に確定します。",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "help [topic | family [verb]]に--format text|jsonを指定し、必要に応じて--languageを追加してください。",
-    "source": "b8af016df835"
+    "text": "help [topic | family [verb]] に --format text|json と、必要に応じて --language および --display-locale を指定します。",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "不明なヘルプ項目です。",
@@ -395,10 +395,6 @@
     "text": "ほかにも変更があります。{command}を実行してください。",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "{finalAt}まで回答の確定を待ちます。",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "案件のメモ",
     "source": "54c2a0df2066"
@@ -426,5 +422,13 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "2分以内にサインインが完了しませんでした。コマンドをもう一度実行し、ブラウザーでサインインを完了してください。",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "コマンドの応答を確認できませんでした。繰り返すと、より新しい状態に影響する可能性があります。",
+    "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore のブラウザーセッション",
+    "source": "afe6f30a2564"
   }
 }

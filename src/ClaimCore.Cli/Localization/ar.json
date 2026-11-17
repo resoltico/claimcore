@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "حفظ إعدادات الاتصال العامة واللغة في الملف الشخصي.\nاستخدم `claimcore configure --show` لفحص القيم الفعلية ومصادرها.\nقدم الأسرار عبر ملفات؛ ولا تُحفظ في الملف الشخصي.\nراجع docs/integrating.md#cli-use.",
-    "source": "2e791425e501"
+    "text": "احفظ إعدادات الاتصال العامة واللغة والإعدادات المحلية للعرض في الملف الشخصي.\\nتحدد اللغة النص؛ ويحدد --display-locale تنسيق التواريخ والأرقام. الأولوية: الخيار ثم CLAIMCORE_DISPLAY_LOCALE ثم الملف الشخصي ثم القيمة الافتراضية للغة.\\nاستخدم `claimcore configure --show` لعرض القيم الفعلية ومصادرها.\\nقدم الأسرار عبر ملفات؛ ولا تُحفظ في الملف الشخصي.\\nراجع docs/integrating.md#cli-use.",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "عند عدم تأكيد التسليم، يطبع رمز الخروج 4 الطلب الدقيق لإرساله مجددًا.\nإعادة الإرسال لا تسجله مرتين.\nاستخدم `claimcore recovery list` و`claimcore recovery check` لمعرفة الإجابة؛ تصبح نهائية خلال {window}.",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "استخدم help [topic | family [verb]] مع --format text|json و--language اختياريًا.",
-    "source": "b8af016df835"
+    "text": "استخدم help [topic | family [verb]] مع --format text|json والخيارين الاختياريين --language و--display-locale.",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "موضوع المساعدة غير معروف.",
@@ -395,10 +395,6 @@
     "text": "توجد تغييرات أخرى — شغّل {command}.",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "بانتظار إجابة نهائية حتى {finalAt}.",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "ملاحظات الملف",
     "source": "54c2a0df2066"
@@ -426,5 +422,13 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "لم يكتمل تسجيل الدخول خلال دقيقتين. شغّل الأمر مجددًا وأكمل تسجيل الدخول في المتصفح.",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "لم يتم تأكيد نتيجة الأمر. قد يؤثر تكراره في حالة أحدث.",
+    "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "جلسات متصفح ClaimCore",
+    "source": "afe6f30a2564"
   }
 }

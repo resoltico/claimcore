@@ -86,10 +86,12 @@ module CaseCsv =
 
     let csvHeader = columns |> List.map _.Key |> csv
 
-    let csvRows basis rows =
+    let csvChunks basis rows =
         rows
-        |> List.map (fun row ->
+        |> Seq.map (fun row ->
             columns
             |> List.map (fun column -> column.Value basis row |> Option.defaultValue "")
             |> csv)
-        |> Array.concat
+
+    let csvRows basis rows =
+        csvChunks basis rows |> Seq.toArray |> Array.concat

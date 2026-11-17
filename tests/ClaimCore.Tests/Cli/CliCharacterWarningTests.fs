@@ -223,7 +223,10 @@ let private rendered exampleName customize verify =
     let original = Array.copy bytes
 
     for language in LocalizationPolicy.languages do
-        let text = ReplyText.bytes language frame |> Encoding.UTF8.GetString
+        let text =
+            ReplyText.bytes (RenderingContext.forLanguage language) frame
+            |> Encoding.UTF8.GetString
+
         verify language text
         Expect.isTrue (bytes = original) "Human annotations never mutate the structured reply bytes"
 
@@ -397,11 +400,11 @@ let private terminalDataBoundaries () =
         for text in
             [
                 ViewText.render
-                    language
+                    (RenderingContext.forLanguage language)
                     (PeopleScreen.actor (ActorReviewItem.ofActor [] actor)
                      |> ScreenEntries.factScreen)
                 |> String.concat "\n"
-                ReplyTextFormat.displayed language (Some dangerous)
+                ReplyTextFormat.displayed (RenderingContext.forLanguage language) (Some dangerous)
                 UsageText.render language [] [ UsageError.ExtraOperand dangerous ]
             ] do
             Expect.isFalse (text.Contains(char 27)) "Human data must never emit ESC"

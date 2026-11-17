@@ -13,6 +13,7 @@ module Registry =
             ClaimCore.Domain.Tasks.Case.WithdrawDecision.task
             ClaimCore.Domain.Tasks.Case.RecordPayment.task
             ClaimCore.Domain.Tasks.Case.RemovePayment.task
+            ClaimCore.Domain.Tasks.Case.CorrectPayment.task
             ClaimCore.Domain.Tasks.Case.Void.task
             ClaimCore.Domain.Tasks.Case.Reinstate.task
             ClaimCore.Domain.Tasks.Case.Close.task

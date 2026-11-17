@@ -615,10 +615,6 @@
     "text": "비활성 업무를 포함하려면 수동 필터를 사용하세요.",
     "source": "dc4f2d354574"
   },
-  "ui.unconfirmedUntil": {
-    "text": "아직 확인되지 않았습니다. {finalAt}까지 답변이 확정됩니다.",
-    "source": "fc1019052c76"
-  },
   "ui.changeResponsible": {
     "text": "변경",
     "source": "c0bf75bd78bf"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "모든 메모 보기",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "담당자 변경",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "청구 건 열기",
@@ -706,5 +698,9 @@
   "ui.roleNumber": {
     "text": "역할 {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "브라우저가 다운로드를 저장하지 못했습니다. 다시 시도하세요.",
+    "source": "e3c4b2089bc4"
   }
 }

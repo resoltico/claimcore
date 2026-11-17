@@ -1,3 +1,5 @@
+import { submissionSelection } from "@contracts/client";
+import { submissionScopeSelection } from "./submissionAssembly";
 import {
   formValueText,
   type FormValue,
@@ -8,43 +10,54 @@ export const isGrantTarget = (value: FormValue | undefined): value is GrantTarge
   typeof value === "object" && value !== null && "kind" in value && value.kind === "GRANT_TARGET";
 /** Core seeds are scalar inputs. Once authored, one raw alternative owns the target. */
 export const grantTarget = (values: FormValues): GrantTargetDraft => {
-  const value = values["input:scope"];
+  const value = values[submissionSelection.scopeInput];
   if (isGrantTarget(value)) {
     return value;
   }
-  if (value !== "CASE") {
+  const selected = submissionScopeSelection(values);
+  if (selected.kind === "INSTALLATION") {
     return { kind: "GRANT_TARGET", selection: { kind: "INSTALLATION" } };
   }
   return {
     kind: "GRANT_TARGET",
-    selection: Object.hasOwn(values, "input:caseId")
-      ? { kind: "ID", text: formValueText(values["input:caseId"]) }
-      : { kind: "REFERENCE", text: formValueText(values["field:caseReference"]) },
+    selection: {
+      kind: selected.kind,
+      text: selected.input === null ? "" : formValueText(values[selected.input]),
+    },
   };
 };
 export const grantScope = (values: FormValues) =>
-  grantTarget(values).selection.kind === "INSTALLATION" ? "INSTALLATION" : "CASE";
+  grantTarget(values).selection.kind === submissionSelection.installationScope
+    ? submissionSelection.installationScope
+    : submissionSelection.caseScope;
 export const grantFields = (values: FormValues): FormValues => {
-  const value = values["input:scope"];
+  const value = values[submissionSelection.scopeInput];
   if (!isGrantTarget(value)) {
     return values;
   }
   const {
-    "input:scope": _scope,
-    "input:caseId": _id,
-    "field:caseReference": _reference,
+    [submissionSelection.scopeInput]: _scope,
+    [submissionSelection.caseIdInput]: _id,
+    [submissionSelection.referenceInput]: _reference,
     ...rest
   } = values;
-  const target = value.selection;
-  return target.kind === "INSTALLATION"
-    ? { ...rest, "input:scope": "INSTALLATION" }
+  const selected = submissionSelection.rules.find((rule) => rule.kind === value.selection.kind);
+  if (selected === undefined) {
+    throw new Error("Invalid grant selection.");
+  }
+  return selected.input === null
+    ? { ...rest, [submissionSelection.scopeInput]: submissionSelection.installationScope }
     : {
         ...rest,
-        "input:scope": "CASE",
-        [target.kind === "ID" ? "input:caseId" : "field:caseReference"]: target.text,
+        [submissionSelection.scopeInput]: submissionSelection.caseScope,
+        [selected.input]: value.selection.kind === "INSTALLATION" ? "" : value.selection.text,
       };
 };
 export const withGrantTarget = (values: FormValues, value: GrantTargetDraft): FormValues => {
-  const { "input:caseId": _id, "field:caseReference": _reference, ...rest } = values;
-  return { ...rest, "input:scope": value };
+  const {
+    [submissionSelection.caseIdInput]: _id,
+    [submissionSelection.referenceInput]: _reference,
+    ...rest
+  } = values;
+  return { ...rest, [submissionSelection.scopeInput]: value };
 };

@@ -9,7 +9,7 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.HostSecurity
 
-/// Only public connection settings and presentation language belong to the profile format.
+/// Only public connection settings and presentation preferences belong to the profile format.
 module internal CliProfile =
     let maximumBytes = 32768
 
@@ -20,6 +20,7 @@ module internal CliProfile =
             CliSetting.ClientId, "clientId"
             CliSetting.AuthMode, "authMode"
             CliSetting.Language, "language"
+            CliSetting.DisplayLocale, "displayLocale"
             CliSetting.ServiceTrustRoot, "serviceTrustRootFile"
             CliSetting.OidcTrustRoot, "oidcTrustRootFile"
         ]
@@ -44,6 +45,8 @@ module internal CliProfile =
         value.Length <= 8192
         && (setting <> CliSetting.Language
             || List.contains value LocalizationPolicy.languages)
+        && (setting <> CliSetting.DisplayLocale
+            || List.contains value LocalizationPolicy.displayLocales)
 
     let private field (name, value) =
         match fields |> List.tryFind (fun (_, memberName) -> memberName = name), value with

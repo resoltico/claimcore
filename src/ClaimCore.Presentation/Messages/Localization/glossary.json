@@ -256,5 +256,17 @@
     "es": "ID de tarea",
     "de": "Aufgaben-ID",
     "forbidden": {}
+  },
+  "ClaimCore browser session": {
+    "en": "ClaimCore browser session",
+    "lv": "ClaimCore pārlūka sesija",
+    "ar": "جلسة متصفح ClaimCore",
+    "ko": "ClaimCore 브라우저 세션",
+    "ja": "ClaimCoreブラウザーセッション",
+    "zh-Hans": "ClaimCore 浏览器会话",
+    "zh-Hant": "ClaimCore 瀏覽器工作階段",
+    "es": "sesión de navegador de ClaimCore",
+    "de": "ClaimCore-Browsersitzung",
+    "forbidden": {}
   }
 }

@@ -26,7 +26,7 @@ BEGIN
   effect:=effect||jsonb_build_object('compartment',0);
   compartments:=jsonb_build_array(jsonb_build_object('ordinal',0,'owner',jsonb_build_object('kind',CASE a WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END,'id',aggregate_id),'commitment',repeat('11',32),'nonce',lpad(to_hex(n),64,'0'),'payload','7b7d'));
  END IF;
- PERFORM claimcore.append_operation(i,n,h.entry_hash,decode(lpad(to_hex(n),64,'0'),'hex'),5::smallint,gen_random_uuid(),'00000000-0000-4000-8000-000000000001',clock_timestamp(),CASE a WHEN 'PERSON' THEN NULL ELSE DATE '2026-11-16' END,a,'sample.change',jsonb_build_object('binding','{}'::jsonb,'retained','{}'::jsonb),jsonb_build_array(effect),compartments);
+ PERFORM claimcore.append_operation(i,n,h.entry_hash,decode(lpad(to_hex(n),64,'0'),'hex'),6::smallint,gen_random_uuid(),'00000000-0000-4000-8000-000000000001',clock_timestamp(),CASE a WHEN 'PERSON' THEN NULL ELSE DATE '2026-11-16' END,a,'sample.change',jsonb_build_object('binding','{}'::jsonb,'retained','{}'::jsonb),jsonb_build_array(effect),compartments);
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.test_append_part(uuid,text,uuid,text,uuid,bigint,text,text,uuid,boolean) TO claimcore_runtime;
@@ -124,9 +124,11 @@ let private controls (database: PostgresFixture.Database) =
             expectSql "23505" (Some "ledger_natural_key") (fun () ->
                 append "FAMILY" (id 40) "THING" (id 40) 1L (Some "mixed-reference") None None false)
 
+        use! familyErasure = runtime.BeginTransactionAsync()
         do! append "FAMILY" (id 10) "THING" (id 11) 2L None (Some "FAMILY") (Some(id 10)) false
         let! removed = clear "FAMILY" (id 10)
         Expect.equal removed 1L "An accepted erasing effect clears exactly its owner"
+        do! familyErasure.CommitAsync()
 
         let! retained =
             DatabaseSession.rows
@@ -141,9 +143,11 @@ let private controls (database: PostgresFixture.Database) =
             "Commitment survives clearing"
 
         do! append "PERSON" (id 50) "THING" (id 50) 1L None None None true
+        use! profileErasure = runtime.BeginTransactionAsync()
         do! append "PERSON" (id 50) "THING" (id 50) 2L None (Some "PROFILE") (Some(id 50)) false
         let! removed = clear "PROFILE" (id 50)
         Expect.equal removed 1L "The earlier profile is cleared"
+        do! profileErasure.CommitAsync()
         do! append "PERSON" (id 50) "THING" (id 50) 3L None None None true
         let! removed = clear "PROFILE" (id 50)
         Expect.equal removed 0L "An old erasure does not authorize clearing its replacement"

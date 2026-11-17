@@ -9,6 +9,7 @@
     <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />
     <Compile Include="ReplyKind.fs" />
+    <Compile Include="SessionTermination.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="TaskOffer.fs" />
     <Compile Include="Advice.fs" />
@@ -26,6 +27,8 @@
     <Compile Include="TaskIdentities.fs" />
     <Compile Include="EndpointDeclarations.fs" />
     <Compile Include="TaskDeclarations.fs" />
+    <Compile Include="ClientCompositions.fs" />
+    <Compile Include="SubmissionDeclarations.fs" />
     <Compile Include="OperationSubmission.fs" />
     <Compile Include="OperationLookup.fs" />
   </ItemGroup>

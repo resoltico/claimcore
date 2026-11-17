@@ -51,7 +51,7 @@ const review: HumanReview = {
           kind: "REMINDER",
           target: { kind: "ID", caseId },
           reminderId,
-          expectedRevision: 0,
+          expectedRevision: 3,
         },
         {},
         [],

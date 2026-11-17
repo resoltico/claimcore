@@ -94,33 +94,43 @@ let private gate =
         || (state.Case.Value.Content
             |> Option.exists (fun content -> content.Finance.Decision.IsSome)))
 
-let private can environment (state: CaseFamily) capability =
-    FamilyRules.permission environment (Scope.Case state.Id) capability
+let private canFor principal access id capability =
+    FamilyRules.permissionFor principal access (Scope.Case id) capability
     |> Result.isOk
 
-let private anyPermission environment (state: CaseFamily) =
+let private anyPermissionFor principal access id =
     if
-        can environment state Capability.Register
-        || can environment state Capability.Decide
+        canFor principal access id Capability.Register
+        || canFor principal access id Capability.Decide
     then
         Ok()
     else
-        FamilyRules.permission environment (Scope.Case state.Id) Capability.Register
+        FamilyRules.permissionFor principal access (Scope.Case id) Capability.Register
 
-let private permissions environment (state: CaseFamily) inputs =
-    anyPermission environment state
+let private permissionsFor principal access id inputs =
+    anyPermissionFor principal access id
     |> Result.bind (fun () ->
         [
             if choice RecordGroup.Registration inputs = Ok "UPDATE" then
-                yield FamilyRules.permission environment (Scope.Case state.Id) Capability.Register
+                yield
+                    FamilyRules.permissionFor principal access (Scope.Case id) Capability.Register
             if
                 choice RecordGroup.Decision inputs
                 |> Result.toOption
                 |> Option.exists (fun value -> value = "UPDATE" || value = "CLEAR")
             then
-                yield FamilyRules.permission environment (Scope.Case state.Id) Capability.Decide
+                yield FamilyRules.permissionFor principal access (Scope.Case id) Capability.Decide
         ]
         |> Admission.collect)
+
+let private can (environment: FamilyEnvironment) (state: DecisionFacts) capability =
+    canFor environment.RequesterPrincipal environment.Requester state.Id capability
+
+let private anyPermission (environment: FamilyEnvironment) (state: DecisionFacts) =
+    anyPermissionFor environment.RequesterPrincipal environment.Requester state.Id
+
+let private permissions (environment: FamilyEnvironment) (state: DecisionFacts) inputs =
+    permissionsFor environment.RequesterPrincipal environment.Requester state.Id inputs
 
 let decisionChoices (finance: FinancialPosition) =
     if finance.Decision.IsNone then
@@ -275,7 +285,7 @@ let private apply (before: CaseContent) command =
             else
                 Ok after))
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
     let syntax = parse (fun _ -> Ok) inputs fields
 
@@ -323,7 +333,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
         FamilyRules.admitPermission
@@ -344,9 +354,9 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment state inputs ->
-                    match state with
-                    | Some state -> permissions environment state inputs
+                fun principal access caseId inputs ->
+                    match caseId with
+                    | Some id -> permissionsFor principal access id inputs
                     | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability

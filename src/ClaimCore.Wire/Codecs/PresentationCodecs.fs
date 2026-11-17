@@ -533,51 +533,46 @@ module PresentationCodecs =
             Vocabulary.define TaskInputId.vocabularyName TaskInputId.all TaskInputId.token
             |> VocabularyCodec.create
 
-        let tasks =
-            TaskDeclarations.all
-            |> List.filter (fun declaration -> declaration.Kind <> ClientTaskKind.Query)
-            |> List.map (fun declaration -> TaskId.ofLiteral declaration.Id)
+        let binding (declaration: ClientTaskDeclaration) =
+            match declaration.Kind with
+            | ClientTaskKind.Operation ->
+                let task = declaration.Ledger |> Option.get
 
-        let task =
-            Vocabulary.define "offeredTask" tasks TaskId.token |> VocabularyCodec.create
+                OperationSubmissionCodecs.binding task.Id
+                |> interpret
+                    (fun path raw ->
+                        OperationSubmission.admitBinding task raw
+                        |> Result.mapError (fun _ ->
+                            {
+                                Path = path
+                                Reason = "Invalid reviewed binding."
+                            }))
+                    OperationSubmission.rawBinding
+                |> map ActionControl.Operation (function
+                    | ActionControl.Operation value -> value
+                    | _ -> invalidOp "Operation control required.")
+            | ClientTaskKind.Command ->
+                let command = CommandTaskId.parse declaration.Id |> Option.get
 
-        let bindings =
-            ClaimCore.Domain.Tasks.Registry.clientDeclarations
-            |> List.distinctBy TaskDeclaration.bindingShape
-            |> List.map (fun declaration ->
-                let shape = TaskDeclaration.bindingShape declaration
-
-                OperationSubmissionCodecs.binding declaration.Id
-                |> map
-                    (fun raw ->
-                        OperationSubmission.admitBinding declaration raw
-                        |> Result.defaultWith (fun _ ->
-                            invalidArg "binding" "Invalid reviewed binding.")
-                        |> Some)
-                    (fun binding -> binding |> Option.get |> OperationSubmission.rawBinding)
-                |> branch id (fun binding ->
-                    match binding with
-                    | Some binding when BindingShape.ofValue binding = shape -> Some(Some binding)
-                    | _ -> None))
-
-        let binding =
-            choice
-                "AffordanceBinding"
-                (bindings
-                 @ [
-                     branch
-                         (fun () -> None)
-                         (function
-                         | None -> Some()
-                         | _ -> None)
-                         RequestCodecs.empty
-                 ])
+                Codec.tagged
+                    ("CommandBinding." + declaration.Id)
+                    [
+                        variant
+                            "COMMAND"
+                            ActionControl.Command
+                            (function
+                            | ActionControl.Command value -> Some value
+                            | _ -> None)
+                            (record id |> field "request" id (CommandControlCodecs.forTask command))
+                    ]
+            | ClientTaskKind.Query -> invalidOp "A query is not an action control."
 
         let seeds =
             TaskInputId.all
             |> List.map (fun input ->
                 input, TaskInputId.token input, true, ClaimCore.RecordFormat.InputMapCodecs.atom)
             |> fieldMapWithPresence
+            |> named "AffordanceSeeds"
 
         let choices =
             TaskInputId.all
@@ -597,23 +592,64 @@ module PresentationCodecs =
                             id
                          |> VocabularyCodec.create)))
             |> fieldMapWithPresence
+            |> named "AffordanceChoices"
 
-        record (fun task binding seeds editable choices blocked ->
-            {
-                Affordance.Task = task
-                Binding = binding
-                Seeds = seeds
-                Editable = editable
-                Choices = choices
-                Blocked = blocked
-            })
-        |> field "task" _.Task task
-        |> field "binding" _.Binding binding
-        |> field "seeds" _.Seeds seeds
-        |> field "editable" _.Editable (list TaskInputId.all.Length inputs)
-        |> field "choices" _.Choices choices
-        |> field "blocked" _.Blocked (nullable advice)
-        |> build
+        let fields (declaration: ClientTaskDeclaration) =
+            let task = TaskId.ofLiteral declaration.Id
+            let emptyMap: Codec<Map<TaskInputId, InputValue>> = record Map.empty |> build
+            let emptyChoices: Codec<Map<TaskInputId, string list>> = record Map.empty |> build
+
+            (record (fun label binding seeds editable choices blocked ->
+                {
+                    Affordance.Task = task
+                    LabelId = label
+                    Control = binding
+                    Seeds = seeds
+                    Editable = editable
+                    Choices = choices
+                    Blocked = blocked
+                })
+            : Fields<Affordance, _>)
+            |> field "labelId" _.LabelId (boundedText 1 160)
+            |> field "binding" _.Control (binding declaration)
+            |> field
+                "seeds"
+                _.Seeds
+                (if declaration.Kind = ClientTaskKind.Command then
+                     emptyMap
+                 else
+                     seeds)
+            |> field
+                "editable"
+                _.Editable
+                (list
+                    (if declaration.Kind = ClientTaskKind.Command then
+                         0
+                     else
+                         TaskInputId.all.Length)
+                    inputs)
+            |> field
+                "choices"
+                _.Choices
+                (if declaration.Kind = ClientTaskKind.Command then
+                     emptyChoices
+                 else
+                     choices)
+            |> field "blocked" _.Blocked (nullable advice)
+
+        TaskDeclarations.all
+        |> List.filter (fun declaration -> declaration.Kind <> ClientTaskKind.Query)
+        |> List.map (fun declaration ->
+            variant
+                declaration.Id
+                id
+                (fun (value: Affordance) ->
+                    if TaskId.token value.Task = declaration.Id then
+                        Some value
+                    else
+                        None)
+                (fields declaration))
+        |> taggedOn "task" "Affordance"
         |> interpret
             (fun path value ->
                 if Affordance.valid value then

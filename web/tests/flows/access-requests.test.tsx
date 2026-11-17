@@ -83,12 +83,17 @@ const succeeded = (
                 ),
                 {
                   task: "people.requests.dismiss",
-                  binding: {},
-                  seeds: {
-                    "input:principal.kind": item.principal.kind,
-                    "input:principal.issuer": item.principal.issuer,
-                    "input:principal.subject": item.principal.subject,
+                  labelId: "endpoint.people.requests.dismiss.label",
+                  binding: {
+                    kind: "COMMAND",
+                    request: {
+                      command: "people.requests.dismiss",
+                      "input:principal.kind": item.principal.kind,
+                      "input:principal.issuer": item.principal.issuer,
+                      "input:principal.subject": item.principal.subject,
+                    },
                   },
+                  seeds: {},
                   editable: [],
                   choices: {},
 

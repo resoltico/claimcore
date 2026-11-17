@@ -76,7 +76,7 @@ let tests =
                             Erase.decide
                                 current
                                 environment
-                                (Some state)
+                                (Some(DecisionFacts.fromReplay state))
                                 (Binding.CaseErase(target state, revision, sequence))
                                 InputMap.empty
 
@@ -105,7 +105,7 @@ let tests =
                     Erase.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (Binding.CaseErase(target state, state.Case.Revision, before.Sequence))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case CaseRefusal.FamilyChanged)
@@ -114,7 +114,7 @@ let tests =
                         Erase.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.CaseErase(target state, state.Case.Revision, state.Sequence))
                             InputMap.empty
                         |> accepted
@@ -146,7 +146,7 @@ let tests =
                         Erase.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.CaseErase(target state, state.Case.Revision, state.Sequence))
                             InputMap.empty
                         |> accepted
@@ -155,7 +155,7 @@ let tests =
                     Erase.decide
                         (context 4)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (Binding.CaseErase(target after, after.Case.Revision, after.Sequence))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)))

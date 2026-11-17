@@ -101,3 +101,6 @@ module Service =
 
     let accessRequests = AccessRequestQueries.page
     let dismissAccessRequest = AccessRequestQueries.dismiss
+
+    let terminateOwnSessions = SessionTerminationQueries.self
+    let terminatePersonSessions = SessionTerminationQueries.person

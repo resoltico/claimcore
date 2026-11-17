@@ -15,7 +15,7 @@ server and its assets; the human CLI is distributed separately.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-Use installation format 5 and CLI recovery journal format 4 with matching builds. Initialization
+Use installation format 6 and CLI recovery journal format 4 with matching builds. Initialization
 requires an empty database; the runtime refuses unsupported baseline identities and formats without
 converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
 and recovery records rather than attempting to initialize or convert them in place.
@@ -42,11 +42,11 @@ uncertain result. Remote database connections require verified TLS.
 | `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
 | `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
-| `maintenance on` | Serialize with earlier writes and pause register writes. |
-| `maintenance off` | End the current pause after inspecting status. |
+| `maintenance acquire GENERATION PAUSE_ID` | Serialize with earlier writes and pause register writes. |
+| `maintenance resume GENERATION PAUSE_ID` | End the current pause after inspecting status. |
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
-| `rebuild --checkpoint FILE` | Rebuild projections during explicit maintenance. |
-| `admit-restored-installation --checkpoint FILE` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
+| `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Rebuild projections during explicit maintenance. |
+| `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
 
 Help/version are offline. Owner failures use a separate bounded envelope,
 `{"kind":"OPERATOR_FAULT","fault":"CONNECTION_FILE_REQUIRED"}`. They contain no submitted values,
@@ -80,23 +80,35 @@ replace a confirmed result or the primary failure. See `claimcore help exit-code
 
 ## Register-write maintenance
 
+Read the inactive generation from `status` before acquiring a pause and supply a fresh nonzero UUID.
+Retain the returned generation and pause ID for resume, takeover, rebuild and restore admission.
+`maintenance takeover GENERATION PAUSE_ID NEW_PAUSE_ID` compares the exact current handle.
+Successful changes advance the generation; an exact active acquisition can be retried. A released
+acquisition and an old resume are stale and have no effect. There is no expiry or automatic resume
+on process exit. After an uncertain acknowledgement, inspect current status; it does not establish
+historical command execution. Rebuild and restore check the expected handle after acquiring the
+ledger serialization lock. The handle does not prove that external traffic is isolated.
+
 Use database-owner credentials to pause register writes before a repair:
 
 ```sh
 claimcore-server status
-claimcore-server maintenance on
+claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # Rebuild only when authoritative history is sound and projections diverge:
-claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-server status
-claimcore-server maintenance off
+claimcore-server maintenance resume PAUSE_GENERATION PAUSE_ID
 ```
 
-Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
-it off. After a lost acknowledgement, inspect fresh status rather than guessing. Maintenance does not
-resume automatically. Rebuild preserves history, replaces projections atomically, reports prior divergence
-and leaves the pause active.
+Only acquisition of the same currently active pause is retryable without changing generation. A
+repeated resume or takeover with an old handle conflicts, including after a lost acknowledgement.
+Inspect fresh status before deciding on another command; current state is not historical proof that
+your earlier command executed. Neither process exit nor elapsed time releases a pause. Rebuild
+preserves history, replaces projections atomically, reports prior divergence and leaves the pause
+active. A queued rebuild or restore admission must still own the exact handle after acquiring the
+common ledger head lock; it never substitutes the current operator's handle.
 
 Maintenance pauses case, work, reminder, note and people changes. Authorized reads, authentication,
 accepted-operation replay and final absence checks continue. It is not an all-host drain. For quiescence,
@@ -128,6 +140,33 @@ Keep the shared key ring protected with mode 0700 and retain keys needed by live
 Hosts sharing the database, key ring and application identity can share sessions. Logout takes effect
 across hosts, though previously admitted work may finish. Session deadlines survive restart. Storage
 or key failures close authentication; inspect sanitized diagnostics.
+
+**End my ClaimCore browser sessions** in Settings deletes every stored browser ticket for the
+currently authenticated principal, including before registration or without roles. An Owner can use
+**End this person’s ClaimCore browser sessions** on the selected person's page. The application
+rechecks ManageAccess against its locked action state; a displayed control does not authorize a later
+request. Ordinary Sign out still ends only the current session.
+
+These actions do not end identity-provider sessions, revoke credentials or independent bearer tokens,
+or create ledger operations. Confirmed counts report deleted stored tickets, including expired ones
+that had not yet been pruned. An unconfirmed acknowledgement reports no count and is not retried
+automatically: repeating deletion could also end sessions created since the original attempt. Inspect
+the outcome before deliberately starting another request; there is no operation.get recovery record.
+
+Session creation and deletion serialize on the canonical principal index, including principal kind,
+issuer and subject. The index is derived from the validated protected ticket, not names or sign-in
+hints. Retrieval checks the decrypted ticket against this index. Renewal checks both the index and
+previous protected ticket under its row lock, updates only an existing row and preserves its original
+deadlines. Runtime writers cannot retarget a session's principal or rewrite its original deadlines.
+
+The lock order is: owner action ledger/head serialization and current access; principal lock; session
+rows. Creation needs no head lock and takes principal, global capacity, then cleanup/insert row locks.
+Cleanup skips locked rows. Retrieve, renew and current-session logout take only their single row and
+never acquire head, principal or capacity locks afterward. This avoids a reverse lock dependency.
+The successful deletion commit is the cut: earlier tickets cannot be retrieved afterward; work whose
+retrieval was admitted before it may finish. A callback that started earlier but creates its ticket
+after that commit can survive. Self success expires the current cookie and clears private browser
+workspace ownership; it does not erase durable recovery identities belonging to the principal.
 
 Access requests contain unverified hints, grant no rights and expire after 30 days. The cache retains
 at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
@@ -188,11 +227,11 @@ With traffic still isolated, use the independently retained checkpoint, not a re
 the restored database:
 
 ```sh
-claimcore-server maintenance on
-claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json
+claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
+claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 # If authoritative history is sound and only projections diverge:
-claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json
+claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
 claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
 claimcore-server status
 ```
@@ -327,6 +366,11 @@ Failed language activation keeps the working language. Protect an unconfirmed ch
 reloading cannot reconstruct a discarded request body.
 
 ## Verification and reconstruction
+
+Ordinary live checks authenticate the roots and selected facts they consume, with scalar projection
+agreement for money and next due. They do not prove that the database supplied a complete child set.
+Their bounded acquisition does not replace complete replay, verification, reconstruction or trusted
+checkpoint custody, and aggregate queries can still scan a growing history.
 
 Accepted writes serialize at one ledger head. Verification replays retained requests through the same
 Domain decisions, using each entry's stored business date and authority at that position. It checks

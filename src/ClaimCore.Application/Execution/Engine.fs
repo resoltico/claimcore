@@ -102,18 +102,11 @@ module internal Engine =
             else
                 let declaration = Task.declaration selected
 
-                let! snapshot =
-                    ExecutionEnvironment.fromStorage
-                        tx
-                        context.Principal
-                        context.Maintenance
-                        selected
-                        binding
-                        (Some inputs)
+                let! access = ExecutionEnvironment.requester tx context.Principal
 
                 if
                     declaration.Exposure <> TaskExposure.Operator
-                    && not (Access.validActor context.Principal snapshot.Requester)
+                    && not (Access.validActor context.Principal access)
                 then
                     return
                         Error(
@@ -127,128 +120,148 @@ module internal Engine =
                             operation
                             tx.CancellationToken
 
-                    let! resolve = resolver tx binding inputs existing
-
-                    let authorization = if existing.IsSome then snapshot.Authorize inputs else Ok()
-
-                    match existing, authorization with
-                    | Some _, Error refusal -> return Error(ExecutionStop.Refused refusal)
-                    | Some record, Ok() when
-                        not (
-                            canObserve
+                    match existing with
+                    | Some record ->
+                        let! authorization =
+                            ExecutionEnvironment.authorize
+                                tx
                                 context.Principal
-                                snapshot.Requester
-                                record.Changes.Head.Aggregate
-                        )
-                        ->
-                        return
-                            Error(
-                                ExecutionStop.Refused(
-                                    Refusal.Access AccessRefusal.ResourceUnavailable
-                                )
-                            )
-                    | Some record, Ok() ->
-                        match OperationIntent.accepted record resolve with
-                        | None ->
-                            return
-                                Error(
-                                    ExecutionStop.Refused(
-                                        Refusal.Access AccessRefusal.ResourceUnavailable
-                                    )
-                                )
-                        | Some accepted when
-                            OperationIntent.same
-                                accepted
-                                (OperationIntent.hash declaration binding inputs resolve)
+                                access
+                                selected
+                                binding
+                                inputs
+
+                        match authorization with
+                        | Error refusal -> return Error(ExecutionStop.Refused refusal)
+                        | Ok() when
+                            not (canObserve context.Principal access record.Changes.Head.Aggregate)
                             ->
-                            return Error(ExecutionStop.AlreadyAccepted record)
-                        | Some _ -> return Error(ExecutionStop.Refused Refusal.IdempotencyConflict)
-                    | None, _ when Sequence.value head.Sequence >= Sequence.Maximum ->
-                        return Error(ExecutionStop.Failed CoreFault.InternalError)
-                    | None, _ ->
-                        let actor =
-                            snapshot.Requester.Actor
-                            |> Option.map _.ActorId
-                            |> Option.orElseWith (fun () ->
-                                if declaration.Exposure = TaskExposure.Operator then
-                                    Some(ActorId.ofOperationId operation)
-                                else
-                                    None)
-
-                        match actor with
-                        | None ->
                             return
                                 Error(
                                     ExecutionStop.Refused(
                                         Refusal.Access AccessRefusal.ResourceUnavailable
                                     )
                                 )
-                        | Some actor ->
-                            let businessDate =
-                                if declaration.Aggregate = AggregateKind.Person then
-                                    None
-                                else
-                                    context.BusinessDate
+                        | Ok() ->
+                            let! resolve = resolver tx binding inputs existing
 
-                            let header =
-                                {
-                                    OperationHeader.InstallationId = tx.InstallationId
-                                    Sequence = Sequence.successor head.Sequence
-                                    PreviousHash = head.EntryHash
-                                    OperationId = operation
-                                    ActorId = actor
-                                    RecordedAt = tx.ObservedAt
-                                    BusinessDate = businessDate
-                                }
+                            match OperationIntent.accepted record resolve with
+                            | None ->
+                                return
+                                    Error(
+                                        ExecutionStop.Refused(
+                                            Refusal.Access AccessRefusal.ResourceUnavailable
+                                        )
+                                    )
+                            | Some accepted when
+                                OperationIntent.same
+                                    accepted
+                                    (OperationIntent.hash declaration binding inputs resolve)
+                                ->
+                                return Error(ExecutionStop.AlreadyAccepted record)
+                            | Some _ ->
+                                return Error(ExecutionStop.Refused Refusal.IdempotencyConflict)
+                    | None ->
+                        let! snapshot =
+                            ExecutionEnvironment.fromStorage
+                                tx
+                                context.Principal
+                                access
+                                context.Maintenance
+                                selected
+                                binding
+                                (Some inputs)
+                                (Some operation)
 
-                            let decision =
-                                {
-                                    TaskContext.Decision =
-                                        { context with
-                                            BusinessDate = businessDate
-                                            Access = snapshot.Requester
-                                        }
-                                    Stamp =
-                                        {
-                                            OperationId = operation
-                                            ActorId = actor
-                                            RecordedAt = tx.ObservedAt
-                                            Position =
-                                                EffectPosition.create header.Sequence 0
-                                                |> Option.get
-                                        }
-                                }
+                        if Sequence.value head.Sequence >= Sequence.Maximum then
+                            return Error(ExecutionStop.Failed CoreFault.InternalError)
+                        else
+                            let! resolve = resolver tx binding inputs None
 
-                            match snapshot.Decide decision binding inputs with
-                            | Error rejected -> return Error(rejection binding rejected)
-                            | Ok changes ->
-                                match (snapshot.Availability binding).Blocked with
-                                | Some refusal -> return Error(ExecutionStop.Refused refusal)
-                                | None ->
-                                    match
-                                        DecisionSnapshot.apply snapshot changes,
-                                        snapshot.Describe changes
-                                    with
-                                    | Ok after, Ok descriptions ->
-                                        return
-                                            Ok
-                                                {
-                                                    Snapshot = snapshot
-                                                    Header = header
-                                                    Binding =
-                                                        OperationIntent.resolveBinding
-                                                            resolve
-                                                            binding
-                                                    Inputs = inputs
-                                                    Changes = changes
-                                                    Descriptions = descriptions
-                                                    After = after
-                                                }
-                                    | _ ->
-                                        return
-                                            Error(
-                                                ExecutionStop.Failed CoreFault.StoreIntegrityError
-                                            )
+                            let actor =
+                                snapshot.Requester.Actor
+                                |> Option.map _.ActorId
+                                |> Option.orElseWith (fun () ->
+                                    if declaration.Exposure = TaskExposure.Operator then
+                                        Some(ActorId.ofOperationId operation)
+                                    else
+                                        None)
+
+                            match actor with
+                            | None ->
+                                return
+                                    Error(
+                                        ExecutionStop.Refused(
+                                            Refusal.Access AccessRefusal.ResourceUnavailable
+                                        )
+                                    )
+                            | Some actor ->
+                                let businessDate =
+                                    if declaration.Aggregate = AggregateKind.Person then
+                                        None
+                                    else
+                                        context.BusinessDate
+
+                                let header =
+                                    {
+                                        OperationHeader.InstallationId = tx.InstallationId
+                                        Sequence = Sequence.successor head.Sequence
+                                        PreviousHash = head.EntryHash
+                                        OperationId = operation
+                                        ActorId = actor
+                                        RecordedAt = tx.ObservedAt
+                                        BusinessDate = businessDate
+                                    }
+
+                                let decision =
+                                    {
+                                        TaskContext.Decision =
+                                            { context with
+                                                BusinessDate = businessDate
+                                                Access = snapshot.Requester
+                                            }
+                                        Stamp =
+                                            {
+                                                OperationId = operation
+                                                ActorId = actor
+                                                RecordedAt = tx.ObservedAt
+                                                Position =
+                                                    EffectPosition.create header.Sequence 0
+                                                    |> Option.get
+                                            }
+                                    }
+
+                                match snapshot.Decide decision binding inputs with
+                                | Error rejected -> return Error(rejection binding rejected)
+                                | Ok changes ->
+                                    match (snapshot.Availability binding).Blocked with
+                                    | Some refusal -> return Error(ExecutionStop.Refused refusal)
+                                    | None ->
+                                        match
+                                            DecisionSnapshot.apply snapshot changes,
+                                            snapshot.Describe changes
+                                        with
+                                        | Ok after, Ok descriptions ->
+                                            return
+                                                Ok
+                                                    {
+                                                        Snapshot = snapshot
+                                                        Header = header
+                                                        Binding =
+                                                            OperationIntent.resolveBinding
+                                                                resolve
+                                                                binding
+                                                        Inputs = inputs
+                                                        Changes = changes
+                                                        Descriptions = descriptions
+                                                        After = after
+                                                    }
+                                        | _ ->
+                                            return
+                                                Error(
+                                                    ExecutionStop.Failed
+                                                        CoreFault.StoreIntegrityError
+                                                )
         }
 
     let commit (tx: WriteTx) plan =
@@ -311,7 +324,7 @@ module internal Engine =
                                 plan.Changes
 
                         match
-                            ProjectionRows.family
+                            ProjectionRows.decision
                                 family
                                 plan.Changes
                                 origins

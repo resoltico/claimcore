@@ -35,7 +35,14 @@ module internal QueryArguments =
                 let value = List.tryItem consumed operands
                 consumed <- consumed + 1
 
-                if value.IsNone then
+                if
+                    value.IsNone
+                    && not (
+                        input.Name =
+                            TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+                        && options.ContainsKey "--case-id"
+                    )
+                then
                     problems.Add(
                         UsageError.MissingOperand(
                             CommandGrammar.kebab (CommandGrammar.inputName input.Name)
@@ -112,6 +119,17 @@ module internal QueryArguments =
                     None
             | CommandAtom.Text ->
                 match name with
+                | TaskInputId.CaseId ->
+                    match Guid.TryParseExact(value, "D") with
+                    | true, id when id <> Guid.Empty ->
+                        Some(
+                            RequestCodecs.caseSelector.Write(
+                                CaseSelector.Id(CaseId.create id |> Option.get)
+                            )
+                        )
+                    | _ ->
+                        problems.Add(UsageError.InvalidValue("--case-id", value))
+                        None
                 | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
                     Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
                 | TaskInputId.ActorId
@@ -161,7 +179,14 @@ module internal QueryArguments =
 
                 value
                 |> Option.map (fun value ->
-                    EndpointInputs.memberName declaration input.Name, value))
+                    (if input.Name = TaskInputId.CaseId then
+                         "target"
+                     else
+                         EndpointInputs.memberName declaration input.Name),
+                    value))
+
+        if (members |> List.filter (fun (name, _) -> name = "target") |> List.length) > 1 then
+            problems.Add(UsageError.DuplicateOption "--case-id")
 
         let members =
             match declaration.Page with

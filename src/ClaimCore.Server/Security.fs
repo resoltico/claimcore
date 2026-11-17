@@ -6,15 +6,28 @@ open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Domain
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
 
+/// This request already committed all of its principal's session deletion. Cookie sign-out still
+/// suppresses sliding renewal, but its ticket-store callback must not perform another deletion.
+module internal BrowserSessionTermination =
+    let private confirmed = obj ()
+    let mark (context: HttpContext) = context.Items[confirmed] <- box true
+
+    let isConfirmed (context: HttpContext) =
+        match context.Items.TryGetValue confirmed with
+        | true, value -> unbox<bool> value
+        | _ -> false
+
 /// Cookies contain only a protected random lookup key; PostgreSQL owns ticket deadlines.
 [<Sealed>]
 type internal OidcTicketStore
     (
+        issuer: Uri,
         idle: TimeSpan,
         absolute: TimeSpan,
         storage: ISessionStore,
@@ -57,6 +70,23 @@ type internal OidcTicketStore
     let unavailable () = report "OIDC_SESSION_UNAVAILABLE"
     let unreadable () = report "OIDC_SESSION_UNREADABLE"
 
+    let principal (ticket: AuthenticationTicket) =
+        PrincipalIdentity.fromBrowserSession issuer ticket.Principal
+        |> Result.map AuthenticatedPrincipals.key
+        |> Result.defaultWith (fun _ -> raise (InvalidDataException "Invalid session principal."))
+
+    let associated expected bytes =
+        try
+            decode bytes
+            |> Option.exists (fun ticket -> PrincipalKey.naturalKey (principal ticket) = expected)
+        with
+        | :? CryptographicException
+        | :? InvalidDataException
+        | :? EndOfStreamException
+        | :? FormatException
+        | :? OverflowException
+        | :? ArgumentException -> false
+
     let store ticket token =
         task {
             // Protect before creation so no cookie can escape without a committed ticket.
@@ -64,7 +94,9 @@ type internal OidcTicketStore
             let expiry = ticket.Properties.ExpiresUtc |> Option.ofNullable
 
             try
-                let! changes = storage.Create(payload, expiry, idle, absolute, token)
+                let! changes =
+                    storage.Create(principal ticket, payload, expiry, idle, absolute, token)
+
                 let key = WebMetrics.sessionChanges changes
                 WebMetrics.sessionStarted ()
                 return key
@@ -76,7 +108,15 @@ type internal OidcTicketStore
     let renew key ticket token =
         task {
             try
-                let! changes = storage.Renew(key, protect ticket, token)
+                let! changes =
+                    storage.Renew(
+                        key,
+                        principal ticket,
+                        protect ticket,
+                        associated (PrincipalKey.naturalKey (principal ticket)),
+                        token
+                    )
+
                 WebMetrics.sessionChanges changes
             with _ ->
                 unavailable ()
@@ -91,11 +131,14 @@ type internal OidcTicketStore
 
                 match stored with
                 | None -> return null
-                | Some bytes ->
+                | Some stored ->
                     try
-                        match decode bytes with
-                        | Some ticket -> return (ticket: AuthenticationTicket | null)
-                        | None ->
+                        match decode stored.Payload with
+                        | Some ticket when
+                            PrincipalKey.naturalKey (principal ticket) = stored.PrincipalKey
+                            ->
+                            return (ticket: AuthenticationTicket | null)
+                        | _ ->
                             let! changes = storage.Remove(key, SessionEndReason.Invalid, token)
                             WebMetrics.sessionChanges changes
                             unreadable ()
@@ -163,4 +206,7 @@ type internal OidcTicketStore
         member _.RemoveAsync(key, token) = remove key token :> Task
 
         member _.RemoveAsync(key, context, token) =
-            withContext context token (remove key) :> Task
+            if BrowserSessionTermination.isConfirmed context then
+                Task.CompletedTask
+            else
+                withContext context token (remove key) :> Task

@@ -21,8 +21,8 @@ open ClaimCore.RecordFormat
 type Command =
     | Initialize of timeZone: string * owner: InitialOwner
     | Verify of InstallationCheckpoint option
-    | Rebuild of InstallationCheckpoint
-    | AdmitRestoredInstallation of InstallationCheckpoint
+    | Rebuild of InstallationCheckpoint * MaintenanceHandle
+    | AdmitRestoredInstallation of InstallationCheckpoint * MaintenanceHandle
     | Head
     | Status
     | Maintenance of MaintenanceChange
@@ -99,9 +99,21 @@ module CommandName =
                 CommandArgument.Optional("--owner-role", "ROLE")
             ]
         | CommandName.Verify -> [ CommandArgument.Optional("--checkpoint", "FILE") ]
-        | CommandName.Rebuild -> [ CommandArgument.Operand "--checkpoint FILE" ]
-        | CommandName.Maintenance -> [ CommandArgument.Operand "on|off" ]
-        | CommandName.AdmitRestoredInstallation -> [ CommandArgument.Operand "--checkpoint FILE" ]
+        | CommandName.Rebuild ->
+            [
+                CommandArgument.Operand
+                    "--checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID"
+            ]
+        | CommandName.Maintenance ->
+            [
+                CommandArgument.Operand
+                    "acquire GENERATION PAUSE_ID | resume GENERATION PAUSE_ID | takeover GENERATION PAUSE_ID NEW_PAUSE_ID"
+            ]
+        | CommandName.AdmitRestoredInstallation ->
+            [
+                CommandArgument.Operand
+                    "--checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID"
+            ]
         | CommandName.Head
         | CommandName.Status
         | CommandName.Help
@@ -230,16 +242,58 @@ module Inputs =
         | [ "--checkpoint"; path ] -> checkpoint path |> Result.map (Some >> Verify)
         | _ -> Error(UsageProblem(UsageError.NotApplicable("arguments", "command")))
 
+    let private generation (raw: string) =
+        match Int64.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
+        | true, value when value >= 0L && value <= SafeInteger.Maximum -> Some value
+        | _ -> None
+
+    let private pauseId (raw: string) =
+        match Guid.TryParseExact(raw, "D") with
+        | true, value when value <> Guid.Empty -> Some value
+        | _ -> None
+
+    let private handle generationText idText =
+        generation generationText
+        |> Option.bind (fun generation ->
+            pauseId idText |> Option.bind (MaintenanceHandle.create generation))
+
     let private maintenance arguments =
+        let invalid =
+            Error(
+                UsageError.MissingOperand
+                    "acquire GENERATION PAUSE_ID | resume GENERATION PAUSE_ID | takeover GENERATION PAUSE_ID NEW_PAUSE_ID"
+            )
+
         match arguments with
-        | [ "on" ] -> Ok(Maintenance MaintenanceChange.On)
-        | [ "off" ] -> Ok(Maintenance MaintenanceChange.Off)
-        | _ -> Error(UsageError.MissingOperand "on|off")
+        | [ "acquire"; expected; id ] ->
+            match generation expected, pauseId id with
+            | Some expected, Some id -> Ok(Maintenance(MaintenanceChange.Acquire(expected, id)))
+            | _ -> invalid
+        | [ "resume"; generation; id ] ->
+            handle generation id
+            |> Option.map (MaintenanceChange.Resume >> Maintenance >> Ok)
+            |> Option.defaultValue invalid
+        | [ "takeover"; generation; id; replacement ] ->
+            match handle generation id, pauseId replacement with
+            | Some handle, Some replacement ->
+                Ok(Maintenance(MaintenanceChange.Takeover(handle, replacement)))
+            | _ -> invalid
+        | _ -> invalid
 
     let private checkpointCommand create arguments =
         match arguments with
-        | [ "--checkpoint"; path ] -> checkpoint path |> Result.map create
-        | _ -> Error(UsageProblem(UsageError.MissingOperand "--checkpoint FILE"))
+        | [ "--checkpoint"; path; "--pause-generation"; generation; "--pause-id"; id ] ->
+            match handle generation id with
+            | Some handle ->
+                checkpoint path |> Result.map (fun checkpoint -> create (checkpoint, handle))
+            | None -> Error(UsageProblem(UsageError.InvalidValue("--pause-id", id)))
+        | _ ->
+            Error(
+                UsageProblem(
+                    UsageError.MissingOperand
+                        "--checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID"
+                )
+            )
 
     let private parse name arguments =
         let usage result = Result.mapError UsageProblem result
@@ -275,7 +329,9 @@ module Inputs =
                 parse name rest
                 |> Result.mapError (function
                     | OperatorProblem fault -> CommandInputFailure.Operator fault
-                    | UsageProblem(UsageError.InvalidValue _ | UsageError.InvalidChoice _) ->
+                    | UsageProblem(UsageError.InvalidValue _ | UsageError.InvalidChoice _) when
+                        name = CommandName.Initialize
+                        ->
                         CommandInputFailure.Operator OperatorFault.InitialOwnerInvalid
                     | UsageProblem(UsageError.UnknownOption _ | UsageError.ExtraOperand _ | UsageError.UnknownTopic _) ->
                         CommandInputFailure.Operator OperatorFault.InvocationInvalid

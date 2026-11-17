@@ -242,39 +242,61 @@ module internal PeopleQueries =
                                                                 viewer
                                                                 maintenance
 
-                                                        let mutable controls = []
+                                                        let! controls =
+                                                            task {
+                                                                if List.isEmpty offers then
+                                                                    return []
+                                                                else
+                                                                    let! requester =
+                                                                        ExecutionEnvironment
+                                                                            .requester
+                                                                            tx
+                                                                            services.Principal
 
-                                                        for id in offers do
-                                                            let selected =
-                                                                ClaimCore.Domain.Tasks.Registry.find
-                                                                    id
-                                                                |> Option.get
+                                                                    let mutable controls = []
 
-                                                            let binding =
-                                                                Binding.People(actorId, revision)
+                                                                    for id in offers do
+                                                                        let selected =
+                                                                            ClaimCore.Domain.Tasks
+                                                                                .Registry.find
+                                                                                id
+                                                                            |> Option.get
 
-                                                            let! snapshot =
-                                                                ExecutionEnvironment.fromStorage
-                                                                    tx
-                                                                    services.Principal
-                                                                    maintenance.Active
-                                                                    selected
-                                                                    binding
-                                                                    (Some InputMap.empty)
+                                                                        let binding =
+                                                                            Binding.People(
+                                                                                actorId,
+                                                                                revision
+                                                                            )
 
-                                                            let available =
-                                                                snapshot.Availability binding
+                                                                        let! snapshot =
+                                                                            ExecutionEnvironment
+                                                                                .fromStorage
+                                                                                tx
+                                                                                services.Principal
+                                                                                requester
+                                                                                maintenance.Active
+                                                                                selected
+                                                                                binding
+                                                                                (Some InputMap.empty)
+                                                                                None
 
-                                                            if available.Blocked.IsNone then
-                                                                controls <-
-                                                                    TaskOffer.Available(
-                                                                        id,
-                                                                        binding,
-                                                                        available
-                                                                    )
-                                                                    :: controls
+                                                                        let available =
+                                                                            snapshot.Availability
+                                                                                binding
 
-                                                        let controls = List.rev controls
+                                                                        if
+                                                                            available.Blocked.IsNone
+                                                                        then
+                                                                            controls <-
+                                                                                TaskOffer.Available(
+                                                                                    id,
+                                                                                    binding,
+                                                                                    available
+                                                                                )
+                                                                                :: controls
+
+                                                                    return List.rev controls
+                                                            }
 
                                                         let profileSeed =
                                                             if
@@ -441,6 +463,15 @@ module internal PeopleQueries =
                                                                                     controls
                                                                                 ProfileSeed =
                                                                                     profileSeed
+                                                                                CanTerminateSessions =
+                                                                                    Access.can
+                                                                                        services
+                                                                                            .Principal
+                                                                                        viewer
+                                                                                        Capability
+                                                                                            .ManageAccess
+                                                                                        Scope
+                                                                                            .Installation
                                                                                 Items = items
                                                                                 NextCursor =
                                                                                     page.Next

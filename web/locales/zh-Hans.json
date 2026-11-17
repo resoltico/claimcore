@@ -615,10 +615,6 @@
     "text": "使用手动筛选以包括非活动工作。",
     "source": "dc4f2d354574"
   },
-  "ui.unconfirmedUntil": {
-    "text": "尚未确认。回答将在 {finalAt} 前确定。",
-    "source": "fc1019052c76"
-  },
   "ui.changeResponsible": {
     "text": "更改",
     "source": "c0bf75bd78bf"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "显示所有备注",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "重新分配",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "打开案件",
@@ -706,5 +698,9 @@
   "ui.roleNumber": {
     "text": "角色 {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "浏览器无法保存下载文件。请重试。",
+    "source": "e3c4b2089bc4"
   }
 }

@@ -322,7 +322,12 @@ let private dispatch () =
                 BuildIdentity.current.Version
             )
 
-        administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
+        administration.Maintenance(
+            (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099")),
+            token
+        )
+        |> sync
+        |> ignore
 
         let maintained = person owner
         Expect.isEmpty maintained.Offers "Maintenance suppresses person tasks at the query snapshot"

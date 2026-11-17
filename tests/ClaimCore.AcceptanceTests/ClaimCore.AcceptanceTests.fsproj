@@ -19,6 +19,7 @@
     <Compile Include="ThirdPartyNoticeTests.fs" />
     <Compile Include="RedirectControl.fs" />
     <Compile Include="HttpsProxy.fs" />
+    <Compile Include="HttpsProxyTests.fs" />
     <Compile Include="CommitReplyProxy.fs" />
     <Compile Include="PublishedFixture.fs" />
     <Compile Include="PublishedSessionTests.fs" />

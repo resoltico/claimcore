@@ -7,21 +7,28 @@ open ClaimCore.Application.Contracts
 module PaymentPageCodecs =
     open Codec
 
-    let page =
-        let item =
-            (record (fun entry position remove ->
-                {
-                    CasePaymentItem.Entry = entry
-                    Position = position
-                    CanRemove = remove
-                })
-            : Fields<CasePaymentItem, _>)
-            |> field "entry" _.Entry PaymentCodecs.entry
-            |> field "position" _.Position LedgerCodecs.effectPosition
-            |> field "canRemove" _.CanRemove boolean
-            |> build
-            |> named "CasePaymentItem"
+    let item =
+        (record (fun entry position actions ->
+            {
+                CasePaymentItem.Entry = entry
+                Position = position
+                Actions = actions
+            })
+        : Fields<CasePaymentItem, _>)
+        |> field "entry" _.Entry PaymentCodecs.entry
+        |> field "position" _.Position LedgerCodecs.effectPosition
+        |> field
+            "actions"
+            _.Actions
+            (list
+                ClientCompositions.paymentActions.Length
+                (VocabularyCodec.select
+                    (fun task -> List.contains task ClientCompositions.paymentActions)
+                    TaskVocabulary.vocabulary))
+        |> build
+        |> named "CasePaymentItem"
 
+    let page =
         let state =
             CaseStateCodecs.state
                 "PaymentFinancialState"

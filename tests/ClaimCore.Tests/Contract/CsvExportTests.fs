@@ -167,3 +167,282 @@ let cellEncoding =
             let bytes = CsvCell.format authored + ",sentinel\r\n" |> Encoding.UTF8.GetBytes
 
             Expect.equal (parseRows bytes) [ [ expected; "sentinel" ] ] "Independent CSV readback")
+
+[<Tests>]
+let completeByteGoldens =
+    testCase
+        "four CSV formats retain literal UTF-8 bytes CRLF canonical scalars and protected formulas"
+        (fun () ->
+            let raw = Guid.Parse "019aa6a0-0000-7000-8000-000000000001"
+            let actorRaw = Guid.Parse "019aa6a0-0000-7000-8000-000000000003"
+            let targetRaw = Guid.Parse "019aa6a0-0000-7000-8000-000000000004"
+            let reminderRaw = Guid.Parse "019aa6a0-0000-7000-8000-000000000002"
+            let operation = CaseFixtures.operationId raw
+
+            let actor =
+                DomainInputs.namedActorReference (CaseFixtures.actorId actorRaw) "+Recorder, α"
+
+            let target =
+                DomainInputs.namedActorReference (CaseFixtures.actorId targetRaw) "=Target α"
+
+            let reference = DomainInputs.reference "CSV-GOLDEN"
+            let changed = DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero)
+
+            let basis =
+                {
+                    WorkDateBasis.ObservedAt = changed
+                    BusinessDate = DateOnly(2026, 11, 9)
+                    TimeZoneId = "Etc/UTC"
+                }
+
+            let claimantName = "=CSV, α \"quoted\""
+
+            let registration =
+                DomainInputs.registrationFrom
+                    [
+                        BusinessField.ClaimantName, claimantName
+                        BusinessField.InsurerName, "Insurer"
+                        BusinessField.ClaimedAmount, "1.2345"
+                        BusinessField.ClaimedCurrency, "EUR"
+                    ]
+                |> DomainInputs.admittedRegistration
+
+            let fields =
+                {
+                    CaseFields.CaseReference = reference
+                    Status = CaseStatus.Opened
+                    Registration = registration
+                    Finance = FinancialPosition.undecided
+                }
+
+            let caseRow: CaseSummary =
+                {
+                    CaseId = CaseFixtures.caseId raw
+                    Reference = reference
+                    Revision = CaseFixtures.revision 7L
+                    WorkRevision = CaseFixtures.revision 3L
+                    CanAssign = true
+                    ChangedAt = changed
+                    State =
+                        CaseState.Active
+                            {
+                                Fields =
+                                    CaseSummaryFields.values CaseSummaryFields.declarations fields
+                            }
+                    Headline = CaseHeadline.Undecided
+                    Attention = [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
+                    Stages = None
+                    NextAction = None
+                    Responsible = None
+                    PendingReminders = 0L
+                    Paid = None
+                    PaymentCount = 0L
+                    LastPaymentDate = None
+                }
+
+            let expected header cells =
+                Encoding.UTF8.GetBytes(header + "\r\n" + String.concat "," cells + "\r\n")
+
+            let caseBytes = Array.append CaseCsv.csvHeader (CaseCsv.csvRows basis [ caseRow ])
+
+            Expect.equal
+                caseBytes
+                (expected
+                    "caseReference,revision,workRevision,state.kind,headline,attention,state.fields.claimantName,state.fields.insurerName,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,paidAmount,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
+                    [
+                        "CSV-GOLDEN"
+                        "7"
+                        "3"
+                        "ACTIVE"
+                        "UNDECIDED"
+                        "NO_NEXT_ACTION;UNASSIGNED"
+                        "\"'=CSV, α \"\"quoted\"\"\""
+                        "Insurer"
+                        "1.2345"
+                        "EUR"
+                        ""
+                        ""
+                        ""
+                        "0"
+                        ""
+                        ""
+                        ""
+                        ""
+                        ""
+                        ""
+                        ""
+                        ""
+                        ""
+                        "0"
+                        "2026-11-09T12:00:00.000000Z"
+                        "2026-11-09"
+                        "Etc/UTC"
+                    ])
+                "Independent case byte vector"
+
+            let due =
+                CalendarDate.parse "2026-11-20" |> Result.defaultWith (fun _ -> failtest "Date")
+
+            let reminder =
+                Reminder.ofAccepted
+                    (ReminderId.create reminderRaw |> Option.get)
+                    (CaseFixtures.caseId raw)
+                    (CaseFixtures.revision 3L)
+                    (ReminderAction.parse "+CSV, α \"quoted\""
+                     |> Result.defaultWith (fun _ -> failtest "Action"))
+                    due
+                    ReminderState.Pending
+                |> Result.defaultWith failtest
+
+            let row: ReminderReadModel =
+                {
+                    Reminder = reminder
+                    Reference = reference
+                    ClaimantName =
+                        (PartyName.parse claimantName
+                         |> Result.defaultWith (fun _ -> failtest "Claimant"))
+                    Responsible = None
+                    RecordedAt = changed
+                    RecordedBy = actor
+                    Offers = []
+                    Active = true
+                    Timing = Some ReminderDue.Upcoming
+                }
+
+            let render = MessageCatalogs.render LocalizationPolicy.defaultLanguage
+
+            let reminderBytes =
+                Array.append ReminderCsv.csvHeader (ReminderCsv.csvRows render [ row ])
+
+            Expect.equal
+                reminderBytes
+                (expected
+                    "caseId,caseReference,reminderId,revision,action,dueDate,state,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
+                    [
+                        "019aa6a0-0000-7000-8000-000000000001"
+                        "CSV-GOLDEN"
+                        "019aa6a0-0000-7000-8000-000000000002"
+                        "3"
+                        "\"'+CSV, α \"\"quoted\"\"\""
+                        "2026-11-20"
+                        "PENDING"
+                        "2026-11-09T12:00:00.000000Z"
+                        "019aa6a0-0000-7000-8000-000000000003"
+                        "\"'+Recorder, α\""
+                        "true"
+                    ])
+                "Independent reminder byte vector"
+
+            let hash = EntryHash.ofBytes (Array.create 32 0xabuy) |> Option.get
+            let position = EffectPosition.create (CaseFixtures.sequence 7L) 3 |> Option.get
+
+            let person: PeopleHistoryEntry =
+                {
+                    OperationId = operation
+                    Position = position
+                    OperationHash = hash
+                    RecordedAt = changed
+                    RecordedBy = actor
+                    Target = target
+                    Task = TaskId.ofLiteral "people.enable"
+                    Changes =
+                        {
+                            PersonPartDescription.Profiles = { Before = None; After = None }
+                            Principal = None
+                            Enabled =
+                                Some
+                                    {
+                                        Before = Some false
+                                        After = Some true
+                                    }
+                            ProfilePresent = None
+                            DisplayName = None
+                            Contact = None
+                            Grants = []
+                        }
+                    PrivateAvailable = true
+                    References = { Actors = []; Cases = [] }
+                }
+
+            let peopleBytes =
+                Array.append
+                    PeopleHistoryCsv.csvHeader
+                    (PeopleHistoryCsv.csvRows render [ person ])
+
+            Expect.equal
+                peopleBytes
+                (expected
+                    "operationId,sequence,effectIndex,operationHash,recordedAt,recordedBy.actorId,recordedBy.displayName,target.actorId,target.displayName,task,privateAvailable,field,before,after"
+                    [
+                        "019aa6a0-0000-7000-8000-000000000001"
+                        "7"
+                        "3"
+                        String.replicate 32 "ab"
+                        "2026-11-09T12:00:00.000000Z"
+                        "019aa6a0-0000-7000-8000-000000000003"
+                        "\"'+Recorder, α\""
+                        "019aa6a0-0000-7000-8000-000000000004"
+                        "'=Target α"
+                        "people.enable"
+                        "true"
+                        "enabled"
+                        "false"
+                        "true"
+                    ])
+                "Independent people-history byte vector"
+
+            let timeline: CaseTimelineEntry =
+                {
+                    OperationId = operation
+                    Position = position
+                    OperationHash = hash
+                    Subject =
+                        {
+                            PartKind = PartKind.Case
+                            PartId = raw
+                            Revision = Revision.first
+                        }
+                    Task = TaskId.ofLiteral "case.open"
+                    RecordedAt = changed
+                    RecordedBy = actor
+                    Changes = TimelineChanges.Withheld
+                }
+
+            let timelineBytes =
+                Array.append
+                    TimelineCsv.csvHeader
+                    (TimelineCsv.csvRows
+                        {
+                            Disclosure = HistoryDisclosure.Full
+                            Basis = basis
+                            CaseId = CaseFixtures.caseId raw
+                            Reference = reference
+                            Items = [ timeline ]
+                            NextCursor = None
+                        })
+
+            Expect.equal
+                timelineBytes
+                (expected
+                    "caseReference,operationId,sequence,effectIndex,operationHash,recordedAt,recordedBy.actorId,recordedBy.displayName.value,recordedBy.displayName.kind,act,revision,reminderId,nextReminderId,nextReminderRevision,changes.kind,field,before,after"
+                    [
+                        "CSV-GOLDEN"
+                        "019aa6a0-0000-7000-8000-000000000001"
+                        "7"
+                        "3"
+                        String.replicate 32 "ab"
+                        "2026-11-09T12:00:00.000000Z"
+                        "019aa6a0-0000-7000-8000-000000000003"
+                        "\"'+Recorder, α\""
+                        "NAMED"
+                        "case.open"
+                        "1"
+                        ""
+                        ""
+                        ""
+                        "WITHHELD"
+                        ""
+                        ""
+                        ""
+                    ])
+                "Independent timeline byte vector")

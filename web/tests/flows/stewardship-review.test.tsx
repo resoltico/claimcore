@@ -88,9 +88,8 @@ const stubReview = (
                   operationAffordance(
                     task.id,
                     {
-                      kind: "CASE",
+                      ...operationPreviewRequest.binding,
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-                      expectedRevision: operationPreviewRequest.binding.expectedRevision,
                     },
                     {},
                     [],
@@ -166,6 +165,7 @@ it.each([
               kind: "CASE",
               target: { kind: "REFERENCE", caseReference: "CASE-1" },
               expectedRevision: 1,
+              ...(act === "case.erase" ? { expectedFamilySequence: 1 } : {}),
             }),
           ],
         }),

@@ -1,4 +1,4 @@
-import { allActions } from "../../src/operation/affordances";
+import { isOperationAffordance, allActions } from "../../src/operation/affordances";
 import type { PersonDocument } from "../../src/protocol/types";
 import { withRecommendation, operationAffordance } from "./affordances.fixtures";
 import { installationActions, requesterLinks } from "./human-requester.fixtures";
@@ -330,19 +330,17 @@ export const setupActorTargets = (
           return withRecommendation(
             {
               ...person,
-              actions: selected.flatMap((action) =>
-                action.task === "people.requests.dismiss"
-                  ? []
-                  : [
-                      operationAffordance(
-                        action.task,
-                        { kind: "PEOPLE", expectedRevision: 1, actorId: person.subject.actorId },
-                        action.seeds,
-                        action.editable,
-                        action.choices,
-                      ),
-                    ],
-              ),
+              actions: selected
+                .filter(isOperationAffordance)
+                .map((action) =>
+                  operationAffordance(
+                    action.task,
+                    { kind: "PEOPLE", expectedRevision: 1, actorId: person.subject.actorId },
+                    action.seeds,
+                    action.editable,
+                    action.choices,
+                  ),
+                ),
             },
             primary,
           );

@@ -19,7 +19,14 @@ let private token = CancellationToken.None
 let private payload = [| 1uy; 2uy; 3uy |]
 
 let private create (store: ISessionStore) =
-    (store.Create(payload, None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+    (store.Create(
+        SessionResults.principal,
+        payload,
+        None,
+        TimeSpan.FromMinutes 30.,
+        TimeSpan.FromHours 8.,
+        token
+     )
      |> SessionResults.value)
 
 let private sql (database: PostgresFixture.Database) statement parameters =
@@ -52,16 +59,20 @@ let private lifecycle (database: PostgresFixture.Database) =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! key = create first
-        let! read = (second.Retrieve(key, token) |> SessionResults.value)
+        let! read = (second.Retrieve(key, token) |> SessionResults.payload)
         Expect.equal read (Some payload) "Another instance reads the committed session"
 
         let restarted =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
-        let! restored = (restarted.Retrieve(key, token) |> SessionResults.value)
+        let! restored = (restarted.Retrieve(key, token) |> SessionResults.payload)
         Expect.equal restored read "A newly constructed instance needs no startup load"
         let! beforeRenewal = lifetime database key
-        do! (second.Renew(key, [| 4uy; 5uy |], token) |> SessionResults.value)
+
+        do!
+            (second.Renew(key, SessionResults.principal, [| 4uy; 5uy |], (fun _ -> true), token)
+             |> SessionResults.value)
+
         let! afterRenewal = lifetime database key
 
         Expect.equal
@@ -69,11 +80,15 @@ let private lifecycle (database: PostgresFixture.Database) =
             beforeRenewal
             "Renewal preserves the original absolute and idle settings"
 
-        let! renewed = (first.Retrieve(key, token) |> SessionResults.value)
+        let! renewed = (first.Retrieve(key, token) |> SessionResults.payload)
         Expect.equal renewed (Some [| 4uy; 5uy |]) "Renewal replaces only the protected payload"
         do! (first.Remove(key, SessionEndReason.Logout, token) |> SessionResults.value)
-        do! (second.Renew(key, payload, token) |> SessionResults.value)
-        let! removed = (restarted.Retrieve(key, token) |> SessionResults.value)
+
+        do!
+            (second.Renew(key, SessionResults.principal, payload, (fun _ -> true), token)
+             |> SessionResults.value)
+
+        let! removed = (restarted.Retrieve(key, token) |> SessionResults.payload)
         Expect.isNone removed "Renew never recreates a logged-out session"
     }
 
@@ -90,7 +105,7 @@ let private deadlines (database: PostgresFixture.Database) =
                 "UPDATE claimcore.sessions SET last_activity=clock_timestamp()+interval '1 hour' WHERE session_key=$1"
                 [| box key |]
 
-        let! backward = (store.Retrieve(key, token) |> SessionResults.value)
+        let! backward = (store.Retrieve(key, token) |> SessionResults.payload)
         Expect.isNone backward "A backward observation invalidates the session"
         let! idle = create store
 
@@ -100,7 +115,7 @@ let private deadlines (database: PostgresFixture.Database) =
                 "UPDATE claimcore.sessions SET created_at=clock_timestamp()-interval '1 hour',last_activity=clock_timestamp()-interval '30 minutes' WHERE session_key=$1"
                 [| box idle |]
 
-        let! expired = (store.Retrieve(idle, token) |> SessionResults.value)
+        let! expired = (store.Retrieve(idle, token) |> SessionResults.payload)
         Expect.isNone expired "The idle deadline refuses at equality and after"
         let! absolute = create store
 
@@ -110,8 +125,11 @@ let private deadlines (database: PostgresFixture.Database) =
                 "UPDATE claimcore.sessions SET created_at=clock_timestamp()-interval '2 hours',absolute_expiry=clock_timestamp()-interval '1 hour' WHERE session_key=$1"
                 [| box absolute |]
 
-        do! (store.Renew(absolute, payload, token) |> SessionResults.value)
-        let! ended = (store.Retrieve(absolute, token) |> SessionResults.value)
+        do!
+            (store.Renew(absolute, SessionResults.principal, payload, (fun _ -> true), token)
+             |> SessionResults.value)
+
+        let! ended = (store.Retrieve(absolute, token) |> SessionResults.payload)
         Expect.isNone ended "Renew refuses expired absolute deadlines"
     }
 
@@ -138,7 +156,7 @@ let private deadlineAfterLock (database: PostgresFixture.Database) =
                 [| box key |]
                 token
 
-        let retrieval = (store.Retrieve(key, token) |> SessionResults.value)
+        let retrieval = (store.Retrieve(key, token) |> SessionResults.payload)
         do! Task.Delay 400
         do! transaction.CommitAsync()
         let! result = retrieval
@@ -192,8 +210,11 @@ let private logoutRace (database: PostgresFixture.Database) =
                 [| box key |]
                 token
 
-        let renewal = (second.Renew(key, payload, token) |> SessionResults.value)
-        let retrieval = (first.Retrieve(key, token) |> SessionResults.value)
+        let renewal =
+            (second.Renew(key, SessionResults.principal, payload, (fun _ -> true), token)
+             |> SessionResults.value)
+
+        let retrieval = (first.Retrieve(key, token) |> SessionResults.payload)
         do! Task.Delay 100
         Expect.isFalse renewal.IsCompleted "Renew waits for the row lock"
         Expect.isFalse retrieval.IsCompleted "Retrieve waits for the row lock"
@@ -228,8 +249,8 @@ let private independentRows (database: PostgresFixture.Database) =
                 token
 
         let creation = create store
-        let blocked = (store.Retrieve(blockedKey, token) |> SessionResults.value)
-        let other = (store.Retrieve(otherKey, token) |> SessionResults.value)
+        let blocked = (store.Retrieve(blockedKey, token) |> SessionResults.payload)
+        let other = (store.Retrieve(otherKey, token) |> SessionResults.payload)
         let! completed = Task.WhenAny(other :> Task, Task.Delay 3000)
 
         Expect.isTrue
@@ -244,7 +265,7 @@ let private independentRows (database: PostgresFixture.Database) =
                 token
 
         Expect.isFalse creation.IsCompleted "Only creation waits for the capacity admission lock"
-        let! another = (store.Retrieve(otherKey, token) |> SessionResults.value)
+        let! another = (store.Retrieve(otherKey, token) |> SessionResults.payload)
         Expect.isSome another "Session lookup does not acquire the ledger head"
         do! transaction.RollbackAsync()
         let! _ = blocked
@@ -272,7 +293,7 @@ let private boundedWait (database: PostgresFixture.Database) =
         let mutable timedOut = false
 
         try
-            let! _ = (store.Retrieve(key, token) |> SessionResults.value)
+            let! _ = (store.Retrieve(key, token) |> SessionResults.payload)
             ()
         with :? Npgsql.PostgresException as failure when failure.SqlState = "55P03" ->
             timedOut <- true
@@ -288,14 +309,14 @@ let private boundedWait (database: PostgresFixture.Database) =
         let mutable aborted = false
 
         try
-            let! _ = (store.Retrieve(key, cancelled.Token) |> SessionResults.value)
+            let! _ = (store.Retrieve(key, cancelled.Token) |> SessionResults.payload)
             ()
         with :? OperationCanceledException ->
             aborted <- true
 
         Expect.isTrue aborted "Caller cancellation interrupts actual database waiting"
         do! transaction.RollbackAsync()
-        let! recovered = (store.Retrieve(key, token) |> SessionResults.value)
+        let! recovered = (store.Retrieve(key, token) |> SessionResults.payload)
 
         Expect.isSome
             recovered
@@ -309,7 +330,7 @@ let private capacity (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800 FROM generate_series(1,10000) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64) FROM generate_series(1,10000) n"
                 [||]
 
         let store =
@@ -320,6 +341,7 @@ let private capacity (database: PostgresFixture.Database) =
         try
             let! _ =
                 store.Create(
+                    SessionResults.principal,
                     payload,
                     Some(DateTimeOffset.UtcNow.AddMinutes(-1.0)),
                     TimeSpan.FromMinutes 30.,
@@ -352,7 +374,7 @@ let private capacity (database: PostgresFixture.Database) =
                 [||]
 
         let! key = create store
-        let! found = (store.Retrieve(key, token) |> SessionResults.value)
+        let! found = (store.Retrieve(key, token) |> SessionResults.payload)
         Expect.isSome found "Bounded cleanup permits new active sessions after expiry"
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
@@ -376,7 +398,7 @@ let private storeFailure (database: PostgresFixture.Database) =
         let mutable failed = false
 
         try
-            let! _ = (store.Retrieve(key, token) |> SessionResults.value)
+            let! _ = (store.Retrieve(key, token) |> SessionResults.payload)
             ()
         with :? ObjectDisposedException ->
             failed <- true

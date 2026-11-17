@@ -47,33 +47,45 @@ module TaskAffordances =
     let offered task binding seeds editable choices =
         Affordance.create task binding seeds editable choices None
 
-    let private selected shape =
-        ClaimCore.Domain.Tasks.Registry.clientDeclarations
-        |> List.find (fun declaration -> TaskDeclaration.bindingShape declaration = shape)
-        |> _.Id
+    let private binding task selection revision identity family =
+        SubmissionAssembly.offeredBinding
+            (TaskConsequences.declaration task)
+            selection
+            revision
+            identity
+            family
 
     let caseAction task id revision family seeds editable choices =
-        let declaration = TaskConsequences.declaration task
-
-        let binding =
-            match TaskDeclaration.bindingShape declaration with
-            | BindingShape.CaseNew -> Binding.CaseNew Revision.zero
-            | BindingShape.CaseErase -> Binding.CaseErase(CaseSelector.Id id, revision, family)
-            | BindingShape.Case -> Binding.Case(CaseSelector.Id id, revision)
-            | _ -> invalidArg (nameof task) "A row selection is required for this action."
-
-        offered task (Some binding) seeds editable choices
+        offered
+            task
+            (Some(binding task (Some(CaseSelector.Id id)) (Some revision) None (Some family)))
+            seeds
+            editable
+            choices
 
     let noteAdd id =
-        let task = selected BindingShape.NoteNew
-        offered task (Some(Binding.NoteNew(CaseSelector.Id id))) Map.empty (authored task) Map.empty
+        let task = ClientCompositions.noteEntry
+
+        offered
+            task
+            (Some(binding task (Some(CaseSelector.Id id)) None None None))
+            Map.empty
+            (authored task)
+            Map.empty
 
     let noteRemove id (item: NoteReadModel) =
         if item.CanRemove then
             [
                 offered
-                    (selected BindingShape.Note)
-                    (Some(Binding.Note(CaseSelector.Id id, item.NoteId)))
+                    (ClientCompositions.noteRemoval)
+                    (Some(
+                        binding
+                            ClientCompositions.noteRemoval
+                            (Some(CaseSelector.Id id))
+                            None
+                            (Some(NoteId.value item.NoteId))
+                            None
+                    ))
                     Map.empty
                     []
                     Map.empty
@@ -83,17 +95,45 @@ module TaskAffordances =
 
     let paymentRemoveEntry id revision entry =
         offered
-            (selected BindingShape.CasePayment)
-            (Some(Binding.CasePayment(CaseSelector.Id id, revision, PaymentEntry.id entry)))
+            (ClientCompositions.paymentRemoval)
+            (Some(
+                binding
+                    ClientCompositions.paymentRemoval
+                    (Some(CaseSelector.Id id))
+                    (Some revision)
+                    (Some(OperationId.value (PaymentEntry.id entry)))
+                    None
+            ))
             Map.empty
             []
             Map.empty
 
-    let paymentRemove id revision (item: CasePaymentItem) =
-        if item.CanRemove then
-            [ paymentRemoveEntry id revision item.Entry ]
-        else
-            []
+    let paymentCorrectionEntry id revision currency entry =
+        let task = ClientCompositions.paymentCorrection
+
+        offered
+            task
+            (Some(
+                binding
+                    task
+                    (Some(CaseSelector.Id id))
+                    (Some revision)
+                    (Some(OperationId.value (PaymentEntry.id entry)))
+                    None
+            ))
+            (Map.ofList [ field BusinessField.PaidCurrency, text currency ])
+            (authored task)
+            Map.empty
+
+    let paymentEntryActions id revision currency (item: CasePaymentItem) =
+        item.Actions
+        |> List.map (fun task ->
+            if task = ClientCompositions.paymentRemoval then
+                paymentRemoveEntry id revision item.Entry
+            elif task = ClientCompositions.paymentCorrection then
+                paymentCorrectionEntry id revision currency item.Entry
+            else
+                invalidArg "item" "A payment item contains an undeclared action.")
 
     let fromOffer =
         function
@@ -112,25 +152,42 @@ module TaskAffordances =
     let reminder (value: ReminderReadModel) = value.Offers |> List.choose fromOffer
 
     let reminderCreate id =
-        let task = selected BindingShape.ReminderNew
+        let task = ClientCompositions.reminderCreation
 
         offered
             task
-            (Some(Binding.ReminderNew(CaseSelector.Id id)))
+            (Some(binding task (Some(CaseSelector.Id id)) None None None))
             Map.empty
             (authored task)
             Map.empty
 
     let work id revision seeds editable =
-        offered
-            (selected BindingShape.Work)
-            (Some(Binding.Work(CaseSelector.Id id, revision)))
-            seeds
-            editable
-            Map.empty
+        let action =
+            offered
+                ClientCompositions.assignment
+                (Some(
+                    binding
+                        ClientCompositions.assignment
+                        (Some(CaseSelector.Id id))
+                        (Some revision)
+                        None
+                        None
+                ))
+                seeds
+                editable
+                Map.empty
+
+        { action with
+            LabelId = "label.assignmentAction"
+        }
 
     let person task actor revision seeds editable choices =
-        offered task (Some(Binding.People(actor, revision))) seeds editable choices
+        offered
+            task
+            (Some(binding task None (Some revision) (Some(ActorId.value actor)) None))
+            seeds
+            editable
+            choices
 
     let availability refusal =
         let message, args =
@@ -181,23 +238,21 @@ module TaskAffordances =
                 (principal value.Principal)
                 (profile hints)
 
-        let declaration =
-            ClaimCore.Domain.Tasks.Registry.clientDeclarations
-            |> List.find (fun declaration ->
-                declaration.Target = ActSubject.People
-                && declaration.Creates
-                && not declaration.Collections.IsEmpty)
+        let declaration = TaskConsequences.declaration ClientCompositions.admission
 
         let editable =
             authored declaration.Id
             |> List.filter (fun input -> not (Map.containsKey input (principal value.Principal)))
 
         let admit =
-            offered declaration.Id (Some(Binding.PeopleNew Revision.zero)) seeds editable Map.empty
-
-        let command = EndpointDeclarations.commands |> List.exactlyOne
+            offered
+                declaration.Id
+                (Some(binding declaration.Id None None None None))
+                seeds
+                editable
+                Map.empty
 
         let dismiss =
-            offered (TaskId.ofLiteral command.Id) None (principal value.Principal) [] Map.empty
+            Affordance.command (CommandRequest.DismissAccessRequest value.Principal)
 
         [ admit; dismiss ]

@@ -33,7 +33,10 @@ let private assertTarget target identity violation code parameters =
     let parameters = Map.ofList parameters
 
     for language in LocalizationPolicy.languages do
-        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered =
+            ReplyText.bytes (RenderingContext.forLanguage language) (frame refusal)
+            |> Encoding.UTF8.GetString
+
         let label = MessageCatalogs.render language identity Map.empty
 
         let message = MessageCatalogs.render language ("diagnostic." + code) parameters
@@ -122,7 +125,9 @@ let private assertOptionalTarget refusal identity code =
     let source = Frames.encode (frame refusal)
 
     for language in LocalizationPolicy.languages do
-        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered =
+            ReplyText.bytes (RenderingContext.forLanguage language) (frame refusal)
+            |> Encoding.UTF8.GetString
 
         let message = MessageCatalogs.render language ("diagnostic." + code) Map.empty
 
@@ -189,7 +194,7 @@ let accumulated =
 
         for language in LocalizationPolicy.languages do
             let lines =
-                ReplyText.bytes language (frame refusal)
+                ReplyText.bytes (RenderingContext.forLanguage language) (frame refusal)
                 |> Encoding.UTF8.GetString
                 |> fun text -> text.Split('\n')
 
@@ -225,7 +230,7 @@ let nextAndConflicts =
                     for language in LocalizationPolicy.languages do
                         let unchanged =
                             DiagnosticText.refusalLines
-                                language
+                                (RenderingContext.forLanguage language)
                                 (Refusal.Case CaseRefusal.CorrectionNoChanges)
                             |> String.concat "\n"
 
@@ -235,7 +240,7 @@ let nextAndConflicts =
 
                         let access =
                             DiagnosticText.refusalLines
-                                language
+                                (RenderingContext.forLanguage language)
                                 (Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward))
                             |> String.concat "\n"
 
@@ -349,7 +354,7 @@ let nextAndConflicts =
                         let text =
                             ReplyText.resultLinesWithDetails
                                 details
-                                "en"
+                                (RenderingContext.forLanguage "en")
                                 None
                                 (FrameResult.Reply admitted)
                             |> String.concat "\n"
@@ -414,7 +419,10 @@ let nextAndConflicts =
                         |> CaseBuilders.accepted
 
                     let customText =
-                        ReplyText.resultLines "en" None (FrameResult.Reply custom)
+                        ReplyText.resultLines
+                            (RenderingContext.forLanguage "en")
+                            None
+                            (FrameResult.Reply custom)
                         |> String.concat "\n"
 
                     Expect.stringContains
@@ -431,7 +439,7 @@ let nextAndConflicts =
                             DiagnosticText.refusalLinesWithView
                                 true
                                 (Some(TimelineScreen.rows entries))
-                                language
+                                (RenderingContext.forLanguage language)
                                 (Some "CASE-1")
                                 refusal
                             |> String.concat "\n"
@@ -477,7 +485,7 @@ let hostFailures =
             |> String.concat "\n"
 
         Expect.stringContains
-            (text "en" HostFailureCode.ContractMismatch)
+            (text (RenderingContext.forLanguage "en") HostFailureCode.ContractMismatch)
             "Use the CLI from the same ClaimCore release as the service."
             "English contract mismatch states the CLI's next step"
 
@@ -487,8 +495,10 @@ let hostFailures =
                     HostFailureCode.ContractMismatch, "CONTRACT_MISMATCH"
                     HostFailureCode.InstallationMismatch, "INSTALLATION_MISMATCH"
                 ] do
-                let rendered = text language code
-                let browser = ReplyTextFormat.label language ("host." + token)
+                let rendered = text (RenderingContext.forLanguage language) code
+
+                let browser =
+                    ReplyTextFormat.label (RenderingContext.forLanguage language) ("host." + token)
 
                 Expect.isFalse
                     (rendered.Contains browser)

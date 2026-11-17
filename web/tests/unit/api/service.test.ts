@@ -292,3 +292,153 @@ it("retains the independent response deadline for an unresponsive fetch", async 
   });
   expect(delivered!.aborted).toBe(true);
 });
+
+it.each([undefined, null, "false", 0])(
+  "rejects malformed byRequester %s without settling uncertain delivery",
+  async (byRequester) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        reply({
+          representation: "HUMAN",
+          operationId: operation,
+          outcome: {
+            kind: "ACCEPTED",
+            document: receipt,
+            ...(byRequester === undefined ? {} : { byRequester }),
+          },
+        }),
+      ),
+    );
+    const result = await service.operationGet(operation, "csrf", installation);
+    expect(result.kind).toBe("deliveryFailure");
+    expect(mutationUncertain(result)).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  },
+);
+it.each([true, false])("retains valid byRequester %s distinctly", async (byRequester) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      reply({
+        representation: "HUMAN",
+        operationId: operation,
+        outcome: { kind: "ACCEPTED", document: receipt, byRequester },
+      }),
+    ),
+  );
+  expect(await service.operationGet(operation, "csrf", installation)).toMatchObject({
+    kind: "outcome",
+    value: { outcome: { byRequester } },
+  });
+});
+it.each(["2024-02-30", "0000-01-01", "2023-02-29", "2024-02-29\n"])(
+  "rejects invalid Gregorian observation %s",
+  async (businessDate) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        reply({
+          representation: "HUMAN",
+          outcome: {
+            kind: "SUCCEEDED",
+            document: {
+              ...current,
+              basis: {
+                kind: "SNAPSHOT",
+                observation: { ...observation.observation, businessDate },
+              },
+            },
+          },
+        }),
+      ),
+    );
+    expect((await service.get("REF", "csrf")).kind).toBe("deliveryFailure");
+  },
+);
+it.each(["2024-02-29T23:59:59.123456Z", "2024-02-29T23:59:59.1234567Z"])(
+  "preserves exact admitted instant %s",
+  async (observedAt) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        reply({
+          representation: "HUMAN",
+          outcome: {
+            kind: "SUCCEEDED",
+            document: {
+              ...current,
+              basis: {
+                kind: "SNAPSHOT",
+                observation: { ...observation.observation, observedAt },
+              },
+            },
+          },
+        }),
+      ),
+    );
+    const result = await service.get("REF", "csrf");
+    // Observation instants use the six-fraction codec; seven-fraction values are admitted by their own declared roots only.
+    expect(result.kind).toBe(observedAt.endsWith("123456Z") ? "outcome" : "deliveryFailure");
+  },
+);
+
+it("admits complete dismissal controls but rejects impossible task associations and malformed principal fields", async () => {
+  const action = {
+    task: "people.requests.dismiss",
+    labelId: "endpoint.people.requests.dismiss.label",
+    binding: {
+      kind: "COMMAND",
+      request: {
+        command: "people.requests.dismiss",
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "https://issuer.example/",
+        "input:principal.subject": "synthetic",
+      },
+    },
+    seeds: {},
+    editable: [],
+    choices: {},
+    blocked: null,
+  };
+  const sample = {
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      document: { ...current, subject: { kind: "LIST" }, history: null, actions: [action] },
+    },
+  };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(sample)));
+  expect((await requestEndpoint("people.requests", "csrf", { limit: 20 })).kind).toBe("outcome");
+  for (const invalid of [
+    { ...action, task: "session.terminateOwn" },
+    {
+      ...action,
+      binding: {
+        ...action.binding,
+        request: { ...action.binding.request, "input:principal.issuer": "" },
+      },
+    },
+    {
+      ...action,
+      binding: {
+        ...action.binding,
+        request: { ...action.binding.request, "input:principal.subject": "" },
+      },
+    },
+  ]) {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      reply({
+        ...sample,
+        outcome: {
+          ...sample.outcome,
+          document: { ...sample.outcome.document, actions: [invalid] },
+        },
+      }),
+    );
+    expect((await requestEndpoint("people.requests", "csrf", { limit: 20 })).kind).toBe(
+      "deliveryFailure",
+    );
+  }
+  expect(fetch).toHaveBeenCalledTimes(4);
+});

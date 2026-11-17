@@ -12,7 +12,7 @@ import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
 
-import { taskDefinitions, type Principal } from "@contracts/client";
+import { clientCompositions, taskDefinitions, type Principal } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
 import { ScreenView } from "../ui/ScreenView";
 import { useOperationObservation } from "../hooks/useOperationObservation";
@@ -231,8 +231,7 @@ const PendingPeopleRequests = ({
       context?.actions.some(
         (action) =>
           isOperationAffordance(action) &&
-          operationTask(action.task).creates &&
-          operationTask(action.task).collections.length > 0 &&
+          action.task === clientCompositions.admission &&
           action.blocked === null,
       ) === true
     }
@@ -264,38 +263,33 @@ const PeopleWorkspace = ({
   return (
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
-      {selectedActorId === null &&
-      context.value?.actions.some(
-        (action) =>
-          isOperationAffordance(action) &&
-          operationTask(action.task).creates &&
-          operationTask(action.task).collections.length > 0 &&
-          action.blocked === null,
-      ) === true ? (
-        <button
-          type="button"
-          disabled={model.busy}
-          onClick={() => {
-            if (
-              model.phase === "ACCEPTED" ||
-              (!model.dirty && model.prepared === null && !model.priorUncertain)
-            ) {
-              const action = context.value?.actions.find(
-                (candidate): candidate is AccessRequestControl =>
-                  isOperationAffordance(candidate) &&
-                  operationTask(candidate.task).creates &&
-                  operationTask(candidate.task).collections.length > 0,
-              );
-              if (action !== undefined) {
-                editor.admit(action);
-              }
-            }
-            editor.open();
-          }}
-        >
-          {renderCatalogKey(p, principalCreationTask().labelId)}
-        </button>
-      ) : null}
+      {selectedActorId === null
+        ? context.value?.actions
+            .filter(
+              (action): action is AccessRequestControl =>
+                isOperationAffordance(action) &&
+                (action.task === clientCompositions.accountRegistration ||
+                  action.task === clientCompositions.admission) &&
+                action.blocked === null,
+            )
+            .map((action) => (
+              <button
+                key={action.task}
+                type="button"
+                disabled={
+                  model.busy ||
+                  (model.phase !== "ACCEPTED" &&
+                    (model.dirty || model.prepared !== null || model.priorUncertain))
+                }
+                onClick={() => {
+                  editor.admit(action);
+                  editor.open();
+                }}
+              >
+                {renderCatalogKey(p, operationTask(action.task).labelId)}
+              </button>
+            ))
+        : null}
       <PendingPeopleRequests
         model={model}
         context={context.value}
@@ -309,7 +303,14 @@ const PeopleWorkspace = ({
           <PeopleDirectory
             selectedActorId={selectedActorId}
             open={!editor.active && model.pendingDiscard === null}
-            actions={<ActorActions target={target} busy={model.busy} onOpen={editor.open} />}
+            actions={
+              <ActorActions
+                target={target}
+                busy={model.busy}
+                onOpen={editor.open}
+                onDisclosureRefused={disclosure.refused}
+              />
+            }
             onRevoke={(action) => {
               target.begin(action);
               editor.open();

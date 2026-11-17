@@ -46,14 +46,14 @@ let tests =
                     "No facet metadata is masked during decode/write"
 
                 Expect.equal
-                    (TextDescriptorValue.render "en" value)
+                    (TextDescriptorValue.render (RenderingContext.forLanguage "en") value)
                     "1.0000 EUR"
                     "The human consumer uses supplied scale"
 
                 let lower = read (money "1.2345" (JsonValue.Integer 0L)) |> CaseBuilders.accepted
 
                 Expect.equal
-                    (TextDescriptorValue.render "en" lower)
+                    (TextDescriptorValue.render (RenderingContext.forLanguage "en") lower)
                     "1.2345 EUR"
                     "Formatting never removes meaningful exact digits")
             testCase
@@ -169,7 +169,7 @@ let tests =
                     "Each side retains its own exact value"
 
                 Expect.isTrue
-                    (TextDescriptorValue.render "en" change.Before
+                    (TextDescriptorValue.render (RenderingContext.forLanguage "en") change.Before
                      |> fun value -> value.Contains "U+180E")
                     "Character-warning protection survives typed changes")
         ]

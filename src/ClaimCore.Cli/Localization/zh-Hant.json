@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "將公開連接和語言設置保存到個人資料。\n運行 `claimcore configure --show` 查看生效值及其來源。\n通過文件提供機密；不會將其保存在個人資料中。\n參見 docs/integrating.md#cli-use。",
-    "source": "2e791425e501"
+    "text": "在設定檔中儲存公開連線、語言和顯示地區設定。\\n語言決定措辭；--display-locale 決定日期和數字格式。優先順序：選項、CLAIMCORE_DISPLAY_LOCALE、設定檔、語言預設值。\\n使用 `claimcore configure --show` 查看有效值及其來源。\\n透過檔案提供機密資訊；它們不會儲存在設定檔中。\\n參閱 docs/integrating.md#cli-use。",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "傳送未確認時，退出碼 4 會輸出可重新發送的準確請求。\n重新發送不會重復記錄。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 檢查；回答將在 {window} 內確定。",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "使用 help [topic | family [verb]]，搭配 --format text|json，並可選用 --language。",
-    "source": "b8af016df835"
+    "text": "使用 help [topic | family [verb]]，並指定 --format text|json，以及可選的 --language 和 --display-locale。",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "未知的幫助主題。",
@@ -395,10 +395,6 @@
     "text": "還有更多更改；請執行 {command}。",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "等待最終回答，截止時間為 {finalAt}。",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "案件備註",
     "source": "54c2a0df2066"
@@ -426,5 +422,13 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "未能在兩分鐘內完成登入。請重新執行命令，並在瀏覽器中完成登入。",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "未確認命令的回應。重複執行可能影響更新的狀態。",
+    "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore 瀏覽器工作階段",
+    "source": "afe6f30a2564"
   }
 }

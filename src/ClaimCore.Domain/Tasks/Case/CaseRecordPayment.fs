@@ -59,7 +59,7 @@ let availability environment state binding =
             |> Option.defaultValue Map.empty
     }
 
-let private failure =
+let internal failure =
     function
     | FinancialPositionIssue.CurrencyMismatch ->
         Rejection.ofRefusal (
@@ -88,7 +88,7 @@ let private failure =
         )
     | _ -> Rejection.InvalidState RecordViolation.InvalidFinancialPosition
 
-let decide (context: TaskContext) environment (state: CaseFamily option) binding inputs =
+let decide (context: TaskContext) environment (state: DecisionFacts option) binding inputs =
     let fields = CaseParsing.values inputs
     let syntax = parse (fun _ -> Ok) fields
 
@@ -145,7 +145,7 @@ let decide (context: TaskContext) environment (state: CaseFamily option) binding
     | _, _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
         CaseRules.admit context environment state binding capability (FamilyRules.active true)
@@ -168,10 +168,10 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment state _ ->
-                    match state with
-                    | Some state ->
-                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                fun principal access caseId _ ->
+                    match caseId with
+                    | Some id ->
+                        FamilyRules.permissionFor principal access (Scope.Case id) capability
                     | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability

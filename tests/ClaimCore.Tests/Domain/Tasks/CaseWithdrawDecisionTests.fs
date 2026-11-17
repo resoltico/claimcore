@@ -21,7 +21,7 @@ let tests =
                         Withdraw.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
@@ -45,7 +45,7 @@ let tests =
                     Withdraw.decide
                         (context 4)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))

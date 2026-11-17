@@ -1,9 +1,10 @@
+import { parseReminderPageQuery } from "./reminderQuery";
 import { isObject } from "../protocol/client";
 import type { CaseSelector } from "@contracts/client";
 export type Route =
   | { screen: "cases"; query: string }
   | { screen: "home" }
-  | { screen: "reminders"; query: string }
+  | { screen: "reminders"; query: string; invalidSelection?: true }
   | { screen: "settings" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector; reminderId?: string }
@@ -124,7 +125,15 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
     }
     return { screen: "peopleHistory", actorId };
   }
-  return segments[0] === "reminders" ? { screen: "reminders", query } : null;
+  if (segments[0] === "reminders") {
+    try {
+      parseReminderPageQuery(query);
+      return { screen: "reminders", query };
+    } catch {
+      return { screen: "reminders", query, invalidSelection: true };
+    }
+  }
+  return null;
 };
 export const parseRoute = (location: Pick<Location, "pathname" | "search">): Route => {
   const segments = location.pathname.split("/").filter(Boolean);

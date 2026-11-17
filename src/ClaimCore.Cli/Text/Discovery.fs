@@ -24,13 +24,17 @@ module Discovery =
             }
 
 
-    let private operationText language operations =
+    let private operationText (rendering: RenderingContext) operations =
         operations
         |> List.map (fun operation ->
             let inputs = CommandGrammar.inputs operation
 
             let message key =
-                MessageCatalogs.render language key Map.empty
+                MessageCatalogs.renderWithNumber
+                    (ReplyTextFormat.number rendering)
+                    rendering.Language
+                    key
+                    Map.empty
 
             [
                 message (TaskRouting.labelId operation)
@@ -44,7 +48,7 @@ module Discovery =
                if (TaskRouting.act operation).IsSome && draft <> execution then
                    [
                        MessageCatalogs.renderCli
-                           language
+                           rendering.Language
                            (CliMessage.DryRunUsage(CliIdentity.programName + " " + draft))
                    ]
                else
@@ -68,12 +72,12 @@ module Discovery =
                        |> Map.map (fun _ value ->
                            match value with
                            | GuidanceArgument.Count count ->
-                               count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                               ReplyTextFormat.number rendering count
                            | GuidanceArgument.Code code -> code)
 
                    message input.LabelId
                    + ": "
-                   + MessageCatalogs.render language guidance.Key arguments
+                   + MessageCatalogs.render rendering.Language guidance.Key arguments
                    + allowed))
             @ (CommandGrammar.collections operation
                |> List.map (fun definition ->
@@ -87,24 +91,25 @@ module Discovery =
                           guidance.Arguments
                           |> Map.map (fun _ value ->
                               match value with
-                              | GuidanceArgument.Count count -> string count
+                              | GuidanceArgument.Count count ->
+                                  ReplyTextFormat.number rendering count
                               | GuidanceArgument.Code code -> code)
 
-                      MessageCatalogs.render language guidance.Key arguments)
+                      MessageCatalogs.render rendering.Language guidance.Key arguments)
                    + " ["
                    + CommandGrammar.collectionFlag definition
                    + " "
                    + CommandGrammar.collectionPlaceholder definition
                    + "; "
-                   + string binding.MinimumItems
+                   + ReplyTextFormat.number rendering (int64 binding.MinimumItems)
                    + "–"
-                   + string binding.MaximumItems
+                   + ReplyTextFormat.number rendering (int64 binding.MaximumItems)
                    + "]"))
             |> String.concat "\n")
         |> String.concat "\n\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
 
-    let commandHelp language (words: string list) =
+    let commandHelp (rendering: RenderingContext) (words: string list) =
         let matches =
             CommandGrammar.operations
             |> List.filter (fun operation ->
@@ -115,7 +120,7 @@ module Discovery =
             |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
         with
         | Some operation ->
-            Some(operationText language [ operation ])
+            Some(operationText rendering [ operation ])
             |> Option.map (fun bytes ->
                 let globals =
                     CommandGrammar.globalOptions operation
@@ -130,7 +135,7 @@ module Discovery =
 
                 Encoding.UTF8.GetString bytes
                 + "\n"
-                + MessageCatalogs.renderCli language CliMessage.GlobalOptions
+                + MessageCatalogs.renderCli rendering.Language CliMessage.GlobalOptions
                 + "\n  "
                 + String.concat "\n  " globals
                 + "\n")
@@ -140,11 +145,14 @@ module Discovery =
             |> List.map (fun operation ->
                 String.concat " " (CommandGrammar.words operation)
                 + " — "
-                + MessageCatalogs.render language (TaskRouting.labelId operation) Map.empty)
+                + MessageCatalogs.render
+                    rendering.Language
+                    (TaskRouting.labelId operation)
+                    Map.empty)
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
 
-    let helpJson language topic text (operations: string list) =
+    let helpJson (rendering: RenderingContext) topic text (operations: string list) =
         let input (value: TaskInputDeclaration) =
             let choices =
                 TaskChoiceId.ofInput value.Input
@@ -191,7 +199,7 @@ module Discovery =
         JsonValue.Object
             [
                 "topic", JsonValue.String topic
-                "language", JsonValue.String language
+                "language", JsonValue.String rendering.Language
                 "text", JsonValue.String text
                 "operations", JsonValue.Array(List.map operation operations)
                 "exitCodes",
@@ -210,15 +218,15 @@ module Discovery =
             ]
         |> WireWriter.indentedBytes
 
-    let commandHelpJson language words =
-        commandHelp language words
+    let commandHelpJson rendering words =
+        commandHelp rendering words
         |> Option.map (fun text ->
             let matches =
                 CommandGrammar.operations
                 |> List.filter (fun operation ->
                     List.truncate words.Length (CommandGrammar.words operation) = words)
 
-            helpJson language (String.concat " " words) text matches)
+            helpJson rendering (String.concat " " words) text matches)
 
     let schema =
         function

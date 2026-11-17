@@ -9,6 +9,10 @@ type CapabilityAccess =
         Effective: bool
     }
 
+/// A case assignee is an enabled human with every declared case capability.
+[<RequireQualifiedAccess>]
+type AssigneeSelection = EnabledHumanWithAll of Capability list
+
 module Access =
     // Roles, principal restrictions and scoped capabilities have one domain owner.
     let policy =
@@ -134,10 +138,19 @@ module Access =
         && (scoped
             |> Option.exists (List.exists (fun role -> List.contains capability (policy role))))
 
+    let assigneeSelection =
+        AssigneeSelection.EnabledHumanWithAll [ Capability.ReadCase; Capability.ManageCaseWork ]
+
+    let matchesAssignee selection principal view caseId =
+        match selection with
+        | AssigneeSelection.EnabledHumanWithAll capabilities ->
+            PrincipalKey.isHuman principal
+            && validActor principal view
+            && capabilities
+               |> List.forall (fun capability -> can principal view capability (Scope.Case caseId))
+
     let eligibleAssignee principal view caseId =
-        PrincipalKey.isHuman principal
-        && can principal view Capability.ReadCase (Scope.Case caseId)
-        && can principal view Capability.ManageCaseWork (Scope.Case caseId)
+        matchesAssignee assigneeSelection principal view caseId
 
     let isEnabledHumanOwner (actor: ActorAccess) =
         actor.Enabled

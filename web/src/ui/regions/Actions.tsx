@@ -33,7 +33,7 @@ export const Actions = ({
   const button = (action: Affordance) => {
     const task = taskDefinitions.find((definition) => definition.id === action.task)!;
     const display = actionPresentation?.(action);
-    const label = display?.label ?? renderCatalogKey(p, task.labelId);
+    const label = renderCatalogKey(p, action.labelId);
     const originId = display?.id ?? `${id}-${action.task}`;
     return (
       <span key={action.task}>

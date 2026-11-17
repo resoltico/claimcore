@@ -48,12 +48,12 @@ module internal DiagnosticText =
             | CaseSelector.Reference reference -> Some reference
             | CaseSelector.Id _ -> None)
 
-    let private requiredRoles language required =
+    let private requiredRoles (rendering: RenderingContext) required =
         Access.rolesFor required
-        |> List.map (term language Role.vocabulary)
+        |> List.map (term rendering Role.vocabulary)
         |> List.reduce (fun first second ->
             MessageCatalogs.render
-                language
+                rendering.Language
                 "notice.alternativeRoles"
                 (Map.ofList [ "first", first; "second", second ]))
 
@@ -64,7 +64,7 @@ module internal DiagnosticText =
         + " "
         + CommandGrammar.quoteArgument reference
 
-    let private next language reference required action =
+    let private next (rendering: RenderingContext) reference required action =
         let message =
             match action with
             | RecommendedAction.CorrectInput -> Some CliMessage.NextCorrectInput
@@ -75,7 +75,7 @@ module internal DiagnosticText =
             | RecommendedAction.AskForAccess ->
                 Some(
                     required
-                    |> Option.map (requiredRoles language >> CliMessage.NextAskRoles)
+                    |> Option.map (requiredRoles rendering >> CliMessage.NextAskRoles)
                     |> Option.defaultValue CliMessage.NextAskAccess
                 )
             | RecommendedAction.ReviewLatest ->
@@ -92,24 +92,24 @@ module internal DiagnosticText =
         |> Option.toList
         |> List.map (fun message ->
             line
-                language
+                rendering
                 (CliMessages.key CliMessage.NextLabel)
-                (MessageCatalogs.renderCli language message))
+                (MessageCatalogs.renderCli rendering.Language message))
 
-    let private conflictLines details view language reference =
+    let private conflictLines details view (rendering: RenderingContext) reference =
         function
         | Refusal.RevisionConflict conflict ->
             match conflict.Changes with
-            | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
+            | Some ConflictChanges.Withheld -> [ label rendering "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
                 (view
-                 |> Option.map (ViewText.renderSelectedIn page.Basis.TimeZoneId details language)
+                 |> Option.map (ViewText.renderSelectedIn page.Basis.TimeZoneId details rendering)
                  |> Option.defaultValue [])
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->
                        [
                            MessageCatalogs.renderCli
-                               language
+                               rendering.Language
                                (CliMessage.ConflictMore(
                                    TerminalText.data (
                                        caseCommand "timeline" reference
@@ -121,26 +121,26 @@ module internal DiagnosticText =
                    | None, Some cursor ->
                        [
                            MessageCatalogs.renderCli
-                               language
+                               rendering.Language
                                (CliMessage.PageMore(TerminalText.data cursor))
                        ]
                    | _, None -> [])
             | None -> []
         | _ -> []
 
-    let refusalLinesWithView details view language reference refusal =
+    let refusalLinesWithView details view (rendering: RenderingContext) reference refusal =
         let render code parameters =
             let arguments =
                 parameters
                 |> List.map (fun (name, value) ->
                     name,
                     match value with
-                    | JsonValue.Integer value -> number value
+                    | JsonValue.Integer value -> number rendering value
                     | JsonValue.String value -> value
                     | _ -> invalidOp "Diagnostic arguments are declared scalars.")
                 |> Map.ofList
 
-            MessageCatalogs.render language (DiagnosticCode.key code) arguments
+            MessageCatalogs.render rendering.Language (DiagnosticCode.key code) arguments
 
         let messages =
             match refusal with
@@ -149,39 +149,39 @@ module internal DiagnosticText =
                 |> List.map (fun issue ->
                     let code, parameters = DiagnosticCodecs.describeIssue issue
 
-                    label language (diagnosticTargetIdentity issue.Target)
+                    label rendering (diagnosticTargetIdentity issue.Target)
                     + ": "
                     + render code parameters
                     + (match issue.RelatedDate with
                        | None -> ""
                        | Some related ->
                            " ("
-                           + label language (FieldPresentation.labelId related.Field)
+                           + label rendering (FieldPresentation.labelId related.Field)
                            + ": "
                            + CalendarDate.format related.Value
                            + ")"))
             | Refusal.Access(AccessRefusal.NotAuthorized required) ->
-                let names = requiredRoles language required
+                let names = requiredRoles rendering required
 
                 [
                     MessageCatalogs.render
-                        language
+                        rendering.Language
                         (DiagnosticCode.key "NOT_AUTHORIZED")
                         (Map.ofList [ "required", names ])
                 ]
             | Refusal.Case(CaseRefusal.NotOffered state) ->
                 [
                     MessageCatalogs.render
-                        language
+                        rendering.Language
                         (DiagnosticCode.key "NOT_OFFERED")
-                        (Map.ofList [ "state", term language CaseHeadline.vocabulary state ])
+                        (Map.ofList [ "state", term rendering CaseHeadline.vocabulary state ])
                 ]
             | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) ->
                 [
                     MessageCatalogs.render
-                        language
+                        rendering.Language
                         (DiagnosticCode.key "REMINDER_NOT_OFFERED")
-                        (Map.ofList [ "state", term language ReminderState.vocabulary state ])
+                        (Map.ofList [ "state", term rendering ReminderState.vocabulary state ])
                 ]
             | refusal ->
                 let code, parameters = DiagnosticCodecs.describe refusal
@@ -190,41 +190,41 @@ module internal DiagnosticText =
                 match refusal with
                 | Refusal.InvalidCursor ->
                     [
-                        label language (diagnosticTargetIdentity InputTarget.Cursor)
+                        label rendering (diagnosticTargetIdentity InputTarget.Cursor)
                         + ": "
                         + message
                     ]
                 | _ -> [ message ]
 
         messages
-        @ conflictLines details view language reference refusal
+        @ conflictLines details view rendering reference refusal
         @ [
-            line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
+            line rendering (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
         ]
         @ next
-            language
+            rendering
             reference
             (match refusal with
              | Refusal.Access(AccessRefusal.NotAuthorized required) -> Some required
              | _ -> None)
             refusal.Action
 
-    let refusalLinesFor language reference refusal =
-        refusalLinesWithView false None language reference refusal
+    let refusalLinesFor (rendering: RenderingContext) reference refusal =
+        refusalLinesWithView false None rendering reference refusal
 
-    let refusalLines language refusal = refusalLinesFor language None refusal
+    let refusalLines (rendering: RenderingContext) refusal = refusalLinesFor rendering None refusal
 
-    let faultLines language fault =
+    let faultLines (rendering: RenderingContext) fault =
         let code = CoreFault.token fault
 
         [
-            label language (DiagnosticCode.key code)
-            line language (CliMessages.key CliMessage.CodeLabel) code
+            label rendering (DiagnosticCode.key code)
+            line rendering (CliMessages.key CliMessage.CodeLabel) code
         ]
-        @ next language None None fault.Action
+        @ next rendering None None fault.Action
 
-    let readLinesFor language reference success outcome =
-        Outcome.fold success (refusalLinesFor language reference) (faultLines language) outcome
+    let readLinesFor (rendering: RenderingContext) reference success outcome =
+        Outcome.fold success (refusalLinesFor rendering reference) (faultLines rendering) outcome
 
-    let readLines language success outcome =
-        Outcome.fold success (refusalLines language) (faultLines language) outcome
+    let readLines (rendering: RenderingContext) success outcome =
+        Outcome.fold success (refusalLines rendering) (faultLines rendering) outcome

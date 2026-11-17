@@ -603,10 +603,6 @@
     "text": "لا يُسجل شيء حتى تؤكد.",
     "source": "23eba3cab92a"
   },
-  "ui.unconfirmedUntil": {
-    "text": "لم يُؤكد بعد. ستكون الإجابة نهائية بحلول {finalAt}.",
-    "source": "fc1019052c76"
-  },
   "ui.version": {
     "text": "الإصدار",
     "source": "dd167905de0d"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "عرض كل الملاحظات",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "إعادة الإسناد",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "فتح المطالبة",
@@ -706,5 +698,9 @@
   "ui.roleNumber": {
     "text": "الدور {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "تعذّر على المتصفح حفظ التنزيل. حاول مجددًا.",
+    "source": "e3c4b2089bc4"
   }
 }

@@ -83,6 +83,12 @@ module Reminder =
         action |> Option.map (ReminderAction.format >> TextSearch.normalize)
 
 [<RequireQualifiedAccess>]
+type DateRelation =
+    | Before
+    | Same
+    | After
+
+[<RequireQualifiedAccess>]
 type ReminderDue =
     | Overdue
     | Today
@@ -95,13 +101,24 @@ module ReminderDue =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+    let relation =
+        function
+        | ReminderDue.Overdue -> DateRelation.Before
+        | ReminderDue.Today -> DateRelation.Same
+        | ReminderDue.Upcoming -> DateRelation.After
+
+    let matchesDate (today: DateOnly) value date =
+        let comparison = compare (CalendarDate.value date) today
+
+        match relation value with
+        | DateRelation.Before -> comparison < 0
+        | DateRelation.Same -> comparison = 0
+        | DateRelation.After -> comparison > 0
+
     /// Current timing uses the owning read's business date; retained terminal/inactive work has none.
     let at (today: DateOnly) active reminder =
         if not active || Reminder.state reminder <> ReminderState.Pending then
             None
-        elif CalendarDate.value (Reminder.due reminder) < today then
-            Some ReminderDue.Overdue
-        elif CalendarDate.value (Reminder.due reminder) = today then
-            Some ReminderDue.Today
         else
-            Some ReminderDue.Upcoming
+            all
+            |> List.tryFind (fun value -> matchesDate today value (Reminder.due reminder))

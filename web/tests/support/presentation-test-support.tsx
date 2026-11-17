@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 import { InlineNoteDraftProvider } from "../../src/views/case/InlineNoteDraft";
 import { WorkspaceViewsContext } from "../../src/views/WorkspaceViews";
 import { testWorkspaceViews } from "./view-counts.fixtures";
@@ -26,6 +27,7 @@ export const TestSession = ({
       value={{
         state: { kind: "authenticated", token: credential, epoch: 0 },
         logout,
+        endedBrowserSessions: vi.fn(),
         refresh: () => Promise.resolve(),
       }}
     >
@@ -48,6 +50,7 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
         value={{
           state: testSession,
           logout: () => Promise.resolve(),
+          endedBrowserSessions: vi.fn(),
           refresh: () => Promise.resolve(),
         }}
       >

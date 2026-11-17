@@ -2794,5 +2794,65 @@
   "label.actionNotOffered": {
     "text": "この案件では現在この操作は利用できません。",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "支払記録を訂正",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "誤って記録した支払を正しい日付と金額に置き換えます。返金や送金は実行されません。以前の履歴は保持されます。",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "支払記録を訂正しました。",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "担当を変更",
+    "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "自分のClaimCoreブラウザーセッションを終了",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "このセッションを含む、自分のすべてのClaimCoreブラウザーセッションを終了します。IDプロバイダーのセッション、認証情報、独立したベアラートークンは引き続き有効です。完了後に作成されたセッションは残る場合があり、すでに許可された処理は完了する場合があります。",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "この人物のClaimCoreブラウザーセッションを終了",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "この人物のすべてのClaimCoreブラウザーセッションを終了します。IDプロバイダーのセッション、認証情報、独立したベアラートークンは引き続き有効です。完了後に作成されたセッションは残る場合があり、すでに許可された処理は完了する場合があります。",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCoreブラウザーセッションを終了しました。",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "終了したブラウザーセッション",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "要求は確認されていません。ClaimCoreブラウザーセッションが終了した可能性があります。繰り返すと、新しいセッションも終了する場合があります。",
+    "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "エクスポートがダウンロードのサイズ制限を超えています。選択範囲を絞るか、CLIでページを順に取得してください。",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "処理時間の制限内にエクスポートが完了しませんでした。再試行するか選択範囲を絞ってください。",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "エクスポートで無効な継続情報が見つかりました。CSVはダウンロードされませんでした。",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "CSVをダウンロード",
+    "source": "a4023b89022f"
   }
 }

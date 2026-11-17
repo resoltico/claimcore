@@ -38,6 +38,12 @@ module internal TaskArguments =
             | CommandArgument.Operand, value :: rest ->
                 remaining <- rest
                 Some value
+            | CommandArgument.Operand, [] when
+                input.Name = target (InputTarget.Field BusinessField.CaseReference)
+                && CommandGrammar.selectsExistingCase task
+                && (raw TaskInputId.CaseId |> Option.isSome)
+                ->
+                None
             | CommandArgument.Operand, [] ->
                 problems.Add(
                     UsageError.MissingOperand(
@@ -80,11 +86,6 @@ module internal TaskArguments =
                 if clear && acquired.IsSome then
                     problems.Add(UsageError.DuplicateOption(flag input.Name))
 
-                let acquired =
-                    match acquired, input.Name with
-                    | None, TaskInputId.Target(InputTarget.Group _) -> Some "KEEP"
-                    | _ -> acquired
-
                 if
                     acquired.IsNone
                     && input.Required
@@ -113,24 +114,15 @@ module internal TaskArguments =
                                 with
                                 | true, number when
                                     number
-                                    >= (if
-                                            List.contains
-                                                input.Name
-                                                [
-                                                    target InputTarget.ExpectedReminderRevision
-                                                    target InputTarget.ExpectedFamilySequence
-                                                ]
-                                            || (input.Name = target InputTarget.ExpectedRevision
-                                                && (TaskRouting.operationDeclaration kind).Target =
-                                                    ActSubject.People
-                                                && not
-                                                    (TaskRouting.operationDeclaration kind)
-                                                        .Creates)
-                                        then
-                                            1L
-                                        else
-                                            0L)
-                                    && number <= Revision.Maximum
+                                    >= (SubmissionDeclarations.integerBounds
+                                            (TaskRouting.operationDeclaration kind)
+                                            input.Name
+                                        |> fst)
+                                    && number
+                                       <= (SubmissionDeclarations.integerBounds
+                                               (TaskRouting.operationDeclaration kind)
+                                               input.Name
+                                           |> snd)
                                     ->
                                     SubmissionValue.Integer number
                                 | _ ->
@@ -180,42 +172,34 @@ module internal TaskArguments =
             | _ -> None
 
         let selection () =
-            text (target (InputTarget.Field BusinessField.CaseReference))
-            |> Option.defaultValue ""
-            |> CaseSelector.Reference
+            let reference = text (target (InputTarget.Field BusinessField.CaseReference))
+            uuid TaskInputId.CaseId |> ignore
+
+            if
+                reference.IsSome
+                && (raw TaskInputId.CaseId).IsSome
+                && CommandGrammar.selectsExistingCase task
+            then
+                problems.Add(UsageError.DuplicateOption "--case-id")
+
+
+            SubmissionAssembly.caseSelection values
+            |> Result.defaultWith (fun _ ->
+                problems.Add(
+                    UsageError.InvalidValue(
+                        flag TaskInputId.CaseId,
+                        text TaskInputId.CaseId |> Option.defaultValue ""
+                    )
+                )
+
+                CaseSelector.Reference "")
 
         let binding =
-            match (TaskRouting.operationDeclaration kind).Target with
-            | ActSubject.Case ->
-                let declaration = TaskRouting.operationDeclaration kind
-
-                if declaration.Creates then
-                    OperationBinding.CaseNew(Some 0L)
-                else
-                    OperationBinding.Case(
-                        selection (),
-                        revision InputTarget.ExpectedRevision,
-                        uuid (target InputTarget.PaymentId),
-                        revision InputTarget.ExpectedFamilySequence
-                    )
-            | ActSubject.Work ->
-                OperationBinding.Work(selection (), revision InputTarget.ExpectedWorkRevision)
-            | ActSubject.Note ->
-                OperationBinding.Note(selection (), uuid (target InputTarget.NoteId))
-            | ActSubject.Reminder ->
-                OperationBinding.Reminder(
-                    selection (),
-                    uuid (target InputTarget.ReminderId)
-                    |> Option.map (fun id -> id, revision InputTarget.ExpectedReminderRevision)
-                )
-            | ActSubject.People ->
-                OperationBinding.People(
-                    uuid TaskInputId.ActorId,
-                    if not (TaskRouting.operationDeclaration kind).Creates then
-                        revision InputTarget.ExpectedRevision
-                    else
-                        Some 0L
-                )
+            SubmissionAssembly.draftBinding
+                (TaskRouting.operationDeclaration kind)
+                (selection ())
+                revision
+                (fun input -> uuid input)
 
         let authored =
             declarations
@@ -225,27 +209,7 @@ module internal TaskArguments =
             |> Map.ofList
 
         let authored =
-            if authored.ContainsKey TaskInputId.Scope then
-                authored
-            elif
-                (TaskDeclarations.describe task).Inputs
-                |> List.exists (fun input -> input.Input = TaskInputId.Scope)
-            then
-                authored
-                |> Map.add
-                    TaskInputId.Scope
-                    (SubmissionValue.Text(
-                        if
-                            authored.ContainsKey(
-                                target (InputTarget.Field BusinessField.CaseReference)
-                            )
-                        then
-                            "CASE"
-                        else
-                            "INSTALLATION"
-                    ))
-            else
-                authored
+            SubmissionAssembly.withDefaults (TaskRouting.operationDeclaration kind) authored
 
         let authored =
             CommandGrammar.collections task

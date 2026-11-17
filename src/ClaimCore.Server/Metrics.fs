@@ -52,16 +52,22 @@ module internal WebMetrics =
         | RequestMetricResult.Failed -> "failed"
         | RequestMetricResult.HostFailure -> "host_failure"
 
-    let request endpoint result (elapsed: TimeSpan) =
-        let endpoint =
-            endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown"
-
+    let private recordRequest endpoint result (elapsed: TimeSpan) =
         safe (fun () ->
             let mutable tags = TagList()
             tags.Add("endpoint", endpoint)
             tags.Add("result", resultToken result)
             requests.Add(1L, &tags)
             duration.Record(elapsed.TotalSeconds, KeyValuePair<string, obj>("endpoint", endpoint)))
+
+    let request endpoint result elapsed =
+        recordRequest
+            (endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown")
+            result
+            elapsed
+
+    let csvExport result elapsed =
+        recordRequest ExportTransport.token result elapsed
 
     let sessionStarted () = safe (fun () -> starts.Add 1L)
 
@@ -77,6 +83,10 @@ module internal WebMetrics =
 
     let sessionEnded reason = ended reason 1L
     let sessionsExpired count = ended SessionEndReason.Expired count
+
+    let sessionsTerminated count =
+        if count > 0L then
+            safe (fun () -> ends.Add(count, KeyValuePair<string, obj>("reason", "terminated")))
 
     let sessionChanges (changes: SessionChanges<'value>) =
         changes.Ended |> List.iter sessionEnded

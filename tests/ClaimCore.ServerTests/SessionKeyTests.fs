@@ -26,24 +26,31 @@ let private ticket () =
     )
 
 let private adapter storage provider =
-    OidcTicketStore(TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., storage, provider, ignore)
+    OidcTicketStore(
+        System.Uri "https://issuer.example/",
+        TimeSpan.FromMinutes 30.,
+        TimeSpan.FromHours 8.,
+        storage,
+        provider,
+        ignore
+    )
     :> ITicketStore
 
 let private awaited () =
     task {
         let pending =
-            TaskCompletionSource<SessionChanges<byte array option>>(
+            TaskCompletionSource<SessionChanges<StoredSessionTicket option>>(
                 TaskCreationOptions.RunContinuationsAsynchronously
             )
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _) =
+                member _.Create(_, _, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
                 member _.Retrieve(_, _) = pending.Task
 
-                member _.Renew(_, _, _) =
+                member _.Renew(_, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged ())
 
                 member _.Remove(_, _, _) =
@@ -60,19 +67,25 @@ let private awaited () =
 
 let private protectionFailures () =
     task {
-        let mutable payload = [||]
+        let mutable payload = SessionResults.stored [||]
         let mutable removed = false
 
         let storage =
             { new ISessionStore with
-                member _.Create(bytes, _, _, _, _) =
-                    payload <- bytes
+                member _.Create(principal, bytes, _, _, _, _) =
+                    payload <-
+                        {
+                            StoredSessionTicket.PrincipalKey =
+                                ClaimCore.Domain.PrincipalKey.naturalKey principal
+                            Payload = bytes
+                        }
+
                     Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
                 member _.Retrieve(_, _) =
                     Task.FromResult(SessionChanges.unchanged (Some payload))
 
-                member _.Renew(_, _, _) =
+                member _.Renew(_, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged ())
 
                 member _.Remove(_, _, _) =
@@ -84,6 +97,7 @@ let private protectionFailures () =
 
         let first =
             OidcTicketStore(
+                System.Uri "https://issuer.example/",
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
                 storage,
@@ -98,6 +112,7 @@ let private protectionFailures () =
 
         let second =
             OidcTicketStore(
+                System.Uri "https://issuer.example/",
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
                 storage,
@@ -121,18 +136,24 @@ let private keyContinuity () =
         let path = PrivateTestPaths.newPrivateDirectory "claimcore-key-continuity-"
 
         try
-            let mutable payload = [||]
+            let mutable payload = SessionResults.stored [||]
 
             let storage =
                 { new ISessionStore with
-                    member _.Create(bytes, _, _, _, _) =
-                        payload <- bytes
+                    member _.Create(principal, bytes, _, _, _, _) =
+                        payload <-
+                            {
+                                StoredSessionTicket.PrincipalKey =
+                                    ClaimCore.Domain.PrincipalKey.naturalKey principal
+                                Payload = bytes
+                            }
+
                         Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
                     member _.Retrieve(_, _) =
                         Task.FromResult(SessionChanges.unchanged (Some payload))
 
-                    member _.Renew(_, _, _) =
+                    member _.Renew(_, _, _, _, _) =
                         Task.FromResult(SessionChanges.unchanged ())
 
                     member _.Remove(_, _, _) =
@@ -152,17 +173,17 @@ let private storageFailure () =
     task {
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _) =
+                member _.Create(_, _, _, _, _, _) =
                     Task.FromException<SessionChanges<string>>(
                         IOException "Synthetic database failure"
                     )
 
                 member _.Retrieve(_, _) =
-                    Task.FromException<SessionChanges<byte array option>>(
+                    Task.FromException<SessionChanges<StoredSessionTicket option>>(
                         IOException "Synthetic database failure"
                     )
 
-                member _.Renew(_, _, _) =
+                member _.Renew(_, _, _, _, _) =
                     Task.FromException<SessionChanges<unit>>(
                         IOException "Synthetic database failure"
                     )
@@ -177,6 +198,7 @@ let private storageFailure () =
 
         let store =
             OidcTicketStore(
+                System.Uri "https://issuer.example/",
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
                 storage,
@@ -200,7 +222,7 @@ let private requestAbort () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _) =
+                member _.Create(_, _, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged "synthetic")
 
                 member _.Retrieve(_, token) =
@@ -210,7 +232,7 @@ let private requestAbort () =
                         return SessionChanges.unchanged None
                     }
 
-                member _.Renew(_, _, _) =
+                member _.Renew(_, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged ())
 
                 member _.Remove(_, _, _) =

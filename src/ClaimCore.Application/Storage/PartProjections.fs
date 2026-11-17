@@ -134,7 +134,7 @@ module internal PartProjections =
                 ()
         }
 
-    let family connection (row: FamilyProjection) token =
+    let family connection (row: FamilyProjectionDelta) token =
         task {
             let id = row.Snapshot.CaseId
 

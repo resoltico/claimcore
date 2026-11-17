@@ -57,10 +57,10 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Reference value) -> Some value
                     | _ -> invalidArg (nameof query) "Expected a reference position."
 
-                key + " > $13 COLLATE \"C\"",
+                key + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"",
                 key + " ASC",
                 [| DatabaseSession.parameter reference |],
-                "$14"
+                $"{CaseSelectionSql.suffix 2}"
             | CaseListOrder.Recent, position ->
                 let reference, changedAt =
                     match position with
@@ -68,12 +68,12 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Recent(time, reference)) -> Some reference, Some time
                     | _ -> invalidArg (nameof query) "Expected a recent position."
 
-                "(c.changed_at < $14::timestamptz OR (c.changed_at = $14 AND "
+                $"(c.changed_at < {CaseSelectionSql.suffix 2}::timestamptz OR (c.changed_at = {CaseSelectionSql.suffix 2} AND "
                 + key
-                + " > $13 COLLATE \"C\"))",
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"))",
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
-                "$15"
+                $"{CaseSelectionSql.suffix 3}"
             | CaseListOrder.Notified, position ->
                 let reference, date =
                     match position with
@@ -81,17 +81,17 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                "(($14::date IS NULL AND c.notified_on IS NULL AND "
+                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.notified_on > $14::date OR c.notified_on IS NULL OR (c.notified_on=$14::date AND "
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.notified_on > {CaseSelectionSql.suffix 2}::date OR c.notified_on IS NULL OR (c.notified_on={CaseSelectionSql.suffix 2}::date AND "
                 + key
-                + " > $13 COLLATE \"C\"))))",
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$15"
+                $"{CaseSelectionSql.suffix 3}"
 
             | CaseListOrder.FollowUp, position ->
                 let reference, date =
@@ -100,20 +100,20 @@ module internal TransactionPages =
                     | Some(CaseListPosition.FollowUp(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a follow-up position."
 
-                "(($14::date IS NULL AND c.follow_up IS NULL AND "
+                $"(({CaseSelectionSql.suffix 2}::date IS NULL AND c.follow_up IS NULL AND "
                 + key
-                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.follow_up > $14::date OR c.follow_up IS NULL OR (c.follow_up=$14::date AND "
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\") OR ({CaseSelectionSql.suffix 2}::date IS NOT NULL AND (c.follow_up > {CaseSelectionSql.suffix 2}::date OR c.follow_up IS NULL OR (c.follow_up={CaseSelectionSql.suffix 2}::date AND "
                 + key
-                + " > $13 COLLATE \"C\"))))",
+                + $" > {CaseSelectionSql.suffix 1} COLLATE \"C\"))))",
                 "c.follow_up ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$15"
+                $"{CaseSelectionSql.suffix 3}"
 
         let sql =
-            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate query.Selection} AND ($13::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
+            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate query.Selection} AND ({CaseSelectionSql.suffix 1}::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
 
         let parameters =
             Array.concat

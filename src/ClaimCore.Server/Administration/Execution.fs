@@ -26,11 +26,11 @@ module Execution =
                             System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds
                         ))
                         result
-            | Rebuild expected ->
-                let! result = administration.Rebuild(expected, token)
+            | Rebuild(expected, handle) ->
+                let! result = administration.Rebuild(expected, handle, token)
                 return Replies.rebuild result
-            | AdmitRestoredInstallation checkpoint ->
-                let! result = administration.AdmitRestoredInstallation(checkpoint, token)
+            | AdmitRestoredInstallation(checkpoint, handle) ->
+                let! result = administration.AdmitRestoredInstallation(checkpoint, handle, token)
 
                 return Replies.restoreAdmission result
             | Status ->

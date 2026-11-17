@@ -32,7 +32,9 @@ type CliMessage =
     | [<MessageKey("cli.family.note")>] NoteCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
+    | [<MessageKey("cli.family.browserSessions")>] BrowserSessions
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
+    | [<MessageKey("cli.text.operationalUnresolved")>] OperationalUnresolved
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput
     | [<MessageKey("cli.next.readCurrent")>] NextReadCurrent
     | [<MessageKey("cli.next.retrySafe")>] NextRetrySafe
@@ -108,7 +110,6 @@ type CliMessage =
         subject: string *
         act: string *
         operationId: string
-    | [<MessageKey("cli.text.operationPending")>] OperationPending of finalAt: string
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel

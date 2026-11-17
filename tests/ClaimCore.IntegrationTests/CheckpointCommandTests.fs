@@ -109,7 +109,15 @@ let private commandPath () =
 
             let! maintenanceRequired =
                 invoke
-                    [ "admit-restored-installation"; "--checkpoint"; futureFile ]
+                    [
+                        "admit-restored-installation"
+                        "--checkpoint"
+                        futureFile
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
                     ExitCode.Rejected
 
             Expect.equal
@@ -117,11 +125,22 @@ let private commandPath () =
                 "MAINTENANCE_REQUIRED"
                 "Actual restore command requires maintenance"
 
-            let! _ = invoke [ "maintenance"; "on" ] ExitCode.Success
+            let! _ =
+                invoke
+                    [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ]
+                    ExitCode.Success
 
             let! restored =
                 invoke
-                    [ "admit-restored-installation"; "--checkpoint"; futureFile ]
+                    [
+                        "admit-restored-installation"
+                        "--checkpoint"
+                        futureFile
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
                     ExitCode.Success
 
             Expect.equal
@@ -141,7 +160,19 @@ let private commandPath () =
                 "VERIFIED"
                 "Restored frontier now satisfies trusted checkpoint"
 
-            let! rebuilt = invoke [ "rebuild"; "--checkpoint"; futureFile ] ExitCode.Success
+            let! rebuilt =
+                invoke
+                    [
+                        "rebuild"
+                        "--checkpoint"
+                        futureFile
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
+                    ExitCode.Success
+
             Expect.equal (kind rebuilt) "REBUILT" "Published rebuild accepts trusted evidence"
             let! older = invoke [ "verify"; "--checkpoint"; file ] ExitCode.Success
             Expect.equal (kind older) "VERIFIED" "Older evidence remains valid"
@@ -236,7 +267,7 @@ let private commandPath () =
 
             ClaimCore.Application.Storage.DatabaseSession.execute
                 blocker
-                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions SELECT repeat('b',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600 FROM observed"
+                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT repeat('b',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600,repeat('b',64) FROM observed"
                 [||]
                 CancellationToken.None
             |> _.GetAwaiter().GetResult()
@@ -244,7 +275,16 @@ let private commandPath () =
 
             let config =
                 AdministrationProcess.start
-                    [ binary; "admit-restored-installation"; "--checkpoint"; laterFile ]
+                    [
+                        binary
+                        "admit-restored-installation"
+                        "--checkpoint"
+                        laterFile
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
 
             config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
 

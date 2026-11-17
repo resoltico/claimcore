@@ -88,9 +88,9 @@ it.each(["/work", "/authority", "/authority/actor-id", "/operations", "/operatio
 );
 it("distinguishes default entry and the separate public areas", () => {
   expect(parseRoute(new URL("/", location.origin))).toEqual({ screen: "home" });
-  expect(parseRoute(new URL("/reminders?view=pending", location.origin))).toEqual({
+  expect(parseRoute(new URL("/reminders?view=PENDING", location.origin))).toEqual({
     screen: "reminders",
-    query: "?view=pending",
+    query: "?view=PENDING",
   });
   expect(parseRoute(new URL("/people-history", location.origin))).toEqual({
     screen: "peopleHistory",

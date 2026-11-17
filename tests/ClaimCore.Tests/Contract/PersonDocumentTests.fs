@@ -60,6 +60,7 @@ let private document offers seed =
             Actor = ActorReviewItem.ofActor [] actor
             Offers = offers
             ProfileSeed = seed
+            CanTerminateSessions = false
             Items = []
             NextCursor = Some "person-next"
         }
@@ -82,7 +83,12 @@ let tests =
                         Advice.actorOffers
                             principal
                             (viewer roles)
-                            (RegisterMaintenance.create maintenance)
+                            (RegisterMaintenance.create
+                                (if maintenance then 1L else 0L)
+                                (if maintenance then
+                                     Some(System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                                 else
+                                     None))
 
                     Expect.equal
                         (offers [ Role.Owner ] false)
@@ -180,6 +186,7 @@ let tests =
                                     |> List.map (fun task ->
                                         Inputs.offeredTask (TaskId.token task) binding Map.empty)
                                 ProfileSeed = None
+                                CanTerminateSessions = false
                                 Items = [ { grant with Controls = rowOffers } ]
                                 NextCursor = None
                             }

@@ -15,6 +15,17 @@ open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
 module internal ApiRoutes =
+    let private terminate invoke services input token =
+        task {
+            let! result = invoke services input token
+
+            match result with
+            | SessionTerminationResult.Succeeded value -> WebMetrics.sessionsTerminated value.Count
+            | _ -> ()
+
+            return result
+        }
+
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
     let route =
         function
@@ -46,6 +57,7 @@ module internal ApiRoutes =
                 Api.operationGetUnavailable
                 (fun _ reply -> HumanReplies.lookup reply)
                 (fun _ -> None)
+                (fun _ -> false)
                 Service.operationGet
         | ActorEndpoint.Query QueryTaskId.PeopleList ->
             Route.representedRead Api.peopleList HumanReadDocuments.actors Service.actors
@@ -58,19 +70,38 @@ module internal ApiRoutes =
                 Api.peopleRequests
                 HumanReadDocuments.requests
                 Service.accessRequests
-        | ActorEndpoint.Command command when
-            command = (EndpointDeclarations.commands |> List.exactlyOne).Id
-            ->
+        | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             Route.representedRead
                 Api.peopleRequestsDismiss
                 HumanReadDocuments.dismissed
                 Service.dismissAccessRequest
+        | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->
+            Route.represented
+                Api.terminateOwnSessions
+                (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
+                (fun _ -> HumanReplies.sessionTermination)
+                (fun _ -> None)
+                (function
+                | SessionTerminationResult.Succeeded value -> value.Self
+                | _ -> false)
+                (terminate Service.terminateOwnSessions)
+        | ActorEndpoint.Command CommandTaskId.TerminatePersonSessions ->
+            Route.represented
+                Api.terminatePersonSessions
+                (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
+                (fun _ -> HumanReplies.sessionTermination)
+                (fun _ -> None)
+                (function
+                | SessionTerminationResult.Succeeded value -> value.Self
+                | _ -> false)
+                (terminate Service.terminatePersonSessions)
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.represented
                 Api.operationPreview
                 Api.operationPreviewUnavailable
                 HumanReplies.previewSubmission
                 (fun _ -> None)
+                (fun _ -> false)
                 Service.previewSubmission
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.represented
@@ -81,10 +112,8 @@ module internal ApiRoutes =
                     match reply.Outcome with
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
+                (fun _ -> false)
                 Service.executeSubmission
-
-        | ActorEndpoint.Command command ->
-            invalidArg (nameof command) "The command endpoint is not declared."
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -93,19 +122,28 @@ module internal ApiRoutes =
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
         task {
-            match
-                Api.all
-                |> List.tryFind (fun endpoint ->
-                    Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
-            with
-            | Some endpoint when context.Request.Method <> (Api.method endpoint).Method ->
+            if
+                Option.ofObj context.Request.Path.Value = Some ExportTransport.path
+                && context.Request.Method <> "POST"
+            then
                 do!
                     (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
-            | _ -> do! next.Invoke context
+            else
+                match
+                    Api.all
+                    |> List.tryFind (fun endpoint ->
+                        Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
+                with
+                | Some endpoint when context.Request.Method <> (Api.method endpoint).Method ->
+                    do!
+                        (RouteSupport.hostFailure context HostFailureReason.MethodRejected)
+                            .ExecuteAsync
+                            context
+                | _ -> do! next.Invoke context
         }
 
-    let private admit (configuration: WebConfiguration) (context: HttpContext) =
+    let internal admit (configuration: WebConfiguration) (context: HttpContext) =
         task {
             let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
@@ -158,7 +196,7 @@ module internal ApiRoutes =
                     | Ok prepared -> return Ok prepared
         }
 
-    let private installationBinding (context: HttpContext) =
+    let internal installationBinding (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Installation" with
         | true, values when values.Count = 1 ->
             Codec.uuid.Read "$.installation" (JsonValue.String(string values[0]))
@@ -235,7 +273,13 @@ module internal ApiRoutes =
 
                             let binding = installationBinding context
 
-                            if Api.requiresInstallation endpoint && binding.IsNone then
+                            let suppliedBinding =
+                                context.Request.Headers.ContainsKey "ClaimCore-Installation"
+
+                            if
+                                (Api.requiresInstallation endpoint || suppliedBinding)
+                                && binding.IsNone
+                            then
                                 RouteSupport.markCompleted context
 
                                 return
@@ -260,7 +304,8 @@ module internal ApiRoutes =
 
                                         task {
                                             if
-                                                Api.requiresInstallation endpoint
+                                                (Api.requiresInstallation endpoint
+                                                 || suppliedBinding)
                                                 && not (
                                                     binding
                                                     |> Option.exists (

@@ -99,7 +99,7 @@ let receipt id (reference: string) : OperationReceipt =
                                 State = LiveCase.ofState (view reference).State |> Option.get
                                 Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
-                                Payment = None
+                                Payments = []
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -242,6 +242,7 @@ type Stub() =
                 Api.operationPreviewUnavailable
                 HumanReplies.previewSubmission
                 (fun _ -> None)
+                (fun _ -> false)
                 (fun _ input _ ->
                     let outcome =
                         match input.Operation with
@@ -276,6 +277,7 @@ type Stub() =
                     match reply.Outcome with
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
+                (fun _ -> false)
                 (fun _ input token ->
                     task {
                         match this.Error with
@@ -355,8 +357,13 @@ type Stub() =
                                                         return
                                                             {
                                                                 Response =
-                                                                    Endpoint.reply endpoint reply
+                                                                    ClaimCore.Server.RouteBody.Json(
+                                                                        Endpoint.reply
+                                                                            endpoint
+                                                                            reply
+                                                                    )
                                                                 RecordedBy = None
+                                                                ExpireBrowserSession = false
                                                             }
                                                     }
                                         })

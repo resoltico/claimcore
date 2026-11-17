@@ -42,7 +42,7 @@ type internal NoteProjection =
         Value: NoteValue
     }
 
-type internal FamilyProjection =
+type internal FamilyProjectionDelta =
     {
         Snapshot: CaseSnapshot
         Index: CaseIndex
@@ -101,100 +101,118 @@ module internal ProjectionRows =
                     | _ -> current)
                 current
 
-    let family (state: CaseFamily) (parts: PartChange list) origins summary =
+    /// A write batch contains only changed child rows; full reconstruction supplies all rows explicitly.
+    let private familyDelta
+        (snapshot: CaseSnapshot)
+        (index: CaseIndex)
+        id
+        (currentWork: AcceptedPart<CaseWork option> option)
+        (parts: PartChange list)
+        origins
+        summary
+        =
+        let erased = snapshot.State = CaseState.Erased
+        let payments = ResizeArray<PaymentProjection>()
+        let reminders = ResizeArray<ReminderProjection>()
+        let notes = ResizeArray<NoteProjection>()
+
+        for change in parts do
+            let value =
+                if erased then
+                    PartValue.clear change.Value
+                else
+                    change.Value
+
+            match value with
+            | PartValue.Payment value ->
+                payments.Add
+                    {
+                        Id = OperationId.create change.PartId |> Option.get
+                        Origin = Map.find (change.Kind, change.PartId) origins
+                        Value = value
+                    }
+            | PartValue.Reminder value ->
+                reminders.Add
+                    {
+                        Id = ReminderId.create change.PartId |> Option.get
+                        Revision = change.Revision
+                        Value = value
+                        Changed = attribution change.Stamp
+                    }
+            | PartValue.Note value ->
+                notes.Add
+                    {
+                        Id = NoteId.create change.PartId |> Option.get
+                        Origin = Map.find (change.Kind, change.PartId) origins
+                        Value = value
+                    }
+            | _ -> ()
+
+        let work =
+            match currentWork with
+            | None ->
+                {
+                    Snapshot =
+                        if erased then
+                            None
+                        else
+                            Some
+                                {
+                                    CaseId = id
+                                    Revision = Revision.zero
+                                    Work = CaseWork.empty
+                                }
+                    Revision = Revision.zero
+                    Changed = None
+                    SummaryChanged = None
+                }
+            | Some work ->
+                {
+                    Snapshot =
+                        if erased then
+                            None
+                        else
+                            work.Value
+                            |> Option.map (fun value ->
+                                {
+                                    CaseId = id
+                                    Revision = work.Revision
+                                    Work = value
+                                })
+                    Revision = work.Revision
+                    Changed = Some(attribution work.Stamp)
+                    SummaryChanged = if erased then None else summary
+                }
+
+        if
+            work.Snapshot |> Option.bind (fun value -> value.Work.Summary) |> Option.isSome
+            <> work.SummaryChanged.IsSome
+        then
+            Error RecordViolation.InvalidSubjectState
+        else
+            Ok
+                {
+                    Snapshot = snapshot
+                    Index = index
+                    Work = work
+                    Payments = List.ofSeq payments
+                    Reminders = List.ofSeq reminders
+                    Notes = List.ofSeq notes
+                }
+
+    let family (state: CaseFamily) parts origins summary =
         CaseFamily.rows state parts
         |> Result.bind (fun (_, index) ->
             match CaseFamily.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot ->
-                let erased = state.Case.Value.Lifecycle = Lifecycle.Erased
-                let payments = ResizeArray<PaymentProjection>()
-                let reminders = ResizeArray<ReminderProjection>()
-                let notes = ResizeArray<NoteProjection>()
+            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
 
-                for change in parts do
-                    let value =
-                        if erased then
-                            PartValue.clear change.Value
-                        else
-                            change.Value
-
-                    match value with
-                    | PartValue.Payment value ->
-                        payments.Add
-                            {
-                                Id = OperationId.create change.PartId |> Option.get
-                                Origin = Map.find (change.Kind, change.PartId) origins
-                                Value = value
-                            }
-                    | PartValue.Reminder value ->
-                        reminders.Add
-                            {
-                                Id = ReminderId.create change.PartId |> Option.get
-                                Revision = change.Revision
-                                Value = value
-                                Changed = attribution change.Stamp
-                            }
-                    | PartValue.Note value ->
-                        notes.Add
-                            {
-                                Id = NoteId.create change.PartId |> Option.get
-                                Origin = Map.find (change.Kind, change.PartId) origins
-                                Value = value
-                            }
-                    | _ -> ()
-
-                let work =
-                    match state.Work with
-                    | None ->
-                        {
-                            Snapshot =
-                                if erased then
-                                    None
-                                else
-                                    Some
-                                        {
-                                            CaseId = state.Id
-                                            Revision = Revision.zero
-                                            Work = CaseWork.empty
-                                        }
-                            Revision = Revision.zero
-                            Changed = None
-                            SummaryChanged = None
-                        }
-                    | Some work ->
-                        {
-                            Snapshot =
-                                if erased then
-                                    None
-                                else
-                                    work.Value
-                                    |> Option.map (fun value ->
-                                        {
-                                            CaseId = state.Id
-                                            Revision = work.Revision
-                                            Work = value
-                                        })
-                            Revision = work.Revision
-                            Changed = Some(attribution work.Stamp)
-                            SummaryChanged = if erased then None else summary
-                        }
-
-                if
-                    work.Snapshot |> Option.bind (fun value -> value.Work.Summary) |> Option.isSome
-                    <> work.SummaryChanged.IsSome
-                then
-                    Error RecordViolation.InvalidSubjectState
-                else
-                    Ok
-                        {
-                            Snapshot = snapshot
-                            Index = index
-                            Work = work
-                            Payments = List.ofSeq payments
-                            Reminders = List.ofSeq reminders
-                            Notes = List.ofSeq notes
-                        })
+    let decision (state: DecisionFacts) parts origins summary =
+        DecisionFacts.rows state parts
+        |> Result.bind (fun (_, index) ->
+            match DecisionFacts.snapshot state with
+            | None -> Error RecordViolation.InvalidSubjectState
+            | Some snapshot -> familyDelta snapshot index state.Id state.Work parts origins summary)
 
     let person state =
         Person.rows state

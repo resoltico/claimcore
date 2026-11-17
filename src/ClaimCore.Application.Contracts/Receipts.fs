@@ -11,7 +11,7 @@ type DisclosedCaseReceipt =
         State: LiveCase
         Disposition: CaseDisposition option
         RecordedFields: BusinessField list
-        Payment: PaymentDifference option
+        Payments: PaymentDifference list
     }
 
 [<RequireQualifiedAccess>]

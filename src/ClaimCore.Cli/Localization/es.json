@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "Guarda en el perfil los ajustes públicos de conexión e idioma.\nUsa `claimcore configure --show` para consultar valores efectivos y fuentes.\nProporciona secretos mediante archivos; nunca se guardan en el perfil.\nConsulta docs/integrating.md#cli-use.",
-    "source": "2e791425e501"
+    "text": "Guarde la conexión pública, el idioma y la configuración regional de visualización en el perfil.\\nEl idioma determina el texto; --display-locale determina fechas y números. Prioridad: opción, CLAIMCORE_DISPLAY_LOCALE, perfil y valor predeterminado del idioma.\\nUse `claimcore configure --show` para ver valores y fuentes.\\nProporcione secretos mediante archivos; nunca se guardan en el perfil.\\nConsulte docs/integrating.md#cli-use.",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta para reenviarla.\nReenviarla no puede registrarla dos veces.\nUsa `claimcore recovery list` y `claimcore recovery check`; la respuesta será definitiva en {window}.",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Use help [topic | family [verb]] con --format text|json y, opcionalmente, --language.",
-    "source": "b8af016df835"
+    "text": "Use help [topic | family [verb]] con --format text|json y, opcionalmente, --language y --display-locale.",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "Tema de ayuda desconocido.",
@@ -395,10 +395,6 @@
     "text": "Más cambios: ejecuta {command}.",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "Esperando una respuesta definitiva hasta {finalAt}.",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "Notas del expediente",
     "source": "54c2a0df2066"
@@ -426,5 +422,13 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "No se completó el inicio de sesión en dos minutos. Ejecute de nuevo el comando y complete el inicio de sesión en el navegador.",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "No se confirmó la respuesta del comando. Repetirlo puede afectar un estado más reciente.",
+    "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "Sesiones de navegador de ClaimCore",
+    "source": "afe6f30a2564"
   }
 }

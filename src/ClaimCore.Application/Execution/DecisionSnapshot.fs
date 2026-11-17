@@ -7,7 +7,7 @@ open ClaimCore.Domain.Tasks
 
 [<RequireQualifiedAccess>]
 type internal AggregateState =
-    | Family of CaseFamily option
+    | Family of DecisionFacts option
     | Person of Person option
 
 /// The state and environment are captured from the same transaction or historical fold position.
@@ -22,7 +22,6 @@ type internal DecisionSnapshot =
         State: AggregateState
         Decide: TaskContext -> Binding -> InputMap -> Result<PartChange list, Rejection>
         DecideRetained: TaskContext -> Binding -> InputMap -> Result<PartChange list, Rejection>
-        Authorize: InputMap -> Result<unit, Refusal>
         Availability: Binding -> Availability
         FactsAvailable: Binding -> bool
         Describe: PartChange list -> Result<DescribedPart list, RecordViolation>
@@ -41,7 +40,6 @@ module internal DecisionSnapshot =
             DecideRetained =
                 fun context binding inputs ->
                     task.DecideRetained context environment state binding inputs
-            Authorize = task.Authorize environment state
             Availability = task.Availability environment state
             FactsAvailable = task.DecisionFactsAvailable state
             Describe = task.Describe state (PartDescriptions.notes parts)
@@ -59,20 +57,20 @@ module internal DecisionSnapshot =
             DecideRetained =
                 fun context binding inputs ->
                     task.DecideRetained context environment state binding inputs
-            Authorize = task.Authorize environment state
             Availability = task.Availability environment state
             FactsAvailable = task.DecisionFactsAvailable state
             Describe = task.Describe state
         }
 
     let apply snapshot changes =
-        changes
-        |> List.fold
-            (fun result change ->
-                result
-                |> Result.bind (function
-                    | AggregateState.Family state ->
-                        CaseFamily.apply state change |> Result.map (Some >> AggregateState.Family)
-                    | AggregateState.Person state ->
-                        Person.apply state change |> Result.map (Some >> AggregateState.Person)))
-            (Ok snapshot.State)
+        match snapshot.State with
+        | AggregateState.Family state ->
+            DecisionFacts.apply state changes |> Result.map (Some >> AggregateState.Family)
+        | AggregateState.Person state ->
+            changes
+            |> List.fold
+                (fun result change ->
+                    result
+                    |> Result.bind (fun state -> Person.apply state change |> Result.map Some))
+                (Ok state)
+            |> Result.map AggregateState.Person

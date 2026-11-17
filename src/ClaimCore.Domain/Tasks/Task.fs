@@ -114,25 +114,25 @@ type FamilyTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
-        Authorize: FamilyEnvironment -> CaseFamily option -> InputMap -> Result<unit, Refusal>
-        Availability: FamilyEnvironment -> CaseFamily option -> Binding -> Availability
-        DecisionFactsAvailable: CaseFamily option -> Binding -> bool
+        Authorize: PrincipalKey -> AccessView -> CaseId option -> InputMap -> Result<unit, Refusal>
+        Availability: FamilyEnvironment -> DecisionFacts option -> Binding -> Availability
+        DecisionFactsAvailable: DecisionFacts option -> Binding -> bool
         Describe:
-            CaseFamily option
+            DecisionFacts option
                 -> Map<NoteId, NoteValue>
                 -> PartChange list
                 -> Result<DescribedPart list, RecordViolation>
         Decide:
             TaskContext
                 -> FamilyEnvironment
-                -> CaseFamily option
+                -> DecisionFacts option
                 -> Binding
                 -> InputMap
                 -> Result<PartChange list, Rejection>
         DecideRetained:
             TaskContext
                 -> FamilyEnvironment
-                -> CaseFamily option
+                -> DecisionFacts option
                 -> Binding
                 -> InputMap
                 -> Result<PartChange list, Rejection>
@@ -143,7 +143,7 @@ type PersonTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
-        Authorize: PersonEnvironment -> Person option -> InputMap -> Result<unit, Refusal>
+        Authorize: PrincipalKey -> AccessView -> InputMap -> Result<unit, Refusal>
         Availability: PersonEnvironment -> Person option -> Binding -> Availability
         DecisionFactsAvailable: Person option -> Binding -> bool
         Describe: Person option -> PartChange list -> Result<DescribedPart list, RecordViolation>

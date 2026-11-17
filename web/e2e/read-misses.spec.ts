@@ -1,3 +1,4 @@
+import { pseudolocalizeLiteral } from "../src/presentation/templates";
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { openRecovery, showExactLookup, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
@@ -5,7 +6,14 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
-import { selectLanguage, trackForegroundRequests, ui } from "./localization-support";
+import {
+  selectLanguage,
+  trackForegroundRequests,
+  ui,
+  seedPresentation,
+  pauseJsonReply,
+  noHorizontalOverflow,
+} from "./localization-support";
 import { endpoints } from "@contracts/client";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup", async ({
@@ -68,3 +76,74 @@ test("keeps absent cases private and unknown operation outcomes pending", async 
   await expect(page.getByText("Operation was not observed.", { exact: true })).toHaveCount(0);
   await expectAccessible(page);
 });
+
+for (const language of ["ar", "en-XA"] as const) {
+  test(`published pending lookup preserves its supplied deadline and reflows accessibly in ${language} at 320px`, async ({
+    page,
+  }) => {
+    await seedPresentation(page, language, "ar-EG");
+    await page.setViewportSize({ width: 320, height: 720 });
+    await openAuthenticated(
+      page,
+      language === "ar"
+        ? ui("ar", "label.cases")
+        : `⟦${pseudolocalizeLiteral(ui("en", "label.cases"))}⟧`,
+    );
+    await openRecovery(page);
+    const operationId = mintOperationId();
+    const field = await showOperationLookup(page);
+    const scope = page.locator('section[aria-labelledby="operation-lookup-title"]');
+    const submit = scope.locator('button[type="submit"]');
+    const first = await pauseJsonReply(page, "operation.get");
+    await field.fill(operationId);
+    await submit.press("Enter");
+    const captured = await first.ready;
+    first.release();
+    expect(captured.reply.operationId).toBe(operationId);
+    expect(captured.reply.outcome.kind).toBe("PENDING");
+    if (captured.reply.outcome.kind !== "PENDING") {
+      throw new Error("E2E_EXPECTED_UNKNOWN_OPERATION_PENDING");
+    }
+    const { finalAt, document } = captured.reply.outcome;
+    const supplied = document.screen.regions.find((region) => region.content.kind === "NOTICE");
+    expect(supplied?.content).toEqual({
+      kind: "NOTICE",
+      messageId: "label.operationPending",
+      tone: "INFO",
+      reason: { kind: "INSTANT", value: finalAt },
+    });
+    const meaning =
+      language === "ar"
+        ? ui("ar", "label.operationPending")
+        : `⟦${pseudolocalizeLiteral(ui("en", "label.operationPending"))}⟧`;
+    const notice = scope.locator('.region-notice[data-tone="INFO"]');
+    await expect(notice).toHaveAttribute("role", "status");
+    await expect(notice).toContainText(meaning);
+    const deadline = notice.locator("time");
+    await expect(deadline).toHaveAttribute("datetime", finalAt);
+    await expect(deadline).toHaveAttribute("title", finalAt);
+    await expect(deadline).not.toHaveText(finalAt);
+    await expect(deadline).toContainText(/[٠-٩]/u);
+    await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
+    await expect(field).toHaveValue(operationId);
+    await noHorizontalOverflow(page, "narrow");
+    const bounds = await notice.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(-1);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(321);
+    await expectAccessible(page);
+    // Keyboard re-observation retains the original identity and canonical deadline.
+    const second = await pauseJsonReply(page, "operation.get");
+    await expect(submit).toBeEnabled();
+    await submit.focus();
+    await expect(submit).toBeFocused();
+    await page.keyboard.press("Enter");
+    const observed = await second.ready;
+    second.release();
+    expect(observed.bytes.equals(captured.bytes)).toBe(true);
+    expect(observed.reply.operationId).toBe(operationId);
+    expect(observed.reply.outcome).toMatchObject({ kind: "PENDING", finalAt });
+    await expect(deadline).toHaveAttribute("datetime", finalAt);
+    await noHorizontalOverflow(page, "narrow");
+  });
+}

@@ -25,6 +25,50 @@ let tests =
         "declared operation submissions"
         [
             testCase
+                "noneditable UPDATE seeds remain dormant while required fixed selections stay exact"
+                (fun () ->
+                    let work = (TaskDeclarations.describe "work.update").Ledger |> Option.get
+
+                    let responsible =
+                        TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor)
+
+                    let summary =
+                        TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary)
+
+                    for display in
+                        [
+                            SubmissionValue.Text "10000000-0000-4000-8000-000000000001"
+                            SubmissionValue.Clear
+                        ] do
+                        let fixedValues =
+                            SubmissionAssembly.fixedInputs
+                                work
+                                [ summary ]
+                                (Map.ofList [ responsible, display ])
+
+                        Expect.isEmpty
+                            fixedValues
+                            "Availability cannot turn an UPDATE display seed into an assertion"
+
+                        Expect.equal
+                            (SubmissionAssembly.merge
+                                [ summary ]
+                                fixedValues
+                                (Map.ofList [ summary, SubmissionValue.Text "Changed" ]))
+                            (Map.ofList [ summary, SubmissionValue.Text "Changed" ])
+                            "Summary-only intent remains summary-only"
+
+                    let registration =
+                        (TaskDeclarations.describe "people.register").Ledger |> Option.get
+
+                    let subject = TaskInputId.Target InputTarget.PrincipalSubject
+                    let selected = Map.ofList [ subject, SubmissionValue.Text "fixed-subject" ]
+
+                    Expect.equal
+                        (SubmissionAssembly.fixedInputs registration [] selected)
+                        selected
+                        "A required immutable selection is retained")
+            testCase
                 "creation reference is authored and an existing binding needs a positive revision"
                 (fun () ->
                     let created =

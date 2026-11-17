@@ -615,10 +615,6 @@
     "text": "Usa los filtros manuales para incluir la tramitación inactiva.",
     "source": "dc4f2d354574"
   },
-  "ui.unconfirmedUntil": {
-    "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
-    "source": "fc1019052c76"
-  },
   "ui.changeResponsible": {
     "text": "Cambiar",
     "source": "c0bf75bd78bf"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "Mostrar todas las notas",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "Reasignar",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "Abrir expediente",
@@ -706,5 +698,9 @@
   "ui.roleNumber": {
     "text": "Rol {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "El navegador no pudo guardar la descarga. Inténtelo de nuevo.",
+    "source": "e3c4b2089bc4"
   }
 }

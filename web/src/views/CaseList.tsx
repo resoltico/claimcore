@@ -1,3 +1,4 @@
+import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
 import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
@@ -168,11 +169,10 @@ const WorklistResults = ({
         <PageTables
           views={page.views}
           actionPresentation={(action) => {
-            const label = p.text("ui.reassign");
             if (action.binding.kind !== "WORK" || action.binding.target.kind !== "ID") {
-              return { label };
+              return {};
             }
-            return { label, id: `reassign-${action.binding.target.caseId}` };
+            return { id: `reassign-${action.binding.target.caseId}` };
           }}
           linkNavigation={(link) => {
             const target = caseLinkTarget(link);
@@ -255,6 +255,10 @@ const ReadyCaseList = ({
         </div>
       </div>
       <WorkspaceViewsStatus area="cases" />
+      <CsvExportButton
+        selection={{ query: apiEndpoints.caseList, selection: page.query }}
+        available={!page.loading && page.page !== null}
+      />
       <ViewTabs
         items={
           views.data?.items.map(({ view, label, count }) => ({

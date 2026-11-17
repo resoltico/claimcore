@@ -102,7 +102,7 @@ let tests =
                 Expect.equal (date.Read()) (PresentedValue.Date expectedDate) "Semantic date kind"
 
                 Expect.equal
-                    (TextDescriptorValue.render "en" (date.Read()))
-                    (ReplyTextFormat.date "en" expectedDate)
+                    (TextDescriptorValue.render (RenderingContext.forLanguage "en") (date.Read()))
+                    (ReplyTextFormat.date (RenderingContext.forLanguage "en") expectedDate)
                     "The generic CLI formatter consumes the supplied value")
         ]

@@ -2794,5 +2794,65 @@
   "label.actionNotOffered": {
     "text": "此案件目前不提供此操作。",
     "source": "78dafa13c3bd"
+  },
+  "task.case.correctPayment.label": {
+    "text": "更正付款紀錄",
+    "source": "22b058e234e0"
+  },
+  "task.case.correctPayment.meaning": {
+    "text": "將錯誤登記的付款紀錄替換為正確的日期和金額。此操作不會退款或執行轉帳。先前的歷史紀錄將保留。",
+    "source": "538255858894"
+  },
+  "task.case.correctPayment.done": {
+    "text": "付款紀錄已更正。",
+    "source": "2439689c02ae"
+  },
+  "label.assignmentAction": {
+    "text": "重新指派",
+    "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "結束我的 ClaimCore 瀏覽器工作階段",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "結束您的所有 ClaimCore 瀏覽器工作階段，包括目前的工作階段。身分提供者工作階段、認證資料及獨立的持有者權杖仍然有效。完成後建立的工作階段可能保留，已獲准的工作可能完成。",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "結束此人的 ClaimCore 瀏覽器工作階段",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "結束此人的所有 ClaimCore 瀏覽器工作階段。身分提供者工作階段、認證資料及獨立的持有者權杖仍然有效。完成後建立的工作階段可能保留，已獲准的工作可能完成。",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore 瀏覽器工作階段已結束。",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "已結束的瀏覽器工作階段",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "要求未獲確認。它可能已結束 ClaimCore 瀏覽器工作階段。重複要求也可能結束較新的工作階段。",
+    "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "匯出超過下載大小限制。請縮小選取範圍或使用 CLI 逐頁讀取。",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "匯出未能在處理時限內完成。請重試或縮小選取範圍。",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "匯出遇到無效的後續頁資訊。未下載 CSV。",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "下載 CSV",
+    "source": "a4023b89022f"
   }
 }

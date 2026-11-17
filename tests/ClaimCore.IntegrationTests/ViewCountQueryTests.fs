@@ -349,3 +349,88 @@ let tests =
     testCaseAsync
         "view counts match literal expectations for all views and retained terminal work"
         (run qualify)
+
+let private translatorNegative fixture =
+    task {
+        let! context = Service.context fixture.Service () token
+
+        let context =
+            match (read context).Requester with
+            | RequesterState.Active active -> active
+            | other -> failtestf "Active fixture requester required: %A" other
+
+        for operation, reference, offset in
+            [ 5601, "work-01", -1; 5602, "mix-04", 0; 5603, "Work-11", 1 ] do
+            do!
+                execute
+                    fixture
+                    (Submissions.createRaw
+                        "reminder.create"
+                        (id fixture.Database.Fixture operation)
+                        (OperationBinding.Reminder(CaseSelector.Reference reference, None))
+                        (Submissions.reminderPlan
+                            "Check supplied evidence"
+                            (context.Runtime.Basis.BusinessDate.AddDays(offset)
+                             |> CalendarDate.ofDate
+                             |> CalendarDate.format)))
+
+        let selection =
+            {
+                CaseSelection.DateBasis = context.Runtime.Basis
+                Visibility = CaseVisibility.Every
+                ActorId = context.ActorId
+                ReadRoles = Access.rolesFor Capability.ReadCase
+                ForbiddenRoles = []
+                Filter =
+                    { CaseListFilter.empty<CaseSearchText> with
+                        Due = Some CaseDue.Today
+                    }
+            }
+
+        let predicate = CaseSelectionSql.predicate selection
+
+        let wrong =
+            predicate.Replace(
+                "c.follow_up=$6::date",
+                "c.follow_up<$6::date",
+                System.StringComparison.Ordinal
+            )
+
+        Expect.notEqual wrong predicate "The negative changes the real date equality translation"
+        use! connection = fixture.Database.RuntimeSource.OpenConnectionAsync(token)
+
+        let query where =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT c.case_reference FROM claimcore.cases c WHERE {where} ORDER BY c.case_reference COLLATE \"C\"")
+                        (CaseSelectionSql.parameters selection)
+                        token
+
+                return rows |> List.map (fun row -> unbox<string> row[0])
+            }
+
+        let! actual = query predicate
+        let! faulty = query wrong
+
+        let witness values =
+            Expect.equal values [ "mix-04" ] "Literal today witness excludes yesterday and tomorrow"
+
+        witness actual
+
+        Expect.equal
+            faulty
+            [ "work-01" ]
+            "The mutated translator executes successfully and selects the known wrong boundary"
+
+        Expect.throws
+            (fun () -> witness faulty)
+            "The same independent witness rejects a valid but incorrect SQL mapping"
+    }
+
+[<Tests>]
+let mappingNegative =
+    testCaseAsync
+        "work selection date translator negative executes wrong boundary and literal witness rejects it"
+        (run translatorNegative)

@@ -57,7 +57,17 @@ let private signalled () =
                     ))
 
             let config =
-                AdministrationProcess.start [ binary; "rebuild"; "--checkpoint"; checkpointFile ]
+                AdministrationProcess.start
+                    [
+                        binary
+                        "rebuild"
+                        "--checkpoint"
+                        checkpointFile
+                        "--pause-generation"
+                        "1"
+                        "--pause-id"
+                        "10000000-0000-4000-8000-000000000099"
+                    ]
 
             config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
             let! _, refusal, quiet = AdministrationProcess.execute config
@@ -71,10 +81,23 @@ let private signalled () =
             Expect.equal quiet "" "Business refusal is not a storage diagnostic"
 
             for signal in [ "INT"; "TERM" ] do
+                let! before = InstallationStatus.read database.OwnerSource token
                 use! holder = database.OwnerSource.OpenConnectionAsync()
                 use! held = holder.BeginTransactionAsync()
                 let! _ = Transactions.head holder token
-                let config = AdministrationProcess.start [ binary; "maintenance"; "on" ]
+
+                let config =
+                    AdministrationProcess.start
+                        [
+                            binary
+                            "maintenance"
+                            "acquire"
+                            (before.Maintenance.Generation.ToString(
+                                Globalization.CultureInfo.InvariantCulture
+                            ))
+                            "10000000-0000-4000-8000-000000000099"
+                        ]
+
                 config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connection
 
                 use child =
@@ -153,7 +176,10 @@ let private signalled () =
                     let! positive =
                         RegisterMaintenanceStore.change
                             database.OwnerSource
-                            MaintenanceChange.On
+                            (MaintenanceChange.Acquire(
+                                before.Maintenance.Generation,
+                                System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                            ))
                             token
 
                     Expect.isTrue
@@ -163,7 +189,7 @@ let private signalled () =
                     let! _ =
                         RegisterMaintenanceStore.change
                             database.OwnerSource
-                            MaintenanceChange.Off
+                            (MaintenanceChange.Resume(positive.State.Handle |> Option.get))
                             token
 
                     ()
@@ -227,7 +253,13 @@ let private confirmedCleanup () =
             // Npgsql 10.0.3 emits CommittedTransaction after awaiting the server's COMMIT response:
             // https://github.com/npgsql/npgsql/blob/v10.0.3/src/Npgsql/NpgsqlTransaction.cs#L125-L126
             let! confirmed =
-                RegisterMaintenanceStore.change source MaintenanceChange.On cancellation.Token
+                RegisterMaintenanceStore.change
+                    source
+                    (MaintenanceChange.Acquire(
+                        0L,
+                        System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                    ))
+                    cancellation.Token
 
             Expect.isTrue
                 confirmedBeforeReturn
@@ -249,7 +281,14 @@ let private confirmedCleanup () =
                     ClaimCore.Wire.BuildIdentity.current.Version
                 )
 
-            let! report = administration.Maintenance(MaintenanceChange.On, cancellation.Token)
+            let! report =
+                administration.Maintenance(
+                    (MaintenanceChange.Acquire(
+                        0L,
+                        System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                    )),
+                    cancellation.Token
+                )
             // Cancellation is deliberately after the actual public admin API confirmed COMMIT,
             // and before owner disposal. It cannot retrospectively replace the accepted report.
             cancellation.Cancel()

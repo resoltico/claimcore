@@ -294,14 +294,14 @@ let private globalFactsIntegrity (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.register_maintenance(singleton,active) VALUES(true,false)"
+                "INSERT INTO claimcore.register_maintenance(singleton,generation,pause_id) VALUES(true,0,NULL)"
                 [||]
 
         // This owned fixture deliberately crosses schema checks to exercise the independent read decoder.
         do!
             sql
                 database
-                "ALTER TABLE claimcore.register_maintenance ALTER COLUMN active DROP NOT NULL; UPDATE claimcore.register_maintenance SET active=NULL"
+                "ALTER TABLE claimcore.register_maintenance ALTER COLUMN generation DROP NOT NULL; UPDATE claimcore.register_maintenance SET generation=NULL"
                 [||]
 
         do! check "Invalid operational state"
@@ -309,13 +309,13 @@ let private globalFactsIntegrity (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.register_maintenance SET active=false; ALTER TABLE claimcore.register_maintenance ALTER COLUMN active SET NOT NULL"
+                "UPDATE claimcore.register_maintenance SET generation=0; ALTER TABLE claimcore.register_maintenance ALTER COLUMN generation SET NOT NULL"
                 [||]
 
         do!
             sql
                 database
-                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_singleton_check; INSERT INTO claimcore.register_maintenance(singleton,active) VALUES(false,false)"
+                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_singleton_check; INSERT INTO claimcore.register_maintenance(singleton,generation,pause_id) VALUES(false,0,NULL)"
                 [||]
 
         do! check "Multiple operational owners"

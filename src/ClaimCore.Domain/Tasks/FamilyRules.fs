@@ -8,22 +8,21 @@ open ClaimCore.Domain.Changes
 module internal FamilyRules =
     let unavailable = Refusal.Access AccessRefusal.ResourceUnavailable
 
-    let permission (environment: FamilyEnvironment) scope capability =
-        if Access.can environment.RequesterPrincipal environment.Requester capability scope then
+    let permissionFor principal access scope capability =
+        if Access.can principal access capability scope then
             Ok()
         elif
             scope <> Scope.Installation
-            && Access.can
-                environment.RequesterPrincipal
-                environment.Requester
-                Capability.ReadCase
-                scope
+            && Access.can principal access Capability.ReadCase scope
         then
             Error(Refusal.Access(AccessRefusal.NotAuthorized capability))
         else
             Error unavailable
 
-    let notOffered (state: CaseFamily) =
+    let permission (environment: FamilyEnvironment) scope capability =
+        permissionFor environment.RequesterPrincipal environment.Requester scope capability
+
+    let notOffered (state: DecisionFacts) =
         match state.Case.Value.Lifecycle with
         | Lifecycle.Erased -> Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)
         | Lifecycle.Voided -> Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided)
@@ -42,7 +41,7 @@ module internal FamilyRules =
                 |> CaseRefusal.NotOffered
                 |> Refusal.Case
 
-    let active requireOpen (state: CaseFamily) =
+    let active requireOpen (state: DecisionFacts) =
         if
             state.Case.Value.Lifecycle <> Lifecycle.Active
             || (requireOpen && state.Case.Value.Status <> CaseStatus.Opened)
@@ -51,22 +50,25 @@ module internal FamilyRules =
         else
             None
 
-    let target (state: CaseFamily) binding =
-        match Binding.caseTarget binding with
-        | Some(CaseSelector.Id id) when id = state.Id -> Ok()
-        | Some(CaseSelector.Reference reference) ->
-            match CaseReference.parse reference with
-            | Ok reference when
-                CaseReference.identity reference = CaseReference.identity state.Reference
-                ->
-                Ok()
+    let target (state: DecisionFacts) binding =
+        let selected =
+            match Binding.caseTarget binding with
+            | Some(CaseSelector.Id id) when id = state.Id -> Ok()
+            | Some(CaseSelector.Reference reference) ->
+                match CaseReference.parse reference with
+                | Ok reference when
+                    CaseReference.identity reference = CaseReference.identity state.Reference
+                    ->
+                    Ok()
+                | _ -> Error unavailable
             | _ -> Error unavailable
-        | _ -> Error unavailable
+
+        selected |> Result.map (fun () -> DecisionFacts.requireSelection binding state)
 
     let availability
         declaration
         (environment: FamilyEnvironment)
-        (state: CaseFamily option)
+        (state: DecisionFacts option)
         binding
         capability
         gate
@@ -94,7 +96,7 @@ module internal FamilyRules =
     let admitPermission
         (context: TaskContext)
         (environment: FamilyEnvironment)
-        (state: CaseFamily)
+        (state: DecisionFacts)
         binding
         permitted
         gate
@@ -115,6 +117,7 @@ module internal FamilyRules =
             (fun () ->
                 target state binding
                 |> Result.bind (fun () ->
+                    DecisionFacts.requireOperation context.Stamp.OperationId state
                     gate state |> Option.map Error |> Option.defaultValue (Ok())))
 
     let admit context environment state binding capability gate =

@@ -6,45 +6,49 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 
 module internal HumanText =
-    let private message language (value: PresentedMessage) =
+    let private message (rendering: RenderingContext) (value: PresentedMessage) =
         value.Arguments
-        |> Map.map (fun _ value -> TextDescriptorValue.render language value)
-        |> MessageCatalogs.render language value.MessageId
+        |> Map.map (fun _ value -> TextDescriptorValue.render rendering value)
+        |> MessageCatalogs.render rendering.Language value.MessageId
 
-    let advice language (value: HumanAdvice) = [ message language value.Message ]
+    let advice (rendering: RenderingContext) (value: HumanAdvice) =
+        [ message rendering value.Message ]
 
-    let fault language value =
+    let fault (rendering: RenderingContext) value =
         [
-            MessageCatalogs.render language (DiagnosticCode.key (CoreFault.token value)) Map.empty
+            MessageCatalogs.render
+                rendering.Language
+                (DiagnosticCode.key (CoreFault.token value))
+                Map.empty
         ]
 
-    let private issue language (value: HumanInputIssue) =
+    let private issue (rendering: RenderingContext) (value: HumanInputIssue) =
         let label =
             TaskInputPresentation.messageKey value.Input "label"
-            |> ReplyTextFormat.label language
+            |> ReplyTextFormat.label rendering
 
         let related =
             value.Related
             |> Option.map (fun entry ->
                 " ("
-                + ReplyTextFormat.label language entry.LabelId
+                + ReplyTextFormat.label rendering entry.LabelId
                 + ": "
-                + TextDescriptorValue.render language entry.Value
+                + TextDescriptorValue.render rendering entry.Value
                 + ")")
             |> Option.defaultValue ""
 
-        label + ": " + message language value.Message + related
+        label + ": " + message rendering value.Message + related
 
-    let rejection details language =
+    let rejection details (rendering: RenderingContext) =
         function
         | HumanRejection.Input(value, issues) ->
-            advice language value @ (issues |> List.map (issue language))
+            advice rendering value @ (issues |> List.map (issue rendering))
         | HumanRejection.Conflict(value, _, document) ->
-            advice language value @ ViewText.renderDocument details language document
-        | HumanRejection.Refused value -> advice language value
+            advice rendering value @ ViewText.renderDocument details rendering document
+        | HumanRejection.Refused value -> advice rendering value
 
-    let read details language (reply: HumanReadReply) =
+    let read details (rendering: RenderingContext) (reply: HumanReadReply) =
         match reply.Outcome with
-        | HumanReadOutcome.Succeeded document -> ViewText.renderDocument details language document
-        | HumanReadOutcome.Failed value -> fault language value
-        | HumanReadOutcome.Rejected value -> rejection details language value
+        | HumanReadOutcome.Succeeded document -> ViewText.renderDocument details rendering document
+        | HumanReadOutcome.Failed value -> fault rendering value
+        | HumanReadOutcome.Rejected value -> rejection details rendering value

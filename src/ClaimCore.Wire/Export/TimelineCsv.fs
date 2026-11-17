@@ -183,7 +183,10 @@ module TimelineCsv =
         let differences = if differences.IsEmpty then [ "", "", "" ] else differences
 
         differences
-        |> List.map (fun (key, before, after) -> csv (metadata @ [ key; before; after ]))
+        |> Seq.map (fun (key, before, after) -> csv (metadata @ [ key; before; after ]))
 
-    let csvRows (page: CaseTimelinePage) =
-        page.Items |> List.collect (rows page.Reference) |> Array.concat
+    let csvChunks (page: CaseTimelinePage) =
+        page.Items |> Seq.collect (rows page.Reference)
+
+    let csvRows page =
+        csvChunks page |> Seq.toArray |> Array.concat

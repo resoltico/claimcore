@@ -111,7 +111,7 @@ let private actualPayments () =
 
             match body.Snapshot with
             | SnapshotDisclosure.Disclosed {
-                                               Payment = Some(PaymentDifference.Recorded entry)
+                                               Payments = [ PaymentDifference.Recorded entry ]
                                            } when index = 1 -> first <- Some(input, entry)
             | _ -> ()
 
@@ -237,8 +237,53 @@ let private actualPayments () =
 
         check
             true
-            (entries |> List.forall _.CanRemove)
-            "Authorized active entries require remove handles."
+            (entries
+             |> List.forall (fun item ->
+                 item.Actions =
+                     [
+                         TaskId.ofLiteral "case.removePayment"
+                         TaskId.ofLiteral "case.correctPayment"
+                     ]))
+            "Each selected payment independently supplies both exact owned action identities."
+
+        // The caller keeps ReadCase through its separate handler role, while both payment
+        // capabilities are freshly checked after revocation rather than inferred from old controls.
+        let paymentRole active =
+            StoreFixtures.grant
+                actor
+                (Guid.CreateVersion7())
+                fixture.Owner
+                {
+                    Role = Role.PaymentRecorder
+                    Scope = GrantTarget.Installation
+                }
+                active
+            |> awaitResult
+            |> StoreFixtures.acceptedPeople
+
+        paymentRole false
+
+        match
+            Service.payments
+                actor
+                {
+                    CasePaymentsRequest.Target = CaseSelector.Id(parent |> Option.get)
+                    AfterCursor = None
+                    Limit = 1
+                }
+                token
+            |> awaitResult
+        with
+        | Outcome.Succeeded page ->
+            check 1 page.Items.Length "Read-only payment visibility remains available."
+
+            check
+                []
+                page.Items.Head.Actions
+                "Fresh authority supplies neither payment task after payment rights are revoked."
+        | other -> failwithf "Expected read-only payment page: %A" other
+
+        paymentRole true
 
         let current = read ()
         let financial = CaseState.fields current.Snapshot.State |> Option.get |> _.Finance
@@ -277,7 +322,10 @@ let private actualPayments () =
 
         let checkpoint = verified ()
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
+            token
         |> awaitResult
         |> ignore
 
@@ -322,6 +370,10 @@ let private actualPayments () =
                 database.OwnerSource
                 (InstallationCheckpoint.create fixture.InstallationId checkpoint None
                  |> Option.get)
+                (ClaimCore.Application.Contracts.MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
                 token
             |> awaitResult
             |> value
@@ -334,7 +386,15 @@ let private actualPayments () =
 
             check checkpoint (verified ()) "Projection repair changed the ledger checkpoint."
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Resume(
+                MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                |> Option.get
+            ))
+            token
         |> awaitResult
         |> ignore
 
@@ -387,7 +447,10 @@ let private actualPayments () =
             "Erasure retains the exact accepted removal marker."
 
 
-        RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
+        RegisterMaintenanceStore.change
+            database.OwnerSource
+            (MaintenanceChange.Acquire(2L, System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
+            token
         |> awaitResult
         |> ignore
 
@@ -396,6 +459,10 @@ let private actualPayments () =
         ProjectionRebuild.rebuild
             database.OwnerSource
             (InstallationCheckpoint.create fixture.InstallationId erasedCheckpoint None
+             |> Option.get)
+            (ClaimCore.Application.Contracts.MaintenanceHandle.create
+                3L
+                (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
              |> Option.get)
             token
         |> awaitResult

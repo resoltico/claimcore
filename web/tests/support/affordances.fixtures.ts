@@ -23,15 +23,17 @@ export const operationAffordance = <
   const authored = declaration.inputs
     .filter((value) => value.source === "AUTHORED")
     .map((value) => value.id);
-  const control: Affordance = {
+  const control = {
     task,
+    labelId: declaration.labelId,
     binding,
     seeds,
     editable: editable ?? [...authored, ...declaration.collections.map((value) => value.input)],
     choices,
     blocked: null,
   };
-  return { ...control, task, binding };
+  // This test builder supplies authored bindings; decoder and native writer tests independently check the closed association.
+  return { ...control, task, binding } as Affordance & { readonly task: T; readonly binding: B };
 };
 
 /** The caller explicitly authors the Core recommendation as a semantic screen region. */

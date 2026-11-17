@@ -133,3 +133,18 @@ nonempty set of targeted violations, and one field can have multiple issues. Sho
 Public outcomes distinguish success, refusal and failure. Execution distinguishes acceptance, replay
 and unknown delivery. A failure does not disprove a prior uncertain commit. A ledger position is a
 sequence and 32-byte entry hash; an independently retained checkpoint supplies external comparison evidence.
+
+The new payment-correction wording is agent-translated in all offered languages and awaits fluent
+review. Moving the existing assignment label to shared Presentation preserves its prior translations.
+
+CLI display-locale guidance and operational delivery wording were agent-translated in all offered
+languages and await fluent review.
+## ClaimCore browser session
+
+A ClaimCore browser session is one protected browser authentication ticket stored by ClaimCore. Its
+canonical principal includes kind, issuer and subject, independently of registration/profile hints.
+Ending these sessions removes the selected principal's tickets; it does not revoke identity-provider
+sessions, credentials or independent bearer tokens. The new session-termination wording in all eight
+translated languages is agent-produced and awaits fluent review.
+The bounded CSV resource advice and browser download chrome are agent-translated in all offered languages;
+these additions await fluent review.

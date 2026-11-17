@@ -603,10 +603,6 @@
     "text": "Nekas netiek reģistrēts, kamēr neapstiprināt.",
     "source": "23eba3cab92a"
   },
-  "ui.unconfirmedUntil": {
-    "text": "Vēl nav apstiprināts. Atbilde būs galīga līdz {finalAt}.",
-    "source": "fc1019052c76"
-  },
   "ui.version": {
     "text": "Versija",
     "source": "dd167905de0d"
@@ -646,10 +642,6 @@
   "ui.showAllNotes": {
     "text": "Rādīt visas piezīmes",
     "source": "28d554a1cdb1"
-  },
-  "ui.reassign": {
-    "text": "Mainīt atbildīgo",
-    "source": "4591c339cfa6"
   },
   "ui.openCase": {
     "text": "Atvērt lietu",
@@ -706,5 +698,9 @@
   "ui.roleNumber": {
     "text": "Loma {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "Pārlūks nevarēja saglabāt lejupielādi. Mēģiniet vēlreiz.",
+    "source": "e3c4b2089bc4"
   }
 }

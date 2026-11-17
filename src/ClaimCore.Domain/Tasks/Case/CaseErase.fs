@@ -29,7 +29,7 @@ let private capability = List.exactlyOne declaration.Capabilities
 type private Command = { FamilySequence: Sequence }
 let check (_: InputMap) = []
 
-let private gate (state: CaseFamily) =
+let private gate (state: DecisionFacts) =
     if state.Case.Value.Lifecycle = Lifecycle.Erased then
         Some(FamilyRules.notOffered state)
     else
@@ -38,7 +38,7 @@ let private gate (state: CaseFamily) =
 let availability environment state binding =
     CaseRules.availability declaration environment state binding capability gate
 
-let decide context environment (state: CaseFamily option) binding (_: InputMap) =
+let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.CaseErase(_, _, sequence) ->
         let command = { FamilySequence = sequence }
@@ -69,10 +69,10 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment state _ ->
-                    match state with
-                    | Some state ->
-                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                fun principal access caseId _ ->
+                    match caseId with
+                    | Some id ->
+                        FamilyRules.permissionFor principal access (Scope.Case id) capability
                     | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability

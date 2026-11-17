@@ -54,7 +54,7 @@ let tests =
                     ClaimCore.Domain.Tasks.Case.Close.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         binding
                         InputMap.empty
                 with

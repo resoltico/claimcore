@@ -68,7 +68,7 @@ let private structuralScenarios database =
 
         for message in
             [
-                "PASS erased projection keeps only reference, revision and state"
+                "PASS unmatched erasure leaves private projections intact"
                 "PASS head equals the last ledger row"
             ] do
             Expect.stringContains (runtime + owner) message "State assertion executed"

@@ -15,17 +15,20 @@ module internal PersonRules =
                 Refusal.invalidInput (InputTarget.ExpectedRevision, Violation.ExpectedRevisionRange)
             )
 
-    let permission (declaration: TaskDeclaration) (environment: PersonEnvironment) =
+    let permissionFor (declaration: TaskDeclaration) principal access =
         if
             Access.can
-                environment.RequesterPrincipal
-                environment.Requester
+                principal
+                access
                 (List.exactlyOne declaration.Capabilities)
                 Scope.Installation
         then
             Ok()
         else
             Error unavailable
+
+    let permission (declaration: TaskDeclaration) (environment: PersonEnvironment) =
+        permissionFor declaration environment.RequesterPrincipal environment.Requester
 
     let admit (context: TaskContext) (environment: PersonEnvironment) permitted gate =
         let decision =

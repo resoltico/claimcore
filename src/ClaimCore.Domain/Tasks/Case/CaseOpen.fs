@@ -46,7 +46,7 @@ let check inputs =
         (fun inputs -> parse (fun _ -> Ok) (reference inputs) (CaseParsing.values inputs))
         inputs
 
-let private gate (state: CaseFamily option) =
+let private gate (state: DecisionFacts option) =
     match state with
     | Some state when state.Case.Value.Lifecycle = Lifecycle.Erased ->
         Some(FamilyRules.notOffered state)
@@ -74,7 +74,7 @@ let availability environment state binding =
 let decide
     (context: TaskContext)
     (environment: FamilyEnvironment)
-    (state: CaseFamily option)
+    (state: DecisionFacts option)
     binding
     inputs
     =
@@ -185,8 +185,8 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment _ _ ->
-                    FamilyRules.permission environment Scope.Installation capability
+                fun principal access _ _ ->
+                    FamilyRules.permissionFor principal access Scope.Installation capability
             Check = check
             Availability = availability
             Decide = decide

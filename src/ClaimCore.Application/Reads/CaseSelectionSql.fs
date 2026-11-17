@@ -13,49 +13,144 @@ module internal CaseSelectionSql =
     let private scopedRead =
         "EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$2 AND g.case_id=c.case_id AND g.role=ANY($3::text[]))"
 
-    let responsibility =
-        "CASE WHEN c.responsible_actor=$2 THEN 'MINE' WHEN c.responsible_actor IS NULL AND c.state<>'ERASED' THEN 'UNASSIGNED' ELSE NULL END"
-
-    let due =
-        "CASE WHEN c.state<>'ACTIVE' OR c.status IS DISTINCT FROM 'OPENED' THEN 'INACTIVE' WHEN c.follow_up IS NULL THEN 'UNSCHEDULED' WHEN c.follow_up<$11::date THEN 'OVERDUE' WHEN c.follow_up=$11::date THEN 'TODAY' ELSE 'UPCOMING' END"
-
     let private basePredicate =
-        $"($1 OR {scopedRead}) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$2 AND bad.case_id=c.case_id AND bad.role=ANY($4::text[])) AND (cardinality($5::text[])=0 OR c.state=ANY($5::text[])) AND (cardinality($6::text[])=0 OR c.status=ANY($6::text[])) AND (cardinality($7::text[])=0 OR c.progress=ANY($7::text[])) AND ($8::text IS NULL OR (c.search_text LIKE '%%' || $8 || '%%' ESCAPE chr(92) OR c.work_search_text LIKE '%%' || $8 || '%%' ESCAPE chr(92))) AND ($9::text IS NULL OR ({responsibility})=$9) AND ($10::text IS NULL OR ({due})=$10)"
+        $"($1 OR {scopedRead}) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=$2 AND bad.case_id=c.case_id AND bad.role=ANY($4::text[])) AND ($5::text IS NULL OR (c.search_text LIKE '%%' || $5 || '%%' ESCAPE chr(92) OR c.work_search_text LIKE '%%' || $5 || '%%' ESCAPE chr(92)))"
 
-    let private roleArray capability =
-        Access.rolesFor capability
-        |> List.map (Role.token >> fun role -> "'" + role + "'")
-        |> String.concat ","
-        |> fun roles -> "ARRAY[" + roles + "]::text[]"
+    let private selectionTokens =
+        [
+            yield!
+                Vocabulary.all Lifecycle.vocabulary
+                |> List.map (fun value ->
+                    "lifecycle:" + Lifecycle.token value, Lifecycle.token value)
+            yield!
+                Vocabulary.all CaseStatus.vocabulary
+                |> List.map (fun value ->
+                    "status:" + CaseStatus.token value, CaseStatus.token value)
+            yield!
+                CaseProgress.vocabulary
+                |> Vocabulary.all
+                |> List.map (fun value ->
+                    "progress:" + CaseProgress.token value, CaseProgress.token value)
+            yield!
+                Vocabulary.all ReminderState.vocabulary
+                |> List.map (fun value ->
+                    "reminder:" + ReminderState.token value, ReminderState.token value)
+        ]
+
+        @ (Vocabulary.all CaseAssignment.vocabulary
+           |> List.map (fun value ->
+               "assignment:" + CaseAssignment.token value, CaseAssignment.token value))
+        @ (Vocabulary.all CaseDue.vocabulary
+           |> List.map (fun value -> "due:" + CaseDue.token value, CaseDue.token value))
+
+    let private token key =
+        let index =
+            selectionTokens |> List.findIndex (fun (candidate, _) -> candidate = key)
+
+        $"($8::text[])[{index + 1}]"
 
     let private available =
-        let read = roleArray Capability.ReadCase
-        let work = roleArray Capability.ManageCaseWork
-        $"EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=c.responsible_actor AND a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=c.case_id) AND g.role=ANY({read})) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=c.case_id) AND g.role=ANY({work})))"
+        let eligibility =
+            AssigneeSelectionSql.predicate
+                Access.assigneeSelection
+                "$9"
+                AssigneeSelectionSql.Source.ResponsibleCase
 
-    /// SQL translates the Domain's closed views; explicit filters remain an intersection.
-    let viewPredicate =
-        let activeOpen = "c.state='ACTIVE' AND c.status='OPENED'"
+        $"EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=c.responsible_actor AND {eligibility})"
 
+    let datePredicateAt column dateParameter value =
+        let comparison =
+            match ReminderDue.relation value with
+            | DateRelation.Before -> "<"
+            | DateRelation.Same -> "="
+            | DateRelation.After -> ">"
+
+        $"COALESCE({column}{comparison}{dateParameter}::date,FALSE)"
+
+    let datePredicate column value = datePredicateAt column "$6" value
+
+    /// The adapter interprets finite facts and boolean structure, never view identities.
+    let rec private interpret responsible =
         function
-        | CaseView.All -> "TRUE"
-        | CaseView.Mine -> "c.responsible_actor=$2"
-        | CaseView.Closed -> "c.status='CLOSED'"
-        | CaseView.Voided -> "c.state='VOIDED'"
-        | CaseView.Undecided -> $"{activeOpen} AND c.progress='UNDECIDED'"
-        | CaseView.DecidedUnpaid -> $"{activeOpen} AND c.progress IN ('DECIDED','PARTLY_PAID')"
-        | CaseView.Overdue -> $"{activeOpen} AND c.follow_up<$11::date"
-        | CaseView.DueToday -> $"{activeOpen} AND c.follow_up=$11::date"
-        | CaseView.NoNextAction -> $"{activeOpen} AND c.follow_up IS NULL"
-        | CaseView.Unassigned -> $"{activeOpen} AND c.responsible_actor IS NULL"
-        | CaseView.NeedsAttention ->
-            $"{activeOpen} AND (c.follow_up<=$11::date OR c.follow_up IS NULL OR c.responsible_actor IS NULL OR NOT ({available}) OR c.progress='PAID')"
+        | WorkSelection.All values ->
+            if values.IsEmpty then
+                "TRUE"
+            else
+                values
+                |> List.map (interpret responsible >> fun value -> "(" + value + ")")
+                |> String.concat " AND "
+        | WorkSelection.Any values ->
+            if values.IsEmpty then
+                "FALSE"
+            else
+                values
+                |> List.map (interpret responsible >> fun value -> "(" + value + ")")
+                |> String.concat " OR "
+        | WorkSelection.Not value -> "NOT (" + interpret responsible value + ")"
+        | WorkSelection.Fact predicate ->
+            let equal column key = $"COALESCE({column}={token key},FALSE)"
+
+            match predicate with
+            | WorkPredicate.Lifecycle value ->
+                equal "c.state" ("lifecycle:" + Lifecycle.token value)
+            | WorkPredicate.Status value -> equal "c.status" ("status:" + CaseStatus.token value)
+            | WorkPredicate.Progress value ->
+                equal "c.progress" ("progress:" + CaseProgress.token value)
+            | WorkPredicate.Mine -> "COALESCE(c.responsible_actor=$2,FALSE)"
+            | WorkPredicate.Responsible value -> responsible value
+            | WorkPredicate.Unassigned -> "c.responsible_actor IS NULL"
+            | WorkPredicate.AssigneeUnavailable ->
+                $"c.responsible_actor IS NOT NULL AND NOT ({available})"
+            | WorkPredicate.NoNextDue -> "c.follow_up IS NULL"
+            | WorkPredicate.NextDue value -> datePredicate "c.follow_up" value
+            | WorkPredicate.ReminderState value ->
+                equal "r.state" ("reminder:" + ReminderState.token value)
+            | WorkPredicate.ReminderDue value -> datePredicate "r.due" value
+
+    let selectionPredicate selection =
+        interpret
+            (fun _ ->
+                invalidArg
+                    (nameof selection)
+                    "A supplied actor filter needs its parameter binding.")
+            selection
+
+    let viewPredicate view =
+        CaseView.plan view |> selectionPredicate
+
+    let private classification vocabulary tokenKey plan =
+        let cases =
+            Vocabulary.all vocabulary
+            |> List.map (fun value ->
+                let condition = selectionPredicate (plan value)
+                let result = token (tokenKey value)
+                $"WHEN {condition} THEN {result}")
+            |> String.concat " "
+
+        $"CASE {cases} ELSE NULL END"
+
+    let responsibility =
+        classification
+            CaseAssignment.vocabulary
+            (fun value -> "assignment:" + CaseAssignment.token value)
+            CaseAssignment.plan
+
+    let due =
+        classification CaseDue.vocabulary (fun value -> "due:" + CaseDue.token value) CaseDue.plan
 
     let predicate (selection: CaseSelection) =
-        let view =
-            selection.Filter.View |> Option.map viewPredicate |> Option.defaultValue "TRUE"
+        let filters =
+            CaseListFilter.selection selection.Filter
+            |> interpret (fun actor ->
+                if actor <> selection.Filter.ResponsibleActor then
+                    invalidArg (nameof selection) "Actor binding differs from its filter."
 
-        $"{basePredicate} AND ({view}) AND ($12::uuid IS NULL OR c.responsible_actor=$12)"
+                "($7::uuid IS NULL OR c.responsible_actor=$7)")
+
+        $"{basePredicate} AND ({filters})"
+
+    /// Suffix parameters follow the complete shared selection prefix.
+    let suffix index = "$" + string (9 + index)
 
     let parameters (selection: CaseSelection) =
         let filter = selection.Filter
@@ -73,12 +168,9 @@ module internal CaseSelectionSql =
             box (ActorId.value selection.ActorId)
             box (selection.ReadRoles |> List.map Role.token |> List.toArray)
             box (selection.ForbiddenRoles |> List.map Role.token |> List.toArray)
-            box (filter.Lifecycles |> List.map Lifecycle.token |> List.toArray)
-            box (filter.Statuses |> List.map CaseStatus.token |> List.toArray)
-            box (filter.Progress |> List.map CaseProgress.token |> List.toArray)
             DatabaseSession.parameter text
-            DatabaseSession.parameter (filter.Assignment |> Option.map CaseAssignment.token)
-            DatabaseSession.parameter (filter.Due |> Option.map CaseDue.token)
             box selection.DateBasis.BusinessDate
             DatabaseSession.parameter (filter.ResponsibleActor |> Option.map ActorId.value)
+            box (selectionTokens |> List.map snd |> List.toArray)
+            AssigneeSelectionSql.parameters Access.assigneeSelection
         |]

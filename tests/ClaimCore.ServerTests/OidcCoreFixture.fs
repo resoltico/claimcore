@@ -22,6 +22,17 @@ type Fixture(database: PostgresFixture.Database) =
     member _.InstallationId = database.Fixture.InstallationId
     member _.Actor principal = core database.Fixture principal
 
+    member _.Sessions =
+        SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+    member _.SessionCount =
+        use connection = database.OwnerSource.OpenConnection()
+
+        use command =
+            new Npgsql.NpgsqlCommand("SELECT count(*) FROM claimcore.sessions", connection)
+
+        command.ExecuteScalar() :?> int64
+
     member _.EntryCount =
         use connection = database.OwnerSource.OpenConnection()
 

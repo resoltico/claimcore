@@ -107,7 +107,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         else
                             ReplyText.bytesForWithDetails
                                 prepared.Details
-                                prepared.Language
+                                prepared.Rendering
                                 (Some frame)
                                 reply.Frame
 
@@ -259,13 +259,15 @@ let tests =
 
                     for language in LocalizationPolicy.languages do
                         let text =
-                            ViewText.render language (TimelineScreen.rows [ item ])
+                            ViewText.render
+                                (RenderingContext.forLanguage language)
+                                (TimelineScreen.rows [ item ])
                             |> String.concat "\n"
 
                         Expect.stringContains
                             text
                             (ReplyTextFormat.label
-                                language
+                                (RenderingContext.forLanguage language)
                                 (PresentationKeys.code vocabulary token))
                             "Actual per-entity labels render in all supported languages")
             testCase "retired history and activity verbs and API endpoints refuse" (fun () ->
@@ -297,7 +299,10 @@ let tests =
                             [ "case history"; "case activity" ])
                         "One command inventory excludes both retired verbs")
             testCase "global verb help lists only supported human commands" (fun () ->
-                let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Verbs)
+                let help =
+                    ContractDiscovery.helpTopic
+                        (RenderingContext.forLanguage "en")
+                        (CliTopic.Help HelpTopic.Verbs)
 
                 Expect.stringContains
                     help
@@ -476,7 +481,7 @@ let tests =
                         Expect.stringContains
                             text
                             (ReplyTextFormat.moneyWithScale
-                                language
+                                (RenderingContext.forLanguage language)
                                 (DomainInputs.money "123456789.12" "EUR")
                                 2)
                             "Exact old money survives the endpoint wire view."
@@ -484,19 +489,23 @@ let tests =
                         Expect.stringContains
                             text
                             (ReplyTextFormat.moneyWithScale
-                                language
+                                (RenderingContext.forLanguage language)
                                 (DomainInputs.money "0" "USD")
                                 2)
                             "Exact new money survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-03"))
+                            (ReplyTextFormat.date
+                                (RenderingContext.forLanguage language)
+                                (DomainInputs.date "2026-11-03"))
                             "Old date survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-04"))
+                            (ReplyTextFormat.date
+                                (RenderingContext.forLanguage language)
+                                (DomainInputs.date "2026-11-04"))
                             "New date survives."
 
                         Expect.stringContains
@@ -511,17 +520,23 @@ let tests =
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language "task.case.close.label")
+                            (ReplyTextFormat.label
+                                (RenderingContext.forLanguage language)
+                                "task.case.close.label")
                             "The supplied act is localized."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language "label.changesWithheld")
+                            (ReplyTextFormat.label
+                                (RenderingContext.forLanguage language)
+                                "label.changesWithheld")
                             "Withheld changes have an explicit localized state"
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language "label.changesErased")
+                            (ReplyTextFormat.label
+                                (RenderingContext.forLanguage language)
+                                "label.changesErased")
                             "Erased changes are distinguished"
 
                         Expect.isFalse

@@ -1,3 +1,4 @@
+import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../../api/service";
 import type { RegionTimelineEntry } from "@contracts/client";
 
@@ -46,6 +47,13 @@ export const PeopleHistory = ({ actorId }: { actorId: string }) => {
   return (
     <section className="people-history" aria-labelledby="people-history-title">
       <h1 id="people-history-title">{p.text("endpoint.people.history.label")}</h1>
+      <CsvExportButton
+        selection={{
+          query: apiEndpoints.peopleHistory,
+          selection: actorId === "" ? {} : { actorId },
+        }}
+        available={page.page !== null && !page.loading}
+      />
       {page.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
       {page.message === null ? null : (
         <p role="alert">

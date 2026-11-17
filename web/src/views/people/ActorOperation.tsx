@@ -1,3 +1,5 @@
+import type { Notice } from "../../protocol/notices";
+import { BrowserSessionCommands } from "../../features/settings/BrowserSessions";
 import { isOperationAffordance } from "../../operation/affordances";
 import { Actions } from "../../ui/regions/Actions";
 import { usePresentation } from "../../presentation/context";
@@ -17,14 +19,16 @@ export const ActorActions = ({
   target,
   busy,
   onOpen,
+  onDisclosureRefused,
 }: {
   target: PeopleTarget;
   busy: boolean;
   onOpen: () => void;
+  onDisclosureRefused?: ((notice?: Notice) => void) | undefined;
 }) => (
   <fieldset disabled={busy}>
     <Actions
-      actions={target.actions}
+      actions={target.actions.filter(isOperationAffordance)}
       expandOther
       onAction={(action) => {
         if (isOperationAffordance(action)) {
@@ -32,6 +36,11 @@ export const ActorActions = ({
           onOpen();
         }
       }}
+    />
+    <BrowserSessionCommands
+      actions={target.actions}
+      disabled={busy}
+      onDisclosureRefused={onDisclosureRefused}
     />
   </fieldset>
 );

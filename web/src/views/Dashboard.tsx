@@ -592,7 +592,7 @@ export const Dashboard = () => {
   const inactive = requester !== null && requester.subject.state !== "ACTIVE" ? requester : null;
   return (
     <InlineNoteDraftProvider owner={lockOwner}>
-      <RequesterContext value={actorContext}>
+      <RequesterContext value={requester}>
         <WorkspacePresence
           inactive={inactive}
           retained={retainInactiveWorkspace(requester, owner, session)}

@@ -11,19 +11,19 @@ open ClaimCore.Json
 
 /// Resolved text is public, admitted with ingress, and served before any cookie authentication.
 module internal CatalogRoutes =
+    let internal core language =
+        use stream =
+            Assembly
+                .GetExecutingAssembly()
+                .GetManifestResourceStream("ClaimCore.Localization." + language + ".core.json")
+            |> nonNull
+
+        use bytes = new MemoryStream()
+        stream.CopyTo bytes
+        bytes.ToArray()
+
+
     type Inventory(files: PublicAssets.Inventory) =
-        let assembly = Assembly.GetExecutingAssembly()
-
-        let core language =
-            use stream =
-                assembly.GetManifestResourceStream(
-                    "ClaimCore.Localization." + language + ".core.json"
-                )
-                |> nonNull
-
-            use bytes = new MemoryStream()
-            stream.CopyTo bytes
-            bytes.ToArray()
 
         let chrome language =
             files.TryRead("/locales/" + language + ".json")

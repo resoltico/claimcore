@@ -201,21 +201,21 @@ module internal CaseWorkReads =
     let canAssign principal actor paused (snapshot: CaseSnapshot) =
         CaseWorkPolicy.canAssign principal actor paused snapshot
 
-    let families (tx: ReadTx) ids =
+    let families (tx: ReadTx) selected =
         task {
             let mutable families = Map.empty
 
-            for id in List.distinct ids do
-                let! state = AggregateStorage.familyForReminders tx id
+            for id, selected in selected |> List.distinct |> List.groupBy fst do
+                let! acquired = AggregateStorage.familyForReminders tx id (selected |> List.map snd)
 
-                match state with
-                | Some(state, _, _) -> families <- Map.add id state families
+                match acquired with
+                | Some acquired -> families <- Map.add id acquired.Facts families
                 | None -> ()
 
             return families
         }
 
-    let reminderActs principal actor maintenance (family: CaseFamily option) value =
+    let reminderActs principal actor maintenance (family: DecisionFacts option) value =
         match family with
         | None -> []
         | Some family ->
@@ -301,7 +301,11 @@ module internal CaseWorkReads =
                         tx
                         (page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
 
-                let! currentFamilies = families tx [ record.CaseId ]
+                let! currentFamilies =
+                    families
+                        tx
+                        (page.Items
+                         |> List.map (fun row -> row.Stored.CaseId, row.Stored.ReminderId))
 
                 return
                     page.Items

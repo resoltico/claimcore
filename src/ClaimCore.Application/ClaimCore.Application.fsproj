@@ -26,9 +26,7 @@
     <Compile Include="Storage/PrincipalLock.fs" />
     <Compile Include="Storage/ExpiryFrontierStorage.fs" />
     <Compile Include="Storage/Ledger/OperationStorage.fs" />
-    <Compile Include="Storage/AggregateStorage.fs" />
     <Compile Include="Storage/PartProjections.fs" />
-    <Compile Include="Execution/ExecutionEnvironment.fs" />
     <Compile Include="Storage/Schema/Baseline.fs" />
     <Compile Include="Storage/InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/Projections.fs" />
@@ -39,6 +37,8 @@
     <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Storage/Ledger/Transactions.fs" />
     <Compile Include="Storage/RegisterMaintenanceStore.fs" />
+    <Compile Include="Storage/SessionStore.fs" />
+    <Compile Include="Reads/AssigneeSelectionSql.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
     <Compile Include="Reads/ResponsibilityCountStorage.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />
@@ -56,6 +56,8 @@
     <Compile Include="Reads/NoteReads.fs" />
     <Compile Include="Reads/LedgerReads.fs" />
     <Compile Include="Reads/PeopleReads.fs" />
+    <Compile Include="Storage/AggregateStorage.fs" />
+    <Compile Include="Execution/ExecutionEnvironment.fs" />
     <Compile Include="Storage/WriteTransaction.fs" />
     <Compile Include="Execution/Engine.fs" />
     <Compile Include="Storage/Store.fs" />
@@ -75,6 +77,7 @@
     <Compile Include="Reads/Advice.fs" />
     <Compile Include="People/PeopleQueries.fs" />
     <Compile Include="People/AccessRequestQueries.fs" />
+    <Compile Include="People/SessionTerminationQueries.fs" />
     <Compile Include="Notes/NoteQueries.fs" />
     <Compile Include="Cases/PaymentQueries.fs" />
     <Compile Include="Cases/Queries.fs" />
@@ -91,7 +94,6 @@
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
     <Compile Include="Storage/RestoreAdmission.fs" />
-    <Compile Include="Storage/SessionStore.fs" />
     <Compile Include="Storage/Housekeeping.fs" />
     <Compile Include="Storage/InstallationStatus.fs" />
     <Compile Include="Runtime.fs" />

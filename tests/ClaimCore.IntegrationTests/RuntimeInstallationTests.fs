@@ -178,6 +178,7 @@ let private retarget () =
 
                 let! session =
                     correct.Create(
+                        SessionResults.principal,
                         [| 1uy |],
                         None,
                         TimeSpan.FromMinutes 5.,
@@ -196,6 +197,7 @@ let private retarget () =
                         task {
                             let! _ =
                                 runtime.Sessions.Create(
+                                    SessionResults.principal,
                                     [| 2uy |],
                                     None,
                                     TimeSpan.FromMinutes 5.,
@@ -209,7 +211,15 @@ let private retarget () =
                 do!
                     refused (fun () ->
                         task {
-                            let! _ = runtime.Sessions.Renew(session.Value, [| 2uy |], token) in
+                            let! _ =
+                                runtime.Sessions.Renew(
+                                    session.Value,
+                                    SessionResults.principal,
+                                    [| 2uy |],
+                                    (fun _ -> true),
+                                    token
+                                ) in
+
                             return ()
                         })
 
@@ -231,7 +241,7 @@ let private retarget () =
                 let! _ =
                     DatabaseSession.execute
                         seed
-                        "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) VALUES(repeat('a',64),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800)"
+                        "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) VALUES(repeat('a',64),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64))"
                         [||]
                         token
 
@@ -250,7 +260,12 @@ let private retarget () =
 
                 do! refused (fun () -> task { let! _ = runtime.Housekeep token in return () })
                 let! retained = correct.Retrieve(session.Value, token)
-                Expect.equal retained.Value (Some [| 1uy |]) "No foreign renewal or removal"
+
+                Expect.equal
+                    (retained.Value |> Option.map _.Payload)
+                    (Some [| 1uy |])
+                    "No foreign renewal or removal"
+
                 use! check = second.OwnerSource.OpenConnectionAsync()
 
                 let! rows =

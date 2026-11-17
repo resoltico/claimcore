@@ -262,7 +262,7 @@ module OperationSubmission =
         |> Option.defaultValue (Error(issue (target input) Violation.ExpectedRevisionRange))
 
     let private creationVersion raw =
-        if raw = 0L then
+        if raw = SubmissionDeclarations.creationRevision then
             Ok Revision.zero
         else
             Error(issue (target InputTarget.ExpectedRevision) Violation.ExpectedRevisionRange)
@@ -291,7 +291,7 @@ module OperationSubmission =
         | ActSubject.Case, OperationBinding.Case(selection, expected, payment, family) when
             not declaration.Creates
             ->
-            version 1L InputTarget.ExpectedRevision expected
+            version SubmissionDeclarations.existingRevision InputTarget.ExpectedRevision expected
             |> bind (fun expected ->
                 if binds InputTarget.PaymentId then
                     match payment, family with
@@ -323,7 +323,10 @@ module OperationSubmission =
                 else
                     Error SubmissionProblem.Shape)
         | ActSubject.Work, OperationBinding.Work(selection, expected) ->
-            version 0L InputTarget.ExpectedWorkRevision expected
+            version
+                SubmissionDeclarations.creationRevision
+                InputTarget.ExpectedWorkRevision
+                expected
             |> Result.map (fun expected -> Binding.Work(selection, expected))
         | ActSubject.Note, OperationBinding.Note(selection, None) when declaration.Creates ->
             Ok(Binding.NoteNew selection)
@@ -338,14 +341,20 @@ module OperationSubmission =
             map2
                 (fun id expected -> Binding.Reminder(selection, id, expected))
                 (identity ReminderId.create InputTarget.ReminderId Violation.ReminderIdRequired id)
-                (version 1L InputTarget.ExpectedReminderRevision expected)
+                (version
+                    SubmissionDeclarations.existingRevision
+                    InputTarget.ExpectedReminderRevision
+                    expected)
         | ActSubject.People, OperationBinding.People(None, expected) when declaration.Creates ->
             creationVersion expected |> Result.map Binding.PeopleNew
         | ActSubject.People, OperationBinding.People(Some id, expected) when not declaration.Creates ->
             map2
                 (fun id expected -> Binding.People(id, expected))
                 (actorIdentity id)
-                (version 1L InputTarget.ExpectedRevision expected)
+                (version
+                    SubmissionDeclarations.existingRevision
+                    InputTarget.ExpectedRevision
+                    expected)
         | _ -> Error SubmissionProblem.Shape
 
     let private declared task =
@@ -438,11 +447,14 @@ module OperationSubmission =
         | BindingShape.CaseNew, OperationBinding.CaseNew expected ->
             optional creationVersion expected
         | BindingShape.Case, OperationBinding.Case(_, expected, None, None) ->
-            revision 1L InputTarget.ExpectedRevision expected
+            revision SubmissionDeclarations.existingRevision InputTarget.ExpectedRevision expected
         | BindingShape.CasePayment, OperationBinding.Case(_, expected, payment, None) ->
             collect
                 [
-                    revision 1L InputTarget.ExpectedRevision expected
+                    revision
+                        SubmissionDeclarations.existingRevision
+                        InputTarget.ExpectedRevision
+                        expected
                     identifier
                         OperationId.create
                         InputTarget.PaymentId
@@ -450,9 +462,19 @@ module OperationSubmission =
                         payment
                 ]
         | BindingShape.CaseErase, OperationBinding.Case(_, expected, None, sequence) ->
-            collect [ revision 1L InputTarget.ExpectedRevision expected; family sequence ]
+            collect
+                [
+                    revision
+                        SubmissionDeclarations.existingRevision
+                        InputTarget.ExpectedRevision
+                        expected
+                    family sequence
+                ]
         | BindingShape.Work, OperationBinding.Work(_, expected) ->
-            revision 0L InputTarget.ExpectedWorkRevision expected
+            revision
+                SubmissionDeclarations.creationRevision
+                InputTarget.ExpectedWorkRevision
+                expected
         | BindingShape.ReminderNew, OperationBinding.Reminder(_, None)
         | BindingShape.NoteNew, OperationBinding.Note(_, None) -> Ok()
         | BindingShape.Reminder, OperationBinding.Reminder(_, Some(id, expected)) ->
@@ -464,7 +486,10 @@ module OperationSubmission =
                         Violation.ReminderIdRequired
                         id
                     |> Result.map ignore
-                    revision 1L InputTarget.ExpectedReminderRevision expected
+                    revision
+                        SubmissionDeclarations.existingRevision
+                        InputTarget.ExpectedReminderRevision
+                        expected
                 ]
         | BindingShape.Note, OperationBinding.Note(_, note) ->
             identifier NoteId.create InputTarget.NoteId Violation.NoteIdRequired note
@@ -474,7 +499,10 @@ module OperationSubmission =
             collect
                 [
                     actorIdentity id |> Result.map ignore
-                    revision 1L InputTarget.ExpectedRevision expected
+                    revision
+                        SubmissionDeclarations.existingRevision
+                        InputTarget.ExpectedRevision
+                        expected
                 ]
         | _ -> Error SubmissionProblem.Shape
 
@@ -560,3 +588,190 @@ module OperationSubmission =
         |> syntaxResult
         |> Result.toOption
         |> Option.flatten
+
+/// Pure draft acquisition policy shared by native interfaces and generated browser assembly.
+module SubmissionAssembly =
+    let private target input = TaskInputId.Target input
+    let private reference = SubmissionDeclarations.caseReferenceInput
+
+    /// Authored selection owns scope. Absence alone permits the installation default.
+    let scope inputs =
+        if Map.containsKey TaskInputId.Scope inputs then
+            inputs
+        else
+            match
+                SubmissionDeclarations.scopeRule
+                    None
+                    (Map.containsKey SubmissionDeclarations.caseIdInput inputs)
+                    (Map.containsKey reference inputs)
+            with
+            | Some rule ->
+                Map.add
+                    SubmissionDeclarations.scopeInput
+                    (SubmissionValue.Text(
+                        if rule.Input.IsSome then
+                            SubmissionDeclarations.caseScope
+                        else
+                            SubmissionDeclarations.installationScope
+                    ))
+                    inputs
+            | None -> inputs // Keep contradictory authored alternatives for visible admission refusal.
+
+
+    /// Missing selection is a draft placeholder; malformed or competing authored alternatives refuse.
+    let caseSelection inputs =
+        let invalid = Error SubmissionProblem.Shape
+
+        match
+            Map.tryFind SubmissionDeclarations.caseIdInput inputs, Map.tryFind reference inputs
+        with
+        | Some(SubmissionValue.Text value), None ->
+            match Guid.TryParseExact(value, "D") with
+            | true, value ->
+                CaseId.create value
+                |> Option.map (CaseSelector.Id >> Ok)
+                |> Option.defaultValue invalid
+            | _ -> invalid
+        | None, Some(SubmissionValue.Text value) -> Ok(CaseSelector.Reference value)
+        | None, None -> Ok(CaseSelector.Reference "")
+        | _ -> invalid
+
+    let defaults (declaration: TaskDeclaration) =
+        declaration.Inputs
+        |> List.choose (fun input ->
+            match input.Input with
+            | TaskInputId.Target(InputTarget.Group _) when input.Source = InputSource.Authored ->
+                Some(
+                    input.Input,
+                    SubmissionValue.Text(CorrectionGroupAction.token CorrectionGroupAction.Keep)
+                )
+            | _ -> None)
+        |> Map.ofList
+
+    let withDefaults (declaration: TaskDeclaration) inputs =
+        let values =
+            Map.fold
+                (fun values key value ->
+                    if Map.containsKey key values then
+                        values
+                    else
+                        Map.add key value values)
+                inputs
+                (defaults declaration)
+
+        if declaration.Inputs |> List.exists (fun input -> input.Input = TaskInputId.Scope) then
+            scope values
+        else
+            values
+
+    /// UPDATE seeds are display hints even when a current control cannot edit them.
+    /// Only declared non-UPDATE values outside Editable are immutable authored selections.
+    let fixedInputs (declaration: TaskDeclaration) editable seeds =
+        let editable = Set.ofList editable
+
+        let declared =
+            declaration.Inputs |> List.map (fun input -> input.Input, input) |> Map.ofList
+
+        seeds
+        |> Map.filter (fun key _ ->
+            not (Set.contains key editable)
+            && (Map.tryFind key declared
+                |> Option.exists (fun input -> SubmissionDeclarations.fixedSeed input)))
+
+    /// Fixed controls always win; editable UPDATE seeds never become authored values.
+    let merge
+        (editable: TaskInputId list)
+        (fixedValues: Map<TaskInputId, SubmissionValue>)
+        authored
+        =
+        let editable = Set.ofList editable
+
+        Map.fold
+            (fun values key value ->
+                if Set.contains key editable then
+                    values
+                else
+                    Map.add key value values)
+            (Map.filter (fun key _ -> Set.contains key editable) authored)
+            fixedValues
+
+    let draftBinding (declaration: TaskDeclaration) selection revision identity =
+        let plan = SubmissionDeclarations.binding declaration
+
+        let expected =
+            plan.Revision
+            |> Option.bind (fun basis -> revision basis.Input |> Option.orElse basis.Initial)
+
+        let selectedIdentity = plan.Identity |> Option.bind identity
+        let family = plan.Family |> Option.bind (fun basis -> revision basis.Input)
+
+        match plan.Shape with
+        | BindingShape.CaseNew -> OperationBinding.CaseNew expected
+        | BindingShape.Case -> OperationBinding.Case(selection, expected, None, None)
+        | BindingShape.CasePayment ->
+            OperationBinding.Case(selection, expected, selectedIdentity, None)
+        | BindingShape.CaseErase -> OperationBinding.Case(selection, expected, None, family)
+        | BindingShape.Work -> OperationBinding.Work(selection, expected)
+        | BindingShape.NoteNew -> OperationBinding.Note(selection, None)
+        | BindingShape.Note -> OperationBinding.Note(selection, selectedIdentity)
+        | BindingShape.ReminderNew -> OperationBinding.Reminder(selection, None)
+        | BindingShape.Reminder ->
+            OperationBinding.Reminder(
+                selection,
+                selectedIdentity |> Option.map (fun id -> id, expected)
+            )
+        | BindingShape.PeopleNew -> OperationBinding.People(None, expected)
+        | BindingShape.People -> OperationBinding.People(selectedIdentity, expected)
+
+    /// Build a supplied control from explicit observed identity and revisions.
+    let offeredBinding (declaration: TaskDeclaration) selection revision identity family =
+        let required name =
+            Option.defaultWith (fun () -> invalidArg name "A declared binding fact is required.")
+
+        let expected () = required "revision" revision
+        let selected () = required "selection" selection
+
+        let identified create =
+            identity |> Option.bind create |> required "identity"
+
+        match (SubmissionDeclarations.binding declaration).Shape with
+        | BindingShape.CaseNew -> Binding.CaseNew Revision.zero
+        | BindingShape.Case -> Binding.Case(selected (), expected ())
+        | BindingShape.CasePayment ->
+            Binding.CasePayment(selected (), expected (), identified OperationId.create)
+        | BindingShape.CaseErase ->
+            Binding.CaseErase(selected (), expected (), required "family" family)
+        | BindingShape.Work -> Binding.Work(selected (), expected ())
+        | BindingShape.NoteNew -> Binding.NoteNew(selected ())
+        | BindingShape.Note -> Binding.Note(selected (), identified NoteId.create)
+        | BindingShape.ReminderNew -> Binding.ReminderNew(selected ())
+        | BindingShape.Reminder ->
+            Binding.Reminder(selected (), identified ReminderId.create, expected ())
+        | BindingShape.PeopleNew -> Binding.PeopleNew Revision.zero
+        | BindingShape.People -> Binding.People(identified ActorId.create, expected ())
+
+    /// Complete only missing draft basis; an explicitly reviewed version is never refreshed.
+    let completeBinding draft offered =
+        match draft, offered with
+        | OperationBinding.CaseNew expected, OperationBinding.CaseNew revision ->
+            OperationBinding.CaseNew(Option.defaultValue revision expected)
+        | OperationBinding.Case(target, expected, payment, family),
+          OperationBinding.Case(_, revision, _, offeredFamily) ->
+            OperationBinding.Case(
+                target,
+                Option.defaultValue revision expected,
+                payment,
+                Option.orElse offeredFamily family
+            )
+        | OperationBinding.Work(target, expected), OperationBinding.Work(_, revision) ->
+            OperationBinding.Work(target, Option.defaultValue revision expected)
+        | OperationBinding.People(id, expected), OperationBinding.People(_, revision) ->
+            OperationBinding.People(id, Option.defaultValue revision expected)
+        | OperationBinding.Reminder(target, Some(id, expected)),
+          OperationBinding.Reminder(_, Some(_, revision)) ->
+            OperationBinding.Reminder(target, Some(id, Option.defaultValue revision expected))
+        | OperationBinding.Note(target, id), OperationBinding.Note _ ->
+            OperationBinding.Note(target, id)
+        | OperationBinding.Reminder(target, None), OperationBinding.Reminder(_, None) ->
+            OperationBinding.Reminder(target, None)
+        | _ -> invalidArg "offered" "A draft requires the matching offered binding."

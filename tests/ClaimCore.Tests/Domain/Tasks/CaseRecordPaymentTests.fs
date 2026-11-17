@@ -19,7 +19,10 @@ let tests =
                     let state = decided ()
 
                     let offered =
-                        RecordPayment.availability environment (Some state) (caseBinding state)
+                        RecordPayment.availability
+                            environment
+                            (Some(DecisionFacts.fromReplay state))
+                            (caseBinding state)
 
                     Expect.equal
                         offered.Seeds
@@ -35,7 +38,7 @@ let tests =
                     let unavailable =
                         RecordPayment.availability
                             environment
-                            (Some unopened)
+                            (Some(DecisionFacts.fromReplay unopened))
                             (caseBinding unopened)
 
                     Expect.isSome unavailable.Blocked "No payment decision"
@@ -49,7 +52,7 @@ let tests =
                         RecordPayment.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (paymentInputs "2026-02-02" "25.1234" "EUR")
                         |> accepted
@@ -96,7 +99,7 @@ let tests =
                         RecordPayment.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (paymentInputs date amount currency)
                         |> expectInputs
@@ -113,7 +116,7 @@ let tests =
                         RecordPayment.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (paymentInputs "2026-11-16" "1" "EUR")
                         |> expectInputs
@@ -130,7 +133,7 @@ let tests =
                     RecordPayment.decide
                         (context 4)
                         environment
-                        (Some paid)
+                        (Some(DecisionFacts.fromReplay paid))
                         (caseBinding paid)
                         (paymentInputs "2026-02-03" "1" "EUR")
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid))
@@ -141,7 +144,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.RemovePayment.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.CasePayment(target state, state.Case.Revision, operation 3))
                             InputMap.empty
                         |> accepted
@@ -150,7 +153,7 @@ let tests =
                     RecordPayment.decide
                         (context 3)
                         environment
-                        (Some removed)
+                        (Some(DecisionFacts.fromReplay removed))
                         (caseBinding removed)
                         (paymentInputs "2026-02-03" "1" "EUR")
                     |> expectRefusal Refusal.IdempotencyConflict)
@@ -172,7 +175,7 @@ let tests =
                         RecordPayment.decide
                             early
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             (paymentInputs "2026-02-02" "1" "EUR")
                         |> expectInputs

@@ -35,7 +35,7 @@ let availability environment state binding =
         capability
         (FamilyRules.active true)
 
-let decide context environment (state: CaseFamily option) binding inputs =
+let decide context environment (state: DecisionFacts option) binding inputs =
     match state, binding with
     | Some state, Binding.ReminderNew _ ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active true)
@@ -63,7 +63,7 @@ let decide context environment (state: CaseFamily option) binding inputs =
         |> Result.map (TaskContext.changes context)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
-let decideRetained context environment (state: CaseFamily option) binding (_: InputMap) =
+let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.ReminderNew _ ->
         FamilyRules.admit context environment state binding capability (FamilyRules.active true)
@@ -94,10 +94,10 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment state _ ->
-                    match state with
-                    | Some state ->
-                        FamilyRules.permission environment (Scope.Case state.Id) capability
+                fun principal access caseId _ ->
+                    match caseId with
+                    | Some id ->
+                        FamilyRules.permissionFor principal access (Scope.Case id) capability
                     | None -> Error FamilyRules.unavailable
             Check = check
             Availability = availability

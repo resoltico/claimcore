@@ -1,3 +1,4 @@
+import { clientCompositions } from "@contracts/client";
 import { operationTask } from "../../protocol/taskCatalog";
 import { isNarrativeCreationId, narrativeCreationInput } from "../../operation/metadata";
 import {
@@ -94,11 +95,15 @@ export const useCaseWorkPanels = ({
   };
   const workAction = current.actions.find(
     (action): action is BoundOperationAffordance<"WORK"> =>
-      isOperationAffordance(action) && action.binding.kind === "WORK" && action.blocked === null,
+      isOperationAffordance(action) &&
+      action.task === clientCompositions.assignment &&
+      action.binding.kind === "WORK" &&
+      action.blocked === null,
   );
   const reminderCreate = current.actions.find(
     (action): action is BoundOperationAffordance<"REMINDER"> =>
       isOperationAffordance(action) &&
+      action.task === clientCompositions.reminderCreation &&
       action.binding.kind === "REMINDER" &&
       !("reminderId" in action.binding) &&
       action.blocked === null,
@@ -107,6 +112,7 @@ export const useCaseWorkPanels = ({
     (action): action is BoundOperationAffordance<"NOTE"> =>
       isOperationAffordance(action) &&
       isNarrativeCreationId(action.task) &&
+      action.task === clientCompositions.noteEntry &&
       action.binding.kind === "NOTE" &&
       !("noteId" in action.binding) &&
       action.blocked === null,

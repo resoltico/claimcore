@@ -24,43 +24,17 @@ type CasePartState =
         Content: CaseContent option
     }
 
-/// Due dates participate in the family index; an action is acquired only for a selected reminder.
-type ReminderSchedule =
-    | DueOnly of CalendarDate
-    | AvailablePlan of ReminderPlan
-    | Cleared
-
-type ReminderFacts =
+type internal FamilyParts =
     {
-        State: ReminderState
-        Schedule: ReminderSchedule
+        Identity: CaseId
+        ReferenceValue: CaseReference
+        CaseValue: AcceptedPart<CasePartState>
+        PaymentsValue: Map<OperationId, AcceptedPart<PaymentValue>>
+        WorkValue: AcceptedPart<CaseWork option> option
+        RemindersValue: Map<ReminderId, AcceptedPart<ReminderValue>>
+        NotesValue: Map<NoteId, AcceptedPart<NoteState>>
+        SequenceValue: Sequence
     }
-
-    member this.Plan =
-        match this.Schedule with
-        | AvailablePlan plan -> Some plan
-        | _ -> None
-
-    member this.Due =
-        match this.Schedule with
-        | AvailablePlan plan -> Some plan.Due
-        | DueOnly due -> Some due
-        | Cleared -> None
-
-    member this.Value: ReminderValue = { State = this.State; Plan = this.Plan }
-
-type CaseFamily =
-    private
-        {
-            Identity: CaseId
-            ReferenceValue: CaseReference
-            CaseValue: AcceptedPart<CasePartState>
-            PaymentsValue: Map<OperationId, AcceptedPart<PaymentValue>>
-            WorkValue: AcceptedPart<CaseWork option> option
-            RemindersValue: Map<ReminderId, AcceptedPart<ReminderFacts>>
-            NotesValue: Map<NoteId, AcceptedPart<NoteState>>
-            SequenceValue: Sequence
-        }
 
     member this.Id = this.Identity
     member this.Reference = this.ReferenceValue
@@ -72,7 +46,23 @@ type CaseFamily =
     member this.Sequence = this.SequenceValue
     member this.ChangedAt = this.CaseValue.Stamp.RecordedAt
 
-module CaseFamily =
+/// Complete reconstruction for replay, verification and rebuild. Live acquisition cannot construct this type.
+type CaseFamily =
+    private
+    | CaseFamily of FamilyParts
+
+    member internal this.Value = let (CaseFamily value) = this in value
+    member this.Id = this.Value.Id
+    member this.Reference = this.Value.Reference
+    member this.Case = this.Value.Case
+    member this.Payments = this.Value.Payments
+    member this.Work = this.Value.Work
+    member this.Reminders = this.Value.Reminders
+    member this.Notes = this.Value.Notes
+    member this.Sequence = this.Value.Sequence
+    member this.ChangedAt = this.Value.ChangedAt
+
+module internal FamilyParts =
     let validateContent (content: CaseContent) =
         CaseAdmission.financial content.Registration content.Finance
 
@@ -161,12 +151,12 @@ module CaseFamily =
                 state.Reminders
                 |> Map.map (fun _ part ->
                     { part with
-                        Value = { part.Value with Schedule = Cleared }
+                        Value = { part.Value with Plan = None }
                     })
         }
 
     /// Structural application never invents missing private values or re-runs a task's business rules.
-    let apply (state: CaseFamily option) (change: PartChange) =
+    let applyWith financialCheck (state: FamilyParts option) (change: PartChange) =
         let invalid = Error RecordViolation.InvalidSubjectState
 
         match change.Aggregate with
@@ -191,7 +181,7 @@ module CaseFamily =
                     && change.NaturalKey = (value.Reference |> Option.map CaseReference.format)
                     && change.Revision = Revision.first
                     ->
-                    financial Map.empty value
+                    financialCheck Map.empty value
                     |> Result.map (fun () ->
                         {
                             Identity = id
@@ -228,7 +218,7 @@ module CaseFamily =
                     then
                         invalid
                     else
-                        financial before.Payments value
+                        financialCheck before.Payments value
                         |> Result.map (fun () ->
                             { before with
                                 CaseValue = accepted change (caseState value)
@@ -301,18 +291,7 @@ module CaseFamily =
                             Ok
                                 { before with
                                     RemindersValue =
-                                        Map.add
-                                            reminder
-                                            (accepted
-                                                change
-                                                {
-                                                    ReminderFacts.State = value.State
-                                                    Schedule =
-                                                        value.Plan
-                                                        |> Option.map AvailablePlan
-                                                        |> Option.defaultValue Cleared
-                                                })
-                                            before.Reminders
+                                        Map.add reminder (accepted change value) before.Reminders
                                 }
                     | Some _ -> Error RecordViolation.InvalidRevisionSequence
                     | None -> invalid
@@ -361,7 +340,7 @@ module CaseFamily =
                     SequenceValue = EffectPosition.sequence change.Stamp.Position
                 })
 
-    let snapshot (state: CaseFamily) =
+    let snapshot (state: FamilyParts) =
         let value = state.Case.Value
 
         let fields =
@@ -393,7 +372,7 @@ module CaseFamily =
                 }
         | _ -> None
 
-    let index (state: CaseFamily) =
+    let index (state: FamilyParts) =
         snapshot state
         |> Option.map (fun snapshot ->
             let work =
@@ -412,7 +391,7 @@ module CaseFamily =
                 |> Map.values
                 |> Seq.choose (fun part ->
                     if part.Value.State = ReminderState.Pending then
-                        part.Value.Due
+                        (part.Value.Plan |> Option.map _.Due)
                     else
                         None)
                 |> Seq.toList
@@ -420,7 +399,7 @@ module CaseFamily =
             CaseIndex.create state.ChangedAt snapshot work due)
 
     /// Projection writers consume accepted values and aggregate-derived indexes in the same fold.
-    let rows (state: CaseFamily) (changes: PartChange list) =
+    let rows (state: FamilyParts) (changes: PartChange list) =
         if
             changes
             |> List.exists (fun change ->
@@ -437,7 +416,8 @@ module CaseFamily =
                 let missing =
                     (state.Work |> Option.exists (fun part -> part.Value.IsNone))
                     || (state.Payments |> Map.exists (fun _ part -> part.Value.Entry.IsNone))
-                    || (state.Reminders |> Map.exists (fun _ part -> part.Value.Due.IsNone))
+                    || (state.Reminders
+                        |> Map.exists (fun _ part -> (part.Value.Plan |> Option.map _.Due).IsNone))
                     || (changes
                         |> List.exists (fun change ->
                             match change.Value with
@@ -452,8 +432,8 @@ module CaseFamily =
 
     /// Restores exact accepted versions for live decisions; history succession is checked by apply.
     let private restoreParts
-        (reminderDates: Map<ReminderId, CalendarDate>)
-        includePrivate
+        financialCheck
+        rowsCheck
         id
         reference
         sequence
@@ -523,22 +503,7 @@ module CaseFamily =
                     |> List.choose (fun change ->
                         match change.Value, ReminderId.create change.PartId with
                         | PartValue.Reminder value, Some reminder ->
-                            Some(
-                                reminder,
-                                accepted
-                                    change
-                                    {
-                                        ReminderFacts.State = value.State
-                                        Schedule =
-                                            match
-                                                value.Plan, Map.tryFind reminder reminderDates
-                                            with
-                                            | Some plan, Some due when plan.Due <> due -> Cleared
-                                            | Some plan, _ -> AvailablePlan plan
-                                            | None, Some due -> DueOnly due
-                                            | None, None -> Cleared
-                                    }
-                            )
+                            Some(reminder, accepted change value)
                         | _ -> None)
                     |> Map.ofList
 
@@ -571,18 +536,46 @@ module CaseFamily =
                         SequenceValue = sequence
                     }
 
-                financial payments value
-                |> Result.bind (fun () ->
-                    let acquired =
-                        parts |> List.filter (fun part -> includePrivate part.Kind part.PartId)
-
-                    rows state acquired |> Result.map (fun _ -> state))
+                financialCheck payments value
+                |> Result.bind (fun () -> rowsCheck state parts |> Result.map (fun () -> state))
             | _ -> invalid
 
-    /// Full reconstruction requires all still-present private values.
-    let restore id reference sequence parts origins =
-        restoreParts Map.empty (fun _ _ -> true) id reference sequence parts origins
+    let apply state change = applyWith financial state change
 
-    /// Live acquisition carries note identity/removal and reminder dates without unrelated text.
-    let restoreForDecision dates includePrivate id reference sequence parts origins =
-        restoreParts dates includePrivate id reference sequence parts origins
+    /// Full reconstruction reconciles every active payment and derives all child projections.
+    let restore id reference sequence parts origins =
+        restoreParts
+            financial
+            (fun state acquired -> rows state acquired |> Result.map ignore)
+            id
+            reference
+            sequence
+            parts
+            origins
+
+    /// The selected-parts constructor is internal; DecisionFacts adds its explicit aggregate facts.
+    let restoreSelected id reference sequence parts origins =
+        restoreParts
+            (fun _ (value: CaseValue) ->
+                value.Content |> Option.map validateContent |> Option.defaultValue (Ok()))
+            (fun _ _ -> Ok())
+            id
+            reference
+            sequence
+            parts
+            origins
+
+module CaseFamily =
+    let validateContent = FamilyParts.validateContent
+    let validateSnapshot = FamilyParts.validateSnapshot
+
+    let apply state change =
+        FamilyParts.apply (state |> Option.map (fun (value: CaseFamily) -> value.Value)) change
+        |> Result.map CaseFamily
+
+    let snapshot (state: CaseFamily) = FamilyParts.snapshot state.Value
+    let index (state: CaseFamily) = FamilyParts.index state.Value
+    let rows (state: CaseFamily) changes = FamilyParts.rows state.Value changes
+
+    let restore id reference sequence parts origins =
+        FamilyParts.restore id reference sequence parts origins |> Result.map CaseFamily

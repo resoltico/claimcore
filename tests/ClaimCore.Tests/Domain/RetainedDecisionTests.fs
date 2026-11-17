@@ -62,7 +62,14 @@ let tests =
                         ]
 
                     for token, before, lifecycle, status in cases do
-                        let changes = retained token 5 before (caseBinding before) InputMap.empty
+                        let changes =
+                            retained
+                                token
+                                5
+                                (DecisionFacts.fromReplay before)
+                                (caseBinding before)
+                                InputMap.empty
+
                         let change = List.exactlyOne changes
                         Expect.equal change.Kind PartKind.Case token
 
@@ -87,7 +94,12 @@ let tests =
                     let opened = historical ()
 
                     let changes =
-                        retained "case.recordPayment" 2 opened (caseBinding opened) InputMap.empty
+                        retained
+                            "case.recordPayment"
+                            2
+                            (DecisionFacts.fromReplay opened)
+                            (caseBinding opened)
+                            InputMap.empty
 
                     Expect.equal
                         (changes |> List.map _.Kind)
@@ -101,7 +113,7 @@ let tests =
                         retained
                             "case.removePayment"
                             3
-                            after
+                            (DecisionFacts.fromReplay after)
                             (Binding.CasePayment(target after, after.Case.Revision, paymentId))
                             InputMap.empty
 
@@ -122,7 +134,7 @@ let tests =
                         ((familyTask "case.removePayment").DecideRetained
                             (recorded 4)
                             environment
-                            (Some paid)
+                            (Some(DecisionFacts.fromReplay paid))
                             (Binding.CasePayment(target paid, paid.Case.Revision, paymentId))
                             InputMap.empty)
                         "A removed payment stays removed")
@@ -133,7 +145,7 @@ let tests =
                     retained
                         "work.update"
                         2
-                        opened
+                        (DecisionFacts.fromReplay opened)
                         (Binding.Work(target opened, Revision.zero))
                         InputMap.empty
 
@@ -144,7 +156,7 @@ let tests =
                     retained
                         "work.update"
                         3
-                        after
+                        (DecisionFacts.fromReplay after)
                         (Binding.Work(target after, Revision.first))
                         InputMap.empty
 
@@ -157,13 +169,18 @@ let tests =
                     ((familyTask "work.update").DecideRetained
                         (recorded 3)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (Binding.Work(target after, Revision.zero))
                         InputMap.empty)
                     "Stale review"
 
                 let note =
-                    retained "note.add" 3 after (Binding.NoteNew(target after)) InputMap.empty
+                    retained
+                        "note.add"
+                        3
+                        (DecisionFacts.fromReplay after)
+                        (Binding.NoteNew(target after))
+                        InputMap.empty
 
                 let noted = apply after note
 
@@ -171,7 +188,7 @@ let tests =
                     retained
                         "note.remove"
                         4
-                        noted
+                        (DecisionFacts.fromReplay noted)
                         (Binding.Note(target noted, NoteId.ofOperationId (operation 3)))
                         InputMap.empty
 
@@ -189,16 +206,37 @@ let tests =
                         retained
                             "reminder.create"
                             2
-                            opened
+                            (DecisionFacts.fromReplay opened)
                             (Binding.ReminderNew(target opened))
                             InputMap.empty
 
                     let pending = apply opened created
                     let id = ReminderId.ofOperationId (operation 2)
                     let bound = Binding.Reminder(target pending, id, Revision.first)
-                    let updated = retained "reminder.update" 3 pending bound InputMap.empty
-                    let completed = retained "reminder.complete" 3 pending bound InputMap.empty
-                    let cancelled = retained "reminder.cancel" 3 pending bound InputMap.empty
+
+                    let updated =
+                        retained
+                            "reminder.update"
+                            3
+                            (DecisionFacts.fromReplay pending)
+                            bound
+                            InputMap.empty
+
+                    let completed =
+                        retained
+                            "reminder.complete"
+                            3
+                            (DecisionFacts.fromReplay pending)
+                            bound
+                            InputMap.empty
+
+                    let cancelled =
+                        retained
+                            "reminder.cancel"
+                            3
+                            (DecisionFacts.fromReplay pending)
+                            bound
+                            InputMap.empty
 
                     for changes, expected in
                         [
@@ -218,7 +256,7 @@ let tests =
                         retained
                             "reminder.reopen"
                             4
-                            doneState
+                            (DecisionFacts.fromReplay doneState)
                             (Binding.Reminder(
                                 target doneState,
                                 id,
@@ -232,7 +270,12 @@ let tests =
                     | _ -> failtest "Expected reminder"
 
                     let compound =
-                        retained "reminder.completeAndPlanNext" 3 pending bound InputMap.empty
+                        retained
+                            "reminder.completeAndPlanNext"
+                            3
+                            (DecisionFacts.fromReplay pending)
+                            bound
+                            InputMap.empty
 
                     Expect.equal
                         (compound |> List.map _.PartId)
@@ -251,7 +294,7 @@ let tests =
                         ((familyTask "reminder.update").DecideRetained
                             (recorded 4)
                             environment
-                            (Some doneState)
+                            (Some(DecisionFacts.fromReplay doneState))
                             (Binding.Reminder(
                                 target doneState,
                                 id,

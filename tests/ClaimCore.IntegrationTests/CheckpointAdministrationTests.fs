@@ -121,20 +121,44 @@ let private checkpoints () =
 
         let addSession () =
             sql
-                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions SELECT repeat('a',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600 FROM observed"
+                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT repeat('a',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600,repeat('b',64) FROM observed"
 
         let mutable maintenanceRefused = false
 
         try
-            administration.AdmitRestoredInstallation(trusted, token) |> sync |> ignore
+            administration.AdmitRestoredInstallation(
+                trusted,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
+            |> ignore
         with :? MaintenanceRequiredException ->
             maintenanceRefused <- true
 
         Expect.isTrue maintenanceRefused "Restore admission requires active maintenance"
 
-        administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
+        administration.Maintenance(
+            (MaintenanceChange.Acquire(0L, System.Guid.Parse "10000000-0000-4000-8000-000000000099")),
+            token
+        )
+        |> sync
+        |> ignore
 
-        match administration.Rebuild(trusted, token) |> sync with
+        match
+            administration.Rebuild(
+                trusted,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
+        with
         | Error actual ->
             Expect.equal
                 actual.Finding
@@ -145,7 +169,16 @@ let private checkpoints () =
         addSession ()
 
         let restored =
-            administration.AdmitRestoredInstallation(trusted, token) |> sync |> require
+            administration.AdmitRestoredInstallation(
+                trusted,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
+            |> require
 
         Expect.equal
             restored.InvalidatedSessions
@@ -169,10 +202,27 @@ let private checkpoints () =
             (VerificationResult.Verified current.Position)
             "Raised frontier satisfies trusted evidence"
 
-        administration.Rebuild(trusted, token) |> sync |> require |> ignore
+        administration.Rebuild(
+            trusted,
+            (MaintenanceHandle.create 1L (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+             |> Option.get),
+            token
+        )
+        |> sync
+        |> require
+        |> ignore
 
         let lower =
-            administration.AdmitRestoredInstallation(older, token) |> sync |> require
+            administration.AdmitRestoredInstallation(
+                older,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
+            |> require
 
         Expect.equal
             lower.Checkpoint.ExpiredBefore
@@ -187,7 +237,17 @@ let private checkpoints () =
                 missing, VerificationFinding.ExpectedPosition
                 changed, VerificationFinding.ExpectedPosition
             ] do
-            match administration.AdmitRestoredInstallation(checkpoint, token) |> sync with
+            match
+                administration.AdmitRestoredInstallation(
+                    checkpoint,
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get),
+                    token
+                )
+                |> sync
+            with
             | Error actual ->
                 Expect.equal
                     actual.Finding
@@ -209,7 +269,16 @@ let private checkpoints () =
         let mutable failed = false
 
         try
-            administration.AdmitRestoredInstallation(later, token) |> sync |> ignore
+            administration.AdmitRestoredInstallation(
+                later,
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get),
+                token
+            )
+            |> sync
+            |> ignore
         with :? PostgresException as error ->
             Expect.equal
                 error.SqlState

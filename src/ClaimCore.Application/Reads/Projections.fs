@@ -348,14 +348,16 @@ module internal Projections =
             let roles = roleSummaryQuery "g.actor_id=actor.actor_id"
 
             let sql =
-                $"WITH current_mode AS MATERIALIZED(SELECT active,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.mode_count,(SELECT COALESCE(jsonb_agg(to_jsonb(r)),'[]'::jsonb)::text FROM ({roles}) r) FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
+                $"WITH current_mode AS MATERIALIZED(SELECT generation,pause_id,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.generation,m.pause_id,m.mode_count,(SELECT COALESCE(jsonb_agg(to_jsonb(r)),'[]'::jsonb)::text FROM ({roles}) r) FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
 
             let! rows = DatabaseSession.preparedRows connection sql parameters token
 
             let mode =
                 match rows with
-                | first :: _ when DatabaseSession.value<int64> 9 first = 1L ->
-                    RegisterMaintenance.create (DatabaseSession.value<bool> 8 first)
+                | first :: _ when DatabaseSession.value<int64> 10 first = 1L ->
+                    RegisterMaintenance.create
+                        (DatabaseSession.value<int64> 8 first)
+                        (DatabaseSession.optional<Guid> 9 first)
                 | _ ->
                     raise (
                         RecordCorruptException "Register maintenance state is absent or duplicated."
@@ -364,7 +366,7 @@ module internal Projections =
             return
                 {
                     GlobalReadFacts.People = globalPeople principal rows
-                    AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 10 rows.Head)
+                    AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 11 rows.Head)
                     Maintenance = mode
                 }
         }

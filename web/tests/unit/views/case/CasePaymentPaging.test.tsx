@@ -8,7 +8,7 @@ import { workBasis } from "../../../support/inputs";
 import type { CurrentCase } from "../../../../src/protocol/types";
 import type { HumanDocument, Region } from "@contracts/client";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
-type Handle = { paymentId: string; canRemove: boolean };
+type Handle = { paymentId: string; removalOffered: boolean };
 const ids = [
   "10000000-0000-7000-8000-000000000101",
   "10000000-0000-7000-8000-000000000102",
@@ -32,7 +32,7 @@ const table = (handles: ReadonlyArray<Handle>, currency: string, firstAmount: nu
     ],
     rows: handles.map((handle, index) => ({
       key: handle.paymentId,
-      actions: handle.canRemove
+      actions: handle.removalOffered
         ? [
             operationAffordance("case.removePayment", {
               kind: "CASE",
@@ -71,7 +71,7 @@ const table = (handles: ReadonlyArray<Handle>, currency: string, firstAmount: nu
 });
 const preview = ids.map((paymentId) => ({
   paymentId,
-  canRemove: true,
+  removalOffered: true,
 }));
 const region = table(preview, "EUR", 1);
 const current: CurrentCase = {
@@ -131,11 +131,11 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
         [
           {
             paymentId: older,
-            canRemove: true,
+            removalOffered: true,
           },
           {
             paymentId: other,
-            canRemove: false,
+            removalOffered: false,
           },
         ],
         "core-payment-cursor",
@@ -146,7 +146,7 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
         [
           {
             paymentId: last,
-            canRemove: true,
+            removalOffered: true,
           },
         ],
         null,
@@ -218,7 +218,7 @@ it("masks earlier payment rows on an erased continuation and refreshes the case 
           [
             {
               paymentId: older,
-              canRemove: true,
+              removalOffered: true,
             },
           ],
           "issued",
@@ -258,7 +258,7 @@ it("refuses to expose payment rows from a newer case version until its current d
         [
           {
             paymentId: older,
-            canRemove: true,
+            removalOffered: true,
           },
         ],
         null,

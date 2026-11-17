@@ -327,7 +327,11 @@ let tests =
                     "Creation cannot clear a profile value"
 
                 for language in [ "en"; "lv"; "ar" ] do
-                    let help = Discovery.commandHelp language [ "people"; "admit" ] |> Option.get
+                    let help =
+                        Discovery.commandHelp
+                            (RenderingContext.forLanguage language)
+                            [ "people"; "admit" ]
+                        |> Option.get
 
                     Expect.stringContains
                         help

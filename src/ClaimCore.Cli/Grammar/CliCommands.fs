@@ -89,6 +89,7 @@ module CliCommands =
         | CliCommand.Recovery -> CliTopic.Help HelpTopic.Recovery
         | CliCommand.Configure -> CliTopic.Help HelpTopic.Configure
 
+    let private displayChoices = String.concat "|" LocalizationPolicy.displayLocales
     let private languageChoices = String.concat "|" LocalizationPolicy.languages
 
     /// Bootstrap syntax is host-owned; business operation syntax comes from semantic task declarations.
@@ -100,6 +101,8 @@ module CliCommands =
             [
                 "help [topic | family [verb...]] [--format text|json] [--language "
                 + languageChoices
+                + "] [--display-locale "
+                + displayChoices
                 + "]"
             ]
         | CliCommand.Call -> [ "call" ]
@@ -107,17 +110,26 @@ module CliCommands =
         | CliCommand.Shell -> [ "shell" ]
         | CliCommand.Recovery ->
             [
-                "recovery list [--format text|json] [--language " + languageChoices + "]"
+                "recovery list [--format text|json] [--language "
+                + languageChoices
+                + "] [--display-locale "
+                + displayChoices
+                + "]"
                 "recovery check ATTEMPT_ID [--format text|json] [--language "
                 + languageChoices
+                + "] [--display-locale "
+                + displayChoices
                 + "]"
             ]
         | CliCommand.Configure ->
             [
                 "configure --show"
                 "configure --language " + languageChoices
+                "configure --display-locale " + displayChoices
                 "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH] [--language "
                 + languageChoices
+                + "] [--display-locale "
+                + displayChoices
                 + "]"
             ]
 

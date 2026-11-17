@@ -133,7 +133,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                         if pending.Format = VerbFormat.Json then
                             reply.Bytes
                         else
-                            ReplyText.bytesFor pending.Language (Some frame) reply.Frame
+                            ReplyText.bytesFor pending.Rendering (Some frame) reply.Frame
 
                     output.Write bytes
                     output.WriteByte(byte '\n')
@@ -289,7 +289,7 @@ let tests =
 
                 let output =
                     CaseListScreen.rows [ row "STATE-1" ]
-                    |> ViewText.render "en"
+                    |> ViewText.render (RenderingContext.forLanguage "en")
                     |> String.concat "\n"
 
                 Expect.stringContains
@@ -416,7 +416,7 @@ let tests =
 
                     Expect.stringContains
                         (TextDescriptorValue.render
-                            "en"
+                            (RenderingContext.forLanguage "en")
                             (ClaimCore.Presentation.PresentedValue.Actor actor))
                         "Agent\\u{001B}[31m\\u{202E}B\\\\u{202E}"
                         "The actual typed formatter distinguishes controls from literal escapes before layout"
@@ -430,7 +430,9 @@ let tests =
 
                         Expect.stringContains
                             rendered
-                            (ReplyTextFormat.label "en" "field.responsibleActor.label")
+                            (ReplyTextFormat.label
+                                (RenderingContext.forLanguage "en")
+                                "field.responsibleActor.label")
                             "The wide layout retains the actual actor column"
 
                         Expect.stringContains
@@ -803,3 +805,21 @@ let tests =
                         (Grammar.prepare (fun () -> "unused") args)
                         "Another command cannot silently acquire export or traversal semantics")
         ]
+
+[<Tests>]
+let localeInvariance =
+    testCase "CSV and DATA pagination bytes ignore independent display locale" (fun () ->
+        let replies = [ Outcome.Succeeded(page [ row "LOCALE" ] None) ]
+
+        for format in [ "csv"; "json" ] do
+            let code, original, _, _ =
+                run [ "--format"; format; "--display-locale"; "en-GB" ] replies
+
+            Expect.equal code 0 "Positive traversal"
+
+            for locale in [ "lv-LV"; "de-DE"; "ar-EG" ] do
+                let code, bytes, _, _ =
+                    run [ "--format"; format; "--display-locale"; locale ] replies
+
+                Expect.equal code 0 "Same traversal"
+                Expect.equal bytes original "Exchange formats stay canonical")

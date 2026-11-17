@@ -114,6 +114,7 @@ let private run words (answer: string option) =
                                                         (TaskId.ofLiteral "people.disable")
                                                         (TaskId.ofLiteral "people.eraseProfile")
                                                     ]
+                                                CanTerminateSessions = false
                                                 ProfileSeed =
                                                     Some
                                                         {
@@ -268,7 +269,11 @@ let private run words (answer: string option) =
             Deliver =
                 fun frame reply ->
                     output.Append(
-                        ReplyText.bytesFor "en" (Some frame) reply.Frame |> Encoding.UTF8.GetString
+                        ReplyText.bytesFor
+                            (RenderingContext.forLanguage "en")
+                            (Some frame)
+                            reply.Frame
+                        |> Encoding.UTF8.GetString
                     )
                     |> ignore
         }

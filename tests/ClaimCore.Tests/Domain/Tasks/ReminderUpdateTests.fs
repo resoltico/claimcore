@@ -21,7 +21,7 @@ let tests =
                         Update.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id Revision.first)
                             (planInputs "Review photographs" "2026-11-20")
                         |> accepted
@@ -47,7 +47,7 @@ let tests =
                     Update.decide
                         (context 4)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (reminderBinding after id Revision.first)
                         (planInputs "Another" "2026-11-21")
                     |> expectRefusal (Refusal.revisionConflict after.Reminders[id].Revision))
@@ -57,7 +57,7 @@ let tests =
                 Update.decide
                     (context 3)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (reminderBinding state id Revision.first)
                     (planInputs "Request photographs" "2026-11-16")
                 |> expectRefusal (Refusal.Reminder ReminderRuleRefusal.NoChanges))
@@ -68,7 +68,7 @@ let tests =
                     ClaimCore.Domain.Tasks.Reminder.Complete.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (reminderBinding state id Revision.first)
                         InputMap.empty
                     |> accepted
@@ -78,7 +78,7 @@ let tests =
                     ClaimCore.Domain.Tasks.Reminder.Create.decide
                         (context 4)
                         environment
-                        (Some completed)
+                        (Some(DecisionFacts.fromReplay completed))
                         (Binding.ReminderNew(target completed))
                         (planInputs "Other reminder" "2026-11-19")
                     |> accepted
@@ -89,7 +89,7 @@ let tests =
                 Expect.isSome
                     (Update.availability
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (reminderBinding state id (Revision.create 2L |> Option.get)))
                         .Blocked
                     "The completed row blocks edits"
@@ -97,7 +97,7 @@ let tests =
                 Expect.isNone
                     (Update.availability
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (reminderBinding state pendingId Revision.first))
                         .Blocked
                     "The pending row offers edits")
@@ -133,7 +133,7 @@ let tests =
                         Update.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id state.Reminders[id].Revision)
                             (planInputs (ReminderAction.format oldAction) "2026-11-20")
                         |> accepted
@@ -149,7 +149,7 @@ let tests =
                         Update.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id state.Reminders[id].Revision)
                             (planInputs (String.replicate 201 "y") "2026-11-20")
                         |> expectInputs

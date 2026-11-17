@@ -88,7 +88,7 @@ module CommandGrammar =
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
-    let inputs operation =
+    let private declaredInputs operation =
         (TaskDeclarations.describe operation).Inputs
         |> List.map (fun declaration ->
             let name = declaration.Input
@@ -145,6 +145,42 @@ module CommandGrammar =
                 LabelId = TaskInputPresentation.messageKey name "label"
             })
 
+    /// ID selection is an argv alternative to an existing-case reference, never a new case reference.
+    let selectsExistingCase operation =
+        let declaration = TaskDeclarations.describe operation
+
+        declaration.Inputs
+        |> List.exists (fun input ->
+            input.Input = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+            && (input.Source = InputSource.Binding || declaration.Kind = ClientTaskKind.Query))
+
+    let inputs operation =
+        let inputs = declaredInputs operation
+
+        if
+            selectsExistingCase operation
+            && not (inputs |> List.exists (fun input -> input.Name = TaskInputId.CaseId))
+        then
+            let declaration =
+                TaskInputDeclaration.create TaskInputMode.Optional TaskInputId.CaseId
+
+            inputs
+            @ [
+                {
+                    Name = TaskInputId.CaseId
+                    Atom = CommandAtom.Text
+                    Argument = CommandArgument.Named
+                    Declaration =
+                        { declaration with
+                            Source = InputSource.Binding
+                        }
+                    Required = false
+                    LabelId = TaskInputPresentation.messageKey TaskInputId.CaseId "label"
+                }
+            ]
+        else
+            inputs
+
     let collections operation =
         (TaskDeclarations.describe operation).Collections
         |> List.map (fun item ->
@@ -185,6 +221,7 @@ module CommandGrammar =
         [
             "--format", String.concat "|" (formats operation)
             "--language", String.concat "|" LocalizationPolicy.languages
+            "--display-locale", String.concat "|" LocalizationPolicy.displayLocales
             "--dry-run", ""
             "--details", ""
             if TaskRouting.consequence operation = Consequence.Irreversible then
@@ -231,6 +268,11 @@ module CommandGrammar =
             |> List.choose (fun input ->
                 match input.Argument with
                 | CommandArgument.Implicit -> None
+                | CommandArgument.Operand when
+                    input.Name = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
+                    && selectsExistingCase operation
+                    ->
+                    Some "(CASE-REFERENCE | --case-id UUID)"
                 | CommandArgument.Operand ->
                     Some(kebab (inputName input.Name) |> _.ToUpperInvariant())
                 | CommandArgument.Named ->

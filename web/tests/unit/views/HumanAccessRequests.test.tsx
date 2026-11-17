@@ -26,12 +26,17 @@ const handles = principals.map((principal) =>
 );
 const dismiss = (index: number): Affordance => ({
   task: "people.requests.dismiss",
-  binding: {},
-  seeds: {
-    "input:principal.kind": principals[index]!.kind,
-    "input:principal.issuer": principals[index]!.issuer,
-    "input:principal.subject": principals[index]!.subject,
+  labelId: "endpoint.people.requests.dismiss.label",
+  binding: {
+    kind: "COMMAND",
+    request: {
+      command: "people.requests.dismiss",
+      "input:principal.kind": principals[index]!.kind,
+      "input:principal.issuer": principals[index]!.issuer,
+      "input:principal.subject": principals[index]!.subject,
+    },
   },
+  seeds: {},
   editable: [],
   choices: {},
 

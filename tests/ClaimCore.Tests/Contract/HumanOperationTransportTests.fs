@@ -46,6 +46,7 @@ let private exercise endpoint unavailable describe input core =
                 unavailable
                 describe
                 (fun _ -> None)
+                (fun _ -> false)
                 (fun _ received _ ->
                     invoked <- invoked + 1
                     Expect.equal received input "Output selection cannot change the authored input"
@@ -333,7 +334,10 @@ let tests =
                         CliReply.result frame (Api.operationPreview.Output.Write reply) |> required
 
                     let text =
-                        ReplyText.bytesFor "en" (Some frame) admitted.Frame
+                        ReplyText.bytesFor
+                            (RenderingContext.forLanguage "en")
+                            (Some frame)
+                            admitted.Frame
                         |> Encoding.UTF8.GetString
 
                     Expect.stringContains
@@ -364,6 +368,7 @@ let tests =
                             Api.operationExecuteUnavailable
                             (fun _ _ -> failwith "Synthetic projection failure")
                             (fun _ -> None)
+                            (fun _ -> false)
                             (fun _ _ _ ->
                                 invoked <- invoked + 1
                                 Task.FromResult core)

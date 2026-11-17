@@ -182,7 +182,8 @@ module ResponseCodecs =
 
     let registerMaintenance =
         (record RegisterMaintenance.create: Fields<RegisterMaintenance, _>)
-        |> field "active" _.Active boolean
+        |> field "generation" _.Generation (integer 0L SafeInteger.Maximum)
+        |> field "pauseId" _.PauseId (nullable uuid)
         |> build
         |> named "RegisterMaintenance"
 
@@ -637,7 +638,7 @@ module ResponseCodecs =
         |> named "GrantReadModel"
 
     let grantsPage =
-        (record (fun basis v0 revision offers seed v1 v2 ->
+        (record (fun basis v0 revision offers seed canTerminate v1 v2 ->
             {
                 Basis = basis
                 PeopleGrantPage.Actor = v0
@@ -645,6 +646,7 @@ module ResponseCodecs =
                 Revision = revision
                 Offers = offers
                 ProfileSeed = seed
+                CanTerminateSessions = canTerminate
                 Items = v1
                 NextCursor = v2
             })
@@ -654,6 +656,7 @@ module ResponseCodecs =
         |> field "revision" _.Revision positiveRevision
         |> field "offers" _.Offers (list (TaskVocabulary.count ActSubject.People) peopleKind)
         |> field "profileSeed" _.ProfileSeed (nullable profileInput)
+        |> field "canTerminateSessions" _.CanTerminateSessions boolean
         |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

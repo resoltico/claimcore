@@ -5,10 +5,10 @@ open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 
 module internal CaseRules =
-    let contentAvailable (state: CaseFamily option) (_: Binding) =
+    let contentAvailable (state: DecisionFacts option) (_: Binding) =
         state |> Option.forall (fun state -> state.Case.Value.Content.IsSome)
 
-    let content (state: CaseFamily) =
+    let content (state: DecisionFacts) =
         match state.Case.Value.Content with
         | Some content -> Ok content
         | None -> Error(Rejection.InvalidState RecordViolation.InvalidFinancialPosition)
@@ -20,7 +20,7 @@ module internal CaseRules =
         | Binding.CaseErase(_, revision, _) -> Some revision
         | _ -> None
 
-    let revision binding (state: CaseFamily) =
+    let revision binding (state: DecisionFacts) =
         match expected binding with
         | Some expected -> FamilyRules.revision expected state.Case.Revision
         | None -> Error FamilyRules.unavailable
@@ -33,7 +33,7 @@ module internal CaseRules =
             else
                 Some(FamilyRules.notOffered state))
 
-    let reviewed binding (state: CaseFamily) gate =
+    let reviewed binding (state: DecisionFacts) gate =
         if state.Case.Value.Lifecycle = Lifecycle.Erased then
             Some(FamilyRules.notOffered state)
         else
@@ -76,7 +76,7 @@ module internal CaseRules =
     let acceptedContent gate state =
         checkState gate state |> Result.bind (fun () -> content state)
 
-    let changeWithDisposition context (state: CaseFamily) (value: CasePartState) disposition =
+    let changeWithDisposition context (state: DecisionFacts) (value: CasePartState) disposition =
         let accepted =
             {
                 CaseValue.Reference = None

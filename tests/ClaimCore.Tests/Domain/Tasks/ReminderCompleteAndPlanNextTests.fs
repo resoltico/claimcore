@@ -21,7 +21,7 @@ let tests =
                         CompleteAndPlanNext.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id Revision.first)
                             (planInputs "Review photographs" "2026-11-20")
                         |> accepted
@@ -56,7 +56,7 @@ let tests =
                 CompleteAndPlanNext.decide
                     (context 2)
                     environment
-                    (Some state)
+                    (Some(DecisionFacts.fromReplay state))
                     (reminderBinding state id Revision.first)
                     (planInputs "Next" "2026-11-20")
                 |> expectRefusal Refusal.IdempotencyConflict
@@ -74,7 +74,7 @@ let tests =
                         CompleteAndPlanNext.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (reminderBinding state id Revision.first)
                             (planInputs (String.replicate 201 "x") "2026-11-20")
                         |> expectInputs

@@ -21,7 +21,7 @@ let tests =
                         Close.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
@@ -37,7 +37,7 @@ let tests =
                     Close.decide
                         (context 4)
                         environment
-                        (Some after)
+                        (Some(DecisionFacts.fromReplay after))
                         (caseBinding after)
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)))
@@ -52,7 +52,7 @@ let tests =
                     Close.decide
                         (context 3)
                         environment
-                        (Some state)
+                        (Some(DecisionFacts.fromReplay state))
                         (caseBinding state)
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))

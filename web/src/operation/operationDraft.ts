@@ -1,3 +1,4 @@
+import { submissionSelection } from "@contracts/client";
 import { grantFields, grantTarget, withGrantTarget, isGrantTarget } from "./grantTargetDraft";
 import type { OperationAffordance } from "./affordances";
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
@@ -11,16 +12,12 @@ import type { OperationBinding } from "@contracts/client";
 
 /** Selecting installation scope removes the case selection from the authored grant. */
 export const editGrantInput = (values: FormValues, input: string, value: FormValue): FormValues => {
-  if (input === "input:scope") {
+  if (input === submissionSelection.scopeInput) {
     if (isGrantTarget(value)) {
       return withGrantTarget(values, value);
     }
     if (value === "INSTALLATION" || value === "CASE") {
-      return withGrantTarget(values, {
-        kind: "GRANT_TARGET",
-        selection:
-          value === "INSTALLATION" ? { kind: "INSTALLATION" } : { kind: "REFERENCE", text: "" },
-      });
+      return withGrantTarget(values, grantTarget({ [submissionSelection.scopeInput]: value }));
     }
   }
   if ((input === "input:caseId" || input === "field:caseReference") && typeof value === "string") {
@@ -40,7 +37,9 @@ export const createDraft = (
   owner: OwnerScope | null,
   affordance: OperationAffordance | null,
 ): OperationDraft => {
-  const values = operationEntry(entry).inputs.some((input) => input.id === "input:scope")
+  const values = operationEntry(entry).inputs.some(
+    (input) => input.id === submissionSelection.scopeInput,
+  )
     ? withGrantTarget(authored, grantTarget(authored))
     : { ...authored };
   return {

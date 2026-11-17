@@ -1,5 +1,5 @@
 import { renderCatalogKey } from "../../presentation/messages";
-import { assembleCommand } from "../../operation/taskForm";
+import { assembleCommand } from "../../api/commandControl";
 import {
   taskDefinitions,
   type Affordance,

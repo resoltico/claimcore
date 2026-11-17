@@ -236,7 +236,10 @@ let tests =
                         State = CaseState.Erased
                     }
 
-                let output = PaymentsScreen.page page |> ViewText.render "en" |> String.concat "\n"
+                let output =
+                    PaymentsScreen.page page
+                    |> ViewText.render (RenderingContext.forLanguage "en")
+                    |> String.concat "\n"
 
                 Expect.stringContains
                     output

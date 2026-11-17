@@ -70,3 +70,33 @@ let tests =
                     "A calendar date cannot enter an amount accessor"
             finally
                 owned.Delete true)
+
+
+[<Tests>]
+let selectedFactsBoundary =
+    testCase "selected decision facts cannot enter complete replay APIs" (fun () ->
+        let owned = Directory.CreateTempSubdirectory "claimcore-family-api-"
+
+        try
+            let code, errors =
+                compile
+                    owned.FullName
+                    "valid-families"
+                    "let complete (family: Aggregates.CaseFamily) = Aggregates.CaseFamily.index family\nlet selected (facts: Aggregates.DecisionFacts) = Aggregates.DecisionFacts.snapshot facts"
+
+            Expect.equal code 0 ("Both typed positive controls: " + errors)
+
+            let code, errors =
+                compile
+                    owned.FullName
+                    "partial-as-complete"
+                    "let wrong (facts: Aggregates.DecisionFacts) = Aggregates.CaseFamily.rows facts []"
+
+            Expect.isTrue
+                (code <> 0
+                 && errors.Contains("FS0001", StringComparison.Ordinal)
+                 && errors.Contains("DecisionFacts", StringComparison.Ordinal)
+                 && errors.Contains("CaseFamily", StringComparison.Ordinal))
+                "The compiler rejects the completeness mismatch at the consumer boundary"
+        finally
+            owned.Delete true)

@@ -116,8 +116,8 @@ let tests =
                         action.Task = (TaskId.ofLiteral "people.requests.dismiss"))
 
                 Expect.equal
-                    dismiss.Seeds
-                    (TaskAffordances.principal principal)
+                    dismiss.Control
+                    (ActionControl.Command(CommandRequest.DismissAccessRequest principal))
                     "The command targets the exact row principal"
 
                 Expect.isEmpty dismiss.Editable "Dismissal cannot change the selected identity")

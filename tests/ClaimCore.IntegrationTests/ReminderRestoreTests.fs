@@ -370,9 +370,27 @@ let private oldHead database =
         let! actor = seeded database
         let! other = otherRows database
         let! before = checkpoint database
-        let! _ = mode database MaintenanceChange.On
+
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         do! dump database "/tmp/reminders-before-erasure.sql"
-        let! _ = mode database MaintenanceChange.Off
+
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Resume(
+                    MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                    |> Option.get
+                ))
+
         do! erase database.Fixture actor
         do! assertOther database other
         let! acceptedErasure = checkpoint database
@@ -382,7 +400,14 @@ let private oldHead database =
             before
             "The retained external checkpoint covers the accepted erasure"
 
-        let! _ = mode database MaintenanceChange.On
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Acquire(
+                    2L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         do! dump database "/tmp/reminders-accepted-erasure.sql"
         do! restore database "/tmp/reminders-before-erasure.sql"
 
@@ -421,7 +446,15 @@ let private mixedPayload database =
     task {
         let! actor = seeded database
         let! other = otherRows database
-        let! _ = mode database MaintenanceChange.On
+
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Acquire(
+                    0L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
+
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
         for statement in
@@ -440,11 +473,27 @@ let private mixedPayload database =
 
             ()
 
-        let! _ = mode database MaintenanceChange.Off
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Resume(
+                    MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                    |> Option.get
+                ))
+
         do! erase database.Fixture actor
         do! assertOther database other
         let! checkpoint = checkpoint database
-        let! _ = mode database MaintenanceChange.On
+
+        let! _ =
+            mode
+                database
+                (MaintenanceChange.Acquire(
+                    2L,
+                    System.Guid.Parse "10000000-0000-4000-8000-000000000099"
+                ))
 
         let restorePayload =
             "UPDATE claimcore.ledger_compartments p SET payload=b.payload,nonce=b.nonce FROM restore_compartments b WHERE p.operation_sequence=b.operation_sequence AND p.ordinal=b.ordinal"
@@ -490,7 +539,15 @@ let private mixedPayload database =
                 "SELECT claimcore.clear_owner('FAMILY',$1)"
                 [| box (CaseId.value (parent database.Fixture)) |]
 
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    3L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
 
         Expect.isOk
             rebuilt

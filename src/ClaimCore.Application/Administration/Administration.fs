@@ -164,12 +164,12 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Verify(expected, cancellationToken) =
         LedgerAdministration.verify source expected cancellationToken
 
-    member _.Rebuild(expected, cancellationToken) =
-        ProjectionRebuild.rebuild source expected cancellationToken
+    member _.Rebuild(expected, handle, cancellationToken) =
+        ProjectionRebuild.rebuild source expected handle cancellationToken
 
     /// Call only with all application/bearer/CLI traffic externally isolated and maintenance active.
-    member _.AdmitRestoredInstallation(checkpoint, cancellationToken) =
-        RestoreAdmission.admit source checkpoint cancellationToken
+    member _.AdmitRestoredInstallation(checkpoint, handle, cancellationToken) =
+        RestoreAdmission.admit source checkpoint handle cancellationToken
 
     member _.Status(cancellationToken) =
         InstallationStatus.read source cancellationToken

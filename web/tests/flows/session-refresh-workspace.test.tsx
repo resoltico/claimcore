@@ -21,6 +21,7 @@ vi.mock("../../src/session/useSession", () => ({
   useSession: () => ({
     state: session.state,
     logout: () => Promise.resolve(),
+    endedBrowserSessions: vi.fn(),
     refresh: () => Promise.resolve(),
   }),
 }));

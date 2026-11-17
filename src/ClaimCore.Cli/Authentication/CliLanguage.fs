@@ -4,6 +4,36 @@ open System
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
+/// Immutable presentation inputs. Machine contracts never consume this context.
+[<StructuralEquality; StructuralComparison>]
+type RenderingContext =
+    private
+        {
+            LanguageValue: string
+            DisplayLocaleValue: string
+        }
+
+    member this.Language = this.LanguageValue
+    member this.DisplayLocale = this.DisplayLocaleValue
+
+module RenderingContext =
+    let create language displayLocale =
+        if
+            List.contains language LocalizationPolicy.languages
+            && List.contains displayLocale LocalizationPolicy.displayLocales
+        then
+            Some
+                {
+                    LanguageValue = language
+                    DisplayLocaleValue = displayLocale
+                }
+        else
+            None
+
+    let forLanguage language =
+        let option = LocalizationPolicy.languageOption language
+        create language option.displayLocale |> Option.get
+
 /// Presentation selection never changes authored requests or structured reply bytes.
 module internal CliLanguage =
     let private supported value =
@@ -46,3 +76,20 @@ module internal CliLanguage =
         Environment.GetEnvironmentVariable name |> Option.ofObj
 
     let effective () = resolveWith environment |> fst
+
+    let displayLocale read profile language supplied =
+        let selected =
+            match supplied with
+            | Some value -> value, "flag"
+            | None ->
+                match read "CLAIMCORE_DISPLAY_LOCALE" with
+                | Some value -> value, "environment"
+                | None ->
+                    match Map.tryFind CliSetting.DisplayLocale profile with
+                    | Some value -> value, "profile"
+                    | None -> (LocalizationPolicy.languageOption language).displayLocale, "language"
+
+        RenderingContext.create language (fst selected)
+        |> Option.map (fun context -> context, snd selected)
+        |> Option.map Ok
+        |> Option.defaultValue (Error(fst selected))

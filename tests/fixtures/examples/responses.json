@@ -35,7 +35,8 @@
             },
             "offers": [],
             "profileSeed": null,
-            "revision": 1
+            "revision": 1,
+            "canTerminateSessions": false
           }
         },
         "representation": "DATA"
@@ -292,7 +293,8 @@
               "acts": [],
               "history": "NONE",
               "maintenance": {
-                "active": false
+                "generation": 0,
+                "pauseId": null
               },
               "recommended": null,
               "blocked": [
@@ -390,6 +392,14 @@
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
                     "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "case.correctPayment",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
                   }
                 }
               ]
@@ -1116,7 +1126,8 @@
               "actorId": "10000000-0000-7000-8000-000000000001",
               "installationId": "90000000-0000-7000-8000-000000000001",
               "maintenance": {
-                "active": false
+                "generation": 0,
+                "pauseId": null
               },
               "self": {
                 "actorId": "10000000-0000-7000-8000-000000000001",
@@ -1197,7 +1208,6 @@
                     }
                   }
                 },
-                "payment": null,
                 "disposition": null,
                 "recordedFields": [
                   "incidentDate",
@@ -1210,7 +1220,8 @@
                   "insurerName",
                   "claimedAmount",
                   "claimedCurrency"
-                ]
+                ],
+                "payments": []
               },
               "caseId": "10000000-0000-7000-8000-000000000001"
             },
@@ -1281,7 +1292,6 @@
                       }
                     }
                   },
-                  "payment": null,
                   "disposition": null,
                   "recordedFields": [
                     "incidentDate",
@@ -1294,7 +1304,8 @@
                     "insurerName",
                     "claimedAmount",
                     "claimedCurrency"
-                  ]
+                  ],
+                  "payments": []
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
               },
@@ -2609,7 +2620,8 @@
                   "seeds": {},
                   "editable": [],
                   "choices": {},
-                  "blocked": null
+                  "blocked": null,
+                  "labelId": "task.case.close.label"
                 }
               ],
               "links": [],
@@ -2839,6 +2851,59 @@
             "nextCursor": null,
             "workRevision": 0
           }
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-confirmed",
+      "endpoint": "session.terminateOwn",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "count": 2,
+            "self": true
+          }
+        }
+      }
+    },
+    {
+      "name": "people.terminateSessions-confirmed",
+      "endpoint": "people.terminateSessions",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "count": 0,
+            "self": false
+          }
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-unknown",
+      "endpoint": "session.terminateOwn",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "OUTCOME_UNKNOWN"
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-unknown-cannot-report-count",
+      "endpoint": "session.terminateOwn",
+      "valid": false,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "OUTCOME_UNKNOWN",
+          "count": 2
         }
       }
     }

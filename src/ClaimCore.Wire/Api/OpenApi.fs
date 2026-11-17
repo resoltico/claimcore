@@ -9,7 +9,7 @@ open ClaimCore.Json
 
 open System.Net.Http
 
-/// The registry and its codecs determine the complete structural contract.
+/// The JSON registry and CSV media declaration determine the complete structural contract.
 module OpenApi =
     let private prefix = "#/components/schemas/"
     let private text = JsonValue.String
@@ -129,10 +129,16 @@ module OpenApi =
                 @ [ header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema ]
 
         let parameters =
-            if Api.requiresInstallation endpoint then
-                parameters @ [ header "ClaimCore-Installation" true Codec.uuid.Schema ]
-            else
+            match endpoint.Id with
+            | EndpointId.Actor _ ->
                 parameters
+                @ [
+                    header
+                        "ClaimCore-Installation"
+                        (Api.requiresInstallation endpoint)
+                        Codec.uuid.Schema
+                ]
+            | EndpointId.Host _ -> parameters
 
         let parameters =
             if Api.requiresRepresentation endpoint then
@@ -164,6 +170,78 @@ module OpenApi =
                 ]
         )
 
+    /// CSV success and JSON failure are separate transport media, not semantic representations.
+    let private exportOperation =
+        let response =
+            object
+                [
+                    "description", text "HTTP 200"
+                    "headers",
+                    object
+                        [
+                            "Content-Length",
+                            object
+                                [
+                                    "required", JsonValue.Boolean true
+                                    "schema",
+                                    object
+                                        [
+                                            "type", text "integer"
+                                            "minimum", JsonValue.Integer 0L
+                                            "maximum",
+                                            JsonValue.Integer(int64 Limits.MaximumResponseBytes)
+                                        ]
+                                ]
+                            "Content-Encoding",
+                            object
+                                [
+                                    "x-claimcore-csv-success-only", JsonValue.Boolean true
+                                    "schema", object [ "const", text "identity" ]
+                                ]
+                            "Content-Disposition",
+                            object
+                                [
+                                    "x-claimcore-csv-success-only", JsonValue.Boolean true
+                                    "schema", object [ "type", text "string" ]
+                                ]
+                        ]
+                    "content",
+                    object
+                        [
+                            ExportTransport.successMediaType,
+                            object [ "schema", object [ "type", text "string" ] ]
+                            "application/json",
+                            object [ "schema", schema ExportTransport.failure.Schema ]
+                        ]
+                ]
+
+        object
+            [
+                "operationId", text ExportTransport.token
+                "x-claimcore-effect", text (EndpointEffect.token EndpointEffect.Read)
+                "parameters",
+                array
+                    [
+                        header "ClaimCore-Contract" true ResponseScalars.digest.Schema
+                        header "ClaimCore-Installation" true Codec.uuid.Schema
+                        header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema
+                    ]
+                "security", security ExportTransport.token
+                "requestBody",
+                object
+                    [
+                        "required", JsonValue.Boolean true
+                        "content", content ExportTransport.request.Schema
+                    ]
+                "responses",
+                object (
+                    ("200", response)
+                    :: (hostResponses
+                        |> List.map (fun (code, name, _) ->
+                            code, object [ "$ref", text ("#/components/responses/" + name) ]))
+                )
+            ]
+
     let private inspected (endpoint: Route) =
         endpoint.Token,
         endpoint.Method.Method.ToLowerInvariant(),
@@ -194,13 +272,18 @@ module OpenApi =
 
     let definitions =
         let roots =
-            Api.all
-            |> List.collect (fun endpoint -> [ endpoint.InputSchema; endpoint.OutputSchema ])
+            (Api.all
+             |> List.collect (fun endpoint -> [ endpoint.InputSchema; endpoint.OutputSchema ]))
+            @ [ ExportTransport.request.Schema; ExportTransport.failure.Schema ]
 
         endpoints
         |> List.fold
             (fun state (_, _, _, definitions) -> SchemaDefinitions.merge state definitions)
-            HostFailureCodecs.reply.Definitions
+            (SchemaDefinitions.merge
+                HostFailureCodecs.reply.Definitions
+                (SchemaDefinitions.merge
+                    ExportTransport.request.Definitions
+                    ExportTransport.failure.Definitions))
         |> fun definitions ->
             SchemaJson.reachable definitions (HostFailureCodecs.reply.Schema :: roots)
 
@@ -215,6 +298,8 @@ module OpenApi =
                     endpoints
                     |> List.map (fun (id, method, operation, _) ->
                         "/api/" + id, object [ method, operation ])
+                    |> fun paths ->
+                        paths @ [ ExportTransport.path, object [ "post", exportOperation ] ]
                 )
                 "components",
                 object

@@ -39,6 +39,7 @@
     <Compile Include="Screens/WorkViews.fs" />
     <Compile Include="Screens/Receipt.fs" />
     <Compile Include="Screens/Operation.fs" />
+    <Compile Include="Documents/ExportAdvice.fs" />
     <Compile Include="Documents/HumanDocuments.fs" />
     <Compile Include="Documents/ReviewDocumentParts.fs" />
     <Compile Include="Documents/HumanOperationDocuments.fs" />

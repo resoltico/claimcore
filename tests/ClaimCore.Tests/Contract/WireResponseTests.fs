@@ -140,7 +140,7 @@ let private malformed () =
         let raw =
             "{\"acts\":[],\"history\":\""
             + token
-            + "\",\"maintenance\":{\"active\":false},\"recommended\":null}"
+            + "\",\"maintenance\":{\"generation\":0,\"pauseId\":null},\"recommended\":null}"
             |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
@@ -151,7 +151,7 @@ let private malformed () =
         let raw =
             "{\"acts\":[],\"history\":"
             + oldShape
-            + ",\"maintenance\":{\"active\":false},\"recommended\":null}"
+            + ",\"maintenance\":{\"generation\":0,\"pauseId\":null},\"recommended\":null}"
             |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
@@ -160,15 +160,15 @@ let private malformed () =
             "Retired arrays and unknown disclosure levels refuse"
 
     let ordinary =
-        """{"acts":["case.close"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+        """{"acts":["case.close"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"generation":0,"pauseId":null},"recommended":null}"""
 
     let missing =
-        """{"acts":["case.correct"],"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+        """{"acts":["case.correct"],"history":"NONE","maintenance":{"generation":0,"pauseId":null},"recommended":null}"""
 
     for valid in
         [
-            """{"acts":["case.close"],"history":"NONE","maintenance":{"active":false},"recommended":"case.close"}"""
-            """{"acts":["case.correct"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
+            """{"acts":["case.close"],"history":"NONE","maintenance":{"generation":0,"pauseId":null},"recommended":"case.close"}"""
+            """{"acts":["case.correct"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"generation":0,"pauseId":null},"recommended":null}"""
         ] do
         Expect.isOk
             (Codec.decode
@@ -288,8 +288,8 @@ let private openApi () =
 
     Expect.equal
         (paths.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
-        (Api.all |> List.map Api.path |> Set.ofList)
-        "Exactly the current registry paths are emitted"
+        (ExportTransport.path :: (Api.all |> List.map Api.path) |> Set.ofList)
+        "Exactly the published JSON registry and dedicated CSV paths are emitted"
 
     for endpoint in Api.all do
         let operation =

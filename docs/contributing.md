@@ -55,6 +55,13 @@ Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain
 field kinds and money relationships; typed records retain validated structure through execution.
 [CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
+
+[Work selections](../src/ClaimCore.Domain/WorklistSemantics.fs),
+[filter/classification plans](../src/ClaimCore.Domain/Reads.fs) and
+[assignee eligibility](../src/ClaimCore.Domain/Access.fs) own worklist policy. The SQL adapters
+interpret their closed facts before paging or aggregation; lists, counts and displayed assignee
+availability use those same declarations. Keep database witnesses literal and independent of them.
+
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 [Task modules](../src/ClaimCore.Domain/Tasks/Registry.fs) own declarations, checks, availability and decisions.
 [CaseFamily](../src/ClaimCore.Domain/Aggregates/CaseFamily.fs) and [Person](../src/ClaimCore.Domain/Aggregates/Person.fs)
@@ -88,10 +95,25 @@ codec records and interpretation predicates do not establish schema equivalence.
 not an integrator custom-store contract. It supplies snapshot read and head-locked write
 callbacks. Writes decide against that locked state and commit only an accepted result. A final absence
 lookup uses the write callback without appending. Current authorization governs every disclosure.
-Live family acquisition reads note headers and reminder dates; it opens preceding private text/plans
-only for selected parts. Public roots and acquired private values retain their hash checks. Reminder
-query controls acquire the plans they present. Live child projections consume accepted changed parts;
-owner erasure clears all related private projections. Replay/rebuild still reconstruct the full rows.
+Live decisions and availability use [DecisionFacts](../src/ClaimCore.Domain/Aggregates/DecisionFacts.fs),
+which cannot enter complete `CaseFamily` APIs. Acquisition loads the current case/work roots, scoped
+children and their origin anchors, plus financial/date/due aggregates from the same snapshot or locked
+action state. It checks consumed projections against those roots. Queried identities distinguish known absence from
+unacquired children, and authoring facts are tied to their operation identity. Core admission rejects
+reuse outside that explicit scope. No ordinary loader falls back to
+complete family acquisition. Pages acquire the bounded child rows whose controls they present.
+Accepted retries check fresh requester authority and the supplied target before comparing immutable
+operation intent; they do not reacquire decision facts. Receipt disclosure reads bounded accepted
+case/child revisions, independently of rebuildable payment and reminder projections. Current child
+projection damage must remain detectable by decisions and verification without hiding an already
+accepted operation. Current rights, revision visibility and erasure still govern disclosure.
+
+Materialized rows, roots and round trips are bounded by the selected scope rather than unrelated child
+counts. Aggregate SQL may scan many rows; this is not constant SQL effort or a latency budget. Scalar
+projection agreement and selected anchors do not authenticate completeness of the whole child set.
+Complete replay, verification and rebuild still reconstruct every child independently. Live projection
+deltas preserve unrelated money, work, search and next-due state; erasure clears all owned private
+records with guarded bulk writes without acquiring per-child application roots.
 
 Pre-1.0 durable changes require a fresh installation. There are no migrations or cross-version readers.
 The [SQL baseline](../db/baseline.sql) enforces structure, append-only storage and erasure authorization;
@@ -99,6 +121,9 @@ RecordFormat decoding and verification enforce task meaning. The ledger stores o
 public bindings, retained inputs, effects and erasable owner compartments. SQL checks gap-free part
 revisions, aggregate ownership and authorized clearing; it does not re-derive tasks, roles or business
 bounds. Do not move business vocabulary into SQL.
+
+The [schema integrity inventory](../db/schema-integrity.md) identifies storage guards, their owners
+and direct SQL witnesses.
 
 ## Generated contracts
 

@@ -25,6 +25,7 @@
     <Compile Include="Json/StructuralAdmissionTests.fs" />
     <Compile Include="Contract/ProgressContractTests.fs" />
     <Compile Include="Contract/MaintenanceContractTests.fs" />
+    <Compile Include="Contract/MaintenanceFencingTests.fs" />
     <Compile Include="Contract/BuildIdentityTests.fs" />
     <Compile Include="Contract/RepresentationNegotiationTests.fs" />
     <Compile Include="Contract/CommandLineModelTests.fs" />
@@ -78,6 +79,8 @@
     <Compile Include="Domain/Tasks/CaseDecideTests.fs" />
     <Compile Include="Domain/Tasks/CaseRecordPaymentTests.fs" />
     <Compile Include="Domain/Tasks/CaseRemovePaymentTests.fs" />
+    <Compile Include="Domain/Tasks/CaseCorrectPaymentTests.fs" />
+    <Compile Include="Domain/Tasks/DecisionFactsTests.fs" />
     <Compile Include="Domain/Tasks/CaseCorrectTests.fs" />
     <Compile Include="Domain/Tasks/CaseCloseTests.fs" />
     <Compile Include="Domain/Tasks/CaseReopenTests.fs" />
@@ -104,6 +107,7 @@
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Architecture/DomainApiTests.fs" />
+    <Compile Include="Architecture/CommandApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
     <Compile Include="Domain/CaseStageTests.fs" />
@@ -140,11 +144,13 @@
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
     <Compile Include="Contract/PartReviewPresentationTests.fs" />
     <Compile Include="Contract/AffordanceTests.fs" />
+    <Compile Include="Contract/PaymentActionTests.fs" />
     <Compile Include="Contract/CurrentGroupDocumentTests.fs" />
     <Compile Include="Contract/ReceiptProofDocumentTests.fs" />
     <Compile Include="Contract/NavigationDocumentTests.fs" />
     <Compile Include="Contract/RepresentationCoverageTests.fs" />
     <Compile Include="Contract/AccessRequestDocumentTests.fs" />
+    <Compile Include="Contract/OperationalCommandTests.fs" />
     <Compile Include="Contract/PersonDocumentTests.fs" />
     <Compile Include="Contract/NoteDocumentTests.fs" />
     <Compile Include="Contract/HistoryControlDocumentTests.fs" />
@@ -193,8 +199,10 @@
     <Compile Include="Contract/ScreenCompositionTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
+    <Compile Include="ContractGenerator/ResponseDecoderTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
     <Compile Include="Contract/OperationSubmissionTests.fs" />
+    <Compile Include="Contract/SubmissionAssemblyTests.fs" />
     <Compile Include="Contract/TaskCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Contract/ResponsibilitySelectionTests.fs" />
@@ -208,6 +216,7 @@
     <Compile Include="Cli/PresentationCodecTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
+    <Compile Include="Cli/ReviewedTransportTests.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
     <Compile Include="Cli/TransportBodyScenarios.fs" />
     <Compile Include="Cli/CliTransportTests.fs" />
@@ -251,9 +260,13 @@
     <Compile Include="Cli/TimelineCommandTests.fs" />
     <Compile Include="Cli/MoneyDisplayTests.fs" />
     <Compile Include="Cli/CliDisplayCultureTests.fs" />
+    <Compile Include="Cli/CliDisplayLocaleTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
     <Compile Include="Contract/CsvExportTests.fs" />
+    <Compile Include="Contract/PaymentCorrectionAcceptanceTests.fs" />
+    <Compile Include="Contract/PaymentRowControlTests.fs" />
+    <Compile Include="Contract/ExportTransportTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
     <Compile Include="Cli/CliCharacterWarningTests.fs" />

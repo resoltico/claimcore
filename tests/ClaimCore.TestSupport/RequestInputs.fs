@@ -105,6 +105,8 @@ let all () : IEndpointInput list =
                 }
         yield EndpointValues.input Api.peopleRequests page
         yield EndpointValues.input Api.peopleRequestsDismiss DomainInputs.principal
+        yield EndpointValues.input Api.terminateOwnSessions ()
+        yield EndpointValues.input Api.terminatePersonSessions { ActorId = targetId }
         yield EndpointValues.input Api.operationGet { OperationId = targetId }
         for preview in [ true; false ] do
             let bind value =

@@ -21,9 +21,9 @@ let tests =
         "exported endpoint representation coverage"
         [
             testCase
-                "all twenty-one endpoints have nonempty admitted behavioral envelopes and complete outcome discovery"
+                "all twenty-three endpoints have nonempty admitted behavioral envelopes and complete outcome discovery"
                 (fun () ->
-                    Expect.equal Api.all.Length 21 "Adopted endpoint inventory"
+                    Expect.equal Api.all.Length 23 "Adopted endpoint inventory"
 
                     for endpoint in Api.all do
                         let samples = ResponseExamples.samples endpoint.Token
@@ -84,8 +84,10 @@ let tests =
                                             "REJECTED"
                                             "FAILED"
                                         ]
+                                | ActorEndpoint.Command(CommandTaskId.TerminateOwnSessions | CommandTaskId.TerminatePersonSessions) ->
+                                    set [ "SUCCEEDED"; "REJECTED"; "FAILED"; "OUTCOME_UNKNOWN" ]
                                 | ActorEndpoint.Query _
-                                | ActorEndpoint.Command _ ->
+                                | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
                                     set [ "SUCCEEDED"; "REJECTED"; "FAILED" ]
 
                             for representation in [ "HUMAN"; "DATA" ] do

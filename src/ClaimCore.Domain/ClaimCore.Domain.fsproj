@@ -52,6 +52,7 @@
     <Compile Include="Changes/PartChange.fs" />
     <Compile Include="Inputs/CaseAdmission.fs" />
     <Compile Include="Aggregates/CaseFamily.fs" />
+    <Compile Include="Aggregates/DecisionFacts.fs" />
     <Compile Include="Aggregates/Person.fs" />
     <Compile Include="Aggregates/Environment.fs" />
     <Compile Include="Changes/Descriptions.fs" />
@@ -100,6 +101,7 @@
     <Compile Include="Tasks/Case/CaseDecide.fs" />
     <Compile Include="Tasks/Case/CaseRecordPayment.fs" />
     <Compile Include="Tasks/Case/CaseRemovePayment.fs" />
+    <Compile Include="Tasks/Case/CaseCorrectPayment.fs" />
     <Compile Include="Tasks/Case/CaseCorrect.fs" />
     <Compile Include="Tasks/Registry.fs" />
   </ItemGroup>

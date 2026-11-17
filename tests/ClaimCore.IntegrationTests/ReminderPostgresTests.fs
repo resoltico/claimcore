@@ -697,7 +697,17 @@ let private projectionRepair database =
         do! sql database "UPDATE claimcore.reminders SET due=DATE '2027-01-02'" [||]
         do! finding VerificationFinding.CaseWorkProjection database
         do! enterMaintenance database
-        let! repaired = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! repaired =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk repaired "Rebuild reconstructs the original date from verified causal history"
         let! _ = verified database
 
@@ -710,7 +720,17 @@ let private projectionRepair database =
             "A point read checks derived scheduling against the independent reminder database.Fixture owner"
 
         do! finding VerificationFinding.CaseWorkProjection database
-        let! repairedDate = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! repairedDate =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk repairedDate "Rebuild reconciles the denormalized next-date projection"
 
         do!
@@ -727,7 +747,17 @@ let private projectionRepair database =
             "A point read checks the work search projection against the summary owner"
 
         do! finding VerificationFinding.CaseWorkProjection database
-        let! repairedSearch = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! repairedSearch =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk repairedSearch "Independent work search columns are also part of reconstruction"
         let! _ = verified database
 
@@ -741,7 +771,16 @@ let private projectionRepair database =
                     [||]
 
             do! finding VerificationFinding.CaseWorkProjection database
-            let! repairedBytes = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+            let! repairedBytes =
+                ProjectionRebuild.rebuild
+                    database.OwnerSource
+                    checkpoint
+                    (MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                     |> Option.get)
+                    token
 
             Expect.isOk
                 repairedBytes
@@ -839,7 +878,17 @@ let private casePageOwners database =
 
         do! check "A missing work root refuses instead of dropping the selected parent"
         do! enterMaintenance database
-        let! repaired = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! repaired =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk repaired "Verified reconstruction restores the missing work owner"
         let! after = Service.list actor request token
 

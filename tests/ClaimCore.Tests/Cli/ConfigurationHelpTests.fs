@@ -89,7 +89,7 @@ let private privateForms () =
 let private helpAlias () =
     for language in LocalizationPolicy.languages do
         let rendered topic =
-            ContractDiscovery.helpTopic language topic
+            ContractDiscovery.helpTopic (RenderingContext.forLanguage language) topic
 
         let content = rendered (CliTopic.Help HelpTopic.Configuration)
 
@@ -113,13 +113,17 @@ let private helpAlias () =
 
 let private localizedExplanations () =
     let english =
-        ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Configuration)
+        ContractDiscovery.helpTopic
+            (RenderingContext.forLanguage "en")
+            (CliTopic.Help HelpTopic.Configuration)
 
     Expect.stringContains english "Secrets are never saved" "Current secret handling stays visible."
 
     for language in LocalizationPolicy.languages |> List.filter ((<>) "en") do
         let content =
-            ContractDiscovery.helpTopic language (CliTopic.Help HelpTopic.Configuration)
+            ContractDiscovery.helpTopic
+                (RenderingContext.forLanguage language)
+                (CliTopic.Help HelpTopic.Configuration)
 
         Expect.notEqual
             content

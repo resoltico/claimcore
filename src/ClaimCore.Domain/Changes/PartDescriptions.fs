@@ -29,7 +29,7 @@ module PartDescriptions =
         }
 
     let family
-        (before: CaseFamily option)
+        (before: DecisionFacts option)
         (notes: Map<NoteId, NoteValue>)
         (changes: PartChange list)
         =
@@ -111,7 +111,7 @@ module PartDescriptions =
                             ReminderId.create change.PartId
                             |> Option.bind (fun id ->
                                 prior |> Option.bind (fun state -> Map.tryFind id state.Reminders))
-                            |> Option.map (fun part -> part.Value.Value)
+                            |> Option.map (fun part -> part.Value)
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe before value))
                     | PartValue.Note value ->

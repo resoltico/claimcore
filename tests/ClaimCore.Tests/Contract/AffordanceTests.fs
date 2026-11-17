@@ -116,8 +116,8 @@ let tests =
                 let role =
                     { action () with
                         Task = TaskId.ofLiteral "people.grant"
-                        Binding =
-                            Some(
+                        Control =
+                            ActionControl.Operation(
                                 Binding.People(
                                     ActorId.create (
                                         Guid.Parse "10000000-0000-4000-8000-000000000002"

@@ -5,6 +5,7 @@ open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
+open ClaimCore.Application.Reads
 
 /// Restores authenticated public roots and only the private values needed by this consumer.
 module internal AggregateStorage =
@@ -24,79 +25,187 @@ module internal AggregateStorage =
                 return record, Map.add id record cache
         }
 
-    let private readFamily includePrivate (tx: ReadTx) id =
+    /// Acquisition evidence is internal: counts describe materialized records, not SQL scan effort.
+    type AcquisitionShape =
+        {
+            MaterializedRows: int
+            RootReads: int
+            PrivateRootReads: int
+            RoundTrips: int
+        }
+
+    type FamilyAcquisition =
+        {
+            Facts: DecisionFacts
+            Parts: PartChange list
+            Origins: Map<PartKind * Guid, SubjectStamp>
+            Shape: AcquisitionShape
+        }
+
+    type private FamilyRootAcquisition =
+        {
+            Reference: CaseReference
+            Sequence: Sequence
+            Parts: PartChange list
+            Origins: Map<PartKind * Guid, SubjectStamp>
+            Projected: StoredCase
+            Shape: AcquisitionShape
+        }
+
+    /// Receipt visibility consumes accepted revisions, never current child decision projections.
+    type FamilyDisclosureState =
+        {
+            Snapshot: CaseSnapshot
+            Revisions: Map<PartKind * Guid, Revision>
+        }
+
+    type private Selection =
+        {
+            Payments: OperationId list
+            Reminders: ReminderId list
+            Notes: NoteId list
+            ExcludedPayment: OperationId option
+            Operation: OperationId option
+        }
+
+    let private emptySelection =
+        {
+            Payments = []
+            Reminders = []
+            Notes = []
+            ExcludedPayment = None
+            Operation = None
+        }
+
+    let private bounds earliest latest =
+        match earliest, latest with
+        | None, None -> None
+        | Some earliest, Some latest ->
+            PaymentDateBounds.create earliest latest
+            |> Option.map Some
+            |> Option.defaultWith (fun () -> corrupt "Projected payment extrema are unordered.")
+        | _ -> corrupt "Projected payment extrema are incomplete."
+
+    let private readFamilyRoots (selection: Selection) (tx: ReadTx) id =
         task {
-            let! rows =
-                DatabaseSession.rows
-                    tx.Connection
-                    ("SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,"
-                     + DatabaseSession.dateExpression "m.due"
-                     + " FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 JOIN claimcore.ledger o ON o.sequence=f.operation_sequence LEFT JOIN claimcore.reminders m ON e.part_kind='REMINDER' AND m.reminder_id=e.part_id WHERE e.aggregate_kind='FAMILY' AND e.aggregate_id=$1 ORDER BY e.part_kind,e.part_id,e.revision DESC")
-                    [| box (CaseId.value id) |]
-                    tx.CancellationToken
+            let mutable materialized = 0
+            let mutable roundTrips = 0
+            let mutable rootReads = 0
+            let mutable privateRoots = 0
 
-            if rows.IsEmpty then
-                return None
-            else
-                let mutable cache = Map.empty
-                let mutable parts = []
-                let mutable origins = Map.empty
-                let mutable dates = Map.empty
-                let mutable publicCache = Map.empty
+            let rows sql parameters =
+                task {
+                    roundTrips <- roundTrips + 1
 
-                let load privateValues id =
+                    let! values =
+                        DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
+
+                    materialized <- materialized + values.Length
+                    return values
+                }
+
+            let paymentIds =
+                selection.Payments @ (selection.Operation |> Option.toList) |> List.distinct
+
+            let reminderIds =
+                selection.Reminders
+                @ (selection.Operation |> Option.map ReminderId.ofOperationId |> Option.toList)
+                |> List.distinct
+
+            let noteIds =
+                selection.Notes
+                @ (selection.Operation |> Option.map NoteId.ofOperationId |> Option.toList)
+                |> List.distinct
+
+            let! located =
+                rows
+                    "SELECT DISTINCT ON(e.part_kind,e.part_id) r.operation_id,e.effect_index,o.operation_id,f.effect_index,e.part_kind,e.part_id,e.revision,(SELECT max(s.operation_sequence) FROM claimcore.ledger_effects s WHERE s.aggregate_kind=$2 AND s.aggregate_id=$1) FROM claimcore.ledger_effects e JOIN claimcore.ledger r ON r.sequence=e.operation_sequence LEFT JOIN claimcore.ledger_effects f ON f.part_kind=e.part_kind AND f.part_id=e.part_id AND f.revision=1 LEFT JOIN claimcore.ledger o ON o.sequence=f.operation_sequence WHERE e.aggregate_kind=$2 AND e.aggregate_id=$1 AND (e.part_kind=ANY($3::text[]) OR (e.part_kind=$7 AND e.part_id=ANY($4::uuid[])) OR (e.part_kind=$8 AND e.part_id=ANY($5::uuid[])) OR (e.part_kind=$9 AND e.part_id=ANY($6::uuid[]))) ORDER BY e.part_kind,e.part_id,e.revision DESC"
+                    [|
+                        box (CaseId.value id)
+                        box "FAMILY"
+                        box [| PartKind.token PartKind.Case; PartKind.token PartKind.Work |]
+                        box (paymentIds |> List.map OperationId.value |> List.toArray)
+                        box (reminderIds |> List.map ReminderId.value |> List.toArray)
+                        box (noteIds |> List.map NoteId.value |> List.toArray)
+                        box (PartKind.token PartKind.Payment)
+                        box (PartKind.token PartKind.Reminder)
+                        box (PartKind.token PartKind.Note)
+                    |]
+
+            let! projected = FamilyReads.findCase tx id
+            roundTrips <- roundTrips + 1
+            materialized <- materialized + (if projected.IsSome then 1 else 0)
+
+            match located, projected with
+            | [], None -> return None
+            | [], Some _
+            | _, None -> return corrupt "Current case root and projection presence disagree."
+            | _, Some projected ->
+                let mutable cache: Map<OperationId, RetainedOperation * bool> = Map.empty
+
+                let load includePrivate operation =
                     task {
-                        match Map.tryFind id cache with
-                        | Some record -> return record
-                        | None when privateValues ->
-                            let! record, loaded = operation tx cache id
-                            cache <- loaded
-                            return record
-                        | None ->
-                            match Map.tryFind id publicCache with
-                            | Some record -> return record
-                            | None ->
-                                let! record =
+                        match Map.tryFind operation cache with
+                        | Some(value, loadedPrivate) when loadedPrivate || not includePrivate ->
+                            return value
+                        | _ ->
+                            let! value =
+                                if includePrivate then
+                                    OperationStorage.find
+                                        tx.Connection
+                                        tx.InstallationId
+                                        operation
+                                        tx.CancellationToken
+                                else
                                     OperationStorage.findStructure
                                         tx.Connection
                                         tx.InstallationId
-                                        id
+                                        operation
                                         tx.CancellationToken
 
-                                let record =
-                                    record
-                                    |> Option.defaultWith (fun () ->
-                                        corrupt "Accepted part root is absent.")
+                            let value =
+                                value
+                                |> Option.defaultWith (fun () ->
+                                    corrupt "Selected accepted root is absent.")
 
-                                publicCache <- Map.add id record publicCache
-                                return record
+                            cache <- Map.add operation (value, includePrivate) cache
+                            rootReads <- rootReads + 1
+
+                            if includePrivate then
+                                privateRoots <- privateRoots + 1
+
+                            roundTrips <- roundTrips + 3
+
+                            materialized <-
+                                materialized
+                                + 1
+                                + value.Changes.Length
+                                + value.Root.Structure.Compartments.Length
+
+                            return value
                     }
 
-                for row in rows do
+                let mutable parts = []
+                let mutable origins = Map.empty
+                let mutable reference = None
+
+                for row in located do
                     let idAt index =
                         DatabaseSession.value<Guid> index row
                         |> DatabaseSession.admitted OperationId.create
 
-                    let! structure = load false (idAt 0)
-                    let index = DatabaseSession.value<int> 1 row
-
-                    let retained =
-                        structure.Changes
-                        |> List.tryItem index
-                        |> Option.defaultWith (fun () -> corrupt "Accepted part index is absent.")
-
-                    let! record = load (includePrivate retained.Kind retained.PartId) (idAt 0)
+                    let! record = load true (idAt 0)
                     let! first = load false (idAt 2)
 
                     let part =
                         record.Changes
                         |> List.tryItem (DatabaseSession.value<int> 1 row)
-                        |> Option.defaultWith (fun () -> corrupt "Accepted part index is absent.")
+                        |> Option.defaultWith (fun () -> corrupt "Selected effect index is absent.")
 
                     let origin =
                         first.Changes
                         |> List.tryItem (DatabaseSession.value<int> 3 row)
-                        |> Option.defaultWith (fun () -> corrupt "Part origin index is absent.")
+                        |> Option.defaultWith (fun () -> corrupt "Selected origin index is absent.")
 
                     if
                         part.Aggregate <> AggregateReference.Family id
@@ -104,74 +213,436 @@ module internal AggregateStorage =
                         || origin.Kind <> part.Kind
                         || origin.PartId <> part.PartId
                         || origin.Revision <> Revision.first
+                        || PartKind.token part.Kind <> DatabaseSession.value<string> 4 row
+                        || part.PartId <> DatabaseSession.value<Guid> 5 row
+                        || Revision.value part.Revision <> DatabaseSession.value<int64> 6 row
                     then
-                        corrupt "Accepted part origin does not match its current owner."
+                        corrupt
+                            "Selected accepted part/origin disagrees with its owner and revision."
 
-                    match part.Value with
-                    | PartValue.Reminder _ ->
-                        match DatabaseSession.optionalCalendarDate 4 row with
-                        | Some due ->
-                            let reminder = DatabaseSession.admitted ReminderId.create part.PartId
-                            dates <- Map.add reminder (CalendarDate.ofDate due) dates
-                        | None -> ()
-                    | _ -> ()
+                    if part.Kind = PartKind.Case then
+                        reference <-
+                            origin.NaturalKey
+                            |> Option.map (fun value ->
+                                CaseReference.parse value
+                                |> Result.defaultWith (fun _ ->
+                                    corrupt "Case creation reference is invalid."))
 
                     parts <- part :: parts
                     origins <- Map.add (part.Kind, part.PartId) origin.Stamp origins
 
-                let! identities =
-                    DatabaseSession.rows
-                        tx.Connection
-                        "SELECT natural_key FROM claimcore.ledger_effects WHERE aggregate_kind='FAMILY' AND aggregate_id=$1 AND natural_key IS NOT NULL"
-                        [| box (CaseId.value id) |]
-                        tx.CancellationToken
-
                 let reference =
-                    match identities with
-                    | [ row ] ->
-                        DatabaseSession.value<string> 0 row
-                        |> CaseReference.parse
-                        |> Result.defaultWith (fun _ -> corrupt "Family reference is invalid.")
-                    | _ -> corrupt "Family has no unique creation identity."
+                    reference
+                    |> Option.defaultWith (fun () -> corrupt "Case creation identity is absent.")
 
                 let sequence =
-                    parts |> List.map (_.Stamp.Position >> EffectPosition.sequence) |> List.max
+                    DatabaseSession.value<int64> 7 located.Head
+                    |> DatabaseSession.admitted Sequence.create
 
-                let family =
-                    CaseFamily.restoreForDecision
-                        dates
-                        includePrivate
+                return
+                    Some
+                        {
+                            Reference = reference
+                            Sequence = sequence
+                            Parts = parts
+                            Origins = origins
+                            Projected = projected
+                            Shape =
+                                {
+                                    MaterializedRows = materialized
+                                    RootReads = rootReads
+                                    PrivateRootReads = privateRoots
+                                    RoundTrips = roundTrips
+                                }
+                        }
+        }
+
+    let private readFamily (selection: Selection) (tx: ReadTx) id =
+        task {
+            let! loaded = readFamilyRoots selection tx id
+
+            match loaded with
+            | None -> return None
+            | Some roots ->
+                let mutable materialized = roots.Shape.MaterializedRows
+                let mutable roundTrips = roots.Shape.RoundTrips
+                let rootReads = roots.Shape.RootReads
+                let privateRoots = roots.Shape.PrivateRootReads
+                let reference = roots.Reference
+                let sequence = roots.Sequence
+                let parts = roots.Parts
+                let origins = roots.Origins
+                let projected = roots.Projected
+
+                let rows sql parameters =
+                    task {
+                        roundTrips <- roundTrips + 1
+
+                        let! values =
+                            DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
+
+                        materialized <- materialized + values.Length
+                        return values
+                    }
+
+                let namedRows sql parameters =
+                    task {
+                        roundTrips <- roundTrips + 1
+
+                        let! values =
+                            DatabaseSession.namedRows
+                                tx.Connection
+                                sql
+                                parameters
+                                tx.CancellationToken
+
+                        materialized <- materialized + values.Length
+                        return values
+                    }
+
+                let paymentIds =
+                    selection.Payments @ (selection.Operation |> Option.toList) |> List.distinct
+
+                let reminderIds =
+                    selection.Reminders
+                    @ (selection.Operation |> Option.map ReminderId.ofOperationId |> Option.toList)
+                    |> List.distinct
+
+                let noteIds =
+                    selection.Notes
+                    @ (selection.Operation |> Option.map NoteId.ofOperationId |> Option.toList)
+                    |> List.distinct
+
+                let! aggregate =
+                    namedRows
+                        ("SELECT count(*) AS payment_count,coalesce(sum(paid_amount),0)::text AS paid,"
+                         + DatabaseSession.dateExpression "min(payment_date)"
+                         + " AS first_payment,"
+                         + DatabaseSession.dateExpression "max(payment_date)"
+                         + " AS last_payment,"
+                         + DatabaseSession.dateExpression
+                             "min(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
+                         + " AS remaining_first,"
+                         + DatabaseSession.dateExpression
+                             "max(payment_date) FILTER(WHERE $2::uuid IS NULL OR payment_id<>$2)"
+                         + " AS remaining_last,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL) AS next_due,"
+                         + "(SELECT "
+                         + DatabaseSession.dateExpression "min(due)"
+                         + " FROM claimcore.reminders WHERE case_id=$1 AND state=$3 AND snapshot IS NOT NULL AND NOT(reminder_id=ANY($4::uuid[]))) AS remaining_due "
+                         + "FROM claimcore.case_payments WHERE case_id=$1 AND NOT removed AND payment_date IS NOT NULL")
+                        [|
+                            box (CaseId.value id)
+                            DatabaseSession.parameter (
+                                selection.ExcludedPayment |> Option.map OperationId.value
+                            )
+                            box (ReminderState.token ReminderState.Pending)
+                            box (selection.Reminders |> List.map ReminderId.value |> List.toArray)
+                        |]
+
+                let aggregate =
+                    aggregate
+                    |> List.tryExactlyOne
+                    |> Option.defaultWith (fun () -> corrupt "Case aggregate facts are absent.")
+
+                let date name =
+                    DatabaseSession.namedOptionalCalendarDate name aggregate
+                    |> Option.map CalendarDate.ofDate
+
+                let paid =
+                    DatabaseSession.namedValue<string> "paid" aggregate
+                    |> Amount.parse
+                    |> Result.defaultWith (fun _ ->
+                        corrupt "Projected paid total is outside its canonical range.")
+
+                let summary =
+                    {
+                        LiveFamilySummary.PaymentCount =
+                            DatabaseSession.namedValue<int64> "payment_count" aggregate
+                        Paid = paid
+                        PaymentDates = bounds (date "first_payment") (date "last_payment")
+                        RemainingPaymentDates =
+                            selection.ExcludedPayment
+                            |> Option.map (fun selected ->
+                                selected, bounds (date "remaining_first") (date "remaining_last"))
+                        NextPendingDue = date "next_due"
+                        RemainingPendingDue = date "remaining_due"
+                    }
+
+                let facts =
+                    DecisionFacts.restore
                         id
                         reference
                         sequence
                         parts
                         origins
+                        summary
+                        {
+                            FamilyFactScope.Payments = Set.ofList paymentIds
+                            Reminders = Set.ofList reminderIds
+                            Notes = Set.ofList noteIds
+                            Operation = selection.Operation
+                        }
                     |> Result.defaultWith (fun _ ->
-                        corrupt "Accepted family parts are inconsistent.")
+                        corrupt "Selected decision facts disagree with current root aggregates.")
 
-                return Some(family, parts, origins)
+                let _, index =
+                    DecisionFacts.rows facts []
+                    |> Result.defaultWith (fun _ ->
+                        corrupt "Selected decision facts do not form a current index.")
+
+                if
+                    DecisionFacts.snapshot facts <> Some projected.Snapshot
+                    || index <> projected.Index
+                then
+                    corrupt
+                        "Consumed case projection disagrees with its accepted root/work/due facts."
+
+                let! work = WorkReads.findWork tx id
+                roundTrips <- roundTrips + 1
+                materialized <- materialized + (if work.IsSome then 1 else 0)
+
+                let expectedWork =
+                    facts.Work
+                    |> Option.bind (fun part ->
+                        part.Value
+                        |> Option.map (fun value ->
+                            {
+                                CaseWorkSnapshot.CaseId = id
+                                Revision = part.Revision
+                                Work = value
+                            }))
+
+                let expectedWork =
+                    match facts.Case.Value.Lifecycle, facts.Work with
+                    | Lifecycle.Erased, _ -> None
+                    | _, None ->
+                        Some
+                            {
+                                CaseId = id
+                                Revision = Revision.zero
+                                Work = CaseWork.empty
+                            }
+                    | _ -> expectedWork
+
+                match work with
+                | Some work when
+                    work.Revision =
+                        (facts.Work |> Option.map _.Revision |> Option.defaultValue Revision.zero)
+                    && work.Snapshot = expectedWork
+                    && work.ChangedAt =
+                        (facts.Work |> Option.map (fun part -> part.Stamp.RecordedAt))
+                    && work.RecordedBy = (facts.Work |> Option.map (fun part -> part.Stamp.ActorId))
+                    ->
+                    ()
+                | _ -> corrupt "Consumed work projection disagrees with its accepted root."
+
+                let! paymentRows =
+                    rows
+                        ("SELECT payment_id,accepting_sequence,effect_index,"
+                         + DatabaseSession.dateExpression "payment_date"
+                         + ",paid_amount,removed FROM claimcore.case_payments WHERE case_id=$1 AND payment_id=ANY($2::uuid[])")
+                        [|
+                            box (CaseId.value id)
+                            box (paymentIds |> List.map OperationId.value |> List.toArray)
+                        |]
+
+                if paymentRows.Length <> facts.Payments.Count then
+                    corrupt "Selected payment root/projection presence disagrees."
+
+                for row in paymentRows do
+                    let payment =
+                        DatabaseSession.value<Guid> 0 row
+                        |> DatabaseSession.admitted OperationId.create
+
+                    let part =
+                        Map.tryFind payment facts.Payments
+                        |> Option.defaultWith (fun () ->
+                            corrupt "Selected payment projection has no accepted root.")
+
+                    let origin = Map.find (PartKind.Payment, OperationId.value payment) origins
+
+                    let expectedDate =
+                        part.Value.Entry |> Option.map (PaymentEntry.date >> CalendarDate.value)
+
+                    let expectedAmount =
+                        part.Value.Entry |> Option.map (PaymentEntry.amount >> Amount.value)
+
+                    if
+                        DatabaseSession.value<int64> 1 row
+                        <> Sequence.value (EffectPosition.sequence origin.Position)
+                        || DatabaseSession.value<int> 2 row <> EffectPosition.index origin.Position
+                        || DatabaseSession.optionalCalendarDate 3 row <> expectedDate
+                        || DatabaseSession.optional<decimal> 4 row <> expectedAmount
+                        || DatabaseSession.value<bool> 5 row <> part.Value.Removed
+                    then
+                        corrupt "Selected payment values/origin disagree with their accepted root."
+
+                let! reminderRows =
+                    namedRows
+                        ($"SELECT {WorkStorage.reminderColumns} FROM claimcore.reminders r WHERE r.case_id=$1 AND r.reminder_id=ANY($2::uuid[])")
+                        [|
+                            box (CaseId.value id)
+                            box (reminderIds |> List.map ReminderId.value |> List.toArray)
+                        |]
+
+                if reminderRows.Length <> facts.Reminders.Count then
+                    corrupt "Selected reminder root/projection presence disagrees."
+
+                for row in reminderRows do
+                    let stored = WorkStorage.reminderRow row
+
+                    let part =
+                        parts
+                        |> List.find (fun part ->
+                            part.Kind = PartKind.Reminder
+                            && part.PartId = ReminderId.value stored.ReminderId)
+
+                    if
+                        stored.Snapshot <> PartChange.reminderSnapshot part
+                        || stored.Revision <> part.Revision
+                        || stored.RecordedAt <> part.Stamp.RecordedAt
+                        || stored.RecordedBy <> part.Stamp.ActorId
+                    then
+                        corrupt "Selected reminder projection disagrees with its accepted root."
+
+                let! noteRows =
+                    namedRows
+                        ("SELECT "
+                         + NoteStorage.columns
+                         + NoteStorage.source
+                         + " WHERE n.case_id=$1 AND n.note_id=ANY($2::uuid[])")
+                        [|
+                            box (CaseId.value id)
+                            box (noteIds |> List.map NoteId.value |> List.toArray)
+                        |]
+
+                if noteRows.Length <> facts.Notes.Count then
+                    corrupt "Selected note root/projection presence disagrees."
+
+                for row in noteRows do
+                    let stored = NoteStorage.row row
+                    let note = Note.id stored.Note
+
+                    let part =
+                        parts
+                        |> List.find (fun part ->
+                            part.Kind = PartKind.Note && part.PartId = NoteId.value note)
+
+                    let origin = Map.find (PartKind.Note, NoteId.value note) origins
+
+                    if
+                        Some stored.Note <> PartChange.noteSnapshot part
+                        || stored.CreatedPosition <> origin.Position
+                        || stored.RecordedAt <> origin.RecordedAt
+                        || stored.RecordedBy <> origin.ActorId
+                    then
+                        corrupt "Selected note values/origin disagree with their accepted root."
+
+                return
+                    Some
+                        {
+                            Facts = facts
+                            Parts = parts
+                            Origins = origins
+                            Shape =
+                                {
+                                    MaterializedRows = materialized
+                                    RootReads = rootReads
+                                    PrivateRootReads = privateRoots
+                                    RoundTrips = roundTrips
+                                }
+                        }
         }
 
-    /// Aggregate consumers need note identity/removal and reminder dates, not unrelated text.
-    let family tx id =
-        readFamily (fun kind _ -> kind <> PartKind.Note && kind <> PartKind.Reminder) tx id
+    let family tx id = readFamily emptySelection tx id
 
-    /// Reminder lists offer controls for their rows and therefore also need the recorded plans.
-    let familyForReminders tx id =
-        readFamily (fun kind _ -> kind <> PartKind.Note) tx id
-
-    let familyForDecision tx id binding =
+    let familyForPayments tx id payments =
         readFamily
-            (fun kind part ->
-                match kind, binding with
-                | PartKind.Note, Binding.Note(_, note) -> part = NoteId.value note
-                | PartKind.Note, _ -> false
-                | PartKind.Reminder, Binding.Reminder(_, reminder, _) ->
-                    part = ReminderId.value reminder
-                | PartKind.Reminder, _ -> false
-                | _ -> true)
+            { emptySelection with
+                Payments = payments
+            }
             tx
             id
+
+    let familyForReminders tx id reminders =
+        readFamily
+            { emptySelection with
+                Reminders = reminders
+            }
+            tx
+            id
+
+    let familyForReceipt (tx: ReadTx) id (changes: PartChange list) =
+        task {
+            let selected kind =
+                changes
+                |> List.filter (fun change -> change.Kind = kind)
+                |> List.map _.PartId
+                |> List.distinct
+
+            let reminders = selected PartKind.Reminder
+            let notes = selected PartKind.Note
+
+            let selection =
+                { emptySelection with
+                    Reminders = reminders |> List.map (DatabaseSession.admitted ReminderId.create)
+                    Notes = notes |> List.map (DatabaseSession.admitted NoteId.create)
+                }
+
+            let! loaded = readFamilyRoots selection tx id
+
+            return
+                loaded
+                |> Option.map (fun roots ->
+                    let revisions =
+                        roots.Parts
+                        |> List.map (fun part -> (part.Kind, part.PartId), part.Revision)
+                        |> Map.ofList
+
+                    for kind, ids in [ PartKind.Reminder, reminders; PartKind.Note, notes ] do
+                        if
+                            ids
+                            |> List.exists (fun part ->
+                                not (Map.containsKey (kind, part) revisions))
+                        then
+                            corrupt "A receipt's selected accepted part revision is absent."
+
+                    let snapshot =
+                        roots.Parts
+                        |> List.tryFind (fun part ->
+                            part.Kind = PartKind.Case && part.PartId = CaseId.value id)
+                        |> Option.bind (PartChange.caseSnapshot roots.Reference)
+                        |> Option.defaultWith (fun () ->
+                            corrupt "A receipt's current case root is absent.")
+
+                    if snapshot <> roots.Projected.Snapshot then
+                        corrupt "Receipt visibility disagrees with its accepted case root."
+
+                    {
+                        Snapshot = snapshot
+                        Revisions = revisions
+                    })
+        }
+
+    let familyForDecision tx id binding operation =
+        let selected =
+            match binding with
+            | Binding.CasePayment(_, _, payment) ->
+                { emptySelection with
+                    Payments = [ payment ]
+                    ExcludedPayment = Some payment
+                }
+            | Binding.Reminder(_, reminder, _) ->
+                { emptySelection with
+                    Reminders = [ reminder ]
+                }
+            | Binding.Note(_, note) -> { emptySelection with Notes = [ note ] }
+            | _ -> emptySelection
+
+        readFamily { selected with Operation = operation } tx id
 
     let person (tx: ReadTx) id =
         task {

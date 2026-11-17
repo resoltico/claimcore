@@ -21,7 +21,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Reminder.Create.decide
                             (context 2)
                             environment
-                            (Some before)
+                            (Some(DecisionFacts.fromReplay before))
                             (Binding.ReminderNew(target before))
                             (planInputs "Follow up" "2026-11-16")
                         |> accepted
@@ -57,7 +57,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.Close.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
@@ -85,7 +85,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Case.Close.decide
                             (context 4)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (caseBinding state)
                             InputMap.empty
                         |> accepted
@@ -122,7 +122,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Note.Add.decide
                             (context 2)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.NoteNew(target state))
                             (inputs [ text InputTarget.NoteText "Text" ])
                         |> accepted
@@ -134,7 +134,7 @@ let tests =
                         ClaimCore.Domain.Tasks.Note.Remove.decide
                             (context 3)
                             environment
-                            (Some state)
+                            (Some(DecisionFacts.fromReplay state))
                             (Binding.Note(target state, id))
                             InputMap.empty
                         |> accepted

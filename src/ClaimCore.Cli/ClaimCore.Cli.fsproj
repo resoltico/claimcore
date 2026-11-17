@@ -33,6 +33,7 @@
     <Compile Include="Delivery/FrameReader.fs" />
     <Compile Include="Text/MessageCatalogs.fs" />
     <Compile Include="Text/TerminalText.fs" />
+    <Compile Include="Text/ReplyTextFormat.fs" />
     <Compile Include="Text/CliConfirmation.fs" />
     <Compile Include="Text/UsageText.fs" />
     <Compile Include="Text/ContractDiscovery.fs" />
@@ -54,10 +55,10 @@
     <Compile Include="Delivery/RemoteServiceCall.fs" />
     <Compile Include="Delivery/FrameDelivery.fs" />
     <Compile Include="Delivery/RemoteFrameProcessing.fs" />
-    <Compile Include="Text/ReplyTextFormat.fs" />
     <Compile Include="Text/TextDescriptorValue.fs" />
     <Compile Include="Text/TextObservation.fs" />
     <Compile Include="Text/TextTable.fs" />
+    <Compile Include="Text/ControlHints.fs" />
     <Compile Include="Text/ViewText.fs" />
     <Compile Include="Text/DiagnosticText.fs" />
     <Compile Include="Text/HumanText.fs" />

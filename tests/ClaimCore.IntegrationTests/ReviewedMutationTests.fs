@@ -215,7 +215,17 @@ let private peopleRevisions (database: PostgresFixture.Database) =
         let! _ = verified database
         do! enterMaintenance database
         let! checkpoint = LedgerAdministration.head database.OwnerSource token
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk rebuilt "Erased profiles rebuild from retained revision metadata"
         let! _ = verified database
 
@@ -487,7 +497,17 @@ let private familyReview (database: PostgresFixture.Database) =
         let! _ = verified database
         do! enterMaintenance database
         let! checkpoint = LedgerAdministration.head database.OwnerSource token
-        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! rebuilt =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk rebuilt "Erased family rebuilds without private contents"
         let! _ = verified database
 

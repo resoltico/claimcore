@@ -174,20 +174,26 @@ module EndpointDeclarations =
         ]
 
     let commands =
-        [
+        CommandTaskId.all
+        |> List.map (fun task ->
+            let inputs =
+                match task with
+                | CommandTaskId.DismissAccessRequest -> principal
+                | CommandTaskId.TerminateOwnSessions -> []
+                | CommandTaskId.TerminatePersonSessions -> [ required TaskInputId.ActorId ]
+
             {
-                Id = "people.requests.dismiss"
+                Id = CommandTaskId.key task
                 Kind = EndpointKind.Command
                 Inputs =
-                    principal
+                    inputs
                     |> List.map (fun input ->
                         { input with
                             Source = InputSource.Authored
                         })
                 Page = None
                 Csv = false
-            }
-        ]
+            })
 
     let all = queries @ commands
 

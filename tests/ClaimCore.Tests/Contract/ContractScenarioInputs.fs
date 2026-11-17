@@ -57,7 +57,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                                     |> Option.get
                                 Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
-                                Payment = None
+                                Payments = []
                             }
                         )
                 }

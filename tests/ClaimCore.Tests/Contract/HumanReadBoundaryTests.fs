@@ -157,7 +157,8 @@ let tests =
                         }
 
                     let rendered =
-                        ViewText.renderDocument false "en" document |> String.concat "\n"
+                        ViewText.renderDocument false (RenderingContext.forLanguage "en") document
+                        |> String.concat "\n"
 
                     Expect.stringContains
                         rendered
@@ -363,7 +364,9 @@ let tests =
                             Result = FrameResult.Reply typed
                         }
 
-                    let text = ReplyText.bytes "en" frame |> Encoding.UTF8.GetString
+                    let text =
+                        ReplyText.bytes (RenderingContext.forLanguage "en") frame
+                        |> Encoding.UTF8.GetString
 
                     Expect.stringContains
                         text

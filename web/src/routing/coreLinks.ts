@@ -93,9 +93,11 @@ const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefine
       : "/recovery/";
   },
   "case.list": (link) => worklistPath(parseWorklistQuery(filterQuery(link.input))),
-  "reminder.list": (link) =>
-    link.input["target"] === undefined
-      ? remindersPath(parseReminderQuery(filterQuery(link.input)))
-      : undefined,
+  "reminder.list": (link) => {
+    const target = targetInput(link);
+    const { target: _target, cursor: _cursor, limit: _limit, ...filters } = link.input;
+    const query = parseReminderQuery(filterQuery(filters));
+    return remindersPath({ ...query, ...(target === undefined ? {} : { target }) });
+  },
 };
 export const coreLinkPath = (link: Link): string | undefined => routes[link.endpoint]?.(link);

@@ -78,7 +78,7 @@ module internal PageCommand =
                                 options
                                 includeHeader
                                 prepared.Details
-                                prepared.Language
+                                prepared.Rendering
                                 document
                             |> text
                             |> io.Output
@@ -123,12 +123,12 @@ module internal PageCommand =
                                 invalidOp "A continuation must preserve request admission.")
                     else
                         if prepared.Format = VerbFormat.Csv then
-                            ReplyTextFormat.nextLines prepared.Language next |> text |> io.Errors
+                            ReplyTextFormat.nextLines prepared.Rendering next |> text |> io.Errors
 
                         running <- false
                 | None ->
                     if prepared.Format = VerbFormat.Csv then
-                        ReplyText.bytesFor prepared.Language (Some frame) response.Frame
+                        ReplyText.bytesFor prepared.Rendering (Some frame) response.Frame
                         |> io.Errors
                     else
                         io.Deliver frame response

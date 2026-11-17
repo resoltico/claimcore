@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "Saglabāt publiskos savienojuma un valodas iestatījumus profilā.\nAr `claimcore configure --show` pārbaudiet faktiskās vērtības un to avotus.\nNorādiet noslēpumus failos; profilā tie netiek saglabāti.\nSkatiet docs/integrating.md#cli-use.",
-    "source": "2e791425e501"
+    "text": "Saglabājiet publiskos savienojuma, valodas un attēlošanas lokalizācijas iestatījumus profilā.\\nValoda nosaka tekstu; --display-locale nosaka datumu un skaitļu formātu. Prioritāte: parametrs, CLAIMCORE_DISPLAY_LOCALE, profils, valodas noklusējums.\\nIzmantojiet `claimcore configure --show`, lai skatītu vērtības un to avotus.\\nNoslēpumus norādiet failos; tie netiek saglabāti profilā.\\nSkatiet docs/integrating.md#cli-use.",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "Ja piegāde nav apstiprināta, izejas kods 4 izdrukā precīzu atkārtojamo pieprasījumu.\nAtkārtota nosūtīšana nevar to reģistrēt divreiz.\nAr `claimcore recovery list` un `claimcore recovery check` pārbaudiet rezultātu; atbilde kļūst galīga {window} laikā.",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Izmantojiet help [tēma | saime [komanda]] ar --format text|json un neobligātu --language.",
-    "source": "b8af016df835"
+    "text": "Izmantojiet help [topic | family [verb]] ar --format text|json, neobligātu --language un --display-locale.",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "Nezināma palīdzības tēma.",
@@ -395,10 +395,6 @@
     "text": "Vairāk izmaiņu — izpildiet {command}.",
     "source": "bc8d51b8ce45"
   },
-  "cli.text.operationPending": {
-    "text": "Gaida galīgo atbildi līdz {finalAt}.",
-    "source": "e6e58811f6cc"
-  },
   "cli.family.note": {
     "text": "Lietas piezīmes",
     "source": "54c2a0df2066"
@@ -426,5 +422,13 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "Pierakstīšanās netika pabeigta divu minūšu laikā. Palaidiet komandu vēlreiz un pabeidziet pierakstīšanos pārlūkā.",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "Komandas atbilde nav apstiprināta. Atkārtošana var ietekmēt jaunāku stāvokli.",
+    "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore pārlūkprogrammas sesijas",
+    "source": "afe6f30a2564"
   }
 }

@@ -310,7 +310,17 @@ let private lifecycle database =
 
         do! finding VerificationFinding.CaseNotesProjection database
         do! enterMaintenance database
-        let! repaired = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+
+        let! repaired =
+            ProjectionRebuild.rebuild
+                database.OwnerSource
+                checkpoint
+                (MaintenanceHandle.create
+                    1L
+                    (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                 |> Option.get)
+                token
+
         Expect.isOk repaired "Shared replay rebuilds current and removed notes"
 
         let! paused =
@@ -335,7 +345,15 @@ let private lifecycle database =
             "Maintenance pauses notes"
 
         let! mode =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                (MaintenanceChange.Resume(
+                    MaintenanceHandle.create
+                        1L
+                        (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+                    |> Option.get
+                ))
+                token
 
         Expect.isFalse mode.State.Active "Maintenance is off"
         let! closed = executeCase (database) (owner) (130) (1L) "case.close" (Map.empty)
