@@ -1,6 +1,10 @@
 import specification from "../../../../contracts/openapi.json";
 import { describe, expect, it } from "vitest";
-import { isResponseStructure as admits, type ResponseSchema } from "../../../../contracts/client";
+import {
+  isResponseStructure as admits,
+  isEndpointResponse,
+  type ResponseSchema,
+} from "../../../../contracts/client";
 
 // Small authored constructor cases, not copies of endpoint response schemas.
 const text = ["string", null, null, null, null, null] as const;
@@ -129,6 +133,67 @@ describe("generated finite structural interpreter", () => {
     ]) {
       expect(admits(partition, value)).toBe(true);
     }
+  });
+
+  // Actual published people.requests -> AccessRequest -> Principal.HUMAN root; no parallel schema.
+  const principalResponse = (issuer: string) => ({
+    representation: "DATA",
+    outcome: {
+      kind: "SUCCEEDED",
+      data: {
+        basis: {
+          observedAt: "2024-02-29T12:00:00.123456Z",
+          businessDate: "2024-02-29",
+          timeZone: "UTC",
+        },
+        items: [
+          {
+            principal: { kind: "HUMAN", issuer, subject: "synthetic-unicode-principal" },
+            firstSeen: "2024-02-29T10:00:00.123456Z",
+            lastSeen: "2024-02-29T11:00:00.123456Z",
+            claims: {},
+          },
+        ],
+        nextCursor: null,
+      },
+    },
+  });
+  it.each([
+    "https://issuer.example/path/",
+    "https://issuer.example/café/東京/",
+    "https://issuer.example/😀/",
+    "https://例え.test/身份/",
+  ])(
+    "admits declared ordinary Unicode issuer strings through the actual endpoint root: %s",
+    (issuer) => {
+      const response = principalResponse(issuer);
+      expect(isEndpointResponse("people.requests", response)).toBe(true);
+      expect(response.outcome.data.items[0]?.principal.issuer).toBe(issuer);
+    },
+  );
+  it.each([
+    ["Cc NUL U+0000", "\u0000"],
+    ["Cc NEXT LINE U+0085", "\u0085"],
+    ["Zs NO-BREAK SPACE U+00A0", "\u00a0"],
+    ["Zs EM SPACE U+2003", "\u2003"],
+    ["Zl LINE SEPARATOR U+2028", "\u2028"],
+    ["Zp PARAGRAPH SEPARATOR U+2029", "\u2029"],
+    ["explicit FEFF U+FEFF", "\ufeff"],
+  ])("refuses excluded issuer category %s in both host and path", (_category, character) => {
+    for (const issuer of [
+      `https://issuer${character}.example/path/`,
+      `https://issuer.example/path${character}/`,
+    ]) {
+      expect(isEndpointResponse("people.requests", principalResponse(issuer))).toBe(false);
+    }
+  });
+  it.each([
+    "prefixhttps://issuer.example/path/",
+    "https://issuer.example/path/?query",
+    "https://issuer.example/path/#fragment",
+    "https://issuer.example/path/\n",
+  ])("requires complete issuer pattern consumption at the actual endpoint root: %j", (issuer) => {
+    expect(isEndpointResponse("people.requests", principalResponse(issuer))).toBe(false);
   });
 
   it("counts Unicode scalars separately from UTF-8 bytes and consumes patterns fully", () => {
