@@ -61,19 +61,6 @@ const seedValues = (
   }
   return values;
 };
-/** Newly added rows reuse the Core prefill, never the user's already edited rows. */
-export const initialCollectionRow = (
-  action: OperationAffordance | undefined,
-  collectionId: string,
-): FormValues => {
-  if (action === undefined) {
-    return {};
-  }
-  const collection = operationTask(action.task).collections.find(
-    (candidate) => candidate.id === collectionId,
-  );
-  return collection === undefined ? {} : { ...collection.defaults };
-};
 /** Acquire seeds without activating editable UPDATE inputs; those seeds are display hints. */
 export const initialAffordanceSeeds = (action: OperationAffordance): FormValues => {
   const declaration = operationTask(action.task);
