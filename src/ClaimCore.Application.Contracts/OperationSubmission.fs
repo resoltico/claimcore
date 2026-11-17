@@ -604,6 +604,21 @@ module SubmissionAssembly =
         else
             values
 
+    /// UPDATE seeds are display hints even when a current control cannot edit them.
+    /// Only declared non-UPDATE values outside Editable are immutable authored selections.
+    let fixedInputs (declaration: TaskDeclaration) editable seeds =
+        let editable = Set.ofList editable
+
+        let declared =
+            declaration.Inputs |> List.map (fun input -> input.Input, input) |> Map.ofList
+
+        seeds
+        |> Map.filter (fun key _ ->
+            not (Set.contains key editable)
+            && (Map.tryFind key declared
+                |> Option.exists (fun input ->
+                    input.Source = InputSource.Authored && input.Mode <> TaskInputMode.Update)))
+
     /// Fixed controls always win; editable UPDATE seeds never become authored values.
     let merge
         (editable: TaskInputId list)

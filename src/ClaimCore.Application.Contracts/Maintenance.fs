@@ -66,8 +66,14 @@ type MaintenanceChange =
 module MaintenanceChange =
     /// Same active acquisition is retryable; a released acquisition can never recreate a pause.
     let apply (current: RegisterMaintenance) change =
-        let advance pause =
-            if current.Generation >= SafeInteger.Maximum then
+        let advance (pause: Guid option) =
+            let ceiling =
+                if pause.IsSome then
+                    SafeInteger.Maximum - 1L
+                else
+                    SafeInteger.Maximum
+
+            if current.Generation >= ceiling then
                 None
             else
                 Some(RegisterMaintenance.create (current.Generation + 1L) pause)
