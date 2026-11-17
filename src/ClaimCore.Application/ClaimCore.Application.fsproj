@@ -38,6 +38,7 @@
     <Compile Include="Storage/Ledger/Transactions.fs" />
     <Compile Include="Storage/RegisterMaintenanceStore.fs" />
     <Compile Include="Storage/SessionStore.fs" />
+    <Compile Include="Reads/AssigneeSelectionSql.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
     <Compile Include="Reads/ResponsibilityCountStorage.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />

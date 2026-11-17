@@ -55,6 +55,13 @@ Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain
 field kinds and money relationships; typed records retain validated structure through execution.
 [CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
+
+[Work selections](../src/ClaimCore.Domain/WorklistSemantics.fs),
+[filter/classification plans](../src/ClaimCore.Domain/Reads.fs) and
+[assignee eligibility](../src/ClaimCore.Domain/Access.fs) own worklist policy. The SQL adapters
+interpret their closed facts before paging or aggregation; lists, counts and displayed assignee
+availability use those same declarations. Keep database witnesses literal and independent of them.
+
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.
 [Task modules](../src/ClaimCore.Domain/Tasks/Registry.fs) own declarations, checks, availability and decisions.
 [CaseFamily](../src/ClaimCore.Domain/Aggregates/CaseFamily.fs) and [Person](../src/ClaimCore.Domain/Aggregates/Person.fs)

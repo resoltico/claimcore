@@ -61,8 +61,11 @@ module CaseState =
     let token state = lifecycle state |> Lifecycle.token
 
     /// Work is actionable only on a live, open case.
+    let actionable = Lifecycle.Active, CaseStatus.Opened
+
     let isActionable lifecycle status =
-        lifecycle = Lifecycle.Active && status = Some CaseStatus.Opened
+        let requiredLifecycle, requiredStatus = actionable
+        lifecycle = requiredLifecycle && status = Some requiredStatus
 
 /// A disclosure cannot carry an erased state.
 [<RequireQualifiedAccess>]

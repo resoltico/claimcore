@@ -450,3 +450,64 @@ let accessExplanation =
             "Removing one overlapping grant does not claim inherited access disappeared"
 
     )
+
+[<Tests>]
+let assigneePlan =
+    testCase "assignee plan requires enabled human and all case capabilities" (fun () ->
+        for principal in [ human; service ] do
+            for role in Role.all do
+                for scope in [ Scope.Installation; Scope.Case caseId; Scope.Case otherCaseId ] do
+                    for enabled in [ false; true ] do
+                        let current = actor principal [ { Role = role; Scope = scope } ]
+
+                        let current =
+                            { current with
+                                Actor = { current.Actor with Enabled = enabled }
+                            }
+
+                        let expected =
+                            principal = human
+                            && enabled
+                            && role = Role.CaseHandler
+                            && scope <> Scope.Case otherCaseId
+
+                        Expect.equal
+                            (Access.eligibleAssignee
+                                principal
+                                (AccessView.ofActor (Some current))
+                                caseId)
+                            expected
+                            "Literal role/scope/identity eligibility witness"
+
+        let view = AccessView.ofActor (Some(actor human []))
+
+        Expect.isTrue
+            (Access.matchesAssignee (AssigneeSelection.EnabledHumanWithAll []) human view caseId)
+            "Empty capability conjunction still requires an enabled human"
+
+        Expect.isFalse
+            (Access.matchesAssignee
+                (AssigneeSelection.EnabledHumanWithAll [ Capability.ReadAccess ])
+                human
+                (AccessView.ofActor (
+                    Some(
+                        actor
+                            human
+                            [
+                                {
+                                    Role = Role.Owner
+                                    Scope = Scope.Installation
+                                }
+                            ]
+                    )
+                ))
+                caseId)
+            "Installation-only capability never applies to a case"
+
+        Expect.isFalse
+            (Access.matchesAssignee
+                (AssigneeSelection.EnabledHumanWithAll [])
+                human
+                AccessView.empty
+                caseId)
+            "Empty capability requirements cannot enable an absent actor")

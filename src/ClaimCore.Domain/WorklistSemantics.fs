@@ -72,6 +72,7 @@ type WorkPredicate =
     | Status of CaseStatus
     | Progress of CaseProgress
     | Mine
+    | Responsible of ActorId option
     | Unassigned
     | AssigneeUnavailable
     | NoNextDue
@@ -88,36 +89,38 @@ type WorkSelection =
 
 module WorkSelection =
     let activeOpen =
+        let lifecycle, status = CaseState.actionable
+
         WorkSelection.All
             [
-                WorkSelection.Fact(WorkPredicate.Lifecycle Lifecycle.Active)
-                WorkSelection.Fact(WorkPredicate.Status CaseStatus.Opened)
+                WorkSelection.Fact(WorkPredicate.Lifecycle lifecycle)
+                WorkSelection.Fact(WorkPredicate.Status status)
             ]
 
-    let private date today expected value =
-        value
-        |> Option.exists (fun date ->
-            let comparison = compare (CalendarDate.value date) today
+    let rec interpret fact =
+        function
+        | WorkSelection.All selections -> selections |> List.forall (interpret fact)
+        | WorkSelection.Any selections -> selections |> List.exists (interpret fact)
+        | WorkSelection.Not selection -> not (interpret fact selection)
+        | WorkSelection.Fact predicate -> fact predicate
 
-            match expected with
-            | ReminderDue.Overdue -> comparison < 0
-            | ReminderDue.Today -> comparison = 0
-            | ReminderDue.Upcoming -> comparison > 0)
+    /// Timing classifiers consume only facts in their declared timing plan.
+    let timing today lifecycle status (nextDue: CalendarDate option) =
+        interpret (function
+            | WorkPredicate.Lifecycle value -> lifecycle = value
+            | WorkPredicate.Status value -> status = Some value
+            | WorkPredicate.NoNextDue -> nextDue.IsNone
+            | WorkPredicate.NextDue value ->
+                nextDue |> Option.exists (ReminderDue.matchesDate today value)
+            | predicate -> invalidArg (nameof predicate) "Not a case timing fact.")
 
-    let rec evaluate
+    let evaluate
         today
         requester
         (facts: CaseWorkFacts)
         (reminder: (ReminderState * CalendarDate) option)
         =
-        function
-        | WorkSelection.All selections ->
-            selections |> List.forall (evaluate today requester facts reminder)
-        | WorkSelection.Any selections ->
-            selections |> List.exists (evaluate today requester facts reminder)
-        | WorkSelection.Not selection -> not (evaluate today requester facts reminder selection)
-        | WorkSelection.Fact predicate ->
-            match predicate with
+        interpret (function
             | WorkPredicate.Lifecycle value -> CaseState.lifecycle facts.State = value
             | WorkPredicate.Status value ->
                 CaseState.fields facts.State
@@ -127,15 +130,21 @@ module WorkSelection =
                 |> Option.exists (fun (_, progress) -> progress = value)
             | WorkPredicate.Mine ->
                 facts.Responsible |> Option.exists (fun (actor, _) -> Some actor = requester)
+            | WorkPredicate.Responsible value ->
+                value
+                |> Option.forall (fun expected ->
+                    facts.Responsible |> Option.exists (fun (actor, _) -> actor = expected))
             | WorkPredicate.Unassigned -> facts.Responsible.IsNone
             | WorkPredicate.AssigneeUnavailable ->
                 facts.Responsible |> Option.exists (fun (_, available) -> not available)
             | WorkPredicate.NoNextDue -> facts.NextPendingDue.IsNone
-            | WorkPredicate.NextDue value -> date today value facts.NextPendingDue
+            | WorkPredicate.NextDue value ->
+                facts.NextPendingDue |> Option.exists (ReminderDue.matchesDate today value)
             | WorkPredicate.ReminderState value ->
                 reminder |> Option.exists (fun (state, _) -> state = value)
             | WorkPredicate.ReminderDue value ->
-                reminder |> Option.exists (fun (_, due) -> date today value (Some due))
+                reminder
+                |> Option.exists (fun (_, due) -> ReminderDue.matchesDate today value due))
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseAttention =

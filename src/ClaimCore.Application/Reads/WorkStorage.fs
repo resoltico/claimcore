@@ -214,8 +214,11 @@ module internal WorkStorage =
         + " AS next_changed_at,r.recorded_by AS next_recorded_by"
 
     /// Callers select the bounded parent set before joining current reminder aggregates.
-    let summaryJoins dateParameter =
-        $"CROSS JOIN LATERAL(SELECT count(*) AS pending,count(*) FILTER(WHERE due<{dateParameter}::date) AS overdue FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING') n LEFT JOIN LATERAL(SELECT * FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING' ORDER BY due,reminder_id LIMIT 1) r ON true"
+    let private summaryJoins dateParameter stateParameter =
+        let overdue =
+            CaseSelectionSql.datePredicateAt "due" dateParameter ReminderDue.Overdue
+
+        $"CROSS JOIN LATERAL(SELECT count(*) AS pending,count(*) FILTER(WHERE {overdue}) AS overdue FROM claimcore.reminders WHERE case_id=w.case_id AND state={stateParameter}) n LEFT JOIN LATERAL(SELECT * FROM claimcore.reminders WHERE case_id=w.case_id AND state={stateParameter} ORDER BY due,reminder_id LIMIT 1) r ON true"
 
     let summaryRow row =
         match DatabaseSession.namedOptional<Guid> (workName "case_id") row with
@@ -244,7 +247,7 @@ module internal WorkStorage =
             if List.isEmpty ids then
                 return Map.empty
             else
-                let joins = summaryJoins "$2"
+                let joins = summaryJoins "$2" "$3"
 
                 let sql =
                     $"SELECT {summaryColumns} FROM claimcore.case_work w {joins} WHERE w.case_id=ANY($1::uuid[])"
@@ -253,7 +256,11 @@ module internal WorkStorage =
                     DatabaseSession.preparedNamedRows
                         connection
                         sql
-                        [| box (ids |> List.map CaseId.value |> List.toArray); box today |]
+                        [|
+                            box (ids |> List.map CaseId.value |> List.toArray)
+                            box today
+                            box (ReminderState.token ReminderState.Pending)
+                        |]
                         token
 
                 return
@@ -273,23 +280,20 @@ module internal WorkStorage =
             if List.isEmpty pairs then
                 return Map.empty
             else
+                let eligibility =
+                    AssigneeSelectionSql.predicate
+                        Access.assigneeSelection
+                        "$3"
+                        AssigneeSelectionSql.Source.AssignedPair
+
                 let! rows =
                     DatabaseSession.namedRows
                         connection
-                        "SELECT p.case_id,a.actor_id,a.principal_kind,a.enabled,a.display_name,a.contact,(a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($3::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($4::text[]))) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
+                        $"SELECT p.case_id,a.actor_id,a.principal_kind,a.enabled,a.display_name,a.contact,({eligibility}) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
                         [|
                             box (pairs |> List.map (fst >> CaseId.value) |> List.toArray)
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
-                            box (
-                                Access.rolesFor Capability.ReadCase
-                                |> List.map Role.token
-                                |> List.toArray
-                            )
-                            box (
-                                Access.rolesFor Capability.ManageCaseWork
-                                |> List.map Role.token
-                                |> List.toArray
-                            )
+                            AssigneeSelectionSql.parameters Access.assigneeSelection
                         |]
                         token
 
@@ -326,23 +330,22 @@ module internal WorkStorage =
                 .Replace("%", "\\%")
                 .Replace("_", "\\_"))
 
-    let private duePredicate =
-        function
-        | ReminderDue.Overdue -> "r.due<$11::date"
-        | ReminderDue.Today -> "r.due=$11::date"
-        | ReminderDue.Upcoming -> "r.due>$11::date"
-
     let page connection (query: PageQuery) token =
         task {
-            let due = query.Due |> Option.map duePredicate |> Option.defaultValue "TRUE"
+            let due =
+                query.Due
+                |> Option.map (CaseSelectionSql.datePredicate "r.due")
+                |> Option.defaultValue "TRUE"
 
             let view =
                 query.View
                 |> Option.map ViewCountStorage.reminderPredicate
                 |> Option.defaultValue "TRUE"
 
+            let active = CaseSelectionSql.selectionPredicate WorkSelection.activeOpen
+
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($17::uuid IS NULL OR r.case_id=$17) AND ($18::text IS NULL OR r.state=$18) AND ({view}) AND ($19 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($20::text IS NULL OR r.search_text LIKE '%%'||$20||'%%' ESCAPE chr(92)) AND ($21::date IS NULL OR (r.due,r.reminder_id)>($21::date,$22::uuid)) ORDER BY r.due,r.reminder_id LIMIT $23"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status,c.snapshot AS parent_snapshot,c.revision AS parent_revision,c.responsible_actor AS parent_responsible,w.snapshot AS parent_work_snapshot FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id LEFT JOIN claimcore.case_work w ON w.case_id=c.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ({CaseSelectionSql.suffix 1}::uuid IS NULL OR r.case_id={CaseSelectionSql.suffix 1}) AND ({CaseSelectionSql.suffix 2}::text IS NULL OR r.state={CaseSelectionSql.suffix 2}) AND ({view}) AND ({CaseSelectionSql.suffix 3} OR ({active})) AND ({due}) AND ({CaseSelectionSql.suffix 4}::text IS NULL OR r.search_text LIKE '%%'||{CaseSelectionSql.suffix 4}||'%%' ESCAPE chr(92)) AND ({CaseSelectionSql.suffix 5}::date IS NULL OR (r.due,r.reminder_id)>({CaseSelectionSql.suffix 5}::date,{CaseSelectionSql.suffix 6}::uuid)) ORDER BY r.due,r.reminder_id LIMIT {CaseSelectionSql.suffix 7}"
 
             let parameters =
                 Array.append

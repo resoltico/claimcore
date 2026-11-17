@@ -21,7 +21,7 @@ module internal ResponsibilityCountStorage =
                 let! rows =
                     DatabaseSession.namedRows
                         connection
-                        ($"SELECT requested.actor_id,count(c.case_id) AS cases FROM unnest($17::uuid[]) AS requested(actor_id) LEFT JOIN (SELECT c.case_id,c.responsible_actor FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection}) c ON c.responsible_actor=requested.actor_id GROUP BY requested.actor_id")
+                        ($"SELECT requested.actor_id,count(c.case_id) AS cases FROM unnest({CaseSelectionSql.suffix 1}::uuid[]) AS requested(actor_id) LEFT JOIN (SELECT c.case_id,c.responsible_actor FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection}) c ON c.responsible_actor=requested.actor_id GROUP BY requested.actor_id")
                         (Array.append
                             (CaseSelectionSql.parameters selection)
                             [|

@@ -265,13 +265,6 @@ module internal Queries =
                                                                 tx
                                                                 {
                                                                     CaseId = record.CaseId
-                                                                    ReadRoles =
-                                                                        Access.rolesFor
-                                                                            Capability.ReadCase
-                                                                    WorkRoles =
-                                                                        Access.rolesFor
-                                                                            Capability
-                                                                                .ManageCaseWork
                                                                     AfterActorId = after
                                                                     Limit = request.Limit
                                                                 }

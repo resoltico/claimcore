@@ -389,3 +389,142 @@ let predicates =
                     None
                     "Omitted view adds no restriction")
         ]
+
+[<Tests>]
+let classificationPlans =
+    testList
+        "core work selection classifications"
+        [
+            testCase "case timing partitions absent dates and inactive retained states" (fun () ->
+                for state in states do
+                    for due, expected in
+                        [
+                            None, CaseDue.Unscheduled
+                            Some(date "2026-11-03"), CaseDue.Overdue
+                            Some(date "2026-11-04"), CaseDue.Today
+                            Some(date "2026-11-05"), CaseDue.Upcoming
+                        ] do
+                        let current = facts state None due
+
+                        let actionable =
+                            match state with
+                            | CaseState.Active(CaseStatus.Opened, _) -> true
+                            | _ -> false
+
+                        let expected = if actionable then expected else CaseDue.Inactive
+
+                        let matching =
+                            Vocabulary.all CaseDue.vocabulary
+                            |> List.filter (fun value ->
+                                WorkSelection.evaluate
+                                    today
+                                    (Some actor)
+                                    current
+                                    None
+                                    (CaseDue.plan value))
+
+                        Expect.equal
+                            matching
+                            [ expected ]
+                            "Exactly the literal due classification matches"
+
+                        Expect.equal
+                            (CaseDue.at
+                                today
+                                (CaseState.lifecycle state)
+                                (CaseState.fields state |> Option.map fst)
+                                due)
+                            expected
+                            "The public classifier consumes the declared plan")
+            testCase
+                "assignment distinguishes retained unassigned from erased absence and unavailable mine"
+                (fun () ->
+                    for state in states do
+                        for responsible in [ None; Some(actor, false) ] do
+                            let current = facts state responsible None
+
+                            Expect.equal
+                                (WorkSelection.evaluate
+                                    today
+                                    (Some actor)
+                                    current
+                                    None
+                                    (CaseAssignment.plan CaseAssignment.Mine))
+                                responsible.IsSome
+                                "Availability and terminal status do not hide mine"
+
+                            Expect.equal
+                                (WorkSelection.evaluate
+                                    today
+                                    (Some actor)
+                                    current
+                                    None
+                                    (CaseAssignment.plan CaseAssignment.Unassigned))
+                                (responsible.IsNone && state <> CaseState.Erased)
+                                "Erased absence is not a retained assignment")
+            testCase
+                "explicit filters intersect while each supplied facet is an alternative"
+                (fun () ->
+                    let filter =
+                        { CaseListFilter.empty<string> with
+                            Lifecycles = [ Lifecycle.Active; Lifecycle.Voided ]
+                            Statuses = [ CaseStatus.Closed ]
+                            Progress = [ CaseProgress.Decided; CaseProgress.Paid ]
+                            View = Some CaseView.Mine
+                            Assignment = Some CaseAssignment.Mine
+                            Due = Some CaseDue.Inactive
+                            ResponsibleActor = Some actor
+                        }
+
+                    for state in states do
+                        for responsible in [ None; Some(actor, false) ] do
+                            let expected =
+                                responsible.IsSome
+                                && (match state with
+                                    | CaseState.Active(CaseStatus.Closed,
+                                                       (CaseProgress.Decided | CaseProgress.Paid))
+                                    | CaseState.Voided(CaseStatus.Closed,
+                                                       (CaseProgress.Decided | CaseProgress.Paid)) ->
+                                        true
+                                    | _ -> false)
+
+                            Expect.equal
+                                (WorkSelection.evaluate
+                                    today
+                                    (Some actor)
+                                    (facts state responsible None)
+                                    None
+                                    (CaseListFilter.selection filter))
+                                expected
+                                "No supplied dimension replaces another"
+
+                    let contradictory =
+                        { filter with
+                            Assignment = Some CaseAssignment.Unassigned
+                        }
+
+                    Expect.isFalse
+                        (WorkSelection.evaluate
+                            today
+                            (Some actor)
+                            (facts
+                                (CaseState.Active(CaseStatus.Closed, CaseProgress.Paid))
+                                (Some(actor, true))
+                                None)
+                            None
+                            (CaseListFilter.selection contradictory))
+                        "Mine and unassigned remain a real empty intersection")
+            testCase
+                "timing interpreter rejects unrelated predicates instead of inventing partial facts"
+                (fun () ->
+                    Expect.throws
+                        (fun () ->
+                            WorkSelection.timing
+                                today
+                                Lifecycle.Active
+                                (Some CaseStatus.Opened)
+                                None
+                                (WorkSelection.Fact WorkPredicate.Mine)
+                            |> ignore)
+                        "A mismatched timing plan fails visibly")
+        ]

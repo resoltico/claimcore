@@ -13,8 +13,6 @@ module internal AccessReads =
     type AssigneeQuery =
         {
             CaseId: CaseId
-            ReadRoles: Role list
-            WorkRoles: Role list
             AfterActorId: ActorId option
             Limit: int
         }
@@ -42,14 +40,19 @@ module internal AccessReads =
         let token = tx.CancellationToken
 
         task {
+            let eligibility =
+                AssigneeSelectionSql.predicate
+                    Access.assigneeSelection
+                    "$2"
+                    AssigneeSelectionSql.Source.SelectedCase
+
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
+                    $"SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE {eligibility} AND ($3::uuid IS NULL OR a.actor_id>$3) ORDER BY a.actor_id LIMIT $4"
                     [|
                         box (CaseId.value query.CaseId)
-                        box (query.ReadRoles |> List.map Role.token |> List.toArray)
-                        box (query.WorkRoles |> List.map Role.token |> List.toArray)
+                        AssigneeSelectionSql.parameters Access.assigneeSelection
                         DatabaseSession.parameter (query.AfterActorId |> Option.map ActorId.value)
                         box (query.Limit + 1)
                     |]

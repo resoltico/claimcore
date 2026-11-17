@@ -49,7 +49,7 @@ module internal ViewCountStorage =
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    ($"SELECT {columns} FROM claimcore.reminders r JOIN claimcore.cases c USING(case_id) WHERE c.state<>'ERASED' AND {CaseSelectionSql.predicate selection}")
+                    ($"SELECT {columns} FROM claimcore.reminders r JOIN claimcore.cases c USING(case_id) WHERE {CaseSelectionSql.predicate selection}")
                     (CaseSelectionSql.parameters selection)
                     token
 

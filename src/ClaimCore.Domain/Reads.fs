@@ -47,6 +47,16 @@ module CaseAssignment =
 
     let token = Vocabulary.token vocabulary
 
+    let plan =
+        function
+        | CaseAssignment.Mine -> WorkSelection.Fact WorkPredicate.Mine
+        | CaseAssignment.Unassigned ->
+            WorkSelection.All
+                [
+                    WorkSelection.Not(WorkSelection.Fact(WorkPredicate.Lifecycle Lifecycle.Erased))
+                    WorkSelection.Fact WorkPredicate.Unassigned
+                ]
+
 [<RequireQualifiedAccess>]
 type CaseDue =
     | Overdue
@@ -59,15 +69,20 @@ module CaseDue =
     let vocabulary = Vocabulary.ofUnion<CaseDue> "due" TokenCasing.ScreamingSnake None
     let token = Vocabulary.token vocabulary
 
+    let plan value =
+        let active timing =
+            WorkSelection.All [ WorkSelection.activeOpen; WorkSelection.Fact timing ]
+
+        match value with
+        | CaseDue.Inactive -> WorkSelection.Not WorkSelection.activeOpen
+        | CaseDue.Overdue -> active (WorkPredicate.NextDue ReminderDue.Overdue)
+        | CaseDue.Today -> active (WorkPredicate.NextDue ReminderDue.Today)
+        | CaseDue.Upcoming -> active (WorkPredicate.NextDue ReminderDue.Upcoming)
+        | CaseDue.Unscheduled -> active WorkPredicate.NoNextDue
+
     let at (today: DateOnly) lifecycle status (nextDue: CalendarDate option) =
-        if not (CaseState.isActionable lifecycle status) then
-            CaseDue.Inactive
-        else
-            match nextDue with
-            | None -> CaseDue.Unscheduled
-            | Some date when CalendarDate.value date < today -> CaseDue.Overdue
-            | Some date when CalendarDate.value date = today -> CaseDue.Today
-            | Some _ -> CaseDue.Upcoming
+        Vocabulary.all vocabulary
+        |> List.find (fun value -> WorkSelection.timing today lifecycle status nextDue (plan value))
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseListOrder =
@@ -121,6 +136,31 @@ type CaseListFilter<'text> =
     }
 
 module CaseListFilter =
+    /// Independent supplied filters intersect; members of one filter are alternatives.
+    let selection (filter: CaseListFilter<'text>) =
+        let alternatives fact values =
+            if List.isEmpty values then
+                WorkSelection.All []
+            else
+                values |> List.map (fact >> WorkSelection.Fact) |> WorkSelection.Any
+
+        WorkSelection.All
+            [
+                alternatives WorkPredicate.Lifecycle filter.Lifecycles
+                alternatives WorkPredicate.Status filter.Statuses
+                alternatives WorkPredicate.Progress filter.Progress
+                filter.View
+                |> Option.map CaseView.plan
+                |> Option.defaultValue (WorkSelection.All [])
+                filter.Assignment
+                |> Option.map CaseAssignment.plan
+                |> Option.defaultValue (WorkSelection.All [])
+                filter.Due
+                |> Option.map CaseDue.plan
+                |> Option.defaultValue (WorkSelection.All [])
+                WorkSelection.Fact(WorkPredicate.Responsible filter.ResponsibleActor)
+            ]
+
     let create lifecycles statuses progress text order =
         {
             Lifecycles = lifecycles
@@ -139,7 +179,8 @@ module CaseListFilter =
 
     /// The person responsibility count and its offered list selection share this domain meaning.
     let activeOpen<'text> : CaseListFilter<'text> =
-        create [ Lifecycle.Active ] [ CaseStatus.Opened ] [] None CaseListOrder.Reference
+        let lifecycle, status = CaseState.actionable
+        create [ lifecycle ] [ status ] [] None CaseListOrder.Reference
 
     let admit (input: CaseListFilter<string>) =
         let text =

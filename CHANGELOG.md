@@ -18,7 +18,7 @@
 - CLI case selectors accept explicit IDs; ID-based erasure confirms the previewed reference, and grant/revoke IDs select case scope.
 - CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
 - The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.
-- Worklist view predicates share a Domain selection plan; structural SQL safeguards require accepted erasure evidence when clearing private projections.
+- Worklist filters, due/assignment classification and assignee eligibility share core plans across lists and counts; clearing private projections requires accepted erasure evidence.
 
 ## [0.19.0] - 2026-11-17
 
