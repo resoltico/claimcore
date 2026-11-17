@@ -133,7 +133,7 @@
     <Compile Include="ReviewedMutationTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />
-    <Compile Include="MaintenanceFailureTests.fs" />
+    <Compile Include="MaintenanceFencingPostgresTests.fs" />
     <Compile Include="ProjectionRebuildFailureTests.fs" />
     <Compile Include="StorageFailurePhaseTests.fs" />
     <Compile Include="PreparedReadTests.fs" />

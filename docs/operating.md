@@ -102,10 +102,13 @@ claimcore-server status
 claimcore-server maintenance resume PAUSE_GENERATION PAUSE_ID
 ```
 
-Both on and off are idempotent. One operator owns the pause: inspect status immediately before turning
-it off. After a lost acknowledgement, inspect fresh status rather than guessing. Maintenance does not
-resume automatically. Rebuild preserves history, replaces projections atomically, reports prior divergence
-and leaves the pause active.
+Only acquisition of the same currently active pause is retryable without changing generation. A
+repeated resume or takeover with an old handle conflicts, including after a lost acknowledgement.
+Inspect fresh status before deciding on another command; current state is not historical proof that
+your earlier command executed. Neither process exit nor elapsed time releases a pause. Rebuild
+preserves history, replaces projections atomically, reports prior divergence and leaves the pause
+active. A queued rebuild or restore admission must still own the exact handle after acquiring the
+common ledger head lock; it never substitutes the current operator's handle.
 
 Maintenance pauses case, work, reminder, note and people changes. Authorized reads, authentication,
 accepted-operation replay and final absence checks continue. It is not an all-host drain. For quiescence,

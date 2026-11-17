@@ -40,6 +40,32 @@ module internal RegisterMaintenanceStore =
                 return raise (OperatorFaultException OperatorFault.MaintenanceConflict)
         }
 
+    /// Apply one transition inside the caller's transaction while it owns the common head lock.
+    let changeWithinHeadLock connection change token =
+        task {
+            let! current = read connection token
+
+            let after =
+                MaintenanceChange.apply current change
+                |> Option.defaultWith (fun () ->
+                    raise (OperatorFaultException OperatorFault.MaintenanceConflict))
+
+            let changed = after <> current
+
+            if changed then
+                let! count =
+                    DatabaseSession.execute
+                        connection
+                        "UPDATE claimcore.register_maintenance SET generation=$1,pause_id=$2 WHERE singleton"
+                        [| box after.Generation; DatabaseSession.parameter after.PauseId |]
+                        token
+
+                if count <> 1 then
+                    raise (RecordCorruptException "Register maintenance state is absent.")
+
+            return after, changed
+        }
+
     let change (source: NpgsqlDataSource) change (token: CancellationToken) =
         DatabaseSession.transaction
             source
@@ -50,25 +76,7 @@ module internal RegisterMaintenanceStore =
                     let! _ = Transactions.configure connection Transactions.timeouts token
                     let! position, observed = Transactions.head connection token
                     let! _ = Baseline.require connection token
-                    let! current = read connection token
-
-                    let after =
-                        MaintenanceChange.apply current change
-                        |> Option.defaultWith (fun () ->
-                            raise (OperatorFaultException OperatorFault.MaintenanceConflict))
-
-                    let changed = after <> current
-
-                    if changed then
-                        let! count =
-                            DatabaseSession.execute
-                                connection
-                                "UPDATE claimcore.register_maintenance SET generation=$1,pause_id=$2 WHERE singleton"
-                                [| box after.Generation; DatabaseSession.parameter after.PauseId |]
-                                token
-
-                        if count <> 1 then
-                            raise (RecordCorruptException "Register maintenance state is absent.")
+                    let! after, changed = changeWithinHeadLock connection change token
 
                     do! DatabaseSession.commit transaction token
 
