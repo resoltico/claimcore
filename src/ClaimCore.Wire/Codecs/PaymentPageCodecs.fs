@@ -22,10 +22,9 @@ module PaymentPageCodecs =
             _.Actions
             (list
                 ClientCompositions.paymentActions.Length
-                (enumeration (
-                    ClientCompositions.paymentActions
-                    |> List.map (fun task -> task, TaskId.token task)
-                )))
+                (VocabularyCodec.select
+                    (fun task -> List.contains task ClientCompositions.paymentActions)
+                    TaskVocabulary.vocabulary))
         |> build
         |> named "CasePaymentItem"
 
