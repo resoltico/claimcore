@@ -165,6 +165,7 @@ module internal TextInputs =
             let rec collect completed remaining =
                 match remaining with
                 | [] -> Ok(List.rev completed)
+                | "--" :: rest -> Ok(List.rev completed @ ("--" :: rest))
                 | argument :: rest ->
                     let selected =
                         inputs
@@ -188,6 +189,7 @@ module internal TextInputs =
                             Error [ UsageError.InvalidValue(flag + suffix, value.Value) ]
                         elif
                             (List.rev completed @ tail)
+                            |> VerbOptions.beforeTerminator
                             |> List.exists (fun argument ->
                                 source flag argument |> Option.isSome
                                 || [ "-file"; "-stdin"; "-editor" ]
@@ -229,7 +231,7 @@ module internal TextInputs =
                                             "Normalized text exceeds its retained byte limit."
                                     )
 
-                                collect (prepared :: flag :: completed) tail
+                                collect ((flag + "=" + prepared) :: completed) tail
                             with
                             | :? EditorCleanupFailure ->
                                 Error

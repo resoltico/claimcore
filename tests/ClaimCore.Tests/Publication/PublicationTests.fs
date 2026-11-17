@@ -150,6 +150,42 @@ let private nativePublication () =
             "\"operationId\""
             "The mutation schema retains its identity contract"
 
+        use selected =
+            JsonDocument.Parse(
+                (run executable [ "case"; "get"; "--dry-run"; "--"; "--claim" ]).AsMemory()
+            )
+
+        Expect.equal
+            (selected.RootElement
+                .GetProperty("input")
+                .GetProperty("target")
+                .GetProperty("caseReference")
+                .GetString())
+            "--claim"
+            "The published argv boundary preserves an option-looking reference"
+
+        use draft =
+            JsonDocument.Parse(
+                (run executable [ "note"; "add"; "--dry-run"; "--text=--urgent"; "--"; "--claim" ])
+                    .AsMemory()
+            )
+
+        let input = draft.RootElement.GetProperty("input")
+
+        Expect.equal
+            (input
+                .GetProperty("binding")
+                .GetProperty("target")
+                .GetProperty("caseReference")
+                .GetString())
+            "--claim"
+            "Published offline preparation preserves the selected case"
+
+        Expect.equal
+            (input.GetProperty("inputs").GetProperty("input:noteText").GetString())
+            "--urgent"
+            "Published offline preparation preserves an assigned option-looking value"
+
         printfn
             "Native CLI publication: RID=%s; configuration=%s; apphost/help/schema/notices/source/closure passed."
             rid

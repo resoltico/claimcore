@@ -319,7 +319,7 @@ module internal VerbRunner =
                                 processor.Deliver(
                                     (fun response ->
                                         ReplyText.bytesForWithDetails
-                                            (List.contains "--details" arguments)
+                                            (VerbOptions.hasOption "--details" arguments)
                                             draft.Rendering
                                             (Some frame)
                                             response.Frame),

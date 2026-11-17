@@ -255,6 +255,19 @@ Copied ledger action hints use `--preview`; operational hints use `--dry-run`. H
 supplied binding and do not allocate an operation ID or refresh a reviewed version. Private text is
 represented by acquisition placeholders. The CLI renders the supplied semantic receipt.
 
+Named option values can use `--flag=value`. Use this spelling when a value begins with `--`;
+shell quoting alone does not change option classification. For example,
+`claimcore people list --text='--urgent'` preserves the exact text filter. Repeated choices and
+collection rows use repeated assigned options, such as `--lifecycle=ACTIVE --lifecycle=VOIDED`.
+
+`--` ends option parsing. Put flags before it when a reference looks like an option:
+`claimcore case get --format=json -- --claim` and
+`claimcore case close --expected-revision=7 --preview -- --claim` retain the literal reference
+`--claim`. Tokens after the marker are operands, including `--help` and preference-looking values;
+profile defaults are inserted before the marker. Text acquired from files, stdin or an editor is
+passed as an assigned value and cannot become an option. Contextual read-form hints include required
+acquisition placeholders such as `<operation-id>`; replace the placeholder with the intended value.
+
 ### CLI language and display locale
 
 Human CLI output selects wording independently from dates, times, numbers and money. Use

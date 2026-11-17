@@ -32,12 +32,11 @@ type internal InteractiveDraft =
     member this.Language = this.Rendering.Language
 
 module internal InteractiveReview =
-    let private hasOption name arguments =
-        arguments
-        |> List.exists (fun (value: string) ->
-            value = name || value.StartsWith(name + "=", StringComparison.Ordinal))
+    let private hasOption = VerbOptions.hasOption
 
     let private requestedText arguments =
+        let arguments = VerbOptions.beforeTerminator arguments
+
         let separate =
             arguments
             |> List.pairwise

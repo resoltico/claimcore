@@ -818,17 +818,17 @@ let tests =
 
                     Expect.stringContains
                         hint
-                        "--lifecycle ACTIVE --lifecycle VOIDED"
+                        "--lifecycle=ACTIVE --lifecycle=VOIDED"
                         "Both lifecycle values"
 
                     Expect.stringContains
                         hint
-                        "--status OPENED --status CLOSED"
+                        "--status=OPENED --status=CLOSED"
                         "Both status values"
 
                     Expect.stringContains
                         hint
-                        "--progress DECIDED --progress PARTLY_PAID"
+                        "--progress=DECIDED --progress=PARTLY_PAID"
                         "Both progress values"
 
                     let prepared =
@@ -883,12 +883,12 @@ let tests =
 
                     Expect.stringContains
                         hint
-                        "--responsible-actor '<responsibleActor>'"
+                        "--responsible-actor='<responsibleActor>'"
                         "Assignment is deliberately editable"
 
                     Expect.stringContains
                         hint
-                        "--expected-work-revision 7"
+                        "--expected-work-revision=7"
                         "Observed work version is exact"
 
                     Expect.isFalse
@@ -906,7 +906,7 @@ let tests =
 
                     Expect.stringContains
                         summaryHint
-                        "--handling-summary '<handlingSummary>'"
+                        "--handling-summary='<handlingSummary>'"
                         "Summary update is explicit"
 
                     Expect.isFalse
@@ -1053,9 +1053,11 @@ let tests =
 
                     let rows =
                         words
-                        |> List.pairwise
-                        |> List.choose (fun (flag, value) ->
-                            if flag = "--role" then Some value else None)
+                        |> List.choose (fun word ->
+                            if word.StartsWith("--role=", StringComparison.Ordinal) then
+                                Some(word.Substring(7))
+                            else
+                                None)
 
                     Expect.equal
                         rows
@@ -1069,7 +1071,7 @@ let tests =
 
                     Expect.stringContains
                         hint
-                        "--role '<ROLE[@CASE-REF]>'"
+                        "--role='<ROLE[@CASE-REF]>'"
                         "Row acquisition placeholder is shell-quoted"
 
                     Expect.isFalse

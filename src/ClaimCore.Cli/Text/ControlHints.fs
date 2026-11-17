@@ -78,30 +78,64 @@ module internal ControlHints =
 
         let inputs = CommandGrammar.inputs task
 
-        let args =
-            inputs
-            |> List.collect (fun input ->
-                match Map.tryFind input.Name values with
-                | None -> []
-                | Some values ->
-                    values
-                    |> List.collect (fun value ->
-                        if input.Argument = CommandArgument.Operand then
-                            [ argument value ]
-                        elif input.Argument = CommandArgument.Implicit then
-                            []
+        let values =
+            if (TaskDeclarations.describe task).Kind = ClientTaskKind.Query then
+                inputs
+                |> List.fold
+                    (fun values input ->
+                        if
+                            not input.Required
+                            || Map.containsKey input.Name values
+                            || (input.Name = reference && Map.containsKey TaskInputId.CaseId values)
+                        then
+                            values
                         else
-                            [ flag input.Name; argument value ]))
+                            Map.add
+                                input.Name
+                                [
+                                    "<"
+                                    + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+                                    + ">"
+                                ]
+                                values)
+                    values
+            else
+                values
+
+        let acquire (input: CommandInput) =
+            Map.tryFind input.Name values |> Option.defaultValue []
+
+        let operands =
+            inputs
+            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
+            |> List.collect acquire
+
+        let named =
+            inputs
+            |> List.filter (fun input -> input.Argument = CommandArgument.Named)
+            |> List.collect (fun input ->
+                acquire input |> List.map (fun value -> flag input.Name + "=" + argument value))
 
         let rows =
             CommandGrammar.collections task
             |> List.collect (fun collection ->
                 Map.tryFind collection.Name values
                 |> Option.defaultValue []
-                |> List.collect (fun row ->
-                    [ CommandGrammar.collectionFlag collection; argument row ]))
+                |> List.map (fun row ->
+                    CommandGrammar.collectionFlag collection + "=" + argument row))
 
-        String.concat " " (CommandGrammar.commandText task :: args @ rows @ suffix)
+        let operands =
+            (if
+                 operands
+                 |> List.exists (fun value ->
+                     value.StartsWith("-", System.StringComparison.Ordinal))
+             then
+                 [ "--" ]
+             else
+                 [])
+            @ (operands |> List.map argument)
+
+        String.concat " " (CommandGrammar.commandText task :: named @ rows @ suffix @ operands)
 
     let action (rendering: RenderingContext) (value: Affordance) =
         let task = TaskId.token value.Task
