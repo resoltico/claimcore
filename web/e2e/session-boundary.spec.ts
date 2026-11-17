@@ -202,7 +202,12 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     await expect(readSession(page)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
     });
-    await logout(page);
+    const signedOut = page.waitForResponse(
+      (reply) => new URL(reply.url()).pathname === "/api/session.logout",
+    );
+    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    expect((await signedOut).status()).toBe(200);
+    await expectAnonymousSession(page);
   } finally {
     await other.close();
   }
