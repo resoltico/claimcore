@@ -135,14 +135,26 @@ module OperationSubmissionCodecs =
         | _ -> invalidOp "People binding required."
 
     let binding kind =
-        let version = integer 0L Revision.Maximum
-        let positiveVersion = integer 1L Revision.Maximum
-
         let declaration =
             TaskId.token kind
             |> TaskId.ofLiteral
             |> ClaimCore.Domain.Tasks.Registry.findDeclaration
             |> Option.defaultWith (fun () -> invalidArg (nameof kind) "The task is not declared.")
+
+        let plan = SubmissionDeclarations.binding declaration
+
+        let bounds input =
+            let minimum, maximum =
+                SubmissionDeclarations.integerBounds declaration (TaskInputId.Target input)
+
+            integer minimum maximum
+
+        let version =
+            bounds (
+                plan.Revision
+                |> Option.map _.Input
+                |> Option.defaultValue InputTarget.ExpectedRevision
+            )
 
         let binds input =
             declaration.Inputs
@@ -159,14 +171,14 @@ module OperationSubmissionCodecs =
                     (function
                     | OperationBinding.CaseNew revision -> revision
                     | _ -> invalidOp "New case binding required.")
-                    (integer 0L 0L)
+                    version
                 |> build
             | ActSubject.Case when binds InputTarget.PaymentId ->
                 record (fun target revision payment ->
                     OperationBinding.Case(target, revision, Some payment, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision positiveVersion
+                |> field "expectedRevision" caseRevision version
                 |> field "paymentId" paymentId uuid
                 |> build
             | ActSubject.Case when declaration.ReviewsFamilySequence ->
@@ -174,19 +186,19 @@ module OperationSubmissionCodecs =
                     OperationBinding.Case(target, revision, None, Some family))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision positiveVersion
+                |> field "expectedRevision" caseRevision version
                 |> field
                     "expectedFamilySequence"
                     (function
                     | OperationBinding.Case(_, _, _, Some family) -> family
                     | _ -> invalidOp "Erasure basis required.")
-                    (integer 1L Sequence.Maximum)
+                    (bounds InputTarget.ExpectedFamilySequence)
                 |> build
             | ActSubject.Case ->
                 record (fun target revision -> OperationBinding.Case(target, revision, None, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision positiveVersion
+                |> field "expectedRevision" caseRevision version
                 |> build
             | ActSubject.Work ->
                 record (fun target revision -> OperationBinding.Work(target, revision))
@@ -216,7 +228,7 @@ module OperationSubmissionCodecs =
                 |> fixedField "kind" "REMINDER"
                 |> field "target" reminderTarget RequestCodecs.caseSelector
                 |> field "reminderId" (reminderCurrent >> fst) uuid
-                |> field "expectedRevision" (reminderCurrent >> snd) positiveVersion
+                |> field "expectedRevision" (reminderCurrent >> snd) version
                 |> build
             | ActSubject.People when declaration.Creates ->
                 record (fun revision -> OperationBinding.People(None, revision))
@@ -226,7 +238,7 @@ module OperationSubmissionCodecs =
                     (function
                     | OperationBinding.People(_, revision) -> revision
                     | _ -> invalidOp "People binding required.")
-                    (integer 0L 0L)
+                    version
                 |> build
             | ActSubject.People ->
                 record (fun actor revision -> OperationBinding.People(Some actor, revision))
@@ -237,7 +249,7 @@ module OperationSubmissionCodecs =
                     (function
                     | OperationBinding.People(_, revision) -> revision
                     | _ -> invalidOp "People binding required.")
-                    positiveVersion
+                    version
                 |> build
 
         let shape =

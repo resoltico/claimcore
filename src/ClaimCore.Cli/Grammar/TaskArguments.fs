@@ -114,24 +114,15 @@ module internal TaskArguments =
                                 with
                                 | true, number when
                                     number
-                                    >= (if
-                                            List.contains
-                                                input.Name
-                                                [
-                                                    target InputTarget.ExpectedReminderRevision
-                                                    target InputTarget.ExpectedFamilySequence
-                                                ]
-                                            || (input.Name = target InputTarget.ExpectedRevision
-                                                && (TaskRouting.operationDeclaration kind).Target =
-                                                    ActSubject.People
-                                                && not
-                                                    (TaskRouting.operationDeclaration kind)
-                                                        .Creates)
-                                        then
-                                            1L
-                                        else
-                                            0L)
-                                    && number <= Revision.Maximum
+                                    >= (SubmissionDeclarations.integerBounds
+                                            (TaskRouting.operationDeclaration kind)
+                                            input.Name
+                                        |> fst)
+                                    && number
+                                       <= (SubmissionDeclarations.integerBounds
+                                               (TaskRouting.operationDeclaration kind)
+                                               input.Name
+                                           |> snd)
                                     ->
                                     SubmissionValue.Integer number
                                 | _ ->
@@ -182,7 +173,7 @@ module internal TaskArguments =
 
         let selection () =
             let reference = text (target (InputTarget.Field BusinessField.CaseReference))
-            let id = uuid TaskInputId.CaseId |> Option.bind CaseId.create
+            uuid TaskInputId.CaseId |> ignore
 
             if
                 reference.IsSome
@@ -191,9 +182,17 @@ module internal TaskArguments =
             then
                 problems.Add(UsageError.DuplicateOption "--case-id")
 
-            match id with
-            | Some id when CommandGrammar.selectsExistingCase task -> CaseSelector.Id id
-            | _ -> CaseSelector.Reference(Option.defaultValue "" reference)
+
+            SubmissionAssembly.caseSelection values
+            |> Result.defaultWith (fun _ ->
+                problems.Add(
+                    UsageError.InvalidValue(
+                        flag TaskInputId.CaseId,
+                        text TaskInputId.CaseId |> Option.defaultValue ""
+                    )
+                )
+
+                CaseSelector.Reference "")
 
         let binding =
             SubmissionAssembly.draftBinding

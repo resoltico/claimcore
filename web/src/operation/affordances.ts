@@ -80,7 +80,7 @@ export const initialAffordanceSeeds = (action: OperationAffordance): FormValues 
   const seeds = seedValues(action, declaration);
   const values: Record<string, FormValue> = {};
   for (const input of declaration.inputs) {
-    if (input.mode !== "UPDATE") {
+    if (input.fixedSeed) {
       const value = seeds[input.id];
       if (value !== undefined) {
         values[input.id] = value;

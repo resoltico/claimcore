@@ -9,6 +9,7 @@
 - End all of your ClaimCore browser sessions or, as an owner, a person's sessions; identity-provider sessions and bearer tokens remain valid. Unconfirmed deletion is never retried automatically.
 - Invalid or duplicate reminder URL filters show a recoverable error without losing the signed-in workspace or dispatching a broader reminder query.
 - Summary-only edits omit dormant assignee values, including when assignments are unavailable on a closed case.
+- Native and browser operation acquisition share binding plans, revision bounds and scope defaults; conflicting grant selectors refuse instead of broadening to installation.
 - Download complete bounded CSV for case lists, timelines, reminders and people history; each page rechecks rights, and late failure produces no successful partial file.
 - CLI wording and display locale are independent; --display-locale, CLAIMCORE_DISPLAY_LOCALE and profile displayLocale control dates, numbers, money and counts.
 - Long CLI reviews preserve the previewed identity and installation; operational uncertainty has no ledger journal or automatic retry, and copied hints retain all filters and update choices.

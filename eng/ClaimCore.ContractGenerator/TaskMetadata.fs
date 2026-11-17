@@ -9,12 +9,20 @@ open ClaimCore.Wire
 /// Emit declaration metadata for generic client acquisition.
 module TaskMetadata =
     let internal declarationSource () =
-        let input (value: TaskInputDeclaration) =
+        let input declarations (value: TaskInputDeclaration) =
             {|
                 id = TaskInputId.token value.Input
                 mode = TaskInputMode.token value.Mode
                 source = InputSource.token value.Source
                 clearable = value.Clearable
+                fixedSeed = SubmissionDeclarations.fixedSeed value
+                activeWhen =
+                    SubmissionDeclarations.activation declarations value
+                    |> Option.map (fun (input, selected) ->
+                        {|
+                            input = TaskInputId.token input
+                            value = selected
+                        |})
                 atom = string value.Atom |> _.ToUpperInvariant()
                 multiple = value.Multiple
                 retention = InputRetention.token value.Retention
@@ -55,6 +63,35 @@ module TaskMetadata =
                 creates = creates
                 paged = paged
                 csv = csv
+                binding =
+                    (if kind = "OPERATION" then
+                         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral id)
+                     else
+                         None)
+                    |> Option.map (fun declaration ->
+                        let plan = SubmissionDeclarations.binding declaration
+
+                        let revision (value: SubmissionRevision) =
+                            {|
+                                input = TaskInputId.token (TaskInputId.Target value.Input)
+                                minimum = value.Minimum
+                                maximum = value.Maximum
+                                initial = value.Initial
+                            |}
+
+                        {|
+                            kind = ActSubject.token plan.Subject
+                            selectsCase = plan.SelectsCase
+                            revision = plan.Revision |> Option.map revision
+                            identity =
+                                plan.Identity
+                                |> Option.map (fun input ->
+                                    {|
+                                        input = TaskInputId.token input
+                                        memberName = TaskInputId.key input
+                                    |})
+                            family = plan.Family |> Option.map revision
+                        |})
                 defaults =
                     (if kind = "OPERATION" then
                          ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral id)
@@ -75,7 +112,7 @@ module TaskMetadata =
 
                         TaskInputId.token key, atom)
                     |> Map.ofList
-                inputs = inputs |> List.map input
+                inputs = inputs |> List.map (input inputs)
                 collections =
                     collections
                     |> List.map (fun (collection: TaskCollectionDeclaration) ->
@@ -91,7 +128,7 @@ module TaskMetadata =
                                 |> List.map (fun (input, value) ->
                                     TaskInputId.token input, atom value)
                                 |> Map.ofList
-                            inputs = collection.Inputs |> List.map input
+                            inputs = collection.Inputs |> List.map (input collection.Inputs)
                         |})
             |}
 
@@ -161,6 +198,28 @@ module TaskMetadata =
                     noteEntry = TaskId.token ClientCompositions.noteEntry
                     assignment = TaskId.token ClientCompositions.assignment
                     reminderCreation = TaskId.token ClientCompositions.reminderCreation
+                |}
+            )
+            + " as const;"
+            "export const submissionSelection = "
+            + JsonSerializer.Serialize(
+                {|
+                    scopeInput = TaskInputId.token SubmissionDeclarations.scopeInput
+                    caseIdInput = TaskInputId.token SubmissionDeclarations.caseIdInput
+                    referenceInput = TaskInputId.token SubmissionDeclarations.caseReferenceInput
+                    caseScope = SubmissionDeclarations.caseScope
+                    installationScope = SubmissionDeclarations.installationScope
+                    rules =
+                        SubmissionDeclarations.scopeRules
+                        |> List.map (fun rule ->
+                            {|
+                                scope = rule.Scope
+                                hasScope = rule.Scope.IsSome
+                                hasId = rule.HasId
+                                hasReference = rule.HasReference
+                                kind = rule.Kind
+                                input = rule.Input |> Option.map TaskInputId.token
+                            |})
                 |}
             )
             + " as const;"

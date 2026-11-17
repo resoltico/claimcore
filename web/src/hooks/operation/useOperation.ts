@@ -1,3 +1,4 @@
+import { initialSubmissionBinding } from "../../operation/submissionAssembly";
 import {
   apiEndpoints,
   service,
@@ -85,54 +86,21 @@ const targetKey = (options: Options): string =>
     options.targetIdentity ?? null,
     options.binding !== undefined && "actorId" in options.binding ? options.binding.actorId : null,
   ]);
-const initialBinding = (options: Options): OperationBinding => {
-  if (options.binding !== undefined) {
-    return options.binding;
-  }
-  if (options.subject === "PEOPLE") {
-    return {
-      kind: "PEOPLE",
-      expectedRevision: 0,
-    };
-  }
+const initialBinding = (options: Options, kind: string): OperationBinding => {
+  const task = operationEntry({ subject: options.subject, kind });
   const { current } = options;
-  if (options.subject === "CASE" && current === null) {
-    return {
-      kind: "CASE",
-      expectedRevision: 0,
-    };
-  }
-  if (current === null) {
-    throw new Error("The task requires a current case binding.");
-  }
-  const target = {
-    kind: "ID",
-    caseId: current.subject.caseId,
-  } as const;
-  switch (options.subject) {
-    case "CASE":
-      return {
-        kind: "CASE",
-        target,
-        expectedRevision: current.subject.revision,
-      };
-    case "WORK":
-      return {
-        kind: "WORK",
-        target,
-        expectedRevision: current.subject.workRevision,
-      };
-    case "NOTE":
-      return {
-        kind: "NOTE",
-        target,
-      };
-    case "REMINDER":
-      return {
-        kind: "REMINDER",
-        target,
-      };
-  }
+  return initialSubmissionBinding(task.id, {
+    ...(current === null
+      ? {}
+      : { selection: { kind: "ID", caseId: current.subject.caseId } as const }),
+    values:
+      current === null
+        ? {}
+        : {
+            "input:expectedRevision": current.subject.revision,
+            "input:expectedWorkRevision": current.subject.workRevision,
+          },
+  });
 };
 const suppliedAffordance = (options: Options, kind: string) => {
   const actions = [
@@ -157,7 +125,7 @@ const fresh = (
     binding ??
     (kind === options.kind ? options.binding : undefined) ??
     affordance?.binding ??
-    initialBinding(options);
+    initialBinding(options, kind);
   const values = {
     ...(affordance === undefined ? {} : initialOperationValues(affordance)),
     ...options.prefill,

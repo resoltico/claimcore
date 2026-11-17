@@ -28,6 +28,7 @@
     <Compile Include="EndpointDeclarations.fs" />
     <Compile Include="TaskDeclarations.fs" />
     <Compile Include="ClientCompositions.fs" />
+    <Compile Include="SubmissionDeclarations.fs" />
     <Compile Include="OperationSubmission.fs" />
     <Compile Include="OperationLookup.fs" />
   </ItemGroup>

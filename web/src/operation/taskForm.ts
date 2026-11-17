@@ -1,3 +1,4 @@
+import { mergeSubmissionInputs, submissionDefaults } from "./submissionAssembly";
 import type { OperationAffordance } from "./affordances";
 import {
   type OperationBinding,
@@ -7,7 +8,7 @@ import {
 } from "@contracts/client";
 import { grantFields } from "./grantTargetDraft";
 
-import { operationTask, taskInput } from "../protocol/taskCatalog";
+import { operationTask } from "../protocol/taskCatalog";
 import { isFormCollection, type FormValues } from "../protocol/forms";
 
 export type TaskSubmission = {
@@ -17,21 +18,15 @@ export type TaskSubmission = {
 
 const authoredScalars = (declaration: OperationTaskDefinition, values: FormValues) => {
   values = grantFields(values);
-  const inputs: Record<string, unknown> = {};
+  const inputs: Record<string, FormValues[string]> = {};
   for (const input of declaration.inputs) {
-    const metadata = taskInput(input.id);
-    const group = metadata.group === null ? null : `group:${metadata.group}`;
     const dormant =
-      metadata.kind === "FIELD" &&
-      group !== null &&
-      declaration.inputs.some((candidate) => candidate.id === group) &&
-      values[group] !== "UPDATE";
+      input.activeWhen !== null && values[input.activeWhen.input] !== input.activeWhen.value;
     if (input.source === "AUTHORED" && !dormant && Object.hasOwn(values, input.id)) {
-      inputs[input.id] = values[input.id];
+      inputs[input.id] = values[input.id]!;
     }
   }
-  const defaults: Readonly<Record<string, unknown>> = declaration.defaults;
-  return { ...defaults, ...inputs };
+  return submissionDefaults(declaration, inputs);
 };
 const authoredCollections = (declaration: OperationTaskDefinition, values: FormValues) => {
   const inputs: Record<string, unknown> = {};
@@ -43,13 +38,14 @@ const authoredCollections = (declaration: OperationTaskDefinition, values: FormV
         throw new Error("Collection row keys must be unique.");
       }
       submittedRows[collection.id] = Object.freeze(value.rows.map((row) => row.key));
-      inputs[collection.input] = value.rows.map((row) =>
-        Object.fromEntries(
+      inputs[collection.input] = value.rows.map((row) => {
+        const fields = submissionDefaults(collection, grantFields(row.values));
+        return Object.fromEntries(
           collection.inputs
-            .filter((input) => Object.hasOwn(grantFields(row.values), input.id))
-            .map((input) => [input.id, grantFields(row.values)[input.id]]),
-        ),
-      );
+            .filter((input) => Object.hasOwn(fields, input.id))
+            .map((input) => [input.id, fields[input.id]]),
+        );
+      });
     }
   }
   return { inputs, submittedRows: Object.freeze(submittedRows) };
@@ -67,23 +63,12 @@ export const assembleTask = (
     if (control.task !== task) {
       throw new Error("The selected task does not match its Core control.");
     }
-    const editable = new Set<string>(control.editable);
-    const merged: Record<string, FormValues[string]> = Object.fromEntries(
-      Object.entries(grantFields(values)).filter(
-        ([key]) =>
-          editable.has(key) ||
-          declaration.collections.some(
-            (collection) => collection.id === key && editable.has(collection.input),
-          ),
-      ),
+    values = mergeSubmissionInputs(
+      declaration,
+      grantFields(values),
+      control.editable,
+      control.seeds,
     );
-    for (const [key, value] of Object.entries(control.seeds)) {
-      const input = declaration.inputs.find((candidate) => candidate.id === key);
-      if (!editable.has(key) && input?.mode !== "UPDATE") {
-        merged[key] = value;
-      }
-    }
-    values = merged;
   }
   const collection = authoredCollections(declaration, values);
   const inputs = { ...authoredScalars(declaration, values), ...collection.inputs };

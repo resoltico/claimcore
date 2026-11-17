@@ -60,6 +60,13 @@ retain endpoint-specific automation types.
 
 An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
 `blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+Operation bindings, creation basis, revision bounds, fixed-seed policy, correction-field activation and
+scope-selection defaults are supplied by shared declarations. Native acquisition uses the pure
+`SubmissionAssembly` facade; browser acquisition interprets generated `taskDefinitions.binding`,
+`defaults`, input policies and `submissionSelection`. Explicit authored atoms, including null, false,
+zero and empty text, retain their presence. UPDATE seeds stay display hints until explicitly authored;
+noneditable fixed inputs remain immutable. Missing scope may acquire a default; contradictory selectors
+or explicit installation scope with a case selector refuse instead of widening the grant.
 Operation controls preview and execute; command controls post seeds plus edits to their declared
 endpoint. Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
 `RECOMMENDATION` screen regions.

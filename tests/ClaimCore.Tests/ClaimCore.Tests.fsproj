@@ -201,6 +201,7 @@
     <Compile Include="ContractGenerator/ResponseDecoderTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
     <Compile Include="Contract/OperationSubmissionTests.fs" />
+    <Compile Include="Contract/SubmissionAssemblyTests.fs" />
     <Compile Include="Contract/TaskCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Contract/ResponsibilitySelectionTests.fs" />
