@@ -49,6 +49,16 @@ SELECT pg_temp.expect('infinite follow-up refused',
 UPDATE claimcore.cases SET follow_up=DATE '2027-12-31';
 SELECT pg_temp.expect('erasure must clear follow-up',
     $s$UPDATE claimcore.cases SET state='ERASED',snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,notified_on=NULL,claimed_amount=NULL,claimed_currency=NULL$s$, '23514');
+SELECT pg_temp.expect('profile columns cannot be cleared without current accepted erasure',
+    format($s$UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=%L$s$, :'owner'), 'CC003');
+SELECT pg_temp.expect('durable revision exceeds exact JSON integer envelope',
+    $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
+SELECT pg_temp.expect('durable snapshot exceeds byte envelope',
+    $s$UPDATE claimcore.cases SET snapshot=decode(repeat('01',32769),'hex')$s$, '23514');
+SELECT pg_temp.expect('durable exact numeric precision refuses overflow',
+    $s$UPDATE claimcore.cases SET claimed_amount=1000000000000000000$s$, '22003');
+SELECT pg_temp.expect('retained exact negative amount remains structurally representable',
+    $s$UPDATE claimcore.cases SET claimed_amount=-999999999999999999.9999$s$, '00000');
 SELECT pg_temp.expect('money sign is domain admission rather than structural SQL policy',
     $s$UPDATE claimcore.cases SET claimed_amount=-1$s$, '00000');
 SELECT pg_temp.expect('lowercase claimed currency refused',

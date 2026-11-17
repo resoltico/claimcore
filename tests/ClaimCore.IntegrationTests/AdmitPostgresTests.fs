@@ -29,7 +29,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
         let! before = checkpoint database
 
         do!
-            sql
+            guardedSql
                 database
                 "UPDATE claimcore.actors SET display_name='Resurrected projection',display_name_search='resurrected projection',contact='Wrong contact',contact_search='wrong contact' WHERE actor_id=$1"
                 [| box (id database.Fixture 740) |]

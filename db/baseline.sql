@@ -570,6 +570,46 @@ END;
 $$;
 CREATE CONSTRAINT TRIGGER accepted_profile_erasure_integrity AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.erases_kind='PROFILE') EXECUTE FUNCTION claimcore.profile_erasure_integrity();
 
+-- Derived person rows must retain the private-presence shape proved by the latest immutable part.
+-- Profile presence is the compartment association, never a policy flag copied into retained JSON.
+CREATE FUNCTION claimcore.actor_profile_integrity()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE identity uuid; actor claimcore.actors%ROWTYPE; latest claimcore.ledger_effects%ROWTYPE;
+        last_private claimcore.ledger_effects%ROWTYPE;
+BEGIN
+    IF TG_TABLE_NAME='actors' THEN identity:=NEW.actor_id; ELSE identity:=NEW.part_id; END IF;
+    SELECT * INTO actor FROM claimcore.actors WHERE actor_id=identity;
+    -- Projections can be deleted and reconstructed by maintenance.
+    IF NOT FOUND THEN RETURN NULL; END IF;
+    SELECT * INTO latest FROM claimcore.ledger_effects WHERE part_kind='PERSON' AND part_id=identity ORDER BY revision DESC LIMIT 1;
+    IF NOT FOUND OR latest.aggregate_kind<>'PERSON' OR latest.aggregate_id<>identity OR latest.revision<>actor.revision THEN
+        RAISE EXCEPTION 'actor revision must match its latest accepted person part' USING ERRCODE='CC003';
+    END IF;
+    IF actor.display_name IS NOT NULL THEN
+        IF latest.compartment IS NULL OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_compartments c
+            WHERE c.operation_sequence=latest.operation_sequence AND c.ordinal=latest.compartment
+              AND c.owner_kind='PROFILE' AND c.owner_id=identity AND c.payload IS NOT NULL) THEN
+            RAISE EXCEPTION 'actor private values require their current owner compartment' USING ERRCODE='CC003';
+        END IF;
+    ELSE
+        IF latest.compartment IS NOT NULL THEN
+            RAISE EXCEPTION 'actor private values cannot be cleared while its current part retains a profile' USING ERRCODE='CC003';
+        END IF;
+        SELECT * INTO last_private FROM claimcore.ledger_effects WHERE part_kind='PERSON' AND part_id=identity AND compartment IS NOT NULL
+            ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
+        IF FOUND AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased
+            WHERE erased.erases_kind='PROFILE' AND erased.erases_id=identity
+              AND (erased.operation_sequence,erased.effect_index)>(last_private.operation_sequence,last_private.effect_index)
+              AND (erased.operation_sequence,erased.effect_index)<=(latest.operation_sequence,latest.effect_index)) THEN
+            RAISE EXCEPTION 'actor private clearing requires an accepted erasure covering its latest private part' USING ERRCODE='CC003';
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER actor_profile_integrity AFTER INSERT OR UPDATE ON claimcore.actors DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.actor_profile_integrity();
+CREATE CONSTRAINT TRIGGER accepted_person_profile_integrity AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.part_kind='PERSON') EXECUTE FUNCTION claimcore.actor_profile_integrity();
+
 -- ---------------------------------------------------------------------------------------------
 -- Runtime privileges: the service can append only a complete operation through append_operation.
 -- It cannot directly append or alter accepted structure; owner erasure clears private contents. It can

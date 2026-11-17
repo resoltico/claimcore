@@ -110,6 +110,9 @@ public bindings, retained inputs, effects and erasable owner compartments. SQL c
 revisions, aggregate ownership and authorized clearing; it does not re-derive tasks, roles or business
 bounds. Do not move business vocabulary into SQL.
 
+The [schema integrity inventory](../db/schema-integrity.md) identifies storage guards, their owners
+and direct SQL witnesses.
+
 ## Generated contracts
 
 After changing a declaration, codec, message or language policy:
