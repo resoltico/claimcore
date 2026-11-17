@@ -20,7 +20,7 @@ let private privateText directory name (text: string) =
     File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
     path
 
-let private serviceReply service (token: AccessToken) cancelled =
+let private serviceReply service installationId (token: AccessToken) stage cancelled =
     task {
         let invocation =
             Frames.admit (
@@ -30,11 +30,11 @@ let private serviceReply service (token: AccessToken) cancelled =
             )
             |> Result.defaultWith (fun _ -> failtest "Frame refused.")
 
-        let! reply =
+        let send suppliedInstallation =
             RemoteServiceCall.send
                 service
                 {
-                    InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                    InstallationId = Some suppliedInstallation
                     Service = (Uri "https://localhost:5443/")
                     Authorization = token.Authorization
                 }
@@ -42,11 +42,51 @@ let private serviceReply service (token: AccessToken) cancelled =
                 ignore
                 cancelled
 
+        let fixtureMarker = Guid.Parse "90000000-0000-4000-8000-000000000001"
+
+        let foreignInstallation =
+            if installationId = fixtureMarker then
+                Guid.Parse "90000000-0000-4000-8000-000000000002"
+            else
+                fixtureMarker
+
+        stage "CLI supplied foreign installation refusal"
+        let! refused = send foreignInstallation
+        Expect.equal refused.ExitCode 3 "A supplied foreign installation is a definite refusal"
+
+        match Frames.decode refused.Bytes with
+        | Ok {
+                 Result = FrameResult.HostFailure failure
+             } ->
+            Expect.equal
+                failure.Code
+                HostFailureCode.InstallationMismatch
+                "A valid issuer token cannot bypass the installation binding"
+        | _ -> failtest "Expected the typed installation-mismatch host failure"
+
+        let! reply = send installationId
+
+        let category =
+            match Frames.decode reply.Bytes with
+            | Ok {
+                     Result = FrameResult.HostFailure failure
+                 } -> sprintf "HOST_%A" failure.Code
+            | Ok { Result = FrameResult.LocalFailure _ } -> "LOCAL_FAILURE"
+            | Ok { Result = FrameResult.Reply _ } -> "SERVICE_REPLY"
+            | Error _ -> "FRAME_INVALID"
+
+        stage (sprintf "CLI service dispatch: exit=%d category=%s" reply.ExitCode category)
         Expect.equal reply.ExitCode 0 "CLI token is accepted by real issuer validation at Web"
         Expect.isOk (Frames.decode reply.Bytes) "Service result is decoded by CLI"
     }
 
-let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: CancellationToken) =
+let qualify
+    (server: IdentityServer.Identity)
+    (service: HttpClient)
+    installationId
+    stage
+    (cancelled: CancellationToken)
+    =
     task {
         let directory = Directory.CreateTempSubdirectory("claimcore-cli-identity-").FullName
 
@@ -70,10 +110,13 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
 
             use _owned = trust :> IDisposable
             use identity = new HttpClient(trust.Handler, false)
+            stage "CLI issuer discovery"
             let! metadata = OidcClient.discover identity issuer cancelled
 
             let endpoints =
                 metadata |> Result.defaultWith (fun _ -> failtest "Live discovery refused.")
+
+            stage "CLI token acquisition"
 
             let! acquired =
                 OAuthTokenClient.acquire
@@ -87,8 +130,10 @@ let qualify (server: IdentityServer.Identity) (service: HttpClient) (cancelled: 
                 acquired
                 |> Result.defaultWith (fun _ -> failtest "Live client credentials refused.")
 
-            do! serviceReply service token cancelled
+            do! serviceReply service installationId token stage cancelled
             File.WriteAllText(secretPath, "invalid-synthetic-secret")
+
+            stage "CLI wrong-secret refusal"
 
             let! denied =
                 OAuthTokenClient.acquire
