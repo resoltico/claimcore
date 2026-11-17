@@ -112,14 +112,14 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                 Encoding.UTF8.GetBytes(
                     certificate.ExportCertificatePem() + root.ExportCertificatePem()
                 ),
-                "/opt/keycloak/conf/server.crt",
+                FilePath.Of "/opt/keycloak/conf/server.crt",
                 0u,
                 0u,
                 UnixFileModes.UserRead
             )
             .WithResourceMapping(
                 Encoding.UTF8.GetBytes(key.ExportPkcs8PrivateKeyPem()),
-                "/opt/keycloak/conf/server.key",
+                FilePath.Of "/opt/keycloak/conf/server.key",
                 0u,
                 0u,
                 UnixFileModes.UserRead
@@ -133,7 +133,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                         Unscoped = unscopedSecret
                     }
                     password,
-                "/opt/keycloak/data/import/realm.json"
+                FilePath.Of "/opt/keycloak/data/import/realm.json"
             )
             .WithResourceMapping(
                 IdentityRealm.bytes
@@ -149,7 +149,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                         Unscoped = unscopedSecret
                     }
                     password,
-                "/opt/keycloak/data/import/foreign.json"
+                FilePath.Of "/opt/keycloak/data/import/foreign.json"
             )
             .WithCommand(
                 "start-dev",
