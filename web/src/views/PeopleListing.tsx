@@ -1,3 +1,5 @@
+import { apiEndpoints, type ApiResult, type ServiceResponse } from "../api/service";
+import { personLinkActorId } from "../routing/coreLinks";
 import type { RegionRow, ActorListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 import { PageTables } from "../ui/PageTables";
@@ -10,11 +12,11 @@ import { queryInput, taskInput } from "../protocol/taskCatalog";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
-import type { ApiResult, ServiceResponse } from "../api/service";
+
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
-const peoplePage = (response: ServiceResponse<"people.list">) => {
+const peoplePage = (response: ServiceResponse<typeof apiEndpoints.peopleList>) => {
   if (response.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -54,20 +56,18 @@ const usePeoplePage = (
     [filter.text, filter.role],
   );
   const restored = useCallback(
-    (result: ApiResult<ServiceResponse<"people.list">>) => {
+    (result: ApiResult<ServiceResponse<typeof apiEndpoints.peopleList>>) => {
       if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
         onDisclosureRestored("listing");
       }
     },
     [onDisclosureRestored],
   );
-  return useEndpointPage<"people.list", Actor, NonNullable<ReturnType<typeof peoplePage>>>(
-    "people.list",
-    input,
-    peoplePage,
-    onDisclosureRefused,
-    restored,
-  );
+  return useEndpointPage<
+    typeof apiEndpoints.peopleList,
+    Actor,
+    NonNullable<ReturnType<typeof peoplePage>>
+  >(apiEndpoints.peopleList, input, peoplePage, onDisclosureRefused, restored);
 };
 const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => {
   const p = usePresentation();
@@ -77,16 +77,17 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
       <PageTables
         labelledBy={props.titleId ?? "people-actors-title"}
         views={page.views}
-        linkNavigation={(link) =>
-          link.endpoint === "people.grants"
-            ? {
-                id: `actor-grants-${link.input.actorId}`,
+        linkNavigation={(link) => {
+          const actor = personLinkActorId(link);
+          return actor === undefined
+            ? undefined
+            : {
+                id: `actor-grants-${actor}`,
                 follow: () => {
-                  props.onSelect(link.input.actorId);
+                  props.onSelect(actor);
                 },
-              }
-            : undefined
-        }
+              };
+        }}
       />
       {page.message === null ? null : (
         <p role="alert">
@@ -97,7 +98,7 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
         <PageStatus
           empty={page.items.length === 0}
           cursor={page.cursor}
-          emptyMessage="ui.noAccessibleActors"
+          emptyMessage="label.noPeople"
         />
       ) : null}
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
@@ -126,7 +127,7 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
 };
 
 const directorySearch = taskInput("input:directorySearch");
-const roleFilter = queryInput("people.list", "input:roleFilter");
+const roleFilter = queryInput(apiEndpoints.peopleList, "input:roleFilter");
 export const PeopleListing = (props: ListingProps) => {
   const p = usePresentation();
   const [draft, setDraft] = useState<DirectoryFilter>({ text: "", role: "" });
@@ -135,7 +136,7 @@ export const PeopleListing = (props: ListingProps) => {
     <section>
       {props.titleId === undefined ? (
         <h2 id="people-actors-title" tabIndex={-1}>
-          {p.text("ui.shell.people")}
+          {p.text("view.PEOPLE.label")}
         </h2>
       ) : null}
       <form

@@ -16,7 +16,7 @@ import "./unconfirmed.css";
 
 const stateLabels = {
   CHECKING: "ui.checking",
-  RECORDED: "ui.stage.recorded",
+  RECORDED: "label.recorded",
   NOT_RECORDED: "label.notRecorded",
 } as const;
 

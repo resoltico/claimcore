@@ -14,18 +14,22 @@ let private change language transform =
 let private invalidCatalogs () =
     for language, transform in
         [
-            "lv", List.filter (fst >> (<>) "ui.cases")
+            "lv", List.filter (fst >> (<>) "label.cases")
             "ar",
             List.map (fun (key, value) ->
-                key, if key = "ui.cases" then value + " {extra}" else value)
+                key, if key = "label.cases" then value + " {extra}" else value)
             "en",
             List.map (fun (key, value) ->
                 key,
-                if key = "ui.cases" then
+                if key = "label.cases" then
                     "{count, plural, one {case} other {cases}}"
                 else
                     value)
         ] do
+        Expect.isTrue
+            (AuthoredMessages.all()[language] |> List.exists (fst >> (=) "label.cases"))
+            "The negative control must mutate a current catalog key"
+
         Expect.throws
             (fun () -> change language transform |> CatalogValidation.validateCatalogs |> ignore)
             "Generation rejects broken language/argument/grammar contracts"

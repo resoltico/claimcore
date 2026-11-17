@@ -56,7 +56,7 @@ module OperationSubmissionCodecs =
             scalar input)
         |> fieldMapWithPresence
 
-    let private inputs (declaration: TaskDeclaration) =
+    let private inputs (declaration: ClientTaskDeclaration) =
         let members =
             declaration.Inputs
             |> List.filter (fun input -> input.Source = InputSource.Authored)
@@ -74,41 +74,13 @@ module OperationSubmissionCodecs =
                 let codec =
                     inputMap collection.Inputs
                     |> boundedList
-                        (TaskCollectionId.minimumRows collection.Collection)
+                        (collection.MinimumRows)
                         (TaskCollectionId.maximumRows collection.Collection)
                     |> map SubmissionValue.Rows (function
                         | SubmissionValue.Rows rows -> rows
                         | _ -> invalidOp "Collection task input required.")
 
                 input, TaskInputId.token input, false, codec)
-
-        fieldMapWithPresence (members @ collections)
-
-    /// Prefill is partial, including collection rows that the user has not completed yet.
-    let seedInputs (declaration: TaskDeclaration) =
-        let members =
-            declaration.Inputs
-            |> List.map (fun input ->
-                input.Input, TaskInputId.token input.Input, true, scalar input)
-
-        let collections =
-            declaration.Collections
-            |> List.map (fun collection ->
-                let input = TaskCollectionId.input collection.Collection
-
-                let row =
-                    collection.Inputs
-                    |> List.map (fun input ->
-                        input.Input, TaskInputId.token input.Input, true, scalar input)
-                    |> fieldMapWithPresence
-
-                let codec =
-                    boundedList 0 (TaskCollectionId.maximumRows collection.Collection) row
-                    |> map SubmissionValue.Rows (function
-                        | SubmissionValue.Rows rows -> rows
-                        | _ -> invalidOp "Collection seed required.")
-
-                input, TaskInputId.token input, true, codec)
 
         fieldMapWithPresence (members @ collections)
 
@@ -166,22 +138,43 @@ module OperationSubmissionCodecs =
         let version = integer 0L Revision.Maximum
         let positiveVersion = integer 1L Revision.Maximum
 
+        let declaration =
+            TaskId.token kind
+            |> TaskId.ofLiteral
+            |> ClaimCore.Domain.Tasks.Registry.findDeclaration
+            |> Option.defaultWith (fun () -> invalidArg (nameof kind) "The task is not declared.")
+
+        let binds input =
+            declaration.Inputs
+            |> List.exists (fun item ->
+                item.Input = TaskInputId.Target input && item.Source = InputSource.Binding)
+
         let built =
-            match kind with
-            | ActKind.Case CaseActKind.RemovePayment ->
+            match declaration.Target with
+            | ActSubject.Case when declaration.Creates ->
+                record OperationBinding.CaseNew
+                |> fixedField "kind" "CASE"
+                |> field
+                    "expectedRevision"
+                    (function
+                    | OperationBinding.CaseNew revision -> revision
+                    | _ -> invalidOp "New case binding required.")
+                    (integer 0L 0L)
+                |> build
+            | ActSubject.Case when binds InputTarget.PaymentId ->
                 record (fun target revision payment ->
                     OperationBinding.Case(target, revision, Some payment, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision version
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> field "paymentId" paymentId uuid
                 |> build
-            | ActKind.Case CaseActKind.Erase ->
+            | ActSubject.Case when declaration.ReviewsFamilySequence ->
                 record (fun target revision family ->
                     OperationBinding.Case(target, revision, None, Some family))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field "expectedRevision" caseRevision version
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> field
                     "expectedFamilySequence"
                     (function
@@ -189,38 +182,35 @@ module OperationSubmissionCodecs =
                     | _ -> invalidOp "Erasure basis required.")
                     (integer 1L Sequence.Maximum)
                 |> build
-            | ActKind.Case task ->
+            | ActSubject.Case ->
                 record (fun target revision -> OperationBinding.Case(target, revision, None, None))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
-                |> field
-                    "expectedRevision"
-                    caseRevision
-                    (if task = CaseActKind.Open then integer 0L 0L else version)
+                |> field "expectedRevision" caseRevision positiveVersion
                 |> build
-            | ActKind.Work _ ->
+            | ActSubject.Work ->
                 record (fun target revision -> OperationBinding.Work(target, revision))
                 |> fixedField "kind" "WORK"
                 |> field "target" workTarget RequestCodecs.caseSelector
                 |> field "expectedRevision" workRevision version
                 |> build
-            | ActKind.Note NoteActKind.AddNote ->
+            | ActSubject.Note when declaration.Creates ->
                 record (fun target -> OperationBinding.Note(target, None))
                 |> fixedField "kind" "NOTE"
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> build
-            | ActKind.Note NoteActKind.RemoveNote ->
+            | ActSubject.Note ->
                 record (fun target note -> OperationBinding.Note(target, Some note))
                 |> fixedField "kind" "NOTE"
                 |> field "target" noteTarget RequestCodecs.caseSelector
                 |> field "noteId" noteId uuid
                 |> build
-            | ActKind.Reminder ReminderActKind.Create ->
+            | ActSubject.Reminder when declaration.Creates ->
                 record (fun target -> OperationBinding.Reminder(target, None))
                 |> fixedField "kind" "REMINDER"
                 |> field "target" reminderTarget RequestCodecs.caseSelector
                 |> build
-            | ActKind.Reminder _ ->
+            | ActSubject.Reminder ->
                 record (fun target id revision ->
                     OperationBinding.Reminder(target, Some(id, revision)))
                 |> fixedField "kind" "REMINDER"
@@ -228,7 +218,7 @@ module OperationSubmissionCodecs =
                 |> field "reminderId" (reminderCurrent >> fst) uuid
                 |> field "expectedRevision" (reminderCurrent >> snd) positiveVersion
                 |> build
-            | ActKind.People(PeopleActKind.Register | PeopleActKind.Admit) ->
+            | ActSubject.People when declaration.Creates ->
                 record (fun revision -> OperationBinding.People(None, revision))
                 |> fixedField "kind" "PEOPLE"
                 |> field
@@ -238,7 +228,7 @@ module OperationSubmissionCodecs =
                     | _ -> invalidOp "People binding required.")
                     (integer 0L 0L)
                 |> build
-            | ActKind.People _ ->
+            | ActSubject.People ->
                 record (fun actor revision -> OperationBinding.People(Some actor, revision))
                 |> fixedField "kind" "PEOPLE"
                 |> field "actorId" actorId uuid
@@ -250,41 +240,63 @@ module OperationSubmissionCodecs =
                     positiveVersion
                 |> build
 
-        built |> named ("OperationBinding." + ActKind.token kind)
+        let shape =
+            match TaskDeclaration.bindingShape declaration with
+            | BindingShape.CaseNew -> "CASE.new"
+            | BindingShape.Case -> "CASE"
+            | BindingShape.CasePayment -> "CASE.payment"
+            | BindingShape.CaseErase -> "CASE.erase"
+            | BindingShape.Work -> "WORK"
+            | BindingShape.ReminderNew -> "REMINDER.new"
+            | BindingShape.Reminder -> "REMINDER"
+            | BindingShape.NoteNew -> "NOTE.new"
+            | BindingShape.Note -> "NOTE"
+            | BindingShape.PeopleNew -> "PEOPLE.new"
+            | BindingShape.People -> "PEOPLE"
+
+        built |> named ("Binding." + shape)
 
     let submission =
         let variants =
-            TaskId.all
-            |> List.choose (function
-                | TaskId.Operation kind ->
-                    let declaration = TaskDeclarations.describe (TaskId.Operation kind)
+            TaskVocabulary.client
+            |> List.map (fun kind ->
+                let declaration = TaskDeclarations.describe (TaskId.token kind)
 
-                    let fields =
-                        record (fun operation binding values -> operation, binding, values)
-                        |> field "operationId" (fun (id, _, _) -> id) uuid
-                        |> field "binding" (fun (_, binding, _) -> binding) (binding kind)
-                        |> field
-                            "inputs"
-                            (fun (_, _, values) -> values)
-                            (inputs declaration |> named ("OperationInputs." + ActKind.token kind))
+                let fields =
+                    record (fun operation binding values -> operation, binding, values)
+                    |> field "operationId" (fun (id, _, _) -> id) uuid
+                    |> field "binding" (fun (_, binding, _) -> binding) (binding kind)
+                    |> field
+                        "inputs"
+                        (fun (_, _, values) -> values)
+                        (inputs declaration
+                         |> named (
+                             if
+                                 declaration.Collections.IsEmpty
+                                 && (declaration.Inputs
+                                     |> List.forall (fun input ->
+                                         input.Source <> InputSource.Authored))
+                             then
+                                 "Empty"
+                             else
+                                 "OperationInputs." + TaskId.token kind
+                         ))
 
-                    variant
-                        (ActKind.token kind)
-                        (fun (operation, binding, values) ->
-                            {
-                                SubmissionEnvelope.OperationId = operation
-                                Task = kind
-                                Binding = binding
-                                Inputs = values
-                            })
-                        (fun (submission: SubmissionEnvelope<int64, System.Guid>) ->
-                            if submission.Task = kind then
-                                Some(submission.OperationId, submission.Binding, submission.Inputs)
-                            else
-                                None)
-                        fields
-                    |> Some
-                | _ -> None)
+                variant
+                    (TaskId.token kind)
+                    (fun (operation, binding, values) ->
+                        {
+                            SubmissionEnvelope.OperationId = operation
+                            Task = kind
+                            Binding = binding
+                            Inputs = values
+                        })
+                    (fun (submission: SubmissionEnvelope<int64, System.Guid>) ->
+                        if submission.Task = kind then
+                            Some(submission.OperationId, submission.Binding, submission.Inputs)
+                        else
+                            None)
+                    fields)
 
         taggedOn "task" "OperationSubmission" variants
         |> interpret

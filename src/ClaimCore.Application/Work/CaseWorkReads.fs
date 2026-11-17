@@ -1,6 +1,14 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Domain.Tasks
 open ClaimCore.Application.Contracts
 
 /// Current account labels/availability are batched for the page under its read snapshot.
@@ -48,7 +56,7 @@ module internal CaseWorkReads =
                  |> Option.map (HandlingSummary.format >> TextSearch.normalize))
 
     let viewsFromSummaries
-        (tx: IReadTx)
+        (tx: ReadTx)
         (basis: WorkDateBasis)
         (records: StoredCase list)
         (summaries: Map<CaseId, CaseWorkSummary>)
@@ -62,7 +70,7 @@ module internal CaseWorkReads =
                     |> Option.bind (fun snapshot ->
                         snapshot.Work.Responsible |> Option.map (fun actor -> id, actor)))
 
-            let! accounts = tx.AssignedAccounts assignments
+            let! accounts = WorkReads.assignedAccounts tx assignments
 
             let authorIds =
                 summaries
@@ -72,7 +80,7 @@ module internal CaseWorkReads =
                 |> Seq.distinct
                 |> Seq.toList
 
-            let! authors = tx.ActorRefs authorIds
+            let! authors = PeopleReads.actorRefs tx authorIds
             let mutable result = Ok Map.empty
 
             for record in records do
@@ -176,9 +184,11 @@ module internal CaseWorkReads =
             return result
         }
 
-    let views (tx: IReadTx) (basis: WorkDateBasis) (records: StoredCase list) =
+    let views (tx: ReadTx) (basis: WorkDateBasis) (records: StoredCase list) =
         task {
-            let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
+            let! summaries =
+                WorkReads.workSummaries tx (records |> List.map _.CaseId, basis.BusinessDate)
+
             return! viewsFromSummaries tx basis records summaries
         }
 
@@ -191,30 +201,58 @@ module internal CaseWorkReads =
     let canAssign principal actor paused (snapshot: CaseSnapshot) =
         CaseWorkPolicy.canAssign principal actor paused snapshot
 
-    let reminderActs principal actor maintenance lifecycle status value =
-        let permitted =
-            not maintenance
-            && lifecycle = Lifecycle.Active
-            && (CaseWorkPolicy.authorize principal actor (Reminder.caseId value) |> Result.isOk)
+    let families (tx: ReadTx) ids =
+        task {
+            let mutable families = Map.empty
 
-        if not permitted then
-            []
-        else
-            [
-                ReminderActKind.Update
-                ReminderActKind.Complete
-                ReminderActKind.CompleteAndPlanNext
-                ReminderActKind.Cancel
-                ReminderActKind.Reopen
-            ]
-            |> List.filter (fun act ->
-                (ReminderState.after act (Some(Reminder.state value))).IsSome
-                && (not (ReminderState.requiresOpen act) || status = Some CaseStatus.Opened))
+            for id in List.distinct ids do
+                let! state = AggregateStorage.familyForReminders tx id
+
+                match state with
+                | Some(state, _, _) -> families <- Map.add id state families
+                | None -> ()
+
+            return families
+        }
+
+    let reminderActs principal actor maintenance (family: CaseFamily option) value =
+        match family with
+        | None -> []
+        | Some family ->
+            let environment =
+                {
+                    FamilyEnvironment.Requester = actor
+                    RequesterPrincipal = principal
+                    Maintenance = maintenance
+                    AssigneeEligible = fun _ -> false
+                }
+
+            let binding =
+                Binding.Reminder(
+                    CaseSelector.Id family.Id,
+                    Reminder.id value,
+                    Reminder.revision value
+                )
+
+            Registry.all
+            |> List.choose (function
+                | Task.Family task when
+                    task.Declaration.Exposure = TaskExposure.Client
+                    && task.Declaration.Target = ActSubject.Reminder
+                    && not task.Declaration.Creates
+                    ->
+                    let availability = task.Availability environment (Some family) binding
+
+                    if availability.Blocked.IsNone then
+                        Some(TaskOffer.Available(task.Declaration.Id, binding, availability))
+                    else
+                        None
+                | _ -> None)
 
     /// A bounded set of current pending rows under the same authorized case-read snapshot.
     let nextActions
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (work: CaseWorkView)
         (actor: AccessView)
         maintenance
@@ -226,7 +264,8 @@ module internal CaseWorkReads =
             match actor.Actor with
             | Some requester when CaseState.lifecycle record.Snapshot.State <> Lifecycle.Erased ->
                 let! page =
-                    tx.ReminderPage
+                    ReminderReads.reminderPage
+                        tx
                         {
                             Selection =
                                 {
@@ -258,7 +297,11 @@ module internal CaseWorkReads =
                         }
 
                 let! authors =
-                    tx.ActorRefs(page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
+                    PeopleReads.actorRefs
+                        tx
+                        (page.Items |> List.map _.Stored.RecordedBy |> List.distinct)
+
+                let! currentFamilies = families tx [ record.CaseId ]
 
                 return
                     page.Items
@@ -286,13 +329,12 @@ module internal CaseWorkReads =
                                     Responsible = work.Responsible
                                     RecordedAt = row.Stored.RecordedAt
                                     RecordedBy = author
-                                    Acts =
+                                    Offers =
                                         reminderActs
                                             services.Principal
                                             actor
                                             maintenance
-                                            row.Lifecycle
-                                            row.Status
+                                            (Map.tryFind row.Stored.CaseId currentFamilies)
                                             reminder
                                     Active = active
                                     Timing = ReminderDue.at basis.BusinessDate active reminder

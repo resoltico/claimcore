@@ -1,6 +1,6 @@
+import { mutationUncertain } from "../../../src/protocol/delivery";
 import { afterEach, it, expect, vi } from "vitest";
 import {
-  isMutationUncertain,
   type ApiResult,
   type EndpointOutcome,
   service,
@@ -19,9 +19,9 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
       },
     },
   };
-  expect(isMutationUncertain(unknown)).toBe(true);
+  expect(mutationUncertain(unknown)).toBe(true);
   expect(
-    isMutationUncertain({
+    mutationUncertain({
       kind: "outcome",
       status: 200,
       value: {
@@ -39,7 +39,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
     }),
   ).toBe(false);
   expect(
-    isMutationUncertain({
+    mutationUncertain({
       kind: "deliveryFailure",
       notice: {
         kind: "local",
@@ -139,7 +139,7 @@ it("checks the typed execute operation echo before accepting delivery", async ()
   );
   const result = await service.execute(prepared(), "csrf", installation);
   expect(result.kind).toBe("deliveryFailure");
-  expect(isMutationUncertain(result)).toBe(true);
+  expect(mutationUncertain(result)).toBe(true);
 });
 it("lookup keeps its installation binding and rejects an operation echo mismatch", async () => {
   vi.stubGlobal("fetch", vi.fn());

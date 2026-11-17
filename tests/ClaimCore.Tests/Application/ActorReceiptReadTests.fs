@@ -4,6 +4,10 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 
@@ -38,7 +42,9 @@ let tests =
                         "An absent authorized account cannot become an invented erased or unknown name"
 
                     let other =
-                        Inputs.namedActorReference (CaseFixtures.actorId (id 92)) "Wrong person"
+                        DomainInputs.namedActorReference
+                            (CaseFixtures.actorId (id 92))
+                            "Wrong person"
 
                     Expect.equal
                         (CaseWorkReadModels.snapshot

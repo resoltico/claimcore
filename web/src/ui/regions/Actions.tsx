@@ -14,15 +14,19 @@ export const Actions = ({
   onAction,
   actionPresentation,
   compact = false,
+  descriptiveLabel = !compact,
   disabled = false,
   expandOther = false,
+  prominent = false,
 }: {
   actions: ReadonlyArray<Affordance>;
   actionPresentation?: ActionPresentation;
   onAction?: (action: Affordance, originId?: string) => void;
   compact?: boolean;
+  descriptiveLabel?: boolean;
   disabled?: boolean;
   expandOther?: boolean;
+  prominent?: boolean;
 }) => {
   const p = usePresentation();
   const id = useId();
@@ -38,16 +42,17 @@ export const Actions = ({
         ) : (
           <ButtonControl
             id={originId}
-            className={action.primary ? "primary" : ""}
+            className={prominent ? "primary" : ""}
             data-act={action.task}
+            data-consequence={task.consequence}
             isDisabled={disabled || action.blocked !== null}
             aria-label={
-              compact
-                ? label
-                : p.text("ui.actDescription", {
+              descriptiveLabel
+                ? p.text("ui.actDescription", {
                     label,
                     meaning: renderCatalogKey(p, task.meaningId),
                   })
+                : label
             }
             onPress={() => {
               onAction(action, originId);
@@ -64,13 +69,11 @@ export const Actions = ({
       </span>
     );
   };
-  const primary = actions.find((action) => action.primary);
-  const other = actions.filter((action) => !action.primary);
-  if (compact) {
+  if (compact || prominent) {
     return <div className="actions">{actions.map(button)}</div>;
   }
   const alternatives = expandOther ? (
-    <div className="case-action-alternatives">{other.map(button)}</div>
+    <div className="case-action-alternatives">{actions.map(button)}</div>
   ) : (
     <details className="case-actions">
       <summary>{p.text("ui.moreCaseActions")}</summary>
@@ -80,15 +83,14 @@ export const Actions = ({
         role="region"
         aria-label={p.text("label.availableActs")}
       >
-        <div className="actions">{other.map(button)}</div>
+        <div className="actions">{actions.map(button)}</div>
       </div>
     </details>
   );
   return (
     <div className="region-actions">
       <h2 className="sr-only">{p.text("label.availableActs")}</h2>
-      {primary === undefined ? null : button(primary)}
-      {other.length === 0 ? null : alternatives}
+      {actions.length === 0 ? null : alternatives}
     </div>
   );
 };

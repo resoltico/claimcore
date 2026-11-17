@@ -14,6 +14,10 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 open ClaimCore.IntegrationTests.DiagnosticWitnesses
@@ -91,7 +95,7 @@ let private completeVocabulary () =
 
         let expectedFields =
             // Closed enums are admitted by the protocol. Technical count saturation is
-            // exercised by an actual pure Domain request; other state witnesses use PostgreSQL.
+            // checked at the financial owner and codec independently; other state witnesses use PostgreSQL.
             (InputTarget.all
              |> List.filter (fun (target, _) ->
                  match target with
@@ -128,20 +132,31 @@ let private missingCasePrivacy () =
         let acts =
             stateScenarios ()
             |> List.collect (fun (setup, final) -> final :: setup)
-            |> List.filter (fun act -> CaseAct.kind act <> CaseActKind.Open)
+            |> List.filter (fun (taskName, _) -> taskName <> "case.open")
 
-        let kinds = acts |> List.map CaseAct.kind |> Set.ofList
+        let kinds = acts |> List.map fst |> Set.ofList
 
         let expected =
-            CaseActKind.all
-            |> List.filter (fun kind -> kind <> CaseActKind.Open)
+            [
+                "case.amendRegistration"
+                "case.correct"
+                "case.decide"
+                "case.withdrawDecision"
+                "case.recordPayment"
+                "case.removePayment"
+                "case.void"
+                "case.reinstate"
+                "case.close"
+                "case.reopen"
+                "case.erase"
+            ]
             |> Set.ofList
 
         Expect.equal kinds expected "Every non-OPEN operation is exercised against an absent case"
 
-        for index, act in List.indexed acts do
+        for index, (taskName, values) in List.indexed acts do
             let! outcome =
-                execute actor (actRequest fixture (100 + index) "MISSING" 1L act)
+                execute actor (request fixture (100 + index) "MISSING" 1L taskName values)
                 |> Async.AwaitTask
 
             Expect.equal
@@ -160,7 +175,7 @@ let tests =
         "public refusal reachability"
         [
             testCaseAsync
-                "all diagnostics and fields have actual core request witnesses"
+                "diagnostics have request witnesses except independently checked integer saturation"
                 (completeVocabulary ())
             testCaseAsync "absent case execution preserves resource privacy" (missingCasePrivacy ())
         ]

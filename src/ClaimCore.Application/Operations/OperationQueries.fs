@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.RecordFormat
@@ -7,60 +13,52 @@ open ClaimCore.Application.Contracts
 
 /// Absence becomes final only after confirmation under the same head lock as execution.
 module internal OperationQueries =
-    let private receipt (services: ServiceContext) (tx: IReadTx) operation discloseForeign =
+    let private receipt (services: ServiceContext) (tx: ReadTx) operation discloseForeign =
         task {
-            let! entry = tx.FindOperation operation
-            let! caller = ExecutionFacts.people tx services.Principal []
+            let! entry =
+                OperationStorage.find tx.Connection tx.InstallationId operation tx.CancellationToken
 
-            match caller.Actor with
-            | _ when not (Access.validActor services.Principal caller) ->
+            let! person = AggregateStorage.principal tx services.Principal
+
+            let caller =
+                person
+                |> Option.map ClaimCore.Domain.Aggregates.Person.access
+                |> AccessView.ofActor
+
+            if not (Access.validActor services.Principal caller) then
                 return QueryResults.unavailable
-            | None -> return QueryResults.unavailable
-            | Some requester ->
-                match entry with
-                | Some entry when entry.OperationId <> operation ->
-                    return Outcome.Failed CoreFault.StoreIntegrityError
-                | Some entry when entry.ActorId = requester.ActorId || discloseForeign ->
-                    let! actor = ExecutionFacts.operationActor tx services.Principal (Some entry)
-                    let own = entry.ActorId = requester.ActorId
+            else
+                match entry, caller.Actor with
+                | Some entry, Some requester when entry.Root.Header.OperationId = operation ->
+                    let own = entry.Root.Header.ActorId = requester.ActorId
 
-                    if not (Access.validActor services.Principal actor) then
-                        if own then
-                            return QueryResults.unavailable
-                        else
-                            return Outcome.Succeeded None
-                    elif
+                    if
                         not own
-                        && not (
-                            LedgerEntries.canObserve
-                                services.Principal
-                                actor
-                                (LedgerEntries.primary entry).Subject
-                        )
+                        && (not discloseForeign
+                            || not (
+                                Engine.canObserve
+                                    services.Principal
+                                    caller
+                                    entry.Changes.Head.Aggregate
+                            ))
                     then
                         return Outcome.Succeeded None
                     else
-                        // Do not read or decode a hidden foreign case's content to establish own absence.
-                        let! current = ExecutionFacts.receiptCurrent tx (Some entry)
-                        let! authors = tx.ActorRefs [ entry.ActorId ]
-                        let! named = ReceiptReads.existing services tx actor current (Some entry)
+                        let! receipt =
+                            ReceiptReads.read
+                                (ServiceContext.basis services tx.ObservedAt)
+                                services.Principal
+                                caller
+                                tx
+                                entry
 
                         return
-                            named
-                            |> Result.bind (fun current ->
-                                LedgerEntries.validateOperation services.InstallationId entry
-                                |> Result.bind (
-                                    LedgerEntries.receiptOperation
-                                        (ServiceContext.basis services tx.ObservedAt)
-                                        services.Principal
-                                        actor
-                                        (Map.tryFind entry.ActorId authors)
-                                        current
-                                ))
+                            receipt
                             |> Result.map (fun receipt ->
                                 Some(OperationLookupResult.Accepted(receipt, own)))
                             |> Outcome.ofResult
-                | _ -> return Outcome.Succeeded None
+                | Some _, _ -> return Outcome.Failed CoreFault.StoreIntegrityError
+                | None, _ -> return Outcome.Succeeded None
         }
 
     let private confirm (services: ServiceContext) operation token =
@@ -77,7 +75,7 @@ module internal OperationQueries =
                                     | Outcome.Succeeded(Some accepted) ->
                                         return Verdict.Proceed accepted
                                     | Outcome.Succeeded None ->
-                                        let! frontier = tx.ExpiredBefore()
+                                        let! frontier = RegisterReads.expiredBefore tx ()
 
                                         if OperationLifetime.expiredBefore frontier operation then
                                             return Verdict.Proceed OperationLookupResult.NotAccepted
@@ -144,7 +142,7 @@ module internal OperationQueries =
                                 fun tx ->
                                     task {
                                         let! found = receipt services tx operation true
-                                        let! frontier = tx.ExpiredBefore()
+                                        let! frontier = RegisterReads.expiredBefore tx ()
                                         return tx.ObservedAt, frontier, found
                                     }
                             CancellationToken = token

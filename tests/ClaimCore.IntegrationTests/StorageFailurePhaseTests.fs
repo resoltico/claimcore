@@ -8,12 +8,16 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -88,11 +92,17 @@ let private controls (database: PostgresFixture.Database) =
                 [||]
 
         let execute number =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture number sensitive 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (number)
+                    (sensitive)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let safe (reply: ExecuteReply) =

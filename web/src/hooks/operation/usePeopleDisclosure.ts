@@ -1,3 +1,4 @@
+import type { apiEndpoints } from "../../api/service";
 import { useCallback, useRef, useState } from "react";
 import type { Notice } from "../../protocol/notices";
 
@@ -36,7 +37,7 @@ export const usePeopleDisclosure = () => {
     [invalidate, revision],
   );
   const restored = useCallback(
-    (source: "context" | "listing") => {
+    (source: typeof apiEndpoints.context | "listing") => {
       if (control.current.revision === revision) {
         control.current[source] = true;
         if (control.current.context && control.current.listing) {

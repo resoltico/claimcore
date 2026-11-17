@@ -55,6 +55,7 @@ const RegionActions = ({
   <Actions
     disabled={actionsDisabled ?? false}
     actions={region.actions ?? []}
+    prominent={region.role === "RECOMMENDATION"}
     {...(onAction === undefined
       ? {}
       : {
@@ -63,6 +64,7 @@ const RegionActions = ({
           },
         })}
     compact
+    descriptiveLabel
   />
 );
 export const RegionView = ({

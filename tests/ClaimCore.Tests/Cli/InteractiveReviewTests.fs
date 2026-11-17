@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -55,21 +56,28 @@ let private caseReply =
                 Count = 0L
                 CanAdd = false
             }
-        ChangedAt = Inputs.workBasis.ObservedAt
+        ChangedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-        Stages = Inputs.stageDisplay current.State
+        Stages = DomainInputs.stageDisplay current.State
         Snapshot = current
         Headline = CaseHeadline.Undecided
         Attention = []
         Advice =
-            let offers = [ CaseActKind.Close; CaseActKind.Erase; CaseActKind.Correct ]
+            let offers =
+                [
+                    (TaskId.ofLiteral "case.close")
+                    (TaskId.ofLiteral "case.erase")
+                    (TaskId.ofLiteral "case.correct")
+                ]
 
             let blocked =
-                CaseActKind.all
+                ClaimCore.Domain.Tasks.Registry.clientDeclarations
+                |> List.filter (fun declaration -> declaration.Target = ActSubject.Case)
+                |> List.map _.Id
                 |> List.filter (fun kind -> not (List.contains kind offers))
                 |> List.map (fun kind ->
                     {
-                        CaseActRefusal.Act = kind
+                        CaseTaskRefusal.Act = kind
                         Reason = Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)
                     })
 
@@ -88,45 +96,55 @@ let private caseReply =
                 HistoryAccess.None
                 blocked
             |> Result.defaultWith invalidOp
+            |> CaseAdvice.withOffers (
+                offers
+                |> List.map (fun task ->
+                    let binding =
+                        if task = TaskId.ofLiteral "case.erase" then
+                            Binding.CaseErase(
+                                CaseSelector.Id current.CaseId,
+                                current.Revision,
+                                Sequence.first
+                            )
+                        else
+                            Binding.Case(CaseSelector.Id current.CaseId, current.Revision)
+
+                    let seeds =
+                        if task = TaskId.ofLiteral "case.correct" then
+                            [
+                                TaskInputId.Target(InputTarget.Group RecordGroup.Registration),
+                                InputValue.Text "KEEP"
+                                TaskInputId.Target(InputTarget.Group RecordGroup.Decision),
+                                InputValue.Text "KEEP"
+                            ]
+                            |> Map.ofList
+                        else
+                            Map.empty
+
+                    Inputs.offeredTask (TaskId.token task) binding seeds)
+            )
     }
 
 let private review =
-    OperationReview.Case
+    let after =
+        { current with
+            Revision = CaseFixtures.revision 8L
+            State =
+                current.State
+                |> CaseState.map (fun fields ->
+                    { fields with
+                        Status = CaseStatus.Closed
+                    })
+        }
+
+    Reviews.caseReview
+        (TaskId.ofLiteral "case.close")
+        (Binding.Case(CaseSelector.Id current.CaseId, current.Revision))
+        (Some current)
+        after
         {
-            Before = Some current
-            Proposed =
-                { current with
-                    Revision = CaseFixtures.revision 8L
-                    State =
-                        current.State
-                        |> CaseState.map (fun fields ->
-                            { fields with
-                                Status = CaseStatus.Closed
-                            })
-                }
-            Changes =
-                {
-                    Payments = None
-                    Lifecycle = None
-                    Fields =
-                        [
-                            {
-                                FieldName = BusinessField.Status
-                                Before = Some(CaseFieldValue.Status CaseStatus.Opened)
-                                After = Some(CaseFieldValue.Status CaseStatus.Closed)
-                            }
-                        ]
-                }
-            Context =
-                {
-                    ProductVersion = "synthetic"
-                    Basis =
-                        {
-                            ObservedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
-                            BusinessDate = DateOnly(2026, 9, 7)
-                            TimeZoneId = "Etc/UTC"
-                        }
-                }
+            ProductVersion = "synthetic"
+            Basis = DomainInputs.workBasis
         }
 
 let private harness language answer scenario =
@@ -137,7 +155,7 @@ let private harness language answer scenario =
     let mutable reads = 0
 
     let response frame (codec: ClaimCore.Json.Codec<'value>) value =
-        CliReply.result frame (codec.Write value) |> Fixtures.accepted
+        CliReply.result frame (codec.Write value) |> CaseBuilders.accepted
 
     let exchange frame (_: CancellationToken) =
         calls.Add frame
@@ -151,15 +169,9 @@ let private harness language answer scenario =
                 let acceptedOpen =
                     calls
                     |> Seq.tryPick (fun call ->
-                        (Frames.value Api.operationExecute
-                         >> Option.map ClaimCore.TestSupport.Submissions.command)
-                            call
-                        |> Option.bind (function
-                            | OperationInput.Case request when
-                                CaseAct.kind request.Act = CaseActKind.Open
-                                ->
-                                Some request
-                            | _ -> None))
+                        (Frames.value Api.operationExecute) call
+                        |> Option.filter (fun request ->
+                            request.Task = TaskId.ofLiteral "case.open"))
 
                 match acceptedOpen with
                 | Some _ ->
@@ -201,11 +213,8 @@ let private harness language answer scenario =
                     frame
                     Api.operationPreview.Output
                     (RepresentationReply.Human(
-                        HumanReplies.preview
-                            ((Frames.value Api.operationPreview
-                              >> Option.map ClaimCore.TestSupport.Submissions.command)
-                                frame
-                             |> Option.get)
+                        HumanReplies.previewSubmission
+                            ((Frames.value Api.operationPreview) frame |> Option.get)
                             {
                                 OperationId = operationId ()
                                 Outcome =
@@ -216,49 +225,69 @@ let private harness language answer scenario =
                                             )
                                         )
                                     else
+                                        let request =
+                                            Frames.value Api.operationPreview frame |> Option.get
+
                                         let supplied =
-                                            match
-                                                (Frames.value Api.operationPreview
-                                                 >> Option.map
-                                                     ClaimCore.TestSupport.Submissions.command)
-                                                    frame,
-                                                review
-                                            with
-                                            | Some(OperationInput.Case request),
-                                              OperationReview.Case value when
-                                                CaseAct.kind request.Act = CaseActKind.Open
-                                                ->
-                                                OperationReview.Case
-                                                    { value with
-                                                        Before = None
-                                                        Proposed =
-                                                            { value.Proposed with
-                                                                CaseId =
-                                                                    CaseId.ofOperationId (
-                                                                        CaseFixtures.operationId
-                                                                            request.OperationId
-                                                                    )
-                                                                Reference =
-                                                                    CaseFixtures.reference "x"
-                                                                Revision = Revision.first
-                                                            }
+                                            if request.Task = TaskId.ofLiteral "case.open" then
+                                                let after =
+                                                    { current with
+                                                        CaseId =
+                                                            CaseId.ofOperationId (
+                                                                CaseFixtures.operationId
+                                                                    request.OperationId
+                                                            )
+                                                        Reference = CaseFixtures.reference "x"
+                                                        Revision = Revision.first
                                                     }
-                                            | _ -> review
+
+                                                Reviews.caseReview
+                                                    request.Task
+                                                    (Binding.CaseNew Revision.zero)
+                                                    None
+                                                    after
+                                                    review.Context
+                                            else
+                                                let after =
+                                                    if
+                                                        request.Task = TaskId.ofLiteral "case.erase"
+                                                    then
+                                                        { current with
+                                                            Revision = CaseFixtures.revision 8L
+                                                            State = CaseState.Erased
+                                                        }
+                                                    elif
+                                                        request.Task =
+                                                            TaskId.ofLiteral "case.correct"
+                                                    then
+                                                        { current with
+                                                            Revision = CaseFixtures.revision 8L
+                                                        }
+                                                    else
+                                                        { current with
+                                                            Revision = CaseFixtures.revision 8L
+                                                            State =
+                                                                current.State
+                                                                |> CaseState.map (fun fields ->
+                                                                    { fields with
+                                                                        Status = CaseStatus.Closed
+                                                                    })
+                                                        }
+
+                                                Reviews.caseReview
+                                                    request.Task
+                                                    (Submissions.command request).Binding
+                                                    (Some current)
+                                                    after
+                                                    review.Context
 
                                         Outcome.Succeeded(Previewed.Reviewed supplied)
                             }
                     ))
             | "operation.execute" ->
-                let act =
-                    match
-                        (Frames.value Api.operationExecute
-                         >> Option.map ClaimCore.TestSupport.Submissions.command)
-                            frame
-                    with
-                    | Some(OperationInput.Case input) -> CaseAct.kind input.Act
-                    | _ -> failtest "Expected reviewed case operation"
+                let act = (Frames.value Api.operationExecute frame |> Option.get).Task
 
-                let opening = act = CaseActKind.Open
+                let opening = act = (TaskId.ofLiteral "case.open")
 
                 let receipt =
                     { CliReplyFixtures.receipt with
@@ -282,6 +311,13 @@ let private harness language answer scenario =
                                             else
                                                 CaseFixtures.revision 8L
                                         Act = act
+                                        Snapshot =
+                                            if opening then
+                                                (match ResponseExamples.receipt.Subject with
+                                                 | ReceiptSubject.Case value -> value.Snapshot
+                                                 | _ -> failtest "Case fixture")
+                                            else
+                                                subject.Snapshot
                                     }
                             | _ -> failtest "The case receipt fixture must identify its actual case"
                     }
@@ -344,7 +380,7 @@ let private harness language answer scenario =
 let private run arguments (harness: Harness) =
     let draft =
         InteractiveReview.prepare harness.Console arguments
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
         |> Option.defaultWith (fun () -> failtest "Expected an interactive draft")
 
     InteractiveReview.run
@@ -359,13 +395,15 @@ let private endpoints (harness: Harness) =
     harness.Calls |> Seq.map (Frames.endpoint >> _.Token) |> Seq.toList
 
 let private caseInput frame =
-    match
-        Api.operationExecute.Input.Read "$" (Frames.input frame)
-        |> Fixtures.accepted
-        |> Submissions.command
-    with
-    | OperationInput.Case request -> request
-    | _ -> failtest "Expected a case request"
+    Api.operationExecute.Input.Read "$" (Frames.input frame)
+    |> CaseBuilders.accepted
+
+let private reviewedRevision (input: OperationSubmission) =
+    match (Submissions.command input).Binding with
+    | Binding.CaseNew version
+    | Binding.Case(_, version)
+    | Binding.CaseErase(_, version, _) -> Revision.value version
+    | _ -> failtest "Expected reviewed case version"
 
 let private unavailable console arguments =
     match InteractiveReview.prepare console arguments with
@@ -385,7 +423,7 @@ let tests =
 
                         let arguments =
                             [ "case"; "open"; "x" ]
-                            @ CliExamples.registrationArguments Inputs.registration
+                            @ CliExamples.registrationArguments DomainInputs.registration
 
                         Expect.equal (run arguments h) 0 "Human completion"
 
@@ -399,11 +437,15 @@ let tests =
                             "A new reference is not looked up before OPEN"
 
                         let input = caseInput h.Calls[1]
-                        Expect.equal input.ExpectedRevision 0L "Zero is the actual OPEN contract"
+                        Expect.equal (reviewedRevision input) 0L "Zero is the actual OPEN contract"
 
                         Expect.equal
-                            input.Target
-                            (CaseSelector.Reference "x")
+                            (Submissions.command input).Inputs.Values[TaskInputId.Target(
+                                                                          InputTarget.Field
+                                                                              BusinessField
+                                                                                  .CaseReference
+                                                                      )]
+                            (InputValue.Text "x")
                             "Preview binds the authored reference"
 
                         Expect.equal
@@ -437,7 +479,7 @@ let tests =
                     let pending = caseInput h.Calls[2]
 
                     Expect.equal
-                        pending.ExpectedRevision
+                        (reviewedRevision pending)
                         7L
                         "The server read supplies the expected revision"
 
@@ -505,7 +547,7 @@ let tests =
                     "The client does not fetch a new revision and bypass consent"
 
                 Expect.equal
-                    (caseInput h.Calls[3]).ExpectedRevision
+                    (reviewedRevision (caseInput h.Calls[3]))
                     7L
                     "Execute retains the reviewed revision")
             testCase "a refused read stops before id allocation preview or confirmation" (fun () ->
@@ -557,15 +599,13 @@ let tests =
                     let h = harness "en" (Some "n") Scenario.Accepted
                     run [ "case"; "correct"; "x" ] h |> ignore
 
-                    match (caseInput h.Calls[2]).Act with
-                    | CaseAct.Correct correction ->
-                        Expect.equal
-                            correction.Registration
-                            Amendment.Keep
-                            "Registration is retained"
+                    let values = (caseInput h.Calls[2] |> Submissions.command).Inputs.Values
 
-                        Expect.equal correction.Decision Change.Keep "Decision is retained"
-                    | _ -> failtest "Expected a correction review"
+                    for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
+                        Expect.equal
+                            values[TaskInputId.Target(InputTarget.Group group)]
+                            (InputValue.Text "KEEP")
+                            "Unselected correction groups retain their facts"
 
                     let rendered = String.concat "\n" h.Text
 
@@ -632,7 +672,7 @@ let tests =
 
                 let draft =
                     Grammar.prepareOffline [ "case"; "close"; "x"; "--dry-run" ]
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
                     |> Option.get
 
                 Expect.isNone draft.Issues "Offline syntax needs no fabricated version"
@@ -679,10 +719,10 @@ let reminderReviewDetails =
                                     (reminderId number)
                                     current.CaseId
                                     revision
-                                    (ReminderAction.parse action |> Fixtures.accepted)
-                                    (Inputs.date "2026-11-09")
+                                    (ReminderAction.parse action |> CaseBuilders.accepted)
+                                    (DomainInputs.date "2026-11-09")
                                     state
-                                |> Fixtures.accepted
+                                |> CaseBuilders.accepted
 
                             let before =
                                 reminder
@@ -701,26 +741,63 @@ let reminderReviewDetails =
                             let created =
                                 reminder 2 Revision.first "Next action" ReminderState.Pending
 
-                            let effects =
-                                if compound then
-                                    ReminderEffects.CompletedAndPlanned(completed, created)
-                                else
-                                    ReminderEffects.Created created
+                            let value reminder =
+                                {
+                                    ReminderValue.Plan =
+                                        Some
+                                            {
+                                                Action = Reminder.action reminder
+                                                Due = Reminder.due reminder
+                                            }
+                                    State = Reminder.state reminder
+                                }
+
+                            let described prior reminder =
+                                {
+                                    DescribedPart.PartId = ReminderId.value (Reminder.id reminder)
+                                    Revision = Reminder.revision reminder
+                                    Description =
+                                        ClaimCore.Domain.Changes.PartDescription.Reminder(
+                                            ClaimCore.Domain.Changes.ReminderDescription.describe
+                                                (prior |> Option.map value)
+                                                (value reminder)
+                                        )
+                                }
 
                             let core =
-                                OperationReview.Reminder
-                                    {
-                                        Parent = current
-                                        Reference = current.Reference
-                                        CaseId = current.CaseId
-                                        Before = if compound then Some before else None
-                                        Effects = effects
-                                        Context =
-                                            {
-                                                ProductVersion = "fixture"
-                                                Basis = Inputs.workBasis
-                                            }
-                                    }
+                                {
+                                    OperationReview.Task =
+                                        TaskId.ofLiteral (
+                                            if compound then
+                                                "reminder.completeAndPlanNext"
+                                            else
+                                                "reminder.create"
+                                        )
+                                    Target = ReviewTarget.Case(current.CaseId, current.Reference)
+                                    Binding =
+                                        if compound then
+                                            Binding.Reminder(
+                                                CaseSelector.Id current.CaseId,
+                                                Reminder.id before,
+                                                Reminder.revision before
+                                            )
+                                        else
+                                            Binding.ReminderNew(CaseSelector.Id current.CaseId)
+                                    References = { Actors = []; Cases = [] }
+                                    Changes =
+                                        (if compound then
+                                             [
+                                                 described (Some before) completed
+                                                 described None created
+                                             ]
+                                         else
+                                             [ described None created ])
+                                    Context =
+                                        {
+                                            ProductVersion = "fixture"
+                                            Basis = DomainInputs.workBasis
+                                        }
+                                }
 
                             let calls = ResizeArray<Invocation>()
                             use output = new System.IO.MemoryStream()
@@ -741,7 +818,7 @@ let reminderReviewDetails =
 
                             let response frame (endpoint: Endpoint<'i, 'o>) value =
                                 CliReply.result frame (endpoint.Output.Write value)
-                                |> Fixtures.accepted
+                                |> CaseBuilders.accepted
 
                             let version reminder =
                                 {
@@ -774,11 +851,22 @@ let reminderReviewDetails =
                                             {
                                                 Reminder = before
                                                 Reference = current.Reference
-                                                ClaimantName = Inputs.name "Reminder claimant"
+                                                ClaimantName =
+                                                    DomainInputs.name "Reminder claimant"
                                                 Responsible = None
-                                                RecordedAt = Inputs.workBasis.ObservedAt
+                                                RecordedAt = DomainInputs.workBasis.ObservedAt
                                                 RecordedBy = CliReplyFixtures.receipt.RecordedBy
-                                                Acts = [ ReminderActKind.CompleteAndPlanNext ]
+                                                Offers =
+                                                    [
+                                                        Inputs.offeredTask
+                                                            "reminder.completeAndPlanNext"
+                                                            (Binding.Reminder(
+                                                                CaseSelector.Id current.CaseId,
+                                                                Reminder.id before,
+                                                                Reminder.revision before
+                                                            ))
+                                                            Map.empty
+                                                    ]
                                                 Active = true
                                                 Timing = None
                                             }
@@ -790,31 +878,23 @@ let reminderReviewDetails =
                                                 HumanReadDocuments.reminder
                                                 (Outcome.Succeeded
                                                     {
-                                                        Basis = Inputs.workBasis
+                                                        Basis = DomainInputs.workBasis
                                                         Item = item
                                                     })
                                              |> RepresentationReply.Human)
                                     | "operation.preview" ->
                                         let input =
-                                            (Frames.value Api.operationPreview
-                                             >> Option.map
-                                                 ClaimCore.TestSupport.Submissions.command)
-                                                frame
-                                            |> Option.get
+                                            (Frames.value Api.operationPreview) frame |> Option.get
 
                                         response
                                             frame
                                             Api.operationPreview
                                             (RepresentationReply.Human(
-                                                HumanReplies.preview
-                                                    ((Frames.value Api.operationPreview
-                                                      >> Option.map
-                                                          ClaimCore.TestSupport.Submissions.command)
-                                                        frame
+                                                HumanReplies.previewSubmission
+                                                    ((Frames.value Api.operationPreview) frame
                                                      |> Option.get)
                                                     {
-                                                        OperationId =
-                                                            OperationInput.operationId input
+                                                        OperationId = input.OperationId
                                                         Outcome =
                                                             Outcome.Succeeded(
                                                                 Previewed.Reviewed core
@@ -823,18 +903,12 @@ let reminderReviewDetails =
                                             ))
                                     | "operation.execute" ->
                                         let input =
-                                            (Frames.value Api.operationExecute
-                                             >> Option.map
-                                                 ClaimCore.TestSupport.Submissions.command)
-                                                frame
-                                            |> Option.get
+                                            (Frames.value Api.operationExecute) frame |> Option.get
 
                                         let receipt =
                                             { CliReplyFixtures.receipt with
                                                 OperationId =
-                                                    CaseFixtures.operationId (
-                                                        OperationInput.operationId input
-                                                    )
+                                                    CaseFixtures.operationId (input.OperationId)
                                                 Subject =
                                                     ReceiptSubject.Reminder
                                                         {
@@ -842,10 +916,11 @@ let reminderReviewDetails =
                                                             CaseId = current.CaseId
                                                             Act =
                                                                 if compound then
-                                                                    ReminderActKind
-                                                                        .CompleteAndPlanNext
+                                                                    (TaskId.ofLiteral
+                                                                        "reminder.completeAndPlanNext")
                                                                 else
-                                                                    ReminderActKind.Create
+                                                                    (TaskId.ofLiteral
+                                                                        "reminder.create")
                                                             Effects =
                                                                 if compound then
                                                                     ReminderReceiptEffects
@@ -866,8 +941,7 @@ let reminderReviewDetails =
                                             (RepresentationReply.Human(
                                                 HumanReplies.execute
                                                     {
-                                                        OperationId =
-                                                            OperationInput.operationId input
+                                                        OperationId = input.OperationId
                                                         Outcome = ExecuteResult.Accepted(receipt)
                                                     }
                                             ))
@@ -985,20 +1059,15 @@ let reminderReviewDetails =
                                     "Execution uses the exact reviewed request"
 
                                 if compound then
-                                    match
-                                        (Frames.value Api.operationExecute
-                                         >> Option.map ClaimCore.TestSupport.Submissions.command)
-                                            executions.Head
-                                    with
-                                    | Some(OperationInput.Reminder {
-                                                                       Act = ReminderAct.CompleteAndPlanNext(_,
-                                                                                                             revision,
-                                                                                                             _)
-                                                                   }) ->
-                                        Expect.equal
-                                            revision
-                                            7L
-                                            "The read reminder revision is frozen"
+                                    match (Frames.value Api.operationExecute) executions.Head with
+                                    | Some submission ->
+                                        match (Submissions.command submission).Binding with
+                                        | Binding.Reminder(_, _, revision) ->
+                                            Expect.equal
+                                                (Revision.value revision)
+                                                7L
+                                                "The read reminder revision is frozen"
+                                        | _ -> failtest "Expected selected reminder binding"
                                     | _ ->
                                         failtest "Expected the reviewed compound reminder request")
         ]

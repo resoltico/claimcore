@@ -3,8 +3,12 @@ module ClaimCore.IntegrationTests.ReminderRestoreTests
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -20,90 +24,84 @@ let private parent fixture = CaseFixtures.caseId (id fixture 10)
 let private identicalOther fixture actor =
     task {
         let registration =
-            Inputs.registrationWith
+            DomainInputs.registrationWith
                 [ BusinessField.IncidentDescription, "Restorable incident\nSecond paragraph" ]
                 registration
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request fixture 820 "synthetic-b" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (820)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         accepted opened |> ignore
 
         let work =
-            OperationInput.Work
-                {
-                    OperationId = id fixture 821
-                    Target = CaseSelector.Reference "synthetic-b"
-                    ExpectedRevision = 0L
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible =
-                                    WorkValue.Set(
-                                        ActorId.format (CaseFixtures.actorId (id fixture 1))
-                                    )
-                                Summary = WorkValue.Set "Restorable handling summary"
-                            }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "work.update"
+                (id fixture 821)
+                (ClaimCore.Application.Contracts.OperationBinding.Work(
+                    (CaseSelector.Reference "synthetic-b"),
+                    (0L)
+                ))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible =
+                            WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 1)))
+                        Summary = WorkValue.Set "Restorable handling summary"
+                    }
+                ))
 
-        let! updated = Service.execute actor work token
+        let! updated = Service.executeSubmission actor work token
         accepted updated |> ignore
 
-        for operation, act in
+        for operation, (taskName, selected, values) in
             [
                 822,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Earlier action"
-                        Due = "2027-01-01"
-                    }
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan ("Earlier action") ("2027-01-01")))
                 823,
-                AuthoredReminderAct.Update(
-                    id fixture 822,
-                    1L,
-                    {
-                        Action = "Current completed action"
-                        Due = "2027-02-01"
-                    }
-                )
-                824, AuthoredReminderAct.Complete(id fixture 822, 2L)
+                ("reminder.update",
+                 (Some((id fixture 822), (1L))),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Current completed action")
+                     ("2027-02-01")))
+                824, ("reminder.complete", (Some((id fixture 822), (2L))), (Map.empty))
                 825,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Action to replace"
-                        Due = "2027-03-01"
-                    }
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Action to replace")
+                     ("2027-03-01")))
                 826,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Cancelled action"
-                        Due = "2027-04-01"
-                    }
-                827, AuthoredReminderAct.Cancel(id fixture 826, 1L)
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan ("Cancelled action") ("2027-04-01")))
+                827, ("reminder.cancel", (Some((id fixture 826), (1L))), (Map.empty))
                 828,
-                AuthoredReminderAct.CompleteAndPlanNext(
-                    id fixture 825,
-                    1L,
-                    {
-                        Action = "Pending replacement"
-                        Due = "2027-05-01"
-                    }
-                )
+                ("reminder.completeAndPlanNext",
+                 (Some((id fixture 825), (1L))),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Pending replacement")
+                     ("2027-05-01")))
             ] do
             let! result =
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture operation
-                            Target = CaseSelector.Reference "synthetic-b"
-                            Act = act
-                        })
+                    (Submissions.createRaw
+                        taskName
+                        (id fixture operation)
+                        (OperationBinding.Reminder(CaseSelector.Reference "synthetic-b", selected))
+                        values)
                     token
 
             accepted result |> ignore
@@ -116,7 +114,7 @@ let private otherRows (database: PostgresFixture.Database) =
         return!
             DatabaseSession.rows
                 connection
-                "SELECT 'root',row_to_json(l)::text FROM claimcore.ledger l WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.operation_sequence=l.sequence AND ((e.subject_kind='CASE' AND e.subject_id=$1) OR e.parent_case_id=$1)) UNION ALL SELECT 'compartment',row_to_json(p)::text FROM claimcore.ledger_compartments p WHERE owner_kind='CASE' AND owner_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
+                "SELECT 'root',row_to_json(l)::text FROM claimcore.ledger l WHERE EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.operation_sequence=l.sequence AND e.aggregate_kind='FAMILY' AND e.aggregate_id=$1) UNION ALL SELECT 'compartment',row_to_json(p)::text FROM claimcore.ledger_compartments p WHERE owner_kind='FAMILY' AND owner_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
                 [| box (id database.Fixture 820) |]
                 token
     }
@@ -185,93 +183,84 @@ let private seeded database =
                 [
                     BusinessField.IncidentDescription, Some("Restorable incident\nSecond paragraph")
                 ]
-                (Inputs.registrationUpdate registration)
+                (DomainInputs.registrationUpdate registration)
              |> Result.defaultWith failtest)
 
         let! description =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 800 "synthetic-a" 1L (CaseAct.AmendRegistration patch)
-                ))
+                (((request
+                    (database.Fixture)
+                    (800)
+                    ("synthetic-a")
+                    (1L)
+                    "case.amendRegistration"
+                    (ClaimCore.TestSupport.Submissions.updates (
+                        RegistrationUpdateInput.values (patch)
+                    )))))
                 token
 
         accepted description |> ignore
 
         let! work =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Work
-                    {
-                        OperationId = id database.Fixture 801
-                        Target = target
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible =
-                                        WorkValue.Set(
-                                            ActorId.format (
-                                                CaseFixtures.actorId (id database.Fixture 1)
-                                            )
-                                        )
-                                    Summary = WorkValue.Set "Restorable handling summary"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id database.Fixture 801)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible =
+                                WorkValue.Set(
+                                    ActorId.format (CaseFixtures.actorId (id database.Fixture 1))
+                                )
+                            Summary = WorkValue.Set "Restorable handling summary"
+                        }
+                    )))
                 token
 
         accepted work |> ignore
 
-        for operation, act in
+        for operation, (taskName, selected, values) in
             [
                 802,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Earlier action"
-                        Due = "2027-01-01"
-                    }
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan ("Earlier action") ("2027-01-01")))
                 803,
-                AuthoredReminderAct.Update(
-                    id database.Fixture 802,
-                    1L,
-                    {
-                        Action = "Current completed action"
-                        Due = "2027-02-01"
-                    }
-                )
-                804, AuthoredReminderAct.Complete(id database.Fixture 802, 2L)
+                ("reminder.update",
+                 (Some((id database.Fixture 802), (1L))),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Current completed action")
+                     ("2027-02-01")))
+                804, ("reminder.complete", (Some((id database.Fixture 802), (2L))), (Map.empty))
                 805,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Action to replace"
-                        Due = "2027-03-01"
-                    }
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Action to replace")
+                     ("2027-03-01")))
                 806,
-                AuthoredReminderAct.Create
-                    {
-                        Action = "Cancelled action"
-                        Due = "2027-04-01"
-                    }
-                807, AuthoredReminderAct.Cancel(id database.Fixture 806, 1L)
+                ("reminder.create",
+                 (None),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan ("Cancelled action") ("2027-04-01")))
+                807, ("reminder.cancel", (Some((id database.Fixture 806), (1L))), (Map.empty))
                 808,
-                AuthoredReminderAct.CompleteAndPlanNext(
-                    id database.Fixture 805,
-                    1L,
-                    {
-                        Action = "Pending replacement"
-                        Due = "2027-05-01"
-                    }
-                )
+                ("reminder.completeAndPlanNext",
+                 (Some((id database.Fixture 805), (1L))),
+                 (ClaimCore.TestSupport.Submissions.reminderPlan
+                     ("Pending replacement")
+                     ("2027-05-01")))
             ] do
             let! result =
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id database.Fixture operation
-                            Target = target
-                            Act = act
-                        })
+                    (Submissions.createRaw
+                        taskName
+                        (id database.Fixture operation)
+                        (OperationBinding.Reminder(target, selected))
+                        values)
                     token
 
             accepted result |> ignore
@@ -302,11 +291,9 @@ let private mode (database: PostgresFixture.Database) change =
 let private erase fixture actor =
     task {
         let! erased =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request fixture 810 "synthetic-a" 2L (CaseAct.Bare BareAct.Erase)
-                ))
+                (((request (fixture) (810) ("synthetic-a") (2L) "case.erase" (Map.empty))))
                 token
 
         accepted erased |> ignore
@@ -319,7 +306,7 @@ let private assertErased (database: PostgresFixture.Database) =
         let! counts =
             DatabaseSession.rows
                 connection
-                "SELECT count(*) FROM claimcore.ledger_compartments WHERE owner_kind='CASE' AND owner_id=$1 AND (payload IS NOT NULL OR nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
+                "SELECT count(*) FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1 AND (payload IS NOT NULL OR nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
                 [| box (CaseId.value (parent database.Fixture)) |]
                 token
 
@@ -439,7 +426,7 @@ let private mixedPayload database =
 
         for statement in
             [
-                "CREATE TEMP TABLE restore_compartments AS SELECT operation_sequence,ordinal,payload,nonce FROM claimcore.ledger_compartments WHERE owner_kind='CASE' AND owner_id=$1"
+                "CREATE TEMP TABLE restore_compartments AS SELECT operation_sequence,ordinal,payload,nonce FROM claimcore.ledger_compartments WHERE owner_kind='FAMILY' AND owner_id=$1"
                 "CREATE TEMP TABLE restore_cases AS SELECT * FROM claimcore.cases WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_work AS SELECT * FROM claimcore.case_work WHERE case_id=$1"
                 "CREATE TEMP TABLE restore_reminders AS SELECT * FROM claimcore.reminders WHERE case_id=$1"
@@ -500,7 +487,7 @@ let private mixedPayload database =
         do!
             sql
                 database
-                "SELECT claimcore.erase_case_payload($1)"
+                "SELECT claimcore.clear_owner('FAMILY',$1)"
                 [| box (CaseId.value (parent database.Fixture)) |]
 
         let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token

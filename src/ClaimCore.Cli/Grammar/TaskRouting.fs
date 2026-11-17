@@ -2,34 +2,41 @@ namespace ClaimCore.Cli
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Presentation
 open ClaimCore.Wire
 
-/// CLI delivery and wording adapt semantic tasks without inspecting a wire schema.
+/// Delivery and wording derive from the declarations' task identity and endpoint.
 module TaskRouting =
-    let endpoint =
-        function
-        | TaskId.Operation _ -> ActorEndpoint.Operation OperationEndpoint.Execute
-        | TaskId.Query query -> ActorEndpoint.Query query
-        | TaskId.Command command -> ActorEndpoint.Command command
+    let endpoint task =
+        let declaration = TaskDeclarations.describe task
 
-    let act =
-        function
-        | TaskId.Operation act -> Some act
-        | TaskId.Query _
-        | TaskId.Command _ -> None
+        match declaration.Kind with
+        | ClientTaskKind.Operation -> ActorEndpoint.Operation OperationEndpoint.Execute
+        | ClientTaskKind.Query ->
+            QueryTaskId.all
+            |> List.find (fun query -> QueryTaskId.key query = task)
+            |> ActorEndpoint.Query
+        | ClientTaskKind.Command -> ActorEndpoint.Command task
 
-    let consequence =
-        function
-        | TaskId.Operation act -> Consequence.ofAct act
-        | TaskId.Query _
-        | TaskId.Command _ -> Consequence.Routine
+    let act task =
+        (TaskDeclarations.describe task).Ledger |> Option.map _.Id
 
-    let private message task part =
-        match task with
-        | TaskId.Operation act -> Vocabulary.messageKey ActKind.vocabulary act part
-        | TaskId.Query _
-        | TaskId.Command _ -> Vocabulary.messageKey ActorEndpoint.vocabulary (endpoint task) part
+    let operationDeclaration task =
+        ClaimCore.Domain.Tasks.Registry.findDeclaration task
+        |> Option.defaultWith (fun () -> invalidArg (nameof task) "The operation is not declared.")
 
-    let labelId task = message task "label"
-    let meaningId task = message task "meaning"
+    let creates task =
+        (TaskDeclarations.describe task).Creates
+
+    let consequence task =
+        (TaskDeclarations.describe task).Consequence
+
+    let private message task suffix =
+        (if (TaskDeclarations.describe task).Kind = ClientTaskKind.Operation then
+             "task."
+         else
+             "endpoint.")
+        + task
+        + suffix
+
+    let labelId task = message task ".label"
+    let meaningId task = message task ".meaning"

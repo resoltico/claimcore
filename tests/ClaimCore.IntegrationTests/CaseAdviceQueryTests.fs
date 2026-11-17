@@ -5,8 +5,12 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 
 [<Tests>]
@@ -37,15 +41,20 @@ let tests =
                             hidden, Role.Owner
                         ] do
                     let! registered =
-                        Service.execute
-                            admin
-                            (OperationInput.People(
-                                Inputs.peopleRequest
-                                    (id (100 + index * 2))
-                                    target
-                                    (PeopleAct.Register Inputs.actorProfile)
-                            ))
-                            token
+                        (task {
+                            let! submission =
+                                ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                    (admin).Store
+                                    ((id (100 + index * 2)))
+                                    (target)
+                                    (Some 0L)
+                                    "people.register"
+                                    (ClaimCore.TestSupport.Submissions.profile (
+                                        DomainInputs.actorProfile
+                                    ))
+
+                            return! Service.executeSubmission (admin) submission (token)
+                        })
                         |> Async.AwaitTask
 
                     StoreFixtures.acceptedPeople registered
@@ -67,25 +76,28 @@ let tests =
                 let core principal =
                     StoreFixtures.core database.Fixture principal
 
-                let write n principal revision act =
-                    Service.execute
+                let write n principal revision taskName values =
+                    Service.executeSubmission
                         (core principal)
-                        (Inputs.caseOperation
-                            {
-                                ExpectedFamilySequence =
-                                    if CaseAct.kind act = CaseActKind.Erase then
-                                        Some 1L
-                                    else
-                                        None
-                                OperationId = id n
-                                CaseReference = "ADVICE-1"
-                                ExpectedRevision = revision
-                                Act = act
-                            })
+                        (StoreFixtures.request
+                            database.Fixture
+                            n
+                            "ADVICE-1"
+                            revision
+                            taskName
+                            values)
                         token
 
                 let! opened =
-                    write 10 owner 0L (AuthoredCaseAct.Open Inputs.registration) |> Async.AwaitTask
+                    write
+                        (10)
+                        (owner)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (DomainInputs.registration)
+                        ))
+                    |> Async.AwaitTask
 
                 match opened.Outcome with
                 | ExecuteResult.Accepted _ -> ()
@@ -111,24 +123,47 @@ let tests =
                 let current = read current
 
                 Expect.equal
-                    (reason CaseActKind.RecordPayment current.Advice)
+                    (reason (TaskId.ofLiteral "case.recordPayment") current.Advice)
                     (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
                     "An authorized payment needs a recorded decision"
 
                 Expect.equal
                     current.Advice.Recommended
-                    (Some CaseActKind.Decide)
+                    (Some(TaskId.ofLiteral "case.decide"))
                     "The alternative is actually offered"
 
                 Expect.equal
                     (Set.union
                         (Set.ofList current.Advice.Acts)
                         (current.Advice.Blocked |> List.map _.Act |> Set.ofList))
-                    (Set.ofList CaseActKind.all)
+                    (Set.ofList (
+                        [
+                            "case.open"
+                            "case.amendRegistration"
+                            "case.correct"
+                            "case.decide"
+                            "case.withdrawDecision"
+                            "case.recordPayment"
+                            "case.removePayment"
+                            "case.void"
+                            "case.reinstate"
+                            "case.close"
+                            "case.reopen"
+                            "case.erase"
+                        ]
+                        |> List.map TaskId.ofLiteral
+                    ))
                     "The actual producer covers the literal act inventory"
 
                 let! refused =
-                    write 11 owner 1L (AuthoredCaseAct.RecordPayment Inputs.payment)
+                    write
+                        (11)
+                        (owner)
+                        (1L)
+                        "case.recordPayment"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            PaymentInput.values (DomainInputs.payment)
+                        ))
                     |> Async.AwaitTask
 
                 Expect.equal
@@ -142,12 +177,19 @@ let tests =
                 let current = read current
 
                 Expect.equal
-                    (reason CaseActKind.RecordPayment current.Advice)
+                    (reason (TaskId.ofLiteral "case.recordPayment") current.Advice)
                     (Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment))
                     "A readable denied action reports capability before state"
 
                 let! refused =
-                    write 12 reader 1L (AuthoredCaseAct.RecordPayment Inputs.payment)
+                    write
+                        (12)
+                        (reader)
+                        (1L)
+                        "case.recordPayment"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            PaymentInput.values (DomainInputs.payment)
+                        ))
                     |> Async.AwaitTask
 
                 Expect.equal
@@ -157,8 +199,7 @@ let tests =
                     ))
                     "Execution enforces the same permission first"
 
-                let! closed =
-                    write 13 owner 1L (AuthoredCaseAct.Bare BareAct.Close) |> Async.AwaitTask
+                let! closed = write (13) (owner) (1L) "case.close" (Map.empty) |> Async.AwaitTask
 
                 match closed.Outcome with
                 | ExecuteResult.Accepted _ -> ()
@@ -167,7 +208,7 @@ let tests =
                 let! current = get payment |> Async.AwaitTask
 
                 Expect.equal
-                    (reason CaseActKind.Correct (read current).Advice)
+                    (reason (TaskId.ofLiteral "case.correct") (read current).Advice)
                     (Refusal.Access(AccessRefusal.NotAuthorized Capability.Register))
                     "A payment-only actor cannot correct a closed case with no financial group"
 
@@ -179,12 +220,12 @@ let tests =
                 let! current = get owner |> Async.AwaitTask
 
                 Expect.equal
-                    (reason CaseActKind.Reopen (read current).Advice)
+                    (reason (TaskId.ofLiteral "case.reopen") (read current).Advice)
                     Refusal.RegisterMaintenance
                     "Maintenance blocks otherwise permitted reopening"
 
                 Expect.equal
-                    (reason CaseActKind.Void (read current).Advice)
+                    (reason (TaskId.ofLiteral "case.void") (read current).Advice)
                     (Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward))
                     "Maintenance does not replace a missing permission"
 

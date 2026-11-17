@@ -12,7 +12,12 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
 let private run action =
@@ -35,8 +40,7 @@ let private replay
     landed
     =
     task {
-        let! replay =
-            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation operation) (token))
+        let! replay = (Service.executeSubmission actor ((operation)) (token))
 
         if landed then
             Expect.isTrue
@@ -126,11 +130,19 @@ let private lostLookup drop (database: PostgresFixture.Database) =
         | other -> failtestf "Repeating expired lookup confirms absence: %A" other
 
         let input =
-            { request database.Fixture 140 "LOST-LOOKUP" 0L (AuthoredCaseAct.Open registration) with
-                OperationId = operation
-            }
+            ClaimCore.TestSupport.Submissions.withOperationId
+                (operation)
+                (request
+                    (database.Fixture)
+                    (140)
+                    ("LOST-LOOKUP")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))
 
-        let! delayed = Service.execute actor (Inputs.caseOperation input) token
+        let! delayed = Service.executeSubmission actor ((input)) token
 
         match delayed.Outcome with
         | ExecuteResult.Rejected(Refusal.OperationClockUnavailable _) -> ()
@@ -172,19 +184,21 @@ let private lostPeople drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "people-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request =
-            reviewedPeopleRequest
+        let! request =
+            personSubmission
                 database.Fixture.Store
                 (id database.Fixture 145)
                 target
-                (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                None
+                "people.register"
+                (Submissions.profile DomainInputs.actorProfile)
 
         let! unknown =
-            (Service.execute (proxyCore database source) (OperationInput.People request) (token))
+            (Service.executeSubmission (proxyCore database source) ((request)) (token))
 
         Expect.equal unknown.Outcome ExecuteResult.OutcomeUnknown "People commit loss is unknown"
 
-        let! repeated = (Service.execute actor (OperationInput.People request) (token))
+        let! repeated = (Service.executeSubmission actor ((request)) (token))
 
         Expect.isTrue
             (match repeated.Outcome, landed with
@@ -233,12 +247,7 @@ let private resolveInitialization (database: PostgresFixture.Database) =
             Expect.isSome status.InitialOwner "A fresh retry after rollback records its owner"
     }
 
-let private commitEvidence
-    drop
-    (operation: UnvalidatedCaseRequest)
-    (proxy: CommitProxy.Proxy)
-    result
-    =
+let private commitEvidence drop (operation: OperationSubmission) (proxy: CommitProxy.Proxy) result =
     task {
         if drop = CommitProxy.Drop.Never then
             accepted result |> ignore
@@ -310,17 +319,17 @@ let tests =
 
                             let operation =
                                 request
-                                    database.Fixture
-                                    20
-                                    "synthetic-commit"
-                                    0L
-                                    (ClaimCore.Domain.AuthoredCaseAct.Open registration)
+                                    (database.Fixture)
+                                    (20)
+                                    ("synthetic-commit")
+                                    (0L)
+                                    "case.open"
+                                    (ClaimCore.TestSupport.Submissions.fields (
+                                        RegistrationInput.values (registration)
+                                    ))
 
                             let! result =
-                                (Service.execute
-                                    throughProxy
-                                    (ClaimCore.TestSupport.Inputs.caseOperation operation)
-                                    (token))
+                                (Service.executeSubmission throughProxy ((operation)) (token))
 
                             do! commitEvidence drop operation proxy result
 

@@ -186,21 +186,3 @@ module CaseHeadline =
         | CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided) -> CaseHeadline.Undecided
 
 /// Recommendations rank only the offered business acts on an active, open case.
-module CaseAdvice =
-    let recommended state offered =
-        let candidates =
-            match state with
-            | CaseState.Active(CaseStatus.Opened, progress) ->
-                let preferred =
-                    match progress with
-                    | CaseProgress.Undecided -> CaseActKind.Decide
-                    | CaseProgress.Decided
-                    | CaseProgress.PartlyPaid -> CaseActKind.RecordPayment
-                    | CaseProgress.Paid -> CaseActKind.Close
-
-                [ preferred; CaseActKind.AmendRegistration; CaseActKind.Correct ]
-            | CaseState.Active(CaseStatus.Closed, _)
-            | CaseState.Voided _
-            | CaseState.Erased -> []
-
-        candidates |> List.tryFind (fun act -> List.contains act offered)

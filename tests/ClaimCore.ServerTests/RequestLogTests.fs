@@ -12,6 +12,10 @@ open System.Text.Json
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open ClaimCore.TestSupport.HandlerStub
 open ClaimCore.TestSupport.TestServerFixture
@@ -101,7 +105,7 @@ let private actorIdentity () =
         let accepted =
             { receipt operationId "WEB-001" with
                 RecordedBy =
-                    ClaimCore.TestSupport.Inputs.actorReference (
+                    ClaimCore.TestSupport.DomainInputs.actorReference (
                         ActorId.create authorId |> Option.get
                     )
             }

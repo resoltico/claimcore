@@ -182,39 +182,33 @@ module internal ViewText =
 
     let render language screen = renderSelected false language screen
 
-    let renderDocument includeDetails language (document: HumanDocument) =
+    let renderDocumentWithHeader
+        options
+        includeHeader
+        includeDetails
+        language
+        (document: HumanDocument)
+        =
         let zone =
             match document.Basis with
             | ObservationBasis.Snapshot basis -> basis.TimeZoneId
             | ObservationBasis.Unavailable -> "UTC"
 
+        let screen =
+            { document.Screen with
+                Regions =
+                    document.Screen.Regions
+                    |> List.filter (fun region -> region.Role <> RegionRole.Context)
+            }
+
         let body =
-            renderWithHeader
-                zone
-                true
-                includeDetails
-                (TextTable.environment ())
-                language
-                document.Screen
+            renderWithHeader zone includeHeader includeDetails options language screen
 
         let actions =
-            document.Actions
+            (screen.Regions |> List.collect _.Actions) @ document.Actions
             |> List.filter (fun action -> action.Blocked.IsNone)
             |> List.map (fun action ->
-                let key =
-                    match action.Task with
-                    | TaskId.Operation task ->
-                        Vocabulary.messageKey ActKind.vocabulary task "label"
-                    | TaskId.Command command ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Command command)
-                            "label"
-                    | TaskId.Query query ->
-                        Vocabulary.messageKey
-                            ActorEndpoint.vocabulary
-                            (ActorEndpoint.Query query)
-                            "label"
+                let key = TaskRouting.labelId (TaskId.token action.Task)
 
                 ReplyTextFormat.label language key)
 
@@ -223,3 +217,6 @@ module internal ViewText =
                []
            else
                [ String.concat ", " actions ])
+
+    let renderDocument includeDetails language document =
+        renderDocumentWithHeader (TextTable.environment ()) true includeDetails language document

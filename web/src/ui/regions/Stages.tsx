@@ -18,7 +18,7 @@ const StageMeter = ({ step, timeZone, label }: { step: Step; timeZone: string; l
       value={step.reached ? 1 : 0}
       aria-label={label}
     >
-      {p.text(step.reached ? "ui.stage.recorded" : "label.notRecorded")}
+      {p.text(step.reached ? "label.recorded" : "label.notRecorded")}
     </meter>
   ) : (
     <MoneyMeter meter={step.meter} timeZone={timeZone} label={label} />
@@ -30,7 +30,7 @@ const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => 
     <>
       {step.meter === undefined ? (
         <span className="sr-only">
-          {p.text(step.reached ? "ui.stage.recorded" : "label.notRecorded")}
+          {p.text(step.reached ? "label.recorded" : "label.notRecorded")}
         </span>
       ) : null}
       <span className="stage-date">

@@ -2,10 +2,7 @@ module ClaimCore.Tests.WorklistSemanticsTests
 
 open System
 open Expecto
-open Hedgehog
-open Hedgehog.FSharp
 open ClaimCore.Domain
-open ClaimCore.Tests.PropertyHarness
 
 let private states =
     [
@@ -46,93 +43,6 @@ let headline =
                     (CaseHeadline.all |> List.map CaseHeadline.token)
                     [ "ERASED"; "VOIDED"; "CLOSED"; "PAID"; "PARTLY_PAID"; "DECIDED"; "UNDECIDED" ]
                     "The closed headline vocabulary has no renderer-specific additions")
-        ]
-
-[<Tests>]
-let recommendation =
-    testList
-        "core recommended case act"
-        [
-            testCase "payment progress selects the preferred offered act" (fun () ->
-                for progress, expected in
-                    [
-                        CaseProgress.Undecided, CaseActKind.Decide
-                        CaseProgress.Decided, CaseActKind.RecordPayment
-                        CaseProgress.Paid, CaseActKind.Close
-                    ] do
-                    Expect.equal
-                        (CaseAdvice.recommended
-                            (CaseState.Active(CaseStatus.Opened, progress))
-                            CaseActKind.all)
-                        (Some expected)
-                        "The preferred act is independent of offer order")
-            testCase "fallbacks are amend, then correct, never an arbitrary offered act" (fun () ->
-                let state = CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided)
-
-                Expect.equal
-                    (CaseAdvice.recommended
-                        state
-                        [ CaseActKind.Correct; CaseActKind.AmendRegistration ])
-                    (Some CaseActKind.AmendRegistration)
-                    "Amend takes precedence over correct"
-
-                Expect.equal
-                    (CaseAdvice.recommended state [ CaseActKind.Correct ])
-                    (Some CaseActKind.Correct)
-                    "Correct remains the last safe fallback"
-
-                Expect.isNone
-                    (CaseAdvice.recommended
-                        state
-                        [
-                            CaseActKind.Void
-                            CaseActKind.Reinstate
-                            CaseActKind.Erase
-                            CaseActKind.Open
-                        ])
-                    "No safe preferred or fallback act is offered")
-            testCase "closed, voided and erased cases have no routine recommendation" (fun () ->
-                for state in states do
-                    match state with
-                    | CaseState.Active(CaseStatus.Opened, _) -> ()
-                    | _ ->
-                        Expect.isNone
-                            (CaseAdvice.recommended state CaseActKind.all)
-                            "Inactive cases do not inherit active-work recommendations")
-            testCase
-                "random offer subsets always recommend an offered non-stewardship act"
-                (fun () ->
-                    run
-                        "recommended case act safety"
-                        (property {
-                            let! state = Gen.item states
-
-                            let! mask =
-                                Gen.int32 (Range.constant 0 ((1 <<< CaseActKind.all.Length) - 1))
-
-                            let offered =
-                                CaseActKind.all
-                                |> List.indexed
-                                |> List.choose (fun (bit, act) ->
-                                    if mask &&& (1 <<< bit) <> 0 then Some act else None)
-
-                            let recommended = CaseAdvice.recommended state offered
-
-                            return
-                                recommended
-                                |> Option.forall (fun act ->
-                                    List.contains act offered
-                                    && not (
-                                        List.contains
-                                            act
-                                            [
-                                                CaseActKind.Void
-                                                CaseActKind.Reinstate
-                                                CaseActKind.Erase
-                                            ]
-                                    ))
-                                && recommended = CaseAdvice.recommended state (List.rev offered)
-                        }))
         ]
 
 let private actor =

@@ -14,12 +14,12 @@ open ClaimCore.TestSupport
 let private context =
     {
         ProductVersion = "fixture"
-        Basis = Inputs.workBasis
+        Basis = DomainInputs.workBasis
     }
 
 let private account =
-    { Inputs.actorReference (CaseFixtures.actorId CliReplyFixtures.id) with
-        DisplayName = DisplayName.Named(Inputs.name "Tess")
+    { DomainInputs.actorReference (CaseFixtures.actorId CliReplyFixtures.id) with
+        DisplayName = DisplayName.Named(DomainInputs.name "Tess")
     }
 
 let private rendered language value =
@@ -34,15 +34,15 @@ let kindGoldens =
                 [
                     PresentedValue.money (
                         Money.create
-                            (Amount.parse "100" |> Fixtures.accepted)
-                            (Currency.parse "EUR" |> Fixtures.accepted)
+                            (Amount.parse "100" |> CaseBuilders.accepted)
+                            (Currency.parse "EUR" |> CaseBuilders.accepted)
                     ),
                     [ "100.00 EUR"; "100,00 EUR"; "100.00 EUR" ]
                     PresentedValue.moneyTotal
-                        (Currency.parse "USD" |> Fixtures.accepted)
-                        (DecimalTotal.parse "0" |> Fixtures.accepted),
+                        (Currency.parse "USD" |> CaseBuilders.accepted)
+                        (DecimalTotal.parse "0" |> CaseBuilders.accepted),
                     [ "0.00 USD"; "0,00 USD"; "0.00 USD" ]
-                    PresentedValue.Date(Inputs.date "2026-11-04"),
+                    PresentedValue.Date(DomainInputs.date "2026-11-04"),
                     [ "4 Nov 2026"; "4 nov. 2026"; "4 نوفمبر 2026" ]
                     PresentedValue.Instant(DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)),
                     [
@@ -50,7 +50,7 @@ let kindGoldens =
                         "4 nov. 2026 12:00 +00:00"
                         "4 نوفمبر 2026 12:00 +00:00"
                     ]
-                    PresentedValue.Party(Inputs.name "Tess"), List.replicate 3 "Tess"
+                    PresentedValue.Party(DomainInputs.name "Tess"), List.replicate 3 "Tess"
                     PresentedValue.Text "Text", List.replicate 3 "Text"
                     PresentedValue.Narrative "First\nSecond", List.replicate 3 "First\nSecond"
                     PresentedValue.Message "label.recorded",
@@ -61,7 +61,7 @@ let kindGoldens =
                     PresentedValue.Actor account, List.replicate 3 "Tess"
                     PresentedValue.State CaseHeadline.Erased, [ "Erased"; "Dzēsta"; "تم المحو" ]
                     PresentedValue.Count 42L, List.replicate 3 "42"
-                    PresentedValue.Reference(Inputs.reference "R-1"), List.replicate 3 "R-1"
+                    PresentedValue.Reference(DomainInputs.reference "R-1"), List.replicate 3 "R-1"
                     PresentedValue.Identifier "ID-1", List.replicate 3 "ID-1"
                     PresentedValue.Absent "label.notRecorded",
                     [ "Not recorded"; "Nav ierakstīts"; "غير مسجّل" ]
@@ -110,20 +110,19 @@ let reviews =
                         }
 
                     let review =
-                        OperationReview.Work
-                            {
-                                Parent = CliReplyFixtures.snapshot
-                                Reference = CliReplyFixtures.snapshot.Reference
-                                Before = before
-                                Proposed = proposed
-                                Context = context
-                            }
+                        Reviews.workReview
+                            (TaskId.ofLiteral "work.update")
+                            (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
+                            CliReplyFixtures.snapshot
+                            before
+                            proposed
+                            context
 
-                    let delta = ReviewScreen.operationReview None None review
+                    let delta = ReviewScreen.operationReview review
 
                     Expect.equal
                         (delta.Changes |> List.map _.Key)
-                        [ "handlingSummary" ]
+                        [ CaseId.format before.CaseId + ".summary" ]
                         "The core supplies only actual changes"
 
                     Expect.equal
@@ -136,20 +135,16 @@ let reviews =
                             "en"
                             None
                             (RepresentationReply.Human(
-                                HumanReplies.preview
-                                    (OperationInput.Work
-                                        {
-                                            OperationId = CliReplyFixtures.id
-                                            Target = CaseSelector.Id before.CaseId
-                                            ExpectedRevision = 1L
-                                            Act =
-                                                WorkAct.UpdateWork
-                                                    {
-                                                        Responsible = WorkValue.Keep
-                                                        Summary =
-                                                            WorkValue.Set "After\nSecond line"
-                                                    }
-                                        })
+                                HumanReplies.previewSubmission
+                                    (Submissions.create
+                                        "work.update"
+                                        CliReplyFixtures.id
+                                        (Binding.Work(
+                                            CaseSelector.Id before.CaseId,
+                                            Revision.first
+                                        ))
+                                        (Submissions.fields
+                                            [ BusinessField.HandlingSummary, "After\nSecond line" ]))
                                     {
                                         PreviewReply.OperationId = CliReplyFixtures.id
                                         Outcome = Outcome.Succeeded(Previewed.Reviewed review)
@@ -175,9 +170,9 @@ let reviews =
                         "Unchanged person does not become a fake change")
             testCase "case money changes are atomic and erasure removes retained fields" (fun () ->
                 let input =
-                    Inputs.registrationWith
+                    DomainInputs.registrationWith
                         [ BusinessField.ClaimedAmount, "0"; BusinessField.ClaimedCurrency, "EUR" ]
-                        Inputs.registration
+                        DomainInputs.registration
 
                 let fields = CaseState.fields CliReplyFixtures.snapshot.State |> Option.get
 
@@ -197,7 +192,7 @@ let reviews =
                                 { fields with
                                     Registration =
                                         CaseFixtures.registration (
-                                            Inputs.registrationWith
+                                            DomainInputs.registrationWith
                                                 [ BusinessField.ClaimedAmount, "12.3400" ]
                                                 input
                                         )
@@ -205,22 +200,18 @@ let reviews =
                     }
 
                 let review proposed =
-                    OperationReview.Case
-                        {
-                            Before = Some before
-                            Proposed = proposed
-                            Changes =
-                                ClaimCore.Application.CaseChanges.review
-                                    (Some before)
-                                    { After = proposed; Payment = None }
-                            Context = context
-                        }
+                    Reviews.caseReview
+                        (TaskId.ofLiteral "case.amendRegistration")
+                        (Binding.Case(CaseSelector.Id before.CaseId, before.Revision))
+                        (Some before)
+                        proposed
+                        context
 
-                let delta = ReviewScreen.operationReview None None (review proposed)
+                let delta = ReviewScreen.operationReview (review proposed)
 
                 Expect.equal
                     (delta.Changes |> List.map _.Key)
-                    [ "claimedAmount" ]
+                    [ CaseId.format before.CaseId + ".claimedAmount" ]
                     "The currency is not a competing changed field"
 
                 Expect.equal
@@ -230,15 +221,12 @@ let reviews =
                     "All accepted money digits and minor units survive"
 
                 let erased =
-                    ReviewScreen.operationReview
-                        None
-                        None
-                        (review { before with State = CaseState.Erased })
+                    ReviewScreen.operationReview (review { before with State = CaseState.Erased })
 
                 Expect.isTrue
                     (erased.Changes
                      |> List.exists (fun change ->
-                         change.Key = "claimedAmount"
+                         change.Key = CaseId.format before.CaseId + ".claimedAmount"
                          && change.After = PresentedValue.Absent "lifecycle.ERASED.label"))
                     "Erasure is a real removal, even with an empty historical scalar changes list"
 
@@ -267,12 +255,12 @@ let reviews =
                             Subject =
                                 ReceiptSubject.People
                                     {
-                                        Act = PeopleActKind.Disable
+                                        Act = (TaskId.ofLiteral "people.disable")
                                         TargetActor = PeopleTargetDisclosure.Withheld identity
                                         Effects =
                                             [
                                                 {
-                                                    Act = PeopleActKind.Disable
+                                                    Act = (TaskId.ofLiteral "people.disable")
                                                     Id =
                                                         EffectId.create
                                                             CliReplyFixtures.receipt.OperationId
@@ -288,7 +276,7 @@ let reviews =
                                             ]
                                     }
                             Basis =
-                                { Inputs.workBasis with
+                                { DomainInputs.workBasis with
                                     // November has a stable abbreviation across the supported ICU versions.
                                     // Keep observation on a different day from both business and recording dates.
                                     BusinessDate = DateOnly(2026, 10, 31)
@@ -350,16 +338,15 @@ let assignmentIdentity =
             }
 
         let review =
-            OperationReview.Work
-                {
-                    Parent = CliReplyFixtures.snapshot
-                    Reference = CliReplyFixtures.snapshot.Reference
-                    Before = before
-                    Proposed = after
-                    Context = context
-                }
+            Reviews.workReview
+                (TaskId.ofLiteral "work.update")
+                (Binding.Work(CaseSelector.Id before.CaseId, before.Revision))
+                CliReplyFixtures.snapshot
+                before
+                after
+                context
 
-        let delta = ReviewScreen.operationReview None None review
+        let delta = ReviewScreen.operationReview review
 
         Expect.equal
             delta.Changes

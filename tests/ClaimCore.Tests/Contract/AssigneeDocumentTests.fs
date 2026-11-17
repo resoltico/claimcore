@@ -22,8 +22,8 @@ let private document () =
         {
             CaseId = parent
             WorkRevision = Revision.first
-            Basis = Inputs.workBasis
-            Items = [ Inputs.actorReference (actor 1); Inputs.actorReference (actor 2) ]
+            Basis = DomainInputs.workBasis
+            Items = [ DomainInputs.actorReference (actor 1); DomainInputs.actorReference (actor 2) ]
             NextCursor = Some "choice-next"
         }
 
@@ -54,15 +54,15 @@ let tests =
                                  (TaskAffordances.field BusinessField.ResponsibleActor)
                                  action.Seeds))
                         [
-                            SubmissionValue.Text(ActorId.format (actor 1))
-                            SubmissionValue.Text(ActorId.format (actor 2))
+                            InputValue.Text(ActorId.format (actor 1))
+                            InputValue.Text(ActorId.format (actor 2))
                         ]
                         "No row-key join supplies the choice identity"
 
                     for action in selections do
                         Expect.equal
                             action.Binding
-                            (OperationBinding.Work(CaseSelector.Id parent, 1L))
+                            (Some(Binding.Work(CaseSelector.Id parent, Revision.first)))
                             "The actual read's version binds the selection"
 
                     Expect.equal

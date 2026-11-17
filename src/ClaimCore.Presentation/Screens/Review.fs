@@ -1,393 +1,409 @@
 namespace ClaimCore.Presentation
 
-open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ScreenEntries
-open CaseScreen
-open PersonScreen
 
+/// Only part wording adapts the Domain's authoritative differences to display values.
 module ReviewScreen =
     let flatten sections =
         sections |> List.collect (fun (section: Section) -> section.Entries)
 
-    let private paymentChanges (changes: PaymentCollectionDifference) =
-        let amount totals entry =
-            match totals with
-            | Some(totals: PaymentTotals) ->
-                Money.create (PaymentEntry.amount entry) (Money.currencyValue totals.Payable)
-            | None -> invalidOp "A payment change requires its financial context."
+    let private changed key label format (change: ValueChange<'value>) =
+        {
+            PresentedChange.Key = key
+            LabelId = label
+            Before = optional format change.Before
+            After = optional format change.After
+        }
 
-        let changed key label before after =
-            {
-                PresentedChange.Key = key
-                LabelId = label
-                Before = before
-                After = after
-            }
+    let private actor references id =
+        references.Actors
+        |> List.tryFind (fun actor -> actor.ActorId = id)
+        |> Option.map PresentedValue.Actor
+        |> Option.defaultWith (fun () ->
+            invalidOp "A changed account has no authorized current label.")
 
-        [
-            for change in changes.Entries do
-                let entry = PaymentDifference.entry change
-                let key = "payment." + OperationId.format (PaymentEntry.id entry)
-                let date = PresentedValue.Date(PaymentEntry.date entry)
+    let private fieldValues (fields: CaseFields option) =
+        let values =
+            fields
+            |> Option.map (fun fields ->
+                FieldPresentation.declarations
+                |> List.map (fun declaration ->
+                    declaration.Field, CaseFields.typedValue declaration.Field fields)
+                |> Map.ofList)
 
-                match change with
-                | PaymentDifference.Recorded _ ->
-                    yield changed (key + ".date") "field.paymentDate.label" absent date
+        entries (ScreenEntries.fields FieldPresentation.declarations id) values
+        |> List.filter (fun entry ->
+            match entry.Value with
+            | PresentedValue.Absent _ -> false
+            | _ -> true)
 
-                    yield
+    let describePart references (partId: System.Guid) description =
+        let prefix = partId.ToString("D") + "."
+
+        match description with
+        | PartDescription.Case value ->
+            let fields =
+                value.Fields
+                |> List.map (fun field ->
+                    changed
+                        (prefix + BusinessField.key field.FieldName)
+                        (FieldPresentation.labelId field.FieldName)
+                        scalar
+                        {
+                            Before = field.Before
+                            After = field.After
+                        })
+
+            let money =
+                value.Money
+                |> List.map (fun field ->
+                    changed
+                        (prefix + BusinessField.key field.FieldName)
+                        (FieldPresentation.labelId field.FieldName)
+                        PresentedValue.money
+                        field.Change)
+
+            let lifecycle =
+                value.Lifecycle
+                |> Option.map (
+                    changed
+                        (prefix + "lifecycle")
+                        "input.lifecycle.label"
+                        (code Lifecycle.vocabulary)
+                )
+                |> Option.toList
+
+            let after = fieldValues value.Values.After
+
+            let changedFields =
+                (value.Fields |> List.map _.FieldName) @ (value.Money |> List.map _.FieldName)
+                |> List.map BusinessField.key
+                |> Set.ofList
+
+            let unchanged =
+                if value.Values.Before.IsNone || value.Values.After.IsNone then
+                    []
+                else
+                    after |> List.filter (fun entry -> not (Set.contains entry.Key changedFields))
+
+            let removals =
+                fields @ money
+                |> List.map (fun change ->
+                    if value.Lifecycle |> Option.bind _.After = Some Lifecycle.Erased then
+                        match change.After with
+                        | PresentedValue.Absent _ ->
+                            { change with
+                                After = PresentedValue.Absent "lifecycle.ERASED.label"
+                            }
+                        | _ -> change
+                    else
+                        change)
+
+            let reason =
+                value.Disposition
+                |> Option.map (fun disposition ->
+                    let reason = CaseDisposition.reason disposition
+
+                    changed
+                        (prefix + "reason")
+                        "field.reason.label"
+                        (Reason.format >> PresentedValue.Narrative)
+                        { Before = None; After = Some reason })
+                |> Option.toList
+
+            removals @ lifecycle @ reason, unchanged
+        | PartDescription.Payment value ->
+            let removed = value.Removed |> Option.bind _.After = Some true
+            let totals = if removed then value.Totals.Before else value.Totals.After
+
+            let entry =
+                value.Entry
+                |> Option.toList
+                |> List.collect (fun entry ->
+                    let pair item =
+                        if removed then
+                            { Before = Some item; After = None }
+                        else
+                            { Before = None; After = Some item }
+
+                    let amount =
+                        totals
+                        |> Option.map (fun totals ->
+                            Money.create
+                                (PaymentEntry.amount entry)
+                                (Money.currencyValue totals.Payable))
+
+                    [
                         changed
-                            (key + ".amount")
-                            "field.paidAmount.label"
-                            absent
-                            (PresentedValue.money (amount changes.After entry))
-                | PaymentDifference.Removed _ ->
-                    yield changed (key + ".date") "field.paymentDate.label" date absent
+                            (prefix + "date")
+                            "field.paymentDate.label"
+                            PresentedValue.Date
+                            (pair (PaymentEntry.date entry))
+                        match amount with
+                        | Some amount ->
+                            changed
+                                (prefix + "amount")
+                                "field.paidAmount.label"
+                                PresentedValue.money
+                                (pair amount)
+                        | None -> ()
+                    ])
 
-                    yield
-                        changed
-                            (key + ".amount")
-                            "field.paidAmount.label"
-                            (PresentedValue.money (amount changes.Before entry))
-                            absent
-            for key, label, select in
+            let balances =
                 [
                     "paid", "label.paid", (fun (totals: PaymentTotals) -> totals.Paid)
                     "remaining", "label.remaining", (fun totals -> totals.Remaining)
-                ] do
-                let before = changes.Before |> Option.map select
-                let after = changes.After |> Option.map select
+                ]
+                |> List.choose (fun (key, label, select) ->
+                    let before = value.Totals.Before |> Option.map select
+                    let after = value.Totals.After |> Option.map select
 
-                if before <> after then
-                    yield
+                    if before = after then
+                        None
+                    else
+                        Some(
+                            changed
+                                (prefix + key)
+                                label
+                                PresentedValue.money
+                                { Before = before; After = after }
+                        ))
+
+            entry @ balances, []
+        | PartDescription.Work value ->
+            let differences =
+                [
+                    value.Responsible
+                    |> Option.map (
                         changed
-                            key
+                            (prefix + "responsible")
+                            "field.responsibleActor.label"
+                            (actor references)
+                    )
+                    value.Summary
+                    |> Option.map (
+                        changed
+                            (prefix + "summary")
+                            "field.handlingSummary.label"
+                            (HandlingSummary.format >> PresentedValue.Narrative)
+                    )
+                ]
+                |> List.choose id
+
+            let unchanged =
+                [
+                    if value.Responsible.IsNone then
+                        match value.Values.After |> Option.bind _.Responsible with
+                        | Some id ->
+                            ScreenEntries.value
+                                "responsible"
+                                "field.responsibleActor.label"
+                                Prominence.Primary
+                                (actor references id)
+                        | None -> ()
+                    if value.Summary.IsNone then
+                        match value.Values.After |> Option.bind _.Summary with
+                        | Some text ->
+                            ScreenEntries.value
+                                "summary"
+                                "field.handlingSummary.label"
+                                Prominence.Primary
+                                (PresentedValue.Narrative(HandlingSummary.format text))
+                        | None -> ()
+                ]
+
+            differences, unchanged
+        | PartDescription.Reminder value ->
+            let differences =
+                [
+                    value.Action
+                    |> Option.map (
+                        changed
+                            (prefix + "action")
+                            "field.reminderAction.label"
+                            (ReminderAction.format >> PresentedValue.Text)
+                    )
+                    value.Due
+                    |> Option.map (
+                        changed (prefix + "due") "field.reminderDueDate.label" PresentedValue.Date
+                    )
+                    value.State
+                    |> Option.map (
+                        changed
+                            (prefix + "state")
+                            "input.reminderState.label"
+                            (code ReminderState.vocabulary)
+                    )
+                ]
+                |> List.choose id
+
+            let unchanged =
+                [
+                    if value.Action.IsNone then
+                        match value.Plans.After with
+                        | Some plan ->
+                            ScreenEntries.value
+                                "action"
+                                "field.reminderAction.label"
+                                Prominence.Primary
+                                (PresentedValue.Text(ReminderAction.format plan.Action))
+                        | None -> ()
+                    if value.Due.IsNone then
+                        match value.Plans.After with
+                        | Some plan ->
+                            ScreenEntries.value
+                                "due"
+                                "field.reminderDueDate.label"
+                                Prominence.Primary
+                                (PresentedValue.Date plan.Due)
+                        | None -> ()
+                ]
+
+            differences, unchanged
+        | PartDescription.Note value ->
+            [
+                value.Text
+                |> Option.map (
+                    changed
+                        (prefix + "text")
+                        "field.noteText.label"
+                        (NoteText.format >> PresentedValue.Narrative)
+                )
+                value.Removed
+                |> Option.map (changed (prefix + "removed") "change.NOTE.removed" boolean)
+            ]
+            |> List.choose id,
+            []
+        | PartDescription.Person value ->
+            let changes =
+                [
+                    value.Enabled
+                    |> Option.map (changed (prefix + "enabled") "label.enabled" boolean)
+                    value.ProfilePresent
+                    |> Option.map (changed (prefix + "profile") "label.profile" boolean)
+                    value.DisplayName
+                    |> Option.map (
+                        changed
+                            (prefix + "name")
+                            "field.profile.displayName.label"
+                            PresentedValue.Party
+                    )
+                    value.Contact
+                    |> Option.map (
+                        changed
+                            (prefix + "contact")
+                            "field.profile.contact.label"
+                            (ContactText.format >> PresentedValue.Text)
+                    )
+                ]
+                |> List.choose id
+
+            let principal =
+                value.Principal
+                |> Option.toList
+                |> List.collect (fun principal ->
+                    let identityFact select format key label =
+                        changed
+                            (prefix + "principal." + key)
                             label
-                            (optional PresentedValue.money before)
-                            (optional PresentedValue.money after)
-        ]
+                            format
+                            {
+                                Before = principal.Before |> Option.map select
+                                After = principal.After |> Option.map select
+                            }
 
-    let caseReviewPresentation (review: AdvisoryReview) =
-        let declarations =
-            FieldPresentation.declarations
-            |> List.filter (fun field ->
-                field.Section <> Some CaseSection.Work
-                && field.Group <> Some RecordGroup.Payment)
-
-        let snapshotValues (snapshot: CaseSnapshot option) =
-            declarations
-            |> List.map (fun field ->
-                field.Field,
-                (match snapshot with
-                 | Some snapshot when field.Field = BusinessField.CaseReference ->
-                     Some(CaseFieldValue.Reference snapshot.Reference)
-                 | Some snapshot ->
-                     CaseState.fields snapshot.State
-                     |> Option.bind (CaseFields.typedValue field.Field)
-                 | None -> None))
-            |> Map.ofList
-
-        let sides get snapshot =
-            review.Changes.Fields
-            |> List.fold
-                (fun values change -> Map.add change.FieldName (get change) values)
-                (snapshotValues snapshot)
-
-        let definitions = fields declarations (fun values -> Some values)
-        let before = entries definitions (sides _.Before review.Before)
-        let after = entries definitions (sides _.After (Some review.Proposed))
-
-        let changedKeys =
-            review.Changes.Fields
-            |> List.map (fun change ->
-                declarations
-                |> List.tryFind (fun field -> field.Pairs = Some change.FieldName)
-                |> Option.map _.Field
-                |> Option.defaultValue change.FieldName
-                |> BusinessField.key)
-            |> Set.ofList
-
-        let erased = CaseState.lifecycle review.Proposed.State = Lifecycle.Erased
-
-        let changed =
-            List.zip before after
-            |> List.choose (fun (before, after) ->
-                if Set.contains after.Key changedKeys then
-                    Some
-                        {
-                            PresentedChange.Key = after.Key
-                            LabelId = after.LabelId
-                            Before = before.Value
-                            After =
-                                if erased && after.Value = absent then
-                                    PresentedValue.Absent "lifecycle.ERASED.label"
-                                else
-                                    after.Value
-                        }
-                else
-                    None)
-
-        let lifecycle =
-            review.Changes.Lifecycle
-            |> Option.toList
-            |> List.map (fun change ->
-                {
-                    PresentedChange.Key = "lifecycle"
-                    LabelId = "input.lifecycle.label"
-                    Before = optional (code Lifecycle.vocabulary) change.Before
-                    After = code Lifecycle.vocabulary change.After
-                })
-
-        let unchanged =
-            if review.Before.IsNone || erased then
-                []
-            else
-                (after |> List.filter (fun entry -> not (Set.contains entry.Key changedKeys)))
-                @ (if review.Changes.Lifecycle.IsNone then
-                       [
-                           value
-                               "lifecycle"
-                               "input.lifecycle.label"
-                               Prominence.Primary
-                               (code
-                                   Lifecycle.vocabulary
-                                   (CaseState.lifecycle review.Proposed.State))
-                       ]
-                   else
-                       [])
-
-        lifecycle
-        @ changed
-        @ (review.Changes.Payments |> Option.map paymentChanges |> Option.defaultValue []),
-        unchanged
-
-    let profileEntries (profile: ActorProfile option) =
-        [
-            value
-                "profileName"
-                "field.profile.displayName.label"
-                Prominence.Primary
-                (optional
-                    (fun (profile: ActorProfile) -> PresentedValue.Party profile.DisplayName)
-                    profile)
-            value
-                "profileContact"
-                "field.profile.contact.label"
-                Prominence.Primary
-                (profile
-                 |> Option.bind _.Contact
-                 |> optional (ContactText.format >> PresentedValue.Text))
-        ]
-
-    let peopleStateEntries (state: PeopleState) =
-        [ value "enabled" "label.enabled" Prominence.Primary (boolean state.Enabled) ]
-        @ profileEntries state.Profile
-        @ (state.Grants
-           |> List.collect (fun item ->
-               let identity =
-                   Role.token item.Role
-                   + "."
-                   + (match item.Scope with
-                      | GrantScope.Installation -> "installation"
-                      | GrantScope.Case(id, _) -> CaseId.format id)
-
-               grant item
-               |> List.map (fun entry ->
-                   { entry with
-                       Key = identity + "." + entry.Key
-                   })))
-
-    let peopleEffects (effects: PeopleReviewEffect list) =
-        effects
-        |> List.map (fun effect ->
-            let kind, details =
-                match effect with
-                | PeopleReviewEffect.Register principal
-                | PeopleReviewEffect.ProvisionOwner principal ->
-                    let kind, issuer, subject = PrincipalKey.parts principal
-
-                    (match effect with
-                     | PeopleReviewEffect.Register _ -> PeopleActKind.Register
-                     | _ -> PeopleActKind.ProvisionOwner),
                     [
-                        value
-                            "principalKind"
+                        identityFact
+                            (fun value -> let kind, _, _ = PrincipalKey.parts value in kind)
+                            (code PrincipalKind.vocabulary)
+                            "kind"
                             "field.principal.kind.label"
-                            Prominence.Detail
-                            (code PrincipalKind.vocabulary kind)
-                        value
+                        identityFact
+                            (fun value -> let _, issuer, _ = PrincipalKey.parts value in issuer)
+                            PresentedValue.Identifier
                             "issuer"
                             "field.principal.issuer.label"
-                            Prominence.Detail
-                            (PresentedValue.Identifier issuer)
-                        value
+                        identityFact
+                            (fun value -> let _, _, subject = PrincipalKey.parts value in subject)
+                            PresentedValue.Identifier
                             "subject"
                             "field.principal.subject.label"
-                            Prominence.Detail
-                            (PresentedValue.Identifier subject)
-                    ]
-                | PeopleReviewEffect.SetProfile _ -> PeopleActKind.SetProfile, []
-                | PeopleReviewEffect.EraseProfile -> PeopleActKind.EraseProfile, []
-                | PeopleReviewEffect.Grant item -> PeopleActKind.Grant, grant item
-                | PeopleReviewEffect.Revoke item -> PeopleActKind.Revoke, grant item
-                | PeopleReviewEffect.Enable -> PeopleActKind.Enable, []
-                | PeopleReviewEffect.Disable -> PeopleActKind.Disable, []
-
-            section
-                "label.effect"
-                (value "act" "label.action" Prominence.Primary (code PeopleActKind.vocabulary kind)
-                 :: details))
-
-    let sameValue before after =
-        match before, after with
-        | PresentedValue.Actor before, PresentedValue.Actor after -> before.ActorId = after.ActorId
-        | _ -> before = after
-
-    let changes afterMissing before after =
-        let previous =
-            before |> List.map (fun (entry: Entry) -> entry.Key, entry) |> Map.ofList
-
-        let proposed =
-            after |> List.map (fun (entry: Entry) -> entry.Key, entry) |> Map.ofList
-
-        let keys = (after @ before) |> List.map _.Key |> List.distinct
-
-        keys
-        |> List.fold
-            (fun (changed, unchanged) key ->
-                let old = Map.tryFind key previous
-                let next = Map.tryFind key proposed
-                let definition = next |> Option.orElse old |> Option.get
-                let oldValue = old |> Option.map _.Value |> Option.defaultValue absent
-                let newValue = next |> Option.map _.Value |> Option.defaultValue afterMissing
-
-                if sameValue oldValue newValue then
-                    changed,
-                    (if old.IsSome && next.IsSome then
-                         definition :: unchanged
-                     else
-                         unchanged)
-                else
-                    {
-                        PresentedChange.Key = key
-                        LabelId = definition.LabelId
-                        Before = oldValue
-                        After = newValue
-                    }
-                    :: changed,
-                    unchanged)
-            ([], [])
-        |> fun (changed, unchanged) -> List.rev changed, List.rev unchanged
-
-    let reviewValues =
-        function
-        | OperationReview.Case review ->
-            let changed, unchanged = caseReviewPresentation review
-
-            {
-                Changes = changed
-                Unchanged = unchanged
-                Effects = []
-                Basis = review.Context.Basis
-            }
-        | OperationReview.Work review ->
-            let changed, unchanged =
-                changes absent (workEntries review.Before) (workEntries review.Proposed)
-
-            {
-                Changes = changed
-                Unchanged = unchanged
-                Effects = []
-                Basis = review.Context.Basis
-            }
-        | OperationReview.Note review ->
-            let changed, unchanged =
-                changes
-                    absent
-                    (review.Before |> Option.map NotesScreen.entries |> Option.defaultValue [])
-                    (NotesScreen.entries review.Proposed)
-
-            {
-                Changes = changed
-                Unchanged = unchanged
-                Effects = []
-                Basis = review.Context.Basis
-            }
-        | OperationReview.Reminder review ->
-            let after =
-                match review.Effects with
-                | ReminderEffects.Created item
-                | ReminderEffects.Changed item -> reminderEntries item
-                | ReminderEffects.CompletedAndPlanned(completed, next) ->
-                    reminderEntries completed @ reminderEntries next
-
-            let changed, unchanged =
-                changes
-                    absent
-                    (review.Before |> Option.map reminderEntries |> Option.defaultValue [])
-                    after
-
-            {
-                Changes = changed
-                Unchanged = unchanged
-                Effects = []
-                Basis = review.Context.Basis
-            }
-        | OperationReview.People review ->
-            let changed, unchanged =
-                changes absent (peopleStateEntries review.Before) (peopleStateEntries review.After)
-
-            {
-                Changes = changed
-                Unchanged = unchanged
-                Effects = peopleEffects review.Effects
-                Basis = review.Basis
-            }
-
-    let authoredDetails act input =
-        let consequence =
-            act
-            |> Option.toList
-            |> List.collect (fun kind ->
-                match Consequence.ofAct kind with
-                | Consequence.Routine -> []
-                | _ ->
-                    [
-                        section
-                            "label.effect"
-                            [
-                                value
-                                    "consequence"
-                                    "label.effect"
-                                    Prominence.Primary
-                                    (PresentedValue.Message(PresentationKeys.consequence kind))
-                            ]
                     ])
 
-        let intent =
-            match input with
-            | Some(OperationInput.Case {
-                                           Act = CaseAct.Void reason | CaseAct.Reinstate reason
-                                       }) ->
+            let unchanged =
                 [
-                    section
-                        "label.details"
-                        [
-                            value
-                                "reason"
-                                "field.reason.label"
+                    match value.Profiles.After with
+                    | Some profile ->
+                        if value.DisplayName.IsNone then
+                            ScreenEntries.value
+                                "name"
+                                "field.profile.displayName.label"
                                 Prominence.Primary
-                                (PresentedValue.Text reason)
-                        ]
+                                (PresentedValue.Party profile.DisplayName)
+
+                        if value.Contact.IsNone then
+                            match profile.Contact with
+                            | Some contact ->
+                                ScreenEntries.value
+                                    "contact"
+                                    "field.profile.contact.label"
+                                    Prominence.Secondary
+                                    (PresentedValue.Text(ContactText.format contact))
+                            | None -> ()
+                    | None -> ()
                 ]
-            | _ -> []
 
-        consequence @ intent
+            let grants =
+                value.Grants
+                |> List.mapi (fun index grant ->
+                    let scope =
+                        match grant.Grant.Scope with
+                        | Scope.Installation -> code ScopeKind.vocabulary ScopeKind.Installation
+                        | Scope.Case id ->
+                            references.Cases
+                            |> List.tryFind (fun value -> value.CaseId = id)
+                            |> Option.map (fun value -> PresentedValue.Reference value.Reference)
+                            |> Option.defaultValue (PresentedValue.Identifier(CaseId.format id))
 
-    let operationReview act input review =
-        let described = reviewValues review
+                    changed
+                        (prefix + "role." + string index)
+                        ("role." + Role.token grant.Grant.Role + ".label")
+                        (fun active -> if active then scope else absent)
+                        {
+                            Before = Some grant.Before
+                            After = Some grant.After
+                        })
 
-        { described with
-            Effects = authoredDetails act input @ described.Effects
+            principal @ changes @ grants, unchanged
+
+    let operationReview (review: OperationReview) =
+        let parts =
+            review.Changes
+            |> List.map (fun part -> describePart review.References part.PartId part.Description)
+
+        let changes = parts |> List.collect fst
+        let unchanged = parts |> List.collect snd
+
+        let effects =
+            changes
+            |> List.map (fun change ->
+                section
+                    change.LabelId
+                    [
+                        value
+                            (change.Key + ".before")
+                            "label.before"
+                            Prominence.Secondary
+                            change.Before
+                        value (change.Key + ".after") "label.after" Prominence.Primary change.After
+                    ])
+
+        {
+            ReviewDescription.Changes = changes
+            Unchanged = unchanged
+            Effects = effects
+            Basis = review.Context.Basis
         }

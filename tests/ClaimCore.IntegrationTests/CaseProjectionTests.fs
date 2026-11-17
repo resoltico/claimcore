@@ -10,7 +10,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 let private installation = Guid.Parse "80000000-0000-4000-8000-000000000001"
@@ -27,7 +31,7 @@ let private snapshot (reference: string) : CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration = CaseFixtures.registration Inputs.registration
+                    Registration = CaseFixtures.registration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
             )
@@ -41,22 +45,7 @@ let private stored (snapshot: CaseSnapshot) : StoredCase =
         SnapshotBytes = CaseRecord.encodeSnapshot snapshot
     }
 
-let private history (snapshot: CaseSnapshot) : CaseHistory =
-    {
-        PaymentProjections = Map.empty
-        Revision = snapshot.Revision
-        ChangedAt = DateTimeOffset.UnixEpoch
-        Snapshot = Some snapshot
-        Reference = Some snapshot.Reference
-        State = CaseState.Active()
-        Status =
-            CaseState.fields snapshot.State
-            |> Option.map _.Status
-            |> Option.defaultValue CaseStatus.Opened
-        MissingPayloadAt = None
-        PresentPayloadAt = Some(Sequence.create 1L |> Option.get)
-        ErasedAt = None
-    }
+let private history (snapshot: CaseSnapshot) = stored snapshot
 
 let private mismatch =
     Error
@@ -66,16 +55,11 @@ let private mismatch =
         }
 
 let private compare histories rows =
-    Replay.caseRecords
-        { Replay.initial None with
-            Cases = histories
-        }
-    |> Result.bind (fun expected ->
-        ProjectionVerification.rows
-            VerificationFinding.CaseProjection
-            (fun (row: StoredCase) -> row.CaseId)
-            expected
-            rows)
+    ProjectionVerification.rows
+        VerificationFinding.CaseProjection
+        (fun (row: StoredCase) -> row.CaseId)
+        histories
+        rows
 
 let private collection () =
     let a = stored (snapshot "synthetic-a")
@@ -143,7 +127,7 @@ let private liveState () =
                             CaseState.Active(
                                 { fields with
                                     Registration =
-                                        (ClaimCore.TestSupport.Inputs.registrationStateWith
+                                        (ClaimCore.TestSupport.DomainInputs.registrationStateWith
                                             [
                                                 BusinessField.ClaimedAmount,
                                                 Admitted.Amount(
@@ -178,18 +162,10 @@ let private erasedState () =
 
     let row = stored erased
 
-    let accepted =
-        { history live with
-            Revision = CaseFixtures.revision 2L
-            Snapshot = None
-            State = CaseState.Erased
-            MissingPayloadAt = Some(Sequence.create 1L |> Option.get)
-            PresentPayloadAt = None
-            ErasedAt = Some(Sequence.create 2L |> Option.get)
-        }
+    let accepted = stored erased
 
-    let check (history: CaseHistory) (row: StoredCase) =
-        compare (Map.ofList [ row.CaseId, history ]) [ row ]
+    let check (expected: StoredCase) (row: StoredCase) =
+        compare (Map.ofList [ row.CaseId, expected ]) [ row ]
 
     Expect.equal (check accepted row) (Ok()) "Erased identity and revision remain covered"
 
@@ -211,16 +187,6 @@ let private erasedState () =
         ] do
         Expect.equal (check accepted changed) mismatch "Erased identity revision and state refuse"
 
-    for changed in
-        [
-            { accepted with
-                State = CaseState.Active()
-            }
-            { accepted with
-                MissingPayloadAt = None
-            }
-        ] do
-        Expect.equal (check changed row) mismatch "Erased evidence remains required"
 
 let private projectionFields: CaseFields =
     {
@@ -228,18 +194,18 @@ let private projectionFields: CaseFields =
         Status = CaseStatus.Closed
         Registration =
             CaseFixtures.registration (
-                ClaimCore.TestSupport.Inputs.registrationWith
+                ClaimCore.TestSupport.DomainInputs.registrationWith
                     [
                         BusinessField.ClaimantName, ("Synthetic claimant")
                         BusinessField.InsurerName, ("Synthetic insurer")
                         BusinessField.ClaimedAmount, ("1234.5678")
                     ]
-                    (Inputs.registration)
+                    (DomainInputs.registration)
             )
         Finance =
             ClaimCore.TestSupport.CaseFixtures.finance
                 (Some(
-                    ClaimCore.TestSupport.Inputs.decisionStateFrom
+                    ClaimCore.TestSupport.DomainInputs.decisionStateFrom
                         [
                             BusinessField.PaymentDecisionDate,
                             Admitted.Date(CaseFixtures.date "2026-08-04")
@@ -254,7 +220,7 @@ let private projectionFields: CaseFields =
                 [
                     CaseFixtures.paymentEntry
                         (System.Guid.Parse "20000000-0000-7000-8000-000000000003")
-                        (Inputs.paymentFrom
+                        (DomainInputs.paymentFrom
                             [
                                 BusinessField.PaymentDate, "2026-08-05"
                                 BusinessField.PaidAmount, "987.6543"
@@ -291,7 +257,7 @@ let private projectionBindings () =
         Map.ofList
             [
                 "case_id", box (CaseId.value expected.CaseId)
-                "creation_reference", box "synthetic-layout"
+                "reserved_reference", box "synthetic-layout"
                 "case_reference", box "synthetic-layout"
                 "revision", box 4L
                 "state", box "VOIDED"
@@ -339,14 +305,7 @@ let private projectionBindings () =
                 |> ignore)
             "Every identity and snapshot mismatch is an integrity fault"
 
-    let histories =
-        Map.ofList
-            [
-                expected.CaseId,
-                { history snapshot with
-                    State = CaseState.Voided()
-                }
-            ]
+    let histories = Map.ofList [ expected.CaseId, history snapshot ]
 
     let noncanonical = Array.append [| byte ' ' |] expected.SnapshotBytes
     Expect.isOk (CaseRecord.decodeSnapshot noncanonical) "Whitespace retains snapshot meaning"
@@ -368,7 +327,7 @@ let private storedRead (database: PostgresFixture.Database) =
 
     database.Fixture.Store.Read
         {
-            Work = (fun tx -> tx.FindCase id)
+            Work = (fun tx -> FamilyReads.findCase tx id)
             CancellationToken = VerificationSupport.token
         }
 
@@ -482,35 +441,46 @@ let private roundTrips database =
 
         do! check "ACTIVE" 1L
 
-        for number, revision, act, state in
+        for number, revision, taskName, values, state in
             [
                 11,
                 1L,
-                AuthoredCaseAct.AmendRegistration(
-                    Inputs.registrationUpdate (
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, ("Changed synthetic") ]
-                            (Inputs.registration)
+                "case.amendRegistration",
+                Submissions.updates (
+                    RegistrationUpdateInput.values (
+                        DomainInputs.registrationUpdate (
+                            DomainInputs.registrationWith
+                                [ BusinessField.ClaimantName, "Changed synthetic" ]
+                                DomainInputs.registration
+                        )
                     )
                 ),
                 "ACTIVE"
-                12, 2L, AuthoredCaseAct.Void "Synthetic correction", "VOIDED"
-                13, 3L, (AuthoredCaseAct.Bare BareAct.Erase), "ERASED"
+                12,
+                2L,
+                "case.void",
+                Map.ofList
+                    [
+                        Submissions.input InputTarget.Reason,
+                        SubmissionValue.Text "Synthetic correction"
+                    ],
+                "VOIDED"
+                13, 3L, "case.erase", Map.empty, "ERASED"
             ] do
             let! result =
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        ClaimCore.TestSupport.StoreFixtures.request
-                            database.Fixture
-                            number
-                            "synthetic-a"
-                            revision
-                            act
-                    ))
+                    (StoreFixtures.request
+                        database.Fixture
+                        number
+                        "synthetic-a"
+                        revision
+                        taskName
+                        values)
                     VerificationSupport.token
 
-            ClaimCore.TestSupport.StoreFixtures.accepted result |> ignore
+            StoreFixtures.accepted result |> ignore
+
             do! check state (revision + 1L)
     }
 

@@ -36,9 +36,11 @@ let tests =
                         "The supplied business zone is retained and the instant is never relabelled as that zone")
             testCase "aggregate money preserves forty integer digits and ISO minor units" (fun () ->
                 let total raw =
-                    DecimalTotal.parse raw |> Fixtures.accepted
+                    DecimalTotal.parse raw |> CaseBuilders.accepted
 
-                let currency raw = Currency.parse raw |> Fixtures.accepted
+                let currency raw =
+                    Currency.parse raw |> CaseBuilders.accepted
+
                 let large = "9999999999999999999999999999999999999999.1234"
 
                 let actual =
@@ -87,7 +89,7 @@ let tests =
                         actual
                         "Aggregate money is never truncated, including narrow cards")
             testCase "calendar dates and country names use the explicit display language" (fun () ->
-                let date = Inputs.date "2026-11-04"
+                let date = DomainInputs.date "2026-11-04"
 
                 Expect.equal
                     (TextDescriptorValue.render "en" (PresentedValue.Date date))
@@ -163,13 +165,13 @@ let tests =
                             "Zero and producer order are retained"
                     | _ -> failtest "Expected a result table")
             testCase "full case facts retain non-listed fields and pair money once" (fun () ->
-                let reference = Inputs.reference "CARD-1"
+                let reference = DomainInputs.reference "CARD-1"
 
                 let facts: CaseFields =
                     {
                         CaseReference = reference
                         Status = CaseStatus.Opened
-                        Registration = Inputs.admittedRegistration Inputs.registration
+                        Registration = DomainInputs.admittedRegistration DomainInputs.registration
                         Finance = FinancialPosition.undecided
                     }
 
@@ -219,7 +221,7 @@ let tests =
                                     CaseFixtures.caseId (
                                         Guid.Parse "80000000-0000-7000-8000-000000000002"
                                     )
-                                Reference = Inputs.reference "ERASED-1"
+                                Reference = DomainInputs.reference "ERASED-1"
                                 Revision = CaseFixtures.revision 2L
                                 State = state
                             }
@@ -268,8 +270,8 @@ let tests =
                 let actorId =
                     CaseFixtures.actorId (Guid.Parse "80000000-0000-7000-8000-000000000003")
 
-                let actor = Inputs.namedActorReference actorId "Aija"
-                let due = Inputs.date "2026-11-05"
+                let actor = DomainInputs.namedActorReference actorId "Aija"
+                let due = DomainInputs.date "2026-11-05"
 
                 let reminder =
                     Reminder.ofAccepted
@@ -289,14 +291,24 @@ let tests =
                 let reply: ReminderReadModel =
                     {
                         Reminder = reminder
-                        Reference = Inputs.reference "REM-1"
+                        Reference = DomainInputs.reference "REM-1"
                         ClaimantName =
                             PartyName.parse "Synthetic claimant"
                             |> Result.defaultWith (string >> failtest)
                         Responsible = None
                         RecordedAt = basis.ObservedAt
                         RecordedBy = actor
-                        Acts = [ ReminderActKind.Complete ]
+                        Offers =
+                            [
+                                Inputs.offeredTask
+                                    "reminder.complete"
+                                    (Binding.Reminder(
+                                        CaseSelector.Id(Reminder.caseId reminder),
+                                        Reminder.id reminder,
+                                        Reminder.revision reminder
+                                    ))
+                                    Map.empty
+                            ]
                         Active = true
                         Timing = Some ReminderDue.Upcoming
                     }

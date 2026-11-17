@@ -1,9 +1,10 @@
+import { apiEndpoints, isCurrentCase, type CurrentCase } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useState } from "react";
 import type { OperationReceipt } from "../../protocol/types";
 import type { CaseListControl } from "../CaseList";
 import { useEndpoint } from "../../hooks/useEndpoint";
-import { isCurrentCase, type CurrentCase } from "../../api/service";
+
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { Dialog } from "../../ui/Dialog";
@@ -30,7 +31,7 @@ export const CaseReassignment = ({
   const { row } = selection;
   const caseId = row.binding.target.kind === "ID" ? row.binding.target.caseId : "";
   const query = useEndpoint(
-    "case.get",
+    apiEndpoints.caseGet,
     { target: { kind: "ID", caseId } },
     disclosureAvailable,
     selection.readId,
@@ -68,7 +69,7 @@ export const CaseReassignment = ({
     <WorkOperation
       current={parent}
       subject="WORK"
-      kind="work.update"
+      kind={row.task}
       targetIdentity={selection.readId}
       affordance={row}
       binding={row.binding}

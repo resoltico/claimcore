@@ -8,9 +8,14 @@ open ClaimCore.Presentation
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -25,25 +30,33 @@ let internal disabledExecutor (database: PostgresFixture.Database) =
         do! register database.Fixture actor 3 reader
 
         let! disabled =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 4)
-                        reader
-                        (PeopleAct.Disable)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 4))
+                        (reader)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (actor) submission ((token))
+            }))
 
         acceptedPeople disabled
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request database.Fixture 11 "another" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("another")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         do!
@@ -80,13 +93,28 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
             rewrite
                 database
                 (accepted granted).Position.Sequence
-                (updatePeople (
-                    PeopleAct.Grant
+                (updatePeople
+                    "people.grant"
+                    (Submissions.grant
                         {
                             Role = Role.Owner
-                            Scope = Scope.Installation
-                        }
-                ))
+                            Scope = GrantTarget.Installation
+                        })
+                    (fun person ->
+                        { person with
+                            Grants =
+                                [
+                                    {
+                                        Grant =
+                                            {
+                                                Role = Role.Owner
+                                                Scope = Scope.Installation
+                                            }
+                                        Active = true
+                                    }
+                                ]
+                        }))
+
 
         do! finding VerificationFinding.HumanRequired database
     }
@@ -96,20 +124,27 @@ let internal lastOwner (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! unchanged =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 20)
-                        database.Fixture.Owner
-                        (PeopleAct.Enable)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 20))
+                        (database.Fixture.Owner)
+                        (None)
+                        "people.enable"
+                        (Map.empty)
 
-        do! rewrite database (accepted unchanged).Position.Sequence (updatePeople PeopleAct.Disable)
+                return! Service.executeSubmission (actor) submission ((token))
+            }))
 
-        do! finding VerificationFinding.PeopleFold database
+        do!
+            rewrite
+                database
+                (accepted unchanged).Position.Sequence
+                (updatePeople "people.disable" Map.empty (fun person ->
+                    { person with Enabled = false }))
+
+        do! finding VerificationFinding.StateSequence database
     }
 
 let internal asOfCapabilityRequired (database: PostgresFixture.Database) =
@@ -119,11 +154,17 @@ let internal asOfCapabilityRequired (database: PostgresFixture.Database) =
         do! register database.Fixture actor 3 reader
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request database.Fixture 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (10)
+                    ("synthetic-a")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         do!
@@ -132,7 +173,7 @@ let internal asOfCapabilityRequired (database: PostgresFixture.Database) =
                 (accepted opened).Position.Sequence
                 (VerificationScenarioInputs.executor (CaseFixtures.actorId (id database.Fixture 3)))
 
-        do! finding VerificationFinding.PeopleFold database
+        do! finding VerificationFinding.StateSequence database
     }
 
 let internal precedence (database: PostgresFixture.Database) =
@@ -174,13 +215,28 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             rewrite
                 database
                 (CaseFixtures.sequence 3L)
-                (updatePeople (
-                    PeopleAct.Grant
+                (updatePeople
+                    "people.grant"
+                    (Submissions.grant
                         {
                             Role = Role.PaymentRecorder
-                            Scope = Scope.Case snapshot.CaseId
-                        }
-                ))
+                            Scope = GrantTarget.CaseId snapshot.CaseId
+                        })
+                    (fun person ->
+                        { person with
+                            Grants =
+                                [
+                                    {
+                                        Grant =
+                                            {
+                                                Role = Role.PaymentRecorder
+                                                Scope = Scope.Case snapshot.CaseId
+                                            }
+                                        Active = true
+                                    }
+                                ]
+                        }))
+
 
         let caseId = CaseFixtures.caseId (id database.Fixture 10)
 
@@ -194,5 +250,5 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
                     box (Role.token Role.PaymentRecorder)
                 |]
 
-        do! finding VerificationFinding.PeopleFold database
+        do! finding VerificationFinding.StateSequence database
     }

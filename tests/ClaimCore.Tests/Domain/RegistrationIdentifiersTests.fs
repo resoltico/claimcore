@@ -1,11 +1,8 @@
 module ClaimCore.Tests.RegistrationIdentifiersTests
 
 open System
-open System.Text
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Json
-open ClaimCore.Wire
 open ClaimCore.TestSupport
 
 let private required value =
@@ -13,39 +10,81 @@ let private required value =
 
 let private today = DateOnly(2026, 9, 7)
 
-let private run number revision act previous =
-    Case.parse
-        {
-            ExpectedFamilySequence =
-                if CaseAct.kind act = CaseActKind.Erase then
-                    Some 1L
-                else
-                    None
-            OperationId = Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
-            CaseReference = "IDENTIFIERS"
-            ExpectedRevision = revision
-            Act = act
+let private values members =
+    members
+    |> List.map (fun (field, value) -> TaskInputId.Target(InputTarget.Field field), value)
+    |> Map.ofList
+
+let private text members =
+    members
+    |> List.map (fun (field, value) -> field, InputValue.Text value)
+    |> values
+
+let private run number revision task members previous =
+    let context = ClaimCore.Tests.TaskBuilders.context number
+
+    let context =
+        { context with
+            Decision =
+                { context.Decision with
+                    BusinessDate = Some today
+                }
         }
-    |> Result.mapError CaseDecisionError.Refused
-    |> Result.bind (fun command -> Case.decide today Map.empty command previous)
+
+    let id =
+        previous
+        |> Option.map (fun (state: ClaimCore.Domain.Aggregates.CaseFamily) -> state.Id)
+        |> Option.defaultValue (CaseId.ofOperationId context.Stamp.OperationId)
+
+    let binding =
+        if task = "case.open" then
+            Binding.CaseNew Revision.zero
+        elif task = "case.erase" then
+            Binding.CaseErase(
+                CaseSelector.Id id,
+                Revision.create revision |> Option.get,
+                previous.Value.Sequence
+            )
+        else
+            Binding.Case(CaseSelector.Id id, Revision.create revision |> Option.get)
+
+    let members =
+        if task = "case.open" then
+            members
+            |> Map.add
+                (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                (InputValue.Text "IDENTIFIERS")
+        else
+            members
+
+    let input = InputMap.create members Map.empty |> Option.get
+
+    let selected =
+        match ClaimCore.Domain.Tasks.Registry.find (TaskId.ofLiteral task) with
+        | Some(ClaimCore.Domain.Tasks.Task.Family task) -> task
+        | _ -> failtest "Expected family task."
+
+    selected.Decide context ClaimCore.Tests.TaskBuilders.environment previous binding input
     |> required
-    |> _.After
-    |> Case.ofAccepted
-    |> required
+    |> List.fold
+        (fun state change ->
+            Some(ClaimCore.Domain.Aggregates.CaseFamily.apply state change |> required))
+        previous
+    |> Option.get
+
+let private snapshot record =
+    ClaimCore.Domain.Aggregates.CaseFamily.snapshot record |> Option.get
 
 let private registration record =
-    (Case.snapshot record).State |> CaseState.fields |> Option.get |> _.Registration
-
-let private patch members =
-    RegistrationUpdateInput.create members |> required
+    (snapshot record).State |> CaseState.fields |> Option.get |> _.Registration
 
 let private facts =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [
             BusinessField.PolicyNumber, "LV / Polise 42"
             BusinessField.InsurerClaimReference, "ملف / 17"
         ]
-        Inputs.registration
+        DomainInputs.registration
 
 [<Tests>]
 let tests =
@@ -55,13 +94,19 @@ let tests =
             testCase
                 "optional identifiers open amend correct and erase through ordinary field inputs"
                 (fun () ->
-                    let absent = run 1 0L (CaseAct.Open Inputs.registration) None
+                    let absent =
+                        run
+                            1
+                            0L
+                            "case.open"
+                            (text (RegistrationInput.values DomainInputs.registration))
+                            None
 
                     Expect.isNone
                         (Registration.policyNumber (registration absent))
                         "Omitted policy is absent"
 
-                    let opened = run 2 0L (CaseAct.Open facts) None
+                    let opened = run 2 0L "case.open" (text (RegistrationInput.values facts)) None
 
                     Expect.equal
                         (Registration.policyNumber (registration opened)
@@ -79,9 +124,8 @@ let tests =
                         run
                             3
                             1L
-                            (CaseAct.AmendRegistration(
-                                patch [ BusinessField.PolicyNumber, Some "Policy 43" ]
-                            ))
+                            "case.amendRegistration"
+                            (values [ BusinessField.PolicyNumber, InputValue.Text "Policy 43" ])
                             (Some opened)
 
                     Expect.equal
@@ -96,20 +140,26 @@ let tests =
                         (Some "ملف / 17")
                         "Omitted fact stays"
 
-                    let decided = run 4 2L (CaseAct.Decide Inputs.decision) (Some amended)
+                    let decided =
+                        run
+                            4
+                            2L
+                            "case.decide"
+                            (text (DecisionInput.values DomainInputs.decision))
+                            (Some amended)
 
                     let corrected =
                         run
                             5
                             3L
-                            (CaseAct.Correct
-                                {
-                                    Registration =
-                                        Amendment.Update(
-                                            patch [ BusinessField.PolicyNumber, None ]
-                                        )
-                                    Decision = Change.Keep
-                                })
+                            "case.correct"
+                            (values [ BusinessField.PolicyNumber, InputValue.Null ]
+                             |> Map.add
+                                 (TaskInputId.Target(InputTarget.Group RecordGroup.Registration))
+                                 (InputValue.Text "UPDATE")
+                             |> Map.add
+                                 (TaskInputId.Target(InputTarget.Group RecordGroup.Decision))
+                                 (InputValue.Text "KEEP"))
                             (Some decided)
 
                     Expect.isNone
@@ -122,10 +172,10 @@ let tests =
                         (Some "ملف / 17")
                         "Correction preserves the other identifier"
 
-                    let erased = run 6 4L (CaseAct.Bare BareAct.Erase) (Some corrected)
+                    let erased = run 6 4L "case.erase" Map.empty (Some corrected)
 
                     Expect.equal
-                        (Case.snapshot erased).State
+                        (snapshot erased).State
                         CaseState.Erased
                         "Erasure retains no registration facts")
             testCase
@@ -152,62 +202,4 @@ let tests =
                             String.replicate 81 "😀"
                         ] do
                         Expect.isError (admit value) "Invalid identifier is refused")
-            testCase
-                "canonical codecs use optional identifiers and flat atomic money pairs"
-                (fun () ->
-                    let encoded = ClaimCore.RecordFormat.CanonicalInputs.registration.Write facts
-
-                    Expect.equal
-                        (JsonValue.tryMember "policyNumber" encoded)
-                        (Some(JsonValue.String "LV / Polise 42"))
-                        "Declaration reaches the create codec"
-
-                    let decoded =
-                        Codec.decode
-                            4096
-                            ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate
-                            (Encoding.UTF8.GetBytes
-                                "{\"policyNumber\":null,\"claimedAmount\":\"12.50\",\"claimedCurrency\":\"EUR\"}")
-                        |> required
-
-                    Expect.equal
-                        (RegistrationUpdateInput.tryValue BusinessField.ClaimedAmount decoded)
-                        (Some "12.50")
-                        "Flat amount remains authored"
-
-                    let parsed = RegistrationUpdateInput.parse decoded |> required
-
-                    Expect.equal
-                        (RegistrationUpdate.changes parsed
-                         |> List.tryFind (fst >> (=) BusinessField.PolicyNumber))
-                        (Some(BusinessField.PolicyNumber, None))
-                        "Clear survives parsing"
-
-                    for json in
-                        [
-                            "{\"claimedAmount\":\"12.50\"}"
-                            "{\"claimedCurrency\":\"EUR\"}"
-                            "{\"claimed\":{\"amount\":\"12.50\",\"currency\":\"EUR\"}}"
-                        ] do
-                        Expect.isError
-                            (Codec.decode
-                                4096
-                                ClaimCore.RecordFormat.CanonicalInputs.registrationUpdate
-                                (Encoding.UTF8.GetBytes json))
-                            "Incomplete or nested money refuses"
-
-                    Expect.isOk
-                        (Codec.decode
-                            4096
-                            ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate
-                            (Encoding.UTF8.GetBytes
-                                "{\"payableAmount\":\"12.50\",\"payableCurrency\":\"EUR\"}"))
-                        "Decision money uses the same flat shape"
-
-                    Expect.isError
-                        (Codec.decode
-                            4096
-                            ClaimCore.RecordFormat.CanonicalInputs.decisionUpdate
-                            (Encoding.UTF8.GetBytes "{\"payableAmount\":\"12.50\"}"))
-                        "Decision money cannot be half asserted")
         ]

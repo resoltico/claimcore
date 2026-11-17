@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain

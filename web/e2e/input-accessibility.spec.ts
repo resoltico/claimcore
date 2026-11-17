@@ -215,7 +215,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         inputMessage(language, "field.caseReference.label"),
       );
       await expect(reference).toHaveAccessibleDescription(
-        `${inputMessage(language, "ui.existingCaseSelectionHint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+        `${inputMessage(language, "label.existingCaseSelectionHint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
       );
       await reference.fill("Synthetic reference");
       await expect(reference).not.toHaveAttribute("aria-invalid");

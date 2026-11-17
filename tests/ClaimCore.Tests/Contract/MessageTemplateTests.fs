@@ -25,7 +25,7 @@ let private accepted () =
 
     for row in examples.RootElement.GetProperty("accepted").EnumerateArray() do
         let source = row.GetProperty("source").GetString() |> nonNull
-        let template = Template.parse source |> Fixtures.accepted
+        let template = Template.parse source |> CaseBuilders.accepted
         let expected = row.GetProperty("expected").GetString() |> nonNull
 
         Expect.equal
@@ -49,7 +49,7 @@ let private rejected () =
 
 let private arguments () =
     let template =
-        Template.parse "Request {operationId}: {result}." |> Fixtures.accepted
+        Template.parse "Request {operationId}: {result}." |> CaseBuilders.accepted
 
     Expect.equal
         (Template.arguments template)
@@ -69,7 +69,7 @@ let private arguments () =
 let private catalog () =
     let catalog =
         Messages.catalog [ "notice.accepted", "Accepted {operationId}." ]
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
 
     Expect.equal
         (Messages.render catalog "notice.accepted" (Map.ofList [ "operationId", "synthetic" ]))

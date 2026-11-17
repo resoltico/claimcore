@@ -13,6 +13,10 @@ open System.Text
 open System.Text.Json
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
@@ -20,10 +24,7 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private httpRequest request =
-    Codec.encode
-        Api.operationExecute.Input
-        (ClaimCore.TestSupport.Inputs.caseOperation request
-         |> ClaimCore.TestSupport.Submissions.ofCommand None)
+    Codec.encode Api.operationExecute.Input request
 
 let private outcome (bytes: byte array) =
     use document = JsonDocument.Parse bytes
@@ -40,16 +41,20 @@ let private caller (database: PostgresFixture.Database) =
             |> Result.defaultWith (fun _ -> failtest "Synthetic human")
 
         let! registered =
-            (Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 20)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 20))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (owner) submission ((token))
+            }))
 
         acceptedPeople registered
 
@@ -110,7 +115,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         do! readRetained host csrf name
 
         let values =
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.ClaimantName, (name)
                     BusinessField.InsurerName, ("Corrected insurer")
@@ -119,11 +124,14 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         let reaffirm =
             request
-                database.Fixture
-                11
-                "HISTORICAL-1"
-                1L
-                (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
+                (database.Fixture)
+                (11)
+                ("HISTORICAL-1")
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values ((DomainInputs.registrationUpdate values))
+                ))
 
         let! status, response = host.Call("operation.execute", httpRequest reaffirm, csrf)
 
@@ -136,15 +144,18 @@ let private retainedHistory (database: PostgresFixture.Database) =
 
         let changed =
             request
-                database.Fixture
-                12
-                "HISTORICAL-1"
-                2L
-                (AuthoredCaseAct.AmendRegistration(
-                    Inputs.registrationUpdate (
-                        ClaimCore.TestSupport.Inputs.registrationWith
-                            [ BusinessField.ClaimantName, (name + "B") ]
-                            (values)
+                (database.Fixture)
+                (12)
+                ("HISTORICAL-1")
+                (2L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values (
+                        (DomainInputs.registrationUpdate (
+                            ClaimCore.TestSupport.DomainInputs.registrationWith
+                                [ BusinessField.ClaimantName, (name + "B") ]
+                                (values)
+                        ))
                     )
                 ))
 
@@ -207,7 +218,13 @@ let private absentRevision (database: PostgresFixture.Database) =
         let! before = verified database
 
         let pending =
-            request database.Fixture 31 "ABSENT-REVISION" 0L (AuthoredCaseAct.Open registration)
+            request
+                (database.Fixture)
+                (31)
+                ("ABSENT-REVISION")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
         let responses = ResizeArray<_>()
 
@@ -232,17 +249,27 @@ let private absentRevision (database: PostgresFixture.Database) =
         Expect.equal after before "Neither rejected operation records a ledger entry"
 
         let! view =
-            inspectCase
-                database.Fixture
-                (database.Fixture.Owner)
-                (Some pending.OperationId)
-                (pending.CaseReference)
-                (token)
+            database.Fixture.Store.Read
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! current = FamilyReads.findCaseByReference tx "ABSENT-REVISION"
+
+                                let! operation =
+                                    LedgerReads.findOperation
+                                        tx
+                                        (CaseFixtures.operationId pending.OperationId)
+
+                                return current, operation
+                            }
+                    CancellationToken = token
+                }
 
         match view with
-        | Ok view ->
-            Expect.isNone view.Case "No case projection was created"
-            Expect.isNone view.ExistingOperation "A rejected operation ID remains unused"
+        | Ok(current, operation) ->
+            Expect.isNone current "No case projection was created"
+            Expect.isNone operation "A rejected operation ID remains unused"
         | Error _ -> failtest "Expected authoritative refusal evidence"
 
         for _, status, response in responses do

@@ -4,7 +4,11 @@ open System
 open System.Threading
 open Expecto
 open Npgsql
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 
 let private token = CancellationToken.None

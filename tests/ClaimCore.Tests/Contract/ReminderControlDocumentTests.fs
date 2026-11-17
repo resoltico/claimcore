@@ -23,18 +23,34 @@ let private item =
             Revision.first
             (ReminderAction.parse "Editable action seed"
              |> Result.defaultWith (string >> failtest))
-            (CalendarDate.ofDate Inputs.workBasis.BusinessDate)
+            (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
             ReminderState.Pending
         |> Result.defaultWith failtest
 
     {
         ReminderReadModel.Reminder = reminder
         Reference = ResponseExamples.caseRead.Snapshot.Reference
-        ClaimantName = Inputs.name "Read-only claimant"
+        ClaimantName = DomainInputs.name "Read-only claimant"
         Responsible = None
-        RecordedAt = Inputs.workBasis.ObservedAt
+        RecordedAt = DomainInputs.workBasis.ObservedAt
         RecordedBy = ResponseExamples.caseRead.RecordedBy
-        Acts = [ ReminderActKind.Update; ReminderActKind.Complete ]
+        Offers =
+            [
+                Inputs.offeredTask
+                    "reminder.update"
+                    (Binding.Reminder(CaseSelector.Id parent, id, Revision.first))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.ReminderAction,
+                            InputValue.Text "Editable action seed"
+                            TaskInputId.Target InputTarget.ReminderDueDate,
+                            InputValue.Text(CalendarDate.format (Reminder.due reminder))
+                        ])
+                Inputs.offeredTask
+                    "reminder.complete"
+                    (Binding.Reminder(CaseSelector.Id parent, id, Revision.first))
+                    Map.empty
+            ]
         Active = true
         Timing = Some ReminderDue.Today
     }
@@ -47,7 +63,7 @@ let tests =
             let document =
                 HumanReadDocuments.reminders
                     {
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Items = [ item ]
                         NextCursor = None
                     }
@@ -56,18 +72,18 @@ let tests =
 
             Expect.equal
                 (controls |> List.map _.Task)
-                [
-                    TaskId.Operation(ActKind.Reminder ReminderActKind.Update)
-                    TaskId.Operation(ActKind.Reminder ReminderActKind.Complete)
-                ]
+                [ TaskId.ofLiteral "reminder.update"; TaskId.ofLiteral "reminder.complete" ]
                 "Literal offered task set"
 
             for control in controls do
                 Expect.equal
                     control.Binding
-                    (OperationBinding.Reminder(
-                        CaseSelector.Id(Reminder.caseId item.Reminder),
-                        Some(ReminderId.value (Reminder.id item.Reminder), 1L)
+                    (Some(
+                        Binding.Reminder(
+                            CaseSelector.Id(Reminder.caseId item.Reminder),
+                            Reminder.id item.Reminder,
+                            Revision.first
+                        )
                     ))
                     "The exact selected version binds both tasks"
 
@@ -75,7 +91,7 @@ let tests =
 
             Expect.equal
                 (Map.find (TaskAffordances.input InputTarget.ReminderAction) update.Seeds)
-                (SubmissionValue.Text "Editable action seed")
+                (InputValue.Text "Editable action seed")
                 "Only update offers the action seed"
 
             Expect.isEmpty controls.Tail.Head.Seeds "Completion carries no editable action or date"
@@ -83,7 +99,7 @@ let tests =
             let detail =
                 HumanReadDocuments.reminder
                     {
-                        Basis = Inputs.workBasis
+                        Basis = DomainInputs.workBasis
                         Item = item
                     }
 

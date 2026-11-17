@@ -12,8 +12,8 @@ import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
 import { Dashboard } from "../../../src/views/Dashboard";
-import type { HumanReadDocument_context } from "@contracts/client";
-const inactive: ReadonlyArray<HumanReadDocument_context> = [
+import type { RequesterDocument } from "../../../src/protocol/types";
+const inactive: ReadonlyArray<RequesterDocument> = [
   {
     subject: { kind: "REQUESTER", state: "NOT_REGISTERED", installationId: null, actorId: null },
     actions: [],
@@ -23,7 +23,17 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
     screen: {
       regions: [
         {
+          role: "NOTICE",
+          content: {
+            kind: "NOTICE",
+            messageId: "label.accessRequested",
+            tone: "INFO",
+            reason: { kind: "TEXT", value: "PRIVATE_NOTICE_CANARY" },
+          },
+        },
+        {
           role: "IDENTITY",
+          titleId: "label.accessPending",
           content: {
             kind: "ENTRIES",
             entries: [
@@ -62,6 +72,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
       regions: [
         {
           role: "IDENTITY",
+          titleId: "label.accessPending",
           content: {
             kind: "ENTRIES",
             entries: [
@@ -94,6 +105,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
       regions: [
         {
           role: "IDENTITY",
+          titleId: "label.accessDisabled",
           content: {
             kind: "ENTRIES",
             entries: [
@@ -113,7 +125,7 @@ const inactive: ReadonlyArray<HumanReadDocument_context> = [
   },
 ];
 it.each(inactive)(
-  "shows caller-owned $context.state guidance and performs no resource reads",
+  "shows caller-owned $subject.state guidance and performs no resource reads",
   async (requester) => {
     mockEndpoint("context").mockResolvedValue({
       kind: "outcome",
@@ -146,7 +158,7 @@ it.each(inactive)(
 );
 
 it.each(inactive)(
-  "keeps caller-owned $context.state guidance visible when Check access cannot reach the service",
+  "keeps caller-owned $subject.state guidance visible when Check access cannot reach the service",
   async (requester) => {
     mockEndpoint("context")
       .mockResolvedValueOnce({
@@ -165,6 +177,9 @@ it.each(inactive)(
     const directory = mockEndpoint("people.list");
     render(<Dashboard />);
     await screen.findByRole("heading", { level: 1 });
+    if (requester.subject.state === "NOT_REGISTERED") {
+      expect(screen.getByText("PRIVATE_NOTICE_CANARY")).toBeVisible();
+    }
     await userEvent.setup().click(screen.getByRole("button", { name: "Check access" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "ClaimCore could not be reached. Check your connection.",
@@ -179,6 +194,7 @@ it.each(inactive)(
     expect(screen.queryByText("Registered name")).toBeNull();
     expect(screen.queryByText("Disabled name")).toBeNull();
     expect(screen.queryByText("own-account")).toBeNull();
+    expect(screen.queryByText("PRIVATE_NOTICE_CANARY")).toBeNull();
     expect(cases).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
   },

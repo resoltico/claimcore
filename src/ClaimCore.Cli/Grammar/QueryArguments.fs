@@ -1,309 +1,175 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.CommandLine
-
 open System
 open System.Collections.Generic
 open System.Globalization
+open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
 
-/// Read commands acquire supplied identities and construct their declared typed query directly.
+/// Query and command arguments follow their declarations; the endpoint codec admits the typed request.
 module internal QueryArguments =
     let build
-        query
+        entry
         (options: Dictionary<string, string option list>)
         operands
         (problems: ResizeArray<UsageError>)
         =
+        let declaration =
+            EndpointDeclarations.find entry
+            |> Option.defaultWith (fun () ->
+                invalidArg (nameof entry) "An endpoint declaration is required.")
+
+        let used = HashSet<string>()
+        let mutable consumed = 0
+        let supplied = ResizeArray<TaskInputId * string>()
+
         let flag input =
             "--" + CommandGrammar.kebab (CommandGrammar.inputName input)
 
-        let target input = TaskInputId.Target input
-        let field input = target (InputTarget.Field input)
-        let used = HashSet<string>()
+        let acquire (input: CommandInput) =
+            match input.Argument with
+            | CommandArgument.Operand ->
+                let value = List.tryItem consumed operands
+                consumed <- consumed + 1
 
-        let values input =
-            let name = flag input
-            used.Add name |> ignore
+                if value.IsNone then
+                    problems.Add(
+                        UsageError.MissingOperand(
+                            CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+                            |> _.ToUpperInvariant()
+                        )
+                    )
 
-            match options.TryGetValue name with
-            | true, values -> values |> List.rev |> List.choose id
-            | _ -> []
+                value |> Option.toList
+            | CommandArgument.Named ->
+                let name = flag input.Name
+                used.Add name |> ignore
 
-        let raw input = values input |> List.tryHead
+                let values =
+                    match options.TryGetValue name with
+                    | true, values -> values |> List.rev |> List.choose id
+                    | _ -> []
 
-        let read input (codec: Codec<'a>) (value: string) =
-            match codec.Read "$" (JsonValue.String value) with
-            | Ok value -> Some value
-            | Error _ ->
-                problems.Add(UsageError.InvalidValue(flag input, value))
-                None
+                if values.IsEmpty && input.Required then
+                    problems.Add(UsageError.MissingOption name)
 
-        let text input maximum =
-            raw input |> Option.bind (read input (Codec.boundedText 1 maximum))
+                values
+            | CommandArgument.Implicit -> []
 
-        let uuid input (value: string) =
-            match Guid.TryParseExact(value, "D") with
-            | true, value -> Some value
-            | _ ->
-                problems.Add(UsageError.InvalidChoice(flag input, value, []))
-                None
-
-        let choice input vocabulary value =
-            Vocabulary.all vocabulary
-            |> List.tryFind (fun item ->
-                let token = Vocabulary.token vocabulary item in
-                value = token || value = CommandGrammar.kebab token)
+        let choice name choices value =
+            choices
+            |> List.tryFind (fun token -> value = token || value = CommandGrammar.kebab token)
             |> Option.orElseWith (fun () ->
                 problems.Add(
                     UsageError.InvalidChoice(
-                        flag input,
+                        flag name,
                         value,
-                        Vocabulary.all vocabulary
-                        |> List.map (Vocabulary.token vocabulary >> CommandGrammar.kebab)
+                        choices |> List.map CommandGrammar.kebab
                     )
                 )
 
                 None)
 
-        let optionalChoice input vocabulary =
-            raw input |> Option.bind (choice input vocabulary)
+        let uuid name value =
+            match Guid.TryParseExact(value, "D") with
+            | true, value when value <> Guid.Empty -> Some(Codec.uuid.Write value)
+            | _ ->
+                problems.Add(UsageError.InvalidChoice(flag name, value, []))
+                None
 
-        let choices input vocabulary =
-            values input |> List.choose (choice input vocabulary) |> List.distinct
+        let scalar (input: CommandInput) value =
+            let name = input.Name
 
-        let cursor maximum =
-            text (target InputTarget.Cursor) maximum
+            match input.Atom with
+            | CommandAtom.Choice choices -> choice name choices value |> Option.map JsonValue.String
+            | CommandAtom.Boolean ->
+                match value with
+                | "true" -> Some(JsonValue.Boolean true)
+                | "false" -> Some(JsonValue.Boolean false)
+                | _ ->
+                    problems.Add(UsageError.InvalidChoice(flag name, value, [ "true"; "false" ]))
+                    None
+            | CommandAtom.Integer ->
+                let maximum =
+                    declaration.Page
+                    |> Option.map _.MaximumLimit
+                    |> Option.defaultValue Paging.MaximumPageSize
 
-        let limit maximum fallback =
-            let input = target InputTarget.Limit
-
-            match raw input with
-            | None -> fallback
-            | Some value ->
                 match
-                    Int32.TryParse(
+                    Int64.TryParse(
                         value,
                         NumberStyles.AllowLeadingSign,
                         CultureInfo.InvariantCulture
                     )
                 with
-                | true, value when value >= 1 && value <= maximum -> value
+                | true, number when number >= 1L && number <= int64 maximum ->
+                    Some(JsonValue.Integer number)
                 | _ ->
-                    problems.Add(UsageError.InvalidRange(flag input, value, 1, maximum))
-                    fallback
+                    problems.Add(UsageError.InvalidRange(flag name, value, 1, maximum))
+                    None
+            | CommandAtom.Text ->
+                match name with
+                | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
+                    Some(RequestCodecs.caseSelector.Write(CaseSelector.Reference value))
+                | TaskInputId.ActorId
+                | TaskInputId.ResponsibleActorFilter
+                | TaskInputId.Target(InputTarget.OperationId | InputTarget.ReminderId) ->
+                    uuid name value
+                | TaskInputId.Target InputTarget.Cursor ->
+                    let maximum =
+                        declaration.Page
+                        |> Option.map _.MaximumCursorCharacters
+                        |> Option.defaultValue Paging.MaximumActorCursorCharacters
 
-        let mutable consumed = 0
-
-        let operand name =
-            consumed <- consumed + 1
-
-            match List.tryItem (consumed - 1) operands with
-            | Some value -> value
-            | None ->
-                problems.Add(UsageError.MissingOperand name)
-                ""
-
-        let caseTarget () =
-            CaseSelector.Reference(operand "CASE-REFERENCE")
-
-        let filter () =
-            let result =
-                CaseListFilter.create
-                    (choices TaskInputId.Lifecycle Lifecycle.vocabulary)
-                    (choices TaskInputId.Status CaseStatus.vocabulary)
-                    (choices TaskInputId.Progress CaseProgress.vocabulary)
-                    (raw (target InputTarget.Text))
-                    (optionalChoice TaskInputId.Order CaseListOrder.vocabulary
-                     |> Option.defaultValue CaseListOrder.Reference)
-
-            { result with
-                Assignment = optionalChoice TaskInputId.Assignment CaseAssignment.vocabulary
-                Due = optionalChoice TaskInputId.Due CaseDue.vocabulary
-                View = optionalChoice TaskInputId.CaseView CaseView.vocabulary
-                ResponsibleActor =
-                    raw TaskInputId.ResponsibleActorFilter
-                    |> Option.bind (uuid TaskInputId.ResponsibleActorFilter)
-                    |> Option.bind (fun id ->
-                        match ActorId.create id with
-                        | Some value -> Some value
-                        | None ->
-                            problems.Add(
-                                UsageError.InvalidValue(
-                                    flag TaskInputId.ResponsibleActorFilter,
-                                    ""
-                                )
-                            )
-
-                            None)
-            }
-
-        let typed =
-            match query with
-            | TaskId.Query QueryTaskId.CaseGet ->
-                EndpointValues.input Api.caseGet { Target = caseTarget () }
-            | TaskId.Query QueryTaskId.CaseAssignees ->
-                EndpointValues.input
-                    Api.caseAssignees
-                    {
-                        Target = caseTarget ()
-                        AfterCursor = cursor 512
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.CaseNotes ->
-                EndpointValues.input
-                    Api.caseNotes
-                    {
-                        Target = caseTarget ()
-                        AfterCursor = cursor 512
-                        Limit = limit NotePaging.MaximumLimit NotePaging.DefaultLimit
-                    }
-            | TaskId.Query QueryTaskId.CasePayments ->
-                EndpointValues.input
-                    Api.casePayments
-                    {
-                        Target = caseTarget ()
-                        AfterCursor = cursor 512
-                        Limit = limit PaymentPaging.MaximumLimit PaymentPaging.DefaultLimit
-                    }
-            | TaskId.Query QueryTaskId.CaseTimeline ->
-                EndpointValues.input
-                    Api.caseTimeline
-                    {
-                        Target = caseTarget ()
-                        Filter = optionalChoice TaskInputId.TimelineFilter TimelineFilter.vocabulary
-                        AfterCursor = cursor 512
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.CaseList ->
-                EndpointValues.input
-                    Api.caseList
-                    {
-                        Filter = filter ()
-                        Page =
-                            {
-                                AfterCursor = cursor Paging.MaximumCaseCursorCharacters
-                                Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                            }
-                    }
-            | TaskId.Query QueryTaskId.CaseSummary ->
-                EndpointValues.input Api.caseSummary (filter ())
-            | TaskId.Query QueryTaskId.ReminderGet ->
-                EndpointValues.input
-                    Api.reminder
-                    {
-                        Target = caseTarget ()
-                        ReminderId =
-                            raw (target InputTarget.ReminderId)
-                            |> Option.bind (uuid (target InputTarget.ReminderId))
-                            |> Option.defaultWith (fun () ->
-                                problems.Add(
-                                    UsageError.MissingOption(flag (target InputTarget.ReminderId))
-                                )
-
-                                Guid.Empty)
-                    }
-            | TaskId.Query QueryTaskId.ReminderList ->
-                let inactive =
-                    match raw TaskInputId.IncludeInactive with
-                    | None -> None
-                    | Some "true" -> Some true
-                    | Some "false" -> Some false
-                    | Some value ->
-                        problems.Add(
-                            UsageError.InvalidChoice(
-                                flag TaskInputId.IncludeInactive,
-                                value,
-                                [ "true"; "false" ]
-                            )
-                        )
-
+                    match (Codec.boundedText 1 maximum).Read "$" (JsonValue.String value) with
+                    | Ok value -> Some(JsonValue.String value)
+                    | Error _ ->
+                        problems.Add(UsageError.InvalidValue(flag name, value))
                         None
+                | TaskInputId.Target InputTarget.DirectorySearch ->
+                    match
+                        (Codec.boundedText 1 DirectorySearchText.MaximumCharacters).Read
+                            "$"
+                            (JsonValue.String value)
+                    with
+                    | Ok value -> Some(JsonValue.String value)
+                    | Error _ ->
+                        problems.Add(UsageError.InvalidValue(flag name, value))
+                        None
+                | _ -> Some(JsonValue.String value)
+            | CommandAtom.Choices _ -> invalidOp "Multiple choices are acquired together."
 
-                EndpointValues.input
-                    Api.reminders
-                    {
-                        Target =
-                            raw (field BusinessField.CaseReference)
-                            |> Option.map CaseSelector.Reference
-                        State = optionalChoice TaskInputId.ReminderState ReminderState.vocabulary
-                        View = optionalChoice TaskInputId.ReminderView ReminderView.vocabulary
-                        Due = optionalChoice TaskInputId.ReminderDue ReminderDue.vocabulary
-                        Assignment = optionalChoice TaskInputId.Assignment CaseAssignment.vocabulary
-                        Text = raw (target InputTarget.Text)
-                        IncludeInactive = inactive
-                        AfterCursor = cursor Paging.MaximumCaseCursorCharacters
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.OperationGet ->
-                EndpointValues.input
-                    Api.operationGet
-                    {
-                        OperationId =
-                            operand "OPERATION-ID"
-                            |> uuid (target InputTarget.OperationId)
-                            |> Option.defaultValue Guid.Empty
-                    }
-            | TaskId.Query QueryTaskId.PeopleList ->
-                EndpointValues.input
-                    Api.peopleList
-                    {
-                        Role = optionalChoice TaskInputId.RoleFilter Role.vocabulary
-                        Text = raw (target InputTarget.DirectorySearch)
-                        AfterCursor = cursor Paging.MaximumActorCursorCharacters
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.PeopleGrants ->
-                EndpointValues.input
-                    Api.peopleGrants
-                    {
-                        ActorId =
-                            operand "ACTOR-ID"
-                            |> uuid TaskInputId.ActorId
-                            |> Option.defaultValue Guid.Empty
-                        AfterCursor = cursor 512
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.PeopleHistory ->
-                EndpointValues.input
-                    Api.peopleHistory
-                    {
-                        TargetActorId =
-                            raw TaskInputId.ActorId |> Option.bind (uuid TaskInputId.ActorId)
-                        AfterCursor = cursor 512
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Query QueryTaskId.PeopleRequests ->
-                EndpointValues.input
-                    Api.peopleRequests
-                    {
-                        AfterCursor = cursor Paging.MaximumAccessRequestCursorCharacters
-                        Limit = limit Paging.MaximumPageSize Paging.DefaultPageSize
-                    }
-            | TaskId.Command CommandTaskId.PeopleRequestsDismiss ->
-                let required input =
-                    raw input
-                    |> Option.defaultWith (fun () ->
-                        problems.Add(UsageError.MissingOption(flag input))
-                        "")
+        let members =
+            CommandGrammar.inputs entry
+            |> List.choose (fun input ->
+                let values = acquire input
+                values |> List.iter (fun value -> supplied.Add(input.Name, value))
 
-                EndpointValues.input
-                    Api.peopleRequestsDismiss
-                    {
-                        Kind =
-                            required (target InputTarget.PrincipalKind)
-                            |> choice (target InputTarget.PrincipalKind) PrincipalKind.vocabulary
-                            |> Option.defaultValue PrincipalKind.Human
-                        Issuer = required (target InputTarget.PrincipalIssuer)
-                        Subject = required (target InputTarget.PrincipalSubject)
-                    }
-            | TaskId.Query QueryTaskId.Context -> EndpointValues.input Api.context ()
-            | TaskId.Query QueryTaskId.WorkViews -> EndpointValues.input Api.workViews ()
-            | TaskId.Operation _ -> invalidArg (nameof query) "Operations use task submissions."
+                let value =
+                    match input.Atom with
+                    | CommandAtom.Choices choices when not values.IsEmpty ->
+                        values
+                        |> List.choose (choice input.Name choices)
+                        |> List.distinct
+                        |> List.map JsonValue.String
+                        |> JsonValue.Array
+                        |> Some
+                    | _ -> values |> List.tryHead |> Option.bind (scalar input)
+
+                value
+                |> Option.map (fun value ->
+                    EndpointInputs.memberName declaration input.Name, value))
+
+        let members =
+            match declaration.Page with
+            | Some page when
+                not (members |> List.exists (fun (name, _) -> name = WireMembers.Limit))
+                ->
+                members @ [ WireMembers.Limit, JsonValue.Integer(int64 page.DefaultLimit) ]
+            | _ -> members
 
         operands
         |> List.skip (min consumed operands.Length)
@@ -311,6 +177,28 @@ module internal QueryArguments =
 
         for name in options.Keys do
             if not (used.Contains name || List.contains name CommandGrammar.globalFlags) then
-                problems.Add(UsageError.NotApplicable(name, TaskId.key query))
+                problems.Add(UsageError.NotApplicable(name, declaration.Id))
 
-        typed
+        if problems.Count > 0 then
+            None
+        else
+            let route =
+                Api.tryFind declaration.Id
+                |> Option.defaultWith (fun () -> invalidOp "The declared endpoint is unavailable.")
+
+            match route.ReadInput(JsonValue.Object members) with
+            | Ok input -> Some input
+            | Error problem ->
+                let argument =
+                    supplied
+                    |> Seq.tryFind (fun (input, _) ->
+                        problem.Path.StartsWith(
+                            "$." + EndpointInputs.memberName declaration input,
+                            StringComparison.Ordinal
+                        ))
+
+                match argument with
+                | Some(input, value) -> problems.Add(UsageError.InvalidValue(flag input, value))
+                | None -> problems.Add(UsageError.InvalidValue("command", problem.Reason))
+
+                None

@@ -58,7 +58,9 @@ module internal ApiRoutes =
                 Api.peopleRequests
                 HumanReadDocuments.requests
                 Service.accessRequests
-        | ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss ->
+        | ActorEndpoint.Command command when
+            command = (EndpointDeclarations.commands |> List.exactlyOne).Id
+            ->
             Route.representedRead
                 Api.peopleRequestsDismiss
                 HumanReadDocuments.dismissed
@@ -80,6 +82,9 @@ module internal ApiRoutes =
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
                 Service.executeSubmission
+
+        | ActorEndpoint.Command command ->
+            invalidArg (nameof command) "The command endpoint is not declared."
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -161,26 +166,13 @@ module internal ApiRoutes =
 
         | _ -> None
 
-    let private confirmationStore (admission: PrincipalAdmission) principal (store: IStore) =
-        { new IStore with
-            member _.Context query = store.Context query
-            member _.Read operation = store.Read operation
+    let private confirmationAdmission (admission: PrincipalAdmission) principal token =
+        task {
+            let! acquired = admission.Acquire(principal, RequestWorkload.Write, token)
 
-            member _.Write operation =
-                task {
-                    let! acquired =
-                        admission.Acquire(
-                            principal,
-                            RequestWorkload.Write,
-                            operation.CancellationToken
-                        )
-
-                    match acquired with
-                    | None -> return raise (WorkloadAdmissionRejectedException())
-                    | Some lease ->
-                        use _owned = lease
-                        return! store.Write operation
-                }
+            match acquired with
+            | None -> return raise (WorkloadAdmissionRejectedException())
+            | Some lease -> return lease
         }
 
     let handle (handler: ClaimCore.Server.Route) configuration withActor (context: HttpContext) =
@@ -259,8 +251,8 @@ module internal ApiRoutes =
                                         let core =
                                             match endpoint.Id with
                                             | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
-                                                Service.mapStore
-                                                    (confirmationStore
+                                                Service.withWriteAdmission
+                                                    (confirmationAdmission
                                                         admission
                                                         (AuthenticatedPrincipals.key principal))
                                                     core

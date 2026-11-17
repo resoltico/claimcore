@@ -1,3 +1,5 @@
+import { apiEndpoints } from "../../api/service";
+import { isOperationAffordance } from "../../operation/affordances";
 import type { taskChoices, CaseSelector, ReminderListRequest } from "@contracts/client";
 import { queryInput } from "../../protocol/taskCatalog";
 import { isTerm } from "../../presentation/terms";
@@ -8,7 +10,7 @@ import { Table } from "../../ui/regions/Table";
 import { Select } from "../../ui/Select";
 import { reminderActionPresentation, type ReminderActHandler } from "./reminderActions";
 import { ReminderList } from "./ReminderList";
-const stateChoice = queryInput("reminder.list", "input:reminderState");
+const stateChoice = queryInput(apiEndpoints.reminderList, "input:reminderState");
 type State = (typeof taskChoices.reminderState)[number];
 export const CaseNextActions = ({
   current,
@@ -67,7 +69,7 @@ export const CaseNextActions = ({
           actionPresentation={reminderActionPresentation}
           timeZone={current.basis.observation.timeZone}
           onAction={(action, _row, originId) => {
-            if (action.task !== "people.requests.dismiss") {
+            if (isOperationAffordance(action)) {
               onReminder(action, originId);
             }
           }}

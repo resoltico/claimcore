@@ -10,22 +10,30 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
 let private serviceCases fixture (admin: ServiceContext) principal =
     task {
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 400)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 400))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -33,16 +41,17 @@ let private serviceCases fixture (admin: ServiceContext) principal =
             let reference = $"SERVICE-{number}"
 
             let! opened =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            fixture
-                            (410 + number)
-                            reference
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        ((410 + number))
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (CancellationToken.None))
 
             accepted opened |> ignore

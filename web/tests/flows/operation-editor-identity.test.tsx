@@ -1,4 +1,9 @@
-import type { CaseSubmission, CurrentCase } from "../../src/api/service";
+import type { RequestByEndpoint, HumanRejection } from "@contracts/client";
+type CaseSubmission = Extract<
+  RequestByEndpoint["operation.execute"],
+  { binding: { kind: "CASE" } }
+>;
+import type { CurrentCase } from "../../src/api/service";
 import { prefixedInputs } from "../support/submission-inputs";
 import {
   caseSubject,
@@ -8,7 +13,6 @@ import {
   correctionChoices,
 } from "../support/case-document.fixtures";
 import { operationAffordance } from "../support/affordances.fixtures";
-import type { RequestByEndpoint, HumanRejection } from "@contracts/client";
 
 import { requestText, endpointResponse } from "../support/transport-response.fixtures";
 import { preview as reviewed } from "../support/operation-hook.fixtures";

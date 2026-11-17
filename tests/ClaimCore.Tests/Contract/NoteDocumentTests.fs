@@ -23,7 +23,7 @@ let private notes =
                     Text =
                         NoteText.parse "Core note narrative Ω"
                         |> Result.defaultWith (string >> failtest)
-                    RecordedAt = Inputs.workBasis.ObservedAt
+                    RecordedAt = DomainInputs.workBasis.ObservedAt
                     RecordedBy = ResponseExamples.caseRead.RecordedBy
                     CanRemove = true
                 }
@@ -36,7 +36,7 @@ let private documents () =
     [
         HumanReadDocuments.notes
             {
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 CaseId = ResponseExamples.caseRead.Snapshot.CaseId
                 Reference = ResponseExamples.caseRead.Snapshot.Reference
                 Notes = notes
@@ -70,14 +70,16 @@ let tests =
 
                         Expect.equal
                             action.Task
-                            (TaskId.Operation(ActKind.Note NoteActKind.RemoveNote))
+                            (TaskId.ofLiteral "note.remove")
                             "The removal task is supplied by Core"
 
                         Expect.equal
                             action.Binding
-                            (OperationBinding.Note(
-                                CaseSelector.Id ResponseExamples.caseRead.Snapshot.CaseId,
-                                Some(NoteId.value id)
+                            (Some(
+                                Binding.Note(
+                                    CaseSelector.Id ResponseExamples.caseRead.Snapshot.CaseId,
+                                    id
+                                )
                             ))
                             "No row-key lookup binds the note"
 
@@ -95,7 +97,7 @@ let tests =
                 let document =
                     HumanReadDocuments.notes
                         {
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                             CaseId = ResponseExamples.snapshot.CaseId
                             Reference = ResponseExamples.snapshot.Reference
                             Notes = readOnly

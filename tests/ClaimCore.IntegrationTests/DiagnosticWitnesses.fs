@@ -15,6 +15,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
@@ -22,29 +26,12 @@ open ClaimCore.IntegrationTests.ApplicationFixtures
 let internal ct = CancellationToken.None
 
 let internal decision: DecisionInput =
-    (ClaimCore.TestSupport.Inputs.decisionFrom
+    (ClaimCore.TestSupport.DomainInputs.decisionFrom
         [
             BusinessField.PaymentDecisionDate, ("2026-08-15")
             BusinessField.PayableAmount, ("750.00")
             BusinessField.PayableCurrency, ("EUR")
         ])
-
-let internal keep: AuthoredCorrection =
-    {
-        Registration = Amendment.Keep
-        Decision = Change.Keep
-    }
-
-let internal correction value = (AuthoredCaseAct.Correct value)
-
-let internal payment =
-    (AuthoredCaseAct.RecordPayment(
-        ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("2026-08-20") ]
-    ))
-
-let internal decided = (AuthoredCaseAct.Decide decision)
-let internal closed = (AuthoredCaseAct.Bare BareAct.Close)
-let internal voided = (AuthoredCaseAct.Void "Synthetic reason")
 
 let internal baseline =
     lazy
@@ -133,7 +120,7 @@ let internal diagnostic reason =
 let internal refused (reply: ExecuteReply) =
     match reply.Outcome with
     | ExecuteResult.Rejected reason -> diagnostic reason
-    | _ -> failtest "The request must produce a public refusal."
+    | other -> failtestf "The request must produce a public refusal: %A" other
 
 let internal queryRefused =
     function
@@ -141,51 +128,52 @@ let internal queryRefused =
     | _ -> failtest "The query must produce a public refusal."
 
 let internal execute actor pending =
-    (Service.execute
-        (actor: ServiceContext)
-        (ClaimCore.TestSupport.Inputs.caseOperation pending)
-        (ct))
+    (Service.executeSubmission (actor: ServiceContext) ((pending)) (ct))
 
 let internal opening fixture values =
-    { openRequest fixture 10 "REACH-1" with
-        Act = (AuthoredCaseAct.Open values)
-    }
+    request
+        fixture
+        10
+        "REACH-1"
+        0L
+        "case.open"
+        (Submissions.fields (RegistrationInput.values values))
 
 let internal textRequests fixture () =
     [
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (String(char 0xD800, 1)) ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (" Synthetic") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, (String('x', 201)) ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic\nParty") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimantName, ("Synthetic​Party") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.InsurerName, ("") ]
                 (registration))
     ]
@@ -194,22 +182,22 @@ let internal registrationRequests fixture () =
     [
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentNotificationDate, ("not-a-date") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentDate, ("2026-08-05") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.IncidentDate, ("2027-01-01")
                     BusinessField.IncidentNotificationDate, ("2027-01-02")
@@ -217,17 +205,17 @@ let internal registrationRequests fixture () =
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.IncidentCountry, ("Latvia") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimedAmount, ("-1") ]
                 (registration))
         opening
             fixture
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [ BusinessField.ClaimedCurrency, ("Euro") ]
                 (registration))
     ]
@@ -235,55 +223,83 @@ let internal registrationRequests fixture () =
 let internal controlRequests fixture () =
     [
         openRequest fixture 10 "bad reference"
-        { openRequest fixture 10 "REACH-1" with
-            OperationId = Guid.Empty
-        }
-        { openRequest fixture 10 "REACH-1" with
-            ExpectedRevision = -1L
-        }
+        ClaimCore.TestSupport.Submissions.withOperationId
+            (Guid.Empty)
+            (openRequest fixture 10 "REACH-1")
+        Submissions.createRaw
+            "case.open"
+            (id fixture 10)
+            (OperationBinding.CaseNew -1L)
+            (Submissions.fields (RegistrationInput.values registration)
+             |> Map.add
+                 (Submissions.field BusinessField.CaseReference)
+                 (SubmissionValue.Text "REACH-1"))
     ]
 
 let internal progressRequests fixture () =
     [
         request
-            fixture
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.Decide(
-                ClaimCore.TestSupport.Inputs.decisionWith
-                    [ BusinessField.PaymentDecisionDate, ("bad") ]
-                    (decision)
+            (fixture)
+            (10)
+            ("REACH-1")
+            (1L)
+            "case.decide"
+            (ClaimCore.TestSupport.Submissions.fields (
+                DecisionInput.values (
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
+                        [ BusinessField.PaymentDecisionDate, ("bad") ]
+                        (decision))
+                )
             ))
         request
-            fixture
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.Decide(
-                ClaimCore.TestSupport.Inputs.decisionWith
-                    [ BusinessField.PayableAmount, ("bad") ]
-                    (decision)
+            (fixture)
+            (10)
+            ("REACH-1")
+            (1L)
+            "case.decide"
+            (ClaimCore.TestSupport.Submissions.fields (
+                DecisionInput.values (
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
+                        [ BusinessField.PayableAmount, ("bad") ]
+                        (decision))
+                )
             ))
         request
-            fixture
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.Decide(
-                ClaimCore.TestSupport.Inputs.decisionWith
-                    [ BusinessField.PayableCurrency, ("bad") ]
-                    (decision)
+            (fixture)
+            (10)
+            ("REACH-1")
+            (1L)
+            "case.decide"
+            (ClaimCore.TestSupport.Submissions.fields (
+                DecisionInput.values (
+                    (ClaimCore.TestSupport.DomainInputs.decisionWith
+                        [ BusinessField.PayableCurrency, ("bad") ]
+                        (decision))
+                )
             ))
         request
-            fixture
-            10
-            "REACH-1"
-            1L
-            (AuthoredCaseAct.RecordPayment(
-                ClaimCore.TestSupport.Inputs.paymentFrom [ BusinessField.PaymentDate, ("bad") ]
+            (fixture)
+            (10)
+            ("REACH-1")
+            (1L)
+            "case.recordPayment"
+            (ClaimCore.TestSupport.Submissions.fields (
+                PaymentInput.values (
+                    (ClaimCore.TestSupport.DomainInputs.paymentFrom
+                        [ BusinessField.PaymentDate, ("bad") ])
+                )
             ))
-        actRequest fixture 10 "REACH-1" 1L ((AuthoredCaseAct.Void ""))
+        request
+            (fixture)
+            (10)
+            ("REACH-1")
+            (1L)
+            "case.void"
+            (Map.ofList
+                [
+                    TaskInputId.Target InputTarget.Reason,
+                    ClaimCore.Application.Contracts.SubmissionValue.Text("")
+                ])
     ]
 
 let internal scalarRequests fixture () =
@@ -291,53 +307,60 @@ let internal scalarRequests fixture () =
     @ registrationRequests fixture ()
     @ controlRequests fixture ()
     @ [
-        actRequest
-            fixture
-            10
-            "REACH-DESCRIPTION"
-            0L
-            (AuthoredCaseAct.Open(
-                Inputs.registrationWith [ BusinessField.IncidentDescription, "" ] registration
+        request
+            (fixture)
+            (10)
+            ("REACH-DESCRIPTION")
+            (0L)
+            "case.open"
+            (ClaimCore.TestSupport.Submissions.fields (
+                RegistrationInput.values (
+                    (DomainInputs.registrationWith
+                        [ BusinessField.IncidentDescription, "" ]
+                        registration)
+                )
             ))
     ]
 
 let internal workScalarRequests fixture () =
     let work operation revision responsible summary =
-        OperationInput.Work
-            {
-                OperationId = id fixture operation
-                Target = CaseSelector.Reference "REACH-WORK"
-                ExpectedRevision = revision
-                Act =
-                    WorkAct.UpdateWork
-                        {
-                            Responsible = responsible
-                            Summary = summary
-                        }
-            }
+        (ClaimCore.TestSupport.Submissions.createRaw)
+            "work.update"
+            (id fixture operation)
+            (ClaimCore.Application.Contracts.OperationBinding.Work(
+                (CaseSelector.Reference "REACH-WORK"),
+                (revision)
+            ))
+            (ClaimCore.TestSupport.Submissions.work (
+                {
+                    Responsible = responsible
+                    Summary = summary
+                }
+            ))
 
-    let reminder operation act =
-        OperationInput.Reminder
-            {
-                OperationId = id fixture operation
-                Target = CaseSelector.Reference "REACH-WORK"
-                Act = act
-            }
+    let reminder operation taskName selected values =
+        Submissions.createRaw
+            taskName
+            (id fixture operation)
+            (OperationBinding.Reminder((CaseSelector.Reference "REACH-WORK"), selected))
+            values
 
     [
         work 500 0L (WorkValue.Set "invalid") WorkValue.Keep
         work 501 0L WorkValue.Keep (WorkValue.Set "")
         work 502 0L WorkValue.Keep WorkValue.Keep
         work 503 -1L WorkValue.Keep (WorkValue.Set "A summary")
-        reminder 504 (AuthoredReminderAct.Complete(Guid.Empty, 1L))
-        reminder 505 (AuthoredReminderAct.Complete(id fixture 700, -1L))
-        reminder 506 (AuthoredReminderAct.Create { Action = ""; Due = "invalid" })
+        reminder (504) "reminder.complete" (Some((Guid.Empty), (1L))) (Map.empty)
+        reminder (505) "reminder.complete" (Some((id fixture 700), (-1L))) (Map.empty)
         reminder
-            507
-            (AuthoredReminderAct.Create
-                {
-                    Action = String('a', 201)
-                    Due = "2027-01-01"
-                })
+            (506)
+            "reminder.create"
+            (None)
+            (ClaimCore.TestSupport.Submissions.reminderPlan ("") ("invalid"))
+        reminder
+            (507)
+            "reminder.create"
+            (None)
+            (ClaimCore.TestSupport.Submissions.reminderPlan (String('a', 201)) ("2027-01-01"))
         work 508 0L WorkValue.Keep (WorkValue.Set(String('a', 601)))
     ]

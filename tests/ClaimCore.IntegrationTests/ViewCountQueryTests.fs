@@ -4,6 +4,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.WorklistFixtures
@@ -15,7 +19,7 @@ let private read =
 
 let private execute fixture input =
     task {
-        let! pg = Service.execute fixture.Service input token
+        let! pg = Service.executeSubmission fixture.Service input token
         accepted pg |> ignore
     }
 
@@ -85,36 +89,35 @@ let private qualify fixture =
             do!
                 execute
                     fixture
-                    (OperationInput.Reminder
-                        {
-                            OperationId = id fixture.Database.Fixture operation
-                            Target = CaseSelector.Reference reference
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = "Check supplied evidence"
-                                        Due =
-                                            context.Runtime.Basis.BusinessDate.AddDays(offset)
-                                            |> CalendarDate.ofDate
-                                            |> CalendarDate.format
-                                    }
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "reminder.create"
+                        (id fixture.Database.Fixture operation)
+                        (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                            (CaseSelector.Reference reference),
+                            None
+                        ))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Check supplied evidence")
+                            (context.Runtime.Basis.BusinessDate.AddDays(offset)
+                             |> CalendarDate.ofDate
+                             |> CalendarDate.format)))
 
         do!
             execute
                 fixture
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture.Database.Fixture 5504
-                        Target = CaseSelector.Reference "work-01"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    Summary = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture.Database.Fixture 5504)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "work-01"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                            Summary = WorkValue.Keep
+                        }
+                    )))
 
         do!
             cases
@@ -149,62 +152,71 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture.Database.Fixture 5520
-                        Target = CaseSelector.Reference "mix-04"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    Summary = WorkValue.Keep
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture.Database.Fixture 5520)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "mix-04"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                            Summary = WorkValue.Keep
+                        }
+                    )))
 
         do!
             execute
                 fixture
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture.Database.Fixture 5505
-                        Target = CaseSelector.Reference "mix-04"
-                        Act = AuthoredReminderAct.Complete(id fixture.Database.Fixture 5502, 1L)
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.complete"
+                    (id fixture.Database.Fixture 5505)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "mix-04"),
+                        Some((id fixture.Database.Fixture 5502), (1L))
+                    ))
+                    (Map.empty))
 
         do!
             execute
                 fixture
-                (Inputs.caseOperation (
-                    request
-                        fixture.Database.Fixture
-                        5506
-                        "mix-04"
-                        3L
-                        (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                (((request
+                    (fixture.Database.Fixture)
+                    (5506)
+                    ("mix-04")
+                    (3L)
+                    "case.close"
+                    (Map.empty))))
 
         do!
             execute
                 fixture
-                (OperationInput.Reminder
-                    {
-                        OperationId = id fixture.Database.Fixture 5507
-                        Target = CaseSelector.Reference "Work-11"
-                        Act = AuthoredReminderAct.Cancel(id fixture.Database.Fixture 5503, 1L)
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.cancel"
+                    (id fixture.Database.Fixture 5507)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "Work-11"),
+                        Some((id fixture.Database.Fixture 5503), (1L))
+                    ))
+                    (Map.empty))
 
         do!
             execute
                 fixture
-                (Inputs.caseOperation (
-                    request
-                        fixture.Database.Fixture
-                        5508
-                        "Work-11"
-                        2L
-                        (AuthoredCaseAct.Void "Incorrect duplicate case")
-                ))
+                (((request
+                    (fixture.Database.Fixture)
+                    (5508)
+                    ("Work-11")
+                    (2L)
+                    "case.void"
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Incorrect duplicate case"
+                            )
+                        ]))))
 
         do!
             reminders
@@ -226,13 +238,15 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Database.Fixture.Store
-                        (id fixture.Database.Fixture 5509)
-                        scoped
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
+                ((personSubmission
+                    fixture.Database.Fixture.Store
+                    (id fixture.Database.Fixture 5509)
+                    scoped
+                    None
+                    "people.register"
+                    (Submissions.profile (DomainInputs.actorProfile)))
+                    .GetAwaiter()
+                    .GetResult())
 
         let! paid =
             Service.get
@@ -253,13 +267,15 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Database.Fixture.Store
-                        (id fixture.Database.Fixture 5510)
-                        scoped
-                        (PeopleAct.Grant grant)
-                ))
+                ((personSubmission
+                    fixture.Database.Fixture.Store
+                    (id fixture.Database.Fixture 5510)
+                    scoped
+                    None
+                    "people.grant"
+                    (Submissions.grant (grant)))
+                    .GetAwaiter()
+                    .GetResult())
 
         let scopedFixture =
             { fixture with
@@ -302,13 +318,15 @@ let private qualify fixture =
         do!
             execute
                 fixture
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Database.Fixture.Store
-                        (id fixture.Database.Fixture 5511)
-                        scoped
-                        (PeopleAct.Revoke grant)
-                ))
+                ((personSubmission
+                    fixture.Database.Fixture.Store
+                    (id fixture.Database.Fixture 5511)
+                    scoped
+                    None
+                    "people.revoke"
+                    (Submissions.grant (grant)))
+                    .GetAwaiter()
+                    .GetResult())
 
         let service = scopedFixture.Service
         let! denied = Service.workViews service () token

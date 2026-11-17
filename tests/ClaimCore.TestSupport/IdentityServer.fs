@@ -94,7 +94,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
     let runId = Guid.NewGuid().ToString "N"
 
     let image =
-        "quay.io/keycloak/keycloak:26.8.2@sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b"
+        "quay.io/keycloak/keycloak:26.8.2@sha256:c68e286cacd87b942ac1939a0a1481461109d6acd3a57dc496969a319a76bbf0"
 
     let container =
         ContainerBuilder(image)
@@ -112,14 +112,14 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                 Encoding.UTF8.GetBytes(
                     certificate.ExportCertificatePem() + root.ExportCertificatePem()
                 ),
-                "/opt/keycloak/conf/server.crt",
+                FilePath.Of "/opt/keycloak/conf/server.crt",
                 0u,
                 0u,
                 UnixFileModes.UserRead
             )
             .WithResourceMapping(
                 Encoding.UTF8.GetBytes(key.ExportPkcs8PrivateKeyPem()),
-                "/opt/keycloak/conf/server.key",
+                FilePath.Of "/opt/keycloak/conf/server.key",
                 0u,
                 0u,
                 UnixFileModes.UserRead
@@ -133,7 +133,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                         Unscoped = unscopedSecret
                     }
                     password,
-                "/opt/keycloak/data/import/realm.json"
+                FilePath.Of "/opt/keycloak/data/import/realm.json"
             )
             .WithResourceMapping(
                 IdentityRealm.bytes
@@ -149,7 +149,7 @@ type Identity(origin: string, accessTokenLifespan: int, accounts: IdentityRealm.
                         Unscoped = unscopedSecret
                     }
                     password,
-                "/opt/keycloak/data/import/foreign.json"
+                FilePath.Of "/opt/keycloak/data/import/foreign.json"
             )
             .WithCommand(
                 "start-dev",

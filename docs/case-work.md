@@ -31,7 +31,7 @@ ClaimCore does not send reminder alarms.
 
 Choose **Open a case**. Enter your reference, claimant, insurer, incident and notification dates,
 incident country, and claimed amount with its currency. Incident description, policy number and insurer
-claim reference are optional. Review the facts and confirm **Open case**.
+claim reference are optional. Review the facts and confirm **Open a case**.
 
 The reference cannot change or be reused after erasure. The case starts open and undecided, with empty
 work, notes and next actions. A claimant can be a person or an organization.
@@ -80,9 +80,9 @@ summary edits also permit a closed active case. If someone loses access or is di
 remains visible as unavailable so another handler can take over. Summary author and time follow actual
 text changes, independently of assignment.
 
-Add next actions with a short action and planned date. Dates may be past or future. Choose **Complete**,
-**Cancel** or **Reschedule** as offered. Completion records when you marked the action, not when an external
-event occurred. **Complete and plan next** records both changes together; a refused part changes neither.
+Add next actions with a short action and planned date. Dates may be past or future. Choose **Complete reminder**,
+**Cancel reminder** or **Update reminder** as offered. Completion records when you marked the action, not when an external
+event occurred. **Complete and plan next action** records both changes together; a refused part changes neither.
 Reopening a completed or cancelled action requires a date.
 
 Closing or voiding preserves pending actions. Reopening or reinstating restores their relevance with the
@@ -141,7 +141,9 @@ continue to constrain any decision change. A refused correction records nothing.
 ## Case stewardship
 
 A Data steward can **Void case record**, **Reinstate case record** or **Erase case** when offered. Void records an entry-error reason
-and stops business work while preserving contents. Reinstate records a reason and resumes it.
+and stops business work while preserving contents. Reinstate records a reason and resumes it. Each
+accepted reason remains attached to its own receipt and full history entry, including after later
+changes; current rights and case erasure control disclosure.
 
 Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
 and notes. The reference remains reserved. Read the consequence and type the shown reference to confirm.
@@ -162,12 +164,12 @@ same review through Settings and display changes; returning to edit restores the
 Review the proposed changes and confirm once. An interactive CLI command can read an omitted version
 and freeze it for review; automation supplies its expected version. Technical versions appear under
 Record details or CLI `--details`. A conflict keeps your draft and requires an explicit fresh review.
-The CLI never silently rebases.
+The CLI never silently rebases. In the browser, accepted case receipts show the recorded facts at
+full available width, with Close above them; closing the receipt returns to the case workspace.
 
 If delivery is uncertain, keep the original change identity. **Unconfirmed changes** checks it
 automatically; lookup does not record it again. Reload retains identity but cannot reconstruct a discarded
 request. Follow [delivery recovery](integrating.md#recover-an-uncertain-change) before starting another change.
-
 
 Browser Back and Forward preserve managed history entries, including a Settings detour with an authored
 draft. Declining departure preserves the original Forward branch. Additional navigation while a guarded

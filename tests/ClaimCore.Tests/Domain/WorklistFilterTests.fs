@@ -3,7 +3,6 @@ module ClaimCore.Tests.WorklistFilterTests
 open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 
 let private admitted result =
@@ -41,17 +40,17 @@ let tests =
                 "stored text and admitted queries use the same NFKC invariant lowercase rule"
                 (fun () ->
                     let registration =
-                        Inputs.registrationWith
+                        DomainInputs.registrationWith
                             [
                                 BusinessField.ClaimantName, "ＲĪＧＡ%"
                                 BusinessField.InsurerName, "A_B\\C"
                             ]
-                            Inputs.registration
-                        |> Inputs.admittedRegistration
+                            DomainInputs.registration
+                        |> DomainInputs.admittedRegistration
 
                     let fields =
                         {
-                            CaseFields.CaseReference = Inputs.reference "CASE-1"
+                            CaseFields.CaseReference = DomainInputs.reference "CASE-1"
                             Status = CaseStatus.Opened
                             Registration = registration
                             Finance = FinancialPosition.undecided

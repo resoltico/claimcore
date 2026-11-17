@@ -15,10 +15,14 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 open ClaimCore.Tests.ContractScenarioInputs
 open ClaimCore.Tests.OutcomeContractScenarios
 
@@ -55,12 +59,11 @@ let internal integerLexemes () =
     let wire =
         Codec.encode
             Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (
-                { caseRequest registration with
-                    Act = AuthoredCaseAct.Bare BareAct.Close
-                }
-             )
-             |> Submissions.ofCommand None)
+            (Submissions.create
+                "work.update"
+                id
+                (Binding.Work(CaseSelector.Reference "INTEGER-LEXEMES", Revision.zero))
+                (Submissions.fields [ BusinessField.HandlingSummary, "Wire integer boundaries" ]))
         |> Encoding.UTF8.GetString
 
     for value in [ "-1"; "9007199254740992"; "1.0"; "1e0"; "\"1\"" ] do
@@ -102,12 +105,12 @@ let internal integerLexemes () =
 
 let internal retainedText () =
     for name in [ String.replicate 201 "A"; "Earlier‮Name" ] do
-        let original = Case.snapshot (opened ())
+        let original = familySnapshot (opened ())
 
         let fields =
             { viewFields original with
                 Registration =
-                    (ClaimCore.TestSupport.Inputs.registrationStateWith
+                    (ClaimCore.TestSupport.DomainInputs.registrationStateWith
                         [ BusinessField.ClaimantName, Admitted.Name(CaseFixtures.name name) ]
                         ((viewFields original).Registration))
             }
@@ -116,8 +119,6 @@ let internal retainedText () =
             { original with
                 State = ClaimCore.Domain.CaseState.Active(fields)
             }
-
-        let prior = Case.ofAccepted snapshot |> accepted
 
         admitted
             Api.caseGet.Output
@@ -136,9 +137,9 @@ let internal retainedText () =
                                 Count = 0L
                                 CanAdd = false
                             }
-                        ChangedAt = Inputs.workBasis.ObservedAt
+                        ChangedAt = DomainInputs.workBasis.ObservedAt
                         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-                        Stages = Inputs.stageDisplay snapshot.State
+                        Stages = DomainInputs.stageDisplay snapshot.State
                         Snapshot = snapshot
                         Headline = CaseHeadline.Undecided
                         Attention = []
@@ -147,53 +148,6 @@ let internal retainedText () =
             ))
 
         |> ignore
-
-        let values =
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [
-                    BusinessField.ClaimantName, (name)
-                    BusinessField.InsurerName, ("Changed insurer")
-                ]
-                (registration))
-
-        let reaffirm =
-            request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
-
-        let input =
-            { caseRequest values with
-                ExpectedRevision = 1L
-                Act =
-                    ClaimCore.Domain.AuthoredCaseAct.AmendRegistration(
-                        Inputs.registrationUpdate values
-                    )
-            }
-
-        Codec.decode
-            Limits.MaximumRequestBytes
-            Api.operationExecute.Input
-            (Codec.encode
-                Api.operationExecute.Input
-                (ClaimCore.TestSupport.Inputs.caseOperation input |> Submissions.ofCommand None))
-        |> accepted
-        |> ignore
-
-        CaseFixtures.decide today Map.empty reaffirm (Some prior) |> accepted |> ignore
-
-        let changed =
-            { reaffirm with
-                Act =
-                    (AuthoredCaseAct.AmendRegistration(
-                        Inputs.registrationUpdate (
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.ClaimantName, (name + "B") ]
-                                (values)
-                        )
-                    ))
-            }
-
-        Expect.isError
-            (CaseFixtures.decide today Map.empty changed (Some prior))
-            "New assertions follow current admission"
 
 let internal peopleWire kind issuer subject =
     JsonSerializer.SerializeToUtf8Bytes
@@ -251,9 +205,7 @@ let internal principalAdmission () =
             |> accepted
 
         Expect.equal
-            (match Submissions.command syntax with
-             | OperationInput.People request -> People.parse request |> Result.isOk
-             | _ -> false)
+            (OperationSubmission.syntax syntax |> Option.isNone)
             admitted
             "Only authoritative principal admission judges identity semantics"
 
@@ -352,11 +304,7 @@ let internal peopleFieldPresentation () =
             "Grant authoring keeps its distinct guidance"
 
 let internal decoderProperty =
-    let seed =
-        Codec.encode
-            Api.operationExecute.Input
-            (ClaimCore.TestSupport.Inputs.caseOperation (caseRequest registration)
-             |> Submissions.ofCommand None)
+    let seed = Codec.encode Api.operationExecute.Input (caseRequest registration)
 
     let generator = Gen.choice [ DecoderCorpora.jsonLike; DecoderCorpora.mutated seed ]
 

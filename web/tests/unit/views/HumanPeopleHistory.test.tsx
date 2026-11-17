@@ -2,9 +2,9 @@ import { requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { PeopleHistory } from "../../../src/views/people/PeopleHistory";
-import type { HumanReadDocument_people_history } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 const caseId = "00000000-0000-4000-8000-000000000001";
-const document: HumanReadDocument_people_history = {
+const document: HumanDocument = {
   screen: {
     regions: [
       {

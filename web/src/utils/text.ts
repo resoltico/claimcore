@@ -19,6 +19,3 @@ export const suspiciousCodePoints = (value: string): string[] => {
   }
   return [...points];
 };
-
-export const hasSuspiciousCharacters = (value: string): boolean =>
-  suspiciousCodePoints(value).length > 0;

@@ -4,12 +4,17 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
+open ClaimCore.IntegrationTests.VerificationScenarioInputs
 
 let private corrupt expected statement =
     run (fun database ->
@@ -24,49 +29,29 @@ let private rehashedCase (database: PostgresFixture.Database) =
         let! actor = populated database
 
         let! closed =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request database.Fixture 11 "synthetic-a" 1L (CaseAct.Bare BareAct.Close)
-                ))
+                (((request (database.Fixture) (11) ("synthetic-a") (1L) "case.close" (Map.empty))))
                 token
 
         accepted closed |> ignore
         let! original = row database (CaseFixtures.sequence 4L)
 
-        let values =
-            match original.Values with
-            | RetainedOperationValues.Case(Some value) -> value
-            | _ -> failtest "Available accepted case required"
+        let submission, snapshot =
+            livePayload (CaseFixtures.reference "synthetic-a") original
 
         let after =
-            { values.Decision.After with
+            { snapshot with
                 State =
                     CaseState.map
                         (fun fields ->
                             { fields with
                                 Status = CaseStatus.Closed
                             })
-                        values.Decision.After.State
+                        snapshot.State
             }
 
-        let nonce =
-            original.Root.Structure.Compartments
-            |> List.exactlyOne
-            |> Compartment.content
-            |> Option.get
-            |> fst
-
-        do!
-            rewrite database original.Root.Header.Sequence (fun retained ->
-                recreate
-                    retained.Root.Header
-                    retained.Root.Structure.Command
-                    (OperationValues.Case
-                        { values with
-                            Decision = { values.Decision with After = after }
-                        })
-                    nonce)
+        do! rewrite database original.Root.Header.Sequence (updateCase submission after)
 
         do!
             sql
@@ -94,39 +79,49 @@ let private actors (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 20)
-                        principal
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 20))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople registered
 
         let! disabled =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    ClaimCore.TestSupport.StoreFixtures.reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 21)
-                        principal
-                        PeopleAct.Disable
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 21))
+                        (principal)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         acceptedPeople disabled
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (Inputs.caseOperation (
-                    request database.Fixture 22 "executor-root" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (22)
+                    ("executor-root")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         let receipt = accepted opened
@@ -134,17 +129,19 @@ let private actors (database: PostgresFixture.Database) =
 
         do!
             rewrite database receipt.Position.Sequence (fun retained ->
-                OperationRoot.append
+                rehashed
                     { retained.Root.Header with
                         ActorId =
                             ActorId.ofOperationId (
                                 CaseFixtures.operationId (id database.Fixture 20)
                             )
                     }
-                    retained.Root.Structure.Command
+                    retained.Root.Structure.Task
+                    retained.Root.Structure.Binding
+                    retained.Root.Structure.Retained
                     retained.Root.Structure.Effects
-                    retained.Root.Structure.Compartments
-                |> Result.defaultWith (fun error -> failtestf "Actor root: %A" error))
+                    retained.Root.Structure.Compartments)
+
 
         do! finding VerificationFinding.ActorNotEnabled database
     }
@@ -173,7 +170,7 @@ let tests =
                 "unknown public command members are not silently normalized away"
                 (corrupt
                     VerificationFinding.PayloadFormat
-                    "UPDATE claimcore.ledger SET command=command || '{\"unknownMember\":null}'::jsonb WHERE sequence=4")
+                    "UPDATE claimcore.ledger SET structure=structure || '{\"unknownMember\":null}'::jsonb WHERE sequence=4")
             testCaseAsync
                 "rehashed case result and matching projection still require independent replay"
                 (run rehashedCase)

@@ -17,6 +17,10 @@ open System.Threading.Tasks
 open Microsoft.VisualBasic.FileIO
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server.Administration
 open ClaimCore.HostSecurity
 

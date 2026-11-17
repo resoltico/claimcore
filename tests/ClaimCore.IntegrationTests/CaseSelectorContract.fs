@@ -4,7 +4,12 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
@@ -20,16 +25,17 @@ let identities (fixture: Fixture) =
         let reference = "80000000-0000-4000-8000-000000000609"
         let expected = CaseFixtures.caseId (id fixture 610)
 
-        let openInput: CaseOperationRequest =
-            {
-                ExpectedFamilySequence = None
-                OperationId = id fixture 610
-                Target = CaseSelector.Reference reference
-                ExpectedRevision = 0L
-                Act = AuthoredCaseAct.Open registration
-            }
+        let openInput: OperationSubmission =
+            ClaimCore.TestSupport.Submissions.createRaw
+                "case.open"
+                (id fixture 610)
+                (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
+                 |> Map.add
+                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                     (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))
 
-        let! opened = Service.execute actor (OperationInput.Case openInput) token
+        let! opened = Service.executeSubmission actor ((openInput)) token
         let opening = accepted opened
 
         Expect.equal
@@ -86,16 +92,19 @@ let identities (fixture: Fixture) =
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "An ID selector never reinterprets its UUID as a reference"
 
-        let close: CaseOperationRequest =
-            {
-                ExpectedFamilySequence = None
-                OperationId = id fixture 611
-                Target = CaseSelector.Id expected
-                ExpectedRevision = 1L
-                Act = AuthoredCaseAct.Bare BareAct.Close
-            }
+        let close: OperationSubmission =
+            ClaimCore.TestSupport.Submissions.createRaw
+                "case.close"
+                (id fixture 611)
+                (ClaimCore.Application.Contracts.OperationBinding.Case(
+                    (CaseSelector.Id expected),
+                    (1L),
+                    None,
+                    (None)
+                ))
+                (Map.empty)
 
-        let! closed = Service.execute actor (OperationInput.Case close) token
+        let! closed = Service.executeSubmission actor ((close)) token
         let receipt = accepted closed
 
         Expect.equal
@@ -104,12 +113,13 @@ let identities (fixture: Fixture) =
             "Mutation receipt retains the creation ID"
 
         let! replay =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { close with
-                        Target = CaseSelector.Reference reference
-                    })
+                (Submissions.createRaw
+                    "case.close"
+                    close.OperationId
+                    (OperationBinding.Case(CaseSelector.Reference reference, 1L, None, None))
+                    close.Envelope.Inputs)
                 token
 
         expectReceipt
@@ -177,13 +187,17 @@ let identities (fixture: Fixture) =
         | _ -> failtest "Equivalent selector continuation must remain valid"
 
         let! second =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { openInput with
-                        OperationId = id fixture 612
-                        Target = CaseSelector.Reference "SELECTOR-OTHER"
-                    })
+                (request
+                    fixture
+                    612
+                    "SELECTOR-OTHER"
+                    0L
+                    "case.open"
+                    (Map.remove
+                        (Submissions.field BusinessField.CaseReference)
+                        openInput.Envelope.Inputs))
                 token
 
         Expect.equal
@@ -192,12 +206,18 @@ let identities (fixture: Fixture) =
             "Another OPEN has a distinct creation identity"
 
         let! wrongTarget =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { close with
-                        Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 612))
-                    })
+                (Submissions.createRaw
+                    "case.close"
+                    close.OperationId
+                    (OperationBinding.Case(
+                        CaseSelector.Id(CaseFixtures.caseId (id fixture 612)),
+                        1L,
+                        None,
+                        None
+                    ))
+                    close.Envelope.Inputs)
                 token
 
         Expect.equal
@@ -233,29 +253,34 @@ let identities (fixture: Fixture) =
         acceptedPeople stewardship
 
         let! voided =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { close with
-                        OperationId = id fixture 621
-                        ExpectedRevision = 2L
-                        Act = AuthoredCaseAct.Void "Synthetic retained identity check"
-                    })
+                (Submissions.createRaw
+                    "case.void"
+                    (id fixture 621)
+                    (OperationBinding.Case(CaseSelector.Id expected, 2L, None, None))
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.Reason,
+                            SubmissionValue.Text "Synthetic retained identity check"
+                        ]))
                 token
 
         accepted voided |> ignore
 
         let! erased =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { close with
-                        OperationId = id fixture 622
-                        ExpectedFamilySequence =
-                            Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expected))
-                        ExpectedRevision = 3L
-                        Act = AuthoredCaseAct.Bare BareAct.Erase
-                    })
+                (Submissions.createRaw
+                    "case.erase"
+                    (id fixture 622)
+                    (OperationBinding.Case(
+                        CaseSelector.Id expected,
+                        3L,
+                        None,
+                        Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expected))
+                    ))
+                    Map.empty)
                 token
 
         accepted erased |> ignore
@@ -272,12 +297,9 @@ let identities (fixture: Fixture) =
         | _ -> failtest "Retained tombstone must remain addressable"
 
         let! reuse =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { openInput with
-                        OperationId = id fixture 623
-                    })
+                ((ClaimCore.TestSupport.Submissions.withOperationId (id fixture 623) (openInput)))
                 token
 
         match reuse.Outcome with
@@ -285,13 +307,17 @@ let identities (fixture: Fixture) =
         | _ -> failtest "An erased case reference cannot be reused"
 
         let! fresh =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    { openInput with
-                        OperationId = id fixture 624
-                        Target = CaseSelector.Reference "SELECTOR-FRESH"
-                    })
+                (request
+                    fixture
+                    624
+                    "SELECTOR-FRESH"
+                    0L
+                    "case.open"
+                    (Map.remove
+                        (Submissions.field BusinessField.CaseReference)
+                        openInput.Envelope.Inputs))
                 token
 
         accepted fresh |> ignore
@@ -329,11 +355,17 @@ let grantScopes (fixture: Fixture) =
         let reference = CaseFixtures.reference "Scope-A"
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request fixture 630 "Scope-A" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (630)
+                    ("Scope-A")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         Expect.equal (caseReceipt (accepted opened)).CaseId expectedId "Independent creation ID"
@@ -343,22 +375,26 @@ let grantScopes (fixture: Fixture) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 631)
-                        reader
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 631))
+                        (reader)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         acceptedPeople registered
 
         let authored =
             {
-                AuthoredGrant.Role = Role.CaseReader
+                GrantInput.Role = Role.CaseReader
                 Scope = GrantTarget.CaseId expectedId
             }
 
@@ -368,33 +404,49 @@ let grantScopes (fixture: Fixture) =
                 Scope = GrantScope.Case(expectedId, reference)
             }
 
-        let input =
-            reviewedPeopleRequest fixture.Store (id fixture 632) reader (PeopleAct.Grant authored)
+        let! input =
+            personSubmission
+                fixture.Store
+                (id fixture 632)
+                reader
+                None
+                "people.grant"
+                (Submissions.grant authored)
 
-        let! preview = Service.preview actor (OperationInput.People input) token
+        let! preview = Service.previewSubmission actor ((input)) token
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review)) ->
-            Expect.equal
-                review.After.Grants
-                [ expected ]
-                "Review publishes the resolved immutable scope"
+        | Outcome.Succeeded(Previewed.Reviewed review) ->
+            match review.Changes.Head.Description with
+            | PartDescription.Person person ->
+                let assignment = person.Grants |> List.exactlyOne
+
+                Expect.equal
+                    assignment.Grant
+                    {
+                        Role = Role.CaseReader
+                        Scope = Scope.Case expectedId
+                    }
+                    "Review publishes the resolved immutable scope"
+
+                Expect.equal assignment.After true "Review grants access"
+            | _ -> failtest "Person part review required"
         | _ -> failtest "The independent ID-scoped grant must preview"
 
-        let! granted = Service.execute actor (OperationInput.People input) token
+        let! granted = Service.executeSubmission actor ((input)) token
         let acceptedGrant = accepted granted
 
         let! replay =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.People
-                    { input with
-                        Act =
-                            PeopleAct.Grant
-                                { authored with
-                                    Scope = GrantTarget.CaseReference "scope-a"
-                                }
-                    })
+                (Submissions.createRaw
+                    "people.grant"
+                    input.OperationId
+                    input.Envelope.Binding
+                    (Submissions.grant
+                        { authored with
+                            Scope = GrantTarget.CaseReference "scope-a"
+                        }))
                 token
 
         expectReceipt
@@ -405,7 +457,11 @@ let grantScopes (fixture: Fixture) =
         let! stored =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id fixture 632)))
+                    Work =
+                        (fun tx ->
+                            LedgerReads.findOperation
+                                tx
+                                (CaseFixtures.operationId (id fixture 632)))
                     CancellationToken = token
                 }
 
@@ -414,15 +470,20 @@ let grantScopes (fixture: Fixture) =
             | Ok(Some value) -> value
             | _ -> failtest "The real accepted people record must exist"
 
-        match entry.Root.Structure.Command with
-        | CommandSkeleton.People { Act = PeopleAct.Grant grant } ->
-            Expect.equal grant.Role Role.CaseReader "Accepted grant role"
-
-            Expect.equal
-                grant.Scope
-                (Scope.Case expectedId)
+        match entry.Changes.Head.Value with
+        | PartValue.Person person ->
+            Expect.contains
+                person.Grants
+                {
+                    Grant =
+                        {
+                            Role = Role.CaseReader
+                            Scope = Scope.Case expectedId
+                        }
+                    Active = true
+                }
                 "Permanent identity uses the resolved ID, not selector spelling"
-        | _ -> failtest "Expected a retained grant command"
+        | _ -> failtest "Expected a retained person assignment"
 
         let query: GrantsRequest =
             {
@@ -486,32 +547,41 @@ let grantScopes (fixture: Fixture) =
         acceptedPeople stewardship
 
         let! voided =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = id fixture 636
-                        Target = CaseSelector.Id expectedId
-                        ExpectedRevision = 1L
-                        Act = AuthoredCaseAct.Void "Synthetic scope retention"
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.void"
+                    (id fixture 636)
+                    (ClaimCore.Application.Contracts.OperationBinding.Case(
+                        (CaseSelector.Id expectedId),
+                        (1L),
+                        None,
+                        (None)
+                    ))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Synthetic scope retention"
+                            )
+                        ])))
                 token
 
         accepted voided |> ignore
 
         let! erased =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    {
-                        ExpectedFamilySequence =
-                            Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expectedId))
-                        OperationId = id fixture 637
-                        Target = CaseSelector.Id expectedId
-                        ExpectedRevision = 2L
-                        Act = AuthoredCaseAct.Bare BareAct.Erase
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.erase"
+                    (id fixture 637)
+                    (ClaimCore.Application.Contracts.OperationBinding.Case(
+                        (CaseSelector.Id expectedId),
+                        (2L),
+                        None,
+                        (Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expectedId)))
+                    ))
+                    (Map.empty)))
                 token
 
         accepted erased |> ignore
@@ -540,11 +610,16 @@ let grantScopes (fixture: Fixture) =
         | Outcome.Succeeded page ->
             let scopes =
                 page.Entries
-                |> List.choose (fun entry ->
-                    match entry.Facts with
-                    | PeopleHistoryFacts.Granted value
-                    | PeopleHistoryFacts.Revoked value -> Some value
-                    | _ -> None)
+                |> List.collect (fun entry ->
+                    entry.Changes.Grants
+                    |> List.map (fun assignment ->
+                        match assignment.Grant.Scope with
+                        | Scope.Case id ->
+                            {
+                                ScopedGrant.Role = assignment.Grant.Role
+                                Scope = GrantScope.Case(id, reference)
+                            }
+                        | Scope.Installation -> failtest "Case scoped history required"))
 
             Expect.equal
                 scopes

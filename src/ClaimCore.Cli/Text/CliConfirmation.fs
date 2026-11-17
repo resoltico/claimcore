@@ -52,8 +52,8 @@ module internal CliConfirmation =
 
     let irreversibleTarget invocation =
         match Frames.value Api.operationExecute invocation with
-        | Some input when Consequence.ofAct input.Task = Consequence.Irreversible ->
-            match input.Binding with
+        | Some input when TaskConsequences.ofTask input.Task = Consequence.Irreversible ->
+            match input.Envelope.Binding with
             | OperationBinding.Case(CaseSelector.Reference reference, _, _, _) -> Some reference
             | OperationBinding.People _ -> Some(input.OperationId.ToString("D"))
             | _ -> invalidOp "Human irreversible commands require their confirmation target."

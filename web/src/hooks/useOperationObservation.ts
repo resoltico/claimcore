@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../api/service";
 import { useRequesterContext } from "./useRequesterContext";
 import { useState } from "react";
 import { useEndpoint } from "./useEndpoint";
@@ -9,7 +10,7 @@ export const useOperationObservation = (initialOperationId = "") => {
   const requester = useRequesterContext();
   const installationId = requester?.subject.installationId;
   const query = useEndpoint(
-    "operation.get",
+    apiEndpoints.operationGet,
     { operationId: submitted ?? "" },
     submitted !== null && installationId !== undefined,
     JSON.stringify([installationId, requester?.subject.actorId]),

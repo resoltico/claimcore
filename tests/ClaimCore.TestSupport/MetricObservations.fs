@@ -4,6 +4,10 @@ open System
 open System.Collections.Concurrent
 open System.Diagnostics.Metrics
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 [<NoComparison>]
 type Observation =

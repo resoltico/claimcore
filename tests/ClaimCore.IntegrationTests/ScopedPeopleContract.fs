@@ -11,6 +11,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport.StoreContractReads
@@ -50,12 +54,18 @@ let internal peopleChanges fixture =
         acceptedPeople removed
 
         let! disabled =
-            (Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest fixture.Store (id fixture 5) target (PeopleAct.Disable)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 5))
+                        (target)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople disabled
         let! read = inspectPeople fixture (target) (CancellationToken.None)
@@ -74,16 +84,20 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 30)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 30))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -123,7 +137,10 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
                 value.Advice.Correction
                 |> Option.defaultWith (fun () -> failtest "Correct needs choices")
 
-            Expect.contains value.Advice.Acts CaseActKind.Correct "Correction is explicitly offered"
+            Expect.contains
+                value.Advice.Acts
+                (TaskId.ofLiteral "case.correct")
+                "Correction is explicitly offered"
 
             Expect.equal
                 value.Snapshot.Revision
@@ -138,17 +155,23 @@ let internal advisedCase fixture reference =
         let! admin = caseWorker fixture
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 admin
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 20 reference 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (20)
+                    (reference)
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
         let decision =
-            (ClaimCore.TestSupport.Inputs.decisionFrom
+            (ClaimCore.TestSupport.DomainInputs.decisionFrom
                 [
                     BusinessField.PaymentDecisionDate, ("2026-08-15")
                     BusinessField.PayableAmount, ("750.0000")
@@ -156,24 +179,24 @@ let internal advisedCase fixture reference =
                 ])
 
         let! decided =
-            (Service.execute
+            (Service.executeSubmission
                 admin
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 21 reference 1L (AuthoredCaseAct.Decide decision)
-                ))
+                (((request
+                    (fixture)
+                    (21)
+                    (reference)
+                    (1L)
+                    "case.decide"
+                    (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision))))))
                 (CancellationToken.None))
 
         accepted decided |> ignore
         return admin
     }
 
-let internal refusedAdvice fixture (actor: ServiceContext) pending =
+let internal refusedAdvice fixture (actor: ServiceContext) reference pending =
     task {
-        let! refused =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation pending)
-                (CancellationToken.None))
+        let! refused = (Service.executeSubmission actor ((pending)) (CancellationToken.None))
 
         Expect.equal
             refused.Outcome
@@ -184,7 +207,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
             (Service.get
                 actor
                 ({
-                    Target = CaseSelector.Reference(pending.CaseReference)
+                    Target = CaseSelector.Reference(reference)
                 })
                 (CancellationToken.None))
 
@@ -201,11 +224,11 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
                 "Fresh advice reflects revoked full history"
 
             Expect.isFalse
-                (List.contains CaseActKind.Correct value.Advice.Acts)
+                (List.contains (TaskId.ofLiteral "case.correct") value.Advice.Acts)
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 
-        let! entries = caseTimeline fixture pending.CaseReference None 50
+        let! entries = caseTimeline fixture reference None 50
 
         Expect.equal
             (storedPage entries).Entries.Length
@@ -220,26 +243,26 @@ let internal revokedAdvice fixture =
         let! target, actor = scopedHandler fixture admin reference
         do! checkScopedAdvice actor reference
 
-        let correction: AuthoredCorrection =
-            {
-                Registration =
-                    Amendment.Update(
-                        Inputs.registrationUpdate (
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [ BusinessField.ClaimedAmount, ("1001.0000") ]
-                                (registration)
-                        )
+        let correction =
+            Submissions.updates (
+                RegistrationUpdateInput.values (
+                    DomainInputs.registrationUpdate (
+                        DomainInputs.registrationWith
+                            [ BusinessField.ClaimedAmount, "1001.0000" ]
+                            registration
                     )
-                Decision = Change.Keep
-            }
+                )
+            )
+            |> Map.add
+                (Submissions.input (InputTarget.Group RecordGroup.Registration))
+                (SubmissionValue.Text "UPDATE")
+            |> Map.add
+                (Submissions.input (InputTarget.Group RecordGroup.Decision))
+                (SubmissionValue.Text "KEEP")
 
-        let pending = request fixture 35 reference 2L (AuthoredCaseAct.Correct correction)
+        let pending = request fixture 35 reference 2L "case.correct" correction
 
-        let! preview =
-            (Service.preview
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation pending)
-                (CancellationToken.None))
+        let! preview = (Service.previewSubmission actor ((pending)) (CancellationToken.None))
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -270,7 +293,7 @@ let internal revokedAdvice fixture =
                 true
 
         acceptedPeople reader
-        do! refusedAdvice fixture actor pending
+        do! refusedAdvice fixture actor reference pending
     }
 
 let internal scopedWorker fixture =
@@ -282,16 +305,20 @@ let internal scopedWorker fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 20)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 20))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -312,16 +339,17 @@ let internal scopedWorker fixture =
             let reference = $"SCOPE-{number}"
 
             let! opened =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            fixture
-                            (100 + number)
-                            reference
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (fixture)
+                        ((100 + number))
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (CancellationToken.None))
 
             accepted opened |> ignore
@@ -350,46 +378,34 @@ let internal scopedPeople fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! facts = tx.GlobalReadFacts principal in return facts.People
+                                let! facts = AccessReads.globalReadFacts tx principal in
+                                return facts.People
                             }
                     CancellationToken = CancellationToken.None
                 }
 
         let! principal = scopedWorker fixture
 
-        let! read =
-            inspectCase fixture (principal) (None) ("SCOPE-1") (CancellationToken.None)
+        let! selected = existingCaseId fixture "SCOPE-1"
+        let! acceptedScope = existingCaseId fixture "SCOPE-2"
 
+        let readScopes ids =
+            fixture.Store.Read
+                {
+                    Work = fun tx -> AccessReads.accessCases tx (principal, ids)
+                    CancellationToken = CancellationToken.None
+                }
+
+        let! read = readScopes [ selected ]
         let view = read |> Result.defaultWith (fun _ -> failtest "Scoped case read")
-
-        Expect.equal
-            view.Actor.Installation
-            [ Role.CaseRegistrar ]
-            "Installation grants remain available"
-
-        Expect.equal view.Actor.Cases.Count 1 "Unrelated case grants are not read"
-
-        let! identity =
-            inspectCase
-                fixture
-                (principal)
-                (Some(id fixture 102))
-                ("SCOPE-1")
-                (CancellationToken.None)
-
+        Expect.equal view.Installation [ Role.CaseRegistrar ] "Installation grants remain available"
+        Expect.equal view.Cases.Count 1 "Unrelated case grants are not read"
+        let! identity = readScopes [ selected; acceptedScope ]
         let identity = identity |> Result.defaultWith (fun _ -> failtest "Identity scopes")
-
-        Expect.equal identity.Actor.Cases.Count 2 "Existing operation adds only its own case people"
-
-        let! observed =
-            inspectOperation
-                fixture
-                (principal)
-                ((CaseFixtures.operationId (id fixture 102)))
-                (CancellationToken.None)
-
+        Expect.equal identity.Cases.Count 2 "Requested and accepted scopes can be read together"
+        let! observed = readScopes [ acceptedScope ]
         let observed = observed |> Result.defaultWith (fun _ -> failtest "Observe scopes")
-        Expect.equal observed.Actor.Cases.Count 1 "Observation reads the accepted entry scope only"
+        Expect.equal observed.Cases.Count 1 "Observation reads only the selected accepted scope"
         let! context = inspectPeople fixture (principal) (CancellationToken.None)
         let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
         Expect.isEmpty context.Cases "Context never enumerates assigned grants"
@@ -413,16 +429,20 @@ let internal scopedPeople fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 430)
-                        roleless
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 430))
+                        (roleless)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission (CancellationToken.None)
+            })
 
         acceptedPeople registered
         let! noGrants = inspectGlobal roleless
@@ -434,15 +454,18 @@ let internal scopedPeople fixture =
             ([], Map.empty, false)
             "A zero-grant actor has no invented visibility"
 
-        for operation, act, enabled in
-            [ 420, PeopleAct.Disable, false; 421, PeopleAct.Enable, true ] do
-            let! changed =
-                Service.execute
-                    admin
-                    (OperationInput.People(
-                        reviewedPeopleRequest fixture.Store (id fixture operation) principal act
-                    ))
-                    CancellationToken.None
+        for operation, taskName, enabled in
+            [ 420, "people.disable", false; 421, "people.enable", true ] do
+            let! submission =
+                personSubmission
+                    fixture.Store
+                    (id fixture operation)
+                    principal
+                    None
+                    taskName
+                    Map.empty
+
+            let! changed = Service.executeSubmission admin submission CancellationToken.None
 
             acceptedPeople changed
             let! observed = inspectGlobal principal
@@ -464,16 +487,20 @@ let internal scopedPeople fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registeredService =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 440)
-                        service
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 440))
+                        (service)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission (CancellationToken.None)
+            })
 
         acceptedPeople registeredService
 
@@ -554,21 +581,24 @@ let internal scopedPeople fixture =
 
         let pending =
             request
-                fixture
-                102
-                "SCOPE-1"
-                1L
-                (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
+                (fixture)
+                (102)
+                ("SCOPE-1")
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (
+                    RegistrationUpdateInput.values ((DomainInputs.registrationUpdate registration))
+                ))
 
         let! conflict =
-            (Service.execute
+            (Service.executeSubmission
                 (Service.create
                     BuildIdentity.current.Version
                     fixture.InstallationId
                     fixture.Store
                     fixture.Calendar
                     principal)
-                (ClaimCore.TestSupport.Inputs.caseOperation pending)
+                ((pending))
                 (CancellationToken.None))
 
         Expect.equal

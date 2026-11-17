@@ -11,6 +11,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 open ClaimCore.TestSupport.StoreContractReads
@@ -27,45 +31,18 @@ let internal genesis fixture =
                             task {
                                 calls <- calls + 1
 
-                                let! view =
-                                    ExecutionFacts.target
-                                        (core fixture fixture.Owner)
-                                        tx
-                                        (People.factsNeeded (
-                                            PeopleAct.ProvisionOwner(
-                                                (ActorProfile.parse Inputs.ownerProfile
-                                                 |> Result.defaultWith (string >> failtest)),
-                                                []
-                                            )
-                                        ))
-                                        ((CaseFixtures.operationId (id fixture 1)))
-                                        fixture.Owner
-                                        []
-
-                                Expect.equal
-                                    tx.Head.Sequence
-                                    (CaseFixtures.sequence 0L)
-                                    "Genesis head"
-
-                                Expect.isTrue
-                                    (tx.Head.EntryHash = EntryHash.zero)
-                                    "Zero previous hash"
-
-                                Expect.isNone view.Actor.Actor "No actor before provisioning"
+                                Expect.equal tx.Head.Sequence Sequence.zero "Genesis head"
+                                Expect.equal tx.Head.EntryHash EntryHash.zero "Zero previous hash"
+                                let! person = AggregateStorage.principal tx fixture.Owner
+                                Expect.isNone person "No actor before provisioning"
 
                                 return!
-                                    ClaimCore.TestSupport.StoreFixtures.provisionPeople
+                                    Service.provisionOwnerInTransaction
                                         (core fixture fixture.Owner)
-                                        ((CaseFixtures.operationId (id fixture 1)))
-                                        Inputs.ownerProfile
+                                        tx
+                                        (id fixture 1)
+                                        DomainInputs.ownerProfile
                                         []
-                                        {
-                                            Head = tx.Head
-
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        view
-                                    |> ExecutionFacts.persist tx tx.ProjectPeople
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -84,17 +61,17 @@ let internal genesis fixture =
             Expect.equal people.Installation [ Role.Owner ] "Only the owner role is provisioned"
         | _ -> failtest "Missing owner projection"
 
-        let! entry =
-            inspectOperation
-                fixture
-                (fixture.Owner)
-                ((CaseFixtures.operationId (id fixture 1)))
-                (CancellationToken.None)
+        let! observed =
+            Service.operationGet
+                (core fixture fixture.Owner)
+                { OperationId = id fixture 1 }
+                CancellationToken.None
 
-        match entry with
-        | Ok { ExistingOperation = Some entry } ->
-            Expect.equal entry.Position.Sequence Sequence.first "Readable operation acceptance"
-        | _ -> failtest "Missing accepted entry"
+        match observed.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) ->
+            Expect.equal receipt.Position.Sequence Sequence.first "Readable accepting root"
+        | other -> failtestf "Missing accepted owner root: %A" other
+
     }
 
 let internal replayAndRefusal fixture =
@@ -102,13 +79,15 @@ let internal replayAndRefusal fixture =
         let! actor = caseWorker fixture
 
         let original =
-            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+            request
+                (fixture)
+                (10)
+                ("CONTRACT-001")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
-        let! result =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation original)
-                (CancellationToken.None))
+        let! result = (Service.executeSubmission actor ((original)) (CancellationToken.None))
 
         let receipt = accepted result
 
@@ -117,20 +96,14 @@ let internal replayAndRefusal fixture =
             (CaseFixtures.sequence 4L)
             "Bootstrap and two grants precede one case operation"
 
-        let! replay =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation original)
-                (CancellationToken.None))
+        let! replay = (Service.executeSubmission actor ((original)) (CancellationToken.None))
 
         expectReceipt (replayReceipt replay) receipt "Original acceptance with current observation"
 
         let! stale =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                (((request (fixture) (11) ("CONTRACT-001") (2L) "case.close" (Map.empty))))
                 (CancellationToken.None))
 
         match stale.Outcome with
@@ -140,15 +113,20 @@ let internal replayAndRefusal fixture =
         | other -> failtestf "Expected revision conflict, got %A" other
 
         let! view =
-            inspectCase fixture (fixture.Owner) (None) ("CONTRACT-001") (CancellationToken.None)
+            fixture.Store.Read
+                {
+                    Work = fun tx -> FamilyReads.findCaseByReference tx "CONTRACT-001"
+                    CancellationToken = CancellationToken.None
+                }
 
         match view with
-        | Ok { Case = Some record } ->
+        | Ok(Some record) ->
             Expect.equal
                 (caseReceipt receipt).Snapshot
                 (SnapshotDisclosure.Disclosed
                     {
                         State = LiveCase.ofState record.Snapshot.State |> Option.get
+                        Disposition = None
                         RecordedFields =
                             [
                                 BusinessField.IncidentDate
@@ -176,13 +154,15 @@ let internal lockedView fixture =
         let! actor = caseWorker fixture
 
         let original =
-            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+            request
+                (fixture)
+                (10)
+                ("CONTRACT-001")
+                (0L)
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
-        let! opened =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation original)
-                (CancellationToken.None))
+        let! opened = (Service.executeSubmission actor ((original)) (CancellationToken.None))
 
         let first = accepted opened
         let mutable calls = 0
@@ -193,14 +173,6 @@ let internal lockedView fixture =
                     WriteOperation.Work =
                         (fun tx ->
                             task {
-                                let! view =
-                                    ExecutionFacts.case
-                                        (core fixture fixture.Owner)
-                                        tx
-                                        (Some(CaseFixtures.operationId original.OperationId))
-                                        (CaseSelector.Reference original.CaseReference)
-                                        (Some original.Act)
-
                                 calls <- calls + 1
 
                                 Expect.equal
@@ -213,27 +185,50 @@ let internal lockedView fixture =
                                     first.Position.EntryHash
                                     "Previous accepted link"
 
+                                let! current = FamilyReads.findCaseByReference tx "CONTRACT-001"
+
                                 Expect.equal
-                                    (view.Case
-                                     |> Option.map (fun record -> record.Snapshot.Revision))
+                                    (current |> Option.map _.Snapshot.Revision)
                                     (Some(CaseFixtures.revision 1L))
                                     "Current case"
 
-                                Expect.equal
-                                    (view.ExistingOperation |> Option.map _.OperationId)
-                                    (Some(CaseFixtures.operationId original.OperationId))
-                                    "Existing identity in the same view"
+                                let command = Submissions.command original
 
-                                return!
-                                    ClaimCore.TestSupport.StoreFixtures.executeCase
-                                        (core fixture fixture.Owner)
-                                        (CaseFixtures.command original)
-                                        {
-                                            Head = tx.Head
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        view
-                                    |> ExecutionFacts.persist tx tx.ProjectCase
+                                let context =
+                                    {
+                                        DecisionContext.BusinessDate = None
+                                        ObservedAt = tx.ObservedAt
+                                        Principal = actor.Principal
+                                        Access = AccessView.empty
+                                        Maintenance = false
+                                        Lifetime = DecisionLifetime.Execution None
+                                    }
+
+                                let! prepared =
+                                    Engine.prepare
+                                        tx
+                                        tx.Head
+                                        context
+                                        (ClaimCore.Domain.Tasks.Registry.find original.Task
+                                         |> Option.get)
+                                        (CaseFixtures.operationId original.OperationId)
+                                        command.Binding
+                                        command.Inputs
+
+                                match prepared with
+                                | Error(ExecutionStop.AlreadyAccepted record) ->
+                                    Expect.equal
+                                        record.Root.Header.OperationId
+                                        first.OperationId
+                                        "Existing identity in the same locked transaction"
+
+                                    Expect.equal
+                                        record.Root.Position
+                                        first.Position
+                                        "Locked replay proof"
+
+                                    return Verdict.Proceed true
+                                | other -> return failtestf "Expected locked replay, got %A" other
 
                             })
                     CancellationToken = CancellationToken.None
@@ -241,7 +236,7 @@ let internal lockedView fixture =
             )
 
         match result with
-        | Ok(Verdict.Replay receipt) -> expectReceipt receipt first "Locked replay"
+        | Ok(Verdict.Proceed true) -> ()
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
@@ -252,21 +247,25 @@ let internal caseUpdate fixture =
         let! actor = caseWorker fixture
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (10)
+                    ("CONTRACT-001")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
         let! closed =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
-                ))
+                (((request (fixture) (11) ("CONTRACT-001") (1L) "case.close" (Map.empty))))
                 (CancellationToken.None))
 
         let receipt = accepted closed
@@ -284,9 +283,9 @@ let internal caseUpdate fixture =
         let revisions (entries: StoredEffect list) =
             entries
             |> List.map (fun entry ->
-                match entry.Subject with
-                | EntryTarget.Case(_, revision, _, _) -> Revision.value revision
-                | _ -> failtest "Expected case history")
+                Expect.equal entry.Change.Kind ClaimCore.Domain.Changes.PartKind.Case "Case part"
+                Revision.value entry.Change.Revision)
+
 
         Expect.equal (revisions page.Entries) [ 2L ] "First page contains newest revision"
         let! continued = caseTimeline fixture "CONTRACT-001" page.Next 1
@@ -305,18 +304,21 @@ let internal caseUpdate fixture =
         Expect.isEmpty (storedPage exhausted).Entries "Continuation below opening revision is empty"
 
         let! operation =
-            inspectOperation
-                fixture
-                (fixture.Owner)
-                ((CaseFixtures.operationId (id fixture 11)))
-                (CancellationToken.None)
+            fixture.Store.Read
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! entry = LedgerReads.findOperation tx receipt.OperationId
+                                let! record = FamilyReads.findCaseByReference tx "CONTRACT-001"
+                                return entry, record
+                            }
+                    CancellationToken = CancellationToken.None
+                }
 
         match operation with
-        | Ok {
-                 ExistingOperation = Some entry
-                 Case = Some record
-             } ->
-            Expect.equal entry.Position.Sequence receipt.Position.Sequence "Operation position"
-            Expect.equal record.Snapshot.Revision (CaseFixtures.revision (2L)) "Current projection"
+        | Ok(Some entry, Some record) ->
+            Expect.equal entry.Root.Position.Sequence receipt.Position.Sequence "Operation position"
+            Expect.equal record.Snapshot.Revision (CaseFixtures.revision 2L) "Current projection"
         | _ -> failtest "Missing accepted update"
     }

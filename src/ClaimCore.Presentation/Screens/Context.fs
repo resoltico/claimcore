@@ -250,10 +250,26 @@ module ContextScreen =
             ]
             @ identity
 
+        let heading =
+            match state with
+            | RequesterKind.Active -> None
+            | RequesterKind.Disabled -> Some "label.accessDisabled"
+            | _ -> Some "label.accessPending"
+
         Screen.create
             [
-                entryRegion RegionRole.Identity None identity
+                entryRegion RegionRole.Identity heading identity
                 match reply.Requester with
+                | RequesterState.NotRegistered _ ->
+                    region
+                        RegionRole.Notice
+                        None
+                        (RegionContent.Notice
+                            {
+                                MessageId = "label.accessRequested"
+                                Reason = None
+                                Tone = NoticeTone.Info
+                            })
                 | RequesterState.Active item when item.Maintenance.Active ->
                     region
                         RegionRole.Notice

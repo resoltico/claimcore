@@ -12,7 +12,12 @@ open System.IO
 open System.Text.Json
 open System.Threading
 open Expecto
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open Npgsql
 open AdministrationProcess
 

@@ -34,7 +34,7 @@ let private commandExamples () =
             Grammar.prepare
                 (fun () -> "11111111-2222-7333-8444-555555555555")
                 (arguments @ [ "--dry-run" ])
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         Expect.isOk (Frames.admit actual.Bytes) "Prepared request passes the actual endpoint codec"
 
@@ -65,7 +65,7 @@ let private byteLimits () =
     let remaining =
         Limits.MaximumRequestBytes - System.Text.Encoding.UTF8.GetByteCount emptyInput
 
-    let exact = prepare (String('x', remaining)) |> Fixtures.accepted
+    let exact = prepare (String('x', remaining)) |> CaseBuilders.accepted
     Expect.isOk (Frames.admit exact.Bytes) "A request at the byte limit remains preparable"
 
     for reason in [ String('x', remaining + 1); String.replicate 20_000 "😀" ] do
@@ -87,13 +87,13 @@ let private byteLimits () =
 let private operationId = "10000000-0000-7000-8000-000000000001"
 
 let private registration =
-    ClaimCore.TestSupport.Inputs.registrationWith
+    ClaimCore.TestSupport.DomainInputs.registrationWith
         [
             BusinessField.ClaimantName, "Synthetic claimant"
             BusinessField.InsurerName, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.0000"
         ]
-        ClaimCore.TestSupport.Inputs.registration
+        ClaimCore.TestSupport.DomainInputs.registration
     |> CliExamples.registrationArguments
 
 let private prepare args =
@@ -120,29 +120,23 @@ let private replacement () =
         )
         |> Result.defaultWith (fun issues -> failtestf "Correction argv must prepare: %A" issues)
 
-    let frame = Frames.admit prepared.Bytes |> Fixtures.accepted
+    let frame = Frames.admit prepared.Bytes |> CaseBuilders.accepted
 
     let request =
         OperationSubmissionCodecs.submission.Read "$" (Frames.input frame)
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
         |> ClaimCore.TestSupport.Submissions.command
 
-    match request with
-    | OperationInput.Case {
-                              Act = AuthoredCaseAct.Correct {
-                                                                Registration = Amendment.Update value
-                                                            }
-                          } ->
-        Expect.equal
-            (RegistrationUpdateInput.tryValue BusinessField.ClaimedAmount value |> Option.get)
-            "1.0000"
-            "Authored amount spelling is preserved"
+    Expect.equal
+        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount)]
+        (InputValue.Text "1.0000")
+        "Authored amount spelling is preserved"
 
-        Expect.equal
-            (RegistrationUpdateInput.tryValue BusinessField.ClaimantName value |> Option.get)
-            "Synthetic claimant"
-            "Replacement fields follow their selected branch"
-    | _ -> failtest "The requested replacement must remain in the prepared frame"
+    Expect.equal
+        request.Inputs.Values[TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName)]
+        (InputValue.Text "Synthetic claimant")
+        "Selected replacement fields"
+
 
 [<Tests>]
 let tests =

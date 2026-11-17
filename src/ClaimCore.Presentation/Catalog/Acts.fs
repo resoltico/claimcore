@@ -3,16 +3,28 @@ namespace ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-/// Message identities follow concepts even when transport vocabularies are separate.
+/// Message identities follow the declared concept and its consequence, never a task switch.
 module PresentationKeys =
     let code vocabulary token = vocabulary + "." + token + ".label"
 
-    let consequence kind =
-        let part =
-            match kind with
-            | ActKind.Case(CaseActKind.Void | CaseActKind.Reinstate | CaseActKind.Erase)
-            | ActKind.People(PeopleActKind.Admit | PeopleActKind.EraseProfile | PeopleActKind.Grant | PeopleActKind.Revoke | PeopleActKind.Disable) ->
-                "consequence"
-            | _ -> "meaning"
+    let consequence act =
+        let declaration = TaskConsequences.declaration act
 
-        Vocabulary.messageKey ActKind.vocabulary kind part
+        let roleInput (input: TaskInputDeclaration) =
+            input.Input = TaskInputId.Target InputTarget.Role
+
+        let changesAccess =
+            declaration.Inputs |> List.exists roleInput
+            || declaration.Collections
+               |> List.exists (fun collection -> collection.Inputs |> List.exists roleInput)
+
+        let part =
+            if
+                declaration.Consequence <> Consequence.Routine
+                || (declaration.Exposure = TaskExposure.Client && changesAccess)
+            then
+                "consequence"
+            else
+                "meaning"
+
+        "task." + TaskId.token declaration.Id + "." + part

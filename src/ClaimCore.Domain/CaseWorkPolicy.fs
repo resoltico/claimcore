@@ -35,7 +35,7 @@ module CaseWorkPolicy =
         && Result.isOk (authorize principal actor snapshot.CaseId)
 
     let eligibleAssignee principal actor caseId =
-        PrincipalKey.isHuman principal && Result.isOk (authorize principal actor caseId)
+        Access.eligibleAssignee principal actor caseId
 
     let canAssign principal actor maintenance (snapshot: CaseSnapshot) =
         canEdit principal actor maintenance snapshot

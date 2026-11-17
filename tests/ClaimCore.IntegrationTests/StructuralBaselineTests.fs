@@ -6,7 +6,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private malformedAdmission (database: PostgresFixture.Database) =
+let private malformedPerson (database: PostgresFixture.Database) =
     task {
         let! _ = bootstrap database.Fixture
         let! _ = verified database
@@ -14,20 +14,20 @@ let private malformedAdmission (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act,kind}','\"ADMIT\"'::jsonb) WHERE sequence=1"
+                "UPDATE claimcore.ledger_effects SET retained=retained || '{\"unknownMember\":null}'::jsonb WHERE operation_sequence=1 AND effect_index=0"
                 [||]
 
         do! finding VerificationFinding.PayloadFormat database
     }
 
-let private unknownAct (database: PostgresFixture.Database) =
+let private unknownTask (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        // This is deliberately outside the retired uppercase act regex, not just an unused known token.
+        // SQL admits a well-formed token; the task registry owns the semantic inventory.
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,'{act}','\"unsupported!\"'::jsonb) WHERE command->>'kind'='CASE'"
+                "UPDATE claimcore.ledger SET task='case.unsupported' WHERE aggregate_kind='FAMILY'"
                 [||]
 
         do! finding VerificationFinding.PayloadFormat database
@@ -39,7 +39,7 @@ let tests =
         "structural SQL baseline"
         [
             testCaseAsync
-                "privileged malformed ADMIT metadata is rejected by verification"
-                (run malformedAdmission)
-            testCaseAsync "privileged unknown act is rejected by verification" (run unknownAct)
+                "privileged malformed person part metadata is rejected by verification"
+                (run malformedPerson)
+            testCaseAsync "privileged unknown task is rejected by verification" (run unknownTask)
         ]

@@ -4,8 +4,13 @@ open System
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.Wire
 open ClaimCore.TestSupport
 open System.Threading
@@ -36,7 +41,7 @@ let private reset database =
 let private owner (database: PostgresFixture.Database) : InitialOwner =
     {
         Principal = database.Fixture.Owner
-        Profile = Inputs.ownerProfile
+        Profile = DomainInputs.ownerProfile
         Roles = [ Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward; Role.Auditor ]
     }
 
@@ -64,7 +69,7 @@ let private initialization (database: PostgresFixture.Database) =
 
         Expect.equal
             initial.DisplayName
-            (DisplayName.Named(Inputs.name Inputs.ownerProfile.DisplayName))
+            (DisplayName.Named(DomainInputs.name DomainInputs.ownerProfile.DisplayName))
             "Status identifies the authored owner"
 
         let settings =
@@ -103,16 +108,18 @@ let private initialization (database: PostgresFixture.Database) =
         | other -> failtestf "Active owner required: %A" other
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = Guid.CreateVersion7()
-                        CaseReference = "INITIAL-OWNER"
-                        ExpectedRevision = 0L
-                        Act = AuthoredCaseAct.Open Inputs.registration
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.open"
+                    (Guid.CreateVersion7())
+                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (DomainInputs.registration)
+                     )
+                     |> Map.add
+                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text("INITIAL-OWNER")))))
                 token
 
         Expect.isTrue

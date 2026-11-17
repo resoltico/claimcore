@@ -134,7 +134,6 @@ const setup = (manage: boolean) => {
                           "input:principal.subject": request.principal.subject,
                           "input:profile.displayName": request.claims.name,
                           "input:profile.contact": request.claims.email,
-                          "input:grants": [{ "input:scope": "INSTALLATION" }],
                         },
                         ["input:profile.displayName", "input:profile.contact", "input:grants"],
                       ),
@@ -167,7 +166,7 @@ const setup = (manage: boolean) => {
 };
 it("people read alone never requests or exposes pending principals", async () => {
   const requests = setup(false);
-  await screen.findByRole("heading", { name: "People & access" });
+  await screen.findByRole("heading", { name: "People and access" });
   await waitFor(() => {
     expect(getEndpointMock("people.list")).toHaveBeenCalled();
   });

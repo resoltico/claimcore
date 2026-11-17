@@ -1,17 +1,22 @@
+import { apiEndpoints } from "../../api/service";
+import type { Affordance, HumanResponseByEndpoint } from "@contracts/client";
+import { hasDocumentSubject, type CurrentCase } from "../../protocol/types";
 import { useCallback, useLayoutEffect } from "react";
-import type { HumanResponseByEndpoint } from "@contracts/client";
-import type { CurrentCase } from "../../protocol/types";
+
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { Button } from "../../ui/Button";
 import { PaymentRows, PaymentsShown } from "./PaymentRows";
 
-const select = (reply: HumanResponseByEndpoint["case.payments"]) => {
+const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.casePayments]) => {
   if (reply.outcome.kind !== "SUCCEEDED" || reply.outcome.document.basis.kind !== "SNAPSHOT") {
     return null;
   }
   const doc = reply.outcome.document;
+  if (!hasDocumentSubject(doc, "CASE")) {
+    return null;
+  }
   return {
     items: doc.screen.regions.flatMap((region) =>
       region.content.kind === "TABLE" ? region.content.rows : [],
@@ -30,12 +35,12 @@ const continuationKey = (page: Page) => `${page.caseId}:${page.revision}`;
 export const CasePaymentPages = ({
   current,
   total,
-  onRemove,
+  onAction,
   onChanged,
 }: {
   current: CurrentCase;
   total: number;
-  onRemove: (paymentId: string) => void;
+  onAction: (action: Affordance) => void;
   onChanged: () => void;
 }) => {
   const p = usePresentation();
@@ -46,8 +51,8 @@ export const CasePaymentPages = ({
     }),
     [current.subject.caseId],
   );
-  const result = useEndpointPage<"case.payments", Handle, Page>(
-    "case.payments",
+  const result = useEndpointPage<typeof apiEndpoints.casePayments, Handle, Page>(
+    apiEndpoints.casePayments,
     input,
     select,
     onChanged,
@@ -77,7 +82,7 @@ export const CasePaymentPages = ({
             key={content.rows[0]?.key ?? "empty"}
             content={content}
             zone={observed.basis.timeZone}
-            onRemove={onRemove}
+            onAction={onAction}
           />
         ) : null;
       })}

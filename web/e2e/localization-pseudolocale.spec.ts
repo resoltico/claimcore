@@ -147,7 +147,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   }
   expect(current.outcome.data.state.fields.registration.claimedAmount).toBe("1");
   await expect(page.locator("section.case-detail")).toBeVisible();
-  await expect(page.locator(".success-toast")).toBeVisible();
+  await expect(page.locator(".accepted-receipt")).toBeVisible();
   await page.setViewportSize({
     width: 320,
     height: 720,
@@ -174,9 +174,9 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await reference.getByRole("button").focus();
   await reference.getByRole("button").click();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
-  const toast = await page.locator(".success-toast").textContent();
+  const toast = await page.locator(".accepted-receipt").textContent();
   await selectLanguage(page, "en");
-  await expect(page.locator(".success-toast")).toContainText("Case opened.");
+  await expect(page.locator(".accepted-receipt")).toContainText("Case opened.");
   expect(toast).not.toBeNull();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
   await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(

@@ -1,6 +1,10 @@
 module ClaimCore.IntegrationTests.HostingTests
 
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 
 open ClaimCore.Wire
@@ -13,7 +17,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Server.Composition
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
@@ -53,16 +57,17 @@ let private runtimeCursors (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CURSOR-A"; 11, "CURSOR-B" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     owner
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            n
-                            reference
-                            0L
-                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted result |> ignore
@@ -173,7 +178,7 @@ let tests =
                         use! owner = database.OwnerSource.OpenConnectionAsync token
 
                         let! _ =
-                            ClaimCore.Postgres.DatabaseSession.execute
+                            ClaimCore.Application.Storage.DatabaseSession.execute
                                 owner
                                 "REVOKE SELECT ON claimcore.ledger FROM claimcore_runtime; GRANT SELECT(sequence,entry_hash) ON claimcore.ledger TO claimcore_runtime"
                                 [||]
@@ -190,7 +195,7 @@ let tests =
                         Expect.isTrue ready "Current reachable schema"
 
                         let! _ =
-                            ClaimCore.Postgres.DatabaseSession.execute
+                            ClaimCore.Application.Storage.DatabaseSession.execute
                                 owner
                                 "UPDATE claimcore.baseline_identity SET script_sha256=decode(repeat('00',32),'hex')"
                                 [||]
@@ -219,16 +224,17 @@ let tests =
 
                         let! result =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Service.execute
+                                (Service.executeSubmission
                                     actor
-                                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                                        request
-                                            database.Fixture
-                                            30
-                                            "synthetic-hosting"
-                                            0L
-                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                    ))
+                                    (((request
+                                        (database.Fixture)
+                                        (30)
+                                        ("synthetic-hosting")
+                                        (0L)
+                                        "case.open"
+                                        (ClaimCore.TestSupport.Submissions.fields (
+                                            RegistrationInput.values (registration)
+                                        )))))
                                     (token)))
 
                         accepted result |> ignore
@@ -338,16 +344,17 @@ let tests =
 
                         let running =
                             call runtime database.Fixture.Owner (fun actor ->
-                                (Service.execute
+                                (Service.executeSubmission
                                     actor
-                                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                                        request
-                                            database.Fixture
-                                            40
-                                            "synthetic-drain"
-                                            0L
-                                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                                    ))
+                                    (((request
+                                        (database.Fixture)
+                                        (40)
+                                        ("synthetic-drain")
+                                        (0L)
+                                        "case.open"
+                                        (ClaimCore.TestSupport.Submissions.fields (
+                                            RegistrationInput.values (registration)
+                                        )))))
                                     (token)))
 
                         let deadline = DateTimeOffset.UtcNow.AddSeconds 3.

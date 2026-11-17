@@ -188,13 +188,7 @@ const sessionLifecycle = async () => {
       screen: { regions: [] },
       subject: { kind: "LIST" },
       actions: [
-        operationAffordance(
-          "case.open",
-          { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
-          {},
-          undefined,
-          {},
-        ),
+        operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, undefined, {}),
       ],
       links: [],
       history: null,

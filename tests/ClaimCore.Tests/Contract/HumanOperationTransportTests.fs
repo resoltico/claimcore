@@ -8,6 +8,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
@@ -18,10 +22,10 @@ let private required value =
     Result.defaultWith (fun error -> failtestf "%A" error) value
 
 let private services =
-    ClaimCore.Tests.DecisionFixtures.services
-        ClaimCore.Tests.DecisionFixtures.installation
-        ClaimCore.Tests.DecisionFixtures.calendar
-        ClaimCore.Tests.DecisionFixtures.owner
+    ClaimCore.Tests.ReadFixtures.services
+        ClaimCore.Tests.ReadFixtures.installation
+        ClaimCore.Tests.ReadFixtures.calendar
+        ClaimCore.Tests.ReadFixtures.owner
 
 let rec private containsScreen =
     function
@@ -151,10 +155,7 @@ let tests =
                                 "Canonical transport choices"
                         | _ -> failtest "Every actor and no host declares representation selection"
 
-                    let authored =
-                        (Api.operationPreview.Input.Write
-                         << ClaimCore.TestSupport.Submissions.ofCommand None)
-                            ResponseExamples.previewInput
+                    let authored = (Api.operationPreview.Input.Write) ResponseExamples.previewInput
 
                     Expect.isNone
                         (JsonValue.tryMember "representation" authored)
@@ -168,7 +169,7 @@ let tests =
                             Api.operationPreview
                             Api.operationPreviewUnavailable
                             HumanReplies.previewSubmission
-                            (Submissions.ofCommand None ResponseExamples.previewInput)
+                            ResponseExamples.previewInput
                             ResponseExamples.preview
                         |> Async.AwaitTask
 
@@ -176,7 +177,7 @@ let tests =
 
                     let accepted =
                         {
-                            ExecuteReply.OperationId = OperationInput.operationId input
+                            ExecuteReply.OperationId = input.OperationId
                             Outcome = ExecuteResult.Accepted ResponseExamples.receipt
                         }
 
@@ -185,7 +186,7 @@ let tests =
                             Api.operationExecute
                             Api.operationExecuteUnavailable
                             (fun _ reply -> HumanReplies.execute reply)
-                            (Submissions.ofCommand None input)
+                            input
                             accepted
                         |> Async.AwaitTask
 
@@ -276,21 +277,24 @@ let tests =
             testCase
                 "actual native review rendering uses opaque supplied facts rather than the frozen input"
                 (fun () ->
+                    let original = ResponseExamples.previewInput
+
                     let input =
-                        match ResponseExamples.previewInput with
-                        | OperationInput.Case value ->
-                            OperationInput.Case
-                                { value with
-                                    Act = CaseAct.Void "CLIENT_INPUT_BAIT"
-                                }
-                        | _ -> failtest "Case fixture required"
+                        Submissions.create
+                            (TaskId.token original.Task)
+                            original.OperationId
+                            (Submissions.command original).Binding
+                            (Map.add
+                                (Submissions.input InputTarget.Reason)
+                                (SubmissionValue.Text "CLIENT_INPUT_BAIT")
+                                original.Envelope.Inputs)
 
                     let core =
                         match ResponseExamples.preview.Outcome with
                         | Outcome.Succeeded(Previewed.Reviewed value) -> value
                         | _ -> failtest "Review fixture required"
 
-                    let review = HumanReviewDocument.ofCore input core
+                    let review = HumanReviewDocument.ofSubmission input core
 
                     let opaque =
                         Screen.create
@@ -316,14 +320,12 @@ let tests =
                     let reply =
                         RepresentationReply.Human
                             {
-                                HumanOperationReply.OperationId = OperationInput.operationId input
+                                HumanOperationReply.OperationId = input.OperationId
                                 Outcome = HumanPreviewResult.Reviewed review
                             }
 
                     let frame =
-                        (Frames.create Api.operationPreview
-                         << ClaimCore.TestSupport.Submissions.ofCommand None)
-                            input
+                        (Frames.create Api.operationPreview) input
                         |> required
                         |> Frames.withRepresentation Representation.Human
 
@@ -352,7 +354,7 @@ let tests =
 
                     let core =
                         {
-                            ExecuteReply.OperationId = OperationInput.operationId input
+                            ExecuteReply.OperationId = input.OperationId
                             Outcome = ExecuteResult.Accepted ResponseExamples.receipt
                         }
 
@@ -367,12 +369,7 @@ let tests =
                                 Task.FromResult core)
 
                     let prepared =
-                        route.Prepare(
-                            (Api.operationExecute.Input.Write
-                             << ClaimCore.TestSupport.Submissions.ofCommand None)
-                                input
-                        )
-                        |> required
+                        route.Prepare((Api.operationExecute.Input.Write) input) |> required
 
                     let! result =
                         prepared.Invoke

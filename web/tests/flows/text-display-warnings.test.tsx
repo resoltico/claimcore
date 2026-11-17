@@ -1,9 +1,9 @@
 import { expect, it } from "vitest";
-import { BusinessValue, CharacterWarning } from "../../src/components/BusinessValue";
-import { hasSuspiciousCharacters, suspiciousCodePoints } from "../../src/utils/text";
+import { CharacterWarning } from "../../src/components/CharacterWarning";
+import { PresentedValue } from "../../src/components/PresentedValue";
+import { suspiciousCodePoints } from "../../src/utils/text";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { render } from "../support/presentation-test-support";
-import { definition } from "../support/service-ui.fixtures";
 
 it.each([
   { value: "\u0000", code: "U+0" },
@@ -16,7 +16,7 @@ it.each([
   { value: "\u{E0020}", code: "U+E0020" },
 ])("warns about the independent display scalar $code", ({ value, code }) => {
   expect(suspiciousCodePoints(value)).toEqual([code]);
-  expect(hasSuspiciousCharacters(value)).toBe(true);
+  expect(suspiciousCodePoints(value).length > 0).toBe(true);
 });
 it.each([
   { name: "empty text", value: "" },
@@ -28,7 +28,7 @@ it.each([
   { name: "emoji variation selector", value: "✈\uFE0F" },
 ])("does not classify $name as a warning", ({ value }) => {
   expect(suspiciousCodePoints(value)).toEqual([]);
-  expect(hasSuspiciousCharacters(value)).toBe(false);
+  expect(suspiciousCodePoints(value).length > 0).toBe(false);
 });
 
 const eight = "\u0000\t\n\u0085\u00AD\u180E\u200D\u2028";
@@ -67,13 +67,12 @@ it.each(languages)(
   "preserves exact business text and localizes supplementary scalar warnings in $language",
   ({ language, prefix, open, close }) => {
     preferences(language);
-    const field = definition.catalog.fields.find((item) => item.name === "claimantName")!;
     const value = "A\u0308 العربية\u180E\u200D\u{E0001}\u{E0020} <script>🙂\uE000";
     const plain = "A\u0308 🙂 \uE000\u{F0000}";
     const view = render(
       <>
-        <BusinessValue value={value} field={field} />
-        <BusinessValue value={plain} field={field} />
+        <PresentedValue value={{ kind: "TEXT", value }} timeZone="Etc/UTC" />
+        <PresentedValue value={{ kind: "TEXT", value: plain }} timeZone="Etc/UTC" />
         <CharacterWarning value={null} />
       </>,
     );

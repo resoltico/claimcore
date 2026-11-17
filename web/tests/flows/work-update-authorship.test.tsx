@@ -155,7 +155,7 @@ it("assignment acquires only the selected UPDATE field from realistic work seeds
   });
 });
 
-it("required reminder seeds reach automatic preview through the real coordinator", async () => {
+it("editable reminder seeds remain available for explicit review through the real coordinator", async () => {
   const requests = captureRequests();
   render(
     <TestSession credential="same-owner">
@@ -181,6 +181,9 @@ it("required reminder seeds reach automatic preview through the real coordinator
       />
     </TestSession>,
   );
+  await screen.findByRole("button", { name: "Review changes" });
+  expect(requests.previews()).toHaveLength(0);
+  await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(requests.previews()).toHaveLength(1);
   });

@@ -1,6 +1,7 @@
 module internal ClaimCore.AcceptanceTests.CliCalls
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 open ClaimCore.TestSupport
 
@@ -13,21 +14,32 @@ open System.Text
 open System.Text.Json
 open Expecto
 
-let caseSubmission (operation: string) reference revision family act =
-    let command =
-        Inputs.caseOperation
-            {
-                ExpectedFamilySequence = family
-                OperationId = Guid.Parse operation
-                CaseReference = reference
-                ExpectedRevision = revision
-                Act = act
-            }
+let caseSubmission (operation: string) reference revision task values =
+    let declaration =
+        ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral task)
+        |> Option.get
+
+    let expected = Revision.create revision |> Option.get
+
+    let binding =
+        if declaration.Creates then
+            Binding.CaseNew expected
+        else
+            Binding.Case(CaseSelector.Reference reference, expected)
+
+    let values =
+        if declaration.Creates then
+            Map.add
+                (Submissions.field BusinessField.CaseReference)
+                (SubmissionValue.Text reference)
+                values
+        else
+            values
+
+    let submission = Submissions.create task (Guid.Parse operation) binding values
 
     let bytes =
-        ClaimCore.Json.Codec.encode
-            ClaimCore.Wire.OperationSubmissionCodecs.submission
-            (Submissions.ofCommand None command)
+        ClaimCore.Json.Codec.encode ClaimCore.Wire.OperationSubmissionCodecs.submission submission
 
     use document = JsonDocument.Parse bytes
     document.RootElement.Clone()

@@ -3,6 +3,10 @@ module internal ClaimCore.IntegrationTests.ObservedTransactions
 open System
 open System.Threading
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 /// Record the real provider instant without replacing transaction behavior or results.
 type Store(inner: IStore) =

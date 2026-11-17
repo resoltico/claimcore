@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "접근 권한 부여",
-    "source": "2fd169b4b39d"
+    "text": "역할",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "접근 권한을 1~{maximumGrants}개 선택하세요.",
-    "source": "d7a1ec1278fd"
+    "text": "역할을 1개에서 {maximumGrants}개까지 선택하세요.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "같은 역할과 적용 범위 쌍은 한 번만 선택하세요.",
@@ -2239,50 +2239,6 @@
     "text": "청구 건과 전체 이력을 봅니다. 모든 청구 건에 대한 이 역할이 있으면 사람과 접근 권한도 봅니다. 아무것도 변경할 수 없습니다.",
     "source": "5c16effd2666"
   },
-  "timeline.event.caseOpened": {
-    "text": "청구 건 등록됨",
-    "source": "06d0c814073c"
-  },
-  "timeline.event.registrationAmended": {
-    "text": "청구 내역 수정됨",
-    "source": "3464951cbb5f"
-  },
-  "timeline.event.factsCorrected": {
-    "text": "정보 정정됨",
-    "source": "b90ba017d774"
-  },
-  "timeline.event.decisionRecorded": {
-    "text": "지급 결정 기록됨",
-    "source": "17798f3d21af"
-  },
-  "timeline.event.decisionWithdrawn": {
-    "text": "지급 결정 철회됨",
-    "source": "0f54656f1d92"
-  },
-  "timeline.event.paymentRecorded": {
-    "text": "지급일 기록됨",
-    "source": "bba7521a5c9f"
-  },
-  "timeline.event.caseClosed": {
-    "text": "청구 건 종결됨",
-    "source": "aa56ad4b2d16"
-  },
-  "timeline.event.caseReopened": {
-    "text": "청구 건 다시 열림",
-    "source": "00dae005cb0c"
-  },
-  "timeline.event.caseVoided": {
-    "text": "청구 건 무효 처리됨",
-    "source": "38d380a51a59"
-  },
-  "timeline.event.caseReinstated": {
-    "text": "청구 건 복원됨",
-    "source": "d9c28b4df570"
-  },
-  "timeline.event.caseErased": {
-    "text": "청구 건 영구 삭제됨",
-    "source": "258332be465d"
-  },
   "timeline.event.responsibilityAssigned": {
     "text": "{person}을(를) 담당자로 지정함",
     "source": "1cea0340442f"
@@ -2539,10 +2495,6 @@
     "text": "일부 지급됨",
     "source": "04739c2e8186"
   },
-  "timeline.event.paymentRemoved": {
-    "text": "지급 내역 제거됨",
-    "source": "49cb55fa2f47"
-  },
   "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
     "text": "0보다 큰 지급액을 입력하세요.",
     "source": "dc72fea18ef9"
@@ -2639,14 +2591,6 @@
     "text": "메모",
     "source": "d8da2c49df39"
   },
-  "timeline.event.note.add": {
-    "text": "메모 추가됨",
-    "source": "a7886ebc4ffd"
-  },
-  "timeline.event.note.remove": {
-    "text": "메모 제거됨",
-    "source": "b9096ff4a83e"
-  },
   "timelineFilter.NOTES.label": {
     "text": "메모",
     "source": "8a7525b1492f"
@@ -2722,5 +2666,133 @@
   "field.expectedFamilySequence.rule": {
     "text": "삭제를 위해 검토한 청구 건에 대해 case.get이 제공한 가족 시퀀스를 사용하세요.",
     "source": "8d258a9cf42b"
+  },
+  "change.CASE.recorded": {
+    "text": "청구 건 사실 기록됨",
+    "source": "8e5b5d6ba758"
+  },
+  "change.PAYMENT.recorded": {
+    "text": "지급 변경 기록됨",
+    "source": "5fda4f37c572"
+  },
+  "change.WORK.recorded": {
+    "text": "청구 건 업무 기록됨",
+    "source": "d970b01f341f"
+  },
+  "change.REMINDER.recorded": {
+    "text": "알림 변경 기록됨",
+    "source": "6050baf70370"
+  },
+  "change.NOTE.recorded": {
+    "text": "메모 변경 기록됨",
+    "source": "db3aa5c9b123"
+  },
+  "change.PERSON.recorded": {
+    "text": "계정 변경 기록됨",
+    "source": "6d1a5a30e98a"
+  },
+  "timeline.event.noteAdded": {
+    "text": "메모 추가됨",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.noteRemoved": {
+    "text": "메모 삭제됨",
+    "source": "b9096ff4a83e"
+  },
+  "change.NOTE.removed": {
+    "text": "메모 삭제됨",
+    "source": "b9096ff4a83e"
+  },
+  "label.profile": {
+    "text": "저장된 프로필",
+    "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "각 정보 그룹에 수행할 작업을 선택하세요.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "선택한 청구 건에는 사용할 수 없습니다",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "서비스 계정에는 사용할 수 없습니다",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "이 계정은 비활성화되어 있습니다",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "아직 접근 권한이 없습니다",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "소유자에게 알렸습니다. 소유자가 이 계정에 접근 권한을 부여할 수 있습니다.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "기록된 지급 내역이 없습니다.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "이 보기에 맞는 후속 조치가 없습니다.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "여기의 기한 필터는 각 후속 조치에 적용됩니다. 청구 건 목록은 각 청구 건의 가장 이른 후속 조치를 사용합니다.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "표시할 사람이 없습니다.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "표시할 청구 건이 없습니다.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "이 보기에 맞는 청구 건이 없습니다.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "이 페이지에 지정 가능한 계정이 없습니다.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "청구 건 상세",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "접근 권한 변경",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "역할 선택",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "참조 번호 또는 ID로 기존 청구 건을 선택하세요.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "청구 건 선택 기준",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "주의가 필요한 청구 건 업무를 찾아 이어서 처리하세요.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "이 청구 건이 변경되었습니다",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "대기 중인 접근 요청이 없습니다.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "현재 이 청구 건에는 이 작업이 제공되지 않습니다.",
+    "source": "78dafa13c3bd"
   }
 }

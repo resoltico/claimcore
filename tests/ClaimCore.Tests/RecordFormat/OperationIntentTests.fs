@@ -1,203 +1,264 @@
 module ClaimCore.Tests.OperationIntentTests
 
-open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.RecordFormat
+open ClaimCore.Tests.RecordBuilders
 
-let private valid result =
-    Result.defaultWith (fun error -> failtestf "Intent fixture: %A" error) result
+module Tasks = ClaimCore.Tests.TaskBuilders
 
-let private guid number =
-    Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
+let private declaration token =
+    ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral token)
+    |> Option.get
 
-let private operation = OperationId.create (guid 2) |> Option.get
-let private parent = CaseId.create (guid 1) |> Option.get
-let private reference text = CaseReference.parse text |> valid
+let private parent = (Tasks.family ()).Id
 
-let private command amount =
-    let decision =
-        DecisionInput.create
-            [
-                BusinessField.PaymentDecisionDate, "2026-01-02"
-                BusinessField.PayableAmount, amount
-                BusinessField.PayableCurrency, "EUR"
-            ]
-        |> valid
+let private resolve =
+    function
+    | CaseSelector.Reference _ -> Some parent
+    | CaseSelector.Id id -> Some id
 
-    Case.parse
-        {
-            ExpectedFamilySequence = None
-            OperationId = guid 2
-            CaseReference = "CASE-ONE"
-            ExpectedRevision = 1L
-            Act = CaseAct.Decide decision
-        }
-    |> valid
-
-let private scope reference act =
-    {
-        ExpectedFamilySequence = None
-        CaseCommandSkeleton.CaseId = parent
-        Reference = reference
-        ExpectedRevision = Revision.first
-        Act = act
-        SelectedPayment = None
-    }
+let private hash task binding inputs =
+    OperationIntent.hash (declaration task) binding inputs resolve
 
 [<Tests>]
 let tests =
     testList
         "operation input identity"
         [
-            testCase
-                "case identity uses normalized input and resolved target rather than lookup spelling"
-                (fun () ->
-                    let first =
-                        OperationIntent.case
-                            operation
-                            (scope (reference "Case-One") CaseActKind.Decide)
-                            (command "10.0000")
+            testCase "case identity normalizes decimal and resolved reference spelling" (fun () ->
+                let first =
+                    hash
+                        "case.decide"
+                        (Binding.Case(CaseSelector.Reference "Case-One", Revision.first))
+                        (Tasks.decisionInputs "2026-01-02" "10.0000" "EUR")
 
-                    let same =
-                        OperationIntent.case
-                            operation
-                            (scope (reference "CASE-ONE") CaseActKind.Decide)
-                            (command "10")
+                let same =
+                    hash
+                        "case.decide"
+                        (Binding.Case(CaseSelector.Id parent, Revision.first))
+                        (Tasks.decisionInputs "2026-01-02" "10" "EUR")
 
-                    Expect.equal
-                        first
-                        same
-                        "Equivalent decimals and reference spelling preserve input identity"
-
-                    Expect.notEqual
-                        first
-                        (OperationIntent.case
-                            operation
-                            (scope (reference "CASE-ONE") CaseActKind.Decide)
-                            (command "11"))
-                        "Changed business input conflicts"
-
-                    Expect.notEqual
-                        first
-                        (OperationIntent.case
-                            operation
-                            { (scope (reference "CASE-ONE") CaseActKind.Decide) with
-                                CaseId = CaseId.create (guid 3) |> Option.get
-                            }
-                            (command "10"))
-                        "Another resolved case cannot borrow identity")
-            testCase "erasing a result does not erase a fully public close input" (fun () ->
-                let registration =
-                    RegistrationInput.create
-                        [
-                            BusinessField.IncidentDate, "2026-01-01"
-                            BusinessField.IncidentNotificationDate, "2026-01-02"
-                            BusinessField.IncidentCountry, "LV"
-                            BusinessField.ClaimantName, "Synthetic claimant"
-                            BusinessField.InsurerName, "Synthetic insurer"
-                            BusinessField.ClaimedAmount, "100"
-                            BusinessField.ClaimedCurrency, "EUR"
-                        ]
-                    |> valid
-
-                let opening =
-                    Case.parse
-                        {
-                            ExpectedFamilySequence = None
-                            OperationId = guid 1
-                            CaseReference = "CASE-ONE"
-                            ExpectedRevision = 0L
-                            Act = CaseAct.Open registration
-                        }
-                    |> valid
-
-                let before =
-                    Case.decideSnapshot (DateOnly(2026, 11, 9)) Map.empty opening None
-                    |> valid
-                    |> _.After
-
-                let close =
-                    Case.parse
-                        {
-                            ExpectedFamilySequence = None
-                            OperationId = guid 2
-                            CaseReference = "CASE-ONE"
-                            ExpectedRevision = 1L
-                            Act = CaseAct.Bare BareAct.Close
-                        }
-                    |> valid
-
-                let after =
-                    Case.decideSnapshot (DateOnly(2026, 11, 9)) Map.empty close (Some before)
-                    |> valid
-
-                let header =
-                    {
-                        OperationHeader.InstallationId = guid 9
-                        Sequence = Sequence.create 2L |> Option.get
-                        PreviousHash = EntryHash.zero
-                        OperationId = operation
-                        ActorId = ActorId.create (guid 9) |> Option.get
-                        RecordedAt = DateTimeOffset(2026, 11, 9, 0, 0, 0, TimeSpan.Zero)
-                        BusinessDate = Some(DateOnly(2026, 11, 9))
-                    }
-
-                let publicInput = scope before.Reference CaseActKind.Close
-
-                let value =
-                    RetainedOperation.create
-                        header
-                        (CommandSkeleton.Case publicInput)
-                        (OperationValues.Case { Command = close; Decision = after })
-                        (fun () -> [| 0uy .. 31uy |])
-                    |> valid
-
-                let expected = Some(OperationIntent.case operation publicInput close)
-
-                Expect.equal
-                    (OperationIntent.accepted value)
-                    expected
-                    "Complete input compares without recording metadata"
-
-                let erased =
-                    OperationRoot.restore
-                        header
-                        (OperationRoot.commandBytes value.Root)
-                        (OperationRoot.effectBytes value.Root)
-                        (value.Root.Structure.Compartments |> List.map Compartment.withoutContent)
-                        value.Root.Hash
-                    |> valid
-                    |> RetainedOperation.decode
-                    |> valid
-
-                Expect.equal
-                    (OperationIntent.accepted erased)
-                    expected
-                    "Private result loss cannot turn a known close into unseen input"
-
-                let otherHeader =
-                    { header with
-                        RecordedAt = header.RecordedAt.AddSeconds 1.
-                        Sequence = Sequence.create 3L |> Option.get
-                        PreviousHash = value.Root.Hash
-                    }
-
-                let recordedAgain =
-                    RetainedOperation.create
-                        otherHeader
-                        (CommandSkeleton.Case publicInput)
-                        (OperationValues.Case { Command = close; Decision = after })
-                        (fun () -> [| 1uy .. 32uy |])
-                    |> valid
-
-                Expect.equal
-                    (OperationIntent.accepted recordedAgain)
-                    expected
-                    "Time, sequence, previous hash and salt do not enter business identity"
+                Expect.equal first same "Same typed target and business amount"
 
                 Expect.notEqual
-                    recordedAgain.Root.Hash
-                    value.Root.Hash
-                    "Acceptance proof still binds recording metadata")
+                    first
+                    (hash
+                        "case.decide"
+                        (Binding.Case(CaseSelector.Id parent, Revision.first))
+                        (Tasks.decisionInputs "2026-01-02" "11" "EUR"))
+                    "Changed business input"
+
+                Expect.notEqual
+                    first
+                    (hash
+                        "case.decide"
+                        (Binding.Case(
+                            CaseSelector.Id(CaseId.ofOperationId (Tasks.operation 99)),
+                            Revision.first
+                        ))
+                        (Tasks.decisionInputs "2026-01-02" "10" "EUR"))
+                    "Different target"
+
+                Expect.notEqual
+                    first
+                    (hash
+                        "case.decide"
+                        (Binding.Case(CaseSelector.Id parent, Revision.create 2L |> Option.get))
+                        (Tasks.decisionInputs "2026-01-02" "10" "EUR"))
+                    "Reviewed version is intent")
+            testCase
+                "recording metadata and private result erasure do not erase a known public close input"
+                (fun () ->
+                    let state = Tasks.family ()
+                    let binding = Tasks.caseBinding state
+                    let record = family "case.close" 2 state binding InputMap.empty
+                    let expected = Some(hash "case.close" binding InputMap.empty)
+                    Expect.equal (OperationIntent.accepted record resolve) expected "Known input"
+
+                    Expect.equal
+                        (OperationIntent.accepted (clear record) resolve)
+                        expected
+                        "Only result content was erased"
+
+                    let header =
+                        { record.Root.Header with
+                            Sequence = Sequence.successor record.Root.Header.Sequence
+                            PreviousHash = record.Root.Hash
+                            OperationId = Tasks.operation 99
+                            RecordedAt = record.Root.Header.RecordedAt.AddSeconds 1.
+                        }
+
+                    let changes =
+                        record.Changes
+                        |> List.map (fun change ->
+                            { change with
+                                Stamp =
+                                    { change.Stamp with
+                                        OperationId = header.OperationId
+                                        RecordedAt = header.RecordedAt
+                                        Position =
+                                            EffectPosition.create header.Sequence 0 |> Option.get
+                                    }
+                            })
+
+                    let again =
+                        RetainedOperation.create
+                            header
+                            record.Root.Structure.Task
+                            binding
+                            InputMap.empty
+                            changes
+                            (fun () -> Array.create 32 99uy)
+                        |> required
+
+                    Expect.notEqual
+                        again.Root.Hash
+                        record.Root.Hash
+                        "Recording and compartment context changed"
+
+                    Expect.equal
+                        (OperationIntent.accepted again resolve)
+                        expected
+                        "Intent excludes that context"
+
+                    Expect.notEqual
+                        (hash "case.close" binding InputMap.empty)
+                        (hash "case.reopen" binding InputMap.empty)
+                        "Task identity remains explicit")
+            testCase
+                "erased authored inputs stay unavailable rather than receiving a fabricated fingerprint"
+                (fun () ->
+                    let record = caseRecord ()
+
+                    Expect.isSome
+                        (OperationIntent.accepted record resolve)
+                        "Available complete input"
+
+                    Expect.isNone
+                        (OperationIntent.accepted (clear record) resolve)
+                        "No unsalted persisted private-input digest")
+            testCase
+                "grant scopes compare by resolved case identity and preserve the person binding"
+                (fun () ->
+                    let actor = ActorId.ofOperationId (Tasks.operation 7)
+                    let binding = Binding.People(actor, Revision.first)
+
+                    let referenced =
+                        Tasks.inputs
+                            [
+                                Tasks.text InputTarget.Role "CASE_READER"
+                                TaskInputId.Scope, InputValue.Text "CASE"
+                                Tasks.text
+                                    (InputTarget.Field BusinessField.CaseReference)
+                                    "Case-One"
+                            ]
+
+                    let selected =
+                        Tasks.inputs
+                            [
+                                Tasks.text InputTarget.Role "CASE_READER"
+                                TaskInputId.Scope, InputValue.Text "CASE"
+                                TaskInputId.CaseId, InputValue.Text(CaseId.format parent)
+                            ]
+
+                    Expect.equal
+                        (hash "people.grant" binding referenced)
+                        (hash "people.grant" binding selected)
+                        "Reference alias equals retained ID"
+
+                    Expect.notEqual
+                        (hash "people.grant" binding selected)
+                        (hash
+                            "people.grant"
+                            (Binding.People(
+                                ActorId.ofOperationId (Tasks.operation 8),
+                                Revision.first
+                            ))
+                            selected)
+                        "Another person cannot borrow intent")
+            testCase
+                "clearable profile contact null equals absence while work clear differs from omission"
+                (fun () ->
+                    let values = Tasks.inputs Tasks.profileInputs
+
+                    let withoutContact =
+                        InputMap.create
+                            (Map.remove
+                                (TaskInputId.Target InputTarget.ProfileContact)
+                                values.Values)
+                            Map.empty
+                        |> Option.get
+
+                    let nullContact =
+                        InputMap.create
+                            (Map.add
+                                (TaskInputId.Target InputTarget.ProfileContact)
+                                InputValue.Null
+                                withoutContact.Values)
+                            Map.empty
+                        |> Option.get
+
+                    Expect.equal
+                        (hash
+                            "people.setProfile"
+                            (Tasks.personBinding (Tasks.person ()))
+                            withoutContact)
+                        (hash
+                            "people.setProfile"
+                            (Tasks.personBinding (Tasks.person ()))
+                            nullContact)
+                        "Clearable complete-profile contact"
+
+                    let binding = Binding.Work(CaseSelector.Id parent, Revision.first)
+
+                    let keep =
+                        Tasks.inputs
+                            [
+                                Tasks.text
+                                    (InputTarget.Field BusinessField.ResponsibleActor)
+                                    (ActorId.format Tasks.actorId)
+                            ]
+
+                    let clear =
+                        InputMap.create
+                            (Map.add
+                                (TaskInputId.Target(
+                                    InputTarget.Field BusinessField.HandlingSummary
+                                ))
+                                InputValue.Null
+                                keep.Values)
+                            Map.empty
+                        |> Option.get
+
+                    Expect.notEqual
+                        (hash "work.update" binding keep)
+                        (hash "work.update" binding clear)
+                        "Explicit clear has a different meaning")
+            testCase "collection order is retained in complete authored intent" (fun () ->
+                let values = Tasks.peopleInputs Tasks.newPrincipal
+
+                let rows =
+                    [
+                        (Tasks.grantInputs Role.CaseReader "INSTALLATION").Values
+                        (Tasks.grantInputs Role.Auditor "INSTALLATION").Values
+                    ]
+
+                let first =
+                    InputMap.create
+                        values.Values
+                        (Map.ofList [ TaskCollectionId.PeopleGrants, rows ])
+                    |> Option.get
+
+                let reversed =
+                    InputMap.create
+                        values.Values
+                        (Map.ofList [ TaskCollectionId.PeopleGrants, List.rev rows ])
+                    |> Option.get
+
+                Expect.notEqual
+                    (hash "people.admit" (Binding.PeopleNew Revision.zero) first)
+                    (hash "people.admit" (Binding.PeopleNew Revision.zero) reversed)
+                    "Ordinals survive intent normalization")
         ]

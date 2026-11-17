@@ -15,7 +15,12 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.Extensions.DependencyInjection

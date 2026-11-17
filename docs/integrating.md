@@ -48,9 +48,37 @@ claimcore case get DEMO-0001
 claimcore people history
 ```
 
-HUMAN documents carry a subject, actions, typed query links and row controls; DATA exposes automation facts.
+Every HUMAN read uses the shared `HumanReadReply` and `HumanDocument` grammar. Operation outcomes
+embed that same document. Its closed subject identifies the resource; screen regions, actions, links,
+continuation, observation basis, disclosure and history describe the current presentation. DATA replies
+retain endpoint-specific automation types.
+
+An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
+`blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
+Operation controls preview and execute; command controls post seeds plus edits to their declared
+endpoint. Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
+`RECOMMENDATION` screen regions.
+A `CONTEXT` region associates form context with its supplied actions; show it for the selected task,
+rather than presenting it as another set of current facts. Other section and row actions retain their
+supplied bindings.
+
+Input `choicesFrom` names a Core lookup. `choicesWhen` is an array of
+`{input, value, choices, messageId}` conditions; intersect every matching condition with the offered
+choices. The optional Core message ID explains a restriction. Choice hints do not replace server
+admission. Removing a recognized stored role remains possible even if assigning it would now be refused.
+
+A `Link` carries `endpoint` and an object `input`. Follow its supplied input through that endpoint's
+typed request boundary. Generic HUMAN arrays use shared structural bounds; response byte bounds still
+apply. Bindings share schemas by target, creation and reviewed-family shape; submissions keep typed
+per-task inputs, with empty inputs referencing `Empty`.
 An operation lookup link with empty input opens the ID-entry form; actual `operation.get` calls require `operationId`.
 Choose the representation your consumer needs; neither grants additional permissions.
+
+Check the document's subject and observation basis before using resource-specific fields; the generic
+HUMAN grammar does not make an endpoint-specific subject or a snapshot implicit. DATA case timelines
+identify each effect by `subject.{partKind,partId,revision}` and `task`. A payment change can produce
+both case and payment entries. People history carries `task`, one compound person change description,
+`privateAvailable` and references; it does not invent separate profile, role and enablement positions.
 
 Keep the observation basis with the data you display. It identifies the server observation and the
 business date/time zone. Changing a display locale does not change a recorded date or amount.
@@ -70,8 +98,12 @@ only the fields that the task declares. Send `{operationId, task, binding, input
 tokens. Omit Update inputs to keep values; use `null` only where `clearable` permits it. Existing-person
 changes select an actor ID and require `binding.expectedRevision`. Acquire the positive account
 `revision` from the DATA `people.grants` reply (or use the supplied HUMAN action binding). Creation
-uses an explicit zero revision. CLI automation supplies `--expected-revision`; interactive commands can
-acquire and freeze it for review.
+of a case or person uses an explicit zero revision and no new-target selector. `case.open` authors
+`field:caseReference` in `inputs`. Creating a reminder or note selects its parent case, without a
+child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
+selection, work, reminder, note and person shapes; command controls use the shared empty binding.
+CLI automation supplies reviewed version flags where the task declares them; interactive commands can
+acquire and freeze those preconditions for review.
 
 Case erasure additionally requires `binding.expectedFamilySequence`, acquired from DATA `case.get`'s
 `familySequence` or the supplied HUMAN erase action. CLI automation supplies
@@ -105,15 +137,39 @@ Optional updates distinguish omission from an explicit clear. Use the task's dec
 help rather than treating blank text, null and absence as interchangeable. Collection issues identify
 the input token and submitted row ordinal; correlate that ordinal with the immutable submitted rows.
 
+Disclosed case receipts include nullable `disposition` from that accepted operation. DATA timeline
+changes use `DISPOSITION` for the same typed void/reinstate reason. Later case updates do not replace
+the reason recorded by each accepted operation. Current permissions and owner erasure control
+disclosure of these values in both representations.
+
 Successful payloads vary by endpoint. Rejections use the shared representation-specific rejection
 shape, and failures use the common fault shape with a Core message ID. Input issues target declared
 input tokens. Use structured codes and actions for automation; do not parse translated prose.
+
+## Post a command
+
+A COMMAND control posts its declared semantic inputs to the definition's endpoint, without an
+operation ID or operation preview. Merge its seeds with authored edits and use the endpoint's typed
+request schema. For example, `people.requests.dismiss` accepts:
+
+```json
+{
+  "input:principal.kind": "HUMAN",
+  "input:principal.issuer": "https://issuer.example/",
+  "input:principal.subject": "waiting-account"
+}
+```
+
+Command requests admit only their declared semantic input keys. Render the returned HUMAN document
+for command feedback. Do not repeat an uncertain operational write automatically.
 
 ## Recover an uncertain change
 
 Before sending a mutation, retain enough identity to confirm it after interruption. The built-in
 clients maintain a local recovery journal without storing the request body or entered personal facts.
-Recovery records belong to a specific service, installation and account.
+Recovery records belong to a specific service, installation and account. The CLI journal uses format 4
+and stores the task token with operation/attempt identity and ownership scope. Journal admission
+requires the supported format; incompatible records are refused without conversion.
 
 If delivery is uncertain:
 

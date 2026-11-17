@@ -4,9 +4,13 @@ open System
 open System.Threading
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
-open ClaimCore.Postgres
+open ClaimCore.Application
 open Expecto
 
 let check expected actual message =
@@ -42,33 +46,19 @@ let private actualPayments () =
         let mutable parent = None
         let mutable first = None
 
-        let execute identity expected act =
+        let execute identity expected taskName values =
             let input =
-                OperationInput.Case
-                    {
-                        ExpectedFamilySequence =
-                            if CaseAct.kind act = CaseActKind.Erase then
-                                Some(
-                                    ClaimCore.TestSupport.StoreFixtures.reviewedFamilySequence
-                                        fixture.Store
-                                        (CaseSelector.Reference "FIN-SERVICE-51")
-                                )
-                            else
-                                None
-                        OperationId = identity
-                        Target = CaseSelector.Reference "FIN-SERVICE-51"
-                        ExpectedRevision = expected
-                        Act = act
-                    }
+                StoreFixtures.request fixture 0 "FIN-SERVICE-51" expected taskName values
+                |> Submissions.withOperationId identity
 
             let reply =
-                Service.execute actor input CancellationToken.None
+                Service.executeSubmission actor input CancellationToken.None
                 |> fun pending -> pending.GetAwaiter().GetResult()
 
             input, reply
 
-        let accepted identity act =
-            let input, reply = execute identity revision act
+        let accepted identity taskName values =
+            let input, reply = execute identity revision taskName values
 
             match reply.Outcome with
             | ExecuteResult.Accepted receipt ->
@@ -80,31 +70,43 @@ let private actualPayments () =
                 | _ -> failwith "Expected case receipt."
             | _ -> failwithf "Expected accepted case operation, received %A" reply.Outcome
 
-        let _, _ = accepted (Guid.CreateVersion7()) (CaseAct.Open Inputs.registration)
+        let _, _ =
+            accepted
+                ((Guid.CreateVersion7()))
+                "case.open"
+                (ClaimCore.TestSupport.Submissions.fields (
+                    RegistrationInput.values (DomainInputs.registration)
+                ))
 
         let _, _ =
             accepted
-                (Guid.CreateVersion7())
-                (CaseAct.Decide(
-                    Inputs.decisionWith
-                        [
-                            BusinessField.PayableAmount, "100"
-                            BusinessField.PaymentDecisionDate, "2026-08-04"
-                        ]
-                        Inputs.decision
+                ((Guid.CreateVersion7()))
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (
+                    DecisionInput.values (
+                        (DomainInputs.decisionWith
+                            [
+                                BusinessField.PayableAmount, "100"
+                                BusinessField.PaymentDecisionDate, "2026-08-04"
+                            ]
+                            DomainInputs.decision)
+                    )
                 ))
 
         for index in 1..51 do
             let input, body =
                 accepted
-                    (Guid.CreateVersion7())
-                    (CaseAct.RecordPayment(
-                        Inputs.paymentWith
-                            [
-                                BusinessField.PaidAmount, "1"
-                                BusinessField.PaymentDate, "2026-08-05"
-                            ]
-                            Inputs.payment
+                    ((Guid.CreateVersion7()))
+                    "case.recordPayment"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        PaymentInput.values (
+                            (DomainInputs.paymentWith
+                                [
+                                    BusinessField.PaidAmount, "1"
+                                    BusinessField.PaymentDate, "2026-08-05"
+                                ]
+                                DomainInputs.payment)
+                        )
                     ))
 
             match body.Snapshot with
@@ -129,16 +131,18 @@ let private actualPayments () =
         let otherOperation = Guid.CreateVersion7()
 
         let other =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Case
-                    {
-                        ExpectedFamilySequence = None
-                        OperationId = otherOperation
-                        Target = CaseSelector.Reference "FIN-SERVICE-OTHER"
-                        ExpectedRevision = 0L
-                        Act = CaseAct.Open Inputs.registration
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw
+                    "case.open"
+                    (otherOperation)
+                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (DomainInputs.registration)
+                     )
+                     |> Map.add
+                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                         (ClaimCore.Application.Contracts.SubmissionValue.Text("FIN-SERVICE-OTHER")))))
                 CancellationToken.None
             |> fun pending -> pending.GetAwaiter().GetResult()
 
@@ -240,16 +244,25 @@ let private actualPayments () =
         let financial = CaseState.fields current.Snapshot.State |> Option.get |> _.Finance
         check 51L financial.PaymentCount "Fifty-one payments were not retained."
         check 51M (Amount.value financial.PaidAmount) "Paid total mismatch."
+
         check 3 current.LatestPayments.Length "Case latest slice is not bounded to three."
+
         let original, entry = first |> Option.get
 
         accepted
-            (Guid.CreateVersion7())
-            (CaseAct.RemovePayment(OperationId.value (PaymentEntry.id entry)))
+            ((Guid.CreateVersion7()))
+            "case.removePayment"
+            (Map.ofList
+                [
+                    TaskInputId.Target InputTarget.PaymentId,
+                    ClaimCore.Application.Contracts.SubmissionValue.Text(
+                        ((OperationId.value (PaymentEntry.id entry))).ToString("D")
+                    )
+                ])
         |> ignore
 
         let replay =
-            Service.execute actor original CancellationToken.None
+            Service.executeSubmission actor original CancellationToken.None
             |> fun pending -> pending.GetAwaiter().GetResult()
 
         match replay.Outcome with
@@ -291,7 +304,7 @@ let private actualPayments () =
             ] do
             sql damage
 
-            let recovered = Service.execute actor original token |> awaitResult
+            let recovered = Service.executeSubmission actor original token |> awaitResult
 
             match recovered.Outcome with
             | ExecuteResult.AlreadyAccepted _ -> ()
@@ -340,7 +353,7 @@ let private actualPayments () =
             | ExecuteResult.Accepted _ -> ()
             | _ -> failwith "Data steward grant refused."
 
-        accepted (Guid.CreateVersion7()) (CaseAct.Bare BareAct.Erase) |> ignore
+        accepted ((Guid.CreateVersion7())) "case.erase" (Map.empty) |> ignore
         let erasedCheckpoint = verified ()
         let erasedRows = rows ()
         use connection = database.OwnerSource.OpenConnection()
@@ -412,18 +425,14 @@ let private lockedBounds () =
         let mutable revision = 0L
         let target = CaseSelector.Reference "PAYMENT-BOUNDS"
 
-        let request identity act =
-            OperationInput.Case
-                {
-                    ExpectedFamilySequence = None
-                    OperationId = identity
-                    Target = target
-                    ExpectedRevision = revision
-                    Act = act
-                }
+        let request identity taskName values =
+            StoreFixtures.request fixture 0 "PAYMENT-BOUNDS" revision taskName values
+            |> Submissions.withOperationId identity
 
-        let accept services identity act =
-            let reply = Service.execute services (request identity act) token |> awaitResult
+        let accept services identity taskName values =
+            let reply =
+                Service.executeSubmission services (request identity taskName values) token
+                |> awaitResult
 
             match reply.Outcome with
             | ExecuteResult.Accepted {
@@ -432,34 +441,43 @@ let private lockedBounds () =
             | other -> failtestf "Expected accepted bounds witness: %A" other
 
         let payment day =
-            CaseAct.RecordPayment(
-                Inputs.paymentWith
-                    [ BusinessField.PaymentDate, day; BusinessField.PaidAmount, "1" ]
-                    Inputs.payment
-            )
-
-        accept actor (Guid.CreateVersion7()) (CaseAct.Open Inputs.registration)
+            DomainInputs.paymentWith
+                [ BusinessField.PaymentDate, day; BusinessField.PaidAmount, "1" ]
+                DomainInputs.payment
+            |> PaymentInput.values
+            |> Submissions.fields
 
         accept
-            actor
-            (Guid.CreateVersion7())
-            (CaseAct.Decide(
-                Inputs.decisionWith
-                    [
-                        BusinessField.PaymentDecisionDate, "2026-08-04"
-                        BusinessField.PayableAmount, "100"
-                    ]
-                    Inputs.decision
+            (actor)
+            ((Guid.CreateVersion7()))
+            "case.open"
+            (ClaimCore.TestSupport.Submissions.fields (
+                RegistrationInput.values (DomainInputs.registration)
+            ))
+
+        accept
+            (actor)
+            ((Guid.CreateVersion7()))
+            "case.decide"
+            (ClaimCore.TestSupport.Submissions.fields (
+                DecisionInput.values (
+                    (DomainInputs.decisionWith
+                        [
+                            BusinessField.PaymentDecisionDate, "2026-08-04"
+                            BusinessField.PayableAmount, "100"
+                        ]
+                        DomainInputs.decision)
+                )
             ))
 
         let mutable entries =
             [
                 for day in [ "2026-08-05"; "2026-08-06"; "2026-08-06"; "2026-08-08" ] ->
-                    Guid.CreateVersion7(), Inputs.date day
+                    Guid.CreateVersion7(), DomainInputs.date day
             ]
 
         for identity, date in entries do
-            accept actor identity (payment (CalendarDate.format date))
+            accept actor identity "case.recordPayment" (payment (CalendarDate.format date))
 
         let rollbackCalendar =
             { new IBusinessCalendar with
@@ -473,9 +491,9 @@ let private lockedBounds () =
             }
 
         let refused =
-            Service.execute
+            Service.executeSubmission
                 rolledBack
-                (request (Guid.CreateVersion7()) (payment "2026-08-08"))
+                (request (Guid.CreateVersion7()) "case.recordPayment" (payment "2026-08-08"))
                 token
             |> awaitResult
 
@@ -488,8 +506,8 @@ let private lockedBounds () =
                 "A new payment cannot reuse an accepted future date"
         | other -> failtestf "Expected calendar rollback refusal: %A" other
 
-        let earlier = Guid.CreateVersion7(), Inputs.date "2026-08-04"
-        accept rolledBack (fst earlier) (payment "2026-08-04")
+        let earlier = Guid.CreateVersion7(), DomainInputs.date "2026-08-04"
+        accept rolledBack (fst earlier) "case.recordPayment" (payment "2026-08-04")
         entries <- earlier :: entries
 
         let checkPosition () =
@@ -530,9 +548,18 @@ let private lockedBounds () =
         let pending =
             selected
             |> List.map (fun identity ->
-                Service.execute
+                Service.executeSubmission
                     actor
-                    (request (Guid.CreateVersion7()) (CaseAct.RemovePayment identity))
+                    (request
+                        ((Guid.CreateVersion7()))
+                        "case.removePayment"
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.PaymentId,
+                                ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                    (identity).ToString("D")
+                                )
+                            ]))
                     token)
             |> List.toArray
 
@@ -560,7 +587,18 @@ let private lockedBounds () =
         checkPosition ()
         // Remove earliest entries first, including the tied pair, then the sole final entry.
         for identity, _ in entries |> List.sortBy snd do
-            accept actor (Guid.CreateVersion7()) (CaseAct.RemovePayment identity)
+            accept
+                (actor)
+                ((Guid.CreateVersion7()))
+                "case.removePayment"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.PaymentId,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            (identity).ToString("D")
+                        )
+                    ])
+
             entries <- entries |> List.filter (fun (existing, _) -> existing <> identity)
             checkPosition ()
 

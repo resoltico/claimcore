@@ -7,7 +7,11 @@ open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 let private token = CancellationToken.None
 
@@ -97,7 +101,7 @@ let run (database: PostgresFixture.Database) =
         try
             let! _ = creation
             ()
-        with :? InvalidOperationException as failure when
+        with :? System.IO.IOException as failure when
             failure.Message = "The OIDC session store is full." ->
             refused <- true
 

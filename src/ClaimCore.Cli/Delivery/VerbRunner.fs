@@ -47,18 +47,7 @@ module internal VerbRunner =
                         io.Errors.Flush()
             }
 
-        let frame = prepared.Invocation
-
-        if (Frames.endpoint frame).Id = Api.peopleHistory.Id then
-            PeopleHistoryCommand.run pageIO prepared token
-        elif
-            List.contains
-                (Frames.endpoint frame).Id
-                [ Api.reminders.Id; Api.caseTimeline.Id; Api.caseNotes.Id; Api.casePayments.Id ]
-        then
-            WorkListCommand.run pageIO prepared token
-        else
-            CaseListCommand.run pageIO prepared token
+        PageCommand.run pageIO prepared token
 
     let private syntax invocation =
         [

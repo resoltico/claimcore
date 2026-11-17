@@ -5,6 +5,8 @@ open System.Text
 open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.TestSupport
 open ClaimCore.Wire
 open ClaimCore.Json
 
@@ -13,39 +15,37 @@ let tests =
     testCase
         "the issue envelope carries maximum-size admission failures and rejects excess issues"
         (fun () ->
-            let request: PeopleRequest =
-                {
-                    ExpectedRevision = 0L
-                    OperationId = Guid.Empty
-                    Target =
-                        {
-                            Kind = PrincipalKind.Human
-                            Issuer = ""
-                            Subject = ""
-                        }
-                    Act =
-                        PeopleAct.Admit
-                            {
-                                Profile =
-                                    {
-                                        DisplayName = ""
-                                        Contact = Some "\u0000"
-                                    }
-                                Grants =
-                                    List.replicate
-                                        PeopleAdmission.MaximumGrants
+            let request =
+                Submissions.create
+                    "people.admit"
+                    Guid.Empty
+                    (Binding.PeopleNew Revision.zero)
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.PrincipalKind,
+                            SubmissionValue.Text "HUMAN"
+                            Submissions.input InputTarget.PrincipalIssuer, SubmissionValue.Text ""
+                            Submissions.input InputTarget.PrincipalSubject, SubmissionValue.Text ""
+                            Submissions.input InputTarget.ProfileDisplayName,
+                            SubmissionValue.Text ""
+                            Submissions.input InputTarget.ProfileContact,
+                            SubmissionValue.Text "\u0000"
+                            Submissions.input InputTarget.Grants,
+                            SubmissionValue.Rows(
+                                List.replicate
+                                    PeopleAdmission.MaximumGrants
+                                    (Submissions.grant
                                         {
                                             Role = Role.CaseReader
                                             Scope = GrantTarget.CaseReference ""
-                                        }
-                            }
-                }
+                                        })
+                            )
+                        ])
 
             let refusal, issues =
-                match People.parse request with
-                | Error(Refusal.InvalidInput issues as refusal) ->
-                    refusal, InputIssues.toList issues
-                | value -> failtestf "Expected accumulated invalid input, got %A" value
+                match OperationSubmission.syntax request with
+                | Some issues -> Refusal.InvalidInput issues, InputIssues.toList issues
+                | other -> failtestf "Expected accumulated invalid input, got %A" other
 
             let rowIssues = issues |> List.choose _.GrantRow
 

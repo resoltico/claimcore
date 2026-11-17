@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open System.Security.Cryptography
@@ -15,7 +21,7 @@ module internal WorkQueries =
         |> SHA256.HashData
         |> Convert.ToHexStringLower
 
-    let private selection (services: ServiceContext) (tx: IReadTx) actor mine =
+    let private selection (services: ServiceContext) (tx: ReadTx) actor mine =
         QueryResults.currentActor services.Principal actor
         |> Result.bind (fun _ ->
             match Access.visibility services.Principal actor, actor.Actor with
@@ -37,7 +43,7 @@ module internal WorkQueries =
     let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
         task {
             match
-                CaseOperations.validateSelector request.Target, ReminderId.create request.ReminderId
+                CaseRecords.validateSelector request.Target, ReminderId.create request.ReminderId
             with
             | Error refusal, _ -> return! RequestRefusals.read services token refusal
             | _, None ->
@@ -53,8 +59,7 @@ module internal WorkQueries =
                             Work =
                                 fun tx ->
                                     task {
-                                        let! view =
-                                            ExecutionFacts.case services tx None request.Target None
+                                        let! view = CaseReadContext.load services tx request.Target
 
                                         match view.Case with
                                         | Some parent when
@@ -64,7 +69,7 @@ module internal WorkQueries =
                                                 Capability.ReadCase
                                                 (Scope.Case parent.CaseId)
                                             ->
-                                            let! value = tx.FindReminder id
+                                            let! value = ReminderReads.findReminder tx id
 
                                             match value with
                                             | Some value when value.ReminderId <> id ->
@@ -75,7 +80,8 @@ module internal WorkQueries =
                                                 && CaseState.lifecycle parent.Snapshot.State
                                                    <> Lifecycle.Erased
                                                 ->
-                                                let! authors = tx.ActorRefs [ value.RecordedBy ]
+                                                let! authors =
+                                                    PeopleReads.actorRefs tx [ value.RecordedBy ]
 
                                                 match Map.tryFind value.RecordedBy authors with
                                                 | None ->
@@ -98,6 +104,9 @@ module internal WorkQueries =
                                                         CaseState.isActionable lifecycle status
 
                                                     let! work = CaseWorkReads.view tx basis parent
+
+                                                    let! currentFamilies =
+                                                        CaseWorkReads.families tx [ parent.CaseId ]
 
                                                     return
                                                         match work with
@@ -128,7 +137,7 @@ module internal WorkQueries =
                                                                             RecordedAt =
                                                                                 value.RecordedAt
                                                                             RecordedBy = author
-                                                                            Acts =
+                                                                            Offers =
                                                                                 CaseWorkReads
                                                                                     .reminderActs
                                                                                     services
@@ -136,8 +145,10 @@ module internal WorkQueries =
                                                                                     view.Actor
                                                                                     view.Maintenance
                                                                                         .Active
-                                                                                    lifecycle
-                                                                                    status
+                                                                                    (Map.tryFind
+                                                                                        parent
+                                                                                            .CaseId
+                                                                                        currentFamilies)
                                                                                     reminder
                                                                             Active = active
                                                                             Timing =
@@ -174,7 +185,7 @@ module internal WorkQueries =
 
                 let selector =
                     request.Target
-                    |> Option.map CaseOperations.validateSelector
+                    |> Option.map CaseRecords.validateSelector
                     |> Option.defaultValue (Ok())
 
                 match Admission.map2 (fun () text -> text) selector text with
@@ -187,25 +198,20 @@ module internal WorkQueries =
                                     fun tx ->
                                         task {
                                             let! actor =
-                                                tx.Access
-                                                    {
-                                                        Principal = services.Principal
-                                                        CaseId = None
-                                                    }
+                                                AccessReads.access tx (services.Principal) (None)
 
                                             let! parent =
                                                 match request.Target with
-                                                | Some target -> ExecutionFacts.findCase tx target
+                                                | Some target -> CaseReadContext.find tx target
                                                 | None ->
                                                     System.Threading.Tasks.Task.FromResult None
 
                                             let! targetActor =
                                                 match parent with
                                                 | Some parent ->
-                                                    tx.AccessCases(
-                                                        services.Principal,
-                                                        [ parent.CaseId ]
-                                                    )
+                                                    AccessReads.accessCases
+                                                        tx
+                                                        (services.Principal, [ parent.CaseId ])
                                                 | None ->
                                                     System.Threading.Tasks.Task.FromResult actor
 
@@ -288,10 +294,12 @@ module internal WorkQueries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok after ->
-                                                    let! maintenance = tx.Maintenance()
+                                                    let! maintenance =
+                                                        RegisterReads.maintenance tx ()
 
                                                     let! page =
-                                                        tx.ReminderPage
+                                                        ReminderReads.reminderPage
+                                                            tx
                                                             {
                                                                 Selection = selection
                                                                 TargetCaseId = parentId
@@ -311,30 +319,37 @@ module internal WorkQueries =
                                                                 Limit = request.Limit
                                                             }
 
+                                                    let! currentFamilies =
+                                                        CaseWorkReads.families
+                                                            tx
+                                                            (page.Items
+                                                             |> List.map (fun row ->
+                                                                 row.Stored.CaseId))
+
                                                     let! pageActor =
-                                                        tx.AccessCases(
-                                                            services.Principal,
-                                                            page.Items
-                                                            |> List.map _.Stored.CaseId
-                                                            |> List.distinct
-                                                        )
+                                                        AccessReads.accessCases
+                                                            tx
+                                                            (services.Principal,
+                                                             page.Items
+                                                             |> List.map _.Stored.CaseId
+                                                             |> List.distinct)
 
                                                     let! authors =
-                                                        tx.ActorRefs(
-                                                            page.Items
-                                                            |> List.map _.Stored.RecordedBy
-                                                            |> List.distinct
-                                                        )
+                                                        PeopleReads.actorRefs
+                                                            tx
+                                                            (page.Items
+                                                             |> List.map _.Stored.RecordedBy
+                                                             |> List.distinct)
 
                                                     let! accounts =
-                                                        tx.AssignedAccounts(
-                                                            page.Items
-                                                            |> List.choose (fun row ->
-                                                                row.Responsible
-                                                                |> Option.map (fun actor ->
-                                                                    row.Stored.CaseId, actor))
-                                                            |> List.distinct
-                                                        )
+                                                        WorkReads.assignedAccounts
+                                                            tx
+                                                            (page.Items
+                                                             |> List.choose (fun row ->
+                                                                 row.Responsible
+                                                                 |> Option.map (fun actor ->
+                                                                     row.Stored.CaseId, actor))
+                                                             |> List.distinct)
 
                                                     let items =
                                                         page.Items
@@ -385,14 +400,16 @@ module internal WorkQueries =
                                                                         RecordedAt =
                                                                             row.Stored.RecordedAt
                                                                         RecordedBy = author
-                                                                        Acts =
+                                                                        Offers =
                                                                             CaseWorkReads
                                                                                 .reminderActs
                                                                                 services.Principal
                                                                                 pageActor
                                                                                 maintenance.Active
-                                                                                row.Lifecycle
-                                                                                row.Status
+                                                                                (Map.tryFind
+                                                                                    row.Stored
+                                                                                        .CaseId
+                                                                                    currentFamilies)
                                                                                 reminder
                                                                         Active = active
                                                                         Timing =

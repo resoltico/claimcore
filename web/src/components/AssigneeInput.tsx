@@ -1,3 +1,4 @@
+import { allActions } from "../operation/affordances";
 import { FieldHelp } from "./FieldHelp";
 import { PresentedValue } from "./PresentedValue";
 import { useMemo, useState } from "react";
@@ -6,16 +7,26 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
-import type { HumanReadDocument_case_assignees, HumanResponseByEndpoint } from "@contracts/client";
+import type {
+  HumanDocument,
+  HumanReadReply,
+  OperationTaskDefinition,
+  TaskInputId,
+} from "@contracts/client";
 import { localNotice } from "../protocol/notices";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "./CatalogDate";
 
-type Props = TypedFieldProps & { current: CurrentCase };
+type Props = TypedFieldProps & {
+  current: CurrentCase;
+  lookup: NonNullable<OperationTaskDefinition["inputs"][number]["choicesFrom"]>;
+  seedInput: TaskInputId;
+};
 const AssigneeChoices = ({
   page,
+  seedInput,
   ...props
-}: TypedFieldProps & { page: HumanReadDocument_case_assignees }) => {
+}: TypedFieldProps & { page: HumanDocument; seedInput: TaskInputId }) => {
   const p = usePresentation();
   if (page.basis.kind !== "SNAPSHOT") {
     return (
@@ -27,7 +38,7 @@ const AssigneeChoices = ({
   const zone = page.basis.observation.timeZone;
   const content = page.screen.regions.find((region) => region.role === "RESULTS")?.content;
   if (content?.kind === "TABLE" && content.rows.length === 0) {
-    return <p>{p.text("ui.noEligibleAccounts")}</p>;
+    return <p>{p.text("label.noEligibleAccounts")}</p>;
   }
   if (content?.kind !== "TABLE") {
     return null;
@@ -35,9 +46,10 @@ const AssigneeChoices = ({
   return (
     <ul>
       {content.rows.map((row) => {
-        const action = row.actions?.find((candidate) => candidate.task === "work.update");
-        const actorId =
-          action?.task === "work.update" ? action.seeds["field:responsibleActor"] : undefined;
+        const action = row.actions?.find(
+          (candidate) => typeof candidate.seeds[seedInput] === "string",
+        );
+        const actorId = action?.seeds[seedInput];
         return typeof actorId === "string" ? (
           <li key={actorId}>
             <label>
@@ -64,13 +76,16 @@ const AssigneeChoices = ({
     </ul>
   );
 };
-const SelectedAssignee = ({ current, value }: Pick<Props, "current" | "value">) => {
+const SelectedAssignee = ({
+  current,
+  value,
+  seedInput,
+}: Pick<Props, "current" | "value" | "seedInput">) => {
   const p = usePresentation();
   if (
     value === "" ||
-    current.actions.find((action) => action.task === "work.update")?.seeds[
-      "field:responsibleActor"
-    ] !== value
+    allActions(current).find((action) => action.seeds[seedInput] === value)?.seeds[seedInput] !==
+      value
   ) {
     return null;
   }
@@ -86,10 +101,10 @@ const SelectedAssignee = ({ current, value }: Pick<Props, "current" | "value">) 
     </p>
   );
 };
-const discoveredPage = (value: HumanResponseByEndpoint["case.assignees"] | null) =>
+const discoveredPage = (value: HumanReadReply | null) =>
   value?.outcome.kind === "SUCCEEDED" ? value.outcome.document : null;
 /** Discovery is advisory; authoritative writes independently check the selected ActorId. */
-export const AssigneeInput = ({ current, ...props }: Props) => {
+export const AssigneeInput = ({ current, lookup, seedInput, ...props }: Props) => {
   const p = usePresentation();
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
@@ -109,7 +124,7 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
   const cursors = paging.owner === owner ? paging.cursors : [];
   const cursor = cursors.at(-1);
   const result = useEndpoint(
-    "case.assignees",
+    lookup,
     {
       target: { kind: "ID", caseId },
       limit: 50,
@@ -127,7 +142,7 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
         ruleId={props.field.ruleId}
       />
       <p>{p.hint(props.field)}</p>
-      <SelectedAssignee current={current} value={props.value} />
+      <SelectedAssignee current={current} value={props.value} seedInput={seedInput} />
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {result.message === null ? null : (
         <p role="alert">
@@ -136,7 +151,7 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
       )}
       {page === null ? null : (
         <>
-          <AssigneeChoices {...props} page={page} />
+          <AssigneeChoices {...props} page={page} seedInput={seedInput} />
           <div className="actions">
             <button
               type="button"

@@ -344,6 +344,34 @@ let tests =
                 "named tagged alternatives share exact meaning and reject collisions"
                 namedAlternatives
             testCase "all range constructors retain ordering and representability checks" bounds
+            testCase "open object payloads preserve nested values and refuse nonobjects" (fun () ->
+                let payload =
+                    JsonValue.Object
+                        [
+                            "unknown", JsonValue.Null
+                            "nested", JsonValue.Array [ JsonValue.Boolean true ]
+                        ]
+
+                Expect.equal
+                    (Codec.jsonObject.Read "$" payload)
+                    (Ok payload)
+                    "Open payload preserves I-JSON structure"
+
+                Expect.equal (Codec.jsonObject.Write payload) payload "No nested null is stripped"
+
+                for value in [ JsonValue.Null; JsonValue.String "text"; JsonValue.Array [] ] do
+                    Expect.isError
+                        (Codec.jsonObject.Read "$" value)
+                        "The payload remains an object"
+
+                Expect.equal
+                    (SchemaJson.value "#/$defs/" Schema.JsonObject)
+                    (JsonValue.Object
+                        [
+                            "type", JsonValue.String "object"
+                            "additionalProperties", JsonValue.Boolean true
+                        ])
+                    "The public grammar accepts query-owned object members")
             testCase
                 "authored structural mutations refuse without a generated oracle"
                 authoredStructuralCases

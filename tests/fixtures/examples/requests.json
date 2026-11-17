@@ -39,14 +39,25 @@
       }
     },
     {
+      "id": "request-dismiss-refuses-retired-principal-keys",
+      "endpoint": "people.requests.dismiss",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "HUMAN",
+        "issuer": "https://issuer.example/",
+        "subject": "waiting"
+      }
+    },
+    {
       "id": "request-dismiss-kind-key",
       "endpoint": "people.requests.dismiss",
       "direction": "request",
       "valid": true,
       "value": {
-        "kind": "HUMAN",
-        "issuer": "https://issuer.example/",
-        "subject": "waiting"
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "https://issuer.example/",
+        "input:principal.subject": "waiting"
       }
     },
     {
@@ -120,13 +131,10 @@
         "task": "case.open",
         "binding": {
           "kind": "CASE",
-          "target": {
-            "kind": "REFERENCE",
-            "caseReference": "x"
-          },
           "expectedRevision": 0
         },
         "inputs": {
+          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:incidentNotificationDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -156,13 +164,10 @@
         "task": "case.open",
         "binding": {
           "kind": "CASE",
-          "target": {
-            "kind": "REFERENCE",
-            "caseReference": "x"
-          },
           "expectedRevision": 0
         },
         "inputs": {
+          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:incidentNotificationDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -291,7 +296,7 @@
             "kind": "REFERENCE",
             "caseReference": "x"
           },
-          "expectedRevision": 0
+          "expectedRevision": 1
         },
         "inputs": {
           "group:registration": "UPDATE",
@@ -415,7 +420,7 @@
             "kind": "REFERENCE",
             "caseReference": "x"
           },
-          "expectedRevision": 0
+          "expectedRevision": 1
         },
         "inputs": {
           "group:registration": "UPDATE",

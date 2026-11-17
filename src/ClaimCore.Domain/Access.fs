@@ -98,6 +98,19 @@ module Access =
         rolesFor Capability.ReadCase
         |> List.filter (fun role -> PrincipalKey.isHuman principal || not (humanOnlyRole role))
 
+    let grantRefusal principal (grant: ActorGrant) =
+        let kind =
+            match grant.Scope with
+            | Scope.Installation -> ScopeKind.Installation
+            | Scope.Case _ -> ScopeKind.Case
+
+        if humanOnlyRole grant.Role && not (PrincipalKey.isHuman principal) then
+            Some PeopleRefusal.HumanPrincipalRequired
+        elif not (List.contains kind (roleScopes grant.Role)) then
+            Some PeopleRefusal.RoleScopeNotApplicable
+        else
+            None
+
     let validActor principal (view: AccessView) =
         let loaded =
             view.Installation @ (view.Cases |> Map.values |> Seq.collect id |> Seq.toList)
@@ -120,6 +133,21 @@ module Access =
         && (not (humanOnlyCapability capability) || PrincipalKey.isHuman principal)
         && (scoped
             |> Option.exists (List.exists (fun role -> List.contains capability (policy role))))
+
+    let eligibleAssignee principal view caseId =
+        PrincipalKey.isHuman principal
+        && can principal view Capability.ReadCase (Scope.Case caseId)
+        && can principal view Capability.ManageCaseWork (Scope.Case caseId)
+
+    let isEnabledHumanOwner (actor: ActorAccess) =
+        actor.Enabled
+        && PrincipalKey.isHuman actor.Principal
+        && List.contains
+            {
+                ActorGrant.Role = Role.Owner
+                Scope = Scope.Installation
+            }
+            actor.Grants
 
     /// Explain only the supplied resource snapshot; this does not predict business-act eligibility.
     let explain principal (view: AccessView) resource =
@@ -164,52 +192,6 @@ module Access =
     let correctionGroups =
         [ RecordGroup.Registration; RecordGroup.Decision ]
         |> List.map (fun group -> group, correctionCapability group)
-
-    let private correctionCapabilities = correctionGroups |> List.map snd
-
-    let private capabilities kind =
-        match (CaseActKind.describe kind).Capabilities with
-        | ActCapabilities.Required values -> values
-        | ActCapabilities.CorrectionGroups -> correctionCapabilities
-
-    /// Only asserted correction groups require their business capabilities.
-    let requiredCapabilities =
-        function
-        | (CaseAct.Correct correction) ->
-            [
-                match correction.Registration with
-                | Amendment.Keep -> ()
-                | _ -> yield correctionCapability RecordGroup.Registration
-                match correction.Decision with
-                | Change.Keep -> ()
-                | _ -> yield correctionCapability RecordGroup.Decision
-
-            ]
-        | act -> capabilities (CaseAct.kind act)
-
-    let canAdvertise principal actor resource kind =
-        match (CaseActKind.describe kind).Capabilities with
-        | ActCapabilities.Required values ->
-            values
-            |> List.forall (fun capability -> can principal actor capability resource)
-        | ActCapabilities.CorrectionGroups ->
-            correctionCapabilities
-            |> List.exists (fun capability -> can principal actor capability resource)
-
-    /// An empty correction still needs an offered fact capability; concrete groups keep their own requirements.
-    let missingCapabilities principal actor resource act =
-        let required =
-            match requiredCapabilities act with
-            | [] when CaseAct.kind act = CaseActKind.Correct -> correctionCapabilities
-            | values -> values
-
-        required
-        |> List.filter (fun capability -> not (can principal actor capability resource))
-
-    let canAct principal actor resource act =
-        canAdvertise principal actor resource (CaseAct.kind act)
-        && (requiredCapabilities act
-            |> List.forall (fun capability -> can principal actor capability resource))
 
     let visibility principal (view: AccessView) =
         if not (validActor principal view) then

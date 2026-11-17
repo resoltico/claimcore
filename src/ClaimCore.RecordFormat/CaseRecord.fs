@@ -39,7 +39,7 @@ module CaseRecord =
         |> Codec.named "CaseSnapshotRecord"
 
     let private validate snapshot =
-        match Case.ofAccepted snapshot with
+        match ClaimCore.Domain.Aggregates.CaseFamily.validateSnapshot snapshot with
         | Ok _ -> Ok snapshot
         | Error _ ->
             Error

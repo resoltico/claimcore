@@ -9,30 +9,30 @@ let private accepted value =
     Result.defaultWith (fun error -> failtestf "%A" error) value
 
 let private amount value = Amount.parse value |> accepted
-let private date value = Inputs.date value
+let private date value = DomainInputs.date value
 
 let private bounds first last =
     PaymentDateBounds.create (date first) (date last) |> Option.get
 
 let private decision value currency =
-    Inputs.decisionWith
+    DomainInputs.decisionWith
         [
             BusinessField.PaymentDecisionDate, "2026-01-10"
             BusinessField.PayableAmount, value
             BusinessField.PayableCurrency, currency
         ]
-        Inputs.decision
-    |> Inputs.admittedDecision
+        DomainInputs.decision
+    |> DomainInputs.admittedDecision
 
 let private payment value currency day =
-    Inputs.paymentWith
+    DomainInputs.paymentWith
         [
             BusinessField.PaidAmount, value
             BusinessField.PaidCurrency, currency
             BusinessField.PaymentDate, day
         ]
-        Inputs.payment
-    |> Inputs.admittedPayment
+        DomainInputs.payment
+    |> DomainInputs.admittedPayment
 
 let private position payable paid count dates =
     FinancialPosition.create (Some(decision payable "EUR")) (amount paid) count dates

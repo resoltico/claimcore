@@ -5,6 +5,7 @@ open ClaimCore.CommandLine
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 open System
@@ -88,6 +89,7 @@ module Frames =
     let attemptId (invocation: Invocation) = invocation.AttemptId
     let endpoint (invocation: Invocation) = invocation.Target
     let input (invocation: Invocation) = invocation.Input
+    let typedInput (invocation: Invocation) = invocation.Typed
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
 
     let operationId invocation =
@@ -123,6 +125,33 @@ module Frames =
                 member _.Visit<'value, 'reply>(endpoint: Endpoint<'value, 'reply>, value: 'value) =
                     create endpoint value
             }
+
+    /// Only a declared paged request can acquire a new continuation; the filters remain unchanged.
+    let withCursor cursor (invocation: Invocation) =
+        let declaration = EndpointDeclarations.find invocation.Target.Token
+
+        if not (declaration |> Option.exists _.Paged) then
+            invalidArg (nameof invocation) "A declared paged request is required."
+
+        let input =
+            match invocation.Input with
+            | JsonValue.Object fields ->
+                let value =
+                    cursor |> Option.map JsonValue.String |> Option.defaultValue JsonValue.Null
+
+                JsonValue.Object(
+                    (fields |> List.filter (fun (name, _) -> name <> WireMembers.Cursor))
+                    @ [ WireMembers.Cursor, value ]
+                )
+            | _ -> invalidOp "A declared paged request has object inputs."
+
+        invocation.Target.ReadInput input
+        |> Result.bind fromInput
+        |> Result.map (fun next ->
+            { next with
+                Representation = invocation.Representation
+                InstallationId = invocation.InstallationId
+            })
 
     let private admitDocument document =
         if

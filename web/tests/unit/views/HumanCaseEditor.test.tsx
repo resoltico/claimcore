@@ -1,5 +1,5 @@
 import { operationAffordance } from "../../support/affordances.fixtures";
-import type { RequestByEndpoint, HumanReview, HumanReceiptDocument } from "@contracts/client";
+import type { RequestByEndpoint, HumanReview, HumanDocument } from "@contracts/client";
 import {
   operationRequest,
   requestText,
@@ -99,7 +99,7 @@ const review: HumanReview = {
     disclosure: "CURRENT",
   },
 };
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [
       {

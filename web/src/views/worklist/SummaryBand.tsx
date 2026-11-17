@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import { ScreenView } from "../../ui/ScreenView";
 import type { CaseSummaryRequest } from "@contracts/client";
 import { useEndpoint } from "../../hooks/useEndpoint";
@@ -5,7 +6,7 @@ import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 export const SummaryBand = ({ filter }: { filter: CaseSummaryRequest }) => {
   const p = usePresentation();
-  const query = useEndpoint("case.summary", filter);
+  const query = useEndpoint(apiEndpoints.caseSummary, filter);
   const summary = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.document : null;
   if (query.loading) {
     return (

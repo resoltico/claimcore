@@ -5,9 +5,13 @@ open System.Globalization
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -53,16 +57,17 @@ let private qualify () =
                 let! actor = caseWorker database.Fixture
 
                 let! opened =
-                    Service.execute
+                    Service.executeSubmission
                         actor
-                        (Inputs.caseOperation (
-                            request
-                                database.Fixture
-                                50
-                                "ZONE-WORK"
-                                0L
-                                (AuthoredCaseAct.Open registration)
-                        ))
+                        (((request
+                            (database.Fixture)
+                            (50)
+                            ("ZONE-WORK")
+                            (0L)
+                            "case.open"
+                            (ClaimCore.TestSupport.Submissions.fields (
+                                RegistrationInput.values (registration)
+                            )))))
                         token
 
                 let opened = accepted opened |> caseReceipt
@@ -84,23 +89,18 @@ let private qualify () =
                 crossedUtcDay <- crossedUtcDay || expected <> utc
 
                 let! changed =
-                    Service.execute
+                    Service.executeSubmission
                         actor
-                        (OperationInput.Reminder
-                            {
-                                OperationId = id database.Fixture 51
-                                Target = CaseSelector.Id caseId
-                                Act =
-                                    AuthoredReminderAct.Create
-                                        {
-                                            Action = "Inspect business-date classification"
-                                            Due =
-                                                utc.ToString(
-                                                    "yyyy-MM-dd",
-                                                    CultureInfo.InvariantCulture
-                                                )
-                                        }
-                            })
+                        ((ClaimCore.TestSupport.Submissions.createRaw)
+                            "reminder.create"
+                            (id database.Fixture 51)
+                            (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                                (CaseSelector.Id caseId),
+                                None
+                            ))
+                            (ClaimCore.TestSupport.Submissions.reminderPlan
+                                ("Inspect business-date classification")
+                                (utc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))))
                         token
 
                 accepted changed |> ignore

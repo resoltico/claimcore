@@ -38,7 +38,9 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                             currentLanguage
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
-                                CommandGrammar.commandText (TaskId.Query QueryTaskId.OperationGet)
+                                CommandGrammar.commandText (
+                                    QueryTaskId.key QueryTaskId.OperationGet
+                                )
                                 + " "
                                 + (Frames.operationId frame
                                    |> Option.map string

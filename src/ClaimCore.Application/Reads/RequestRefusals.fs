@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System.Threading
 open ClaimCore.Domain
@@ -6,14 +12,14 @@ open ClaimCore.Application.Contracts
 
 /// Early business input failures still belong to a current caller's authorized snapshot.
 module internal RequestRefusals =
-    let private current (services: ServiceContext) (tx: IReadTx) refusal =
+    let private current (services: ServiceContext) (tx: ReadTx) refusal =
         task {
-            let! actor =
-                tx.Access
-                    {
-                        Principal = services.Principal
-                        CaseId = None
-                    }
+            let! person = AggregateStorage.principal tx services.Principal
+
+            let actor =
+                person
+                |> Option.map ClaimCore.Domain.Aggregates.Person.access
+                |> AccessView.ofActor
 
             return
                 if Access.validActor services.Principal actor then

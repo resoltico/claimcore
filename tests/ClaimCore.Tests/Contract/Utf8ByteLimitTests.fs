@@ -6,6 +6,8 @@ open System.Text.Json
 open Expecto
 open global.Json.Schema
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.TestSupport
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json
@@ -97,27 +99,25 @@ let tests =
                         (PartyName.parse (String.replicate 200 "😀") |> Result.bind PartyName.admit)
                         "Current valid supplementary names stay admitted"
 
-                    let authored: PeopleRequest =
-                        {
-                            ExpectedRevision = 0L
-                            OperationId = Guid.Parse "65f2c361-c10f-7bd9-bacf-54ce57716701"
-                            Target =
-                                {
-                                    Kind = PrincipalKind.Human
-                                    Issuer = "https://bytes.example/"
-                                    Subject = "new-profile"
-                                }
-                            Act =
-                                PeopleAct.Register
-                                    {
-                                        DisplayName = String('x', 1025)
-                                        Contact = None
-                                    }
-                        }
+                    let authored =
+                        Submissions.create
+                            "people.register"
+                            (Guid.Parse "65f2c361-c10f-7bd9-bacf-54ce57716701")
+                            (Binding.PeopleNew Revision.zero)
+                            (Submissions.principal (
+                                PrincipalKey.human "https://bytes.example/" "new-profile"
+                                |> Result.toOption
+                                |> Option.get
+                             )
+                             |> Map.fold
+                                 (fun values key value -> Map.add key value values)
+                                 (Submissions.profile
+                                     {
+                                         DisplayName = String('x', 1025)
+                                         Contact = None
+                                     }))
 
-                    let raw =
-                        ClaimCore.Application.Contracts.OperationInput.People authored
-                        |> ClaimCore.TestSupport.Submissions.ofCommand None
+                    let raw = authored
 
                     let bytes = Codec.encode Api.operationExecute.Input raw
 
@@ -125,8 +125,8 @@ let tests =
                         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input bytes)
                         "Raw authored strings still reach Application rather than read-side wire constraints"
 
-                    match People.parse authored with
-                    | Error(Refusal.InvalidInput issues) ->
+                    match OperationSubmission.syntax authored with
+                    | Some issues ->
                         Expect.equal
                             (InputIssues.toList issues
                              |> List.map (fun issue -> issue.Target, issue.Violation))

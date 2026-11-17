@@ -1,4 +1,6 @@
-import type { OperationAffordance } from "../../operation/affordances";
+import { apiEndpoints, type CurrentCase, isCurrentCase } from "../../api/service";
+import type { BoundOperationAffordance, OperationAffordance } from "../../operation/affordances";
+
 import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
@@ -11,7 +13,6 @@ import { operationTask } from "../../protocol/taskCatalog";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { type CurrentCase, isCurrentCase } from "../../api/service";
 
 import { renderCatalogKey } from "../../presentation/messages";
 import { Dialog } from "../../ui/Dialog";
@@ -19,7 +20,7 @@ import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
 
 type Selection = {
-  action: Extract<OperationAffordance, { binding: { kind: "REMINDER" } }>;
+  action: BoundOperationAffordance<"REMINDER">;
   anchor: string | null;
   readId: string;
 };
@@ -45,7 +46,7 @@ const SelectedReminder = ({
   const kind = action.task;
   const { binding } = action;
   const query = useEndpoint(
-    "case.get",
+    apiEndpoints.caseGet,
     { target: binding.target },
     disclosureAvailable,
     selection.readId,
@@ -85,11 +86,9 @@ const SelectedReminder = ({
     <WorkOperation
       current={parent}
       subject="REMINDER"
-      kind={task.act}
+      kind={task.id}
       targetIdentity={"reminderId" in binding ? binding.reminderId : action.task}
-      {...(kind !== "reminder.complete" || selection.anchor === null
-        ? {}
-        : { completionAnchor: selection.anchor })}
+      {...(selection.anchor === null ? {} : { completionAnchor: selection.anchor })}
       affordance={action}
       binding={binding}
       disclosureAvailable={disclosureAvailable}

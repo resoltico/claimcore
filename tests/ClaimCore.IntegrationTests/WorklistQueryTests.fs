@@ -6,7 +6,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.WorklistFixtures
 
@@ -266,7 +270,7 @@ let private erasure fixture =
         let! latest =
             DatabaseSession.rows
                 connection
-                "SELECT l.recorded_at FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.subject_kind='CASE' AND e.subject_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='work-13') ORDER BY e.case_revision DESC LIMIT 1"
+                "SELECT l.recorded_at FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.part_kind='CASE' AND e.part_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='work-13') ORDER BY e.revision DESC LIMIT 1"
                 [||]
                 token
 

@@ -101,7 +101,7 @@ module Terms =
             rendered RequesterKind.vocabulary
             rendered CorrectionGroupAction.vocabulary
             rendered ScopeKind.vocabulary
-            rendered ActKind.vocabulary
+            rendered TaskVocabulary.vocabulary
             rendered ActFamily.vocabulary
             rendered HistoryAccess.vocabulary
             sectionTerms

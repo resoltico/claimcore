@@ -1,5 +1,5 @@
-import { termKeys } from "@contracts/messages";
-import type { Terms, MessageKey } from "@contracts/messages";
+import { termKeys, type Terms, type MessageKey } from "@contracts/messages";
+
 import { renderKey } from "./messages";
 import type { Preferences } from "./preferences";
 

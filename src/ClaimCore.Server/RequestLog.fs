@@ -56,8 +56,8 @@ module internal RequestLog =
     let reply classification context =
         entry context
         |> Option.iter (fun value ->
-            value.Outcome <- ReplyKind.token classification.Kind
-            value.MetricResult <- WebMetrics.result classification.Kind)
+            value.Outcome <- ReplyKind.token classification
+            value.MetricResult <- WebMetrics.result classification)
 
     let operation id context =
         OperationId.create id
@@ -102,7 +102,7 @@ module internal RequestLog =
     let middleware (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             let correlation = Guid.NewGuid()
-            use _correlation = ClaimCore.Postgres.StorageDiagnostics.correlate correlation
+            use _correlation = ClaimCore.Application.Runtime.correlate correlation
 
             if context.Request.Path.StartsWithSegments(PathString "/api") then
                 let endpoint =

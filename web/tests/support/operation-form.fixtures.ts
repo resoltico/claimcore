@@ -29,14 +29,8 @@ export const current: CurrentCase = {
       { "group:registration": "KEEP", "group:decision": "KEEP" },
       [],
       {
-        "group:registration": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.registration,
-        "group:decision": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.decision,
+        "group:registration": ["KEEP", "UPDATE"],
+        "group:decision": ["KEEP", "UPDATE", "CLEAR"],
       },
     ),
     operationAffordance(
@@ -49,14 +43,8 @@ export const current: CurrentCase = {
       { "group:registration": "KEEP", "group:decision": "KEEP" },
       [],
       {
-        "group:registration": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.registration,
-        "group:decision": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.decision,
+        "group:registration": ["KEEP", "UPDATE"],
+        "group:decision": ["KEEP", "UPDATE", "CLEAR"],
       },
     ),
     operationAffordance(
@@ -69,14 +57,8 @@ export const current: CurrentCase = {
       { "group:registration": "KEEP", "group:decision": "KEEP" },
       [],
       {
-        "group:registration": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.registration,
-        "group:decision": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP", "UPDATE", "CLEAR"],
-        }.decision,
+        "group:registration": ["KEEP", "UPDATE"],
+        "group:decision": ["KEEP", "UPDATE", "CLEAR"],
       },
     ),
   ],

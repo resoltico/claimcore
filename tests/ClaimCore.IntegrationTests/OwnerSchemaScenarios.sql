@@ -22,10 +22,10 @@ SELECT pg_temp.expect('owner cannot rewrite ledger metadata',
     $s$UPDATE claimcore.ledger SET actor_id = 'a0000000-0000-4000-8000-000000000009'
        WHERE sequence = 2$s$, 'CC003');
 SELECT pg_temp.expect('owner cannot replace private contents',
-    $s$UPDATE claimcore.ledger_compartments SET payload = '\x00', nonce = NULL WHERE owner_kind='CASE'$s$,
+    $s$UPDATE claimcore.ledger_compartments SET payload = '\x00', nonce = NULL WHERE owner_kind='FAMILY'$s$,
     'CC003');
 SELECT pg_temp.expect('owner cannot clear a person profile payload',
-    $s$UPDATE claimcore.ledger_compartments SET payload = NULL, nonce = NULL WHERE owner_kind='ACTOR_PROFILE'$s$,
+    $s$UPDATE claimcore.ledger_compartments SET payload = NULL, nonce = NULL WHERE owner_kind='PROFILE'$s$,
     'CC003');
 SELECT pg_temp.expect('owner cannot delete a ledger row',
     'DELETE FROM claimcore.ledger WHERE sequence = 1', 'CC003');

@@ -10,67 +10,21 @@ module PeopleHistoryCodecs =
     open Codec
     open ResponseScalars
 
-    let private principalFields = record id |> field "principal" id PrincipalCodecs.key
-
-
-    let facts =
-        tagged
-            "PeopleHistoryFacts"
-            [
-                variant
-                    (PeopleActKind.token PeopleActKind.ProvisionOwner)
-                    PeopleHistoryFacts.OwnerProvisioned
-                    (function
-                    | PeopleHistoryFacts.OwnerProvisioned value -> Some value
-                    | _ -> None)
-                    principalFields
-                variant
-                    (PeopleActKind.token PeopleActKind.Register)
-                    PeopleHistoryFacts.Registered
-                    (function
-                    | PeopleHistoryFacts.Registered value -> Some value
-                    | _ -> None)
-                    principalFields
-                variant
-                    (PeopleActKind.token PeopleActKind.Grant)
-                    PeopleHistoryFacts.Granted
-                    (function
-                    | PeopleHistoryFacts.Granted value -> Some value
-                    | _ -> None)
-                    ResponseCodecs.peopleGrantFields
-                variant
-                    (PeopleActKind.token PeopleActKind.Revoke)
-                    PeopleHistoryFacts.Revoked
-                    (function
-                    | PeopleHistoryFacts.Revoked value -> Some value
-                    | _ -> None)
-                    ResponseCodecs.peopleGrantFields
-                variant
-                    (PeopleActKind.token PeopleActKind.SetProfile)
-                    PeopleHistoryFacts.ProfileSet
-                    (function
-                    | PeopleHistoryFacts.ProfileSet profile -> Some profile
-                    | _ -> None)
-                    (record id |> field "profile" id (nullable ActorCodecs.profile))
-                unitVariant
-                    (PeopleActKind.token PeopleActKind.EraseProfile)
-                    PeopleHistoryFacts.ProfileErased
-                unitVariant (PeopleActKind.token PeopleActKind.Enable) PeopleHistoryFacts.Enabled
-                unitVariant (PeopleActKind.token PeopleActKind.Disable) PeopleHistoryFacts.Disabled
-            ]
-        |> vocabulary (Vocabulary.name PeopleActKind.vocabulary)
-
     let entry =
-        (record (fun operation position hash instant executor target facts ->
-            {
-                PeopleHistoryEntry.OperationId = operation
-                Position = position
-                OperationHash = hash
-                RecordedAt = instant
-                RecordedBy = executor
-                Target = target
-                Facts = facts
-            })
+        (record
+            (fun operation position hash instant executor target task changes available references ->
+                {
+                    PeopleHistoryEntry.OperationId = operation
+                    Position = position
+                    OperationHash = hash
+                    RecordedAt = instant
+                    RecordedBy = executor
+                    Target = target
+                    Task = task
+                    Changes = changes
+                    PrivateAvailable = available
+                    References = references
+                })
         : Fields<PeopleHistoryEntry, _>)
         |> field "operationId" _.OperationId operationId
         |> field "position" _.Position LedgerCodecs.effectPosition
@@ -78,7 +32,10 @@ module PeopleHistoryCodecs =
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "target" _.Target ActorCodecs.actorRef
-        |> field "act" _.Facts facts
+        |> field "task" _.Task (TaskVocabulary.forSubject ActSubject.People)
+        |> field "changes" _.Changes PartDescriptionCodecs.person
+        |> field "privateAvailable" _.PrivateAvailable boolean
+        |> field "references" _.References PartDescriptionCodecs.references
         |> build
         |> named "PeopleHistoryEntry"
 

@@ -72,7 +72,9 @@ module ReceiptScreen =
 
     let caseReceipt (item: CaseReceipt) =
         [
-            receiptHeader (Some item.Reference) (code CaseActKind.vocabulary item.Act)
+            receiptHeader
+                (Some item.Reference)
+                (PresentedValue.Message("task." + TaskId.token item.Act + ".label"))
             section
                 "label.recordedFacts"
                 [
@@ -85,20 +87,36 @@ module ReceiptScreen =
         ]
         @ (match item.Snapshot with
            | SnapshotDisclosure.Disclosed live ->
-               caseFacts
+               (caseFacts
                    {
                        CaseId = item.CaseId
                        Reference = item.Reference
                        Revision = item.Revision
                        State = LiveCase.toState live.State
-                   }
+                   })
+               @ (live.Disposition
+                  |> Option.map (fun disposition ->
+                      section
+                          "field.reason.label"
+                          [
+                              value
+                                  "reason"
+                                  "field.reason.label"
+                                  Prominence.Primary
+                                  (PresentedValue.Narrative(
+                                      Reason.format (CaseDisposition.reason disposition)
+                                  ))
+                          ])
+                  |> Option.toList)
            | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
            | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
         []
 
     let workReceipt (item: WorkReceipt) =
         [
-            receiptHeader (Some item.Reference) (code WorkActKind.vocabulary item.Act)
+            receiptHeader
+                (Some item.Reference)
+                (PresentedValue.Message("task." + TaskId.token item.Act + ".label"))
             section
                 "section.work.label"
                 [
@@ -117,7 +135,9 @@ module ReceiptScreen =
 
     let reminderReceipt (item: ReminderReceipt) =
         [
-            receiptHeader (Some item.Reference) (code ReminderActKind.vocabulary item.Act)
+            receiptHeader
+                (Some item.Reference)
+                (PresentedValue.Message("task." + TaskId.token item.Act + ".label"))
         ]
         @ (match item.Effects with
            | ReminderReceiptEffects.Single version -> [ receiptReminderVersion version ]
@@ -127,7 +147,7 @@ module ReceiptScreen =
 
     let peopleReceipt (item: PeopleReceipt) =
         [
-            receiptHeader None (code PeopleActKind.vocabulary item.Act)
+            receiptHeader None (PresentedValue.Message("task." + TaskId.token item.Act + ".label"))
             section
                 "label.account"
                 [
@@ -150,7 +170,7 @@ module ReceiptScreen =
                            "act"
                            "label.action"
                            Prominence.Primary
-                           (code PeopleActKind.vocabulary effect.Act)
+                           (PresentedValue.Message("task." + TaskId.token effect.Act + ".label"))
                        value
                            ("effect." + string (EffectId.index effect.Id) + ".position")
                            "label.effectPosition"
@@ -267,7 +287,8 @@ module ReceiptScreen =
             | _ -> None
 
         let isRecorded label =
-            selected |> Option.map (Set.contains label) |> Option.defaultValue true
+            label = "field.reason.label"
+            || (selected |> Option.map (Set.contains label) |> Option.defaultValue true)
 
         let markEntry (entry: Entry) =
             { entry with
@@ -343,11 +364,11 @@ module ReceiptScreen =
 
         let act =
             match receipt.Subject with
-            | ReceiptSubject.Case item -> ActKind.Case item.Act
-            | ReceiptSubject.Work item -> ActKind.Work item.Act
-            | ReceiptSubject.Note item -> ActKind.Note item.Act
-            | ReceiptSubject.Reminder item -> ActKind.Reminder item.Act
-            | ReceiptSubject.People item -> ActKind.People item.Act
+            | ReceiptSubject.Case item -> item.Act
+            | ReceiptSubject.Work item -> item.Act
+            | ReceiptSubject.Note item -> item.Act
+            | ReceiptSubject.Reminder item -> item.Act
+            | ReceiptSubject.People item -> item.Act
 
         let reference =
             match receipt.Subject with
@@ -400,7 +421,8 @@ module ReceiptScreen =
             | _ -> []
 
         let identity =
-            (receiptHeader reference (code ActKind.vocabulary act)).Entries
+            (receiptHeader reference (PresentedValue.Message("task." + TaskId.token act + ".label")))
+                .Entries
             @ stateEntries
             @ [
                 value
@@ -411,10 +433,10 @@ module ReceiptScreen =
             ]
 
         let message =
-            if act = ActKind.People PeopleActKind.ProvisionOwner then
+            if (TaskConsequences.declaration act).Exposure = TaskExposure.Operator then
                 "label.recorded"
             else
-                Vocabulary.messageKey ActKind.vocabulary act "done"
+                "task." + TaskId.token act + ".done"
 
         Screen.create (
             [

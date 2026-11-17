@@ -144,7 +144,7 @@ module Discovery =
             |> String.concat "\n"
             |> fun text -> Some(text + "\n")
 
-    let helpJson language topic text (operations: TaskId list) =
+    let helpJson language topic text (operations: string list) =
         let input (value: TaskInputDeclaration) =
             let choices =
                 TaskChoiceId.ofInput value.Input
@@ -182,7 +182,7 @@ module Discovery =
                     "task",
                     JsonValue.Object
                         [
-                            "id", JsonValue.String(TaskId.key declaration.Task)
+                            "id", JsonValue.String(declaration.Id)
                             "inputs", JsonValue.Array(declaration.Inputs |> List.map input)
                             "collections", JsonValue.Array collections
                         ]

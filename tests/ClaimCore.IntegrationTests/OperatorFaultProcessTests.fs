@@ -10,7 +10,11 @@ open Expecto
 open Npgsql
 open ClaimCore.Application.Contracts
 open ClaimCore.Server.Administration
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.TestSupport
@@ -245,7 +249,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "UPDATE claimcore.installation SET installation_format=4; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=4)"
+                    "UPDATE claimcore.installation SET installation_format=5; ALTER TABLE claimcore.installation ADD CONSTRAINT installation_installation_format_check CHECK(installation_format=5)"
                     [||]
 
             do! sql "DELETE FROM claimcore.installation" [||]
@@ -253,7 +257,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(4,$1,'Etc/UTC')"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone) VALUES(5,$1,'Etc/UTC')"
                     [| box database.Fixture.InstallationId |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]

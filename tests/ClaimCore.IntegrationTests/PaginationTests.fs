@@ -12,7 +12,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
@@ -31,11 +35,17 @@ let private setup (database: PostgresFixture.Database) =
 
         for n, reference in [ 10, "CASE-A"; 11, "CASE-B"; 12, "CASE-C" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request database.Fixture n reference 0L (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (n)
+                        (reference)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted result |> ignore
@@ -45,16 +55,20 @@ let private setup (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 3)
-                        principal
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 3))
+                        (principal)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((token))
+            }))
 
         acceptedPeople registered
 
@@ -118,168 +132,16 @@ type internal PausedPageStore
 
     interface IStore with
         member _.Context query = inner.Context query
+        member _.Write operation = inner.Write operation
 
-        member _.Write
-            ({
-                 WriteOperation.Work = work
-                 CancellationToken = ct
-             })
-            =
-            inner.Write(
-                {
-                    WriteOperation.Work = work
-                    CancellationToken = ct
+        member _.Read operation =
+            inner.Read
+                { operation with
+                    Work =
+                        fun tx ->
+                            pause ()
+                            operation.Work tx
                 }
-            )
-
-        member _.Read
-            ({
-                 ReadOperation.Work = work
-                 CancellationToken = ct
-             })
-            =
-            inner.Read(
-                {
-                    ReadOperation.Work =
-                        (fun tx ->
-                            work
-                                { new IReadTx with
-                                    member _.AccessRequestPage query = tx.AccessRequestPage query
-
-                                    member _.CaseState id = tx.CaseState id
-
-                                    member _.CaseFamilySequence id = tx.CaseFamilySequence id
-                                    member _.CaseFamily id = tx.CaseFamily id
-
-                                    member _.PendingReminderDue(parent, excluded) =
-                                        tx.PendingReminderDue(parent, excluded)
-
-
-                                    member _.LatestPayments(parent, selection) =
-                                        tx.LatestPayments(parent, selection)
-
-
-                                    member _.PaymentPage query = tx.PaymentPage query
-                                    member _.ObservedAt = tx.ObservedAt
-                                    member _.Maintenance() = tx.Maintenance()
-                                    member _.ExpiredBefore() = tx.ExpiredBefore()
-
-                                    member _.GlobalReadFacts principal =
-                                        task {
-                                            let! facts = tx.GlobalReadFacts principal
-                                            pause ()
-                                            return facts
-                                        }
-
-
-                                    member _.Access
-                                        ({
-                                             AccessQuery.Principal = principal
-                                             CaseId = scope
-                                         })
-                                        =
-                                        task {
-                                            let! actor =
-                                                tx.Access(
-                                                    {
-                                                        AccessQuery.Principal = principal
-                                                        CaseId = scope
-                                                    }
-                                                )
-
-                                            pause ()
-                                            return actor
-                                        }
-
-                                    member _.FindCase id = tx.FindCase id
-
-                                    member _.FindCaseByReference reference =
-                                        tx.FindCaseByReference reference
-
-                                    member _.AccessCases(principal, ids) =
-                                        tx.AccessCases(principal, ids)
-
-                                    member _.FindWork id = tx.FindWork id
-                                    member _.FindNote id = tx.FindNote id
-
-                                    member _.NotePage query = tx.NotePage query
-
-                                    member _.FindReminder id = tx.FindReminder id
-
-                                    member _.WorkSummaries(ids, today) =
-                                        tx.WorkSummaries(ids, today)
-
-                                    member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
-
-                                    member _.ResponsibilityCounts(selection, actors) =
-                                        tx.ResponsibilityCounts(selection, actors)
-
-                                    member _.ReminderPage query = tx.ReminderPage query
-
-                                    member _.CaseViewCounts selection = tx.CaseViewCounts selection
-
-                                    member _.ReminderViewCounts selection =
-                                        tx.ReminderViewCounts selection
-
-                                    member _.TimelinePage query = tx.TimelinePage query
-                                    member _.CaseStageFacts id = tx.CaseStageFacts id
-                                    member _.PreviousEntries entries = tx.PreviousEntries entries
-                                    member _.FindOperation id = tx.FindOperation id
-
-
-                                    member _.CasePage query = tx.CasePage query
-
-                                    member _.CaseSummary query = tx.CaseSummary query
-
-                                    member _.PeopleHistoryPage query = tx.PeopleHistoryPage query
-
-                                    member _.ActorPage
-                                        ({
-                                             ActorPageQuery.AfterActorId = after
-                                             Role = role
-                                             Text = text
-                                             Limit = limit
-                                         })
-                                        =
-                                        tx.ActorPage(
-                                            {
-                                                ActorPageQuery.AfterActorId = after
-                                                Role = role
-                                                Text = text
-                                                Limit = limit
-                                            }
-                                        )
-
-                                    member _.GrantPage
-                                        ({
-                                             GrantPageQuery.ActorId = id
-                                             AfterGrant = after
-                                             Limit = limit
-                                         })
-                                        =
-                                        tx.GrantPage(
-                                            {
-                                                GrantPageQuery.ActorId = id
-                                                AfterGrant = after
-                                                Limit = limit
-                                            }
-                                        )
-
-                                    member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
-                                    member _.ActorRefs ids = tx.ActorRefs ids
-                                    member _.ActorPrincipal id = tx.ActorPrincipal id
-
-                                    member _.PeopleRevision principal = tx.PeopleRevision principal
-                                    member _.PeopleState principal = tx.PeopleState principal
-
-                                    member _.FindActor id = tx.FindActor id
-                                    member _.AssigneePage query = tx.AssigneePage query
-                                    member _.EnabledHumanOwners() = tx.EnabledHumanOwners()
-                                    member _.ActorCount() = tx.ActorCount()
-                                })
-                    CancellationToken = ct
-                }
-            )
 
 let private freshAdvice (actor: ServiceContext) cursor current =
     task {
@@ -371,16 +233,17 @@ let private snapshot (database: PostgresFixture.Database) =
             acceptedPeople revoked
 
             let! later =
-                (Service.execute
+                (Service.executeSubmission
                     admin
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            database.Fixture
-                            13
-                            "CASE-AFTER"
-                            0L
-                            (AuthoredCaseAct.Open registration)
-                    ))
+                    (((request
+                        (database.Fixture)
+                        (13)
+                        ("CASE-AFTER")
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        )))))
                     (token))
 
             accepted later |> ignore

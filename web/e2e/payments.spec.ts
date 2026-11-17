@@ -174,7 +174,9 @@ const expandPayments = async (page: Page, sizes: ReadonlyArray<number>) => {
       ...rows.flatMap(
         (row) =>
           row.actions?.flatMap((action) =>
-            action.task === "case.removePayment" ? [action.binding.paymentId] : [],
+            action.task === "case.removePayment" && "paymentId" in action.binding
+              ? [action.binding.paymentId]
+              : [],
           ) ?? [],
       ),
     );
@@ -280,7 +282,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
   }
   expect(current.outcome.data.state.fields.finance.paymentCount).toBe(54);
   expect(current.outcome.data.state.fields.finance.paidAmount).toBe("54");
-  const acceptedNotice = page.locator(".success-toast");
+  const acceptedNotice = page.locator(".accepted-receipt");
   await expect(acceptedNotice).toBeVisible();
   await acceptedNotice
     .getByRole("button", {

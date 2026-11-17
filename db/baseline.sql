@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 4),
+    installation_format smallint NOT NULL CHECK (installation_format = 5),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -61,57 +61,56 @@ CREATE TABLE claimcore.register_maintenance (
 );
 INSERT INTO claimcore.register_maintenance(singleton,active) VALUES (true,false);
 
--- ---------------------------------------------------------------------------------------------
--- One root advances the installation head. Effects and private owner compartments are its closed children.
+-- One immutable root and its ordered part versions advance the installation head.
 CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=4),
+    installation_format smallint NOT NULL CHECK (installation_format=5),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid NOT NULL CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
     business_date date CHECK (business_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
-    command jsonb NOT NULL CHECK (jsonb_typeof(command)='object'),
-    CHECK ((command->>'kind'='PEOPLE')=(business_date IS NULL))
+    aggregate_kind text NOT NULL CHECK (aggregate_kind IN ('FAMILY','PERSON')),
+    task text COLLATE "C" NOT NULL CHECK (task ~ $task$\A[a-z]+(\.[a-z][A-Za-z]*)+\Z$task$),
+    structure jsonb NOT NULL CHECK (jsonb_typeof(structure)='object'),
+    CHECK ((aggregate_kind='PERSON')=(business_date IS NULL))
 );
-
 CREATE TABLE claimcore.ledger_effects (
     operation_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
     effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
-    descriptor jsonb NOT NULL CHECK (jsonb_typeof(descriptor)='object'),
-    subject_kind text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'NOTE_ADDED' THEN 'NOTE' WHEN 'NOTE_REMOVED' THEN 'NOTE' WHEN 'REMINDER_CREATED' THEN 'REMINDER' WHEN 'REMINDER_CHANGED' THEN 'REMINDER' ELSE descriptor->>'kind' END) STORED,
-    subject_id uuid GENERATED ALWAYS AS ((CASE descriptor->>'kind' WHEN 'PEOPLE' THEN descriptor->>'targetActorId' WHEN 'NOTE_ADDED' THEN descriptor->>'noteId' WHEN 'NOTE_REMOVED' THEN descriptor->>'noteId' WHEN 'REMINDER_CREATED' THEN descriptor->>'reminderId' WHEN 'REMINDER_CHANGED' THEN descriptor->>'reminderId' ELSE descriptor->>'caseId' END)::uuid) STORED,
-    act text GENERATED ALWAYS AS (CASE descriptor->>'kind' WHEN 'PEOPLE' THEN descriptor->'change'->>'kind' WHEN 'WORK' THEN 'work.update' WHEN 'NOTE_ADDED' THEN 'note.add' WHEN 'NOTE_REMOVED' THEN 'note.remove' WHEN 'REMINDER_CREATED' THEN 'reminder.create' ELSE descriptor->>'act' END) STORED,
-    case_revision bigint GENERATED ALWAYS AS ((descriptor->>'revision')::bigint) STORED,
-    parent_case_id uuid GENERATED ALWAYS AS ((CASE WHEN descriptor->>'kind' IN ('WORK','NOTE_ADDED','NOTE_REMOVED','REMINDER_CREATED','REMINDER_CHANGED') THEN descriptor->>'caseId' END)::uuid) STORED,
-    creation_reference text GENERATED ALWAYS AS (descriptor->>'creationReference') STORED,
-    payment_id uuid GENERATED ALWAYS AS ((descriptor->'payment'->>'operationId')::uuid) STORED,
+    aggregate_kind text NOT NULL CHECK (aggregate_kind IN ('FAMILY','PERSON')),
+    aggregate_id uuid NOT NULL CHECK (aggregate_id<>'00000000-0000-0000-0000-000000000000'),
+    part_kind text COLLATE "C" NOT NULL CHECK (part_kind ~ $part$\A[A-Z][A-Z_]{0,31}\Z$part$),
+    part_id uuid NOT NULL CHECK (part_id<>'00000000-0000-0000-0000-000000000000'),
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
+    natural_key text CHECK (natural_key IS NULL OR claimcore.is_interchange_text(natural_key)),
+    retained jsonb,
+    erases_kind text CHECK (erases_kind IN ('FAMILY','PROFILE')),
+    erases_id uuid CHECK (erases_id<>'00000000-0000-0000-0000-000000000000'),
+    compartment integer CHECK (compartment BETWEEN 0 AND 1),
     PRIMARY KEY(operation_sequence,effect_index),
-    CHECK (subject_kind IN ('CASE','PEOPLE','WORK','NOTE','REMINDER')),
-    CHECK (subject_id IS NOT NULL AND subject_id<>'00000000-0000-0000-0000-000000000000'),
-    CHECK (case_revision IS NULL OR case_revision BETWEEN 1 AND 9007199254740991)
+    UNIQUE(part_kind,part_id,revision),
+    CHECK ((erases_kind IS NULL)=(erases_id IS NULL))
 );
-CREATE UNIQUE INDEX ledger_case_revision ON claimcore.ledger_effects(subject_kind,subject_id,case_revision);
-CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger_effects(upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
-CREATE INDEX ledger_case_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='CASE';
-CREATE INDEX ledger_people_events ON claimcore.ledger_effects(subject_id,operation_sequence DESC,effect_index DESC) WHERE subject_kind='PEOPLE';
-CREATE INDEX ledger_case_activity ON claimcore.ledger_effects(parent_case_id,operation_sequence DESC,effect_index DESC) WHERE parent_case_id IS NOT NULL;
-
+CREATE UNIQUE INDEX ledger_natural_key ON claimcore.ledger_effects(part_kind,upper(natural_key COLLATE "C")) WHERE natural_key IS NOT NULL;
+CREATE INDEX ledger_aggregate_events ON claimcore.ledger_effects(aggregate_kind,aggregate_id,operation_sequence DESC,effect_index DESC);
+CREATE INDEX ledger_part_events ON claimcore.ledger_effects(part_kind,part_id,revision);
+CREATE INDEX ledger_owner_erasure ON claimcore.ledger_effects(erases_kind,erases_id,operation_sequence DESC,effect_index DESC) WHERE erases_kind IS NOT NULL;
 CREATE TABLE claimcore.ledger_compartments (
     operation_sequence bigint NOT NULL REFERENCES claimcore.ledger(sequence),
-    ordinal integer NOT NULL CHECK (ordinal=0),
-    owner_kind text NOT NULL CHECK (owner_kind IN ('CASE','ACTOR_PROFILE')),
+    ordinal integer NOT NULL CHECK (ordinal BETWEEN 0 AND 1),
+    owner_kind text NOT NULL CHECK (owner_kind IN ('FAMILY','PROFILE')),
     owner_id uuid NOT NULL CHECK (owner_id<>'00000000-0000-0000-0000-000000000000'),
-    purpose text NOT NULL CHECK (purpose IN ('CASE','WORK','NOTE','REMINDER','PROFILE')),
-    effect_indices integer[] NOT NULL CHECK (cardinality(effect_indices) BETWEEN 1 AND 2 AND effect_indices[1]>=0 AND (cardinality(effect_indices)=1 OR effect_indices[2]>effect_indices[1])),
     commitment bytea NOT NULL CHECK (octet_length(commitment)=32),
     nonce bytea UNIQUE,
     payload bytea,
     PRIMARY KEY(operation_sequence,ordinal),
-    CHECK ((owner_kind='ACTOR_PROFILE')=(purpose='PROFILE')),
+    UNIQUE(operation_sequence,owner_kind,owner_id),
     CHECK ((nonce IS NULL AND payload IS NULL) OR (nonce IS NOT NULL AND payload IS NOT NULL AND octet_length(nonce)=32 AND octet_length(payload) BETWEEN 1 AND 32768))
 );
+ALTER TABLE claimcore.ledger_effects ADD CONSTRAINT effect_compartment
+    FOREIGN KEY(operation_sequence,compartment) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal) DEFERRABLE INITIALLY DEFERRED;
 CREATE INDEX ledger_compartment_owner ON claimcore.ledger_compartments(owner_kind,owner_id,operation_sequence);
 
 CREATE TABLE claimcore.ledger_head (
@@ -158,120 +157,12 @@ BEGIN
 END;
 $$;
 
-CREATE FUNCTION claimcore.json_shape(value jsonb, names text[])
+CREATE FUNCTION claimcore.json_shape(value jsonb,names text[])
 RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
     SELECT jsonb_typeof(value)='object' AND
-        (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(value) key)=
-        (SELECT array_agg(name ORDER BY name) FROM unnest(names) name)
+       (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(value) key)=
+       (SELECT array_agg(name ORDER BY name) FROM unnest(names) name)
 $$;
-
--- This routine describes structural closure, not business admission or financial decisions.
-CREATE FUNCTION claimcore.operation_effects(command jsonb, operation uuid, executor uuid, root_sequence bigint)
-RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
-DECLARE family text:=command->>'kind'; action text; target uuid; revision bigint; result jsonb; item jsonb; i integer;
-BEGIN
-    IF family='CASE' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','reference','expectedRevision','expectedFamilySequence','act','selectedPayment','compartment']) THEN RAISE EXCEPTION 'invalid case command shape' USING ERRCODE='CC004'; END IF;
-        target:=(command->>'caseId')::uuid; revision:=(command->>'expectedRevision')::bigint; action:=command->>'act';
-        IF action NOT IN ('case.open','case.amendRegistration','case.correct','case.decide','case.withdrawDecision','case.recordPayment','case.removePayment','case.close','case.reopen','case.void','case.reinstate','case.erase')
-           OR revision IS NULL OR revision<0 OR revision>=9007199254740991 OR (action='case.open' AND (revision<>0 OR target<>operation)) OR (action<>'case.open' AND revision=0)
-           OR (command->>'reference') COLLATE "C" !~ '^[!-~]{1,80}$'
-           OR ((action='case.erase')<>(command->'expectedFamilySequence'<>'null'::jsonb))
-           OR (action='case.erase' AND ((command->>'expectedFamilySequence')::bigint NOT BETWEEN 1 AND root_sequence-1))
-           OR (action='case.removePayment')<>(command->'selectedPayment'<>'null'::jsonb)
-           OR command->'compartment' IS DISTINCT FROM (CASE WHEN action='case.erase' THEN 'null'::jsonb ELSE '0'::jsonb END)
-        THEN RAISE EXCEPTION 'invalid case command structure' USING ERRCODE='CC004'; END IF;
-        IF action='case.removePayment' THEN PERFORM (command->>'selectedPayment')::uuid; END IF;
-        RETURN jsonb_build_array(jsonb_build_object('kind','CASE','caseId',target,'revision',revision+1,'act',action,'creationReference',CASE WHEN action='case.open' THEN command->>'reference' END,'payment',CASE WHEN action='case.recordPayment' THEN jsonb_build_object('kind','RECORDED','operationId',operation) WHEN action='case.removePayment' THEN jsonb_build_object('kind','REMOVED','operationId',(command->>'selectedPayment')::uuid) ELSE 'null'::jsonb END));
-    ELSIF family='WORK' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid work command shape' USING ERRCODE='CC004'; END IF;
-        revision:=(command->>'expectedRevision')::bigint;
-        IF revision<0 OR revision>=9007199254740991 THEN RAISE EXCEPTION 'invalid work revision' USING ERRCODE='CC004'; END IF;
-        RETURN jsonb_build_array(jsonb_build_object('kind','WORK','caseId',(command->>'caseId')::uuid,'revision',revision+1));
-    ELSIF family='NOTE' THEN
-        action:=command->>'act'; target:=(command->>'caseId')::uuid;
-        IF action='note.add' AND claimcore.json_shape(command,ARRAY['kind','caseId','act','compartment']) AND command->'compartment'='0'::jsonb THEN
-            RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_ADDED','caseId',target,'noteId',operation));
-        ELSIF action='note.remove' AND claimcore.json_shape(command,ARRAY['kind','caseId','noteId','act','compartment']) AND command->'compartment'='null'::jsonb THEN
-            RETURN jsonb_build_array(jsonb_build_object('kind','NOTE_REMOVED','caseId',target,'noteId',(command->>'noteId')::uuid));
-        ELSE RAISE EXCEPTION 'invalid note command shape' USING ERRCODE='CC004'; END IF;
-    ELSIF family='REMINDER' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','caseId','act','reminderId','expectedRevision','compartment']) OR command->'compartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid reminder command shape' USING ERRCODE='CC004'; END IF;
-        target:=(command->>'caseId')::uuid; action:=command->>'act';
-        IF action='reminder.create' AND command->'reminderId'='null'::jsonb AND command->'expectedRevision'='null'::jsonb THEN
-            RETURN jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
-        END IF;
-        revision:=(command->>'expectedRevision')::bigint;
-        IF action NOT IN ('reminder.update','reminder.complete','reminder.cancel','reminder.reopen','reminder.completeAndPlanNext') OR revision IS NULL OR revision<1 OR revision>=9007199254740991 OR command->>'reminderId' IS NULL THEN RAISE EXCEPTION 'invalid reminder change' USING ERRCODE='CC004'; END IF;
-        result:=jsonb_build_array(jsonb_build_object('kind','REMINDER_CHANGED','caseId',target,'reminderId',(command->>'reminderId')::uuid,'revision',revision+1,'act',CASE WHEN action='reminder.completeAndPlanNext' THEN 'reminder.complete' ELSE action END));
-        IF action='reminder.completeAndPlanNext' THEN
-            IF (command->>'reminderId')::uuid=operation THEN RAISE EXCEPTION 'reminder identities overlap' USING ERRCODE='CC004'; END IF;
-            result:=result||jsonb_build_array(jsonb_build_object('kind','REMINDER_CREATED','caseId',target,'reminderId',operation,'revision',1));
-        END IF;
-        RETURN result;
-    ELSIF family='PEOPLE' THEN
-        IF NOT claimcore.json_shape(command,ARRAY['kind','expectedRevision','targetActorId','principal','act']) OR NOT claimcore.json_shape(command->'principal',ARRAY['kind','issuer','subject'])
-           OR command->'principal'->>'kind' NOT IN ('HUMAN','SERVICE') OR jsonb_typeof(command->'principal'->'issuer')<>'string' OR jsonb_typeof(command->'principal'->'subject')<>'string'
-        THEN RAISE EXCEPTION 'invalid people command shape' USING ERRCODE='CC004'; END IF;
-        target:=(command->>'targetActorId')::uuid; action:=command->'act'->>'kind'; item:=command->'act';
-        revision:=(command->>'expectedRevision')::bigint;
-        IF revision IS NULL OR revision<0 OR revision>=9007199254740991 OR ((action IN ('people.register','people.admit','people.provisionOwner'))<>(revision=0)) THEN RAISE EXCEPTION 'invalid people revision' USING ERRCODE='CC004'; END IF;
-        IF action IN ('people.register','people.admit','people.provisionOwner') THEN
-            IF target<>operation OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid registered actor identity' USING ERRCODE='CC004'; END IF;
-            result:=jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind',CASE WHEN action='people.provisionOwner' THEN action ELSE 'people.register' END,'principal',command->'principal')),
-                jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.setProfile','profileCompartment',0)));
-            IF action='people.register' THEN
-                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) THEN RAISE EXCEPTION 'invalid registration shape' USING ERRCODE='CC004'; END IF;
-            ELSIF action='people.admit' THEN
-                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','grants']) OR jsonb_typeof(item->'grants')<>'array' OR jsonb_array_length(item->'grants') NOT BETWEEN 1 AND 48 THEN RAISE EXCEPTION 'invalid admission shape' USING ERRCODE='CC004'; END IF;
-                IF (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'grants')) THEN RAISE EXCEPTION 'duplicate admission grants' USING ERRCODE='CC004'; END IF;
-                FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'grants') LOOP
-                    IF NOT claimcore.json_shape(item,ARRAY['role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
-                    result:=result||jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.grant','role',item->'role','scope',item->'scope')));
-                END LOOP;
-            ELSE
-                IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment','roles']) OR jsonb_typeof(item->'roles')<>'array' OR jsonb_array_length(item->'roles')>4
-                   OR root_sequence<>1 OR executor<>target OR command->'principal'->>'kind'<>'HUMAN'
-                   OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(item->'roles') role WHERE role NOT IN ('CASE_HANDLER','PAYMENT_RECORDER','DATA_STEWARD','AUDITOR'))
-                   OR (SELECT count(*)<>count(DISTINCT value) FROM jsonb_array_elements(item->'roles'))
-                THEN RAISE EXCEPTION 'invalid owner provisioning shape' USING ERRCODE='CC004'; END IF;
-                FOR item IN SELECT value FROM jsonb_array_elements(command->'act'->'roles') LOOP
-                    result:=result||jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',jsonb_build_object('kind','people.grant','role',item,'scope',jsonb_build_object('kind','INSTALLATION'))));
-                END LOOP;
-            END IF;
-            RETURN result;
-        ELSIF action='people.setProfile' THEN
-            IF NOT claimcore.json_shape(item,ARRAY['kind','profileCompartment']) OR item->'profileCompartment'<>'0'::jsonb THEN RAISE EXCEPTION 'invalid profile reference' USING ERRCODE='CC004'; END IF;
-        ELSIF action IN ('people.grant','people.revoke') THEN
-            IF NOT claimcore.json_shape(item,ARRAY['kind','role','scope']) THEN RAISE EXCEPTION 'invalid grant shape' USING ERRCODE='CC004'; END IF;
-        ELSIF action IN ('people.enable','people.disable','people.eraseProfile') THEN
-            IF NOT claimcore.json_shape(item,ARRAY['kind']) THEN RAISE EXCEPTION 'invalid people act shape' USING ERRCODE='CC004'; END IF;
-        ELSE RAISE EXCEPTION 'unknown people act' USING ERRCODE='CC004'; END IF;
-        RETURN jsonb_build_array(jsonb_build_object('kind','PEOPLE','targetActorId',target,'change',item));
-    ELSE RAISE EXCEPTION 'unknown operation family' USING ERRCODE='CC004'; END IF;
-END;
-$$;
-
-CREATE FUNCTION claimcore.operation_compartments(command jsonb)
-RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
-DECLARE family text:=command->>'kind'; action text; owner_kind text; owner_id uuid; purpose text; refs jsonb:='[0]'::jsonb;
-BEGIN
-    IF family='PEOPLE' THEN
-        action:=command->'act'->>'kind';
-        IF action NOT IN ('people.register','people.admit','people.provisionOwner','people.setProfile') THEN RETURN '[]'::jsonb; END IF;
-        owner_kind:='ACTOR_PROFILE'; owner_id:=(command->>'targetActorId')::uuid; purpose:='PROFILE';
-        IF action<>'people.setProfile' THEN refs:='[1]'::jsonb; END IF;
-    ELSE
-        owner_kind:='CASE';owner_id:=(command->>'caseId')::uuid;purpose:=family;
-        IF (family='CASE' AND command->>'act'='case.erase') OR (family='NOTE' AND command->>'act'='note.remove') THEN RETURN '[]'::jsonb; END IF;
-        IF family='REMINDER' AND command->>'act'='reminder.completeAndPlanNext' THEN refs:='[0,1]'::jsonb; END IF;
-    END IF;
-    RETURN jsonb_build_array(jsonb_build_object('ordinal',0,'ownerKind',owner_kind,'ownerId',owner_id,'purpose',purpose,'effects',refs));
-END;
-$$;
-
--- Immutable rows stay immutable for the schema owner too. The trusted owner can disable guards,
--- but runtime credentials have only the protected complete-append routine, never direct INSERT.
 CREATE FUNCTION claimcore.immutable_ledger_row()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN RAISE EXCEPTION 'accepted operation structure is immutable' USING ERRCODE='CC003'; END;
@@ -284,7 +175,9 @@ CREATE TRIGGER effects_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_effect
 CREATE FUNCTION claimcore.new_operation_child()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN
-    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger root WHERE root.sequence=NEW.operation_sequence AND root.xmin=pg_current_xact_id()::xid) THEN
+    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger root CROSS JOIN claimcore.ledger_head head
+                  WHERE head.singleton AND root.sequence=NEW.operation_sequence
+                    AND root.sequence=head.sequence+1 AND root.previous_hash=head.entry_hash) THEN
         RAISE EXCEPTION 'accepted operations cannot acquire new children' USING ERRCODE='CC003';
     END IF;
     RETURN NEW;
@@ -293,17 +186,39 @@ $$;
 CREATE TRIGGER effects_insert_guard BEFORE INSERT ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
 CREATE TRIGGER compartments_insert_guard BEFORE INSERT ON claimcore.ledger_compartments FOR EACH ROW EXECUTE FUNCTION claimcore.new_operation_child();
 
+CREATE FUNCTION claimcore.part_revision_chain()
+RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE prior claimcore.ledger_effects%ROWTYPE;
+BEGIN
+    SELECT * INTO prior FROM claimcore.ledger_effects WHERE part_kind=NEW.part_kind AND part_id=NEW.part_id ORDER BY revision DESC LIMIT 1;
+    IF FOUND THEN
+        IF NEW.revision<>prior.revision+1 OR NEW.operation_sequence<=prior.operation_sequence THEN
+            RAISE EXCEPTION 'part revision must immediately follow its predecessor' USING ERRCODE='CC004',CONSTRAINT='part_revision_chain';
+        END IF;
+        IF (NEW.aggregate_kind,NEW.aggregate_id) IS DISTINCT FROM (prior.aggregate_kind,prior.aggregate_id) THEN
+            RAISE EXCEPTION 'a part cannot change its aggregate' USING ERRCODE='CC004',CONSTRAINT='part_aggregate_owner';
+        END IF;
+    ELSIF NEW.revision<>1 THEN
+        RAISE EXCEPTION 'a part starts at revision one' USING ERRCODE='CC004',CONSTRAINT='part_revision_chain';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER part_revision_chain BEFORE INSERT ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.part_revision_chain();
+
 CREATE FUNCTION claimcore.compartment_guard()
 RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE last_reference integer;
 BEGIN
     IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'compartments are never removed' USING ERRCODE='CC003'; END IF;
+    SELECT COALESCE(max(effect_index),-1) INTO last_reference FROM claimcore.ledger_effects WHERE operation_sequence=OLD.operation_sequence AND compartment=OLD.ordinal;
     IF NEW.nonce IS NOT NULL OR NEW.payload IS NOT NULL OR
-       (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.purpose,NEW.effect_indices,NEW.commitment)
-       IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.purpose,OLD.effect_indices,OLD.commitment)
-       OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_id=OLD.owner_id
-             AND ((OLD.owner_kind='CASE' AND erased.subject_kind='CASE' AND erased.act='case.erase') OR (OLD.owner_kind='ACTOR_PROFILE' AND erased.subject_kind='PEOPLE' AND erased.act='people.eraseProfile'))
-             AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,OLD.effect_indices[cardinality(OLD.effect_indices)]))
-    THEN RAISE EXCEPTION 'private contents clear only under accepted owner erasure' USING ERRCODE='CC003'; END IF;
+       (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.commitment)
+       IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.commitment)
+       OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.erases_kind=OLD.owner_kind AND erased.erases_id=OLD.owner_id
+                     AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,last_reference)) THEN
+        RAISE EXCEPTION 'private contents clear only under a later accepted owner erasure' USING ERRCODE='CC003';
+    END IF;
     RETURN NEW;
 END;
 $$;
@@ -312,17 +227,35 @@ CREATE TRIGGER compartments_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_c
 
 CREATE FUNCTION claimcore.complete_operation()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE root claimcore.ledger%ROWTYPE; actual jsonb; required jsonb; root_sequence bigint;
+DECLARE root claimcore.ledger%ROWTYPE; root_sequence bigint; first_effect claimcore.ledger_effects%ROWTYPE; n integer; ordinals integer[];
 BEGIN
     IF TG_TABLE_NAME='ledger' THEN root_sequence:=NEW.sequence; ELSE root_sequence:=NEW.operation_sequence; END IF;
     SELECT * INTO STRICT root FROM claimcore.ledger WHERE sequence=root_sequence;
-    required:=claimcore.operation_effects(root.command,root.operation_id,root.actor_id,root.sequence);
-    SELECT jsonb_agg(descriptor ORDER BY effect_index) INTO actual FROM claimcore.ledger_effects WHERE operation_sequence=root.sequence;
-    IF actual IS DISTINCT FROM required OR (SELECT array_agg(effect_index ORDER BY effect_index) FROM claimcore.ledger_effects WHERE operation_sequence=root.sequence) IS DISTINCT FROM ARRAY(SELECT generate_series(0,jsonb_array_length(required)-1)) THEN
-        RAISE EXCEPTION 'operation effects are not a complete closed sequence' USING ERRCODE='CC004';
+    IF EXISTS(SELECT 1 FROM claimcore.ledger_head head WHERE head.singleton AND
+              (root.sequence>head.sequence OR (root.sequence=head.sequence AND root.entry_hash<>head.entry_hash))) THEN
+        RAISE EXCEPTION 'operation must close the committed head extension' USING ERRCODE='CC004';
     END IF;
-    SELECT COALESCE(jsonb_agg(jsonb_build_object('ordinal',ordinal,'ownerKind',owner_kind,'ownerId',owner_id,'purpose',purpose,'effects',to_jsonb(effect_indices)) ORDER BY ordinal),'[]'::jsonb) INTO actual FROM claimcore.ledger_compartments WHERE operation_sequence=root.sequence;
-    IF actual IS DISTINCT FROM claimcore.operation_compartments(root.command) THEN RAISE EXCEPTION 'operation compartments do not close' USING ERRCODE='CC004'; END IF;
+    SELECT count(*),array_agg(effect_index ORDER BY effect_index) INTO n,ordinals FROM claimcore.ledger_effects WHERE operation_sequence=root_sequence;
+    IF n NOT BETWEEN 1 AND 50 OR ordinals IS DISTINCT FROM ARRAY(SELECT generate_series(0,n-1)) THEN
+        RAISE EXCEPTION 'operation effects are not a complete ordered sequence' USING ERRCODE='CC004';
+    END IF;
+    SELECT * INTO STRICT first_effect FROM claimcore.ledger_effects WHERE operation_sequence=root_sequence AND effect_index=0;
+    IF EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.operation_sequence=root_sequence
+              AND (e.aggregate_kind<>root.aggregate_kind OR e.aggregate_id<>first_effect.aggregate_id)) THEN
+        RAISE EXCEPTION 'operation effects must share their aggregate' USING ERRCODE='CC004';
+    END IF;
+    SELECT count(*),array_agg(ordinal ORDER BY ordinal) INTO n,ordinals FROM claimcore.ledger_compartments WHERE operation_sequence=root_sequence;
+    IF n>2 OR (n>0 AND ordinals IS DISTINCT FROM ARRAY(SELECT generate_series(0,n-1))) THEN
+        RAISE EXCEPTION 'compartment ordinals are not contiguous' USING ERRCODE='CC004';
+    END IF;
+    IF EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.operation_sequence=root_sequence
+              AND (c.owner_id<>first_effect.aggregate_id OR c.owner_kind<>CASE root.aggregate_kind WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END)) THEN
+        RAISE EXCEPTION 'compartment owner does not bind to its aggregate' USING ERRCODE='CC004';
+    END IF;
+    IF EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.operation_sequence=root_sequence AND e.erases_kind IS NOT NULL
+              AND (e.erases_id<>first_effect.aggregate_id OR e.erases_kind<>CASE root.aggregate_kind WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END)) THEN
+        RAISE EXCEPTION 'erasure owner does not bind to its aggregate' USING ERRCODE='CC004';
+    END IF;
     RETURN NULL;
 END;
 $$;
@@ -330,67 +263,62 @@ CREATE CONSTRAINT TRIGGER complete_operation_root AFTER INSERT ON claimcore.ledg
 CREATE CONSTRAINT TRIGGER complete_operation_effect AFTER INSERT ON claimcore.ledger_effects DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
 CREATE CONSTRAINT TRIGGER complete_operation_compartment AFTER INSERT ON claimcore.ledger_compartments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION claimcore.complete_operation();
 
-CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_command jsonb,p_effects jsonb,p_compartments jsonb)
+CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_aggregate_kind text,p_task text,p_structure jsonb,p_effects jsonb,p_compartments jsonb)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE head claimcore.ledger_head%ROWTYPE; expected jsonb; supplied jsonb; item jsonb; n integer;
+DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>4 OR jsonb_typeof(p_effects)<>'array' OR jsonb_typeof(p_compartments)<>'array' THEN RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004'; END IF;
-    expected:=claimcore.operation_effects(p_command,p_operation,p_actor,p_sequence);
-    IF jsonb_array_length(p_effects)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation effects' USING ERRCODE='CC004'; END IF;
-    FOR n IN 0..jsonb_array_length(expected)-1 LOOP
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>5
+       OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
+       OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
+       OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
+        RAISE EXCEPTION 'invalid operation envelope' USING ERRCODE='CC004';
+    END IF;
+    INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,operation_id,actor_id,recorded_at,business_date,aggregate_kind,task,structure)
+        VALUES(p_sequence,p_previous_hash,p_hash,p_format,p_operation,p_actor,p_recorded_at,p_business_date,p_aggregate_kind,p_task,p_structure);
+    FOR n IN 0..jsonb_array_length(p_effects)-1 LOOP
         item:=p_effects->n;
-        IF NOT claimcore.json_shape(item,ARRAY['index','descriptor']) OR item->'index' IS DISTINCT FROM to_jsonb(n) OR item->'descriptor' IS DISTINCT FROM expected->n THEN RAISE EXCEPTION 'effect order or reference mismatch' USING ERRCODE='CC004'; END IF;
-    END LOOP;
-    expected:=claimcore.operation_compartments(p_command);
-    IF jsonb_array_length(p_compartments)<>jsonb_array_length(expected) THEN RAISE EXCEPTION 'incomplete operation compartments' USING ERRCODE='CC004'; END IF;
-    FOR n IN 0..jsonb_array_length(expected)-1 LOOP
-        item:=p_compartments->n;
-        IF NOT claimcore.json_shape(item,ARRAY['ordinal','ownerKind','ownerId','purpose','effects','commitment','nonce','payload'])
-           OR item-ARRAY['commitment','nonce','payload'] IS DISTINCT FROM expected->n
-           OR COALESCE(item->>'commitment','') !~ '^[0-9a-f]{64}$' OR COALESCE(item->>'nonce','') !~ '^[0-9a-f]{64}$'
-           OR jsonb_typeof(item->'commitment')<>'string' OR jsonb_typeof(item->'nonce')<>'string' OR jsonb_typeof(item->'payload')<>'string'
-           OR length(COALESCE(item->>'payload','')) NOT BETWEEN 2 AND 65536 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]'
-        THEN RAISE EXCEPTION 'invalid owner compartment structure' USING ERRCODE='CC004'; END IF;
-    END LOOP;
-    INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,installation_format,operation_id,actor_id,recorded_at,business_date,command) VALUES(p_sequence,p_previous_hash,p_hash,p_format,p_operation,p_actor,p_recorded_at,p_business_date,p_command);
-    FOR item IN SELECT value FROM jsonb_array_elements(p_effects) LOOP
-        INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,descriptor) VALUES(p_sequence,(item->>'index')::integer,item->'descriptor');
+        IF jsonb_typeof(item) IS DISTINCT FROM 'object' OR NOT item ?& ARRAY['aggregate','part','revision']
+           OR item-ARRAY['aggregate','part','revision','naturalKey','retained','erases','compartment']<>'{}'::jsonb
+           OR NOT claimcore.json_shape(item->'aggregate',ARRAY['kind','id']) OR NOT claimcore.json_shape(item->'part',ARRAY['kind','id'])
+           OR jsonb_typeof(item->'revision') IS DISTINCT FROM 'number' OR item->>'revision' !~ $integer$\A[0-9]+\Z$integer$
+           OR (item ? 'erases' AND NOT claimcore.json_shape(item->'erases',ARRAY['kind','id'])) THEN
+            RAISE EXCEPTION 'invalid part structure' USING ERRCODE='CC004';
+        END IF;
+        INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,aggregate_kind,aggregate_id,part_kind,part_id,revision,natural_key,retained,erases_kind,erases_id,compartment)
+        VALUES(p_sequence,n,item->'aggregate'->>'kind',(item->'aggregate'->>'id')::uuid,item->'part'->>'kind',(item->'part'->>'id')::uuid,(item->>'revision')::bigint,item->>'naturalKey',item->'retained',item->'erases'->>'kind',(item->'erases'->>'id')::uuid,(item->>'compartment')::integer);
     END LOOP;
     FOR item IN SELECT value FROM jsonb_array_elements(p_compartments) LOOP
-        IF item->>'ownerKind'='CASE' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.subject_kind='CASE' AND erased.subject_id=(item->>'ownerId')::uuid AND erased.act='case.erase') THEN RAISE EXCEPTION 'erased case cannot acquire private contents' USING ERRCODE='CC004'; END IF;
-        INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,purpose,effect_indices,commitment,nonce,payload)
-        VALUES(p_sequence,(item->>'ordinal')::integer,item->>'ownerKind',(item->>'ownerId')::uuid,item->>'purpose',ARRAY(SELECT value::integer FROM jsonb_array_elements_text(item->'effects')),decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
+        IF NOT claimcore.json_shape(item,ARRAY['ordinal','owner','commitment','nonce','payload']) OR NOT claimcore.json_shape(item->'owner',ARRAY['kind','id'])
+           OR jsonb_typeof(item->'ordinal') IS DISTINCT FROM 'number' OR item->>'ordinal' !~ $integer$\A[0-9]+\Z$integer$
+           OR jsonb_typeof(item->'commitment') IS DISTINCT FROM 'string' OR item->>'commitment' !~ $hash$\A[0-9a-f]{64}\Z$hash$
+           OR jsonb_typeof(item->'nonce') IS DISTINCT FROM 'string' OR item->>'nonce' !~ $hash$\A[0-9a-f]{64}\Z$hash$
+           OR jsonb_typeof(item->'payload') IS DISTINCT FROM 'string' OR length(item->>'payload') NOT BETWEEN 2 AND 65536 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]' THEN
+            RAISE EXCEPTION 'invalid owner compartment' USING ERRCODE='CC004';
+        END IF;
+        IF item->'owner'->>'kind'='FAMILY' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind=item->'owner'->>'kind' AND e.erases_id=(item->'owner'->>'id')::uuid AND e.operation_sequence<p_sequence) THEN
+            RAISE EXCEPTION 'a cleared permanent owner cannot acquire private values' USING ERRCODE='CC004';
+        END IF;
+        INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload)
+        VALUES(p_sequence,(item->>'ordinal')::integer,item->'owner'->>'kind',(item->'owner'->>'id')::uuid,decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'payload','hex'));
     END LOOP;
     UPDATE claimcore.ledger_head SET sequence=p_sequence,entry_hash=p_hash WHERE singleton;
 END;
 $$;
 
-CREATE FUNCTION claimcore.erase_case_payload(target_case_id uuid)
-RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE erased bigint;
-BEGIN
-    IF NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects WHERE subject_kind='CASE' AND subject_id=target_case_id AND act='case.erase') THEN RAISE EXCEPTION 'case has no accepted erasure' USING ERRCODE='CC002'; END IF;
-    UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='CASE' AND owner_id=target_case_id AND payload IS NOT NULL;
-    GET DIAGNOSTICS erased=ROW_COUNT;
-    UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL WHERE case_id=target_case_id;
-    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
-    UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
-    UPDATE claimcore.notes SET text=NULL WHERE case_id=target_case_id;
-    RETURN erased;
-END;
-$$;
-CREATE FUNCTION claimcore.erase_profile_payload(target_actor_id uuid)
+-- An old eraser cannot clear private data accepted after its frontier.
+CREATE FUNCTION claimcore.clear_owner(target_kind text,target_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE frontier bigint; erase_index integer; erased bigint;
 BEGIN
-    SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects WHERE subject_kind='PEOPLE' AND subject_id=target_actor_id AND act='people.eraseProfile' ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
-    IF frontier IS NULL THEN RAISE EXCEPTION 'actor has no accepted profile erasure' USING ERRCODE='CC002'; END IF;
-    UPDATE claimcore.ledger_compartments SET payload=NULL,nonce=NULL WHERE owner_kind='ACTOR_PROFILE' AND owner_id=target_actor_id AND (operation_sequence,effect_indices[cardinality(effect_indices)])<(frontier,erase_index) AND payload IS NOT NULL;
+    SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects
+      WHERE erases_kind=target_kind AND erases_id=target_id ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
+    IF frontier IS NULL THEN RAISE EXCEPTION 'owner has no accepted erasure' USING ERRCODE='CC002'; END IF;
+    UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL
+      WHERE c.owner_kind=target_kind AND c.owner_id=target_id AND c.payload IS NOT NULL
+        AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(frontier,erase_index);
     GET DIAGNOSTICS erased=ROW_COUNT;
-    UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=target_actor_id
-       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects later WHERE later.subject_kind='PEOPLE' AND later.act='people.setProfile' AND later.subject_id=target_actor_id AND (later.operation_sequence,later.effect_index)>(frontier,erase_index));
     RETURN erased;
 END;
 $$;
@@ -472,6 +400,7 @@ CREATE TABLE claimcore.actors (
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     -- The operation ID of the people entry that registered the actor.
     actor_id uuid PRIMARY KEY CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
+    principal_key text COLLATE "C" NOT NULL UNIQUE CHECK (principal_key ~ $key$\A[0-9a-f]{64}\Z$key$),
     principal_kind text NOT NULL CHECK (principal_kind ~ '^[A-Z][A-Z_]{0,39}$'),
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
@@ -480,8 +409,7 @@ CREATE TABLE claimcore.actors (
     contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
     display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
     contact_search text CHECK (contact_search IS NULL OR (octet_length(contact_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(contact_search))),
-    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL))),
-    UNIQUE (issuer, principal_kind, subject)
+    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
 );
 
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
@@ -489,6 +417,7 @@ CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public
 
 -- Bounded authentication hints, never ledger evidence. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (
+    principal_key text COLLATE "C" PRIMARY KEY CHECK (principal_key ~ $key$\A[0-9a-f]{64}\Z$key$),
     principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN','SERVICE')),
     issuer text COLLATE "C" NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text COLLATE "C" NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
@@ -496,10 +425,9 @@ CREATE TABLE claimcore.access_request (
     last_seen timestamptz NOT NULL CHECK (last_seen>=first_seen),
     name text CHECK (name IS NULL OR (char_length(name) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(name))),
     preferred_username text CHECK (preferred_username IS NULL OR (char_length(preferred_username) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(preferred_username))),
-    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email))),
-    PRIMARY KEY (issuer,principal_kind,subject)
+    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email)))
 );
-CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,issuer,principal_kind,subject);
+CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,principal_key);
 
 
 ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
@@ -596,14 +524,13 @@ GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments TO claimcore_runtime;
-GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,jsonb,jsonb,jsonb) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb) TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
-GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
-GRANT EXECUTE ON FUNCTION claimcore.erase_profile_payload(uuid) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
 

@@ -1,4 +1,6 @@
-import { requestEndpoint, resultNotice } from "../../api/service";
+import { apiEndpoints, requestEndpoint, resultNotice } from "../../api/service";
+import { hasDocumentSubject } from "../../protocol/types";
+
 import { isDisclosureRefused } from "../../api/outcomes";
 import type {
   OperationAction,
@@ -31,7 +33,7 @@ const observe = async (
       return { kind: "failed", notice: { kind: "local", reason: "incomplete" }, refused: false };
     }
     const result = await requestEndpoint(
-      "reminder.get",
+      apiEndpoints.reminderGet,
       effect.identity.credential,
       { target: input.binding.target, reminderId: input.binding.reminderId },
       signal,
@@ -60,7 +62,7 @@ export const readConflict = async (
   const common = { identity: effect.identity, conflictId: effect.conflictId };
   try {
     const result = await requestEndpoint(
-      "case.get",
+      apiEndpoints.caseGet,
       effect.identity.credential,
       { target: effect.source.prepared.input.binding.target },
       controller.signal,
@@ -73,7 +75,16 @@ export const readConflict = async (
         refused: isDisclosureRefused(result),
       };
     }
-    const observation = await observe(effect, result.value.outcome.document, controller.signal);
+    const { document } = result.value.outcome;
+    if (!hasDocumentSubject(document, "CASE")) {
+      return {
+        type: "CONFLICT_READ_FAILED",
+        ...common,
+        notice: { kind: "local", reason: "incomplete" },
+        refused: false,
+      };
+    }
+    const observation = await observe(effect, document, controller.signal);
     return observation.kind === "observed"
       ? { type: "CONFLICT_OBSERVED", ...common, value: observation.value }
       : {

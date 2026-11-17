@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-17
+
+- Use a fresh installation for format 5; format 4 databases have no migration or cross-version reader. Use fresh CLI state for recovery journal format 4.
+- Rebuild integrations for shape-based bindings; case.open now authors field:caseReference in inputs; case/person creation has no target selector.
+- Regenerate HUMAN clients for one document/read grammar, generic affordances and links, scalar seeds, and recommendation/context regions replacing primary flags.
+- Acquire collection rows from declared minimums/defaults; choicesWhen is a condition array with Core restriction messages, alongside contextual choices and lookups.
+- Post semantic input:principal.* keys to people.requests.dismiss; the earlier kind, issuer and subject members are rejected.
+- Update DATA history consumers for generic part subjects and change descriptions; payment changes can emit both case and payment entries.
+- Regenerate DATA clients for nullable receipt disposition and DISPOSITION timeline changes; authorized receipts/history retain each operation's exact stewardship reason.
+- People history combines identity, profile, enablement and roles in one person change description with current private-data availability.
+- Application includes PostgreSQL storage, reads and administration; the Postgres project and IReadTx/IWriteTx interfaces are removed.
+- Reply kinds belong to Application.Contracts; CLI maps exit codes. Production Knip and test ownership checks follow the current boundaries.
+- Accepted case receipts use the available width and place Close above the facts, including narrow and RTL layouts.
+- Tasks own declarations, checks and decisions; case-family and person aggregates share execution, replay, verification and reconstruction.
+- Live family decisions skip unrelated note/reminder text; selected values supply review, and child projections update only changed parts.
+- Format 5 retains opaque task/input/effect structure with owner compartments; SQL enforces revision chains, ownership and authorized clearing without business task lists.
+- Core supplies business wording and action placement; browser and CLI acquire operations from declarations and controls instead of task branches.
+- Business catalogs are current in all nine languages; translated changes remain AI-assisted and require human linguistic review.
+- Update OpenAPI, Testcontainers, user-event, oxlint and minimatch dependencies; refresh the Keycloak test image digest.
+
 ## [0.18.0] - 2026-11-15
 
 - Fresh installation is required for InstallationFormat 4; stored act identities now use dotted task IDs.

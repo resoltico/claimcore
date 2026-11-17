@@ -24,7 +24,7 @@ module internal TaskArguments =
         operands
         (problems: ResizeArray<UsageError>)
         =
-        let task = TaskId.Operation kind
+        let task = TaskId.token kind
         let declarations = CommandGrammar.inputs task
         let mutable remaining = operands
 
@@ -121,10 +121,11 @@ module internal TaskArguments =
                                                     target InputTarget.ExpectedFamilySequence
                                                 ]
                                             || (input.Name = target InputTarget.ExpectedRevision
-                                                && (match kind with
-                                                    | ActKind.People people ->
-                                                        PeopleActKind.targetsExistingActor people
-                                                    | _ -> false))
+                                                && (TaskRouting.operationDeclaration kind).Target =
+                                                    ActSubject.People
+                                                && not
+                                                    (TaskRouting.operationDeclaration kind)
+                                                        .Creates)
                                         then
                                             1L
                                         else
@@ -145,6 +146,17 @@ module internal TaskArguments =
 
                         input.Name, scalar))
             |> Map.ofList
+
+        for input in declarations do
+            match input.Name with
+            | TaskInputId.Target(InputTarget.Field field) when values.ContainsKey input.Name ->
+                let field = BusinessField.describe field
+
+                match field.Pairs with
+                | Some paired when not (values.ContainsKey(target (InputTarget.Field paired))) ->
+                    problems.Add(UsageError.MissingOption(flag (target (InputTarget.Field paired))))
+                | _ -> ()
+            | _ -> ()
 
         remaining |> List.iter (UsageError.ExtraOperand >> problems.Add)
 
@@ -173,22 +185,19 @@ module internal TaskArguments =
             |> CaseSelector.Reference
 
         let binding =
-            match ActKind.subject kind with
+            match (TaskRouting.operationDeclaration kind).Target with
             | ActSubject.Case ->
-                let initial =
-                    match kind with
-                    | ActKind.Case kind -> (CaseActKind.describe kind).Revision = RevisionInput.New
-                    | _ -> false
+                let declaration = TaskRouting.operationDeclaration kind
 
-                OperationBinding.Case(
-                    selection (),
-                    (if initial then
-                         Some 0L
-                     else
-                         revision InputTarget.ExpectedRevision),
-                    uuid (target InputTarget.PaymentId),
-                    revision InputTarget.ExpectedFamilySequence
-                )
+                if declaration.Creates then
+                    OperationBinding.CaseNew(Some 0L)
+                else
+                    OperationBinding.Case(
+                        selection (),
+                        revision InputTarget.ExpectedRevision,
+                        uuid (target InputTarget.PaymentId),
+                        revision InputTarget.ExpectedFamilySequence
+                    )
             | ActSubject.Work ->
                 OperationBinding.Work(selection (), revision InputTarget.ExpectedWorkRevision)
             | ActSubject.Note ->
@@ -202,13 +211,7 @@ module internal TaskArguments =
             | ActSubject.People ->
                 OperationBinding.People(
                     uuid TaskInputId.ActorId,
-                    if
-                        PeopleActKind.targetsExistingActor (
-                            match kind with
-                            | ActKind.People kind -> kind
-                            | _ -> failwith "People task"
-                        )
-                    then
+                    if not (TaskRouting.operationDeclaration kind).Creates then
                         revision InputTarget.ExpectedRevision
                     else
                         Some 0L
@@ -345,6 +348,7 @@ module internal TaskArguments =
 
         let binding =
             match draft.Binding with
+            | OperationBinding.CaseNew revision -> version revision
             | OperationBinding.Case(target, revision, payment, family) ->
                 selected target
                 :: (version revision
@@ -366,10 +370,13 @@ module internal TaskArguments =
         JsonValue.Object(
             id "operationId" draft.OperationId
             @ [
-                "task", JsonValue.String(ActKind.token draft.Task)
+                "task", JsonValue.String(TaskId.token draft.Task)
                 "binding",
                 JsonValue.Object(
-                    ("kind", JsonValue.String(ActSubject.token (ActKind.subject draft.Task)))
+                    ("kind",
+                     JsonValue.String(
+                         ActSubject.token ((TaskRouting.operationDeclaration draft.Task).Target)
+                     ))
                     :: binding
                 )
                 "inputs", inputs draft.Inputs

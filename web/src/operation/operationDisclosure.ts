@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../api/service";
 import { sameOwnerScope } from "../protocol/ownerScope";
 import { isCurrentCase } from "../protocol/types";
 import type {
@@ -35,7 +36,7 @@ export const beginCaseRead = (
   caseId: string,
 ): DisclosedResource => ({
   ...resource,
-  read: { resource: "case.get", identity, query: { target: { kind: "ID", caseId } } },
+  read: { resource: apiEndpoints.caseGet, identity, query: { target: { kind: "ID", caseId } } },
   notice: null,
 });
 export const beginConflictRead = (
@@ -56,7 +57,7 @@ export const observeCase = (
   const { read } = resource;
   if (
     !ownsDisclosure(resource, action.identity) ||
-    read?.resource !== "case.get" ||
+    read?.resource !== apiEndpoints.caseGet ||
     read.identity.id !== action.identity.id
   ) {
     return resource;

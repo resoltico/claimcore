@@ -1,3 +1,5 @@
+import { apiEndpoints } from "../../api/service";
+import { isOperationAffordance } from "../../operation/affordances";
 import type {
   RegionRow,
   CaseSelector,
@@ -14,7 +16,7 @@ import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 
-const select = (reply: HumanResponseByEndpoint["reminder.list"]) => {
+const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.reminderList]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -54,15 +56,15 @@ export const ReminderList = ({
     }),
     [filter, target],
   );
-  const result = useEndpointPage<"reminder.list", RegionRow, ObservedReminderPage>(
-    "reminder.list",
+  const result = useEndpointPage<typeof apiEndpoints.reminderList, RegionRow, ObservedReminderPage>(
+    apiEndpoints.reminderList,
     input,
     select,
     onDisclosureRefused,
   );
   return (
     <section className="reminder-list" aria-busy={result.loading}>
-      {target === undefined ? <p>{p.text("ui.reminderQueueHint")}</p> : null}
+      {target === undefined ? <p>{p.text("label.reminderQueueHint")}</p> : null}
       {result.message === null ? null : (
         <p role="alert">
           <NoticeView value={result.message} />
@@ -70,7 +72,7 @@ export const ReminderList = ({
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {result.items.length === 0 && !result.loading && result.message === null ? (
-        <p>{p.text("ui.noReminders")}</p>
+        <p>{p.text("label.noReminders")}</p>
       ) : null}
       <PageTables
         views={result.views}
@@ -79,7 +81,7 @@ export const ReminderList = ({
           ? {}
           : {
               onAction: (action, _row, originId) => {
-                if (action.task !== "people.requests.dismiss") {
+                if (isOperationAffordance(action)) {
                   onAct(action, originId);
                 }
               },

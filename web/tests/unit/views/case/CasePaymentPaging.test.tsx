@@ -6,7 +6,7 @@ import { requestText } from "../../../support/transport-response.fixtures";
 import { current as source } from "../../../support/operation-form.fixtures";
 import { workBasis } from "../../../support/inputs";
 import type { CurrentCase } from "../../../../src/protocol/types";
-import type { HumanReadDocument_case_payments, Region } from "@contracts/client";
+import type { HumanDocument, Region } from "@contracts/client";
 import { CasePayments } from "../../../../src/views/case/CasePayments";
 type Handle = { paymentId: string; canRemove: boolean };
 const ids = [
@@ -90,7 +90,7 @@ const reply = (
   revision = 7,
   disclosure: "CURRENT" | "ERASED" = "CURRENT",
 ) => {
-  const document: HumanReadDocument_case_payments = {
+  const document: HumanDocument = {
     screen: {
       regions: disclosure === "ERASED" ? [] : [table(handles, "USD", 41)],
     },
@@ -199,7 +199,12 @@ it("expands a bounded preview using Core cursors and binds older-row removal to 
       name: "Remove payment entry",
     })[0]!,
   );
-  expect(onAct).toHaveBeenCalledWith("case.removePayment", older);
+  expect(onAct).toHaveBeenCalledWith(
+    expect.objectContaining<{ task: string; binding: unknown }>({
+      task: "case.removePayment",
+      binding: expect.objectContaining({ paymentId: older }),
+    }),
+  );
   expect(onChanged).not.toHaveBeenCalled();
 });
 it("masks earlier payment rows on an erased continuation and refreshes the case disclosure", async () => {

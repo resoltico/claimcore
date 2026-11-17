@@ -1,10 +1,14 @@
-import { grantFields } from "./grantTargetDraft";
-import type {
-  OperationBinding,
-  OperationSubmission,
-  OperationTaskId,
-  OperationTaskDefinition,
+import {
+  taskDefinitions,
+  type Affordance,
+  type RequestByEndpoint,
+  type OperationBinding,
+  type OperationSubmission,
+  type OperationTaskId,
+  type OperationTaskDefinition,
 } from "@contracts/client";
+import { grantFields } from "./grantTargetDraft";
+
 import { operationTask, taskInput } from "../protocol/taskCatalog";
 import { isFormCollection, type FormValues } from "../protocol/forms";
 
@@ -61,15 +65,26 @@ export const assembleTask = (
   const declaration = operationTask(task);
   const collection = authoredCollections(declaration, values);
   const inputs = { ...authoredScalars(declaration, values), ...collection.inputs };
-  const selected =
-    binding.kind === "CASE" && task === "case.open"
-      ? {
-          ...binding,
-          target: { kind: "REFERENCE", caseReference: values["field:caseReference"] ?? "" },
-        }
-      : binding;
   // Acquisition builds a declared envelope; Core performs closed admission and business validation.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Generic declaration acquisition preserves tokens; Core owns admission of the envelope.
-  const command = { operationId, task, binding: selected, inputs } as OperationSubmission;
+  const command = { operationId, task, binding, inputs } as OperationSubmission;
   return { command, submittedRows: collection.submittedRows };
+};
+
+/** Nonledger controls use the same declared input identities as their endpoint request. */
+export const assembleCommand = (action: Affordance) => {
+  const definition = taskDefinitions.find(
+    (task) => task.kind === "COMMAND" && task.id === action.task,
+  );
+  if (definition === undefined || definition.kind !== "COMMAND") {
+    return null;
+  }
+  const values = Object.fromEntries(
+    definition.inputs
+      .filter((input) => input.source === "AUTHORED")
+      .map((input) => [input.id, action.seeds[input.id]]),
+  );
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Core declares the command's closed input keys; its endpoint independently admits the supplied values.
+  const input = values as RequestByEndpoint[typeof definition.endpoint];
+  return { endpoint: definition.endpoint, input };
 };

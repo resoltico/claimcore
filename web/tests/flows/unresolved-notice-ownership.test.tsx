@@ -3,7 +3,7 @@ import { RecoveryProvider } from "../../src/recovery/RecoveryContext";
 import userEvent from "@testing-library/user-event";
 import { useEndpointCache } from "../../src/hooks/EndpointProvider";
 import { navigate } from "../../src/routing/navigation";
-import type { Screen, HumanReceiptDocument } from "@contracts/client";
+import type { Screen, HumanDocument } from "@contracts/client";
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -264,7 +264,7 @@ const receiptView: Screen = {
     },
   ],
 };
-const savedReceipt: HumanReceiptDocument = {
+const savedReceipt: HumanDocument = {
   screen: receiptView,
   subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
   actions: [],

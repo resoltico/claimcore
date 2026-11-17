@@ -1,9 +1,10 @@
+import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
 import {
   caseSubject,
   caseDocumentInput,
   caseIdentityScreen,
 } from "../support/case-document.fixtures";
-import { operationAffordance } from "../support/affordances.fixtures";
+
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
@@ -42,24 +43,27 @@ const disclosureScreen = (caption: string): Screen => ({
     },
   ],
 });
-const before = caseDocumentInput(
-  {
-    actions: [
-      operationAffordance(
-        "case.close",
-        {
-          kind: "CASE",
-          target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-          expectedRevision: 1,
-        },
-        {},
-        undefined,
-        {},
-      ),
-    ],
-    history: "NONE",
-  },
-  disclosureScreen("PRIOR_CASE_DISCLOSURE_CANARY"),
+const before = withRecommendation(
+  caseDocumentInput(
+    {
+      actions: [
+        operationAffordance(
+          "case.close",
+          {
+            kind: "CASE",
+            target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+            expectedRevision: 1,
+          },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      history: "NONE",
+    },
+    disclosureScreen("PRIOR_CASE_DISCLOSURE_CANARY"),
+  ),
+  "case.close",
 );
 const after = caseDocumentInput(
   {

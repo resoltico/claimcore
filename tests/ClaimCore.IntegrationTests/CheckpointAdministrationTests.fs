@@ -6,8 +6,13 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.Wire
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -34,11 +39,17 @@ let private checkpoints () =
         let older = administration.Head token |> sync
 
         let opened =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation (
-                    actRequest fixture 20 "CHECKPOINT" 0L (AuthoredCaseAct.Open Inputs.registration)
-                ))
+                (((request
+                    (fixture)
+                    (20)
+                    ("CHECKPOINT")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (DomainInputs.registration)
+                    )))))
                 token
             |> sync
             |> accepted
@@ -120,6 +131,7 @@ let private checkpoints () =
             maintenanceRefused <- true
 
         Expect.isTrue maintenanceRefused "Restore admission requires active maintenance"
+
         administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
 
         match administration.Rebuild(trusted, token) |> sync with

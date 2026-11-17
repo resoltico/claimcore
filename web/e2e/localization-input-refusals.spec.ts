@@ -148,10 +148,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await confirmReview(page);
     await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.locator("#case-detail-title")).toBeVisible();
-    await expect(page.locator(".success-toast")).toBeVisible();
+    await expect(page.locator(".accepted-receipt")).toBeVisible();
     await expectCaseReadsSettled(page);
     await expectReceiptReadSettled(page);
-    await expect(page.locator(".success-toast")).toContainText("Case closed.");
+    await expect(page.locator(".accepted-receipt")).toContainText("Case closed.");
     await startAct(page, "case.correct", "en");
     await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);

@@ -15,7 +15,7 @@ open ClaimCore.TestSupport
 
 let private keys group =
     match group with
-    | Some value -> Inputs.fieldKeys (RecordGroup.token value)
+    | Some value -> DomainInputs.fieldKeys (RecordGroup.token value)
     | None ->
         CaseFields.declarations
         |> List.filter (fun field -> field.Group.IsNone && field.Section.IsNone)
@@ -28,17 +28,7 @@ let rec private members definitions =
     | Schema.OneOf([ schema; Schema.Null ], _) -> members definitions schema
     | _ -> failtest "Expected an object codec."
 
-let private expectGroup group (codec: Codec<'T>) =
-    Expect.equal
-        (members codec.Definitions codec.Schema)
-        (keys group)
-        "Codec members follow the record declaration"
-
 let private codecs () =
-    expectGroup (Some RecordGroup.Registration) ClaimCore.RecordFormat.CanonicalInputs.registration
-    expectGroup (Some RecordGroup.Decision) ClaimCore.RecordFormat.CanonicalInputs.decision
-    expectGroup (Some RecordGroup.Payment) ClaimCore.RecordFormat.CanonicalInputs.payment
-
     let actual =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
@@ -106,7 +96,7 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        Inputs.fieldKeys (RecordGroup.token group)
+        DomainInputs.fieldKeys (RecordGroup.token group)
         |> List.map (fun key -> Vocabulary.tryParse BusinessField.vocabulary key |> Option.get)
 
     let fields inputs =
@@ -119,20 +109,19 @@ let private actGroups () =
 
     for kind, group in
         [
-            CaseActKind.Open, RecordGroup.Registration
-            CaseActKind.AmendRegistration, RecordGroup.Registration
-            CaseActKind.Decide, RecordGroup.Decision
-            CaseActKind.RecordPayment, RecordGroup.Payment
+            (TaskId.ofLiteral "case.open"), RecordGroup.Registration
+            (TaskId.ofLiteral "case.amendRegistration"), RecordGroup.Registration
+            (TaskId.ofLiteral "case.decide"), RecordGroup.Decision
+            (TaskId.ofLiteral "case.recordPayment"), RecordGroup.Payment
         ] do
-        let task = TaskDeclarations.describe (TaskId.Operation(ActKind.Case kind))
+        let task = TaskDeclarations.describe (TaskId.token kind)
 
         Expect.equal
             (fields task.Inputs)
             (expected group)
             "Semantic task inputs retain the authoritative business field order"
 
-    let correction =
-        TaskDeclarations.describe (TaskId.Operation(ActKind.Case CaseActKind.Correct))
+    let correction = TaskDeclarations.describe "case.correct"
 
     for group in [ RecordGroup.Registration; RecordGroup.Decision ] do
         let expected = expected group

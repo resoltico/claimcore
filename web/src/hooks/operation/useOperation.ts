@@ -1,5 +1,22 @@
-import { operationActions, type OperationAffordance } from "../../operation/affordances";
+import {
+  apiEndpoints,
+  service,
+  requestEndpoint,
+  isCurrentCase,
+  resultNotice,
+  type CurrentCase,
+  type ApiResult,
+  type ServiceResponse,
+  type OperationReceipt,
+} from "../../api/service";
+import {
+  documentActions,
+  isOperationAffordance,
+  operationActions,
+  type OperationAffordance,
+} from "../../operation/affordances";
 
+import { operationTask } from "../../protocol/taskCatalog";
 import { createDraft } from "../../operation/operationDraft";
 import { ownerScope, sameOwnerScope } from "../../protocol/ownerScope";
 import type { MutationLockChange } from "../useWorkspaceMutationLock";
@@ -19,16 +36,7 @@ import {
   type RecoveryJournal,
 } from "../../protocol/recoveryJournal";
 import { useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
-import {
-  service,
-  requestEndpoint,
-  isCurrentCase,
-  resultNotice,
-  type CurrentCase,
-  type ApiResult,
-  type ServiceResponse,
-  type OperationReceipt,
-} from "../../api/service";
+
 import { isDisclosureRefused } from "../../api/outcomes";
 import { mutationUncertain } from "../../protocol/delivery";
 import { prepareRequest } from "../../protocol/preparedRequest";
@@ -91,7 +99,6 @@ const initialBinding = (options: Options): OperationBinding => {
   if (options.subject === "CASE" && current === null) {
     return {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "" },
       expectedRevision: 0,
     };
   }
@@ -131,11 +138,11 @@ const suppliedAffordance = (options: Options, kind: string) => {
   const actions = [
     ...(options.affordance === undefined ? [] : [options.affordance]),
     ...(options.affordances ?? []),
-    ...(options.current?.actions ?? []),
+    ...(options.current === null ? [] : documentActions(options.current)),
   ];
   return actions.find(
     (action): action is OperationAffordance =>
-      action.task === kind && action.task !== "people.requests.dismiss",
+      action.task === kind && isOperationAffordance(action),
   );
 };
 const fresh = (
@@ -215,7 +222,10 @@ const identity = (options: Options, contextGeneration: number): EffectIdentity =
 const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
-type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
+type Reply = ApiResult<
+  | ServiceResponse<typeof apiEndpoints.operationExecute>
+  | ServiceResponse<typeof apiEndpoints.operationPreview>
+>;
 const completionNotice = (result: Reply): Notice => resultNotice(result);
 const completionUncertain = (
   effect: {
@@ -388,7 +398,7 @@ const readCaseDisclosure = async (
   reads.set(effect.identity.id, controller);
   try {
     const result = await requestEndpoint(
-      "case.get",
+      apiEndpoints.caseGet,
       effect.identity.credential,
       {
         target: {
@@ -716,7 +726,7 @@ const prepareValues = (
     mintOperationId(),
   );
   return {
-    prepared: prepareRequest("operation.execute", submission.command),
+    prepared: prepareRequest(apiEndpoints.operationExecute, submission.command),
     submittedRows: submission.submittedRows,
   };
 };
@@ -744,7 +754,7 @@ const reviewLatestDraft = (
       rebasedOperationBinding(
         conflict.source.prepared.input,
         conflict.latest.revision,
-        conflict.latest.current.actions,
+        documentActions(conflict.latest.current),
       ),
     );
     dispatch({
@@ -958,8 +968,13 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   !state.disclosed.refused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
 const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.actions.some((action) => action.task === "case.open" && action.blocked === null) ===
-  true;
+  requester?.actions.some(
+    (action) =>
+      isOperationAffordance(action) &&
+      operationTask(action.task).creates &&
+      operationTask(action.task).subject === "CASE" &&
+      action.blocked === null,
+  ) === true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
@@ -1117,7 +1132,7 @@ export const useOperation = (supplied: Options) => {
       return;
     }
     requestedReview.current = null;
-    const offered = operationActions(current?.actions ?? []).find(
+    const offered = operationActions(current === null ? [] : documentActions(current)).find(
       (action) => action.task === state.draft.entry.kind && action.blocked === null,
     );
     if (offered !== undefined) {

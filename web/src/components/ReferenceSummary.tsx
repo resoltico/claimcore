@@ -1,5 +1,5 @@
 import { IdentifierValue } from "./IdentifierValue";
-import { CharacterWarning } from "./BusinessValue";
+import { CharacterWarning } from "./CharacterWarning";
 import { usePresentation } from "../presentation/context";
 import { renderIsolatedValue } from "../presentation/messages";
 import type { MessageArgs } from "../presentation/types";

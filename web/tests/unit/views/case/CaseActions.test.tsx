@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
-import { operationAffordance } from "../../../support/affordances.fixtures";
+import { operationAffordance, withRecommendation } from "../../../support/affordances.fixtures";
 import { current } from "../../../support/operation-form.fixtures";
 import { CaseActions, CaseActionAlternatives } from "../../../../src/views/case/CaseActions";
 const primary = operationAffordance(
@@ -10,20 +10,22 @@ const primary = operationAffordance(
   {},
   [],
   {},
-  true,
 );
 const alternative = operationAffordance("case.decide", primary.binding);
-it("renders the exact supplied primary and invokes its task", async () => {
+it("renders the supplied recommendation and passes its control", async () => {
   const onAct = vi.fn();
   const view = render(
-    <CaseActions current={{ ...current, actions: [alternative, primary] }} onAct={onAct} />,
+    <CaseActions
+      current={withRecommendation({ ...current, actions: [alternative, primary] }, primary.task)}
+      onAct={onAct}
+    />,
   );
   expect(view.container.querySelector("button.primary")).toHaveAttribute(
     "data-act",
     "case.amendRegistration",
   );
   await userEvent.setup().click(screen.getByRole("button", { name: /^Update claim details:/u }));
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.amendRegistration");
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(primary);
 });
 it("does not invent a primary", () => {
   const view = render(
@@ -34,7 +36,12 @@ it("does not invent a primary", () => {
 });
 it("withdraws controls when Core withdraws the offer", () => {
   const onAct = vi.fn();
-  const view = render(<CaseActions current={{ ...current, actions: [primary] }} onAct={onAct} />);
+  const view = render(
+    <CaseActions
+      current={withRecommendation({ ...current, actions: [primary] }, primary.task)}
+      onAct={onAct}
+    />,
+  );
   view.rerender(<CaseActions current={{ ...current, actions: [] }} onAct={onAct} />);
   expect(screen.queryByRole("button")).toBeNull();
   expect(onAct).not.toHaveBeenCalled();
@@ -58,4 +65,19 @@ it("disables an offered action with Core refusal advice", () => {
     />,
   );
   expect(screen.getByRole("button", { name: /^Record payment decision:/u })).toBeDisabled();
+});
+
+it("keeps a supplied nonrecommended action reachable through the overflow control", async () => {
+  const onAct = vi.fn();
+  render(
+    <CaseActions
+      current={{ ...current, screen: { regions: [] }, actions: [alternative] }}
+      onAct={onAct}
+    />,
+  );
+  await userEvent.setup().click(screen.getByText("More actions", { selector: "summary" }));
+  const action = screen.getByRole("button", { name: /^Record payment decision:/u });
+  expect(action).toBeVisible();
+  await userEvent.setup().click(action);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(alternative);
 });

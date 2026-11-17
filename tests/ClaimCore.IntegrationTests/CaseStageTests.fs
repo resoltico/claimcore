@@ -3,6 +3,10 @@ module ClaimCore.IntegrationTests.CaseStageTests
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.TestSupport
@@ -37,13 +41,21 @@ let tests =
 
                 acceptedPeople stewardship
 
-                let write n revision act =
-                    Service.execute
+                let write n revision taskName values =
+                    Service.executeSubmission
                         actor
-                        (Inputs.caseOperation (request fixture n "STAGES-1" revision act))
+                        (((request fixture n "STAGES-1" revision taskName values)))
                         token
 
-                let! result = write 78000 0L (AuthoredCaseAct.Open registration)
+                let! result =
+                    write
+                        (78000)
+                        (0L)
+                        "case.open"
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (registration)
+                        ))
+
                 let receipt = accepted result |> caseReceipt
 
                 let get () =
@@ -71,18 +83,18 @@ let tests =
                 use! connection = database.OwnerSource.OpenConnectionAsync()
 
                 let! date =
-                    ClaimCore.Postgres.DatabaseSession.rows
+                    ClaimCore.Application.Storage.DatabaseSession.rows
                         connection
-                        "SELECT to_char(l.business_date,'YYYY-MM-DD') FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.subject_kind='CASE' AND e.subject_id=$1 AND e.case_revision=1"
+                        "SELECT to_char(l.business_date,'YYYY-MM-DD') FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.part_kind='CASE' AND e.part_id=$1 AND e.revision=1"
                         [| box (CaseId.value receipt.CaseId) |]
                         token
 
                 Expect.equal
                     (CalendarDate.format opening)
-                    (ClaimCore.Postgres.DatabaseSession.value<string> 0 date.Head)
+                    (ClaimCore.Application.Storage.DatabaseSession.value<string> 0 date.Head)
                     "Opening date is actual retained ledger metadata"
 
-                let! closed = write 78001 1L (AuthoredCaseAct.Bare BareAct.Close)
+                let! closed = write (78001) (1L) "case.close" (Map.empty)
                 accepted closed |> ignore
                 let! current = get ()
 
@@ -101,11 +113,33 @@ let tests =
                     Expect.isSome steps[3].Date "Close has a retained date"
                 | other -> failtestf "Expected closed tracker: %A" other
 
-                let! voided = write 78002 2L (AuthoredCaseAct.Void "Duplicate report")
+                let! voided =
+                    write
+                        (78002)
+                        (2L)
+                        "case.void"
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.Reason,
+                                ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                    "Duplicate report"
+                                )
+                            ])
+
                 accepted voided |> ignore
 
                 let! reinstated =
-                    write 78003 3L (AuthoredCaseAct.Reinstate "Confirmed original report")
+                    write
+                        (78003)
+                        (3L)
+                        "case.reinstate"
+                        (Map.ofList
+                            [
+                                TaskInputId.Target InputTarget.Reason,
+                                ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                    "Confirmed original report"
+                                )
+                            ])
 
                 accepted reinstated |> ignore
                 let! current = get ()
@@ -121,20 +155,21 @@ let tests =
                     "Latest fact act is reinstatement"
 
                 let! changed =
-                    Service.execute
+                    Service.executeSubmission
                         actor
-                        (OperationInput.Work
-                            {
-                                OperationId = id fixture 78004
-                                Target = CaseSelector.Id receipt.CaseId
-                                ExpectedRevision = 0L
-                                Act =
-                                    WorkAct.UpdateWork
-                                        {
-                                            Responsible = WorkValue.Keep
-                                            Summary = WorkValue.Set "Investigate coverage"
-                                        }
-                            })
+                        ((ClaimCore.TestSupport.Submissions.createRaw)
+                            "work.update"
+                            (id fixture 78004)
+                            (ClaimCore.Application.Contracts.OperationBinding.Work(
+                                (CaseSelector.Id receipt.CaseId),
+                                (0L)
+                            ))
+                            (ClaimCore.TestSupport.Submissions.work (
+                                {
+                                    Responsible = WorkValue.Keep
+                                    Summary = WorkValue.Set "Investigate coverage"
+                                }
+                            )))
                         token
 
                 accepted changed |> ignore
@@ -150,7 +185,7 @@ let tests =
                     ))
                     "Work changes do not replace latest case-fact act"
 
-                let! reopened = write 78005 4L (AuthoredCaseAct.Bare BareAct.Reopen)
+                let! reopened = write (78005) (4L) "case.reopen" (Map.empty)
                 accepted reopened |> ignore
                 let! current = get ()
 

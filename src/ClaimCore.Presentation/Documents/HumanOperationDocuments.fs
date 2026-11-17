@@ -1,109 +1,41 @@
 namespace ClaimCore.Presentation
 
-open ClaimCore.CommandLine
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 module HumanReviewDocument =
-    let private describe act operationId binding seeds authored review =
-        let basis, reference =
-            match review with
-            | OperationReview.Case value -> value.Context.Basis, Some value.Proposed.Reference
-            | OperationReview.Work value -> value.Context.Basis, Some value.Reference
-            | OperationReview.Note value -> value.Context.Basis, Some value.Reference
-            | OperationReview.Reminder value -> value.Context.Basis, Some value.Reference
-            | OperationReview.People value -> value.Basis, None
-
+    let private describe task operationId binding seeds (review: OperationReview) =
         let confirmation =
-            reference
-            |> Option.map ConfirmationTarget.CaseReference
-            |> Option.defaultValue (ConfirmationTarget.Operation operationId)
+            match review.Target with
+            | ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
+            | ReviewTarget.Person _ -> ConfirmationTarget.Operation operationId
 
-        let screen, presentation =
-            ReviewDocumentParts.describe (Some(act, operationId)) authored review
-
-        let action =
-            TaskAffordances.offered (TaskId.Operation act) binding seeds [] Map.empty
+        let screen, presentation = ReviewDocumentParts.describe (Some operationId) review
+        let action = TaskAffordances.offered task (Some binding) seeds [] Map.empty
 
         {
             HumanReview.Document =
                 HumanDocument.create
-                    (DocumentSubject.Review(confirmation, Consequence.ofAct act))
+                    (DocumentSubject.Review(confirmation, TaskConsequences.ofTask task))
                     screen
-                    [ { action with Primary = true } ]
+                    [ action ]
                     []
                     None
-                    (ObservationBasis.Snapshot basis)
+                    (ObservationBasis.Snapshot review.Context.Basis)
                     HumanDisclosure.Current
                     None
             Presentation = presentation
         }
 
     let ofSubmission (submission: OperationSubmission) review =
-        let authored =
-            match submission.Operation with
-            | Ok(SubmittedOperation.Command input) -> Some input
-            | _ -> None
-
         describe
             submission.Task
             submission.OperationId
-            submission.Binding
-            submission.Inputs
-            authored
-            review
-
-    /// Typed Core callers retain their command structure without serializing a protocol request.
-    let ofCore input review =
-        let binding =
-            match input with
-            | OperationInput.Case value ->
-                let payment =
-                    match value.Act with
-                    | CaseAct.RemovePayment id -> Some id
-                    | _ -> None
-
-                OperationBinding.Case(
-                    value.Target,
-                    value.ExpectedRevision,
-                    payment,
-                    value.ExpectedFamilySequence
-                )
-            | OperationInput.Work value ->
-                OperationBinding.Work(value.Target, value.ExpectedRevision)
-            | OperationInput.Note value ->
-                let selected =
-                    match value.Act with
-                    | AuthoredNoteAct.RemoveNote id -> Some id
-                    | _ -> None
-
-                OperationBinding.Note(value.Target, selected)
-            | OperationInput.Reminder value ->
-                let current =
-                    match value.Act with
-                    | ReminderAct.Create _ -> None
-                    | ReminderAct.Update(id, revision, _)
-                    | ReminderAct.CompleteAndPlanNext(id, revision, _)
-                    | ReminderAct.Complete(id, revision)
-                    | ReminderAct.Cancel(id, revision)
-                    | ReminderAct.Reopen(id, revision, _) -> Some(id, revision)
-
-                OperationBinding.Reminder(value.Target, current)
-            | OperationInput.People request ->
-                let actor =
-                    match review with
-                    | OperationReview.People value ->
-                        value.Target |> Option.map (fun value -> ActorId.value value.Actor.ActorId)
-                    | _ -> None
-
-                OperationBinding.People(actor, request.ExpectedRevision)
-
-        describe
-            (ActKind.ofInput input)
-            (OperationInput.operationId input)
-            binding
-            Map.empty
-            (Some input)
+            review.Binding
+            (submission.Operation
+             |> Result.map (fun operation -> operation.Inputs.Values)
+             |> Result.defaultWith (fun _ ->
+                 invalidArg (nameof submission) "A reviewed submission has admitted inputs."))
             review
 
 module HumanReceiptDocument =
@@ -119,9 +51,10 @@ module HumanReceiptDocument =
 
                 Some value.CaseId,
                 disclosure,
-                List.contains
-                    value.Act
-                    [ CaseActKind.Open; CaseActKind.Reopen; CaseActKind.Reinstate ]
+                (match value.Snapshot with
+                 | SnapshotDisclosure.Disclosed { State = LiveCase.Active fields } ->
+                     fields.Status = CaseStatus.Opened
+                 | _ -> false)
             | ReceiptSubject.Work value ->
                 let disclosure =
                     match value.Snapshot with
@@ -194,30 +127,25 @@ module HumanReceiptDocument =
             None
 
 module HumanOperationReply =
-    let private classification kind exitCode = { Kind = kind; ExitCode = exitCode }
-
     let classifyPreview (reply: HumanOperationReply<HumanPreviewResult>) =
         match reply.Outcome with
-        | HumanPreviewResult.Reviewed _ -> classification ReplyKind.Reviewed ExitCode.Success
-        | HumanPreviewResult.AlreadyAccepted _ ->
-            classification ReplyKind.AlreadyAccepted ExitCode.Success
-        | HumanPreviewResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | HumanPreviewResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+        | HumanPreviewResult.Reviewed _ -> ReplyKind.Reviewed
+        | HumanPreviewResult.AlreadyAccepted _ -> ReplyKind.AlreadyAccepted
+        | HumanPreviewResult.Rejected _ -> ReplyKind.Rejected
+        | HumanPreviewResult.Failed _ -> ReplyKind.Failed
 
     let classifyExecute (reply: HumanOperationReply<HumanExecuteResult>) =
         match reply.Outcome with
-        | HumanExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
-        | HumanExecuteResult.AlreadyAccepted _ ->
-            classification ReplyKind.AlreadyAccepted ExitCode.Success
-        | HumanExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | HumanExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
-        | HumanExecuteResult.OutcomeUnknown ->
-            classification ReplyKind.OutcomeUnknown ExitCode.OutcomeUnknown
+        | HumanExecuteResult.Accepted _ -> ReplyKind.Accepted
+        | HumanExecuteResult.AlreadyAccepted _ -> ReplyKind.AlreadyAccepted
+        | HumanExecuteResult.Rejected _ -> ReplyKind.Rejected
+        | HumanExecuteResult.Failed _ -> ReplyKind.Failed
+        | HumanExecuteResult.OutcomeUnknown -> ReplyKind.OutcomeUnknown
 
     let classifyLookup (reply: HumanOperationReply<HumanLookupResult>) =
         match reply.Outcome with
-        | HumanLookupResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
-        | HumanLookupResult.Pending _ -> classification ReplyKind.Pending ExitCode.OutcomeUnknown
-        | HumanLookupResult.NotAccepted _ -> classification ReplyKind.NotAccepted ExitCode.Rejected
-        | HumanLookupResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | HumanLookupResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+        | HumanLookupResult.Accepted _ -> ReplyKind.Accepted
+        | HumanLookupResult.Pending _ -> ReplyKind.Pending
+        | HumanLookupResult.NotAccepted _ -> ReplyKind.NotAccepted
+        | HumanLookupResult.Rejected _ -> ReplyKind.Rejected
+        | HumanLookupResult.Failed _ -> ReplyKind.Failed

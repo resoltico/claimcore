@@ -1,5 +1,5 @@
 import { operationAffordance } from "../../../support/affordances.fixtures";
-import type { RequestByEndpoint, HumanReview, HumanReceiptDocument } from "@contracts/client";
+import type { RequestByEndpoint, HumanReview, HumanDocument } from "@contracts/client";
 import { requestText, requestAddress } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -96,7 +96,7 @@ const review: HumanReview = {
     disclosure: "CURRENT",
   },
 };
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [],
   },

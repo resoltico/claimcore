@@ -25,6 +25,49 @@ let tests =
         "declared operation submissions"
         [
             testCase
+                "creation reference is authored and an existing binding needs a positive revision"
+                (fun () ->
+                    let created =
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:incidentNotificationDate":"2026-01-02","field:incidentCountry":"LV","field:claimantName":"Claimant","field:insurerName":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
+
+                    let submitted = decode created |> accepted
+
+                    match submitted.Operation with
+                    | Ok request ->
+                        Expect.equal
+                            request.Binding
+                            (Binding.CaseNew Revision.zero)
+                            "Creation basis"
+
+                        Expect.equal
+                            request.Inputs.Values[TaskInputId.Target(
+                                                      InputTarget.Field BusinessField.CaseReference
+                                                  )]
+                            (InputValue.Text "MAP-NEW")
+                            "Authored creation reference"
+                    | other -> failtestf "Expected creation: %A" other
+
+                    let misplaced =
+                        created.Replace(
+                            """"expectedRevision":0""",
+                            """"target":{"kind":"REFERENCE","caseReference":"OTHER"},"expectedRevision":0"""
+                        )
+
+                    Expect.isError
+                        (decode misplaced)
+                        "A former binding target is refused even when every new input is present"
+
+                    Expect.isOk
+                        (decode (amend ""))
+                        "The existing-target positive control admits its reviewed revision"
+
+                    Expect.isError
+                        (decode (
+                            (amend "")
+                                .Replace(""""expectedRevision":1""", """"expectedRevision":0""")
+                        ))
+                        "Existing targets cannot use a creation revision")
+            testCase
                 "well-typed grant target authoring yields precise issues while transport types remain closed"
                 (fun () ->
                     let grant values =
@@ -49,8 +92,8 @@ let tests =
                             (InputTarget.Field BusinessField.CaseReference),
                             Violation.CaseSelectionInvalid
                         ] do
-                        match decode (grant values) |> accepted |> _.Operation with
-                        | Error(Refusal.InvalidInput issues) ->
+                        match decode (grant values) |> accepted |> OperationSubmission.syntax with
+                        | Some issues ->
                             let issue = InputIssues.toList issues |> List.exactlyOne
 
                             Expect.equal
@@ -114,16 +157,16 @@ let tests =
                 (fun () ->
                     let submission = decode (amend "\"field:policyNumber\":null") |> accepted
 
-                    match submission.Operation |> accepted with
-                    | SubmittedOperation.Command(OperationInput.Case request) ->
-                        match request.Act with
-                        | CaseAct.AmendRegistration update ->
-                            Expect.equal
-                                (RegistrationUpdateInput.values update)
-                                [ BusinessField.PolicyNumber, None ]
-                                "Only the supplied input is changed"
-                        | _ -> failtest "Amendment required"
-                    | _ -> failtest "Typed case command required")
+                    let operation = submission.Operation |> accepted
+
+                    Expect.equal
+                        operation.Inputs.Values
+                        (Map.ofList
+                            [
+                                TaskInputId.Target(InputTarget.Field BusinessField.PolicyNumber),
+                                InputValue.Null
+                            ])
+                        "Only the explicit null changes; other inputs remain omitted")
             testCase "input key order does not change the typed canonical-intent input" (fun () ->
                 let first =
                     decode (
@@ -162,7 +205,7 @@ let tests =
                 let draft =
                     {
                         SubmissionEnvelope.OperationId = None
-                        Task = ActKind.Case CaseActKind.AmendRegistration
+                        Task = (TaskId.ofLiteral "case.amendRegistration")
                         Binding =
                             OperationBinding.Case(CaseSelector.Reference "MAP-1", None, None, None)
                         Inputs =
@@ -211,25 +254,26 @@ let tests =
                     )
                     |> accepted
 
-                match submission.Operation |> accepted with
-                | SubmittedOperation.Command(OperationInput.Case {
-                                                                     Act = CaseAct.AmendRegistration update
-                                                                 }) ->
-                    Expect.equal
-                        (RegistrationUpdateInput.values update |> Map.ofList)
-                        (Map.ofList
-                            [
-                                BusinessField.ClaimantName, Some ""
-                                BusinessField.IncidentDescription, None
-                                BusinessField.ClaimedAmount, Some "12.3400"
-                                BusinessField.ClaimedCurrency, Some "EUR"
-                            ])
-                        "Omitted facts keep, null clears, and authored text remains exact"
+                let operation = submission.Operation |> accepted
 
-                    Expect.isSome
-                        (OperationSubmission.syntax submission)
-                        "Core diagnoses an empty authored name"
-                | other -> failtestf "%A" other)
+                Expect.equal
+                    operation.Inputs.Values
+                    (Map.ofList
+                        [
+                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimantName),
+                            InputValue.Text ""
+                            TaskInputId.Target(InputTarget.Field BusinessField.IncidentDescription),
+                            InputValue.Null
+                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount),
+                            InputValue.Text "12.3400"
+                            TaskInputId.Target(InputTarget.Field BusinessField.ClaimedCurrency),
+                            InputValue.Text "EUR"
+                        ])
+                    "Omitted facts keep, null clears, authored text remains exact"
+
+                Expect.isSome
+                    (OperationSubmission.syntax submission)
+                    "Core diagnoses empty authored name")
             testCase "sibling declaration issues retain both submitted row ordinals" (fun () ->
                 let raw =
                     """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"people.admit","binding":{"kind":"PEOPLE","expectedRevision":0},"inputs":{"input:principal.kind":"HUMAN","input:principal.issuer":"https://issuer.example/","input:principal.subject":"person","input:profile.displayName":"Name","input:grants":[{"input:role":null,"input:scope":"INSTALLATION"},{"input:role":null,"input:scope":"INSTALLATION"}]}}"""
@@ -271,8 +315,10 @@ let tests =
                     ]
                     "Both representations address the declared token")
             testCase "partial money updates and out-of-range row targets are refused" (fun () ->
-                Expect.isError
-                    (decode (amend "\"field:claimedAmount\":\"1.00\""))
+                Expect.isSome
+                    (decode (amend "\"field:claimedAmount\":\"1.00\"")
+                     |> accepted
+                     |> OperationSubmission.syntax)
                     "Both coordinates of a selected money update are required"
 
                 Expect.isNone
@@ -339,47 +385,42 @@ let tests =
                 (fun () ->
                     let id = System.Guid.Parse "019aa6a0-0000-7000-8000-000000000001"
 
-                    let principal =
-                        {
-                            PrincipalInput.Kind = PrincipalKind.Human
-                            Issuer = "https://issuer.example/"
-                            Subject = "person"
-                        }
+                    let submitted task binding =
+                        OperationSubmission.admit
+                            {
+                                SubmissionEnvelope.OperationId = id
+                                Task = TaskId.ofLiteral task
+                                Binding = binding
+                                Inputs = Map.empty
+                            }
+                        |> Result.defaultWith (fun () -> failtest "Valid envelope shape")
 
                     let person revision =
-                        OperationInput.People
-                            {
-                                OperationId = id
-                                Target = principal
-                                ExpectedRevision = revision
-                                Act = PeopleAct.Enable
-                            }
+                        submitted "people.enable" (OperationBinding.People(Some id, revision))
 
-                    let case family act =
-                        OperationInput.Case
-                            {
-                                OperationId = id
-                                Target = CaseSelector.Reference "TYPED"
-                                ExpectedRevision = 1L
-                                ExpectedFamilySequence = family
-                                Act = act
-                            }
-
-                    let erase = CaseAct.Bare BareAct.Erase
+                    let case family =
+                        submitted
+                            "case.erase"
+                            (OperationBinding.Case(
+                                CaseSelector.Reference "TYPED",
+                                1L,
+                                None,
+                                family
+                            ))
 
                     for value in [ -1L; 0L; 9007199254740992L ] do
                         Expect.isSome
-                            (OperationInput.syntax (person value))
-                            "Invalid typed People metadata is not discarded"
+                            (OperationSubmission.syntax (person value))
+                            "Invalid People metadata is retained"
 
                         Expect.isSome
-                            (OperationInput.syntax (case (Some value) erase))
-                            "Invalid typed family metadata is not discarded"
+                            (OperationSubmission.syntax (case (Some value)))
+                            "Invalid family metadata is retained"
 
                         let envelope =
                             {
                                 SubmissionEnvelope.OperationId = id
-                                Task = ActKind.People PeopleActKind.Enable
+                                Task = (TaskId.ofLiteral "people.enable")
                                 Binding = OperationBinding.People(Some id, value)
                                 Inputs = Map.empty
                             }
@@ -395,7 +436,7 @@ let tests =
                         let personDraft =
                             {
                                 SubmissionEnvelope.OperationId = None
-                                Task = ActKind.People PeopleActKind.Enable
+                                Task = (TaskId.ofLiteral "people.enable")
                                 Binding = OperationBinding.People(Some id, Some value)
                                 Inputs = Map.empty
                             }
@@ -408,7 +449,7 @@ let tests =
                         let draft =
                             {
                                 SubmissionEnvelope.OperationId = None
-                                Task = ActKind.Case CaseActKind.Erase
+                                Task = (TaskId.ofLiteral "case.erase")
                                 Binding =
                                     OperationBinding.Case(
                                         CaseSelector.Reference "TYPED",
@@ -424,40 +465,75 @@ let tests =
                              |> Result.defaultWith (fun _ -> failtest "Draft syntax"))
                             "Supplied draft family metadata is checked"
 
-                    Expect.isNone (OperationInput.syntax (person 1L)) "Positive existing revision"
+                    Expect.isNone
+                        (OperationSubmission.syntax (person 1L))
+                        "Positive existing revision"
 
                     Expect.isNone
-                        (OperationInput.syntax (case (Some 1L) erase))
+                        (OperationSubmission.syntax (case (Some 1L)))
                         "Positive family basis"
 
-                    Expect.isSome
-                        (OperationInput.syntax (case None erase))
+                    Expect.isError
+                        (OperationSubmission.admit
+                            {
+                                SubmissionEnvelope.OperationId = id
+                                Task = TaskId.ofLiteral "case.erase"
+                                Binding =
+                                    OperationBinding.Case(
+                                        CaseSelector.Reference "TYPED",
+                                        1L,
+                                        None,
+                                        None
+                                    )
+                                Inputs = Map.empty
+                            })
                         "Complete erasure requires its basis"
 
-                    Expect.isSome
-                        (OperationInput.syntax (case (Some 1L) (CaseAct.Bare BareAct.Close)))
-                        "Family basis is erasure-only"
-
                     let creation =
-                        OperationInput.People
-                            {
-                                OperationId = id
-                                Target = principal
-                                ExpectedRevision = 0L
-                                Act =
-                                    PeopleAct.Register
-                                        {
-                                            DisplayName = "Person"
-                                            Contact = None
-                                        }
-                            }
+                        ClaimCore.TestSupport.Submissions.create
+                            "people.register"
+                            id
+                            (Binding.PeopleNew Revision.zero)
+                            (Map.fold
+                                (fun values key value -> Map.add key value values)
+                                (ClaimCore.TestSupport.Submissions.principal (
+                                    PrincipalKey.human "https://issuer.example/" "person"
+                                    |> accepted
+                                ))
+                                (ClaimCore.TestSupport.Submissions.profile
+                                    {
+                                        DisplayName = "Person"
+                                        Contact = None
+                                    }))
 
-                    Expect.isNone (OperationInput.syntax creation) "Creation zero remains valid"
+                    Expect.isNone
+                        (OperationSubmission.syntax creation)
+                        "Creation zero remains valid"
+
+                    for taskName, binding in
+                        [
+                            "people.register", OperationBinding.People(None, 1L)
+                            "case.open", OperationBinding.CaseNew 1L
+                        ] do
+                        let declaration =
+                            ClaimCore.Domain.Tasks.Registry.findDeclaration (
+                                TaskId.ofLiteral taskName
+                            )
+                            |> Option.get
+
+                        match OperationSubmission.admitBinding declaration binding with
+                        | Error(SubmissionProblem.Rejected(Refusal.InvalidInput issues)) ->
+                            Expect.equal
+                                (InputIssues.toList issues
+                                 |> List.map (fun issue -> issue.Target, issue.Violation))
+                                [ InputTarget.ExpectedRevision, Violation.ExpectedRevisionRange ]
+                                "Creation revisions must be exactly zero before intent encoding"
+                        | other -> failtestf "Nonzero creation binding was admitted: %A" other
 
                     let draft =
                         {
                             SubmissionEnvelope.OperationId = None
-                            Task = ActKind.Case CaseActKind.Erase
+                            Task = (TaskId.ofLiteral "case.erase")
                             Binding =
                                 OperationBinding.Case(
                                     CaseSelector.Reference "TYPED",

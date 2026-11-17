@@ -36,8 +36,7 @@ let private submitted (fixture: PublishedFixture.Fixture) =
     let operation, reference = id (), "RECOVERY-PROCESS-" + id ()
     input["operationId"] <- JsonValue.Create operation
 
-    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
-        JsonValue.Create reference
+    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     Encoding.UTF8.GetBytes(source.ToJsonString()), operation, reference
 
@@ -113,8 +112,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                     "actorId"
                     "attemptId"
                     "operationId"
-                    "subject"
-                    "act"
+                    "task"
                     "refused"
                 ]
 
@@ -122,6 +120,13 @@ let qualify (fixture: PublishedFixture.Fixture) =
             (own.Head.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
             expectedKeys
             "Only identity and delivery knowledge are retained"
+
+        Expect.equal (own.Head.GetProperty("format").GetInt32()) 4 "Current recovery format"
+
+        Expect.equal
+            (own.Head.GetProperty("task").GetString())
+            "case.open"
+            "Exact declared task identity"
 
         Expect.isFalse
             (own.Head.GetRawText().Contains(reference, StringComparison.Ordinal))

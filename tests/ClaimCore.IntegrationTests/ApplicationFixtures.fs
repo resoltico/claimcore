@@ -9,6 +9,10 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 let instant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
@@ -41,7 +45,13 @@ let run action =
     }
 
 let openRequest fixture n reference =
-    request fixture n reference 0L (AuthoredCaseAct.Open registration)
+    request
+        (fixture)
+        (n)
+        (reference)
+        (0L)
+        "case.open"
+        (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
 /// A write can finish before another accepted change is observed by its caller.
 type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =

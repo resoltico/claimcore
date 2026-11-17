@@ -2,7 +2,7 @@ import { installationActions, requesterLinks, activeRequester } from "./human-re
 import {
   type DocumentSubject,
   type EndpointId,
-  type HumanReceiptDocument,
+  type HumanDocument,
   type HumanResponseByEndpoint,
   type HumanReview,
   type Screen,
@@ -47,7 +47,7 @@ const read = <const C extends DocumentSubject>(subject: C) => ({
     },
   },
 });
-const caseReceipt = (): HumanReceiptDocument => ({
+const caseReceipt = (): HumanDocument => ({
   screen: empty,
   subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
   actions: [],
@@ -68,7 +68,7 @@ const caseReceipt = (): HumanReceiptDocument => ({
   basis,
   disclosure: "CURRENT",
 });
-export const peopleReceipt = (): HumanReceiptDocument => ({
+export const peopleReceipt = (): HumanDocument => ({
   screen: empty,
   subject: { kind: "RECEIPT", operationId: "10000000-0000-7000-8000-000000000001" },
   actions: [],

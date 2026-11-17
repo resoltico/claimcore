@@ -4,6 +4,12 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
 module TaskInputPresentation =
+    let choiceConstraintMessage =
+        function
+        | TaskInputId.Scope -> Some "label.roleNotAvailableAtScope"
+        | TaskInputId.Target InputTarget.PrincipalKind -> Some "label.roleNotAvailableForService"
+        | _ -> None
+
     // This total semantic-input to message-namespace table contains no nested decisions.
     let messageKey input part =
         match input with

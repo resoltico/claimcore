@@ -1,9 +1,5 @@
 import { operationAffordance } from "../support/affordances.fixtures";
-import {
-  taskDefinitions,
-  type HumanReceiptDocument,
-  type RequestByEndpoint,
-} from "@contracts/client";
+import { taskDefinitions, type HumanDocument, type RequestByEndpoint } from "@contracts/client";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { chooseOption, optionValues } from "../support/choice-entry";
 import userEvent from "@testing-library/user-event";
@@ -22,7 +18,7 @@ const peopleActs = taskDefinitions.flatMap((task) =>
   task.kind === "OPERATION" && task.subject === "PEOPLE"
     ? [
         {
-          kind: task.act,
+          kind: task.id,
         },
       ]
     : [],
@@ -40,7 +36,7 @@ const PeopleBinding = ({
   initialKind?: PeopleInput["task"];
 }) => {
   const credential = useCredential();
-  const [recorded, setRecorded] = useState<HumanReceiptDocument | null>(null);
+  const [recorded, setRecorded] = useState<HumanDocument | null>(null);
   const model = useOperation({
     subject: "PEOPLE",
     kind: initialKind,
@@ -56,9 +52,6 @@ const PeopleBinding = ({
             },
         {
           "input:principal.kind": "HUMAN",
-          ...(kind === "people.admit"
-            ? { "input:grants": [{ "input:scope": "INSTALLATION" }] }
-            : {}),
           ...(["people.grant", "people.revoke"].includes(kind)
             ? { "input:scope": "INSTALLATION" }
             : {}),
@@ -159,10 +152,19 @@ const authorPeople = async (kind: PeopleInput["task"]) => {
     );
   }
 };
-it.each(peopleActs)(
-  "renders, reviews and submits real people act $kind through production transport",
+// Creation collections, scalar updates, fixed role selection, erasure and empty input.
+const examples = peopleActs.filter(({ kind }) =>
+  [
+    "people.admit",
+    "people.setProfile",
+    "people.revoke",
+    "people.eraseProfile",
+    "people.disable",
+  ].some((id) => id === kind),
+);
+it.each(examples)(
+  "acquires $kind from supplied controls through preview and execution",
   async (act) => {
-    expect(peopleActs).toHaveLength(8);
     const calls: Dispatch<PeopleInput>[] = [];
     vi.stubGlobal("fetch", peopleTransport(calls));
     render(<PeopleBinding initialKind={act.kind} />);

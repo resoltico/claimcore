@@ -16,14 +16,14 @@ let private principal =
 let private document name =
     HumanReadDocuments.requests
         {
-            Basis = Inputs.workBasis
+            Basis = DomainInputs.workBasis
             NextCursor = Some "request-next"
             Items =
                 [
                     {
                         Principal = principal
-                        FirstSeen = Inputs.workBasis.ObservedAt
-                        LastSeen = Inputs.workBasis.ObservedAt
+                        FirstSeen = DomainInputs.workBasis.ObservedAt
+                        LastSeen = DomainInputs.workBasis.ObservedAt
                         Claims =
                             RequesterClaims.admit
                                 name
@@ -53,28 +53,28 @@ let tests =
                     let admit =
                         actions original
                         |> List.find (fun action ->
-                            action.Task = TaskId.Operation(ActKind.People PeopleActKind.Admit))
+                            action.Task = (TaskId.ofLiteral "people.admit"))
 
                     Expect.equal
                         admit.Binding
-                        (OperationBinding.People(None, 0L))
+                        (Some(Binding.PeopleNew Revision.zero))
                         "Admission selects an unregistered principal through authored inputs"
 
                     Expect.equal
                         (Map.find (TaskAffordances.input InputTarget.PrincipalSubject) admit.Seeds)
-                        (SubmissionValue.Text "request-handle")
+                        (InputValue.Text "request-handle")
                         "Identity comes from the row's action"
 
                     Expect.equal
                         (Map.find
                             (TaskAffordances.input InputTarget.ProfileDisplayName)
                             admit.Seeds)
-                        (SubmissionValue.Text "preferred input hint")
+                        (InputValue.Text "preferred input hint")
                         "Name hint precedes username"
 
                     Expect.equal
                         (Map.find (TaskAffordances.input InputTarget.ProfileContact) admit.Seeds)
-                        (SubmissionValue.Text "contact@example.test")
+                        (InputValue.Text "contact@example.test")
                         "Contact remains an unverified input hint"
 
                     Expect.isFalse
@@ -96,7 +96,7 @@ let tests =
                         (Map.find
                             (TaskAffordances.input InputTarget.ProfileDisplayName)
                             fallback.Seeds)
-                        (SubmissionValue.Text "fallback input hint")
+                        (InputValue.Text "fallback input hint")
                         "Missing names use the explicit hint"
 
                     Expect.equal
@@ -113,7 +113,7 @@ let tests =
                 let dismiss =
                     actions (document None)
                     |> List.find (fun action ->
-                        action.Task = TaskId.Command CommandTaskId.PeopleRequestsDismiss)
+                        action.Task = (TaskId.ofLiteral "people.requests.dismiss"))
 
                 Expect.equal
                     dismiss.Seeds

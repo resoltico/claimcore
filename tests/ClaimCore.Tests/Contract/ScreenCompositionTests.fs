@@ -2,6 +2,7 @@ module ClaimCore.Tests.ScreenCompositionTests
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
@@ -144,7 +145,7 @@ let tests =
                     TimelineDisclosure.create
                         [ change ]
                         {
-                            Event = TimelineEvent.CaseActRecorded CaseActKind.RecordPayment
+                            Event = TimelineEvent.PartChanged PartKind.Payment
                             Highlights = [ TimelineHighlight.Change 0 ]
                         }
                     |> Result.defaultWith invalidOp
@@ -159,7 +160,12 @@ let tests =
                         RecordedAt = receipt.RecordedAt
                         RecordedBy = receipt.RecordedBy
                         Subject =
-                            TimelineSubject.CaseFact(Revision.first, CaseActKind.RecordPayment)
+                            {
+                                PartKind = PartKind.Payment
+                                PartId = OperationId.value receipt.OperationId
+                                Revision = Revision.first
+                            }
+                        Task = TaskId.ofLiteral "case.recordPayment"
                         Changes = TimelineChanges.Disclosed disclosure
                     }
 
@@ -184,7 +190,12 @@ let tests =
                                 RecordedAt = receipt.RecordedAt
                                 RecordedBy = receipt.RecordedBy
                                 Subject =
-                                    TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+                                    {
+                                        PartKind = PartKind.Case
+                                        PartId = CaseId.value ResponseExamples.snapshot.CaseId
+                                        Revision = Revision.first
+                                    }
+                                Task = TaskId.ofLiteral "case.open"
                                 Changes = TimelineChanges.Withheld
                             }
 
@@ -307,7 +318,7 @@ let tests =
                 [ RegionRole.Identity; RegionRole.Facts; RegionRole.Details ]
                 (fun () -> data Api.context |> ContextScreen.view)
             matches "operation pending" [ RegionRole.Notice ] (fun () ->
-                OperationScreen.pending Inputs.workBasis.ObservedAt)
+                OperationScreen.pending DomainInputs.workBasis.ObservedAt)
             matches "operation not accepted" [ RegionRole.Notice ] OperationScreen.notAccepted
             testCase "receipt separates done facts and technical details" (fun () ->
                 let screen = ReceiptScreen.view ResponseExamples.receipt

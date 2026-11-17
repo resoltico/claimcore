@@ -132,8 +132,7 @@ module private FrameInvocation =
                     ActorId = ActorId.value context.ActorId
                     AttemptId = Frames.attemptId frame
                     OperationId = Frames.operationId frame |> Option.defaultValue Guid.Empty
-                    Subject = ActKind.subject kind
-                    Act = ActKind.token kind
+                    Task = TaskId.token kind
                     Refused = false
                 }
 
@@ -182,7 +181,7 @@ module private FrameInvocation =
                         else
                             let refused =
                                 match reply.Frame.Result with
-                                | FrameResult.Reply value -> value.Class.Kind = ReplyKind.Rejected
+                                | FrameResult.Reply value -> value.Class = ReplyKind.Rejected
                                 | FrameResult.HostFailure failure ->
                                     failure.Phase = Some ExecutionPhase.NotStarted
                                 | FrameResult.LocalFailure _ -> false

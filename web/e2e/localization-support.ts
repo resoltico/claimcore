@@ -13,11 +13,20 @@ import {
 import type { ServiceResponse } from "../src/protocol/types";
 import { admitBytes } from "../src/protocol/schema";
 import { isHostFailure, isObject } from "../src/protocol/client";
-import { installLanguage, catalogFor } from "../src/presentation/languageCatalog";
-import { preferenceKey } from "../src/presentation/preferences";
-import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
+import {
+  installLanguage,
+  catalogFor,
+  type CatalogLanguage,
+} from "../src/presentation/languageCatalog";
+import {
+  preferenceKey,
+  type Language,
+  type DisplayLocale,
+  type Preferences,
+} from "../src/presentation/preferences";
+
 import type { MessageKey } from "../src/presentation/types";
-import type { CatalogLanguage } from "../src/presentation/languageCatalog";
+
 import type { ReviewIdentity } from "./case-workflow";
 export const seedPresentation = async (
   page: Page,

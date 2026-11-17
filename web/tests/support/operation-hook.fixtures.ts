@@ -36,10 +36,17 @@ export const preview = (
     throw new Error("This fixture reviews an authored OPEN or CLOSE command.");
   }
   const source = input.task === "case.open" ? openReview : closeReview;
-  const reference =
-    input.binding.target.kind === "REFERENCE"
+  const reference = (() => {
+    if (input.task === "case.open") {
+      return input.inputs["field:caseReference"];
+    }
+    return input.binding.target.kind === "REFERENCE"
       ? input.binding.target.caseReference
       : "CASE-SERIALIZATION";
+  })();
+  if (typeof reference !== "string") {
+    throw new Error("A positive review fixture requires an authored reference.");
+  }
   return {
     kind: "outcome",
     status: 200,
@@ -53,7 +60,8 @@ export const preview = (
           document: {
             ...source.document,
             subject: {
-              ...source.document.subject,
+              kind: "REVIEW",
+              consequence: "ROUTINE",
               confirmation: { kind: "CASE_REFERENCE", reference },
             },
             actions: [operationAffordance(input.task, input.binding, input.inputs, [])],

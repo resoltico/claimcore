@@ -12,6 +12,7 @@ open System.Text
 open System.Security.Cryptography
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
@@ -88,22 +89,22 @@ let private receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 10, 22)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.People
                 {
                     TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId id)
-                    Act = PeopleActKind.Register
+                    Act = (TaskId.ofLiteral "people.register")
                     Effects =
                         [
                             {
-                                PeopleReceiptEffect.Act = PeopleActKind.Register
+                                PeopleReceiptEffect.Act = (TaskId.ofLiteral "people.register")
                                 Id = EffectId.create (CaseFixtures.operationId id) 0 |> Option.get
                                 Position =
                                     EffectPosition.create (CaseFixtures.sequence 2L) 0 |> Option.get
                             }
                             {
-                                PeopleReceiptEffect.Act = PeopleActKind.SetProfile
+                                PeopleReceiptEffect.Act = (TaskId.ofLiteral "people.setProfile")
                                 Id = EffectId.create (CaseFixtures.operationId id) 1 |> Option.get
                                 Position =
                                     EffectPosition.create (CaseFixtures.sequence 2L) 1 |> Option.get
@@ -113,26 +114,35 @@ let private receipt: OperationReceipt =
     }
 
 let private peopleReview =
-    OperationReview.People
+    let actor = ActorId.create id |> Option.get
+
+    let description =
         {
-            Basis = ClaimCore.TestSupport.Inputs.workBasis
-            Effects = [ PeopleReviewEffect.Enable ]
-            Target = None
-            AccessScope = GrantScope.Installation
-            Before =
-                {
-                    Enabled = false
-                    Profile = None
-                    Grants = []
-                    Access = []
-                }
-            After =
-                {
-                    Enabled = true
-                    Profile = None
-                    Grants = []
-                    Access = []
-                }
+            PersonPartDescription.Profiles = { Before = None; After = None }
+            Principal = None
+            Enabled =
+                Some
+                    {
+                        Before = Some false
+                        After = Some true
+                    }
+            ProfilePresent = None
+            DisplayName = None
+            Contact = None
+            Grants = []
+        }
+
+    Reviews.personReview
+        (TaskId.ofLiteral "people.enable")
+        (Binding.People(actor, Revision.first))
+        None
+        id
+        (Revision.create 2L |> Option.get)
+        description
+        { Actors = []; Cases = [] }
+        {
+            ProductVersion = "fixture"
+            Basis = DomainInputs.workBasis
         }
 
 let private mutationReplies () =

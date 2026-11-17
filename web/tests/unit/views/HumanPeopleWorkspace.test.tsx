@@ -1,15 +1,11 @@
+import { withRecommendation, operationAffordance } from "../../support/affordances.fixtures";
 import {
   installationActions,
   requesterLinks,
   activeRequester,
 } from "../../support/human-requester.fixtures";
-import { operationAffordance } from "../../support/affordances.fixtures";
-import type {
-  RequestByEndpoint,
-  HumanReadDocument_people_grants,
-  HumanReview,
-  HumanReceiptDocument,
-} from "@contracts/client";
+
+import type { RequestByEndpoint, HumanDocument, HumanReview } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -36,46 +32,48 @@ const owner: ActiveRequester = {
     ["people.enable", "people.list", "people.grants", "people.history"],
   ),
 };
-const person: HumanReadDocument_people_grants = {
-  screen: {
-    regions: [
-      {
-        role: "ACCOUNT",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "actor",
-              labelId: "field.profile.displayName.label",
-              prominence: "PRIMARY",
-              value: {
-                kind: "TEXT",
-                value: "Core selected person Ω",
+const person: HumanDocument = withRecommendation(
+  {
+    screen: {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
+                value: {
+                  kind: "TEXT",
+                  value: "Core selected person Ω",
+                },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
+      ],
+    },
+    subject: { kind: "PERSON", actorId },
+    actions: [
+      operationAffordance(
+        "people.enable",
+        { kind: "PEOPLE", actorId, expectedRevision: 1 },
+        {},
+        undefined,
+        {},
+      ),
     ],
+    links: [],
+    history: null,
+    nextCursor: null,
+    basis,
+    disclosure: "CURRENT",
   },
-  subject: { kind: "PERSON", actorId },
-  actions: [
-    operationAffordance(
-      "people.enable",
-      { kind: "PEOPLE", actorId, expectedRevision: 1 },
-      {},
-      undefined,
-      {},
-      true,
-    ),
-  ],
-  links: [],
-  history: null,
-  nextCursor: null,
-  basis,
-  disclosure: "CURRENT",
-};
-const receipt = (caption: string): HumanReceiptDocument => ({
+  "people.enable",
+);
+const receipt = (caption: string): HumanDocument => ({
   screen: {
     regions: [
       {
@@ -350,7 +348,7 @@ it("binds a selected revocation to the Core case identity without editable role/
       caseId,
     },
   } as const;
-  const document: HumanReadDocument_people_grants = {
+  const document: HumanDocument = {
     ...person,
     actions: person.actions.filter((action) => new Set<string>(["people.revoke"]).has(action.task)),
     screen: {

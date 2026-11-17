@@ -156,21 +156,26 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     let refusedOperation = id ()
 
-    verb
-        fixture
-        environment
-        [
-            "case"
-            "close"
-            reference
-            "--operation-id"
-            refusedOperation
-            "--expected-revision"
-            "0"
-        ]
-        2
-    |> require "REJECTED"
-    |> ignore
+    let refused =
+        verb
+            fixture
+            environment
+            [
+                "case"
+                "close"
+                reference
+                "--operation-id"
+                refusedOperation
+                "--expected-revision"
+                "2"
+            ]
+            2
+        |> require "REJECTED"
+
+    Expect.equal
+        (refused.GetProperty("code").GetString() |> nonNull)
+        "REVISION_CONFLICT"
+        "The valid stale revision reaches the business concurrency guard"
 
     let listed =
         ProcessRunner.dotnet

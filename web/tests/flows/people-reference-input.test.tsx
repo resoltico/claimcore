@@ -124,7 +124,7 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
   return reference;
 };
 const expectReferenceDescription = (reference: HTMLElement, locale: Locale, invalid: boolean) => {
-  const hint = locale.field["ui.existingCaseSelectionHint"];
+  const hint = locale.field["label.existingCaseSelectionHint"];
   const description = reference
     .getAttribute("aria-describedby")!
     .split(" ")

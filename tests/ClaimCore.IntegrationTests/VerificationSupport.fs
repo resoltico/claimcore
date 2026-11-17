@@ -10,9 +10,15 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -77,11 +83,17 @@ let populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request database.Fixture 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (10)
+                    ("synthetic-a")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         accepted opened |> ignore
@@ -137,11 +149,11 @@ let row (database: PostgresFixture.Database) (sequence: Sequence) =
     }
 
 let private updateRoot =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,installation_format=$4,operation_id=$5,actor_id=$6,recorded_at=$7,business_date=$8,command=$9::jsonb WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,installation_format=$4,operation_id=$5,actor_id=$6,recorded_at=$7,business_date=$8::text::date,aggregate_kind=$9,task=$10,structure=$11::jsonb WHERE sequence=$1"
 
 let private rootParameters root =
     let parameters = OperationStorage.parameters root
-    Array.append [| parameters[1] |] parameters[2..9]
+    Array.append [| parameters[1] |] parameters[2..11]
 
 let private replaceRoot connection root =
     task {
@@ -158,13 +170,6 @@ let private replaceRoot connection root =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,descriptor) SELECT $1,(value->>'index')::integer,value->'descriptor' FROM jsonb_array_elements($2::jsonb)"
-                [| parameters[1]; parameters[10] |]
-                token
-
-        let! _ =
-            DatabaseSession.execute
-                connection
                 "DELETE FROM claimcore.ledger_compartments WHERE operation_sequence=$1"
                 [| parameters[1] |]
                 token
@@ -172,68 +177,60 @@ let private replaceRoot connection root =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,purpose,effect_indices,commitment,nonce,payload) SELECT $1,(value->>'ordinal')::integer,value->>'ownerKind',(value->>'ownerId')::uuid,value->>'purpose',ARRAY(SELECT jsonb_array_elements_text(value->'effects')::integer),decode(value->>'commitment','hex'),decode(value->>'nonce','hex'),decode(value->>'payload','hex') FROM jsonb_array_elements($2::jsonb)"
-                [| parameters[1]; parameters[11] |]
+                "INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,payload) SELECT $1,(value->>'ordinal')::integer,value#>>'{owner,kind}',(value#>>'{owner,id}')::uuid,decode(value->>'commitment','hex'),decode(value->>'nonce','hex'),decode(value->>'payload','hex') FROM jsonb_array_elements($2::jsonb)"
+                [| parameters[1]; parameters[13] |]
+                token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "INSERT INTO claimcore.ledger_effects(operation_sequence,effect_index,aggregate_kind,aggregate_id,part_kind,part_id,revision,natural_key,retained,erases_kind,erases_id,compartment) SELECT $1,(ordinal-1)::integer,value#>>'{aggregate,kind}',(value#>>'{aggregate,id}')::uuid,value#>>'{part,kind}',(value#>>'{part,id}')::uuid,(value->>'revision')::bigint,value->>'naturalKey',value->'retained',value#>>'{erases,kind}',(value#>>'{erases,id}')::uuid,(value->>'compartment')::integer FROM jsonb_array_elements($2::jsonb) WITH ORDINALITY AS effect(value,ordinal)"
+                [| parameters[1]; parameters[12] |]
                 token
 
         return ()
     }
 
-/// Rehash retained public closure without inventing unavailable private content. This supplies
-/// tampered inputs; each caller independently specifies the semantic finding it must detect.
-let rehashed (header: OperationHeader) command effects (compartments: Compartment list) =
-    let u32 (value: int) =
+/// Rehash restorable public closure, including deliberately unavailable private contents.
+/// Independent expected hash vectors remain with the RecordFormat owner tests.
+let rehashed
+    (header: OperationHeader)
+    task
+    binding
+    retained
+    (effects: RecordedPart list)
+    (compartments: Compartment list)
+    =
+    let u32 value =
         let bytes = Array.zeroCreate<byte> 4
-        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(bytes, value)
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(bytes, uint32 value)
         bytes
 
-    let i64 (value: int64) =
+    let i64 value =
         let bytes = Array.zeroCreate<byte> 8
         System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(bytes, value)
         bytes
 
-    let frame bytes =
-        Array.append (u32 (Array.length bytes)) bytes
+    let frame (bytes: byte array) = Array.append (u32 bytes.Length) bytes
 
-    let descriptorBytes (value: CompartmentDescriptor) =
-        let kind, id =
-            match value.Owner with
-            | CompartmentOwner.Case id -> 1uy, CaseId.value id
-            | CompartmentOwner.ActorProfile id -> 2uy, ActorId.value id
+    let text (value: string) =
+        System.Text.Encoding.UTF8.GetBytes value |> frame
 
-        let purpose =
-            match value.Purpose with
-            | CompartmentPurpose.Case -> 1uy
-            | CompartmentPurpose.Work -> 2uy
-            | CompartmentPurpose.Note -> 3uy
-            | CompartmentPurpose.Reminder -> 4uy
-            | CompartmentPurpose.Profile -> 5uy
-
-        Array.concat
-            [
-                [| kind |]
-                id.ToByteArray(true)
-                [| purpose |]
-                u32 value.Ordinal
-                u32 value.Effects.Length
-                value.Effects |> List.map u32 |> Array.concat
-            ]
-
-    let commandBytes =
-        OperationPublicCodecs.command.Write command
-        |> ClaimCore.Json.CanonicalWriter.bytes
+    let canonical value =
+        ClaimCore.Json.CanonicalWriter.bytes value
 
     let effectRows =
         effects
         |> List.mapi (fun index effect ->
-            index,
-            (OperationPublicCodecs.effect.Write effect
-             |> ClaimCore.Json.CanonicalWriter.bytes))
+            index, (OperationPublicCodecs.effect header index).Write effect |> canonical)
+
+    let publicBytes =
+        OperationPublicCodecs.structure.Write(binding, retained) |> canonical
 
     let bytes =
         Array.concat
             [
-                frame (System.Text.Encoding.UTF8.GetBytes "ClaimCore.Operation")
+                text "ClaimCore.Operation"
                 u32 InstallationFormat.Current
                 header.InstallationId.ToByteArray(true)
                 i64 (Sequence.value header.Sequence)
@@ -241,18 +238,22 @@ let rehashed (header: OperationHeader) command effects (compartments: Compartmen
                 (OperationId.value header.OperationId).ToByteArray(true)
                 (ActorId.value header.ActorId).ToByteArray(true)
                 i64 header.RecordedAt.UtcTicks
-                match header.BusinessDate with
-                | None -> [| 0uy |]
-                | Some date -> Array.append [| 1uy |] (u32 date.DayNumber)
-                frame commandBytes
+                (match header.BusinessDate with
+                 | None -> [| 0uy |]
+                 | Some date -> Array.append [| 1uy |] (u32 date.DayNumber))
+                text (TaskId.token task)
+                BindingCodecs.binding.Write binding |> canonical |> frame
+                InputMapCodecs.stored.Write retained |> canonical |> frame
                 u32 effects.Length
                 effectRows
                 |> List.map (fun (index, bytes) -> Array.append (u32 index) (frame bytes))
                 |> Array.concat
                 u32 compartments.Length
                 compartments
-                |> List.map (fun value ->
-                    Array.append (frame (descriptorBytes value.Descriptor)) value.Commitment)
+                |> List.map (fun (value: Compartment) ->
+                    Array.append
+                        (CompartmentDescriptor.value value.Descriptor |> canonical |> frame)
+                        value.Commitment)
                 |> Array.concat
             ]
 
@@ -261,8 +262,8 @@ let rehashed (header: OperationHeader) command effects (compartments: Compartmen
         |> EntryHash.ofBytes
         |> Option.get
 
-    OperationRoot.restore header commandBytes effectRows compartments hash
-    |> Result.defaultWith (fun error -> failtestf "Retained root rehash: %A" error)
+    OperationRoot.restore header (TaskId.token task) publicBytes effectRows compartments hash
+    |> Result.defaultWith (fun error -> failtestf "Restorable root rehash: %A" error)
 
 /// Tamper only an owned fixture, proving the live guard first. Rehash subsequent roots so
 /// a broken link cannot conceal the independently expected semantic replay failure.
@@ -328,7 +329,9 @@ let rewrite
             let rewritten =
                 rehashed
                     header
-                    root.Structure.Command
+                    root.Structure.Task
+                    root.Structure.Binding
+                    root.Structure.Retained
                     root.Structure.Effects
                     root.Structure.Compartments
 
@@ -345,8 +348,8 @@ let rewrite
         do! transaction.CommitAsync()
     }
 
-let recreate header command values nonce =
-    RetainedOperation.create header command values (fun () -> nonce)
+let recreate header task binding inputs changes nonce =
+    RetainedOperation.create header task binding inputs changes (fun () -> nonce)
     |> Result.defaultWith (fun error -> failtestf "Synthetic retained values: %A" error)
     |> _.Root
 

@@ -5,7 +5,7 @@ open ClaimCore.Json
 
 module ReminderRecord =
     open Codec
-    open WorkRecordCodecs
+    open RecordScalars
 
     let private reminder =
         (record (fun id parent revision action due state ->
@@ -33,4 +33,10 @@ module ReminderRecord =
     let encodeSnapshot value =
         snapshotCodec.Write value |> CanonicalWriter.bytes
 
-    let decodeSnapshot bytes = decode snapshotCodec bytes
+    let decodeSnapshot bytes =
+        Codec.decode Compartment.MaximumContentBytes snapshotCodec bytes
+        |> Result.mapError (fun problem ->
+            {
+                DecodeProblem.Field = problem.Path
+                Message = problem.Reason
+            })

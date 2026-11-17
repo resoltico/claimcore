@@ -2,16 +2,17 @@ module ClaimCore.TestSupport.ResponseExamples
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
 
-let private id = OperationIds.numberedAt Inputs.workBasis.ObservedAt 1
+let private id = OperationIds.numberedAt DomainInputs.workBasis.ObservedAt 1
 let private actorId = CaseFixtures.actorId id
-let private actor = Inputs.namedActorReference actorId "Synthetic recorder"
-let private reference = Inputs.reference "CASE-1"
-let private basis = Inputs.workBasis
+let private actor = DomainInputs.namedActorReference actorId "Synthetic recorder"
+let private reference = DomainInputs.reference "CASE-1"
+let private basis = DomainInputs.workBasis
 
 let private position =
     LedgerPosition.create Sequence.first (EntryHash.ofBytes (Array.zeroCreate 32) |> Option.get)
@@ -26,7 +27,7 @@ let snapshot: CaseSnapshot =
                 {
                     CaseReference = reference
                     Status = CaseStatus.Opened
-                    Registration = Inputs.admittedRegistration Inputs.registration
+                    Registration = DomainInputs.admittedRegistration DomainInputs.registration
                     Finance = FinancialPosition.undecided
                 }
     }
@@ -44,11 +45,12 @@ let receipt: OperationReceipt =
                     CaseId = snapshot.CaseId
                     Reference = reference
                     Revision = Revision.first
-                    Act = CaseActKind.Open
+                    Act = (TaskId.ofLiteral "case.open")
                     Snapshot =
                         SnapshotDisclosure.Disclosed
                             {
                                 State = LiveCase.ofState snapshot.State |> Option.get
+                                Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payment = None
                             }
@@ -61,11 +63,11 @@ let peopleReceipt =
             ReceiptSubject.People
                 {
                     TargetActor = PeopleTargetDisclosure.Disclosed actor
-                    Act = PeopleActKind.ProvisionOwner
+                    Act = (TaskId.ofLiteral "people.provisionOwner")
                     Effects =
                         [
                             {
-                                Act = PeopleActKind.ProvisionOwner
+                                Act = (TaskId.ofLiteral "people.provisionOwner")
                                 Id = EffectId.create receipt.OperationId 0 |> Option.get
                                 Position = EffectPosition.create position.Sequence 0 |> Option.get
                             }
@@ -83,7 +85,7 @@ let caseRead: CaseReadModel =
         Work = Inputs.workView snapshot.State
         Headline = CaseHeadline.Undecided
         Attention = []
-        Stages = Inputs.stageDisplay snapshot.State
+        Stages = DomainInputs.stageDisplay snapshot.State
         Disposition = None
         NextActions = []
         Notes =
@@ -117,54 +119,60 @@ let private directoryActor: ActorReviewItem =
     }
 
 let previewInput =
-    OperationInput.Case
-        {
-            ExpectedFamilySequence = None
-            OperationId = id
-            Target = CaseSelector.Id snapshot.CaseId
-            ExpectedRevision = 1L
-            Act = CaseAct.Void "Synthetic reason"
-        }
+    Submissions.create
+        "case.void"
+        id
+        (Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first))
+        (Map.ofList
+            [
+                Submissions.input InputTarget.Reason, SubmissionValue.Text "Synthetic reason"
+            ])
 
 let preview: PreviewReply =
     {
         OperationId = id
         Outcome =
             Outcome.Succeeded(
-                Previewed.Reviewed(
-                    OperationReview.Case
-                        {
-                            Before = Some snapshot
-                            Proposed =
-                                { snapshot with
-                                    Revision = CaseFixtures.revision 2L
-                                }
-                            Context = runtime
-                            Changes =
+                Previewed.Reviewed
+                    {
+                        OperationReview.Task = TaskId.ofLiteral "case.void"
+                        Target = ReviewTarget.Case(snapshot.CaseId, reference)
+                        References = { Actors = []; Cases = [] }
+                        Binding = Binding.Case(CaseSelector.Id snapshot.CaseId, Revision.first)
+                        Context = runtime
+                        Changes =
+                            [
                                 {
-                                    Lifecycle = None
-                                    Payments = None
-                                    Fields =
-                                        [
+                                    DescribedPart.PartId = CaseId.value snapshot.CaseId
+                                    Revision = CaseFixtures.revision 2L
+                                    Description =
+                                        ClaimCore.Domain.Changes.PartDescription.Case
                                             {
-                                                FieldName = BusinessField.ClaimantName
-                                                Before =
+                                                Values =
+                                                    {
+                                                        Before = CaseState.fields snapshot.State
+                                                        After = CaseState.fields snapshot.State
+                                                    }
+                                                Lifecycle =
+                                                    Some
+                                                        {
+                                                            Before = Some Lifecycle.Active
+                                                            After = Some Lifecycle.Voided
+                                                        }
+                                                Fields = []
+                                                Money = []
+                                                Disposition =
                                                     Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name(Inputs.name "Before")
-                                                        )
-                                                    )
-                                                After =
-                                                    Some(
-                                                        CaseFieldValue.Business(
-                                                            Admitted.Name(Inputs.name "After")
+                                                        CaseDisposition.Voided(
+                                                            Reason.parse "Synthetic reason"
+                                                            |> Result.toOption
+                                                            |> Option.get
                                                         )
                                                     )
                                             }
-                                        ]
                                 }
-                        }
-                )
+                            ]
+                    }
             )
     }
 
@@ -209,7 +217,7 @@ let private actorRead
                     (RepresentationReply.Human(HumanReplies.read describe outcome))
     ]
 
-let private replies () : IEndpointOutput list =
+let internal replies () : IEndpointOutput list =
     [
         yield!
             hostRead
@@ -269,7 +277,10 @@ let private replies () : IEndpointOutput list =
                         Reference = snapshot.Reference
                         Revision = snapshot.Revision
                         WorkRevision = Revision.zero
-                        State = CaseState.map _.Finance snapshot.State
+                        State =
+                            CaseState.map
+                                (fun (fields: CaseFields) -> fields.Finance)
+                                snapshot.State
                         Items = []
                         NextCursor = None
                     })
@@ -388,7 +399,7 @@ let private replies () : IEndpointOutput list =
                                 Responsible = None
                                 RecordedAt = basis.ObservedAt
                                 RecordedBy = actor
-                                Acts = []
+                                Offers = []
                                 Active = true
                                 Timing = Some ReminderDue.Today
                             }
@@ -422,6 +433,7 @@ let private replies () : IEndpointOutput list =
                         Basis = basis
                         Actor = directoryActor
                         Revision = Revision.first
+                        Controls = []
                         Offers = []
                         ProfileSeed = None
                         Items = []
@@ -462,7 +474,7 @@ let private replies () : IEndpointOutput list =
             yield
                 EndpointValues.output
                     Api.operationPreview
-                    (RepresentationReply.Human(HumanReplies.preview previewInput reply))
+                    (RepresentationReply.Human(HumanReplies.previewSubmission previewInput reply))
         for outcome in
             [
                 ExecuteResult.Accepted receipt
@@ -539,7 +551,7 @@ let unavailable representation (endpoint: Endpoint<'input, 'output>) input =
             |> List.find (fun value ->
                 let wire = endpoint.Output.Write value
 
-                (endpoint.Classify value).Kind = ReplyKind.Failed
+                (endpoint.Classify value) = ReplyKind.Failed
                 && JsonValue.tryMember "representation" wire = Some(JsonValue.String "HUMAN"))
 
         let wire = endpoint.Output.Write failed

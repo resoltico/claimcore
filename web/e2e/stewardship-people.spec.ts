@@ -30,7 +30,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
 const stewardAct = async (
   page: Page,
   reference: string,
-  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   reason?: string,
 ) => {
   const p = createPresenter({
@@ -304,7 +304,7 @@ const openActor = async (page: Page, actorId: string, name: string) => {
     }
     await dialog
       .getByRole("button", {
-        name: "Reload grants",
+        name: "Reload roles",
         exact: true,
       })
       .click();
@@ -314,7 +314,7 @@ const openActor = async (page: Page, actorId: string, name: string) => {
 const beginActorAct = async (
   page: Page,
   name: string,
-  kind: Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "PEOPLE" }>["id"],
   language: Language,
 ) => {
   const p = createPresenter({
@@ -380,7 +380,11 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   // D2 admission records profile and the original case-only grant atomically; no extra installation access is added.
   await openAdmission(page, source.issuer, subject, name, reference);
   const admitted = await submitPeople(page, "ACCEPTED");
-  if (admitted === null || admitted.disclosure !== "CURRENT") {
+  if (
+    admitted === null ||
+    admitted.disclosure !== "CURRENT" ||
+    admitted.subject.kind !== "RECEIPT"
+  ) {
     throw new Error("Missing disclosed admitted service target.");
   }
   const receiptDetails = page.locator('section.receipt details[data-region="DETAILS"]');
@@ -433,7 +437,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
     outcome: {
       kind: "REJECTED",
       rejection: {
-        code: "RESOURCE_UNAVAILABLE",
+        code: "ACTOR_UNKNOWN",
       },
     },
   });

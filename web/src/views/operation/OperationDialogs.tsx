@@ -25,7 +25,7 @@ export const AcceptedOperation = ({ receipt, message, onCommitted }: AcceptedOpe
         </p>
       )}
       <h1 ref={heading} tabIndex={-1} id="accepted-title">
-        {p.text("ui.acceptedOperation")}
+        {p.text("label.recordedChange")}
       </h1>
       <ScreenView
         view={receipt.document.screen}

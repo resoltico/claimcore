@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -7,22 +13,24 @@ open ClaimCore.RecordFormat
 module internal NoteQueries =
     let current
         (services: ServiceContext)
-        (tx: IReadTx)
-        (view: CaseFacts)
+        (tx: ReadTx)
+        (view: CaseReadFacts)
         (parent: StoredCase)
         before
         limit
         =
         task {
             let! rows =
-                tx.NotePage
+                NoteReads.notePage
+                    tx
                     {
                         CaseId = parent.CaseId
                         Before = before
                         Limit = limit
                     }
 
-            let! authors = tx.ActorRefs(rows.Items |> List.map _.RecordedBy |> List.distinct)
+            let! authors =
+                PeopleReads.actorRefs tx (rows.Items |> List.map _.RecordedBy |> List.distinct)
 
             let writable =
                 CaseWorkPolicy.canEdit
@@ -83,7 +91,7 @@ module internal NoteQueries =
                             Violation.PageLimitRange NotePaging.MaximumLimit
                         ))
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -94,12 +102,7 @@ module internal NoteQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case
-                                                    services
-                                                    tx
-                                                    None
-                                                    request.Target
-                                                    None
+                                                CaseReadContext.load services tx request.Target
 
                                             match view.Case with
                                             | Some parent when

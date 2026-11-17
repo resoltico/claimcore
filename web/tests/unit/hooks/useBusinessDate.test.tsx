@@ -1,5 +1,5 @@
 import { SessionContext } from "../../../src/session/SessionContext";
-import type { RegionRow, HumanReadDocument_case_list, ResponseFor } from "@contracts/client";
+import type { RegionRow, HumanDocument, ResponseFor } from "@contracts/client";
 
 import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
 
@@ -18,7 +18,7 @@ const requester = {
     observation: { ...activeRequester.basis.observation, businessDate: "2026-11-04" },
   },
 };
-const document = (businessDate: string): HumanReadDocument_case_list => ({
+const document = (businessDate: string): HumanDocument => ({
   screen: { regions: [] },
   subject: { kind: "LIST" },
   actions: [],

@@ -9,7 +9,7 @@ const presenterFor = async (page: Page) =>
 
 export const expectReceiptReadSettled = async (page: Page): Promise<void> => {
   const p = await presenterFor(page);
-  const receipt = page.locator(".success-toast");
+  const receipt = page.locator(".accepted-receipt");
   if ((await receipt.count()) > 0) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       await expect(

@@ -9,8 +9,12 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -127,7 +131,7 @@ let private retarget () =
                 let! read =
                     store.Read
                         {
-                            Work = (fun tx -> tx.ActorCount())
+                            Work = (fun tx -> PeopleReads.actorCount tx ())
                             CancellationToken = token
                         }
 
@@ -234,8 +238,14 @@ let private retarget () =
                 let! _ =
                     DatabaseSession.execute
                         seed
-                        "INSERT INTO claimcore.access_request(issuer,principal_kind,subject,first_seen,last_seen) VALUES('https://issuer.example/','HUMAN','expired-foreign',clock_timestamp()-interval '40 days',clock_timestamp()-interval '35 days')"
-                        [||]
+                        "INSERT INTO claimcore.access_request(principal_key,issuer,principal_kind,subject,first_seen,last_seen) VALUES($1,'https://issuer.example/','HUMAN','expired-foreign',clock_timestamp()-interval '40 days',clock_timestamp()-interval '35 days')"
+                        [|
+                            box (
+                                StoreFixtures.humanPrincipalKey
+                                    "https://issuer.example/"
+                                    "expired-foreign"
+                            )
+                        |]
                         token
 
                 do! refused (fun () -> task { let! _ = runtime.Housekeep token in return () })
@@ -298,7 +308,7 @@ let private retarget () =
                 let! zoneRead =
                     (Runtime.store runtimeB).Read
                         {
-                            Work = (fun tx -> tx.ActorCount())
+                            Work = (fun tx -> PeopleReads.actorCount tx ())
                             CancellationToken = token
                         }
 

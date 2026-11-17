@@ -3,7 +3,11 @@ module ClaimCore.IntegrationTests.WorklistAuthorizationTests
 open System
 open System.Threading
 open System.Globalization
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -51,16 +55,18 @@ let tests =
 
         for index, reference in List.indexed [ "VISIBLE-1"; "VISIBLE-2" ] do
             let opened =
-                Service.execute
+                Service.executeSubmission
                     (core adminPrincipal)
-                    (ClaimCore.TestSupport.Inputs.caseOperation
-                        {
-                            ExpectedFamilySequence = None
-                            OperationId = operationId (3 + index)
-                            CaseReference = reference
-                            ExpectedRevision = 0L
-                            Act = AuthoredCaseAct.Open Inputs.registration
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw
+                        "case.open"
+                        (operationId (3 + index))
+                        (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
+                        (ClaimCore.TestSupport.Submissions.fields (
+                            RegistrationInput.values (DomainInputs.registration)
+                         )
+                         |> Map.add
+                             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                             (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))))
                     CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
@@ -75,15 +81,18 @@ let tests =
         let serviceId = operationId 10
 
         let registered =
-            Service.execute
-                admin
-                (OperationInput.People(
-                    StoreFixtures.peopleRequest
-                        serviceId
-                        servicePrincipal
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (admin).Store
+                        (serviceId)
+                        (servicePrincipal)
+                        (Some 0L)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
+
+                return! Service.executeSubmission (admin) submission (CancellationToken.None)
+            })
             |> fun pending -> pending.GetAwaiter().GetResult()
 
         StoreFixtures.acceptedPeople registered
@@ -126,12 +135,7 @@ let tests =
             database.Fixture.Store.Read
                 {
                     Work =
-                        (fun tx ->
-                            tx.Access
-                                {
-                                    Principal = servicePrincipal
-                                    CaseId = Some corruptedCase
-                                })
+                        (fun tx -> AccessReads.access tx (servicePrincipal) (Some corruptedCase))
                     CancellationToken = CancellationToken.None
                 }
             |> fun pending -> pending.GetAwaiter().GetResult()
@@ -220,7 +224,7 @@ let tests =
             }
 
         for principal, expected in
-            [ adminPrincipal, Some CaseActKind.Decide; servicePrincipal, None ] do
+            [ adminPrincipal, Some(TaskId.ofLiteral "case.decide"); servicePrincipal, None ] do
             match
                 Service.get (core principal) target CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
@@ -245,19 +249,16 @@ let tests =
         let reminderId = operationId 20
 
         let created =
-            Service.execute
+            Service.executeSubmission
                 (core adminPrincipal)
-                (OperationInput.Reminder
-                    {
-                        OperationId = reminderId
-                        Target = CaseSelector.Reference "VISIBLE-2"
-                        Act =
-                            AuthoredReminderAct.Create
-                                {
-                                    Action = "Review evidence"
-                                    Due = dueDate
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.create"
+                    (reminderId)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (CaseSelector.Reference "VISIBLE-2"),
+                        None
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan ("Review evidence") (dueDate)))
                 CancellationToken.None
             |> fun task -> task.GetAwaiter().GetResult()
 

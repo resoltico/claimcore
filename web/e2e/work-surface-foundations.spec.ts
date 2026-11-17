@@ -57,7 +57,7 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
-  await expect(page.locator(".success-toast")).toContainText("Case closed.");
+  await expect(page.locator(".accepted-receipt")).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
   await showCaseRecordDetails(page);
   await expect(

@@ -8,180 +8,145 @@ open ClaimCore.Presentation
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private snapshot operationId (reference: string) claimant : CaseSnapshot =
-    let reference = CaseFixtures.reference reference
-
-    {
-        CaseId = CaseFixtures.caseId operationId
-        Reference = reference
-        Revision = CaseFixtures.revision 1L
-        State =
-            CaseState.Active(
-                {
-                    CaseReference = reference
-                    Status = CaseStatus.Opened
-                    Registration =
-                        CaseFixtures.registration (
-                            ClaimCore.TestSupport.Inputs.registrationWith
-                                [
-                                    BusinessField.ClaimantName, (claimant)
-                                    BusinessField.InsurerName,
-                                    ((RegistrationInput.value
-                                        BusinessField.InsurerName
-                                        (registration)))
-                                    BusinessField.ClaimedAmount, ("1000")
-                                ]
-                                ((Inputs.registrationOn
-                                    (RegistrationInput.value
-                                        BusinessField.IncidentDate
-                                        (registration))
-                                    (RegistrationInput.value
-                                        BusinessField.IncidentNotificationDate
-                                        (registration))))
-                        )
-                    Finance = FinancialPosition.undecided
-                }
-            )
-    }
-
-/// Writes a complete synthetic acceptance without current admission. Valid boundary fixtures exercise
-/// reads; a separate negative control deliberately supplies an invalid current-format acceptance.
+/// Seed accepted values without current admission, including intentionally invalid decision controls.
 let internal seed (database: PostgresFixture.Database) claimant =
-    let fixture = database.Fixture
-
-    let request =
-        request
-            database.Fixture
-            10
-            "HISTORICAL-1"
-            0L
-            (AuthoredCaseAct.Open(
-                ClaimCore.TestSupport.Inputs.registrationWith
-                    [ BusinessField.ClaimantName, (claimant) ]
-                    (registration)
-            ))
-
-    let snapshot = snapshot request.OperationId request.CaseReference claimant
-
-    Case.ofAccepted snapshot
-    |> Result.defaultWith (fun _ -> failtest "Historical fixture must obey permanent format")
-    |> ignore
-
-    let decide (tx: IWriteTx) (view: CaseFacts) =
-        Expect.isNone view.Case "Fixture reference is fresh"
-        Expect.isNone view.ExistingOperation "Fixture operation is fresh"
-
-        let id = snapshot.CaseId
-
-        let actor =
-            view.Actor.Actor
-            |> Option.defaultWith (fun () -> failtest "Fixture owner is provisioned")
-
-        let command =
-            Case.parse request
-            |> Result.defaultWith (fun error -> failtestf "Historical command: %A" error)
-
-        let header =
-            {
-                OperationHeader.InstallationId = fixture.InstallationId
-                Sequence = Sequence.successor tx.Head.Sequence
-                PreviousHash = tx.Head.EntryHash
-                OperationId = command.OperationId
-                ActorId = actor.ActorId
-                RecordedAt = view.ObservedAt
-                BusinessDate = Some(fixture.Calendar.DateAt view.ObservedAt)
-            }
-
-        let scope =
-            CommandSkeleton.Case
-                {
-                    ExpectedFamilySequence = None
-                    CaseId = id
-                    Reference = snapshot.Reference
-                    ExpectedRevision = Revision.zero
-                    Act = CaseActKind.Open
-                    SelectedPayment = None
-                }
-
-        let entry =
-            RetainedOperation.create
-                header
-                scope
-                (OperationValues.Case
-                    {
-                        Command = command
-                        Decision = { After = snapshot; Payment = None }
-                    })
-                tx.NewPayloadNonce
-            |> Result.defaultWith (fun error -> failtestf "Historical root: %A" error)
-
-        let current: StoredCase =
-            {
-                CaseId = id
-                Snapshot = snapshot
-                Index = CaseIndex.create entry.RecordedAt snapshot None []
-                SnapshotBytes = ClaimCore.RecordFormat.CaseRecord.encodeSnapshot snapshot
-            }
-
-        let receipt =
-            LedgerEntries.validateOperation fixture.InstallationId entry
-            |> Result.bind (
-                LedgerEntries.receiptOperation
-                    (Inputs.workBasis)
-                    fixture.Owner
-                    view.Actor
-                    (view.Actor.Actor |> Option.map Actor.currentReference)
-                    (ReceiptCurrent.Case(Some current))
-            )
-            |> Result.defaultWith (fun _ ->
-                failtest "Historical fixture receipt is structurally valid")
-
-        Verdict.Proceed(
-            entry,
-            {
-                CaseProjection.Rows =
-                    {
-                        Snapshot = snapshot
-                        Payments = []
-                        ChangedAt = entry.RecordedAt
-                    }
-                Index = CaseIndex.create entry.RecordedAt snapshot None []
-                Family = CaseFamily.onCaseCreated id |> CaseFamily.rows |> Result.toOption
-            },
-            receipt
-        )
-
     task {
-        let! result =
-            fixture.Store.Write(
-                {
-                    WriteOperation.Work =
-                        (fun tx ->
-                            task {
-                                let! view =
-                                    ExecutionFacts.case
-                                        (core fixture fixture.Owner)
-                                        tx
-                                        (Some(CaseFixtures.operationId (request.OperationId)))
-                                        (CaseSelector.Reference request.CaseReference)
-                                        (Some request.Act)
+        let fixture = database.Fixture
 
-                                return! decide tx view |> ExecutionFacts.persist tx tx.ProjectCase
-                            })
+        let submission =
+            request
+                fixture
+                10
+                "HISTORICAL-1"
+                0L
+                "case.open"
+                (Submissions.fields (
+                    RegistrationInput.values (
+                        DomainInputs.registrationWith
+                            [ BusinessField.ClaimantName, claimant ]
+                            registration
+                    )
+                ))
+
+        let! result =
+            fixture.Store.Write
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let command = Submissions.command submission
+
+                                let reference = CaseFixtures.reference "HISTORICAL-1"
+                                let! current = AggregateStorage.principal tx fixture.Owner
+                                let actor = current |> Option.get |> _.Id
+                                let operation = CaseFixtures.operationId submission.OperationId
+
+                                let header =
+                                    {
+                                        OperationHeader.InstallationId = fixture.InstallationId
+                                        Sequence = Sequence.successor tx.Head.Sequence
+                                        PreviousHash = tx.Head.EntryHash
+                                        OperationId = operation
+                                        ActorId = actor
+                                        RecordedAt = tx.ObservedAt
+                                        BusinessDate = Some(fixture.Calendar.DateAt tx.ObservedAt)
+                                    }
+
+                                let change =
+                                    {
+                                        PartChange.Aggregate =
+                                            AggregateReference.Family(
+                                                CaseId.ofOperationId operation
+                                            )
+                                        PartId = OperationId.value operation
+                                        Revision = Revision.first
+                                        NaturalKey = Some "HISTORICAL-1"
+                                        Erases = None
+                                        Stamp =
+                                            {
+                                                Position =
+                                                    EffectPosition.create header.Sequence 0
+                                                    |> Option.get
+                                                OperationId = operation
+                                                ActorId = actor
+                                                RecordedAt = tx.ObservedAt
+                                            }
+                                        Value =
+                                            PartValue.Case
+                                                {
+                                                    Reference = Some reference
+                                                    Lifecycle = Lifecycle.Active
+                                                    Status = CaseStatus.Opened
+                                                    Disposition = None
+                                                    Content =
+                                                        Some
+                                                            {
+                                                                Registration =
+                                                                    DomainInputs
+                                                                        .admittedRegistration (
+                                                                            DomainInputs
+                                                                                .registrationWith
+                                                                                [
+                                                                                    BusinessField
+                                                                                        .ClaimantName,
+                                                                                    claimant
+                                                                                ]
+                                                                                registration
+                                                                        )
+                                                                Finance =
+                                                                    FinancialPosition.undecided
+                                                            }
+                                                }
+                                    }
+
+                                let retained =
+                                    RetainedOperation.create
+                                        header
+                                        submission.Task
+                                        command.Binding
+                                        command.Inputs
+                                        [ change ]
+                                        tx.NewPayloadNonce
+                                    |> Result.defaultWith (fun error ->
+                                        failtestf "Historical root: %A" error)
+
+                                let family =
+                                    CaseFamily.apply None change
+                                    |> Result.defaultWith (fun error ->
+                                        failtestf "Permanent family: %A" error)
+
+                                let origins =
+                                    Map.ofList [ (change.Kind, change.PartId), change.Stamp ]
+
+                                let rows =
+                                    ProjectionRows.family family [ change ] origins None
+                                    |> Result.defaultWith (fun error ->
+                                        failtestf "Historical projection: %A" error)
+
+                                do! tx.Append retained
+                                do! tx.ProjectFamily rows
+                                return Verdict.Proceed retained
+
+                            }
                     CancellationToken = token
                 }
-            )
 
         match result with
         | Ok(Verdict.Proceed _) -> ()
-        | _ -> failtest "Historical fixture append failed"
+        | other -> failtestf "Historical fixture append: %A" other
     }
 
 let private acceptedBoundary (database: PostgresFixture.Database) =
@@ -211,7 +176,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
         | _ -> failtest "Historical record could not be read"
 
         let values =
-            (ClaimCore.TestSupport.Inputs.registrationWith
+            (ClaimCore.TestSupport.DomainInputs.registrationWith
                 [
                     BusinessField.ClaimantName, (name)
                     BusinessField.InsurerName, ("Corrected Insurer")
@@ -219,37 +184,39 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
                 (registration))
 
         let! reaffirm =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "HISTORICAL-1"
-                        1L
-                        (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
-                ))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("HISTORICAL-1")
+                    (1L)
+                    "case.amendRegistration"
+                    (ClaimCore.TestSupport.Submissions.updates (
+                        RegistrationUpdateInput.values ((DomainInputs.registrationUpdate values))
+                    )))))
                 (token))
 
         accepted reaffirm |> ignore
 
         let! changed =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        12
-                        "HISTORICAL-1"
-                        2L
-                        (AuthoredCaseAct.AmendRegistration(
-                            Inputs.registrationUpdate (
-                                ClaimCore.TestSupport.Inputs.registrationWith
+                (((request
+                    (database.Fixture)
+                    (12)
+                    ("HISTORICAL-1")
+                    (2L)
+                    "case.amendRegistration"
+                    (ClaimCore.TestSupport.Submissions.updates (
+                        RegistrationUpdateInput.values (
+                            (DomainInputs.registrationUpdate (
+                                ClaimCore.TestSupport.DomainInputs.registrationWith
                                     [ BusinessField.ClaimantName, (name + "B") ]
                                     (values)
-                            )
-                        ))
-                ))
+                            ))
+                        )
+                    )))))
                 (token))
 
         Expect.equal
@@ -269,19 +236,13 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
 let private appendTransitions fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
-            let act =
-                if revision % 2L = 1L then
-                    (AuthoredCaseAct.Bare BareAct.Close)
-                else
-                    (AuthoredCaseAct.Bare BareAct.Reopen)
+            let taskName = if revision % 2L = 1L then "case.close" else "case.reopen"
 
             let! result =
-                (Service.execute
+                Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture (100 + int revision) "HISTORICAL-1" revision act
-                    ))
-                    (token))
+                    (request fixture (100 + int revision) "HISTORICAL-1" revision taskName Map.empty)
+                    token
 
             accepted result |> ignore
 
@@ -332,9 +293,12 @@ let private retainedPages (database: PostgresFixture.Database) =
         Expect.equal
             (entries
              |> List.map (fun entry ->
-                 match entry.Subject with
-                 | TimelineSubject.CaseFact(revision, _) -> Revision.value revision
-                 | _ -> failtest "The fact filter excludes work and reminders"))
+                 Expect.equal
+                     entry.Subject.PartKind
+                     ClaimCore.Domain.Changes.PartKind.Case
+                     "Fact filter selects case parts"
+
+                 Revision.value entry.Subject.Revision))
             (List.rev [ 1L .. 60L ])
             "Retained revisions traverse newest-first without omissions or duplicates"
 

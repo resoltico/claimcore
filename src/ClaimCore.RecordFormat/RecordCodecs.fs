@@ -54,10 +54,10 @@ module internal RecordCodecs =
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
             (values >> List.map (fun (field, value) -> field, Some value) >> Map.ofList)
 
-    let private acceptedRegistration =
+    let registration =
         acceptedGroup RecordGroup.Registration Registration.create Registration.values
 
-    let private acceptedDecision =
+    let decision =
         acceptedGroup RecordGroup.Decision Decision.create Decision.values
         |> named "Decision"
 
@@ -66,8 +66,8 @@ module internal RecordCodecs =
         =
         fields
         |> field "status" _.Status (enumeration (Vocabulary.entries CaseStatus.vocabulary))
-        |> field "registration" _.Registration acceptedRegistration
-        |> field "finance" _.Finance (FinancialCodecs.position acceptedDecision)
+        |> field "registration" _.Registration registration
+        |> field "finance" _.Finance (FinancialCodecs.position decision)
 
     let caseFields =
         (record (fun reference status registration finance ->

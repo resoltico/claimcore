@@ -1,6 +1,7 @@
 namespace ClaimCore.Domain
 
 open System
+open ClaimCore.Domain.Changes
 
 type LifecycleChange =
     {
@@ -84,17 +85,18 @@ type TimelineChange =
     | CaseField of CaseFieldDifference
     | CaseMoney of CaseMoneyDifference
     | Lifecycle of LifecycleChange
+    | Disposition of CaseDisposition
     | Responsibility of ValueChange<ActorRef>
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference
     | Payments of PaymentCollectionDifference
-    | Note of NoteActKind * NoteId * NoteText option
+    | Note of removed: bool * NoteId * NoteText option
 
 /// A concise recorded event, not an instruction to perform an act.
 [<RequireQualifiedAccess>]
 type TimelineEvent =
-    | CaseActRecorded of CaseActKind
-    | NoteRecorded of NoteActKind
+    | PartChanged of PartKind
+    | NoteRecorded of removed: bool
     | ResponsibilityAssigned of ActorRef
     | ResponsibilityCleared of ActorRef
     | WorkRecorded
@@ -229,12 +231,12 @@ type TimelineChanges =
     | Withheld
     | Erased
 
-[<RequireQualifiedAccess>]
 type TimelineSubject =
-    | CaseFact of Revision * CaseActKind
-    | Note of NoteActKind * NoteId
-    | Work of Revision * WorkActKind
-    | Reminder of ReminderActKind * ReminderId * Revision * (ReminderId * Revision) option
+    {
+        PartKind: PartKind
+        PartId: Guid
+        Revision: Revision
+    }
 
 type CaseTimelineEntry =
     {
@@ -242,6 +244,7 @@ type CaseTimelineEntry =
         Position: EffectPosition
         OperationHash: EntryHash
         Subject: TimelineSubject
+        Task: TaskId
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
         Changes: TimelineChanges
@@ -252,6 +255,19 @@ type ChangeEntity =
     | Case
     | Work
     | Reminder of ReminderId
+
+module ChangeEntity =
+    let partKind =
+        function
+        | ChangeEntity.Case -> PartKind.Case
+        | ChangeEntity.Work -> PartKind.Work
+        | ChangeEntity.Reminder _ -> PartKind.Reminder
+
+    let partId caseId =
+        function
+        | ChangeEntity.Case
+        | ChangeEntity.Work -> CaseId.value caseId
+        | ChangeEntity.Reminder id -> ReminderId.value id
 
 /// A conflict continuation retains the observed upper revision, even if later changes are accepted.
 type ChangeRange =

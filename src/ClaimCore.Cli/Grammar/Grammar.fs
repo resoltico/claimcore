@@ -79,7 +79,7 @@ module Grammar =
     let private build
         incomplete
         allocate
-        (entry: TaskId)
+        (entry: string)
         options
         operands
         (problems: ResizeArray<UsageError>)
@@ -95,7 +95,7 @@ module Grammar =
             match (TaskRouting.endpoint entry) with
             | ActorEndpoint.Query _
             | ActorEndpoint.Command _ ->
-                QueryArguments.build entry options operands problems |> Some |> Choice1Of2
+                QueryArguments.build entry options operands problems |> Choice1Of2
             | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
 
     let private prepareWith incomplete admit finish newId arguments =

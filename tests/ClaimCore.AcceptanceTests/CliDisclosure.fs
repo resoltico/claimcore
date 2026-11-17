@@ -21,8 +21,7 @@ let private original (fixture: PublishedFixture.Fixture) =
     let reference = "CLI-DISCLOSURE-" + id ()
     input["operationId"] <- JsonValue.Create(id ())
 
-    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
-        JsonValue.Create reference
+    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     (input["inputs"] |> nonNull)["field:incidentDescription"] <-
         JsonValue.Create "Earlier history\nOriginal exact paragraph"
@@ -33,6 +32,13 @@ let private amend (input: JsonNode) =
     let pending = input.DeepClone()
     pending["operationId"] <- JsonValue.Create(id ())
     (pending["binding"] |> nonNull)["expectedRevision"] <- JsonValue.Create 1L
+    let target = JsonObject()
+    target["kind"] <- JsonValue.Create "REFERENCE"
+
+    target["caseReference"] <-
+        ((pending["inputs"] |> nonNull)["field:caseReference"] |> nonNull).DeepClone()
+
+    (pending["binding"] |> nonNull)["target"] <- target
     pending["task"] <- JsonValue.Create "case.amendRegistration"
 
     pending["inputs"] <-
@@ -65,7 +71,18 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
     let close =
-        caseSubmission (id ()) reference 1L None (CaseAct.AmendRegistration update)
+        caseSubmission
+            (id ())
+            reference
+            1L
+            "case.amendRegistration"
+            (RegistrationUpdateInput.values update
+             |> List.map (fun (field, value) ->
+                 ClaimCore.TestSupport.Submissions.field field,
+                 value
+                 |> Option.map ClaimCore.Application.Contracts.SubmissionValue.Text
+                 |> Option.defaultValue ClaimCore.Application.Contracts.SubmissionValue.Clear)
+             |> Map.ofList)
 
     automation fixture "operation.execute" close 0 |> require "ACCEPTED" |> ignore
     let refused = automation fixture "operation.execute" pending 2 |> require "REJECTED"

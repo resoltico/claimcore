@@ -1,7 +1,17 @@
+import { principalCreationTask } from "../operation/metadata";
+import { operationTask } from "../protocol/taskCatalog";
+import { renderCatalogKey } from "../presentation/messages";
+import { isOperationAffordance, initialAffordanceValues } from "../operation/affordances";
+import {
+  apiEndpoints,
+  resultNotice,
+  type ServiceResponse,
+  type OperationReceipt,
+} from "../api/service";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { PersonDocument } from "../protocol/types";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
-import { initialAffordanceValues } from "../operation/affordances";
+
 import { taskDefinitions, type Principal } from "@contracts/client";
 import { isActiveRequester, useRequesterContext } from "../hooks/useRequesterContext";
 import { ScreenView } from "../ui/ScreenView";
@@ -24,7 +34,7 @@ import {
   type ReactNode,
 } from "react";
 import { isDisclosureRefused } from "../api/outcomes";
-import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
+
 import { PeopleGrants, type RevocationControl } from "./PeopleGrants";
 import { PeopleListing } from "./PeopleListing";
 import type { Notice } from "../protocol/notices";
@@ -34,13 +44,13 @@ import { useEndpoint } from "../hooks/useEndpoint";
 import { usePeopleDisclosure } from "../hooks/operation/usePeopleDisclosure";
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
-const contextData = (response: ServiceResponse<"context">) =>
+const contextData = (response: ServiceResponse<typeof apiEndpoints.context>) =>
   response.outcome.kind === "SUCCEEDED" && isActiveRequester(response.outcome.document)
     ? response.outcome.document
     : null;
 type Disclosure = ReturnType<typeof usePeopleDisclosure>;
 const usePeopleContext = (disclosure: Disclosure) => {
-  const query = useEndpoint("context", {});
+  const query = useEndpoint(apiEndpoints.context, {});
   const { refused, restored } = disclosure;
   useEffect(() => {
     let active = true;
@@ -54,7 +64,7 @@ const usePeopleContext = (disclosure: Disclosure) => {
         query.result.kind === "outcome" &&
         query.result.value.outcome.kind === "SUCCEEDED"
       ) {
-        restored("context");
+        restored(apiEndpoints.context);
       }
     });
     return () => {
@@ -177,7 +187,7 @@ const usePeopleWorkspace = (disclosure: Disclosure, target: PeopleTarget) => {
         context.value?.actions.some(
           (action) => action.task === task.id && action.blocked === null,
         ) === true
-          ? [task.act]
+          ? [task.id]
           : [],
       ),
     [context.value],
@@ -210,7 +220,7 @@ const PendingPeopleRequests = ({
     available={
       !selected &&
       available &&
-      context?.links.some((named) => named.link.endpoint === "people.requests") === true
+      context?.links.some((named) => named.link.endpoint === apiEndpoints.peopleRequests) === true
     }
     busy={
       model.busy ||
@@ -219,7 +229,11 @@ const PendingPeopleRequests = ({
     }
     mayAdmit={
       context?.actions.some(
-        (action) => action.task === "people.admit" && action.blocked === null,
+        (action) =>
+          isOperationAffordance(action) &&
+          operationTask(action.task).creates &&
+          operationTask(action.task).collections.length > 0 &&
+          action.blocked === null,
       ) === true
     }
     onDisclosureRefused={refused}
@@ -252,7 +266,11 @@ const PeopleWorkspace = ({
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
       {selectedActorId === null &&
       context.value?.actions.some(
-        (action) => action.task === "people.admit" && action.blocked === null,
+        (action) =>
+          isOperationAffordance(action) &&
+          operationTask(action.task).creates &&
+          operationTask(action.task).collections.length > 0 &&
+          action.blocked === null,
       ) === true ? (
         <button
           type="button"
@@ -263,7 +281,10 @@ const PeopleWorkspace = ({
               (!model.dirty && model.prepared === null && !model.priorUncertain)
             ) {
               const action = context.value?.actions.find(
-                (candidate): candidate is AccessRequestControl => candidate.task === "people.admit",
+                (candidate): candidate is AccessRequestControl =>
+                  isOperationAffordance(candidate) &&
+                  operationTask(candidate.task).creates &&
+                  operationTask(candidate.task).collections.length > 0,
               );
               if (action !== undefined) {
                 editor.admit(action);
@@ -272,7 +293,7 @@ const PeopleWorkspace = ({
             editor.open();
           }}
         >
-          {p.peopleLabel("people.admit")}
+          {renderCatalogKey(p, principalCreationTask().labelId)}
         </button>
       ) : null}
       <PendingPeopleRequests
@@ -289,14 +310,10 @@ const PeopleWorkspace = ({
             selectedActorId={selectedActorId}
             open={!editor.active && model.pendingDiscard === null}
             actions={<ActorActions target={target} busy={model.busy} onOpen={editor.open} />}
-            onRevoke={
-              target.offered.includes("people.revoke")
-                ? (grant) => {
-                    target.begin(grant);
-                    editor.open();
-                  }
-                : undefined
-            }
+            onRevoke={(action) => {
+              target.begin(action);
+              editor.open();
+            }}
             disclosure={disclosure}
             available={disclosureAvailable}
             onSelect={setSelectedActorId}
@@ -328,9 +345,9 @@ const PeopleReceipt = ({ operationId }: { operationId: string }) => {
   return (
     <section className="receipt">
       <h2 ref={heading} tabIndex={-1}>
-        {p.text("ui.acceptedOperation")}
+        {p.text("label.recordedChange")}
       </h2>
-      {observation.receipt === null ? null : (
+      {observation.receipt === null || observation.receipt.basis.kind !== "SNAPSHOT" ? null : (
         <ScreenView
           view={observation.receipt.screen}
           timeZone={observation.receipt.basis.observation.timeZone}
@@ -379,7 +396,7 @@ type PeopleLayoutProps = {
 };
 const PeopleTitle = () => {
   const p = usePresentation();
-  return <h1 id="people-title">{p.text("ui.shell.people")}</h1>;
+  return <h1 id="people-title">{p.text("view.PEOPLE.label")}</h1>;
 };
 const PeopleUnavailable = ({
   model,
@@ -473,7 +490,7 @@ const PeopleLayout = ({
     </section>
   );
 };
-const initialPeopleAct = "people.admit";
+
 type PeoplePanelProps = {
   onLockChange: MutationLockChange;
   disclosureAvailable?: boolean;
@@ -537,7 +554,7 @@ const usePeopleOperation = ({ onLockChange }: PeoplePanelProps) => {
   };
   const model = useOperation({
     subject: "PEOPLE",
-    kind: initialPeopleAct,
+    kind: principalCreationTask().id,
     current: null,
     credential,
     onLockChange,
@@ -597,7 +614,7 @@ const PeopleEditorPanel = (props: PeoplePanelProps) => {
           const subject = action.seeds["input:principal.subject"];
           const fixed =
             !action.editable.includes("input:principal.subject") &&
-            typeof kind === "string" &&
+            (kind === "HUMAN" || kind === "SERVICE") &&
             typeof issuer === "string" &&
             typeof subject === "string";
           setAdmissionPrincipal(fixed ? { kind, issuer, subject } : null);

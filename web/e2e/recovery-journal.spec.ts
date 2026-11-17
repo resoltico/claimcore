@@ -784,6 +784,7 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
     if (
       contextReply.representation !== "HUMAN" ||
       contextReply.outcome.kind !== "SUCCEEDED" ||
+      contextReply.outcome.document.subject.kind !== "REQUESTER" ||
       contextReply.outcome.document.subject.state !== "ACTIVE"
     ) {
       throw new Error("Workspace context refresh positive control");

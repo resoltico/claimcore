@@ -1,3 +1,4 @@
+import { principalCreationTask } from "../../operation/metadata";
 import { grantFields } from "../../operation/grantTargetDraft";
 import { useEndpointCache } from "../EndpointProvider";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -6,6 +7,7 @@ import type { PersonDocument } from "../../protocol/types";
 
 import {
   allActions,
+  documentActions,
   initialAffordanceValues,
   operationActions,
   type OperationAffordance,
@@ -60,7 +62,7 @@ const useActorDisclosure = (revision: number, available: boolean) => {
 };
 const admissionIsBound = (model: OperationModel, principal: Principal | null) =>
   principal !== null &&
-  model.entry.kind === "people.admit" &&
+  model.task.creates &&
   model.values["input:principal.kind"] === principal.kind &&
   model.values["input:principal.issuer"] === principal.issuer &&
   model.values["input:principal.subject"] === principal.subject;
@@ -163,29 +165,31 @@ export const usePeopleTarget = (
   const [intent, setIntent] = useState<Intent | null>(null);
   const admissionBound = admissionIsBound(model, admissionPrincipal);
   const actorBound =
-    source !== null &&
-    boundActor(model) === source.document.subject.actorId &&
-    model.entry.kind !== "people.admit" &&
-    model.entry.kind !== "people.register";
+    source !== null && boundActor(model) === source.document.subject.actorId && !model.task.creates;
   const fixed = admissionBound || actorBound;
   const seeded = useRef<string | null>(null);
-  const primary = source?.document.actions.find(
-    (action) => action.primary && action.blocked === null,
-  );
+  const recommended =
+    source === null
+      ? undefined
+      : operationActions(
+          source.document.screen.regions
+            .filter((region) => region.role === "RECOMMENDATION")
+            .flatMap((region) => region.actions ?? []),
+        ).find((action) => action.blocked === null);
   useEffect(() => {
     if (retained(model) || model.busy || fixed) {
       return;
     }
-    if (source !== null && primary !== undefined && primary.task !== "people.requests.dismiss") {
+    if (source !== null && recommended !== undefined) {
       seeded.current = source.key;
-      adopt(model, primary);
+      adopt(model, recommended);
     } else if (source === null && seeded.current !== null && model.phase !== "ACCEPTED") {
       seeded.current = null;
       if (boundActor(model) !== undefined) {
-        model.discard(false, "people.admit", {}, { kind: "PEOPLE", expectedRevision: 0 });
+        model.discard(false, principalCreationTask().id, {});
       }
     }
-  }, [model, source, primary, fixed]);
+  }, [model, source, recommended, fixed]);
   const begin = (action: OperationAffordance) => {
     if (source === null || !source.actions.includes(action) || model.busy) {
       return;
@@ -203,7 +207,7 @@ export const usePeopleTarget = (
     const action =
       explicit ??
       pending?.action ??
-      source?.actions.find((candidate) => candidate.task === (kind ?? primary?.task));
+      source?.actions.find((candidate) => candidate.task === (kind ?? recommended?.task));
     if (action === undefined) {
       model.discard(acknowledged, kind, values, binding);
     } else {
@@ -232,8 +236,7 @@ export const usePeopleTarget = (
     selectionCurrent,
     observe,
     offered: source?.actions.map((action) => action.task) ?? [],
-    actions: source === null ? [] : source.document.actions,
-    primary: primary?.task,
+    actions: source === null ? [] : documentActions(source.document),
     person: actorBound ? source.document : null,
     mode: targetMode(actorId, fixed, model),
   };

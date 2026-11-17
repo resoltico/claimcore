@@ -2,517 +2,316 @@ module ClaimCore.Tests.OperationRootTests
 
 open System
 open System.Text
-open System.Security.Cryptography
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
+open ClaimCore.Json
 open ClaimCore.RecordFormat
+open ClaimCore.Tests.RecordBuilders
 
-let private valid result =
-    Result.defaultWith (fun error -> failtestf "Root vector: %A" error) result
+let private restoreWith header task structure effects compartments hash =
+    OperationRoot.restore header task structure effects compartments hash
 
-let private guid number =
-    Guid.Parse(sprintf "00000000-0000-7000-8000-%012d" number)
+let private read (bytes: byte array) =
+    StrictJson.read Int32.MaxValue bytes |> required
 
-let private operation = OperationId.create (guid 2) |> Option.get
-let private parent = CaseId.create (guid 3) |> Option.get
-let private note = NoteId.create (guid 7) |> Option.get
-let private selected = OperationId.create (guid 7) |> Option.get
-let private utf8 (text: string) = Encoding.UTF8.GetBytes text
-
-let private header =
-    {
-        OperationHeader.InstallationId = Guid.Parse "00000000-0000-4000-8000-000000000001"
-        Sequence = Sequence.create 42L |> Option.get
-        PreviousHash = EntryHash.zero
-        OperationId = operation
-        ActorId = ActorId.create (guid 9) |> Option.get
-        RecordedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
-        BusinessDate = Some(DateOnly(2026, 9, 7))
-    }
-
-let private commandText =
-    """{"act":"note.remove","caseId":"00000000-0000-7000-8000-000000000003","compartment":null,"kind":"NOTE","noteId":"00000000-0000-7000-8000-000000000007"}"""
-
-let private effectText =
-    """{"caseId":"00000000-0000-7000-8000-000000000003","kind":"NOTE_REMOVED","noteId":"00000000-0000-7000-8000-000000000007"}"""
-
-let private command = CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note))
-let private effect = EffectDescriptor.NoteRemoved(parent, note)
-
-// Independent stdlib derivation: framed ASCII domain tag, format4, RFC4122 UUIDs,
-// i64BE sequence, prior hash, operation/executor UUIDs, i64BE UTC ticks,
-// optional business-date flag + u32BE zero-based Gregorian day, then framed canonical
-// command, effect count, each ordinal/framed descriptor, compartment count/descriptors/hashes.
-// UTC ticks = 739865 Gregorian days * 864000000000 ticks/day = 639243360000000000.
-let private prefix =
-    Convert.FromHexString(
-        String.concat
-            ""
-            [
-                "00000013"
-                "436c61696d436f72652e4f7065726174696f6e"
-                "00000004"
-                "00000000000040008000000000000001"
-                "000000000000002a"
-                "0000000000000000000000000000000000000000000000000000000000000000"
-                "00000000000070008000000000000002"
-                "00000000000070008000000000000009"
-                "08df0c72f5d3c000"
-                "01"
-                "000b4a19"
-            ]
-    )
-
-let private digest =
-    Convert.FromHexString "a3358f456c4e69a115d534270214b5b06628524cd4af93a41976bdea628637f5"
-
-let private expectedHash = EntryHash.ofBytes digest |> Option.get
+let private setMember name value =
+    function
+    | JsonValue.Object members ->
+        JsonValue.Object((name, value) :: (members |> List.filter (fst >> (<>) name)))
+    | _ -> failtest "Expected object mutation witness."
 
 [<Tests>]
 let tests =
     testList
-        "canonical operation roots"
+        "format 5 operation roots"
         [
-            testCase "an independently framed public operation derives the literal hash" (fun () ->
-                let bytes =
-                    Array.concat
-                        [
-                            prefix
-                            Convert.FromHexString "00000096"
-                            utf8 commandText
-                            Convert.FromHexString "000000010000000000000077"
-                            utf8 effectText
-                            Convert.FromHexString "00000000"
-                        ]
-
-                Expect.equal bytes.Length 417 "Hand-counted root framing length"
-
-                Expect.equal
-                    (SHA256.HashData bytes)
-                    digest
-                    "Independent preimage derives the fixed vector"
-
-                let root = OperationRoot.append header command [ effect ] [] |> valid
-
-                Expect.equal
-                    (OperationRoot.commandBytes root)
-                    (utf8 commandText)
-                    "Command codec matches independently authored canonical text"
-
-                Expect.equal
-                    (OperationRoot.effectBytes root)
-                    [ 0, utf8 effectText ]
-                    "Effect codec matches independently authored canonical text"
-
-                Expect.equal
-                    root.Hash
-                    expectedHash
-                    "Actual root encoding includes every independently framed field"
-
-                Expect.equal
-                    (OperationRoot.restore
-                        header
-                        (utf8 commandText)
-                        [ 0, utf8 effectText ]
-                        []
-                        expectedHash)
-                    (Ok root)
-                    "Stored public metadata closes and verifies")
             testCase
-                "a salted Unicode compartment is bound into the operation root and survives content erasure"
+                "independently framed public metadata derives the literal format 5 digest"
                 (fun () ->
-                    let command =
-                        CommandSkeleton.Case
-                            {
-                                ExpectedFamilySequence = None
-                                CaseId = parent
-                                Reference = CaseReference.parse "STRUCTURE-1" |> valid
-                                ExpectedRevision = Revision.create 4L |> Option.get
-                                Act = CaseActKind.RemovePayment
-                                SelectedPayment = Some selected
-                            }
+                    let record = publicRecord ()
+                    let root = record.Root
+                    // Independent Python struct/uuid/hashlib calculation: 545 bytes, .NET UTC ticks below.
+                    Expect.equal
+                        root.Header.RecordedAt.UtcTicks
+                        639297792000000000L
+                        "Timestamp frame"
 
-                    let effect =
-                        EffectDescriptor.Case(
-                            parent,
-                            Revision.create 5L |> Option.get,
-                            CaseActKind.RemovePayment,
-                            None,
-                            Some(PaymentReference.Removed selected)
-                        )
+                    Expect.equal
+                        (EntryHash.toBytes root.Hash |> Convert.ToHexStringLower)
+                        "1eafd7d8cb9c025ef799e0e5d44c5c797d13fbdcf4c1cd8ae34f1c54ee0985ea"
+                        "Literal SHA-256 vector"
 
-                    let descriptor =
-                        CompartmentDescriptor.create
-                            0
-                            (CompartmentOwner.Case parent)
-                            CompartmentPurpose.Case
-                            [ 0 ]
-                        |> valid
+                    Expect.equal
+                        (OperationRoot.structureBytes root |> Encoding.UTF8.GetString)
+                        """{"binding":{"actorId":"00000000-0000-7000-8000-000000000002","expectedRevision":1,"kind":"PEOPLE"},"retained":{"collections":{}}}"""
+                        "Hand-authored canonical structure"
 
-                    let payload = utf8 """{"claimant":"Ā 😀"}"""
+                    Expect.equal
+                        (OperationRoot.effectBytes root
+                         |> List.exactlyOne
+                         |> snd
+                         |> Encoding.UTF8.GetString)
+                        """{"aggregate":{"id":"00000000-0000-7000-8000-000000000002","kind":"PERSON"},"erases":{"id":"00000000-0000-7000-8000-000000000002","kind":"PROFILE"},"part":{"id":"00000000-0000-7000-8000-000000000002","kind":"PERSON"},"retained":{"enabled":true,"grants":[]},"revision":2}"""
+                        "Hand-authored canonical effect"
 
-                    let compartment =
-                        Compartment.seal
-                            header.InstallationId
-                            operation
-                            descriptor
-                            [| 0uy .. 31uy |]
-                            payload
-                        |> valid
+                    Expect.equal (restore root) (Ok root) "Public-only root restores")
+            testCase
+                "all six part kinds restore with available or erased compartment content"
+                (fun () ->
+                    let records = samples ()
+                    let kinds = records |> List.collect _.Changes |> List.map _.Kind |> Set.ofList
 
-                    let root =
-                        OperationRoot.append header command [ effect ] [ compartment ] |> valid
-
-                    let commandText =
-                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","compartment":0,"expectedFamilySequence":null,"expectedRevision":4,"kind":"CASE","reference":"STRUCTURE-1","selectedPayment":"00000000-0000-7000-8000-000000000007"}"""
-
-                    let effectText =
-                        """{"act":"case.removePayment","caseId":"00000000-0000-7000-8000-000000000003","creationReference":null,"kind":"CASE","payment":{"kind":"REMOVED","operationId":"00000000-0000-7000-8000-000000000007"},"revision":5}"""
-
-                    let descriptorBytes =
-                        Convert.FromHexString
-                            "010000000000007000800000000000000301000000000000000100000000"
-
-                    let commitment =
-                        Convert.FromHexString
-                            "787f3b9337181e82933691cc006e4fa9d53851284a83478f41b277a12b269329"
-
-                    let bytes =
-                        Array.concat
+                    Expect.equal
+                        kinds
+                        (set
                             [
-                                prefix
-                                Convert.FromHexString "000000f0"
-                                utf8 commandText
-                                Convert.FromHexString "0000000100000000000000d2"
-                                utf8 effectText
-                                Convert.FromHexString "000000010000001e"
-                                descriptorBytes
-                                commitment
-                            ]
+                                PartKind.Case
+                                PartKind.Payment
+                                PartKind.Work
+                                PartKind.Reminder
+                                PartKind.Note
+                                PartKind.Person
+                            ])
+                        "Independent part inventory"
 
-                    let hash =
-                        Convert.FromHexString
-                            "0cdc974e711a7f22f617d4d27aae0cb84c1d492ceb4876b90fc1dcf0209ebe17"
+                    for record in records do
+                        Expect.equal
+                            (restore record.Root)
+                            (Ok record.Root)
+                            (TaskId.token record.Root.Structure.Task)
 
-                    Expect.equal bytes.Length 664 "Hand-counted salted root framing"
-                    Expect.equal (SHA256.HashData bytes) hash "Independent salted root derivation"
+                        Expect.equal
+                            (RetainedOperation.restore record.Root)
+                            (Ok record)
+                            "Available accepted values round trip"
 
-                    Expect.equal
-                        (EntryHash.toBytes root.Hash)
-                        hash
-                        "Root binds ordered compartment descriptor and commitment"
+                        let erased = clear record
 
-                    let erased =
-                        OperationRoot.restore
-                            header
-                            (utf8 commandText)
-                            [ 0, utf8 effectText ]
-                            [ Compartment.withoutContent compartment ]
-                            root.Hash
-                        |> valid
+                        Expect.equal
+                            erased.Root.Hash
+                            record.Root.Hash
+                            "Erasure cannot change the root"
 
-                    Expect.equal erased.Hash root.Hash "Erasure never rewrites an accepted root"
+                        Expect.isOk (restore erased.Root) "Erased root is still hash-verifiable")
+            testCase "recording metadata, task and binding cannot be reassigned" (fun () ->
+                let root = (publicRecord ()).Root
 
-                    Expect.equal
-                        erased.Structure.Effects
-                        [ effect ]
-                        "Selected payment identity remains after private content is gone"
+                let restoreHeader header =
+                    restoreWith
+                        header
+                        (TaskId.token root.Structure.Task)
+                        (OperationRoot.structureBytes root)
+                        (OperationRoot.effectBytes root)
+                        root.Structure.Compartments
+                        root.Hash
 
-                    let changed =
-                        Compartment.seal
-                            header.InstallationId
-                            operation
-                            descriptor
-                            [| 1uy .. 32uy |]
-                            payload
-                        |> valid
-
-                    Expect.equal
-                        (OperationRoot.restore
-                            header
-                            (utf8 commandText)
-                            [ 0, utf8 effectText ]
-                            [ changed ]
-                            root.Hash)
-                        (Error OperationRootProblem.Hash)
-                        "A substituted salt/content commitment changes the root")
-            testCase "recording metadata and operation context cannot be reassigned" (fun () ->
-                let root = OperationRoot.append header command [ effect ] [] |> valid
-
-                let changedHeaders =
+                for header in
                     [
-                        { header with
-                            InstallationId = Guid.Parse "00000000-0000-4000-8000-000000000004"
+                        { root.Header with
+                            InstallationId = Guid.Parse "00000000-0000-4000-8000-000000000099"
                         }
-                        { header with
-                            Sequence = Sequence.create 43L |> Option.get
+                        { root.Header with
+                            PreviousHash = EntryHash.zero
                         }
-                        { header with
-                            PreviousHash = EntryHash.ofBytes (Array.create 32 1uy) |> Option.get
+                        { root.Header with
+                            OperationId = ClaimCore.Tests.TaskBuilders.operation 99
                         }
-                        { header with
-                            OperationId = OperationId.create (guid 8) |> Option.get
+                        { root.Header with
+                            ActorId =
+                                ActorId.ofOperationId (ClaimCore.Tests.TaskBuilders.operation 99)
                         }
-                        { header with
-                            ActorId = ActorId.create (guid 8) |> Option.get
+                        { root.Header with
+                            RecordedAt = root.Header.RecordedAt.AddTicks 10L
                         }
-                        { header with
-                            RecordedAt = header.RecordedAt.AddTicks 10L
-                        }
-                        { header with
-                            BusinessDate = Some(DateOnly(2026, 9, 8))
-                        }
-                    ]
-
-                for changed in changedHeaders do
-                    Expect.equal
-                        (OperationRoot.restore
-                            changed
-                            (utf8 commandText)
-                            [ 0, utf8 effectText ]
-                            []
-                            root.Hash)
-                        (Error OperationRootProblem.Hash)
-                        "Every root context field is committed")
-            testCase "stored effect ordinals cannot disappear repeat or leave gaps" (fun () ->
-                for effects in
-                    [
-                        []
-                        [ 1, utf8 effectText ]
-                        [ 0, utf8 effectText; 0, utf8 effectText ]
-                        [ 0, utf8 effectText; 2, utf8 effectText ]
                     ] do
                     Expect.equal
-                        (OperationRoot.restore header (utf8 commandText) effects [] expectedHash)
-                        (Error OperationRootProblem.EffectOrdinals)
-                        "Row ordinals are the actual complete ordered effect positions")
+                        (restoreHeader header)
+                        (Error OperationRootProblem.Hash)
+                        "Header mutation reaches hash comparison"
+
+                Expect.equal
+                    (restoreWith
+                        root.Header
+                        "people.disable"
+                        (OperationRoot.structureBytes root)
+                        (OperationRoot.effectBytes root)
+                        []
+                        root.Hash)
+                    (Error OperationRootProblem.Hash)
+                    "Task is bound"
+
+                let structure = OperationRoot.structureBytes root |> read
+
+                let binding =
+                    BindingCodecs.binding.Write(
+                        Binding.People(
+                            ActorId.ofOperationId (ClaimCore.Tests.TaskBuilders.operation 99),
+                            Revision.first
+                        )
+                    )
+
+                let changed = setMember "binding" binding structure |> CanonicalWriter.bytes
+
+                Expect.equal
+                    (restoreWith
+                        root.Header
+                        (TaskId.token root.Structure.Task)
+                        changed
+                        (OperationRoot.effectBytes root)
+                        []
+                        root.Hash)
+                    (Error OperationRootProblem.Hash)
+                    "Binding is bound")
             testCase
-                "public metadata admits JSONB spelling and rejects private or unknown fields"
+                "effect contents and the descriptor remain committed after private erasure"
                 (fun () ->
-                    let pretty =
-                        utf8
-                            """{ "kind":"NOTE", "noteId":"00000000-0000-7000-8000-000000000007", "caseId":"00000000-0000-7000-8000-000000000003", "act":"note.remove", "compartment":null }"""
+                    let record = personRecord ()
+                    let root = record.Root
+                    let rows = OperationRoot.effectBytes root
 
-                    Expect.isOk
-                        (OperationRoot.restore header pretty [ 0, utf8 effectText ] [] expectedHash)
-                        "Canonical hash depends on interpreted metadata, not JSONB formatting"
+                    let changedRows =
+                        rows
+                        |> List.map (fun (index, bytes) ->
+                            index,
+                            (bytes
+                             |> read
+                             |> setMember "revision" (JsonValue.Integer 2L)
+                             |> CanonicalWriter.bytes))
 
-                    for invalid in
-                        [
-                            commandText.Replace("\"compartment\":null,", "")
-                            commandText.Replace("\"kind\":\"NOTE\"", "\"kind\":\"UNKNOWN\"")
-                            commandText.Replace("}", ",\"text\":\"private narrative\"}")
-                        ] do
-                        match
-                            OperationRoot.restore
-                                header
-                                (utf8 invalid)
-                                [ 0, utf8 effectText ]
-                                []
-                                expectedHash
-                        with
-                        | Error(OperationRootProblem.PublicMetadata _) -> ()
-                        | other -> failtestf "Expected closed public metadata refusal: %A" other)
-            testCase
-                "bound effects expose operation-scoped proof and lexicographic order"
-                (fun () ->
-                    let target = ReminderId.create (guid 7) |> Option.get
-                    let next = ReminderId.ofOperationId operation
+                    Expect.equal
+                        (restoreWith
+                            root.Header
+                            (TaskId.token root.Structure.Task)
+                            (OperationRoot.structureBytes root)
+                            changedRows
+                            root.Structure.Compartments
+                            root.Hash)
+                        (Error OperationRootProblem.Hash)
+                        "Public part revision is committed"
 
-                    let command =
-                        CommandSkeleton.Reminder
-                            {
-                                CaseId = parent
-                                Act = ReminderActKind.CompleteAndPlanNext
-                                ReminderId = Some target
-                                ExpectedRevision = Some(Revision.create 2L |> Option.get)
-                            }
+                    let compartment = root.Structure.Compartments.Head
 
-                    let effects =
-                        [
-                            EffectDescriptor.ReminderChanged(
-                                parent,
-                                target,
-                                Revision.create 3L |> Option.get,
-                                ReminderActKind.Complete
-                            )
-                            EffectDescriptor.ReminderCreated(parent, next, Revision.first)
-                        ]
-
-                    let descriptor =
+                    let wrong =
                         CompartmentDescriptor.create
                             0
-                            (CompartmentOwner.Case parent)
-                            CompartmentPurpose.Reminder
-                            [ 0; 1 ]
-                        |> valid
+                            (CompartmentOwner.Profile(
+                                ActorId.ofOperationId (ClaimCore.Tests.TaskBuilders.operation 99)
+                            ))
+                        |> required
 
-                    let compartment =
-                        Compartment.seal
-                            header.InstallationId
-                            operation
-                            descriptor
-                            [| 0uy .. 31uy |]
-                            (utf8 """{"private":"synthetic"}""")
-                        |> valid
-
-                    let root = OperationRoot.append header command effects [ compartment ] |> valid
-                    let bound = OperationRoot.effects root
+                    let reassigned =
+                        Compartment.restore wrong compartment.Commitment None None |> required
 
                     Expect.equal
-                        (bound |> List.map (fun effect -> EffectId.operation effect.Id))
-                        [ operation; operation ]
-                        "One operation owns both identities"
-
-                    Expect.equal
-                        (bound |> List.map (fun effect -> EffectId.index effect.Id))
-                        [ 0; 1 ]
-                        "Indices remain distinct"
-
-                    Expect.isLessThan
-                        bound[0].Position
-                        bound[1].Position
-                        "Ordering includes the effect ordinal"
-
-                    Expect.equal
-                        root.Position.Sequence
-                        header.Sequence
-                        "The root advances once for a compound command"
+                        (restoreWith
+                            root.Header
+                            (TaskId.token root.Structure.Task)
+                            (OperationRoot.structureBytes root)
+                            rows
+                            [ reassigned ]
+                            root.Hash)
+                        (Error(
+                            OperationRootProblem.Structure OperationStructureProblem.Compartments
+                        ))
+                        "Owner substitution is independently rejected by the root"
 
                     Expect.isOk
-                        (OperationRoot.restore
-                            header
-                            (OperationRoot.commandBytes root)
-                            (OperationRoot.effectBytes root)
-                            [ compartment ]
+                        (restore (clear record).Root)
+                        "Legitimate erasure is the positive control")
+            testCase
+                "stored effect ordinals cannot disappear, repeat, reorder or leave gaps"
+                (fun () ->
+                    let root = (compoundReminder ()).Root
+
+                    let a, b =
+                        match OperationRoot.effectBytes root with
+                        | [ a; b ] -> a, b
+                        | _ -> failtest "Expected two parts"
+
+                    for rows in [ []; [ a; a ]; [ b; a ]; [ a; (2, snd b) ] ] do
+                        Expect.equal
+                            (restoreWith
+                                root.Header
+                                (TaskId.token root.Structure.Task)
+                                (OperationRoot.structureBytes root)
+                                rows
+                                root.Structure.Compartments
+                                root.Hash)
+                            (Error OperationRootProblem.EffectOrdinals)
+                            "Exact ordinal failure"
+
+                    Expect.isError
+                        (restoreWith
+                            root.Header
+                            (TaskId.token root.Structure.Task)
+                            (OperationRoot.structureBytes root)
+                            [ a ]
+                            root.Structure.Compartments
                             root.Hash)
-                        "Complete compound root closes and verifies")
+                        "A trailing member cannot disappear")
+            testCase
+                "unknown members and trailing bytes are refused before hash comparison"
+                (fun () ->
+                    let root = (publicRecord ()).Root
+
+                    let malformed =
+                        OperationRoot.structureBytes root
+                        |> read
+                        |> setMember "unknown" JsonValue.Null
+                        |> CanonicalWriter.bytes
+
+                    for bytes in
+                        [
+                            malformed
+                            Array.append
+                                (OperationRoot.structureBytes root)
+                                (Encoding.UTF8.GetBytes "{}")
+                        ] do
+                        match
+                            restoreWith
+                                root.Header
+                                (TaskId.token root.Structure.Task)
+                                bytes
+                                (OperationRoot.effectBytes root)
+                                []
+                                root.Hash
+                        with
+                        | Error(OperationRootProblem.PublicMetadata _) -> ()
+                        | other -> failtestf "Expected structural metadata rejection: %A" other)
+            testCase
+                "append refuses public metadata that its own restore limit cannot read"
+                (fun () ->
+                    let root = (publicRecord ()).Root
+
+                    let retained =
+                        InputMap.create
+                            (Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Reason,
+                                    InputValue.Text(
+                                        String.replicate
+                                            (OperationRoot.MaximumPublicMetadataBytes + 1)
+                                            "x"
+                                    )
+                                ])
+                            Map.empty
+                        |> Option.get
+
+                    match
+                        OperationRoot.append
+                            root.Header
+                            (TaskId.ofLiteral "sample.change")
+                            root.Structure.Binding
+                            retained
+                            root.Structure.Effects
+                            []
+                    with
+                    | Error(OperationRootProblem.PublicMetadata _) -> ()
+                    | other ->
+                        failtestf
+                            "Expected bounded, restorable metadata: %A"
+                            (other
+                             |> Result.map (fun value ->
+                                 (OperationRoot.structureBytes value).Length)))
         ]
-
-[<Tests>]
-let publicCodecMatrix =
-    testCase "all declared command families retain their typed public metadata" (fun () ->
-        let principal = PrincipalKey.human "https://issuer.example/" "م Ā 😀" |> valid
-        let target = ActorId.ofOperationId operation
-        let peopleHeader = { header with BusinessDate = None }
-
-        let grant =
-            {
-                Role = Role.CaseHandler
-                Scope = Scope.Case parent
-            }
-
-        let people act =
-            CommandSkeleton.People
-                {
-                    ExpectedRevision =
-                        if PeopleActKind.targetsExistingActor (PeopleAct.kind act) then
-                            Revision.first
-                        else
-                            Revision.zero
-                    TargetActorId = target
-                    Principal = principal
-                    Act = act
-                }
-
-        let ownerHeader =
-            { peopleHeader with
-                Sequence = Sequence.first
-                ActorId = target
-            }
-
-        let commands =
-            [
-                for kind in CaseActKind.all do
-                    let opening = kind = CaseActKind.Open
-
-                    yield
-                        header,
-                        CommandSkeleton.Case
-                            {
-                                ExpectedFamilySequence =
-                                    if kind = CaseActKind.Erase then
-                                        Some Sequence.first
-                                    else
-                                        None
-                                CaseId = if opening then CaseId.ofOperationId operation else parent
-                                Reference = CaseReference.parse "STRUCTURE-1" |> valid
-                                ExpectedRevision =
-                                    if opening then Revision.zero else Revision.first
-                                Act = kind
-                                SelectedPayment =
-                                    if kind = CaseActKind.RemovePayment then
-                                        Some selected
-                                    else
-                                        None
-                            }
-                yield peopleHeader, people (PeopleAct.Register 0)
-                yield peopleHeader, people (PeopleAct.Admit { Profile = 0; Grants = [ grant ] })
-                yield peopleHeader, people (PeopleAct.SetProfile 0)
-                yield peopleHeader, people PeopleAct.EraseProfile
-                yield peopleHeader, people (PeopleAct.Grant grant)
-                yield peopleHeader, people (PeopleAct.Revoke grant)
-                yield peopleHeader, people PeopleAct.Enable
-                yield peopleHeader, people PeopleAct.Disable
-                yield ownerHeader, people (PeopleAct.ProvisionOwner(0, [ Role.Auditor ]))
-                yield header, CommandSkeleton.Work(parent, Revision.zero)
-                yield header, CommandSkeleton.Note(NoteCommandSkeleton.Add parent)
-                yield header, command
-                for act in ReminderActKind.all do
-                    yield
-                        header,
-                        CommandSkeleton.Reminder
-                            {
-                                CaseId = parent
-                                Act = act
-                                ReminderId =
-                                    if act = ReminderActKind.Create then
-                                        None
-                                    else
-                                        Some note
-                                        |> Option.map (
-                                            NoteId.value >> ReminderId.create >> Option.get
-                                        )
-                                ExpectedRevision =
-                                    if act = ReminderActKind.Create then
-                                        None
-                                    else
-                                        Some Revision.first
-                            }
-            ]
-        // Shared closure supplies coherent inputs only. The independent vectors and closure
-        // mutation controls establish the required encoding and structural rules separately.
-        for header, command in commands do
-            let effects, descriptors = OperationStructure.expected header command |> valid
-
-            let compartments =
-                descriptors
-                |> List.map (fun descriptor ->
-                    Compartment.seal
-                        header.InstallationId
-                        header.OperationId
-                        descriptor
-                        [| 0uy .. 31uy |]
-                        (utf8 """{"private":"synthetic"}""")
-                    |> valid)
-
-            let root = OperationRoot.append header command effects compartments |> valid
-
-            let decoded =
-                OperationRoot.restore
-                    header
-                    (OperationRoot.commandBytes root)
-                    (OperationRoot.effectBytes root)
-                    compartments
-                    root.Hash
-                |> valid
-
-            Expect.equal
-                decoded.Structure.Command
-                command
-                "Principal, grant scope, selected handles and expected revision survive the public codec"
-
-            Expect.equal
-                decoded.Structure.Effects
-                effects
-                "Ordered typed descriptors survive the public codec")

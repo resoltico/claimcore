@@ -45,7 +45,7 @@ const recordFrame = async (run: Run, frame: string) => {
   await captureFrame(run.page, run.info, run.dimension, frame);
 };
 const expandedFilters = async (run: Run) => {
-  const compact = run.dimension.width < 640;
+  const compact = run.dimension.width / (run.dimension.reflowScale ?? 1) < 640;
   await settledWorkspaceHeader(run.page);
   const trigger = run.page.locator('.worklist-toolbar > button[aria-haspopup="dialog"]');
   const viewport = await run.page.evaluate(() => ({

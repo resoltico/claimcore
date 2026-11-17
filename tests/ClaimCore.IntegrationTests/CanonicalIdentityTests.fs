@@ -2,20 +2,33 @@ module ClaimCore.IntegrationTests.CanonicalIdentityTests
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private values amount claimant =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [ BusinessField.ClaimedAmount, amount; BusinessField.ClaimantName, claimant ]
         registration
 
 let private opening fixture number reference amount claimant =
-    request fixture number reference 0L (AuthoredCaseAct.Open(values amount claimant))
+    request
+        (fixture)
+        (number)
+        (reference)
+        (0L)
+        "case.open"
+        (ClaimCore.TestSupport.Submissions.fields (
+            RegistrationInput.values ((values amount claimant))
+        ))
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -40,33 +53,23 @@ let private casePairs (database: PostgresFixture.Database) =
 
         let cases =
             [
-                true,
-                amount,
-                { amount with
-                    Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
-                }
+                true, amount, opening database.Fixture 9300 "Canonical-amount" "10.5" "Claimant"
                 true,
                 reference,
-                { reference with
-                    CaseReference = "canonical-reference"
-                }
+                opening database.Fixture 9301 "canonical-reference" "10.50" "Claimant"
                 false,
                 differentAmount,
-                { differentAmount with
-                    Act = AuthoredCaseAct.Open(values "11" "Claimant")
-                }
+                opening database.Fixture 9302 "Canonical-different-amount" "11" "Claimant"
                 false,
                 differentName,
-                { differentName with
-                    Act = AuthoredCaseAct.Open(values "10.50" "Another claimant")
-                }
+                opening database.Fixture 9303 "Canonical-different-name" "10.50" "Another claimant"
             ]
 
         for same, left, right in cases do
-            let! first = Service.execute actor (Inputs.caseOperation left) token
+            let! first = Service.executeSubmission actor ((left)) token
             let receipt = accepted first
             let! before = verified database
-            let! replay = Service.execute actor (Inputs.caseOperation right) token
+            let! replay = Service.executeSubmission actor ((right)) token
 
             if same then
                 expectReceipt (replayReceipt replay) receipt "Equivalent amounts/references replay"
@@ -80,24 +83,20 @@ let private casePairs (database: PostgresFixture.Database) =
             Expect.equal after before "Replay and conflicts append nothing"
             let! authored = retainedRequest database receipt
 
-            let restored =
-                match authored.Values with
-                | RetainedOperationValues.Case(Some values) -> values.Command
-                | _ -> failtest "Available retained case command required"
+            let expected = Submissions.command left
 
             Expect.equal
-                restored.Authored
-                { left with
-                    Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
-                }
-                "Retained typed values preserve authored reference and canonical decimal meaning"
+                authored.Inputs
+                (Some expected.Inputs)
+                "Retained inputs preserve authored reference and canonical decimal meaning"
+
     }
 
 let private peoplePairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
         let input = opening database.Fixture 9310 "Canonical-Reference" "10.50" "Claimant"
-        let! opened = Service.execute actor (Inputs.caseOperation input) token
+        let! opened = Service.executeSubmission actor ((input)) token
         let parent = accepted opened |> caseReceipt
 
         let target =
@@ -105,16 +104,18 @@ let private peoplePairs (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 901)
-                        target
-                        (PeopleAct.Register Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 901))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         acceptedPeople registered
 
@@ -124,27 +125,27 @@ let private peoplePairs (database: PostgresFixture.Database) =
                 Scope = GrantTarget.CaseReference reference
             }
 
-        for number, act, effect in
-            [
-                9320, PeopleAct.Grant, PeopleActKind.Grant
-                9321, PeopleAct.Revoke, PeopleActKind.Revoke
-            ] do
-            let left =
-                reviewedPeopleRequest
+        for number, taskName, active in [ 9320, "people.grant", true; 9321, "people.revoke", false ] do
+            let! left =
+                personSubmission
                     database.Fixture.Store
                     (id database.Fixture number)
                     target
-                    (act (grant "Canonical-Reference"))
+                    None
+                    taskName
+                    (Submissions.grant (grant "Canonical-Reference"))
 
             let right =
-                { left with
-                    Act = act (grant "canonical-reference")
-                }
+                Submissions.createRaw
+                    taskName
+                    left.OperationId
+                    left.Envelope.Binding
+                    (Submissions.grant (grant "canonical-reference"))
 
-            let! first = Service.execute actor (OperationInput.People left) token
+            let! first = Service.executeSubmission actor ((left)) token
             let receipt = accepted first
             let! before = verified database
-            let! replay = Service.execute actor (OperationInput.People right) token
+            let! replay = Service.executeSubmission actor ((right)) token
 
             expectReceipt
                 (replayReceipt replay)
@@ -155,26 +156,20 @@ let private peoplePairs (database: PostgresFixture.Database) =
             Expect.equal after before "People replay appends nothing"
             let! authored = retainedRequest database receipt
 
-            let restored =
-                authored.Root.Structure.Effects
-                |> List.exactlyOne
-                |> function
-                    | EffectDescriptor.People(_, descriptor) -> descriptor
-                    | _ -> failtest "Retained people effect required"
-
             let expected =
                 {
                     Role = Role.CaseHandler
                     Scope = Scope.Case parent.CaseId
                 }
 
-            Expect.equal
-                restored
-                (if effect = PeopleActKind.Grant then
-                     PeopleEffectDescriptor.Grant expected
-                 else
-                     PeopleEffectDescriptor.Revoke expected)
-                "The retained people command uses the resolved case identity"
+            match authored.Changes |> List.exactlyOne |> _.Value with
+            | PartValue.Person person ->
+                Expect.contains
+                    person.Grants
+                    { Grant = expected; Active = active }
+                    "The accepted assignment uses the resolved case identity"
+            | _ -> failtest "Retained person part required"
+
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =
@@ -182,18 +177,10 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
         let left = opening database.Fixture 9340 "Canonical-private" "10.50" "Claimant"
 
-        let right =
-            { left with
-                Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
-            }
+        let right = opening database.Fixture 9340 "Canonical-private" "10.5" "Claimant"
+        let unequal = opening database.Fixture 9340 "Canonical-private" "11" "Claimant"
 
-        let unequal =
-            { left with
-                Act = AuthoredCaseAct.Open(values "11" "Claimant")
-            }
-
-        let! first =
-            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation left) (token))
+        let! first = (Service.executeSubmission actor ((left)) (token))
 
         accepted first |> ignore
 
@@ -202,25 +189,27 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        database.Fixture.Store
-                        (id database.Fixture 920)
-                        outsider
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (token))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (database.Fixture.Store)
+                        ((id database.Fixture 920))
+                        (outsider)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission ((token))
+            }))
 
         acceptedPeople registered
         let other = core database.Fixture outsider
 
-        let! hiddenEqual =
-            (Service.execute other (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
+        let! hiddenEqual = (Service.executeSubmission other ((right)) (token))
 
-        let! hiddenDifferent =
-            (Service.execute other (ClaimCore.TestSupport.Inputs.caseOperation unequal) (token))
+        let! hiddenDifferent = (Service.executeSubmission other ((unequal)) (token))
 
         Expect.equal
             hiddenEqual.Outcome
@@ -246,23 +235,21 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         acceptedPeople stewardship
 
         let! erased =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        922
-                        left.CaseReference
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Erase)
-                ))
+                (((request
+                    (database.Fixture)
+                    (922)
+                    ("Canonical-private")
+                    (1L)
+                    "case.erase"
+                    (Map.empty))))
                 (token))
 
         accepted erased |> ignore
         let! before = verified database
 
-        let! retry =
-            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
+        let! retry = (Service.executeSubmission actor ((right)) (token))
 
         Expect.equal
             retry.Outcome
@@ -284,10 +271,7 @@ let private submissionMaps (database: PostgresFixture.Database) =
                 (System.Text.Encoding.UTF8.GetBytes(source: string))
             |> Result.defaultWith (fun error -> failtestf "Submission admission: %A" error)
 
-        let opening =
-            opening database.Fixture 9400 "Map-Replay" "10.50" "Claimant"
-            |> Inputs.caseOperation
-            |> Submissions.ofCommand None
+        let opening = opening database.Fixture 9400 "Map-Replay" "10.50" "Claimant"
 
         let! opened = Service.executeSubmission actor opening token
         accepted opened |> ignore
@@ -348,13 +332,16 @@ let private submissionMaps (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "selected-person"
             |> Result.defaultWith (string >> failtest)
 
-        let command =
-            OperationInput.People(
-                peopleRequest registration principal (PeopleAct.Register Inputs.actorProfile)
-            )
+        let! command =
+            personSubmission
+                database.Fixture.Store
+                registration
+                principal
+                None
+                "people.register"
+                (Submissions.profile DomainInputs.actorProfile)
 
-        let! registered =
-            Service.executeSubmission actor (Submissions.ofCommand None command) token
+        let! registered = Service.executeSubmission actor ((command)) token
 
         acceptedPeople registered
 

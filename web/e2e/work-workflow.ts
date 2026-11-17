@@ -120,6 +120,7 @@ const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, pay
     operationExecuteReply.representation !== "HUMAN" ||
     (operationExecuteReply.outcome.kind !== "ACCEPTED" &&
       operationExecuteReply.outcome.kind !== "ALREADY_ACCEPTED") ||
+    operationExecuteReply.outcome.document.subject.kind !== "RECEIPT" ||
     operationExecuteReply.outcome.document.subject.operationId !==
       operationExecuteRequest.operationId
   ) {
@@ -221,6 +222,9 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   // A workspace retry revalidates identity and may discard transient success text.
   // The accepted response and fresh authorized version establish completion independently.
   const access = observedAccess(delivered.request());
+  if (receipt.subject.kind !== "RECEIPT") {
+    throw new Error("Receipt subject required");
+  }
   const target = await acceptedSubject(page, receipt.subject.operationId, access);
   if (target.kind === "WORK") {
     const fresh = await workRequest(page, "case.get", {

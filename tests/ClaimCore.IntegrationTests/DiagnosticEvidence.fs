@@ -15,7 +15,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
@@ -40,9 +44,9 @@ let internal scalarEvidence () =
                 if request.OperationId = Guid.Empty then
                     request
                 else
-                    { request with
-                        OperationId = id fixture (100 + index)
-                    }
+                    ClaimCore.TestSupport.Submissions.withOperationId
+                        (id fixture (100 + index))
+                        (request)
 
             let! outcome = execute actor pending
             results.Add(refused outcome)
@@ -66,11 +70,7 @@ let internal scalarEvidence () =
 
         for index, request in List.indexed (progressRequests fixture ()) do
             let! outcome =
-                execute
-                    actor
-                    { request with
-                        OperationId = id fixture (482 + index)
-                    }
+                execute actor (Submissions.withOperationId (id fixture (482 + index)) request)
 
             results.Add(refused outcome)
 
@@ -78,32 +78,29 @@ let internal scalarEvidence () =
         accepted workOpening |> ignore
 
         for request in workScalarRequests fixture () do
-            let! outcome = Service.execute actor request ct
+            let! outcome = Service.executeSubmission actor request ct
             results.Add(refused outcome)
 
         let target = CaseSelector.Reference "REACH-WORK"
 
         let work operation responsible summary =
-            OperationInput.Work
-                {
-                    OperationId = id fixture operation
-                    Target = target
-                    ExpectedRevision = 0L
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible = responsible
-                                Summary = summary
-                            }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "work.update"
+                (id fixture operation)
+                (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible = responsible
+                        Summary = summary
+                    }
+                ))
 
-        let reminder operation act =
-            OperationInput.Reminder
-                {
-                    OperationId = id fixture operation
-                    Target = target
-                    Act = act
-                }
+        let reminder operation taskName selected values =
+            Submissions.createRaw
+                taskName
+                (id fixture operation)
+                (OperationBinding.Reminder((target), selected))
+                values
 
         for request in
             [
@@ -113,51 +110,55 @@ let internal scalarEvidence () =
                     (WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 999))))
                     WorkValue.Keep
             ] do
-            let! outcome = Service.execute actor request ct
+            let! outcome = Service.executeSubmission actor request ct
             results.Add(refused outcome)
 
-        let plan =
-            {
-                ReminderPlanInput.Action = "Request report"
-                Due = "2027-01-01"
-            }
+        let plan = Submissions.reminderPlan "Request report" "2027-01-01"
 
         let! planned =
-            Service.execute actor (reminder 520 (AuthoredReminderAct.Create plan)) ct
+            Service.executeSubmission actor (reminder (520) "reminder.create" (None) plan) ct
 
         accepted planned |> ignore
 
         for request in
             [
-                reminder 521 (AuthoredReminderAct.Reopen(id fixture 520, 1L, "2027-01-01"))
-                reminder 522 (AuthoredReminderAct.Update(id fixture 520, 1L, plan))
+                reminder
+                    (521)
+                    "reminder.reopen"
+                    (Some((id fixture 520), (1L)))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.ReminderDueDate,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("2027-01-01")
+                        ])
+                reminder (522) "reminder.update" (Some((id fixture 520), (1L))) plan
             ] do
-            let! outcome = Service.execute actor request ct
+            let! outcome = Service.executeSubmission actor request ct
             results.Add(refused outcome)
 
         let! completed =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (reminder 523 (AuthoredReminderAct.Complete(id fixture 520, 1L)))
+                (reminder (523) "reminder.complete" (Some((id fixture 520), (1L))) (Map.empty))
                 ct
 
         accepted completed |> ignore
 
         let! repeated =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (reminder 524 (AuthoredReminderAct.Complete(id fixture 520, 2L)))
+                (reminder (524) "reminder.complete" (Some((id fixture 520), (2L))) (Map.empty))
                 ct
 
         results.Add(refused repeated)
 
         let! closed =
-            execute actor (request fixture 525 "REACH-WORK" 1L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request (fixture) (525) ("REACH-WORK") (1L) "case.close" (Map.empty))
 
         accepted closed |> ignore
 
         let! inactive =
-            Service.execute actor (reminder 526 (AuthoredReminderAct.Create plan)) ct
+            Service.executeSubmission actor (reminder (526) "reminder.create" (None) plan) ct
 
         results.Add(refused inactive)
 
@@ -178,74 +179,121 @@ let internal scalarEvidence () =
             execute
                 actor
                 (request
-                    fixture
-                    528
-                    "REACH-WORK"
-                    2L
-                    (AuthoredCaseAct.Void "Synthetic diagnostic state"))
+                    (fixture)
+                    (528)
+                    ("REACH-WORK")
+                    (2L)
+                    "case.void"
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.Reason,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Synthetic diagnostic state"
+                            )
+                        ]))
 
         accepted voided |> ignore
 
         let! blocked =
-            Service.execute actor (reminder 529 (AuthoredReminderAct.Create plan)) ct
+            Service.executeSubmission actor (reminder (529) "reminder.create" (None) plan) ct
 
         results.Add(refused blocked)
         return List.ofSeq results
     }
 
 let internal stateScenarios () =
+    let decided = "case.decide", Submissions.fields (DecisionInput.values decision)
+    let closed = "case.close", Map.empty
+
+    let voided =
+        "case.void",
+        Map.ofList
+            [
+                Submissions.input InputTarget.Reason, SubmissionValue.Text "Synthetic reason"
+            ]
+
+    let payment =
+        "case.recordPayment",
+        Submissions.fields (
+            PaymentInput.values (
+                DomainInputs.paymentFrom [ BusinessField.PaymentDate, "2026-08-20" ]
+            )
+        )
+
+    let correct registrationChoice decisionChoice fields =
+        "case.correct",
+        fields
+        |> Map.add
+            (Submissions.input (InputTarget.Group RecordGroup.Registration))
+            (SubmissionValue.Text registrationChoice)
+        |> Map.add
+            (Submissions.input (InputTarget.Group RecordGroup.Decision))
+            (SubmissionValue.Text decisionChoice)
+
+    let registration =
+        Submissions.updates (
+            RegistrationUpdateInput.values (DomainInputs.registrationUpdate registration)
+        )
+
+    let decisionUpdate value =
+        Submissions.updates (DecisionUpdateInput.values (DomainInputs.decisionUpdate value))
+
     [
-        [], (AuthoredCaseAct.Open registration)
-        [], (AuthoredCaseAct.Bare BareAct.Reopen)
-        [ closed ], (AuthoredCaseAct.Bare BareAct.Close)
+        [], ("case.open", Submissions.fields (RegistrationInput.values StoreFixtures.registration))
+        [], ("case.reopen", Map.empty)
+        [ closed ], closed
         [ closed ], decided
-        [ decided ], (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
-        [ decided ],
-        correction
-            { keep with
-                Registration = Amendment.Update(Inputs.registrationUpdate registration)
-            }
-        [ closed ], correction { keep with Decision = Change.Clear }
+        [ decided ], ("case.amendRegistration", registration)
+        [ decided ], correct "UPDATE" "KEEP" registration
+        [ closed ], correct "KEEP" "CLEAR" Map.empty
         [], payment
-        [], (AuthoredCaseAct.RemovePayment(Guid.Parse "20000000-0000-7000-8000-000000000003"))
+        [],
+        ("case.removePayment",
+         Map.ofList
+             [
+                 Submissions.input InputTarget.PaymentId,
+                 SubmissionValue.Text "20000000-0000-7000-8000-000000000003"
+             ])
         [ decided; payment ],
-        (AuthoredCaseAct.RecordPayment(
-            Inputs.paymentFrom
-                [
-                    BusinessField.PaymentDate, "2026-08-20"
-                    BusinessField.PaidAmount, "751"
-                    BusinessField.PaidCurrency, "EUR"
-                ]
-        ))
-        [ decided; payment ], (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
+        ("case.recordPayment",
+         Submissions.fields (
+             PaymentInput.values (
+                 DomainInputs.paymentFrom
+                     [
+                         BusinessField.PaymentDate, "2026-08-20"
+                         BusinessField.PaidAmount, "751"
+                         BusinessField.PaidCurrency, "EUR"
+                     ]
+             )
+         ))
+        [ decided; payment ], ("case.withdrawDecision", Map.empty)
         [
-            (AuthoredCaseAct.Decide(
-                ClaimCore.TestSupport.Inputs.decisionWith
-                    [ BusinessField.PayableAmount, ("0") ]
-                    (decision)
-            ))
+            "case.decide",
+            Submissions.fields (
+                DecisionInput.values (
+                    DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
+                )
+            )
         ],
         payment
         [ voided ], closed
         [ voided ], voided
-        [], (AuthoredCaseAct.Reinstate "Synthetic reason")
-        [ (AuthoredCaseAct.Bare BareAct.Erase) ], closed
-        [ decided; payment ], correction { keep with Decision = Change.Clear }
+        [],
+        ("case.reinstate",
+         Map.ofList
+             [
+                 Submissions.input InputTarget.Reason, SubmissionValue.Text "Synthetic reason"
+             ])
+        [ "case.erase", Map.empty ], closed
+        [ decided; payment ], correct "KEEP" "CLEAR" Map.empty
+        [ decided; payment ], correct "KEEP" "UPDATE" (decisionUpdate decision)
         [ decided; payment ],
-        correction
-            { keep with
-                Decision = Change.Update(Inputs.decisionUpdate decision)
-            }
-        [ decided; payment ],
-        correction
-            { keep with
-                Decision =
-                    Change.Update(
-                        Inputs.decisionUpdate (
-                            Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
-                        )
-                    )
-            }
+        correct
+            "KEEP"
+            "UPDATE"
+            (decisionUpdate (
+                DomainInputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
+            ))
     ]
 
 let internal stateEvidence (setup, final) =
@@ -274,14 +322,29 @@ let internal stateEvidence (setup, final) =
         let! opening = execute actor (openRequest fixture 10 "REACH-1")
         accepted opening |> ignore
 
-        for index, act in List.indexed setup do
+        for index, (taskName, values) in List.indexed setup do
             let! outcome =
-                execute actor (actRequest fixture (11 + index) "REACH-1" (int64 (index + 1)) act)
+                execute
+                    actor
+                    (request fixture (11 + index) "REACH-1" (int64 (index + 1)) taskName values)
 
             accepted outcome |> ignore
 
+        let taskName, values = final
+
         let! outcome =
-            execute actor (actRequest fixture 50 "REACH-1" (int64 (setup.Length + 1)) final)
+            execute
+                actor
+                (request
+                    fixture
+                    50
+                    "REACH-1"
+                    (if taskName = "case.open" then
+                         0L
+                     else
+                         int64 (setup.Length + 1))
+                    taskName
+                    values)
 
         return refused outcome
     }
@@ -333,22 +396,22 @@ let internal peopleEvidence fixture actor =
             PrincipalKey.service "https://issuer.example/" "synthetic"
             |> Result.defaultWith (string >> failtest)
 
-        let send n target act =
-            (Service.execute
-                (actor: ServiceContext)
-                (OperationInput.People(
-                    reviewedPeopleRequest fixture.Store (id fixture n) target act
-                ))
-                (ct))
+        let send n target taskName values =
+            task {
+                let! submission =
+                    personSubmission fixture.Store (id fixture n) target None taskName values
+
+                return! Service.executeSubmission (actor: ServiceContext) submission ct
+            }
 
         let! registered =
-            send 30 owner (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+            send 30 owner "people.register" (Submissions.profile DomainInputs.actorProfile)
 
-        let! unknown = send 31 service (PeopleAct.Disable)
-        let! last = send 32 owner (PeopleAct.Disable)
+        let! unknown = send 31 service "people.disable" Map.empty
+        let! last = send 32 owner "people.disable" Map.empty
 
         let! admitted =
-            send 33 service (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+            send 33 service "people.register" (Submissions.profile DomainInputs.actorProfile)
 
         acceptedPeople admitted
 
@@ -389,26 +452,46 @@ let internal identityEvidence fixture actor =
         let pending = openRequest fixture 10 "REACH-1"
         let! opening = execute actor pending
         accepted opening |> ignore
-        let! conflict = execute actor { pending with ExpectedRevision = 1L }
+
+        let! conflict =
+            execute
+                actor
+                (request
+                    fixture
+                    10
+                    "REACH-1"
+                    0L
+                    "case.open"
+                    (Submissions.fields (
+                        RegistrationInput.values (
+                            DomainInputs.registrationWith
+                                [ BusinessField.ClaimantName, "Different claimant" ]
+                                registration
+                        )
+                    )))
 
         let! revision =
-            execute actor (request fixture 11 "REACH-1" 0L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request (fixture) (11) ("REACH-1") (2L) "case.close" (Map.empty))
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 35)
-                        reader
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (ct))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 35))
+                        (reader)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission ((ct))
+            }))
 
         acceptedPeople registered
 
@@ -425,23 +508,26 @@ let internal identityEvidence fixture actor =
 
         acceptedPeople granted
 
-        let stalePerson =
-            reviewedPeopleRequest fixture.Store (id fixture 900101) reader PeopleAct.Enable
+        let! stalePerson =
+            personSubmission fixture.Store (id fixture 900101) reader None "people.enable" Map.empty
 
         let! changedProfile =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 900102)
-                        reader
-                        (PeopleAct.SetProfile Inputs.actorProfile)
-                ))
-                ct
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 900102))
+                        (reader)
+                        (None)
+                        "people.setProfile"
+                        (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile))
+
+                return! Service.executeSubmission (actor) submission (ct)
+            })
 
         acceptedPeople changedProfile
-        let! actorChanged = Service.execute actor (OperationInput.People stalePerson) ct
+
+        let! actorChanged = Service.executeSubmission actor ((stalePerson)) ct
 
         let! steward =
             grant
@@ -455,17 +541,25 @@ let internal identityEvidence fixture actor =
                 true
 
         acceptedPeople steward
-        let erase = request fixture 900104 "REACH-1" 1L (CaseAct.Bare BareAct.Erase)
+        let erase = request (fixture) (900104) ("REACH-1") (1L) "case.erase" (Map.empty)
 
         let! child =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Note
-                    {
-                        OperationId = id fixture 900105
-                        Target = CaseSelector.Reference "REACH-1"
-                        Act = AuthoredNoteAct.AddNote "Family review witness"
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "note.add"
+                    (id fixture 900105)
+                    (ClaimCore.Application.Contracts.OperationBinding.Note(
+                        (CaseSelector.Reference "REACH-1"),
+                        None
+                    ))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text(
+                                "Family review witness"
+                            )
+                        ]))
                 ct
 
         accepted child |> ignore
@@ -474,10 +568,11 @@ let internal identityEvidence fixture actor =
         let! invalidFamily =
             execute
                 actor
-                { erase with
-                    OperationId = id fixture 900106
-                    ExpectedFamilySequence = Some 0L
-                }
+                (Submissions.createRaw
+                    "case.erase"
+                    (id fixture 900106)
+                    (OperationBinding.Case(CaseSelector.Reference "REACH-1", 1L, None, Some 0L))
+                    Map.empty)
 
         return
             [
@@ -502,22 +597,23 @@ let internal principalEvidence fixture (actor: ServiceContext) =
                     "invalid", "valid"
                     "https://issuer.example/", String('x', 513)
                 ] do
-            let request: ClaimCore.Domain.PeopleRequest =
-                {
-                    ExpectedRevision = 0L
-                    OperationId = id fixture (60 + index)
-                    Target =
-                        {
-                            Kind = PrincipalKind.Human
-                            Issuer = issuer
-                            Subject = subject
-                        }
-                    Act =
-                        (ClaimCore.Domain.PeopleAct.Register
-                            ClaimCore.TestSupport.Inputs.actorProfile)
-                }
+            let request =
+                Submissions.createRaw
+                    "people.register"
+                    (id fixture (60 + index))
+                    (OperationBinding.People(None, 0L))
+                    (Submissions.profile DomainInputs.actorProfile
+                     |> Map.add
+                         (Submissions.input InputTarget.PrincipalKind)
+                         (SubmissionValue.Text "HUMAN")
+                     |> Map.add
+                         (Submissions.input InputTarget.PrincipalIssuer)
+                         (SubmissionValue.Text issuer)
+                     |> Map.add
+                         (Submissions.input InputTarget.PrincipalSubject)
+                         (SubmissionValue.Text subject))
 
-            let! outcome = (Service.execute actor (OperationInput.People request) (ct))
+            let! outcome = (Service.executeSubmission actor ((request)) (ct))
 
             evidence.Add(refused outcome)
 
@@ -557,16 +653,18 @@ let private profileAndDirectoryEvidence fixture actor =
                         }
 
                 let! reply =
-                    Service.execute
-                        actor
-                        (OperationInput.People(
-                            reviewedPeopleRequest
-                                fixture.Store
-                                (id fixture (600 + index * 2 + (if contact then 1 else 0)))
-                                target
-                                (PeopleAct.Register profile)
-                        ))
-                        ct
+                    (task {
+                        let! submission =
+                            ClaimCore.TestSupport.StoreFixtures.personSubmission
+                                (fixture.Store)
+                                ((id fixture (600 + index * 2 + (if contact then 1 else 0))))
+                                (target)
+                                (None)
+                                "people.register"
+                                (ClaimCore.TestSupport.Submissions.profile (profile))
+
+                        return! Service.executeSubmission (actor) submission (ct)
+                    })
 
                 results.Add(refused reply)
 
@@ -592,20 +690,23 @@ let private profileAndDirectoryEvidence fixture actor =
         for index, grants in
             List.indexed [ []; List.replicate 49 assignment; [ assignment; assignment ] ] do
             let! reply =
-                Service.execute
-                    actor
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            fixture.Store
-                            (id fixture (650 + index))
-                            target
-                            (PeopleAct.Admit
-                                {
-                                    Profile = Inputs.actorProfile
-                                    Grants = grants
-                                })
-                    ))
-                    ct
+                (task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (fixture.Store)
+                            ((id fixture (650 + index)))
+                            (target)
+                            (None)
+                            "people.admit"
+                            (ClaimCore.TestSupport.Submissions.profile (DomainInputs.actorProfile)
+                             |> Map.add
+                                 (TaskInputId.Target InputTarget.Grants)
+                                 (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                                     (grants) |> List.map ClaimCore.TestSupport.Submissions.grant
+                                 )))
+
+                    return! Service.executeSubmission (actor) submission (ct)
+                })
 
             results.Add(refused reply)
 
@@ -627,7 +728,7 @@ let internal boundaryEvidence () =
         let! denied =
             execute
                 (core fixture reader)
-                (request fixture 37 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+                (request (fixture) (37) ("REACH-1") (1L) "case.close" (Map.empty))
 
         let! queries = queryEvidence actor
         let! people = peopleEvidence fixture actor
@@ -637,9 +738,9 @@ let internal boundaryEvidence () =
         let expired = Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.))
 
         let pending =
-            { request fixture 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close) with
-                OperationId = expired
-            }
+            ClaimCore.TestSupport.Submissions.withOperationId
+                (expired)
+                (request (fixture) (42) ("REACH-1") (1L) "case.close" (Map.empty))
 
         let! outOfWindow = execute actor pending
         let! confirmed = Service.operationGet actor { OperationId = expired } ct
@@ -657,7 +758,7 @@ let internal boundaryEvidence () =
         Expect.isTrue maintenance.State.Active "The owner explicitly pauses actual register writes"
 
         let! paused =
-            execute actor (request fixture 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request (fixture) (80) ("REACH-1") (1L) "case.close" (Map.empty))
 
         return
             identity

@@ -9,6 +9,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -23,7 +24,7 @@ let optionalLimit =
         let raw =
             Encoding.UTF8.GetBytes """{"target":{"kind":"REFERENCE","caseReference":"R-1"}}"""
 
-        let decoded = Codec.decode 4096 Api.caseTimeline.Input raw |> Fixtures.accepted
+        let decoded = Codec.decode 4096 Api.caseTimeline.Input raw |> CaseBuilders.accepted
         Expect.equal decoded.Limit 50 "Omission keeps the public default"
 
         let canonical =
@@ -37,7 +38,7 @@ let optionalLimit =
 let private actor =
     {
         ActorId = CaseFixtures.actorId CliReplyFixtures.id
-        DisplayName = DisplayName.Named(Inputs.name "Timeline author")
+        DisplayName = DisplayName.Named(DomainInputs.name "Timeline author")
         PrincipalKind = PrincipalKind.Human
         Availability = ActorAvailability.Available
     }
@@ -47,7 +48,13 @@ let private entry revision =
         CaseTimelineEntry.OperationId = CaseFixtures.operationId CliReplyFixtures.id
         Position = EffectPosition.create (CaseFixtures.sequence revision) 0 |> Option.get
         OperationHash = CliReplyFixtures.receipt.Position.EntryHash
-        Subject = TimelineSubject.CaseFact(CaseFixtures.revision revision, CaseActKind.Close)
+        Subject =
+            {
+                PartKind = PartKind.Case
+                PartId = CaseId.value CliReplyFixtures.snapshot.CaseId
+                Revision = CaseFixtures.revision revision
+            }
+        Task = TaskId.ofLiteral "case.close"
         RecordedAt = DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
         RecordedBy = actor
         Changes = TimelineChanges.Withheld
@@ -56,7 +63,7 @@ let private entry revision =
 let private page revision next =
     {
         CaseTimelinePage.Disclosure = HistoryDisclosure.Full
-        Basis = Inputs.workBasis
+        Basis = DomainInputs.workBasis
         CaseId = CliReplyFixtures.snapshot.CaseId
         Reference = CliReplyFixtures.snapshot.Reference
         Items = [ entry revision ]
@@ -66,7 +73,7 @@ let private page revision next =
 let private run arguments (replies: Outcome<CaseTimelinePage> list) =
     let prepared =
         Grammar.prepare (fun () -> "unused") ([ "case"; "timeline"; "x" ] @ arguments)
-        |> Fixtures.accepted
+        |> CaseBuilders.accepted
 
     let calls = ResizeArray<Invocation>()
     let pending = Collections.Generic.Queue<Outcome<CaseTimelinePage>>(replies)
@@ -90,7 +97,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                                 |> RepresentationReply.Human
                             | Representation.Data -> RepresentationReply.Data outcome
                         ))
-                    |> Fixtures.accepted
+                    |> CaseBuilders.accepted
                     |> Task.FromResult
             Deliver =
                 fun frame reply ->
@@ -111,7 +118,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
         }
 
     let code =
-        WorkListCommand.run io prepared CancellationToken.None
+        PageCommand.run io prepared CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code,
@@ -133,8 +140,8 @@ let tests =
                                 FieldName = BusinessField.ClaimedAmount
                                 Change =
                                     {
-                                        Before = Some(Inputs.money "1234.5678" "EUR")
-                                        After = Some(Inputs.money "100.0000" "EUR")
+                                        Before = Some(DomainInputs.money "1234.5678" "EUR")
+                                        After = Some(DomainInputs.money "100.0000" "EUR")
                                     }
                             }
 
@@ -150,8 +157,8 @@ let tests =
                                                     Overview =
                                                         {
                                                             Event =
-                                                                TimelineEvent.CaseActRecorded
-                                                                    CaseActKind.Close
+                                                                TimelineEvent.PartChanged
+                                                                    PartKind.Case
                                                             Highlights = []
                                                         }
                                                 }
@@ -220,22 +227,24 @@ let tests =
 
                 let subjects =
                     [
-                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "task", "case.close"
-                        TimelineSubject.Work(revision, WorkActKind.UpdateWork),
-                        "task",
-                        "work.update"
-                        TimelineSubject.Reminder(
-                            ReminderActKind.Create,
-                            reminderId,
-                            revision,
-                            None
-                        ),
-                        "task",
-                        "reminder.create"
+                        PartKind.Case, CaseId.value CliReplyFixtures.snapshot.CaseId, "case.close"
+                        PartKind.Work, CaseId.value CliReplyFixtures.snapshot.CaseId, "work.update"
+                        PartKind.Reminder, ReminderId.value reminderId, "reminder.create"
                     ]
 
-                for subject, vocabulary, token in subjects do
-                    let item = { entry 1L with Subject = subject }
+                for kind, id, token in subjects do
+                    let item =
+                        { entry 1L with
+                            Subject =
+                                {
+                                    PartKind = kind
+                                    PartId = id
+                                    Revision = revision
+                                }
+                            Task = TaskId.ofLiteral token
+                        }
+
+                    let vocabulary = "task"
 
                     let act =
                         TimelineScreen.timelineEntry item
@@ -245,7 +254,7 @@ let tests =
 
                     Expect.equal
                         act.Value
-                        (PresentedValue.Code(vocabulary, token))
+                        (PresentedValue.Message("task." + token + ".label"))
                         "Work and reminder metadata cannot be relabelled as financial acts"
 
                     for language in LocalizationPolicy.languages do
@@ -330,8 +339,8 @@ let tests =
                     if details then
                         Expect.equal
                             (text.Split(operationId).Length - 1)
-                            2
-                            "Explicit details render the technical identity on both pages")
+                            4
+                            "Both operation and part identities are supplied on each of the two pages")
             testCase
                 "all pages keep target filter and limit and emit exact JSON page frames"
                 (fun () ->
@@ -393,8 +402,8 @@ let tests =
                                     FieldName = BusinessField.PayableAmount
                                     Change =
                                         {
-                                            Before = Some(Inputs.money "123456789.12" "EUR")
-                                            After = Some(Inputs.money "0" "USD")
+                                            Before = Some(DomainInputs.money "123456789.12" "EUR")
+                                            After = Some(DomainInputs.money "0" "USD")
                                         }
                                 }
                             TimelineChange.Lifecycle
@@ -409,7 +418,7 @@ let tests =
                                     After =
                                         Some(
                                             HandlingSummary.parse "First\nsecond"
-                                            |> Fixtures.accepted
+                                            |> CaseBuilders.accepted
                                         )
                                 }
                             TimelineChange.Reminder
@@ -420,8 +429,8 @@ let tests =
                                     Due =
                                         Some
                                             {
-                                                Before = Some(Inputs.date "2026-11-03")
-                                                After = Some(Inputs.date "2026-11-04")
+                                                Before = Some(DomainInputs.date "2026-11-03")
+                                                After = Some(DomainInputs.date "2026-11-04")
                                             }
                                     State =
                                         Some
@@ -440,8 +449,7 @@ let tests =
                                         Items = changes
                                         Overview =
                                             {
-                                                Event =
-                                                    TimelineEvent.CaseActRecorded CaseActKind.Close
+                                                Event = TimelineEvent.PartChanged PartKind.Case
                                                 Highlights = []
                                             }
                                     }
@@ -469,23 +477,26 @@ let tests =
                             text
                             (ReplyTextFormat.moneyWithScale
                                 language
-                                (Inputs.money "123456789.12" "EUR")
+                                (DomainInputs.money "123456789.12" "EUR")
                                 2)
                             "Exact old money survives the endpoint wire view."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.moneyWithScale language (Inputs.money "0" "USD") 2)
+                            (ReplyTextFormat.moneyWithScale
+                                language
+                                (DomainInputs.money "0" "USD")
+                                2)
                             "Exact new money survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (Inputs.date "2026-11-03"))
+                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-03"))
                             "Old date survives."
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
+                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-04"))
                             "New date survives."
 
                         Expect.stringContains

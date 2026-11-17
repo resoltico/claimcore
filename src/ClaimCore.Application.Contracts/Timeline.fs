@@ -2,6 +2,7 @@ namespace ClaimCore.Application.Contracts
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 
 [<RequireQualifiedAccess>]
 type TimelineFilter =
@@ -13,6 +14,12 @@ type TimelineFilter =
 module TimelineFilter =
     let vocabulary =
         Vocabulary.ofUnion<TimelineFilter> "timelineFilter" TokenCasing.ScreamingSnake None
+
+    let parts =
+        function
+        | TimelineFilter.Facts -> [ PartKind.Case; PartKind.Payment ]
+        | TimelineFilter.Work -> [ PartKind.Work; PartKind.Reminder ]
+        | TimelineFilter.Notes -> [ PartKind.Note ]
 
     let token = Vocabulary.token vocabulary
 

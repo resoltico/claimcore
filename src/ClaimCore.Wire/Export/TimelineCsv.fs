@@ -30,6 +30,8 @@ module TimelineCsv =
                     (fun money -> Money.format money + " " + Money.currency money)
                     change.Change
             ]
+        | TimelineChange.Disposition disposition ->
+            [ "reason", "", (CaseDisposition.reason disposition |> Reason.format) ]
         | TimelineChange.Lifecycle change ->
             [
                 difference
@@ -131,19 +133,16 @@ module TimelineCsv =
             ]
 
     let private rows reference (entry: CaseTimelineEntry) =
-        let act, revision, reminder, nextId, nextRevision =
-            match entry.Subject with
-            | TimelineSubject.CaseFact(revision, act) ->
-                CaseActKind.token act, Revision.format revision, "", "", ""
-            | TimelineSubject.Work(revision, act) ->
-                WorkActKind.token act, Revision.format revision, "", "", ""
-            | TimelineSubject.Note(act, _) -> NoteActKind.token act, "", "", "", ""
-            | TimelineSubject.Reminder(act, id, revision, next) ->
-                ReminderActKind.token act,
-                Revision.format revision,
-                ReminderId.format id,
-                (next |> Option.map (fst >> ReminderId.format) |> Option.defaultValue ""),
-                (next |> Option.map (snd >> Revision.format) |> Option.defaultValue "")
+        let act = TaskId.token entry.Task
+        let revision = Revision.format entry.Subject.Revision
+
+        let reminder =
+            if entry.Subject.PartKind = ClaimCore.Domain.Changes.PartKind.Reminder then
+                entry.Subject.PartId.ToString("D")
+            else
+                ""
+
+        let nextId, nextRevision = "", ""
 
         let actorName, actorKind =
             match entry.RecordedBy.DisplayName with

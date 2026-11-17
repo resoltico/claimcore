@@ -12,6 +12,10 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
@@ -29,34 +33,54 @@ let position: LedgerPosition =
     }
 
 let private registration =
-    Inputs.registrationWith
+    DomainInputs.registrationWith
         [
             BusinessField.ClaimantName, "Synthetic claimant"
             BusinessField.InsurerName, "Synthetic insurer"
             BusinessField.ClaimedAmount, "1.00"
         ]
-        Inputs.registration
+        DomainInputs.registration
 
 let private request reference =
-    {
-        ExpectedFamilySequence = None
-        OperationId = operationId
-        CaseReference = reference
-        ExpectedRevision = 0L
-        Act = AuthoredCaseAct.Open registration
-    }
+    Submissions.create
+        "case.open"
+        operationId
+        (Binding.CaseNew Revision.zero)
+        (Submissions.fields (RegistrationInput.values registration)
+         |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text reference))
 
 let commandInput =
-    (OperationSubmissionCodecs.submission.Write
-     << ClaimCore.TestSupport.Submissions.ofCommand None) (
-        ClaimCore.TestSupport.Inputs.caseOperation (request "WEB-001")
-    )
+    request "WEB-001"
+    |> OperationSubmissionCodecs.submission.Write
     |> ClaimCore.Json.WireWriter.bytes
 
 let view reference : CaseSnapshot =
-    CaseFixtures.decide (DateOnly(2026, 10, 13)) Map.empty (request reference) None
-    |> Result.map _.After
-    |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
+    let reference = CaseFixtures.reference reference
+
+    {
+        CaseId = CaseFixtures.caseId operationId
+        Reference = reference
+        Revision = Revision.first
+        State =
+            CaseState.Active
+                {
+                    CaseReference = reference
+                    Status = CaseStatus.Opened
+                    Registration = DomainInputs.admittedRegistration registration
+                    Finance = FinancialPosition.undecided
+                }
+    }
+
+let reference (request: OperationSubmission) =
+    match Binding.caseTarget (Submissions.command request).Binding with
+    | Some(CaseSelector.Reference reference) -> reference
+    | Some(CaseSelector.Id _) -> "WEB-001"
+    | None ->
+        match
+            Map.tryFind (Submissions.field BusinessField.CaseReference) request.Envelope.Inputs
+        with
+        | Some(SubmissionValue.Text reference) -> reference
+        | _ -> "WEB-001"
 
 let receipt id (reference: string) : OperationReceipt =
     {
@@ -68,17 +92,18 @@ let receipt id (reference: string) : OperationReceipt =
                     CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference reference
                     Revision = Revision.first
-                    Act = CaseActKind.Open
+                    Act = TaskId.ofLiteral "case.open"
                     Snapshot =
                         SnapshotDisclosure.Disclosed
                             {
                                 State = LiveCase.ofState (view reference).State |> Option.get
+                                Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payment = None
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)
+        RecordedBy = DomainInputs.actorReference (CaseFixtures.actorId operationId)
         Basis =
             {
                 ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
@@ -87,51 +112,29 @@ let receipt id (reference: string) : OperationReceipt =
             }
     }
 
-let peopleReceipt (request: ClaimCore.Domain.PeopleRequest) =
+let peopleReceipt (request: OperationSubmission) =
     let original = receipt request.OperationId "WEB-001"
-    let kind = PeopleAct.kind request.Act
-
-    let kinds =
-        match request.Act with
-        | PeopleAct.Register _ -> [ PeopleActKind.Register; PeopleActKind.SetProfile ]
-        | PeopleAct.ProvisionOwner _ -> [ PeopleActKind.ProvisionOwner; PeopleActKind.SetProfile ]
-        | PeopleAct.Admit value ->
-            PeopleActKind.Register
-            :: PeopleActKind.SetProfile
-            :: List.replicate value.Grants.Length PeopleActKind.Grant
-        | _ -> [ kind ]
-
-    let effects =
-        kinds
-        |> List.mapi (fun index kind ->
-            {
-                PeopleReceiptEffect.Act = kind
-                Id = EffectId.create original.OperationId index |> Option.get
-                Position = EffectPosition.create original.Position.Sequence index |> Option.get
-            })
 
     { original with
         Subject =
             ReceiptSubject.People
                 {
                     TargetActor = PeopleTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
-                    Act = kind
-                    Effects = effects
+                    Act = request.Task
+                    Effects =
+                        [
+                            {
+                                Act = request.Task
+                                Id = EffectId.create original.OperationId 0 |> Option.get
+                                Position =
+                                    EffectPosition.create original.Position.Sequence 0 |> Option.get
+                            }
+                        ]
                 }
     }
 
-
 // Host tests configure replies rather than implement ledger state or transitions.
-type ScriptedRead() =
-    inherit System.Reflection.DispatchProxy()
-
-    member val Reply: string -> (obj | null) array -> (obj | null) =
-        (fun name _ -> invalidOp ("Unexpected store read: " + name)) with get, set
-
-    override this.Invoke(methodInfo, arguments) =
-        this.Reply (nonNull methodInfo).Name (nonNull arguments)
-
-type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
+type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?reads: IStore) =
     let contexts = System.Collections.Concurrent.ConcurrentQueue<ContextQuery>()
 
     let facts principal =
@@ -160,25 +163,6 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
             Maintenance = RegisterMaintenance.initial
         }
 
-    let reader = System.Reflection.DispatchProxy.Create<IReadTx, ScriptedRead>()
-
-    do
-        (reader :?> ScriptedRead).Reply <-
-            fun name arguments ->
-                match name with
-                | "get_ObservedAt" -> box observed
-                | "Maintenance" -> box (Task.FromResult RegisterMaintenance.initial)
-                | "ExpiredBefore" -> box (Task.FromResult<DateTimeOffset option> None)
-                | "GlobalReadFacts" -> box (Task.FromResult(facts (unbox (nonNull arguments[0]))))
-                | "Access" ->
-                    box (
-                        Task.FromResult
-                            (facts (unbox<AccessQuery>(nonNull arguments[0])).Principal).People
-                    )
-                | "FindOperation" ->
-                    box (Task.FromResult<ClaimCore.RecordFormat.RetainedOperation option> None)
-                | _ -> invalidOp ("Unexpected store read: " + name)
-
     member _.ContextQueries = contexts.ToArray() |> Array.toList
 
     interface IStore with
@@ -194,10 +178,9 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
             )
 
         member _.Read operation =
-            task {
-                let! reply = operation.Work reader
-                return Ok reply
-            }
+            match reads with
+            | Some store -> store.Read operation
+            | None -> Task.FromResult(Error StoreFailure.Unavailable)
 
         member _.Write _ =
             invalidOp "Host reply stubs do not execute writes."
@@ -210,14 +193,13 @@ type Stub() =
     member val RuntimeAvailable = true with get, set
     member val Error: exn option = None with get, set
 
-    member val Execute: UnvalidatedCaseRequest * CancellationToken -> Task<ExecuteResult> =
+    member val Execute: OperationSubmission * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) ->
             Task.FromResult(
-                ExecuteResult.Accepted(receipt request.OperationId request.CaseReference)
+                ExecuteResult.Accepted(receipt request.OperationId (reference request))
             )) with get, set
 
-    member val ExecutePeople: ClaimCore.Domain.PeopleRequest * CancellationToken
-        -> Task<ExecuteResult> =
+    member val ExecutePeople: OperationSubmission * CancellationToken -> Task<ExecuteResult> =
         (fun (request, _) -> Task.FromResult(ExecuteResult.Accepted(peopleReceipt request))) with get, set
 
     member val Principal: PrincipalKey option = None with get, set
@@ -263,18 +245,21 @@ type Stub() =
                 (fun _ input _ ->
                     let outcome =
                         match input.Operation with
-                        | Ok(SubmittedOperation.Command(OperationInput.Case input)) ->
-                            let request = Inputs.referencedCase input
+                        | Ok _ ->
+                            let result =
+                                if
+                                    (ClaimCore.Domain.Tasks.Registry.findDeclaration input.Task
+                                     |> Option.get)
+                                        .Target
+                                        =
+                                        ActSubject.People
+                                then
+                                    peopleReceipt input
+                                else
+                                    receipt input.OperationId (reference input)
 
-                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                receipt request.OperationId request.CaseReference
-                            )
-                        | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
-                            (Previewed.AlreadyAccepted >> Outcome.Succeeded) (
-                                peopleReceipt request
-                            )
+                            Outcome.Succeeded(Previewed.AlreadyAccepted result)
                         | Error refusal -> Outcome.Rejected refusal
-                        | _ -> Outcome.Failed CoreFault.InternalError
 
                     this.Invoke
                         "operation.preview"
@@ -300,13 +285,18 @@ type Stub() =
 
                             let! outcome =
                                 match input.Operation with
-                                | Ok(SubmittedOperation.Command(OperationInput.Case request)) ->
-                                    this.Execute(Inputs.referencedCase request, token)
-                                | Ok(SubmittedOperation.Command(OperationInput.People request)) ->
-                                    this.ExecutePeople(request, token)
+                                | Ok _ ->
+                                    if
+                                        (ClaimCore.Domain.Tasks.Registry.findDeclaration input.Task
+                                         |> Option.get)
+                                            .Target
+                                            =
+                                            ActSubject.People
+                                    then
+                                        this.ExecutePeople(input, token)
+                                    else
+                                        this.Execute(input, token)
                                 | Error refusal -> Task.FromResult(ExecuteResult.Rejected refusal)
-                                | _ ->
-                                    Task.FromResult(ExecuteResult.Failed CoreFault.InternalError)
 
                             return
                                 {

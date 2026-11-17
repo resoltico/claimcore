@@ -9,8 +9,33 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
-open ClaimCore.Tests.DecisionFixtures
+open ClaimCore.TestSupport
+
+let private id n =
+    OperationIds.numberedAt (DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)) n
+
+let private installation = id 500
+
+let private owner =
+    PrincipalKey.human "https://issuer.example/" "owner"
+    |> Result.toOption
+    |> Option.get
+
+let private other =
+    PrincipalKey.human "https://issuer.example/" "other"
+    |> Result.toOption
+    |> Option.get
+
+let private calendar =
+    { new IBusinessCalendar with
+        member _.TimeZoneId = "Etc/UTC"
+        member _.DateAt value = DateOnly.FromDateTime value.UtcDateTime
+    }
 
 /// A port failure has no transaction state and never invokes application callbacks.
 type private FailingStore() =
@@ -33,15 +58,26 @@ type private FailingStore() =
 
 let private unavailable () = FailingStore()
 
+let private opening operation values =
+    Submissions.create "case.open" operation (Binding.CaseNew Revision.zero) values
+
+let private registration =
+    DomainInputs.registration
+    |> RegistrationInput.values
+    |> Submissions.fields
+    |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "BOUNDARY")
+
 let private inputs () =
     [
-        ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
-        OperationInput.People(
-            peopleRequest
-                (id 471)
-                other
-                (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-        )
+        opening (id 470) registration
+        Submissions.create
+            "people.register"
+            (id 471)
+            (Binding.PeopleNew Revision.zero)
+            (Map.fold
+                (fun result key value -> Map.add key value result)
+                (Submissions.principal other)
+                (Submissions.profile DomainInputs.actorProfile))
     ]
 
 let private malformed () =
@@ -58,27 +94,31 @@ let private malformed () =
 
         let invalid =
             [
-                ClaimCore.TestSupport.Inputs.caseOperation
-                    { opening 470 "BOUNDARY" with
-                        OperationId = Guid.Empty
-                    }
-                ClaimCore.TestSupport.Inputs.caseOperation (
-                    actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
-                )
-                OperationInput.People(
-                    peopleRequest
-                        Guid.Empty
-                        other
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                )
+                opening Guid.Empty registration
+                opening
+                    (id 471)
+                    (Map.add
+                        (Submissions.field BusinessField.ClaimantName)
+                        (SubmissionValue.Text " Padded ")
+                        registration)
+                Submissions.create
+                    "people.register"
+                    Guid.Empty
+                    (Binding.PeopleNew Revision.zero)
+                    (Map.fold
+                        (fun result key value -> Map.add key value result)
+                        (Submissions.principal other)
+                        (Submissions.profile DomainInputs.actorProfile))
             ]
 
         for input in invalid do
             let! execute =
-                (Service.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
+                (Service.executeSubmission core (input) (CancellationToken.None))
+                |> Async.AwaitTask
 
             let! preview =
-                (Service.preview core (input) (CancellationToken.None)) |> Async.AwaitTask
+                (Service.previewSubmission core (input) (CancellationToken.None))
+                |> Async.AwaitTask
 
             Expect.equal
                 execute.Outcome
@@ -119,12 +159,10 @@ let private failures () =
 
             for input in inputs () do
                 let! reply =
-                    (Service.execute core (input) (CancellationToken.None)) |> Async.AwaitTask
+                    (Service.executeSubmission core (input) (CancellationToken.None))
+                    |> Async.AwaitTask
 
-                Expect.equal
-                    reply.OperationId
-                    (OperationInput.operationId input)
-                    "Failure retains identity"
+                Expect.equal reply.OperationId input.OperationId "Failure retains identity"
 
                 Expect.equal reply.Outcome expected "Only dispatched commit uncertainty is unknown"
 
@@ -146,14 +184,13 @@ let private cancelled () =
                 owner
 
         for input in inputs () do
-            let! execute = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
+            let! execute =
+                (Service.executeSubmission core (input) (cancellation.Token)) |> Async.AwaitTask
 
-            let! preview = (Service.preview core (input) (cancellation.Token)) |> Async.AwaitTask
+            let! preview =
+                (Service.previewSubmission core (input) (cancellation.Token)) |> Async.AwaitTask
 
-            Expect.equal
-                execute.OperationId
-                (OperationInput.operationId input)
-                "Cancelled write identity"
+            Expect.equal execute.OperationId input.OperationId "Cancelled write identity"
 
             Expect.equal
                 execute.Outcome
@@ -204,48 +241,3 @@ let tests =
                 "predispatch cancellation and cancelled reads remain definite"
                 (cancelled ())
         ]
-
-[<Tests>]
-let oneRound =
-    testCase "case snapshot admission enriches syntax failures in the application path" (fun () ->
-        let request: CaseOperationRequest =
-            {
-                ExpectedFamilySequence = None
-                OperationId = id 479
-                Target = CaseSelector.Reference "BAD REF"
-                ExpectedRevision = 0L
-                Act =
-                    CaseAct.Open(
-                        ClaimCore.TestSupport.Inputs.registrationFrom
-                            [
-                                BusinessField.IncidentDate, "2026-09-08"
-                                BusinessField.IncidentNotificationDate, "2026-09-06"
-                                BusinessField.IncidentCountry, "latvia"
-                                BusinessField.ClaimantName, " Padded "
-                                BusinessField.ClaimedCurrency, "eur"
-                            ]
-                    )
-            }
-
-        let prepared =
-            CaseOperations.prepare request |> Result.defaultWith (string >> failtest)
-
-        let snapshot = (locked worker None None).Read
-
-        let actual =
-            CaseOperations.complete (services installation calendar owner) prepared snapshot
-
-        match actual with
-        | Error(Refusal.InvalidInput issues) ->
-            Expect.equal
-                (InputIssues.toList issues |> List.map _.Violation)
-                [
-                    Violation.ReferenceFormat
-                    Violation.FutureDate
-                    Violation.ChronologicalOrder
-                    Violation.CountryFormat
-                    Violation.SurroundingWhitespace
-                    Violation.CurrencyFormat
-                ]
-                "The service clock and partially parsed values participate in the first refusal"
-        | result -> failtestf "Expected one refusal with every issue, got %A" result)

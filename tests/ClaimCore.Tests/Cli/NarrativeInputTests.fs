@@ -46,15 +46,15 @@ let tests =
                              >> Option.map ClaimCore.TestSupport.Submissions.command)
                                 prepared.Invocation
                         with
-                        | Some(OperationInput.Note { Act = AuthoredNoteAct.AddNote text }) ->
+                        | Some value ->
                             Expect.equal
-                                text
-                                "First\nSecond"
+                                value.Inputs.Values[TaskInputId.Target InputTarget.NoteText]
+                                (InputValue.Text "First\nSecond")
                                 "The reviewed text is normalized once"
                         | _ -> failtest "Expected note input"
 
                         Expect.isTrue
-                            (CommandGrammar.supportsAll (TaskId.Query QueryTaskId.CaseNotes))
+                            (CommandGrammar.supportsAll ((QueryTaskId.key QueryTaskId.CaseNotes)))
                             "Notes have bounded live traversal"
                     finally
                         directory.Delete true)
@@ -93,14 +93,22 @@ let tests =
                              >> Option.map ClaimCore.TestSupport.Submissions.command)
                                 prepared.Invocation
                         with
-                        | Some(OperationInput.Work {
-                                                       Act = WorkAct.UpdateWork value
-                                                       ExpectedRevision = 2L
-                                                   }) ->
+                        | Some value ->
                             Expect.equal
-                                value.Summary
-                                (WorkValue.Set "  first\nsecond 😀  \n")
-                                "Exact normalized value freezes"
+                                value.Binding
+                                (Binding.Work(
+                                    CaseSelector.Reference "NAR",
+                                    Revision.create 2L |> Option.get
+                                ))
+                                "Reviewed work version"
+
+                            Expect.equal
+                                value.Inputs.Values[TaskInputId.Target(
+                                                        InputTarget.Field
+                                                            BusinessField.HandlingSummary
+                                                    )]
+                                (InputValue.Text "  first\nsecond 😀  \n")
+                                "Exact normalized text"
                         | _ -> failtest "Expected work draft"
 
                         Expect.equal
@@ -156,8 +164,13 @@ let tests =
                      >> Option.map ClaimCore.TestSupport.Submissions.command)
                         prepared.Invocation
                 with
-                | Some(OperationInput.Work { Act = WorkAct.UpdateWork value }) ->
-                    Expect.equal value.Summary WorkValue.Clear "Null clear is authored"
+                | Some value ->
+                    Expect.equal
+                        value.Inputs.Values[TaskInputId.Target(
+                                                InputTarget.Field BusinessField.HandlingSummary
+                                            )]
+                        InputValue.Null
+                        "Null clear is authored"
                 | _ -> failtest "Expected work clear"
 
                 Expect.isError

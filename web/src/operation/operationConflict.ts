@@ -1,3 +1,4 @@
+import { isOperationAffordance } from "./affordances";
 import {
   type OperationSubmission,
   type CaseSelector,
@@ -13,7 +14,7 @@ import type {
   RevisionConflictSnapshot,
 } from "./operationTypes";
 const caseBound = (source: LocalSource): source is ConflictSource =>
-  source.prepared.input.binding.kind !== "PEOPLE";
+  "target" in source.prepared.input.binding;
 export const conflictFromRefusal = (
   action: Extract<OperationAction, { type: "REFUSE" }>,
   source: LocalSource | null,
@@ -44,20 +45,26 @@ export const rebasedOperationBinding = (
   currentActions: ReadonlyArray<Affordance>,
 ): OperationBinding => {
   const { binding } = input;
-  if (input.task === "case.erase") {
+  if ("expectedFamilySequence" in binding) {
     const current = currentActions.find(
-      (action) => action.task === "case.erase" && action.blocked === null,
+      (action) => action.task === input.task && action.blocked === null,
     );
-    if (current?.task !== "case.erase") {
-      throw new Error("A fresh erasure action is required.");
+    if (
+      current === undefined ||
+      !isOperationAffordance(current) ||
+      current.task !== input.task ||
+      current.binding.kind !== "CASE" ||
+      !("expectedFamilySequence" in current.binding)
+    ) {
+      throw new Error("A fresh reviewed action is required.");
     }
     return {
-      ...input.binding,
+      ...binding,
       expectedRevision: current.binding.expectedRevision,
       expectedFamilySequence: current.binding.expectedFamilySequence,
     };
   }
-  return binding.kind !== "PEOPLE" && "expectedRevision" in binding
+  return "target" in binding && "expectedRevision" in binding
     ? { ...binding, expectedRevision: revision }
     : binding;
 };
@@ -73,8 +80,8 @@ export const sameConflictTarget = (
   const left = before.binding;
   const right = after.binding;
   if (
-    left.kind === "PEOPLE" ||
-    right.kind === "PEOPLE" ||
+    !("target" in left) ||
+    !("target" in right) ||
     left.kind !== right.kind ||
     before.task !== after.task ||
     !sameSelector(left.target, right.target)

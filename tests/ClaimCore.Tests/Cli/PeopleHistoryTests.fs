@@ -10,6 +10,7 @@ open Microsoft.VisualBasic.FileIO
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -50,9 +51,26 @@ let private csvSubjects () =
             Position = EffectPosition.create Sequence.first 0 |> Option.get
             OperationHash = EntryHash.zero
             RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-            RecordedBy = Inputs.actorReference actor
-            Target = Inputs.actorReference actor
-            Facts = PeopleHistoryFacts.Registered principal
+            RecordedBy = DomainInputs.actorReference actor
+            Target = DomainInputs.actorReference actor
+            Task = TaskId.ofLiteral "people.register"
+            PrivateAvailable = true
+            References = { Actors = []; Cases = [] }
+            Changes =
+                {
+                    PersonPartDescription.Profiles = { Before = None; After = None }
+                    Principal =
+                        Some
+                            {
+                                Before = None
+                                After = Some principal
+                            }
+                    Enabled = None
+                    ProfilePresent = None
+                    DisplayName = None
+                    Contact = None
+                    Grants = []
+                }
         }
 
     let csv =
@@ -67,13 +85,29 @@ let private csvSubjects () =
     reader.SetDelimiters [| "," |]
     reader.HasFieldsEnclosedInQuotes <- true
     let header = reader.ReadFields() |> nonNull
-    let values = reader.ReadFields() |> nonNull
-    Expect.equal header[12] "principal.subject" "Machine-readable column identity"
-    Expect.equal values[12] ("'" + subject) "Protection precedes independent RFC4180 decoding"
+    let rows = ResizeArray<Map<string, string>>()
+
+    while not reader.EndOfData do
+        rows.Add(
+            List.zip (Array.toList header) (reader.ReadFields() |> nonNull |> Array.toList)
+            |> Map.ofList
+        )
+
+    Expect.contains
+        (rows |> Seq.map (fun row -> row["field"]) |> Seq.toList)
+        "principal.subject"
+        "Principal components remain separately addressable"
+
+    let subjectRow = rows |> Seq.find (fun row -> row["field"] = "principal.subject")
+
+    Expect.equal
+        subjectRow["after"]
+        ("'" + subject)
+        "Formula protection precedes independent RFC4180 decoding"
 
     let page =
         {
-            PeopleHistoryPage.Basis = Inputs.workBasis
+            PeopleHistoryPage.Basis = DomainInputs.workBasis
             Entries = [ entry ]
             NextCursor = None
         }
@@ -95,7 +129,12 @@ let private csvSubjects () =
         json.RootElement.GetProperty("outcome").GetProperty("data").GetProperty("entries")
 
     let actual =
-        data[0].GetProperty("act").GetProperty("principal").GetProperty("subject").GetString()
+        data[0]
+            .GetProperty("changes")
+            .GetProperty("principal")
+            .GetProperty("after")
+            .GetProperty("subject")
+            .GetString()
 
     Expect.equal actual subject "Structured output stays exact"
 

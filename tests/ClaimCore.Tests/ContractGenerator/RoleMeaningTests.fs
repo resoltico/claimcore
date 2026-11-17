@@ -7,6 +7,10 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.ContractGeneration
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 
 let private replace key text source =

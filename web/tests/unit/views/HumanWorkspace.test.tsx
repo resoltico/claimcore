@@ -10,7 +10,7 @@ import { render, screen, waitFor } from "../../support/presentation-test-support
 import { Dashboard } from "../../../src/views/Dashboard";
 import { navigate } from "../../../src/routing/navigation";
 
-import type { HumanReadDocument_context } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 const reply = (document: unknown) => ({
   representation: "HUMAN",
   outcome: {
@@ -25,9 +25,7 @@ const response = (document: unknown) =>
       "Content-Type": "application/json",
     },
   });
-const inactive = (
-  state: "NO_ROLES" | "DISABLED" | "NOT_REGISTERED",
-): HumanReadDocument_context => ({
+const inactive = (state: "NO_ROLES" | "DISABLED" | "NOT_REGISTERED"): HumanDocument => ({
   screen: {
     regions: [
       {
@@ -99,7 +97,7 @@ it.each(["NO_ROLES", "DISABLED", "NOT_REGISTERED"] as const)(
   },
 );
 it("uses advertised query tasks for deep-link availability and the supplied own-account caption", async () => {
-  const document: HumanReadDocument_context = {
+  const document: HumanDocument = {
     ...activeRequester,
     screen: {
       regions: [
@@ -168,7 +166,7 @@ it("masks the old requester Screen during a failed access refresh", async () => 
   expect(screen.queryByText("Core caller technical identity Ψ")).not.toBeInTheDocument();
 });
 it("renders the Core maintenance notice without a requester maintenance DTO", async () => {
-  const document: HumanReadDocument_context = {
+  const document: HumanDocument = {
     ...activeRequester,
     actions: installationActions([]),
     links: requesterLinks(["OPERATIONS"], []),

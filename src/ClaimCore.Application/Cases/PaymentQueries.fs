@@ -1,6 +1,13 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -17,7 +24,7 @@ module internal PaymentQueries =
                             Violation.PageLimitRange PaymentPaging.MaximumLimit
                         ))
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -28,12 +35,7 @@ module internal PaymentQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case
-                                                    services
-                                                    tx
-                                                    None
-                                                    request.Target
-                                                    None
+                                                CaseReadContext.load services tx request.Target
 
                                             match view.Case with
                                             | Some parent when
@@ -52,7 +54,7 @@ module internal PaymentQueries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok before ->
-                                                    let! work = tx.FindWork parent.CaseId
+                                                    let! work = WorkReads.findWork tx parent.CaseId
 
                                                     match work with
                                                     | Some work when
@@ -78,28 +80,57 @@ module internal PaymentQueries =
                                                                            >
                                                                     )
                                                             | _ ->
-                                                                tx.PaymentPage
+                                                                PaymentReads.paymentPage
+                                                                    tx
                                                                     {
                                                                         CaseId = parent.CaseId
                                                                         Before = before
                                                                         Limit = request.Limit
                                                                     }
 
+                                                        let! family =
+                                                            AggregateStorage.family tx parent.CaseId
+
+                                                        let removable =
+                                                            ClaimCore.Domain.Tasks.Registry.all
+                                                            |> List.tryPick (function
+                                                                | ClaimCore.Domain.Tasks.Task.Family task when
+                                                                    task.Declaration.Inputs
+                                                                    |> List.exists (fun input ->
+                                                                        input.Input =
+                                                                            TaskInputId.Target
+                                                                                InputTarget
+                                                                                    .PaymentId
+                                                                        && input.Source =
+                                                                            InputSource.Binding)
+                                                                    ->
+                                                                    Some task
+                                                                | _ -> None)
+
                                                         let canRemove =
-                                                            not view.Maintenance.Active
-                                                            && Access.canAct
-                                                                services.Principal
-                                                                view.Actor
-                                                                (Scope.Case parent.CaseId)
-                                                                (CaseAct.probe
-                                                                    CaseActKind.RemovePayment)
-                                                            && (Case.ofAccepted parent.Snapshot
-                                                                |> Result.map (
-                                                                    Case.actRefusal
-                                                                        CaseActKind.RemovePayment
-                                                                )
-                                                                    =
-                                                                    Ok None)
+                                                            match family, removable with
+                                                            | Some(family, _, _), Some task ->
+                                                                let environment =
+                                                                    {
+                                                                        FamilyEnvironment.Requester =
+                                                                            view.Actor
+                                                                        RequesterPrincipal =
+                                                                            services.Principal
+                                                                        Maintenance =
+                                                                            view.Maintenance.Active
+                                                                        AssigneeEligible =
+                                                                            fun _ -> false
+                                                                    }
+
+                                                                (task.Availability
+                                                                    environment
+                                                                    (Some family)
+                                                                    (Binding.Case(
+                                                                        CaseSelector.Id family.Id,
+                                                                        family.Case.Revision
+                                                                    )))
+                                                                    .Blocked.IsNone
+                                                            | _ -> false
 
                                                         return
                                                             Outcome.Succeeded

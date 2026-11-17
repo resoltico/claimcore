@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <Compile Include="TaskInputs.fs" />
     <Compile Include="QueryFields.fs" />
     <Compile Include="Requests.fs" />
+    <Compile Include="ChangeReferences.fs" />
     <Compile Include="Paging.fs" />
     <Compile Include="Faults.fs" />
     <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />
+    <Compile Include="ReplyKind.fs" />
     <Compile Include="Maintenance.fs" />
+    <Compile Include="TaskOffer.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
@@ -21,8 +23,8 @@
     <Compile Include="WorkReads.fs" />
     <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />
-    <Compile Include="Operations.fs" />
     <Compile Include="TaskIdentities.fs" />
+    <Compile Include="EndpointDeclarations.fs" />
     <Compile Include="TaskDeclarations.fs" />
     <Compile Include="OperationSubmission.fs" />
     <Compile Include="OperationLookup.fs" />

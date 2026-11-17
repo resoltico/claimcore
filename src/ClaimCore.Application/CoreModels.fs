@@ -21,7 +21,7 @@ type RuntimeOpenFault =
     | Cancelled
 
 [<RequireQualifiedAccess; NoComparison>]
-type Verdict<'proceed> =
+type internal Verdict<'proceed> =
     | Proceed of 'proceed
     | Replay of OperationReceipt
     | Refuse of Refusal

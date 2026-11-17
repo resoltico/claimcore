@@ -15,7 +15,10 @@ server and its assets; the human CLI is distributed separately.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-The runtime refuses unsupported baseline identities and formats without converting them.
+Use installation format 5 and CLI recovery journal format 4 with matching builds. Initialization
+requires an empty database; the runtime refuses unsupported baseline identities and formats without
+converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
+and recovery records rather than attempting to initialize or convert them in place.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
@@ -102,7 +105,7 @@ Keep traffic isolated after an uncertain owner procedure.
 
 Every host cleans expired sessions and access requests in bounded batches every ten minutes with up to
 one minute of jitter. Hosts may clean concurrently; locked rows are skipped and expiry is rechecked.
-No manual prune command is required. See [housekeeping](../src/ClaimCore.Postgres/Housekeeping.fs)
+No manual prune command is required. See [housekeeping](../src/ClaimCore.Application/Storage/Housekeeping.fs)
 and the [host service](../src/ClaimCore.Server/HousekeepingService.fs) for the enforced limits and scheduling.
 
 ## Access review and sessions
@@ -147,7 +150,6 @@ PostgreSQL `clock_timestamp()` still supplies actual observation/recording time;
 clamped to the expiry frontier. An arbitrary forward clock jump cannot be distinguished from legitimate
 idle time. Keep clocks synchronized and retain checkpoint evidence independently of database backups;
 restoring an older database can lose later accepted history and confirmed expiry observations.
-
 
 ## Certificate, key and host replacement
 
@@ -207,7 +209,6 @@ Rebuild preserves erased identities and removal markers while keeping private co
 prior divergence for investigation, and review later erasures and affected copies: a pre-erasure backup
 can restore private content. Inspect restored status and turn maintenance off only after successful
 verification, then reopen traffic.
-
 
 ## Monitoring
 
@@ -330,10 +331,12 @@ reloading cannot reconstruct a discarded request body.
 Accepted writes serialize at one ledger head. Verification replays retained requests through the same
 Domain decisions, using each entry's stored business date and authority at that position. It checks
 hashes, commitments, installation format, erasure, effects, projections and the head. Rebuild writes
-the replayed state as projections. Erased payloads receive structural erasure checks; request-admission
-windows and maintenance mode are not replayed.
+the replayed state as projections. One fold supplies the historical environment, applies effects and
+checks reproduced part changes. Erased history is checked from retained inputs and available facts,
+including owner/compartment consistency; cleared private values cannot be reconstructed. First-execution
+windows and present maintenance are not replayed.
 
-Unknown stored act, role or principal-kind tokens are corruption. SQL keeps structural and erasure
+Unknown stored task, role or principal-kind tokens are corruption. SQL keeps structural and erasure
 checks; record decoding and verification check vocabulary and meaning. VERIFIED and DIVERGED are
 structured results; provider failures remain failures. A checkpoint contains `installationId`,
 `operationSequence`, `operationHash` and the nullable full-precision `expiredBefore` frontier. A matching

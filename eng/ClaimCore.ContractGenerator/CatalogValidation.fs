@@ -121,7 +121,7 @@ module CatalogValidation =
         let required =
             Set.union
                 (presentationIds ())
-                (TaskId.all
+                ((TaskDeclarations.all |> List.map _.Id)
                  |> List.choose TaskRouting.act
                  |> List.map PresentationKeys.consequence
                  |> Set.ofList)
@@ -143,6 +143,7 @@ module CatalogValidation =
                 "ui"
                 "cli"
                 "timeline"
+                "change"
             ]
             @ (Terms.all |> List.map _.Name)
 

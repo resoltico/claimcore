@@ -12,6 +12,10 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.ApplicationFixtures
 
@@ -20,9 +24,9 @@ let internal cases fixture (actor: ServiceContext) =
     task {
         for n, reference in [ 10, "Case-c"; 11, "case-A"; 12, "CASE-B" ] do
             let! result =
-                (Service.execute
+                (Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture n reference))
+                    (((openRequest fixture n reference)))
                     (CancellationToken.None))
 
             accepted result |> ignore
@@ -47,16 +51,20 @@ let internal reader fixture (admin: ServiceContext) =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
-                admin
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 20)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                (CancellationToken.None))
+            ((task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 20))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (admin) submission ((CancellationToken.None))
+            }))
 
         acceptedPeople registered
 
@@ -78,30 +86,33 @@ let internal reader fixture (admin: ServiceContext) =
 let internal createHistory fixture (actor: ServiceContext) =
     task {
         let! opened =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "HISTORY-1"))
+                (((openRequest fixture 10 "HISTORY-1")))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
         for n, revision in [ 11, 1L; 12, 2L ] do
             let values =
-                (ClaimCore.TestSupport.Inputs.registrationWith
+                (ClaimCore.TestSupport.DomainInputs.registrationWith
                     [ BusinessField.ClaimantName, ("Party " + string n) ]
                     (registration))
 
             let! amended =
-                (Service.execute
+                (Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request
-                            fixture
-                            n
-                            "HISTORY-1"
-                            revision
-                            (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate values))
-                    ))
+                    (((request
+                        (fixture)
+                        (n)
+                        ("HISTORY-1")
+                        (revision)
+                        "case.amendRegistration"
+                        (ClaimCore.TestSupport.Submissions.updates (
+                            RegistrationUpdateInput.values (
+                                (DomainInputs.registrationUpdate values)
+                            )
+                        )))))
                     (CancellationToken.None))
 
             accepted amended |> ignore
@@ -115,16 +126,20 @@ let internal registerActors fixture (actor: ServiceContext) =
                 |> Result.defaultWith (string >> failtest)
 
             let! registered =
-                (Service.execute
-                    actor
-                    (OperationInput.People(
-                        reviewedPeopleRequest
-                            fixture.Store
-                            (id fixture n)
-                            target
-                            (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                    ))
-                    (CancellationToken.None))
+                ((task {
+                    let! submission =
+                        ClaimCore.TestSupport.StoreFixtures.personSubmission
+                            (fixture.Store)
+                            ((id fixture n))
+                            (target)
+                            (None)
+                            "people.register"
+                            (ClaimCore.TestSupport.Submissions.profile (
+                                ClaimCore.TestSupport.DomainInputs.actorProfile
+                            ))
+
+                    return! Service.executeSubmission (actor) submission ((CancellationToken.None))
+                }))
 
             acceptedPeople registered
     }
@@ -137,9 +152,9 @@ let internal differentHistoryResource
     =
     task {
         let! other =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 13 "OTHER"))
+                (((openRequest fixture 13 "OTHER")))
                 (CancellationToken.None))
 
         accepted other |> ignore
@@ -159,19 +174,13 @@ let internal differentHistoryResource
 let internal appendHistory fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 52L do
-            let act =
-                if revision % 2L = 1L then
-                    (AuthoredCaseAct.Bare BareAct.Close)
-                else
-                    (AuthoredCaseAct.Bare BareAct.Reopen)
+            let taskName = if revision % 2L = 1L then "case.close" else "case.reopen"
 
             let! result =
-                (Service.execute
+                Service.executeSubmission
                     actor
-                    (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request fixture (20 + int revision) "LONG-HISTORY" revision act
-                    ))
-                    (CancellationToken.None))
+                    (request fixture (20 + int revision) "LONG-HISTORY" revision taskName Map.empty)
+                    CancellationToken.None
 
             accepted result |> ignore
 

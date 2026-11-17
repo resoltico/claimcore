@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "角色授权",
-    "source": "2fd169b4b39d"
+    "text": "角色",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "请选择 1 至 {maximumGrants} 项角色授权。",
-    "source": "d7a1ec1278fd"
+    "text": "请选择 1 到 {maximumGrants} 个角色。",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "每个角色与范围组合只能选择一次。",
@@ -2239,50 +2239,6 @@
     "text": "查看案件及其完整历史记录。拥有此角色的所有案件权限时，还可查看人员和访问权限。不能更改任何内容。",
     "source": "5c16effd2666"
   },
-  "timeline.event.caseOpened": {
-    "text": "已新建案件",
-    "source": "06d0c814073c"
-  },
-  "timeline.event.registrationAmended": {
-    "text": "已更新索赔资料",
-    "source": "3464951cbb5f"
-  },
-  "timeline.event.factsCorrected": {
-    "text": "已更正资料",
-    "source": "b90ba017d774"
-  },
-  "timeline.event.decisionRecorded": {
-    "text": "已记录赔付决定",
-    "source": "17798f3d21af"
-  },
-  "timeline.event.decisionWithdrawn": {
-    "text": "已撤回赔付决定",
-    "source": "0f54656f1d92"
-  },
-  "timeline.event.paymentRecorded": {
-    "text": "已记录付款日期",
-    "source": "bba7521a5c9f"
-  },
-  "timeline.event.caseClosed": {
-    "text": "已结案",
-    "source": "aa56ad4b2d16"
-  },
-  "timeline.event.caseReopened": {
-    "text": "已重新开案",
-    "source": "00dae005cb0c"
-  },
-  "timeline.event.caseVoided": {
-    "text": "已作废案件",
-    "source": "38d380a51a59"
-  },
-  "timeline.event.caseReinstated": {
-    "text": "已恢复案件",
-    "source": "d9c28b4df570"
-  },
-  "timeline.event.caseErased": {
-    "text": "已永久删除案件",
-    "source": "258332be465d"
-  },
   "timeline.event.responsibilityAssigned": {
     "text": "已指定 {person} 负责",
     "source": "1cea0340442f"
@@ -2539,10 +2495,6 @@
     "text": "部分已付",
     "source": "04739c2e8186"
   },
-  "timeline.event.paymentRemoved": {
-    "text": "付款记录已移除",
-    "source": "49cb55fa2f47"
-  },
   "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
     "text": "请输入大于零的付款金额。",
     "source": "dc72fea18ef9"
@@ -2639,14 +2591,6 @@
     "text": "备注",
     "source": "d8da2c49df39"
   },
-  "timeline.event.note.add": {
-    "text": "备注已添加",
-    "source": "a7886ebc4ffd"
-  },
-  "timeline.event.note.remove": {
-    "text": "备注已移除",
-    "source": "b9096ff4a83e"
-  },
   "timelineFilter.NOTES.label": {
     "text": "备注",
     "source": "8a7525b1492f"
@@ -2722,5 +2666,133 @@
   "field.expectedFamilySequence.rule": {
     "text": "请使用 case.get 为你审阅并准备擦除的案件提供的系列序号。",
     "source": "8d258a9cf42b"
+  },
+  "change.CASE.recorded": {
+    "text": "已记录案件事实",
+    "source": "8e5b5d6ba758"
+  },
+  "change.PAYMENT.recorded": {
+    "text": "已记录付款变更",
+    "source": "5fda4f37c572"
+  },
+  "change.WORK.recorded": {
+    "text": "已记录案件处理工作",
+    "source": "d970b01f341f"
+  },
+  "change.REMINDER.recorded": {
+    "text": "已记录提醒变更",
+    "source": "6050baf70370"
+  },
+  "change.NOTE.recorded": {
+    "text": "已记录备注变更",
+    "source": "db3aa5c9b123"
+  },
+  "change.PERSON.recorded": {
+    "text": "已记录账户变更",
+    "source": "6d1a5a30e98a"
+  },
+  "timeline.event.noteAdded": {
+    "text": "已添加备注",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.noteRemoved": {
+    "text": "已删除备注",
+    "source": "b9096ff4a83e"
+  },
+  "change.NOTE.removed": {
+    "text": "已删除备注",
+    "source": "b9096ff4a83e"
+  },
+  "label.profile": {
+    "text": "已保存的个人资料",
+    "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "选择对每组信息执行的操作。",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "不适用于所选案件",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "不适用于服务账户",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "此账户已停用",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "您尚无访问权限",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "我们已通知所有者。所有者可为此账户授予访问权限。",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "尚无付款记录。",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "没有符合此视图的提醒。",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "这里的到期筛选适用于每条提醒。案件列表使用每个案件最早的提醒。",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "没有可显示的人员。",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "没有可显示的案件。",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "没有符合此视图的案件。",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "本页没有符合条件的账户。",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "案件详情",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "访问权限更改",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "选择角色",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "使用编号或 ID 选择现有案件。",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "案件选择方式",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "查找并继续处理需要关注的案件工作。",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "此案件已更改",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "没有待处理的访问申请。",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "此案件当前不提供该操作。",
+    "source": "78dafa13c3bd"
   }
 }

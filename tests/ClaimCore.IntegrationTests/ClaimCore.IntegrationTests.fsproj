@@ -4,6 +4,9 @@
     <ProjectReference Include="../../src/ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
+    <Compile Include="LedgerStructureTests.fs" />
+    <Compile Include="SubmissionServiceTests.fs" />
+    <Compile Include="ReceiptDisclosureTests.fs" />
     <Compile Include="PaymentPositionTests.fs" />
     <Compile Include="OperationStorageTests.fs" />
     <Compile Include="OperationReadTests.fs" />
@@ -39,6 +42,7 @@
     <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="VerificationScenarioInputs.fs" />
     <Compile Include="RootVerificationTests.fs" />
     <Compile Include="StructuralBaselineTests.fs" />
     <Compile Include="SummaryAttributionPostgresTests.fs" />
@@ -46,6 +50,7 @@
     <Compile Include="NamedRowTests.fs" />
     <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />
+    <Compile Include="StewardshipReasonConsumerTests.fs" />
     <Compile Include="NotesPostgresTests.fs" />
     <Compile Include="HandoverPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
@@ -94,7 +99,6 @@
     <Compile Include="DiagnosticEntryEvidence.fs" />
     <Compile Include="DiagnosticReachabilityTests.fs" />
     <Compile Include="ReceiptContextTests.fs" />
-    <Compile Include="VerificationScenarioInputs.fs" />
     <Compile Include="LedgerFindingScenarios.fs" />
     <Compile Include="PeopleFindingScenarios.fs" />
     <Compile Include="StoredDataFindingScenarios.fs" />
@@ -143,7 +147,6 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
 
     <PackageReference Include="Testcontainers.PostgreSql" />

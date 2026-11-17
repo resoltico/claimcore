@@ -15,10 +15,14 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.CaseBuilders
 open ClaimCore.Tests.ContractScenarioInputs
 
 
@@ -72,7 +76,7 @@ let internal contextCodec () =
                                         }
                                     ]
                                 Self =
-                                    ClaimCore.TestSupport.Inputs.actorReference (
+                                    ClaimCore.TestSupport.DomainInputs.actorReference (
                                         CaseFixtures.actorId (
                                             System.Guid.Parse "10000000-0000-7000-8000-000000000001"
                                         )
@@ -89,7 +93,7 @@ let internal contextCodec () =
     |> ignore
 
 let internal queryCodecs () =
-    let snapshot = Case.snapshot (opened ())
+    let snapshot = familySnapshot (opened ())
 
     for view in
         [
@@ -115,9 +119,9 @@ let internal queryCodecs () =
                                 Count = 0L
                                 CanAdd = false
                             }
-                        ChangedAt = Inputs.workBasis.ObservedAt
+                        ChangedAt = DomainInputs.workBasis.ObservedAt
                         RecordedBy = ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-                        Stages = Inputs.stageDisplay view.State
+                        Stages = DomainInputs.stageDisplay view.State
                         Snapshot = view
                         Headline =
                             if view.State = ClaimCore.Domain.CaseState.Erased then
@@ -136,7 +140,7 @@ let internal queryCodecs () =
         (RepresentationReply.Data(
             Outcome.Succeeded
                 {
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Items = []
                     NextCursor = None
                     Offers = []
@@ -154,7 +158,7 @@ let internal queryCodecs () =
                     Disclosure = HistoryDisclosure.Full
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference "WIRE"
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Items = []
                     NextCursor = None
                 }
@@ -177,7 +181,7 @@ let internal queryCodecs () =
         (RepresentationReply.Data(
             Outcome.Succeeded
                 {
-                    Basis = Inputs.workBasis
+                    Basis = DomainInputs.workBasis
                     Items = []
                     NextCursor = None
                 }
@@ -249,7 +253,7 @@ let internal disclosures () =
                                 )
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L
-                            Act = CaseActKind.Open
+                            Act = (TaskId.ofLiteral "case.open")
                             Snapshot = snapshot
                         }
             }
@@ -276,35 +280,14 @@ let internal disclosures () =
             "Disclosure remains explicit"
 
 let internal previewCodecs () =
-    let review: AdvisoryReview =
-        {
-            Before = None
-            Proposed = Case.snapshot (opened ())
-            Changes =
-                {
-                    Payments = None
-                    Lifecycle = None
-                    Fields = []
-                }
-            Context =
-                {
-                    ProductVersion = "0.10.0"
-                    Basis =
-                        {
-                            ObservedAt =
-                                System.DateTimeOffset(
-                                    today.ToDateTime(System.TimeOnly.MinValue),
-                                    System.TimeSpan.Zero
-                                )
-                            BusinessDate = today
-                            TimeZoneId = "Etc/UTC"
-                        }
-                }
-        }
+    let review =
+        match ResponseExamples.preview.Outcome with
+        | Outcome.Succeeded(Previewed.Reviewed review) -> review
+        | other -> failtestf "Expected review fixture, got %A" other
 
     for value in
         [
-            (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
+            (Previewed.Reviewed >> Outcome.Succeeded) review
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
             Outcome.Rejected(
                 ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
@@ -410,7 +393,7 @@ let internal diagnosticRevisions () =
         "Negative actual revisions remain invalid"
 
     let snapshot =
-        { Case.snapshot (opened ()) with
+        { familySnapshot (opened ()) with
             Revision = CaseFixtures.revision 0L
         }
 

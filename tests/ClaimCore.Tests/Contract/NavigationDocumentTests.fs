@@ -15,7 +15,7 @@ let private parent =
     CaseFixtures.caseId (Guid.Parse "00000000-0000-4000-8000-000000000001")
 
 let private actor =
-    Inputs.namedActorReference
+    DomainInputs.namedActorReference
         (CaseFixtures.actorId (Guid.Parse "00000000-0000-4000-8000-000000000002"))
         "Core account caption"
 
@@ -27,18 +27,18 @@ let private reminder =
         Revision.first
         (ReminderAction.parse "Core action caption"
          |> Result.defaultWith (string >> failtest))
-        (CalendarDate.ofDate Inputs.workBasis.BusinessDate)
+        (CalendarDate.ofDate DomainInputs.workBasis.BusinessDate)
         ReminderState.Pending
     |> Result.defaultWith failtest
 
 let case: CaseSummary =
     {
         CaseId = parent
-        Reference = Inputs.reference "CASE-NAV"
+        Reference = DomainInputs.reference "CASE-NAV"
         Revision = Revision.first
         WorkRevision = Revision.zero
         CanAssign = false
-        ChangedAt = Inputs.workBasis.ObservedAt
+        ChangedAt = DomainInputs.workBasis.ObservedAt
         State = CaseState.Erased
         Headline = CaseHeadline.Erased
         Attention = []
@@ -68,11 +68,11 @@ let private documents () =
         {
             Reminder = reminder
             Reference = case.Reference
-            ClaimantName = Inputs.name "Core claimant"
+            ClaimantName = DomainInputs.name "Core claimant"
             Responsible = None
-            RecordedAt = Inputs.workBasis.ObservedAt
+            RecordedAt = DomainInputs.workBasis.ObservedAt
             RecordedBy = actor
-            Acts = []
+            Offers = []
             Active = true
             Timing = Some ReminderDue.Today
         }
@@ -80,7 +80,7 @@ let private documents () =
     [
         HumanReadDocuments.cases
             {
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 Items = [ case ]
                 Offers = []
                 NextCursor = Some "case-next"
@@ -88,13 +88,13 @@ let private documents () =
             }
         HumanReadDocuments.reminders
             {
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 Items = [ action ]
                 NextCursor = Some "reminder-next"
             }
         HumanReadDocuments.actors
             {
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
                 Items = [ person ]
                 NextCursor = Some "actor-next"
             }
@@ -135,7 +135,7 @@ let tests =
                 (fun () ->
                     let value =
                         {
-                            Basis = Inputs.workBasis
+                            Basis = DomainInputs.workBasis
                             CaseViews =
                                 [
                                     {

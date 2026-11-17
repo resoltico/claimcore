@@ -1,5 +1,5 @@
 import { ScreenView } from "../../../src/ui/ScreenView";
-import type { HumanReceiptDocument } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { afterEach, expect, it, vi } from "vitest";
 import {
   render,
@@ -14,7 +14,7 @@ import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import { activeRequester } from "../../support/human-requester.fixtures";
 import { ObservedReceipt } from "../../../src/views/operation/ObservedReceipt";
 const operationId = "00000000-0000-4000-8000-000000000777";
-const document = (caption: string): HumanReceiptDocument => ({
+const document = (caption: string): HumanDocument => ({
   screen: {
     regions: [
       {
@@ -127,7 +127,7 @@ it("does not carry retained receipt identity into another verified actor or cred
 });
 
 it("keeps embedded receipt sections distinct from the current resource's landmarks", async () => {
-  const receipt: HumanReceiptDocument = {
+  const receipt: HumanDocument = {
     ...document(""),
     screen: {
       regions: [

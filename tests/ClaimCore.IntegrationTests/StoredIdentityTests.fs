@@ -4,7 +4,11 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -49,7 +53,7 @@ let private qualify path (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET command=jsonb_set(command,$2::text[],'\"UNDECLARED\"'::jsonb) WHERE sequence=$1"
+                "UPDATE claimcore.ledger_effects SET retained=jsonb_set(retained,$2::text[],'\"UNDECLARED\"'::jsonb) WHERE operation_sequence=$1 AND effect_index=0"
                 [| box (Sequence.value sequence); box (List.toArray path) |]
 
         let! after = Service.operationGet actor { OperationId = observedOperation } token
@@ -70,5 +74,5 @@ let tests =
                 (run (qualify [ "principal"; "kind" ]))
             testCaseAsync
                 "a damaged stored role is an integrity fault"
-                (run (qualify [ "act"; "role" ]))
+                (run (qualify [ "grants"; "0"; "role" ]))
         ]

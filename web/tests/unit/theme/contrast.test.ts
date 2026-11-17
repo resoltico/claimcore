@@ -1,6 +1,6 @@
 import { presentationAccents } from "@contracts/client";
 import { describe, expect, it } from "vitest";
-import { contrastRatio, themeContrast } from "../../../src/theme/contrast";
+import { contrastRatio, themeContrast } from "../../support/themeContrast";
 import tokens from "../../../src/theme/tokens.json";
 
 describe("semantic theme contrast gate", () => {

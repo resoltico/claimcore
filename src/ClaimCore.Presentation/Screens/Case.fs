@@ -341,9 +341,14 @@ module CaseScreen =
                                         (fun entry ->
                                             None,
                                             (if
-                                                 List.contains
-                                                     CaseActKind.RemovePayment
-                                                     reply.Advice.Acts
+                                                 reply.Advice.Acts
+                                                 |> List.exists (fun id ->
+                                                     ClaimCore.Domain.Tasks
+                                                         .Registry.findDeclaration
+                                                         id
+                                                     |> Option.exists (fun declaration ->
+                                                         TaskDeclaration.bindingShape declaration =
+                                                             BindingShape.CasePayment))
                                              then
                                                  [
                                                      TaskAffordances.paymentRemoveEntry

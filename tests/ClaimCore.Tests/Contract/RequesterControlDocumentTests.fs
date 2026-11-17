@@ -22,7 +22,7 @@ let private actor =
         Runtime =
             {
                 ProductVersion = "synthetic"
-                Basis = Inputs.workBasis
+                Basis = DomainInputs.workBasis
             }
         Capability = [ Capability.ReadAccess ]
         View = [ View.People; View.Operations ]
@@ -67,8 +67,8 @@ let tests =
                         Capability = [ Capability.ReadAccess; Capability.ManageAccess ]
                         Offers =
                             [
-                                InstallationOffer.PeopleAct PeopleActKind.Register
-                                InstallationOffer.PeopleAct PeopleActKind.Admit
+                                InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
+                                InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")
                             ]
                     }
 
@@ -80,7 +80,7 @@ let tests =
                         (Map.tryFind
                             (TaskAffordances.input InputTarget.PrincipalIssuer)
                             action.Seeds)
-                        (Some(SubmissionValue.Text "https://issuer.example/"))
+                        (Some(InputValue.Text "https://issuer.example/"))
                         "Issuer default"
 
                 let paused =
@@ -181,14 +181,15 @@ let tests =
                             HasAssignedRoles = true
                         }
 
-                    let offers = ClaimCore.Application.Advice.installationOffers principal access
+                    let offers =
+                        ClaimCore.Application.Reads.Advice.installationOffers principal access
 
                     Expect.equal
                         offers
                         [
                             InstallationOffer.Open
-                            InstallationOffer.PeopleAct PeopleActKind.Register
-                            InstallationOffer.PeopleAct PeopleActKind.Admit
+                            InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
+                            InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")
                         ]
                         "Only bindings with no selected existing actor are offered here"
 

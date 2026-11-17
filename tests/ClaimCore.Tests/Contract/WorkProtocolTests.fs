@@ -42,10 +42,10 @@ let tests =
             testCase "nullable summary clear differs from omission and supplied text" (fun () ->
                 for members, expected in
                     [
-                        "", WorkValue.Keep
-                        "\"field:handlingSummary\":null", WorkValue.Clear
+                        "", None
+                        "\"field:handlingSummary\":null", Some InputValue.Null
                         "\"field:handlingSummary\":\"  first\\nsecond  \"",
-                        WorkValue.Set "  first\nsecond  "
+                        Some(InputValue.Text "  first\nsecond  ")
                     ] do
                     let submission =
                         OperationSubmissionCodecs.submission.Read
@@ -53,18 +53,28 @@ let tests =
                             (input "work.update" "WORK" ",\"expectedRevision\":0" members)
                         |> accepted
 
-                    match submission.Operation |> accepted with
-                    | SubmittedOperation.Command(OperationInput.Work {
-                                                                         ExpectedRevision = 0L
-                                                                         Act = WorkAct.UpdateWork value
-                                                                     }) ->
-                        Expect.equal value.Summary expected "Presence retains its meaning"
+                    let value = submission.Operation |> accepted
 
-                        Expect.equal
-                            value.Responsible
-                            WorkValue.Keep
-                            "Omitted owner stays untouched"
-                    | other -> failtestf "%A" other
+                    Expect.equal
+                        value.Binding
+                        (Binding.Work(
+                            CaseSelector.Id(CaseId.create (Guid.Parse parent) |> Option.get),
+                            Revision.zero
+                        ))
+                        "Exact work binding"
+
+                    Expect.equal
+                        (Map.tryFind
+                            (TaskInputId.Target(InputTarget.Field BusinessField.HandlingSummary))
+                            value.Inputs.Values)
+                        expected
+                        "Presence retains meaning"
+
+                    Expect.isFalse
+                        (value.Inputs.Values.ContainsKey(
+                            TaskInputId.Target(InputTarget.Field BusinessField.ResponsibleActor)
+                        ))
+                        "Omitted owner stays omitted"
 
                 Expect.isError
                     (OperationSubmissionCodecs.submission.Read
@@ -140,10 +150,7 @@ let tests =
                         })
                     "Independent summary expectations"
 
-                let task =
-                    TaskDeclarations.describe (
-                        TaskId.Operation(ActKind.Work WorkActKind.UpdateWork)
-                    )
+                let task = TaskDeclarations.describe ("work.update")
 
                 let summary =
                     task.Inputs

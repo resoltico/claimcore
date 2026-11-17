@@ -198,7 +198,7 @@ module Configuration =
 
         let sufficientPool =
             try
-                ClaimCore.Postgres.Runtime.supportsCapacity
+                ClaimCore.Application.Runtime.supportsCapacity
                     (AdmissionPolicy.minimumPoolCapacity configuredLimits.CorePermitLimit)
                     configuredConnection
             with :? ArgumentException ->

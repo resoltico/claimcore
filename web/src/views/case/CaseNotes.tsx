@@ -1,5 +1,9 @@
+import { isNarrativeCreationId } from "../../operation/metadata";
+import { apiEndpoints } from "../../api/service";
+import { isOperationAffordance, type OperationAffordance } from "../../operation/affordances";
+import { caseLinkId } from "../../routing/coreLinks";
 import { useInlineNoteDraft, type NoteIntent } from "./InlineNoteDraft";
-import type { OperationAffordance } from "../../operation/affordances";
+
 import type { RegionRow, HumanResponseByEndpoint, Screen } from "@contracts/client";
 import { Actions } from "../../ui/regions/Actions";
 import { useCallback, useId, useLayoutEffect, useState } from "react";
@@ -14,7 +18,7 @@ import { Button } from "../../ui/Button";
 import {} from "./notes.css";
 
 type NoteRow = RegionRow;
-const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
+const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.caseNotes]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -28,10 +32,8 @@ const select = (reply: HumanResponseByEndpoint["case.notes"]) => {
     ),
     caseId:
       doc.links.flatMap((named) =>
-        named.rel === "OPEN_CASE" &&
-        named.link.endpoint === "case.get" &&
-        named.link.input.target.kind === "ID"
-          ? [named.link.input.target.caseId]
+        named.rel === "OPEN_CASE" && caseLinkId(named.link) !== undefined
+          ? [caseLinkId(named.link)!]
           : [],
       )[0] ?? null,
     nextCursor: doc.nextCursor,
@@ -106,7 +108,7 @@ const NoteRows = ({
               compact
               onAction={(action) => {
                 if (
-                  action.task === "note.remove" &&
+                  isOperationAffordance(action) &&
                   action.binding.kind === "NOTE" &&
                   "noteId" in action.binding
                 ) {
@@ -138,8 +140,8 @@ const AllNotes = ({
     }),
     [current.subject.caseId],
   );
-  const result = useEndpointPage<"case.notes", NoteRow, Page>(
-    "case.notes",
+  const result = useEndpointPage<typeof apiEndpoints.caseNotes, NoteRow, Page>(
+    apiEndpoints.caseNotes,
     input,
     select,
     onDisclosureRefused,
@@ -279,7 +281,9 @@ export const CaseNotes = ({
       aria-labelledby={`${id}-title`}
     >
       <h2 id={`${id}-title`}>{renderCatalogKey(p, region.titleId ?? "section.notes.label")}</h2>
-      {current.actions.some((action) => action.task === "note.add" && action.blocked === null) ? (
+      {current.actions.some(
+        (action) => isNarrativeCreationId(action.task) && action.blocked === null,
+      ) ? (
         <div className="note-composer" hidden={!authoringAvailable} inert={!authoringAvailable}>
           <label htmlFor={`${id}-text`}>{p.fieldLabel("noteText")}</label>
           <textarea

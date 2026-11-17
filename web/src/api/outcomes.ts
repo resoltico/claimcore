@@ -1,4 +1,3 @@
-import { mutationUncertain } from "../protocol/delivery";
 import type { ApiResult, EndpointOutcome } from "../protocol/types";
 import { localNotice, type Notice } from "../protocol/notices";
 const humanNotice = (value: EndpointOutcome): Notice | null => {
@@ -50,7 +49,6 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   }
   return localNotice("incomplete");
 };
-export const isMutationUncertain = mutationUncertain;
 export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean => {
   if (result.kind === "hostFailure") {
     return result.failure.code === "SESSION_REJECTED";

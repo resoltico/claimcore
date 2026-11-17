@@ -1,3 +1,4 @@
+import { isNarrativeCreationId } from "../../operation/metadata";
 import { useRecovery } from "../../recovery/RecoveryContext";
 import {
   createContext,
@@ -9,8 +10,8 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { OwnerScope } from "../../protocol/ownerScope";
-import { sameOwnerScope } from "../../protocol/ownerScope";
+import { type OwnerScope, sameOwnerScope } from "../../protocol/ownerScope";
+
 import { useSessionContext } from "../../session/SessionContext";
 import { setNavigationBlocker, cancelPendingNavigation } from "../../routing/navigation";
 import { parseRoute } from "../../routing/routes";
@@ -271,7 +272,7 @@ export const InlineNoteRecovery = () => {
   useEffect(() => {
     for (const final of Object.values(recovery.finals)) {
       if (
-        final.record.act === "note.add" &&
+        isNarrativeCreationId(final.record.act) &&
         final.outcome.kind === "RECORDED" &&
         final.outcome.caseId !== null
       ) {

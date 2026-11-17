@@ -2,7 +2,7 @@ import { prefixedInputs } from "../../support/submission-inputs";
 import { operationAffordance } from "../../support/affordances.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { HumanReadDocument_case_get, Region, PresentedEntry } from "@contracts/client";
+import type { HumanDocument, Region, PresentedEntry } from "@contracts/client";
 import { render, screen, TestSession, waitFor } from "../../support/presentation-test-support";
 import { CaseDetail } from "../../../src/views/CaseDetail";
 import { productMetadata } from "../../../src/protocol/productMetadata";
@@ -61,7 +61,7 @@ const table = (role: Region["role"], key: string, caption: string): Region => ({
     ],
   },
 });
-const document: HumanReadDocument_case_get = {
+const document: HumanDocument = {
   screen: {
     regions: [
       {
@@ -205,8 +205,10 @@ it("renders Core case regions and binds offered edit/payment actions to typed co
         caseId,
       }),
     }),
-    "case.removePayment",
-    paymentId,
+    expect.objectContaining<{ task: string; binding: unknown }>({
+      task: "case.removePayment",
+      binding: expect.objectContaining({ paymentId }),
+    }),
   );
   expect(
     screen.queryByRole("button", {

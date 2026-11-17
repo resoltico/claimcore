@@ -16,7 +16,11 @@ open System.Text
 open System.Threading
 open Expecto
 open Npgsql
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application
 
 let private token = CancellationToken.None
@@ -62,7 +66,7 @@ let private install identifier (bytes: byte array) (source: NpgsqlDataSource) =
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC',4)"
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format) VALUES ('10000000-0000-4000-8000-000000000001','Etc/UTC',5)"
                 [||]
                 token
 

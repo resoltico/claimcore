@@ -7,8 +7,7 @@ import {
 import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 
-import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { completeAct, openCase, lookupCase, caseActionButton } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
@@ -44,11 +43,11 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await completeAct(page, "case.withdrawDecision");
   await expectRevision(page, "4");
   await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(4);
-  const opening = page
-    .locator(".case-timeline-panel .region-timeline > li")
-    .filter({ hasText: opened.operationId });
+  const opening = page.locator(".case-timeline-panel .region-timeline > li").filter({
+    has: page.locator('[data-entry="operationId"]').filter({ hasText: opened.operationId }),
+  });
   await expect(opening).toHaveCount(1);
-  await expect(opening).toContainText("Case opened");
+  await expect(opening).toContainText("Case facts recorded");
   await expect(opening).toContainText(opened.operationId);
   await expect(await caseActionButton(page, "case.close", "en")).toBeVisible();
   await expectAccessible(page);
@@ -73,9 +72,9 @@ test("publishes payment, correction, close and reopen with current-case parity",
 }) => {
   const caseReference = reference();
   await openAuthenticated(page);
-  await openCase(page, caseReference);
+  const opened = await openCase(page, caseReference);
   await decide(page);
-  await completeAct(page, "case.recordPayment", {
+  const payment = await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "300.25",
   });
@@ -90,6 +89,13 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "case.reopen");
   await expectRevision(page, "6");
-  await expect(page.locator(".case-timeline-panel .region-timeline > li")).toHaveCount(6);
+  const entries = page.locator(".case-timeline-panel .region-timeline > li");
+  await expect(entries).toHaveCount(8);
+  await expect(
+    entries.filter({ has: page.locator(`[data-entry="${opened.operationId}.id"]`) }),
+  ).toHaveCount(6);
+  await expect(
+    entries.filter({ has: page.locator(`[data-entry="${payment.operationId}.id"]`) }),
+  ).toHaveCount(2);
   await expectAccessible(page);
 });

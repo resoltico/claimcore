@@ -6,27 +6,9 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 
 let all () : IEndpointInput list =
-    let operation = OperationIds.fresh ()
     let targetId = Guid.Parse "10000000-0000-7000-8000-000000000001"
     let target = CaseSelector.Reference "CASE-1"
     let page: PageRequest = { AfterCursor = None; Limit = 50 }
-
-    let caseInput =
-        Inputs.caseOperation
-            {
-                ExpectedFamilySequence = None
-                OperationId = operation
-                CaseReference = "CASE-1"
-                ExpectedRevision = 0L
-                Act = AuthoredCaseAct.Open Inputs.registration
-            }
-
-    let principal =
-        {
-            PrincipalInput.Kind = PrincipalKind.Human
-            Issuer = "https://issuer.example/"
-            Subject = "synthetic"
-        }
 
     [
         yield EndpointValues.input Api.session ()
@@ -122,96 +104,78 @@ let all () : IEndpointInput list =
                     Limit = 50
                 }
         yield EndpointValues.input Api.peopleRequests page
-        yield EndpointValues.input Api.peopleRequestsDismiss principal
+        yield EndpointValues.input Api.peopleRequestsDismiss DomainInputs.principal
         yield EndpointValues.input Api.operationGet { OperationId = targetId }
         for preview in [ true; false ] do
-            // Both operation endpoints consume the same authored input type.
             let bind value =
-                let fresh = OperationIds.fresh ()
-
-                let value =
-                    match value with
-                    | OperationInput.Case input ->
-                        OperationInput.Case { input with OperationId = fresh }
-                    | OperationInput.People input ->
-                        OperationInput.People { input with OperationId = fresh }
-                    | OperationInput.Note input ->
-                        OperationInput.Note { input with OperationId = fresh }
-                    | OperationInput.Work input ->
-                        OperationInput.Work { input with OperationId = fresh }
-                    | OperationInput.Reminder input ->
-                        OperationInput.Reminder { input with OperationId = fresh }
-
-                let value = Submissions.ofCommand (Some targetId) value
-
                 if preview then
                     EndpointValues.input Api.operationPreview value
                 else
                     EndpointValues.input Api.operationExecute value
 
-            yield
-                bind (
-                    OperationInput.Note
-                        {
-                            OperationId = operation
-                            Target = target
-                            Act = AuthoredNoteAct.AddNote "Authored note"
-                        }
-                )
+            let create task binding values =
+                Submissions.create task (OperationIds.fresh ()) binding values |> bind
 
             yield
-                bind (
-                    OperationInput.Note
-                        {
-                            OperationId = operation
-                            Target = target
-                            Act = AuthoredNoteAct.RemoveNote targetId
-                        }
-                )
-
-            yield bind caseInput
+                create
+                    "case.open"
+                    (Binding.CaseNew Revision.zero)
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration)
+                     |> Map.add
+                         (Submissions.field BusinessField.CaseReference)
+                         (SubmissionValue.Text "CASE-1"))
 
             yield
-                bind (
-                    OperationInput.People
-                        {
-                            OperationId = operation
-                            ExpectedRevision = 0L
-                            Target = principal
-                            Act = PeopleAct.Register Inputs.actorProfile
-                        }
-                )
+                create
+                    "note.add"
+                    (Binding.NoteNew target)
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.NoteText,
+                            SubmissionValue.Text "Synthetic note"
+                        ])
 
             yield
-                bind (
-                    OperationInput.Work
-                        {
-                            OperationId = operation
-                            Target = target
-                            ExpectedRevision = 0L
-                            Act =
-                                WorkAct.UpdateWork
-                                    {
-                                        Responsible = WorkValue.Keep
-                                        Summary = WorkValue.Set "Follow up"
-                                    }
-                        }
-                )
+                create
+                    "note.remove"
+                    (Binding.Note(target, NoteId.create targetId |> Option.get))
+                    Map.empty
 
             yield
-                bind (
-                    OperationInput.Reminder
-                        {
-                            OperationId = operation
-                            Target = target
-                            Act =
-                                AuthoredReminderAct.Create
-                                    {
-                                        Action = "Contact claimant"
-                                        Due = "2026-09-01"
-                                    }
-                        }
-                )
+                create
+                    "people.register"
+                    (Binding.PeopleNew Revision.zero)
+                    (Submissions.principal (
+                        PrincipalKey.human "https://issuer.example/" "synthetic"
+                        |> Result.toOption
+                        |> Option.get
+                     )
+                     |> Map.fold
+                         (fun values key value -> Map.add key value values)
+                         (Submissions.profile DomainInputs.actorProfile))
+
+            yield
+                create
+                    "work.update"
+                    (Binding.Work(target, Revision.zero))
+                    (Map.ofList
+                        [
+                            Submissions.field BusinessField.HandlingSummary,
+                            SubmissionValue.Text "Follow up"
+                        ])
+
+            yield
+                create
+                    "reminder.create"
+                    (Binding.ReminderNew target)
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.ReminderAction,
+                            SubmissionValue.Text "Contact claimant"
+                            Submissions.input InputTarget.ReminderDueDate,
+                            SubmissionValue.Text "2026-09-01"
+                        ])
+
     ]
 
 let values () =

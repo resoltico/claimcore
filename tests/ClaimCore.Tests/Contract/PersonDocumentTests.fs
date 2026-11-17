@@ -5,6 +5,10 @@ open System.Text.Json.Nodes
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Presentation
 open ClaimCore.Wire
@@ -36,7 +40,23 @@ let private document offers seed =
     HumanReadDocuments.grants
         {
             Revision = Revision.first
-            Basis = Inputs.workBasis
+            Controls =
+                offers
+                |> List.map (fun task ->
+                    Inputs.offeredTask
+                        (TaskId.token task)
+                        (Binding.People(actorId, Revision.first))
+                        (if task = TaskId.ofLiteral "people.setProfile" then
+                             Map.ofList
+                                 [
+                                     TaskInputId.Target InputTarget.ProfileDisplayName,
+                                     InputValue.Text profile.DisplayName
+                                     TaskInputId.Target InputTarget.ProfileContact,
+                                     InputValue.Text profile.Contact.Value
+                                 ]
+                         else
+                             Map.empty))
+            Basis = DomainInputs.workBasis
             Actor = ActorReviewItem.ofActor [] actor
             Offers = offers
             ProfileSeed = seed
@@ -67,12 +87,12 @@ let tests =
                     Expect.equal
                         (offers [ Role.Owner ] false)
                         [
-                            PeopleActKind.Grant
-                            PeopleActKind.Revoke
-                            PeopleActKind.Enable
-                            PeopleActKind.Disable
-                            PeopleActKind.SetProfile
-                            PeopleActKind.EraseProfile
+                            (TaskId.ofLiteral "people.grant")
+                            (TaskId.ofLiteral "people.revoke")
+                            (TaskId.ofLiteral "people.enable")
+                            (TaskId.ofLiteral "people.disable")
+                            (TaskId.ofLiteral "people.setProfile")
+                            (TaskId.ofLiteral "people.eraseProfile")
                         ]
                         "Literal existing-account action inventory"
 
@@ -84,18 +104,15 @@ let tests =
                         (offers [ Role.Auditor ] false)
                         "Read people confers no mutation controls")
             testCase "person actions carry the target and permitted profile seeds" (fun () ->
-                let value = document [ PeopleActKind.SetProfile ] (Some profile)
+                let value = document [ (TaskId.ofLiteral "people.setProfile") ] (Some profile)
                 Expect.equal value.Subject (DocumentSubject.Person actorId) "Typed target"
                 let action = List.exactlyOne value.Actions
 
-                Expect.equal
-                    action.Task
-                    (TaskId.Operation(ActKind.People PeopleActKind.SetProfile))
-                    "Core task"
+                Expect.equal action.Task (TaskId.ofLiteral "people.setProfile") "Core task"
 
                 Expect.equal
                     action.Binding
-                    (OperationBinding.People(Some(ActorId.value actorId), 1L))
+                    (Some(Binding.People(actorId, Revision.first)))
                     "Selected account"
 
                 Expect.isFalse action.Seeds.IsEmpty "Permitted profile seed"
@@ -106,16 +123,6 @@ let tests =
                     (Codec.encode HumanDocumentCodecs.document value
                      |> Codec.decode 65536 HumanDocumentCodecs.document)
                     "Boundary")
-            testCase "Core chooses the primary person action" (fun () ->
-                let value =
-                    document
-                        [ PeopleActKind.Disable; PeopleActKind.Enable; PeopleActKind.Grant ]
-                        None
-
-                Expect.equal
-                    (value.Actions |> List.filter _.Primary |> List.map _.Task)
-                    [ TaskId.Operation(ActKind.People PeopleActKind.Grant) ]
-                    "Grant has the Core preference")
             testCase
                 "revocation controls belong to granted rows and retain permission boundaries"
                 (fun () ->
@@ -123,21 +130,57 @@ let tests =
 
                     let grant =
                         {
-                            GrantReadModel.Role = Role.CaseReader
+                            GrantReadModel.Controls = []
+                            Role = Role.CaseReader
                             Scope = GrantScope.Case(parent, ResponseExamples.snapshot.Reference)
-                            GrantedAt = Inputs.workBasis.ObservedAt
+                            GrantedAt = DomainInputs.workBasis.ObservedAt
                             GrantedBy = ResponseExamples.caseRead.RecordedBy
                         }
 
                     let read offers =
+                        let binding = Binding.People(actorId, Revision.first)
+
+                        let seeds =
+                            Map.ofList
+                                [
+                                    TaskInputId.Target InputTarget.Role,
+                                    InputValue.Text "CASE_READER"
+                                    TaskInputId.Scope, InputValue.Text "CASE"
+                                    TaskInputId.Target(
+                                        InputTarget.Field BusinessField.CaseReference
+                                    ),
+                                    InputValue.Text(
+                                        CaseReference.format ResponseExamples.snapshot.Reference
+                                    )
+                                ]
+
+                        let rowOffers =
+                            if List.contains (TaskId.ofLiteral "people.revoke") offers then
+                                match Inputs.offeredTask "people.revoke" binding seeds with
+                                | TaskOffer.Available(task, binding, available) ->
+                                    [
+                                        TaskOffer.Available(
+                                            task,
+                                            binding,
+                                            { available with Editable = [] }
+                                        )
+                                    ]
+                                | _ -> failtest "Available fixture required"
+                            else
+                                []
+
                         HumanReadDocuments.grants
                             {
                                 Revision = Revision.first
-                                Basis = Inputs.workBasis
+                                Basis = DomainInputs.workBasis
                                 Actor = ActorReviewItem.ofActor [] actor
                                 Offers = offers
+                                Controls =
+                                    offers
+                                    |> List.map (fun task ->
+                                        Inputs.offeredTask (TaskId.token task) binding Map.empty)
                                 ProfileSeed = None
-                                Items = [ grant ]
+                                Items = [ { grant with Controls = rowOffers } ]
                                 NextCursor = None
                             }
 
@@ -148,12 +191,12 @@ let tests =
                             | RegionContent.Table table -> table.Rows
                             | _ -> [])
 
-                    let value = read [ PeopleActKind.Revoke ]
+                    let value = read [ (TaskId.ofLiteral "people.revoke") ]
                     let general = List.exactlyOne value.Actions
 
                     Expect.equal
                         general.Binding
-                        (OperationBinding.People(Some(ActorId.value actorId), 1L))
+                        (Some(Binding.People(actorId, Revision.first)))
                         "General revocation binds the known account"
 
                     Expect.contains
@@ -172,18 +215,17 @@ let tests =
 
                     Expect.equal
                         control.Binding
-                        (OperationBinding.People(Some(ActorId.value actorId), 1L))
+                        (Some(Binding.People(actorId, Revision.first)))
                         "Immutable selected account"
 
                     Expect.equal
                         control.Seeds
                         (Map.ofList
                             [
-                                TaskInputId.Target InputTarget.Role,
-                                SubmissionValue.Text "CASE_READER"
-                                TaskInputId.Scope, SubmissionValue.Text "CASE"
+                                TaskInputId.Target InputTarget.Role, InputValue.Text "CASE_READER"
+                                TaskInputId.Scope, InputValue.Text "CASE"
                                 TaskInputId.Target(InputTarget.Field BusinessField.CaseReference),
-                                SubmissionValue.Text(
+                                InputValue.Text(
                                     CaseReference.format ResponseExamples.snapshot.Reference
                                 )
                             ])

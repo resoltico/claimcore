@@ -83,6 +83,9 @@ module internal CodecSchema =
     and private schemaFields (prefix: string) (writer: Utf8JsonWriter) schema =
         match schema with
         | Schema.EnumPartition _ -> assertions prefix writer schema
+        | Schema.JsonObject ->
+            WriterProfile.writeMember writer "type" "object"
+            writer.WriteBoolean("additionalProperties", true)
         | Schema.Object(properties, optionalMembers) ->
             objectSchema prefix writer properties optionalMembers
         | Schema.Array(items, minimum, maximum) ->

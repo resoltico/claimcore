@@ -41,7 +41,7 @@ type CommandCollection =
     }
 
 module CommandGrammar =
-    let operations = TaskId.all
+    let operations = (TaskDeclarations.all |> List.map _.Id)
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
@@ -67,8 +67,8 @@ module CommandGrammar =
         | TaskInputId.TimelineFilter -> "filter"
         | input -> TaskInputId.key input
 
-    let words (entry: TaskId) =
-        (TaskId.key entry).Split('.') |> Array.map kebab |> List.ofArray
+    let words (entry: string) =
+        entry.Split('.') |> Array.map kebab |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
@@ -95,10 +95,7 @@ module CommandGrammar =
 
             let fixedRevision =
                 declaration.Source = InputSource.ExpectedRevision
-                && (match TaskRouting.act operation with
-                    | Some(ActKind.Case kind) ->
-                        (CaseActKind.describe kind).Revision = RevisionInput.New
-                    | _ -> false)
+                && TaskRouting.creates operation
 
             let required =
                 declaration.Mode = TaskInputMode.Required
@@ -127,11 +124,10 @@ module CommandGrammar =
             let atom =
                 match TaskChoiceId.ofInput name with
                 | Some choice ->
-                    match name with
-                    | TaskInputId.Lifecycle
-                    | TaskInputId.Status
-                    | TaskInputId.Progress -> CommandAtom.Choices(TaskChoiceId.tokens choice)
-                    | _ -> CommandAtom.Choice(TaskChoiceId.tokens choice)
+                    if declaration.Multiple then
+                        CommandAtom.Choices(TaskChoiceId.tokens choice)
+                    else
+                        CommandAtom.Choice(TaskChoiceId.tokens choice)
                 | None when
                     declaration.Source = InputSource.ExpectedRevision
                     || name = TaskInputId.Target InputTarget.Limit
@@ -161,8 +157,8 @@ module CommandGrammar =
                         TaskInputPresentation.messageKey
                             (TaskInputId.Target InputTarget.Grants)
                             "label"
-                    MinimumItems = PeopleAdmission.MinimumGrants
-                    MaximumItems = PeopleAdmission.MaximumGrants
+                    MinimumItems = item.MinimumRows
+                    MaximumItems = TaskCollectionId.maximumRows item.Collection
                 })
 
     let collectionFlag (definition: CommandCollection) =
@@ -176,28 +172,11 @@ module CommandGrammar =
 
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
-    let supportsAll (operation: TaskId) =
-        List.contains
-            (TaskRouting.endpoint operation)
-            [
-                ActorEndpoint.Query QueryTaskId.CasePayments
-                ActorEndpoint.Query QueryTaskId.CaseNotes
-                ActorEndpoint.Query QueryTaskId.CaseList
-                ActorEndpoint.Query QueryTaskId.ReminderList
-                ActorEndpoint.Query QueryTaskId.CaseTimeline
-            ]
+    let supportsAll operation =
+        EndpointDeclarations.find operation |> Option.exists _.Paged
 
-    let formats (operation: TaskId) =
-        if
-            List.contains
-                (TaskRouting.endpoint operation)
-                [
-                    ActorEndpoint.Query QueryTaskId.CaseList
-                    ActorEndpoint.Query QueryTaskId.ReminderList
-                    ActorEndpoint.Query QueryTaskId.PeopleHistory
-                    ActorEndpoint.Query QueryTaskId.CaseTimeline
-                ]
-        then
+    let formats operation =
+        if EndpointDeclarations.find operation |> Option.exists _.Csv then
             [ "text"; "json"; "csv" ]
         else
             [ "text"; "json" ]
@@ -234,9 +213,9 @@ module CommandGrammar =
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
 
-    let canClear (_operation: TaskId) (input: CommandInput) = input.Declaration.Clearable
+    let canClear (_operation: string) (input: CommandInput) = input.Declaration.Clearable
 
-    let synopsisForDraft draft (operation: TaskId) =
+    let synopsisForDraft draft (operation: string) =
         let placeholder =
             function
             | CommandAtom.Text -> "VALUE"

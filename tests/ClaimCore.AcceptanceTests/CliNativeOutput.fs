@@ -53,8 +53,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
     let reference = "NATIVE-OUTPUT-" + id ()
     input["operationId"] <- JsonValue.Create operation
 
-    ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
-        JsonValue.Create reference
+    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
     values["field:claimantName"] <- JsonValue.Create "Rīga مطالبة 😀"

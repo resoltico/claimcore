@@ -16,24 +16,26 @@ let private caseRead () =
 
     let finance =
         FinancialPosition.withDecision
-            (Some(Inputs.admittedDecision Inputs.decision))
+            (Some(DomainInputs.admittedDecision DomainInputs.decision))
             fields.Finance
         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
     let state = CaseState.Active { fields with Finance = finance }
 
     let blocked =
-        CaseActKind.all
-        |> List.filter ((<>) CaseActKind.Correct)
+        (ClaimCore.Domain.Tasks.Registry.clientDeclarations
+         |> List.filter (fun declaration -> declaration.Target = ActSubject.Case)
+         |> List.map _.Id)
+        |> List.filter ((<>) (TaskId.ofLiteral "case.correct"))
         |> List.map (fun act ->
             {
-                CaseActRefusal.Act = act
+                CaseTaskRefusal.Act = act
                 Reason = Refusal.Access(AccessRefusal.NotAuthorized Capability.Decide)
             })
 
     let advice =
         CaseAdvice.create
-            [ CaseActKind.Correct ]
+            [ (TaskId.ofLiteral "case.correct") ]
             (Some
                 {
                     Registration = [ CorrectionGroupAction.Keep; CorrectionGroupAction.Update ]
@@ -45,7 +47,18 @@ let private caseRead () =
 
     { original with
         Snapshot = { original.Snapshot with State = state }
-        Advice = advice
+        Advice =
+            advice
+            |> CaseAdvice.withOffers
+                [
+                    Inputs.offeredTask
+                        "case.correct"
+                        (Binding.Case(
+                            CaseSelector.Id original.Snapshot.CaseId,
+                            original.Snapshot.Revision
+                        ))
+                        Map.empty
+                ]
     }
 
 [<Tests>]

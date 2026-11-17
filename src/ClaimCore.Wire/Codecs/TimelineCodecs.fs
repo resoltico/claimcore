@@ -1,6 +1,7 @@
 namespace ClaimCore.Wire
 
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.Presentation
@@ -8,18 +9,6 @@ open ClaimCore.Presentation
 module TimelineCodecs =
     open Codec
     open ResponseScalars
-
-    let private valueChange name value =
-        (record (fun before after ->
-            {
-                ValueChange.Before = before
-                After = after
-            })
-        : Fields<ValueChange<_>, _>)
-        |> field "before" _.Before (nullable value)
-        |> field "after" _.After (nullable value)
-        |> build
-        |> named name
 
     let private reminderDifference =
         (record (fun id action due state ->
@@ -31,13 +20,18 @@ module TimelineCodecs =
             })
         : Fields<ReminderDifference, _>)
         |> field "reminderId" _.ReminderId reminderId
-        |> field "action" _.Action (nullable (valueChange "ReminderActionChange" reminderAction))
-        |> field "due" _.Due (nullable (valueChange "ReminderDueChange" calendarDate))
+        |> field
+            "action"
+            _.Action
+            (nullable (ValueChangeCodecs.change "ReminderActionChange" reminderAction))
+        |> field "due" _.Due (nullable (ValueChangeCodecs.change "ReminderDueChange" calendarDate))
         |> field
             "state"
             _.State
             (nullable (
-                valueChange "ReminderStateChange" (VocabularyCodec.create ReminderState.vocabulary)
+                ValueChangeCodecs.change
+                    "ReminderStateChange"
+                    (VocabularyCodec.create ReminderState.vocabulary)
             ))
         |> build
         |> named "ReminderDifference"
@@ -56,7 +50,7 @@ module TimelineCodecs =
         |> build
         |> named "CaseFieldDifference"
 
-    let private moneyDifference =
+    let internal moneyDifference =
         (record (fun field change ->
             {
                 CaseMoneyDifference.FieldName = field
@@ -71,7 +65,7 @@ module TimelineCodecs =
                     (BusinessField.describe field).Kind = FieldValueKind.Amount
                     && (BusinessField.describe field).Pairs.IsSome)
                 BusinessField.vocabulary)
-        |> field "change" _.Change (valueChange "MoneyChange" ResponseScalars.money)
+        |> field "change" _.Change (ValueChangeCodecs.change "MoneyChange" ResponseScalars.money)
         |> build
         |> named "CaseMoneyDifference"
 
@@ -101,6 +95,13 @@ module TimelineCodecs =
                     | _ -> None)
                     (record id |> field "change" id moneyDifference)
                 variant
+                    "DISPOSITION"
+                    TimelineChange.Disposition
+                    (function
+                    | TimelineChange.Disposition value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id CaseStateCodecs.disposition)
+                variant
                     "LIFECYCLE"
                     TimelineChange.Lifecycle
                     (function
@@ -114,7 +115,10 @@ module TimelineCodecs =
                     | TimelineChange.Responsibility value -> Some value
                     | _ -> None)
                     (record id
-                     |> field "change" id (valueChange "ResponsibilityChange" ActorCodecs.actorRef))
+                     |> field
+                         "change"
+                         id
+                         (ValueChangeCodecs.change "ResponsibilityChange" ActorCodecs.actorRef))
                 variant
                     "HANDLING_SUMMARY"
                     TimelineChange.HandlingSummary
@@ -122,7 +126,10 @@ module TimelineCodecs =
                     | TimelineChange.HandlingSummary value -> Some value
                     | _ -> None)
                     (record id
-                     |> field "change" id (valueChange "HandlingSummaryChange" handlingSummary))
+                     |> field
+                         "change"
+                         id
+                         (ValueChangeCodecs.change "HandlingSummaryChange" handlingSummary))
                 variant
                     "NOTE"
                     (fun (act, id, text) -> TimelineChange.Note(act, id, text))
@@ -130,10 +137,7 @@ module TimelineCodecs =
                     | TimelineChange.Note(act, id, text) -> Some(act, id, text)
                     | _ -> None)
                     (record (fun act id text -> act, id, text)
-                     |> field
-                         "act"
-                         (fun (act, _, _) -> act)
-                         (VocabularyCodec.create NoteActKind.vocabulary)
+                     |> field "removed" (fun (removed, _, _) -> removed) boolean
                      |> field "noteId" (fun (_, id, _) -> id) noteId
                      |> field "text" (fun (_, _, text) -> text) (nullable noteText))
                 variant
@@ -248,11 +252,11 @@ module TimelineCodecs =
         tagged
             "TimelineEvent"
             [
-                for act in CaseActKind.all do
+                for part in Vocabulary.all PartKind.vocabulary do
                     yield
                         unitEvent
-                            (TimelineEventPresentation.caseKind act |> fst)
-                            (TimelineEvent.CaseActRecorded act)
+                            ("PART_" + PartKind.token part + "_RECORDED")
+                            (TimelineEvent.PartChanged part)
                 yield
                     personEvent
                         "RESPONSIBILITY_ASSIGNED"
@@ -267,8 +271,8 @@ module TimelineCodecs =
                         (function
                          | TimelineEvent.ResponsibilityCleared value -> Some value
                          | _ -> None)
-                for act in Vocabulary.all NoteActKind.vocabulary do
-                    yield unitEvent (NoteActKind.token act) (TimelineEvent.NoteRecorded act)
+                yield unitEvent "NOTE_ADDED" (TimelineEvent.NoteRecorded false)
+                yield unitEvent "NOTE_REMOVED" (TimelineEvent.NoteRecorded true)
                 yield unitEvent "WORK_RECORDED" TimelineEvent.WorkRecorded
                 yield unitEvent "HANDLING_SUMMARY_ADDED" TimelineEvent.HandlingSummaryAdded
                 yield unitEvent "HANDLING_SUMMARY_CHANGED" TimelineEvent.HandlingSummaryChanged
@@ -422,150 +426,43 @@ module TimelineCodecs =
             | TimelineChanges.Disclosed value -> TimelineDisclosure.resolve value |> Result.isOk
             | _ -> true)
 
-    let private entry operation position hash at author changes subject =
-        {
-            CaseTimelineEntry.OperationId = operation
-            Position = position
-            OperationHash = hash
-            Subject = subject
-            RecordedAt = at
-            RecordedBy = author
-            Changes = changes
-        }
+    let private subject =
+        (record (fun kind id revision ->
+            {
+                TimelineSubject.PartKind = kind
+                PartId = id
+                Revision = revision
+            })
+        : Fields<TimelineSubject, _>)
+        |> field "partKind" _.PartKind (VocabularyCodec.create PartKind.vocabulary)
+        |> field "partId" _.PartId uuid
+        |> field "revision" _.Revision positiveRevision
+        |> build
+        |> named "TimelineSubject"
 
-    let private metadata (fields: Fields<CaseTimelineEntry, _>) =
-        fields
+    let timelineEntry =
+        (record (fun operation position hash at author task subject changes ->
+            {
+                CaseTimelineEntry.OperationId = operation
+                Position = position
+                OperationHash = hash
+                RecordedAt = at
+                RecordedBy = author
+                Task = task
+                Subject = subject
+                Changes = changes
+            })
+        : Fields<CaseTimelineEntry, _>)
         |> field "operationId" _.OperationId operationId
         |> field "position" _.Position LedgerCodecs.effectPosition
         |> field "operationHash" _.OperationHash LedgerCodecs.hash
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "task" _.Task TaskVocabulary.codec
+        |> field "subject" _.Subject subject
         |> field "changes" _.Changes changes
-
-    let private caseParts (entry: CaseTimelineEntry) =
-        match entry.Subject with
-        | TimelineSubject.CaseFact(revision, act) -> revision, act
-        | _ -> invalidArg (nameof entry) "Use a case-fact timeline entry."
-
-    let private workParts (entry: CaseTimelineEntry) =
-        match entry.Subject with
-        | TimelineSubject.Work(revision, act) -> revision, act
-        | _ -> invalidArg (nameof entry) "Use a work timeline entry."
-
-    let private reminderParts (entry: CaseTimelineEntry) =
-        match entry.Subject with
-        | TimelineSubject.Reminder(act, id, revision, next) -> act, id, revision, next
-        | _ -> invalidArg (nameof entry) "Use a reminder timeline entry."
-
-    let private caseFields =
-        (record (fun operation position hash at author changes revision act ->
-            entry
-                operation
-                position
-                hash
-                at
-                author
-                changes
-                (TimelineSubject.CaseFact(revision, act)))
-        : Fields<CaseTimelineEntry, _>)
-        |> metadata
-        |> field "revision" (caseParts >> fst) positiveRevision
-        |> field "act" (caseParts >> snd) (VocabularyCodec.create CaseActKind.vocabulary)
-
-    let private workFields =
-        (record (fun operation position hash at author changes revision act ->
-            entry operation position hash at author changes (TimelineSubject.Work(revision, act)))
-        : Fields<CaseTimelineEntry, _>)
-        |> metadata
-        |> field "revision" (workParts >> fst) positiveRevision
-        |> field "act" (workParts >> snd) (VocabularyCodec.create WorkActKind.vocabulary)
-
-    let private reminderVersion =
-        record (fun id revision -> id, revision)
-        |> field "reminderId" fst reminderId
-        |> field "revision" snd positiveRevision
         |> build
-        |> named "TimelineReminderVersion"
-
-    let private reminderFields =
-        (record (fun operation position hash at author changes act id revision next ->
-            entry
-                operation
-                position
-                hash
-                at
-                author
-                changes
-                (TimelineSubject.Reminder(act, id, revision, next)))
-        : Fields<CaseTimelineEntry, _>)
-        |> metadata
-        |> field
-            "act"
-            (fun value -> let (act, _, _, _) = reminderParts value in act)
-            (VocabularyCodec.create ReminderActKind.vocabulary)
-        |> field
-            "reminderId"
-            (fun value -> let (_, id, _, _) = reminderParts value in id)
-            reminderId
-        |> field
-            "revision"
-            (fun value -> let (_, _, revision, _) = reminderParts value in revision)
-            positiveRevision
-        |> field
-            "next"
-            (fun value -> let (_, _, _, next) = reminderParts value in next)
-            (nullable reminderVersion)
-
-    let private noteParts (entry: CaseTimelineEntry) =
-        match entry.Subject with
-        | TimelineSubject.Note(act, id) -> act, id
-        | _ -> invalidArg (nameof entry) "Use a note timeline entry."
-
-    let private noteFields =
-        (record (fun operation position hash at author changes act id ->
-            entry operation position hash at author changes (TimelineSubject.Note(act, id)))
-        : Fields<CaseTimelineEntry, _>)
-        |> metadata
-        |> field "act" (noteParts >> fst) (VocabularyCodec.create NoteActKind.vocabulary)
-        |> field "noteId" (noteParts >> snd) noteId
-
-    let timelineEntry =
-        tagged
-            "CaseTimelineEntry"
-            [
-                variant
-                    "CASE_FACT"
-                    id
-                    (fun (entry: CaseTimelineEntry) ->
-                        match entry.Subject with
-                        | TimelineSubject.CaseFact _ -> Some entry
-                        | _ -> None)
-                    caseFields
-                variant
-                    "NOTE"
-                    id
-                    (fun (entry: CaseTimelineEntry) ->
-                        match entry.Subject with
-                        | TimelineSubject.Note _ -> Some entry
-                        | _ -> None)
-                    noteFields
-                variant
-                    "WORK"
-                    id
-                    (fun (entry: CaseTimelineEntry) ->
-                        match entry.Subject with
-                        | TimelineSubject.Work _ -> Some entry
-                        | _ -> None)
-                    workFields
-                variant
-                    "REMINDER"
-                    id
-                    (fun (entry: CaseTimelineEntry) ->
-                        match entry.Subject with
-                        | TimelineSubject.Reminder _ -> Some entry
-                        | _ -> None)
-                    reminderFields
-            ]
+        |> named "CaseTimelineEntry"
 
     let disclosure =
         VocabularyCodec.create HistoryDisclosure.vocabulary |> named "HistoryDisclosure"

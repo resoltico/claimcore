@@ -6,6 +6,7 @@ open ClaimCore.Presentation
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -266,16 +267,19 @@ let nextAndConflicts =
                                         |> Option.get
                                     OperationHash = CliReplyFixtures.receipt.Position.EntryHash
                                     Subject =
-                                        TimelineSubject.CaseFact(
-                                            CaseFixtures.revision (int64 number),
-                                            CaseActKind.AmendRegistration
-                                        )
-                                    RecordedAt = ClaimCore.TestSupport.Inputs.workBasis.ObservedAt
+                                        {
+                                            PartKind = PartKind.Case
+                                            PartId = CaseId.value CliReplyFixtures.snapshot.CaseId
+                                            Revision = CaseFixtures.revision (int64 number)
+                                        }
+                                    Task = TaskId.ofLiteral "case.amendRegistration"
+                                    RecordedAt =
+                                        ClaimCore.TestSupport.DomainInputs.workBasis.ObservedAt
                                     RecordedBy =
                                         { CliReplyFixtures.receipt.RecordedBy with
                                             DisplayName =
                                                 DisplayName.Named(
-                                                    ClaimCore.TestSupport.Inputs.name (
+                                                    ClaimCore.TestSupport.DomainInputs.name (
                                                         sprintf "Editor %d" number
                                                     )
                                                 )
@@ -300,15 +304,16 @@ let nextAndConflicts =
                                                                                     "Change %d"
                                                                                     number
                                                                             )
-                                                                            |> Fixtures.accepted
+                                                                            |> CaseBuilders
+                                                                                .accepted
                                                                         )
                                                                 }
                                                         ]
                                                     Overview =
                                                         {
                                                             Event =
-                                                                TimelineEvent.CaseActRecorded
-                                                                    CaseActKind.AmendRegistration
+                                                                TimelineEvent.PartChanged
+                                                                    PartKind.Case
                                                             Highlights = []
                                                         }
                                                 }
@@ -322,7 +327,7 @@ let nextAndConflicts =
                                 ConflictChanges.Page
                                     {
                                         Basis =
-                                            { ClaimCore.TestSupport.Inputs.workBasis with
+                                            { ClaimCore.TestSupport.DomainInputs.workBasis with
                                                 TimeZoneId = "Europe/Riga"
                                             }
                                         Disclosure = HistoryDisclosure.Full
@@ -406,7 +411,7 @@ let nextAndConflicts =
 
                     let custom =
                         ServiceReply.read admitted.Route (replace admitted.Wire)
-                        |> Fixtures.accepted
+                        |> CaseBuilders.accepted
 
                     let customText =
                         ReplyText.resultLines "en" None (FrameResult.Reply custom)

@@ -1,16 +1,17 @@
+import type { apiEndpoints } from "../api/service";
 import type { OperationAffordance } from "./affordances";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
   CaseGetRequest,
+  CaseSelector,
   HumanReview,
   HumanRejection,
   OperationSubmission,
   HumanRejection_CONFLICT,
-  HumanReadDocument_case_get,
   OperationBinding,
 } from "@contracts/client";
-import type { OperationReceipt, CurrentCase } from "../protocol/types";
+import type { OperationReceipt, CurrentCase, CaseDocument } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { OperationSelection } from "../protocol/operationCatalog";
 import type { FormValues, FormValue } from "../protocol/forms";
@@ -26,16 +27,16 @@ export type EffectIdentity = {
   target: string;
 };
 export type LocalSource = {
-  prepared: PreparedRequest<"operation.execute">;
+  prepared: PreparedRequest<typeof apiEndpoints.operationExecute>;
   submittedRows: TaskSubmission["submittedRows"];
 };
 export type ConflictSource = LocalSource & {
-  prepared: PreparedRequest<"operation.execute"> & {
-    input: Exclude<OperationSubmission, { binding: { kind: "PEOPLE" } }>;
+  prepared: PreparedRequest<typeof apiEndpoints.operationExecute> & {
+    input: Extract<OperationSubmission, { binding: { target: CaseSelector } }>;
   };
 };
 export type ConflictObservation = {
-  readonly current: HumanReadDocument_case_get;
+  readonly current: CaseDocument;
   readonly revision: number | null;
 };
 export type RevisionConflictSnapshot = {
@@ -135,7 +136,7 @@ export type OperationDelivery = {
   notice: Extract<Notice, { kind: "local" | "pending" | "accepted" }> | null;
 };
 type DisclosureRead =
-  | { resource: "case.get"; identity: EffectIdentity; query: CaseGetRequest }
+  | { resource: typeof apiEndpoints.caseGet; identity: EffectIdentity; query: CaseGetRequest }
   | { resource: "conflict"; identity: EffectIdentity; query: ConflictSource };
 export type DisclosedResource = {
   review: { identity: EffectIdentity; value: HumanReview } | null;

@@ -1,5 +1,4 @@
 import type { OperationAffordance } from "../../operation/affordances";
-import { Entries } from "../../ui/regions/Entries";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { OperationErrors } from "./OperationErrors";
@@ -8,7 +7,7 @@ import { TaskInputs } from "../../components/TaskInputs";
 import { ScreenView } from "../../ui/ScreenView";
 import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
-import { taskForAct } from "../../protocol/taskCatalog";
+import { taskForAct, taskInput } from "../../protocol/taskCatalog";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues, FormValue } from "../../protocol/forms";
 import type { Notice } from "../../protocol/notices";
@@ -44,25 +43,24 @@ export type OperationFormProps = {
   onMount?: (form: HTMLFormElement) => void;
   onFieldBlur?: (control: EventTarget | null) => void;
 };
-const PaymentContext = ({ current }: { current: CurrentCase | null }) => {
-  const p = usePresentation();
-  const payment = current?.screen.regions.find((region) => region.role === "PAYMENTS");
-  if (current === null || payment?.content.kind !== "TABLE") {
-    return null;
-  }
-  const entries = (payment.content.sections ?? [])
-    .flatMap((section) => section.entries)
-    .filter((entry) => entry.key === "remaining");
-  return (
-    <div className="payment-input-context">
-      <Entries entries={entries} timeZone={current.basis.observation.timeZone} />
-      <p>{p.text("field.paidCurrency.hint")}</p>
-    </div>
+const FormContext = ({ current, task }: { current: CurrentCase | null; task: string }) =>
+  current === null ? null : (
+    <ScreenView
+      view={{
+        regions: current.screen.regions
+          .filter(
+            (region) =>
+              region.role === "CONTEXT" &&
+              region.actions?.some((action) => action.task === task) === true,
+          )
+          .map(({ actions: _actions, ...region }) => region),
+      }}
+      timeZone={current.basis.observation.timeZone}
+    />
   );
-};
 const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
   const p = usePresentation();
-  const creation = model.task.id === "case.open" && current === null;
+  const creation = model.task.creates && current === null;
   const allowed = offered.includes(model.entry.kind);
   return (
     <>
@@ -74,8 +72,10 @@ const OperationInputs = ({ model, current, offered }: OperationFormProps) => {
         />
       )}
       <p className="operation-meaning">{renderCatalogKey(p, model.task.meaningId)}</p>
-      {model.task.id === "case.recordPayment" ? <PaymentContext current={current} /> : null}
-      {model.task.id === "case.correct" ? <p>{p.text("ui.correctionHint")}</p> : null}
+      <FormContext current={current} task={model.task.id} />
+      {model.task.inputs.some((input) => taskInput(input.id).kind === "GROUP") ? (
+        <p>{p.text("label.correctionSelection")}</p>
+      ) : null}
       {offered.length === 0 && !creation ? null : (
         <TaskInputs
           task={model.task}
@@ -137,7 +137,7 @@ export const OperationForm = (props: OperationFormProps) => {
       {model.entry.subject === "CASE" || offered.length < 2 ? null : (
         <Select
           id="act-picker"
-          label={p.text("ui.peopleAction")}
+          label={p.text("label.accessChange")}
           value={model.entry.kind}
           disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
           options={offered.map((act) => ({

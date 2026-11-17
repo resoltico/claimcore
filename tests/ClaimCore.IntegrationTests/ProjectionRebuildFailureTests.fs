@@ -6,9 +6,13 @@ open System.Threading.Tasks
 open Expecto
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -232,16 +236,17 @@ let private writerRace database =
         do! waitFor database advisoryWait
 
         let writing =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        990
-                        "AFTER-REBUILD"
-                        0L
-                        (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (990)
+                    ("AFTER-REBUILD")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
 
         do!
@@ -340,7 +345,7 @@ let tests =
                 "corrupt retained creation reference refuses without byte changes"
                 (run (
                     corruptHistory
-                        "UPDATE claimcore.ledger SET command=jsonb_set(command,'{reference}','\"WRONG-RETAINED-REFERENCE\"'::jsonb) WHERE command->>'kind'='CASE' AND command->>'act'='case.open'"
+                        "UPDATE claimcore.ledger SET structure=jsonb_set(structure,'{retained,field:caseReference}','\"WRONG-RETAINED-REFERENCE\"'::jsonb) WHERE task='case.open'"
                 ))
             testCaseAsync "corrupt head refuses without byte changes" (run corruptHead)
             testCaseAsync

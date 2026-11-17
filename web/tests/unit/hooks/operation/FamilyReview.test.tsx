@@ -3,7 +3,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../../../src/protocol/types";
 import { useOperation, type OperationModel } from "../../../../src/hooks/operation/useOperation";
 import { render, waitFor } from "../../../support/presentation-test-support";
-import { operationAffordance } from "../../../support/affordances.fixtures";
+import {
+  operationAffordance,
+  requireOperationAffordance,
+} from "../../../support/affordances.fixtures";
 import { humanReadHttpReply } from "../../../support/human-read-reply.fixtures";
 const caseId = "00000000-0000-4000-8000-000000000002";
 const current = (family: number): CurrentCase => ({
@@ -38,7 +41,9 @@ const current = (family: number): CurrentCase => ({
 afterEach(() => vi.unstubAllGlobals());
 it("explicit family review acquires the new supplied erasure basis without changing the root version or dispatching a mutation", async () => {
   const previous = current(12);
-  const offered = previous.actions.find((action) => action.task === "case.erase")!;
+  const offered = requireOperationAffordance(
+    previous.actions.find((action) => action.task === "case.erase"),
+  );
   const fetch = vi.fn().mockResolvedValue(humanReadHttpReply("case.get", current(13)));
   vi.stubGlobal("fetch", fetch);
   let model: OperationModel | undefined;

@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -15,7 +21,7 @@ module internal TimelineQueries =
             if not (QueryResults.validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -26,12 +32,7 @@ module internal TimelineQueries =
                                     fun tx ->
                                         task {
                                             let! view =
-                                                ExecutionFacts.case
-                                                    services
-                                                    tx
-                                                    None
-                                                    request.Target
-                                                    None
+                                                CaseReadContext.load services tx request.Target
 
                                             match view.Case with
                                             | Some parent when
@@ -62,7 +63,8 @@ module internal TimelineQueries =
                                                     let range = position |> Option.bind _.Range
 
                                                     let! page =
-                                                        tx.TimelinePage
+                                                        LedgerReads.timelinePage
+                                                            tx
                                                             {
                                                                 CaseId = parent.CaseId
                                                                 Filter = request.Filter
@@ -103,6 +105,7 @@ module internal TimelineQueries =
                                                             entries
                                                                 services
                                                                 tx
+                                                                parent.Snapshot.Reference
                                                                 erased
                                                                 full
                                                                 range

@@ -84,12 +84,12 @@ const checkPresentation = async (page: Page, complete: boolean, count: number, n
     ).toBeVisible();
     await expect(
       view.getByRole("button", {
-        name: ui(language, "ui.reloadGrants"),
+        name: ui(language, "ui.reloadRoles"),
         exact: true,
       }),
     ).toBeEnabled();
     await expect(view.getByRole("status")).toHaveText(
-      ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
+      ui(language, complete ? "ui.rolesEnd" : "ui.rolesPartial"),
     );
     await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
     await noHorizontalOverflow(page, "narrow");
@@ -265,18 +265,21 @@ test("preserves historical profile contact and distinguishes global and case rol
   const historical = page.locator(".people-history .region-timeline > li").filter({
     hasText: "historical-browser-only@example.test",
   });
-  await expect(historical).toHaveCount(1);
-  await expect(historical).toContainText("historical-browser-only@example.test");
+  await expect(historical).toHaveCount(2);
+  await expect(historical).toContainText([
+    "historical-browser-only@example.test",
+    "historical-browser-only@example.test",
+  ]);
   const details = page.locator('.people-history details[data-region="DETAILS"]');
   await details.locator(":scope > summary").click();
-  const issuer = details.locator('[data-entry$=".issuer"]').filter({
+  const issuer = details.locator('[data-entry$=".principal.issuer.after"]').filter({
     hasText: "https://historical-issuer.example/",
   });
   await expect(issuer).toHaveCount(1);
   const key = await issuer.getAttribute("data-entry");
-  const sequence = key?.slice(0, -".issuer".length);
-  if (sequence === undefined) {
-    throw Error("Historical metadata requires its sequence key");
+  const subjectKey = key?.replace(/issuer\.after$/u, "subject.after");
+  if (subjectKey === undefined) {
+    throw Error("Historical principal requires its part identity");
   }
-  await expect(details.locator(`[data-entry="${sequence}.subject"]`)).toContainText(subject);
+  await expect(details.locator(`[data-entry="${subjectKey}"]`)).toContainText(subject);
 });

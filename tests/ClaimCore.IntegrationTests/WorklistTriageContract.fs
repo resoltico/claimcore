@@ -6,19 +6,21 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 let private maximum = "999999999999999999.9999"
 
-let private execute fixture owner number reference revision act =
+let private execute fixture owner number reference revision taskName values =
     task {
         let! reply =
-            Service.execute
+            Service.executeSubmission
                 owner
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request fixture number reference revision act
-                ))
+                (((request fixture number reference revision taskName values)))
                 token
 
         match reply.Outcome with
@@ -36,15 +38,22 @@ type private CaseSeed =
 
 let private openCase fixture owner number (seed: CaseSeed) =
     let values =
-        Inputs.registrationWith
+        DomainInputs.registrationWith
             [
                 BusinessField.IncidentNotificationDate, seed.Notification
                 BusinessField.ClaimedAmount, seed.Amount
                 BusinessField.ClaimedCurrency, seed.Currency
             ]
-            Inputs.registration
+            DomainInputs.registration
 
-    execute fixture owner number seed.Reference 0L (AuthoredCaseAct.Open values)
+    execute
+        (fixture)
+        (owner)
+        (number)
+        (seed.Reference)
+        (0L)
+        "case.open"
+        (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (values)))
 
 let private setup fixture =
     task {
@@ -114,35 +123,70 @@ let private setup fixture =
         // Work revision is independent of the financial revision used by later decisions.
         for number, reference in [ 40, "TRIAGE-B"; 41, "TRIAGE-C" ] do
             let! changed =
-                Service.execute
+                Service.executeSubmission
                     owner
-                    (OperationInput.Work
-                        {
-                            OperationId = id fixture number
-                            Target = CaseSelector.Reference reference
-                            ExpectedRevision = 0L
-                            Act =
-                                WorkAct.UpdateWork
-                                    {
-                                        Responsible =
-                                            WorkValue.Set(
-                                                ActorId.format (CaseFixtures.actorId (id fixture 1))
-                                            )
-                                        Summary = WorkValue.Keep
-                                    }
-                        })
+                    ((ClaimCore.TestSupport.Submissions.createRaw)
+                        "work.update"
+                        (id fixture number)
+                        (ClaimCore.Application.Contracts.OperationBinding.Work(
+                            (CaseSelector.Reference reference),
+                            (0L)
+                        ))
+                        (ClaimCore.TestSupport.Submissions.work (
+                            {
+                                Responsible =
+                                    WorkValue.Set(
+                                        ActorId.format (CaseFixtures.actorId (id fixture 1))
+                                    )
+                                Summary = WorkValue.Keep
+                            }
+                        )))
                     token
 
             accepted changed |> ignore
 
         let decision =
-            Inputs.decisionWith [ BusinessField.PayableAmount, maximum ] Inputs.decision
+            DomainInputs.decisionWith [ BusinessField.PayableAmount, maximum ] DomainInputs.decision
 
-        do! execute fixture owner 24 "TRIAGE-A" 1L (AuthoredCaseAct.Decide decision)
-        do! execute fixture owner 25 "TRIAGE-A" 2L (AuthoredCaseAct.Bare BareAct.Close)
-        do! execute fixture owner 26 "TRIAGE-B" 1L (AuthoredCaseAct.Decide decision)
-        do! execute fixture owner 27 "TRIAGE-B" 2L (AuthoredCaseAct.Void "Synthetic triage review")
-        do! execute fixture owner 28 "TRIAGE-D" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+        do!
+            execute
+                (fixture)
+                (owner)
+                (24)
+                ("TRIAGE-A")
+                (1L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision)))
+
+        do! execute (fixture) (owner) (25) ("TRIAGE-A") (2L) "case.close" (Map.empty)
+
+        do!
+            execute
+                (fixture)
+                (owner)
+                (26)
+                ("TRIAGE-B")
+                (1L)
+                "case.decide"
+                (ClaimCore.TestSupport.Submissions.fields (DecisionInput.values (decision)))
+
+        do!
+            execute
+                (fixture)
+                (owner)
+                (27)
+                ("TRIAGE-B")
+                (2L)
+                "case.void"
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.Reason,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text(
+                            "Synthetic triage review"
+                        )
+                    ])
+
+        do! execute (fixture) (owner) (28) ("TRIAGE-D") (1L) "case.erase" (Map.empty)
 
         for number, reference in [ 30, "TRIAGE-B"; 31, "TRIAGE-C" ] do
             let! granted =
@@ -170,7 +214,7 @@ let private summary actor filter =
         | _ -> return failtestf "Expected filtered summary: %A" result
     }
 
-let private counts value entries =
+let private counts value (entries: ValueCount<_> list) =
     entries |> List.find (fun entry -> entry.Value = value) |> _.Count
 
 let private totals (values: CurrencyTotal list) =
@@ -319,16 +363,20 @@ let internal assignmentExcludesForbiddenRoles fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 100)
-                        service
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 100))
+                        (service)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (owner) submission (token)
+            })
 
         let actorId =
             match (accepted registered).Subject with
@@ -381,9 +429,14 @@ let internal assignmentExcludesForbiddenRoles fixture =
                     Work =
                         fun tx ->
                             task {
-                                let! actor = tx.FindActor actorId
-                                let! state = tx.PeopleState actor.Value.Principal
-                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
+                                let! actor = PeopleReads.findActor tx actorId
+                                let! state = AggregateStorage.principal tx actor.Value.Principal
+
+                                let rows =
+                                    state
+                                    |> Option.get
+                                    |> ProjectionRows.person
+                                    |> Result.defaultWith (fun error -> failtestf "%A" error)
 
                                 let grant =
                                     {
@@ -391,15 +444,18 @@ let internal assignmentExcludesForbiddenRoles fixture =
                                         Scope = Scope.Case caseId
                                     }
 
+                                let! origin =
+                                    LedgerReads.findOperation
+                                        tx
+                                        (CaseFixtures.operationId (ActorId.value actorId))
+
+                                let acceptingPosition =
+                                    origin |> Option.get |> _.Changes.Head.Stamp.Position
+
                                 do!
-                                    tx.ProjectPeople
+                                    tx.ProjectPerson
                                         { rows with
-                                            Grants =
-                                                Map.add
-                                                    grant
-                                                    (EffectPosition.create Sequence.first 0
-                                                     |> Option.get)
-                                                    rows.Grants
+                                            Grants = Map.add grant acceptingPosition rows.Grants
                                         }
 
                                 return Verdict.Proceed()

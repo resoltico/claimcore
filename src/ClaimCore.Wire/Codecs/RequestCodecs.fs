@@ -47,149 +47,97 @@ module RequestCodecs =
             ]
         |> Codec.vocabulary "caseSelector"
 
-    let principal = CanonicalInputs.principal
+    let principal =
+        PrincipalCodecs.key
+        |> Codec.map PrincipalKey.toInput (fun value ->
+            PrincipalKey.ofKind value.Kind value.Issuer value.Subject
+            |> Result.toOption
+            |> Option.get)
 
-    [<NoEquality; NoComparison>]
-    type private ReadFields<'request, 'ctor> =
-        {
-            Inputs: ReadInput list
-            Fields: Fields<'request, 'ctor>
-        }
+    let private caseOperand get fields =
+        fields |> field "target" get caseSelector
 
-    let private read ctor : ReadFields<'request, 'ctor> = { Inputs = []; Fields = record ctor }
+    let private operationOperand get fields =
+        fields |> field WireMembers.OperationId get uuid
 
-    let private caseOperand get (fields: ReadFields<'request, CaseSelector -> 'rest>) =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.CaseOperand ]
-            Fields = fields.Fields |> field "target" get caseSelector
-        }
+    let private actorOperand get fields =
+        fields |> field WireMembers.ActorId get uuid
 
-    let private operationOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.OperationOperand ]
-            Fields = fields.Fields |> field WireMembers.OperationId get uuid
-        }
+    let private actorFilter get fields =
+        fields |> optionalField WireMembers.ActorId get uuid
 
-    let private actorOperand get (fields: ReadFields<'request, Guid -> 'rest>) =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.ActorOperand ]
-            Fields = fields.Fields |> field WireMembers.ActorId get uuid
-        }
+    let private pageWith maximum cursor limit fields =
+        fields
+        |> optionalField WireMembers.Cursor cursor (boundedText 1 maximum)
+        |> field
+            WireMembers.Limit
+            limit
+            (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
 
-    let private actorFilter get (fields: ReadFields<'request, Guid option -> 'rest>) =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.ActorFilter ]
-            Fields = fields.Fields |> optionalField WireMembers.ActorId get uuid
-        }
+    let private page cursor limit fields =
+        pageWith Paging.MaximumActorCursorCharacters cursor limit fields
 
-    let private pageWith
-        maximum
-        cursor
-        limit
-        (fields: ReadFields<'request, string option -> int -> 'rest>)
-        =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.Page ]
-            Fields =
-                fields.Fields
-                |> optionalField WireMembers.Cursor cursor (boundedText 1 maximum)
-                |> field
-                    WireMembers.Limit
-                    limit
-                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        }
-
-    let private page cursor limit fields = pageWith 512 cursor limit fields
-
-    let private finishEndpoint name endpoint (fields: ReadFields<'request, 'request>) =
-        let declaration =
-            ReadCatalog.declarations |> List.find (fun value -> value.Endpoint = endpoint)
-
-        if declaration.Inputs <> fields.Inputs then
-            invalidOp "The read codec must follow its declared input contract."
-
-        fields.Fields |> build |> named name
-
-    let private finishRead name query fields =
-        finishEndpoint name (TaskId.Query query) fields
+    let private finishRead name fields = fields |> build |> named name
 
     let caseGetRequest =
-        (read (fun reference -> { CaseGetRequest.Target = reference })
-        : ReadFields<CaseGetRequest, _>)
+        (record (fun reference -> { CaseGetRequest.Target = reference }): Fields<CaseGetRequest, _>)
         |> caseOperand _.Target
-        |> finishRead RequestSchemas.CaseGetRequest QueryTaskId.CaseGet
+        |> finishRead RequestSchemas.CaseGetRequest
 
     let assigneeRequest =
-        (read (fun target cursor limit ->
+        (record (fun target cursor limit ->
             {
                 AssigneeRequest.Target = target
                 AfterCursor = cursor
                 Limit = limit
             })
-        : ReadFields<AssigneeRequest, _>)
+        : Fields<AssigneeRequest, _>)
         |> caseOperand _.Target
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AssigneeRequest QueryTaskId.CaseAssignees
+        |> finishRead RequestSchemas.AssigneeRequest
 
     let actorListRequest =
-        let fields
-            : ReadFields<
-                ActorListRequest,
-                string option -> Role option -> string option -> int -> ActorListRequest
-               > =
+        (record (fun text role cursor limit ->
             {
-                Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole ]
-                Fields =
-                    record (fun text role cursor limit ->
-                        {
-                            ActorListRequest.Text = text
-                            Role = role
-                            AfterCursor = cursor
-                            Limit = limit
-                        })
-            }
-
-        {
-            Inputs = fields.Inputs
-            Fields =
-                fields.Fields
-                |> optionalField "text" _.Text text
-                |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
-        }
+                ActorListRequest.Text = text
+                Role = role
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : Fields<ActorListRequest, _>)
+        |> optionalField "text" _.Text text
+        |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
         |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.ActorListRequest QueryTaskId.PeopleList
+        |> finishRead RequestSchemas.ActorListRequest
 
     let accessRequestsRequest =
-        (read (fun cursor limit ->
+        (record (fun cursor limit ->
             {
                 PageRequest.AfterCursor = cursor
                 Limit = limit
             })
-        : ReadFields<PageRequest, _>)
+        : Fields<PageRequest, _>)
         |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.AccessRequestsRequest QueryTaskId.PeopleRequests
+        |> finishRead RequestSchemas.AccessRequestsRequest
 
     let accessRequestDismissRequest =
-        let payload: ReadFields<PrincipalInput, PrincipalInput> =
+        (record (fun kind issuer subject ->
             {
-                Inputs = [ ReadInput.PrincipalOperand ]
-                Fields =
-                    (record (fun kind issuer subject ->
-                        {
-                            PrincipalInput.Kind = kind
-                            Issuer = issuer
-                            Subject = subject
-                        })
-                    : Fields<PrincipalInput, _>)
-                    |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
-                    |> field "issuer" _.Issuer text
-                    |> field "subject" _.Subject text
-            }
-
-        payload
-        |> finishEndpoint
-            RequestSchemas.AccessRequestDismissRequest
-            (TaskId.Command CommandTaskId.PeopleRequestsDismiss)
+                PrincipalInput.Kind = kind
+                Issuer = issuer
+                Subject = subject
+            })
+        : Fields<PrincipalInput, _>)
+        |> field
+            (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalKind))
+            _.Kind
+            (VocabularyCodec.create PrincipalKind.vocabulary)
+        |> field (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalIssuer)) _.Issuer text
+        |> field
+            (TaskInputId.token (TaskInputId.Target InputTarget.PrincipalSubject))
+            _.Subject
+            text
+        |> finishRead RequestSchemas.AccessRequestDismissRequest
 
     let private optionalChoices name get vocabulary fields =
         fields
@@ -246,12 +194,12 @@ module RequestCodecs =
 
     let caseListRequest =
         let paging =
-            (read (fun cursor limit ->
+            (record (fun cursor limit ->
                 {
                     PageRequest.AfterCursor = cursor
                     Limit = limit
                 })
-            : ReadFields<PageRequest, _>)
+            : Fields<PageRequest, _>)
             |> pageWith Paging.MaximumCaseCursorCharacters _.AfterCursor _.Limit
 
         let fields =
@@ -261,84 +209,69 @@ module RequestCodecs =
                     Filter = filter
                 })
             : Fields<CaseListRequest, _>)
-            |> flatten _.Page paging.Fields
+            |> flatten _.Page paging
             |> flatten _.Filter filterFields
 
-        {
-            Inputs = paging.Inputs @ [ ReadInput.Worklist ]
-            Fields = fields
-        }
-        |> finishRead RequestSchemas.CaseListRequest QueryTaskId.CaseList
+        fields |> finishRead RequestSchemas.CaseListRequest
 
     let caseSummaryRequest =
-        {
-            Inputs = [ ReadInput.Worklist ]
-            Fields = filterFields
-        }
-        |> finishRead RequestSchemas.CaseSummaryRequest QueryTaskId.CaseSummary
+        filterFields |> finishRead RequestSchemas.CaseSummaryRequest
 
     let timelineRequest =
         let fields =
-            (read (fun target filter cursor limit ->
+            (record (fun target filter cursor limit ->
                 {
                     CaseTimelineRequest.Target = target
                     Filter = filter
                     AfterCursor = cursor
                     Limit = defaultArg limit Paging.DefaultPageSize
                 })
-            : ReadFields<CaseTimelineRequest, _>)
+            : Fields<CaseTimelineRequest, _>)
             |> caseOperand _.Target
 
-        {
-            Inputs = fields.Inputs @ [ ReadInput.TimelineFilter; ReadInput.Page ]
-            Fields =
-                fields.Fields
-                |> optionalField
-                    "filter"
-                    _.Filter
-                    (VocabularyCodec.create TimelineFilter.vocabulary)
-                |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
-                |> optionalField
-                    "limit"
-                    (fun request -> Some request.Limit)
-                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        }
-        |> finishRead "CaseTimelineRequest" QueryTaskId.CaseTimeline
+        fields
+        |> optionalField "filter" _.Filter (VocabularyCodec.create TimelineFilter.vocabulary)
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumActorCursorCharacters)
+        |> optionalField
+            "limit"
+            (fun request -> Some request.Limit)
+            (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        |> finishRead "CaseTimelineRequest"
 
     let operationGetRequest =
-        (read (fun operation ->
+        (record (fun operation ->
             {
                 OperationLookup.OperationId = operation
             })
-        : ReadFields<OperationLookup, _>)
+        : Fields<OperationLookup, _>)
         |> operationOperand _.OperationId
-        |> finishRead RequestSchemas.OperationGetRequest QueryTaskId.OperationGet
+        |> finishRead RequestSchemas.OperationGetRequest
 
     let grantsRequest =
-        (read (fun actor cursor limit ->
+        (record (fun actor cursor limit ->
             {
                 GrantsRequest.ActorId = actor
                 AfterCursor = cursor
                 Limit = limit
             })
-        : ReadFields<GrantsRequest, _>)
+        : Fields<GrantsRequest, _>)
         |> actorOperand _.ActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.GrantsRequest QueryTaskId.PeopleGrants
+        |> finishRead RequestSchemas.GrantsRequest
 
-    let empty = read () |> finishRead RequestSchemas.Empty QueryTaskId.Context
+    let empty = record () |> finishRead RequestSchemas.Empty
 
     let peopleHistoryRequest =
-        (read (fun actor cursor limit ->
+        (record (fun actor cursor limit ->
             {
                 PeopleHistoryRequest.TargetActorId = actor
                 AfterCursor = cursor
                 Limit = limit
             })
-        : ReadFields<PeopleHistoryRequest, _>)
+        : Fields<PeopleHistoryRequest, _>)
         |> actorFilter _.TargetActorId
         |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.PeopleHistoryRequest QueryTaskId.PeopleHistory
+        |> finishRead RequestSchemas.PeopleHistoryRequest
 
     let reminderListRequest =
         (record (fun target state view due assignment search cursor limit inactive ->

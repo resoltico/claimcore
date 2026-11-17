@@ -1,9 +1,6 @@
 module ClaimCore.Tests.ScalarPropertyTests
 
-open ClaimCore.TestSupport
 
-open ClaimCore.Wire
-open ClaimCore.Presentation
 
 open System
 open System.Globalization
@@ -11,7 +8,6 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Domain
-open ClaimCore.Tests.Fixtures
 open ClaimCore.Tests.PropertyHarness
 
 type private Sample = { Raw: string; Accepted: bool }
@@ -93,20 +89,28 @@ let private invalidAmount =
     |> Gen.item
     |> Gen.map (fun raw -> { Raw = raw; Accepted = false })
 
+let private admitOpening inputs =
+    ClaimCore.Domain.Tasks.Case.Open.decide
+        (TaskBuilders.context 2)
+        TaskBuilders.environment
+        None
+        (Binding.CaseNew Revision.zero)
+        inputs
+    |> Result.map ignore
+
 let private amountProperty =
     property {
         let! sample = Gen.frequency [ 3, validAmount; 2, invalidAmount ]
 
-        let candidate =
-            request
-                0L
-                (AuthoredCaseAct.Open(
-                    ClaimCore.TestSupport.Inputs.registrationWith
-                        [ BusinessField.ClaimedAmount, (sample.Raw) ]
-                        (registration)
-                ))
+        let values =
+            Map.add
+                (TaskInputId.Target(InputTarget.Field BusinessField.ClaimedAmount))
+                (InputValue.Text sample.Raw)
+                TaskBuilders.openingInputs.Values
 
-        let result = CaseFixtures.decide today Map.empty candidate None
+        let inputs = InputMap.create values Map.empty |> Option.get
+
+        let result = admitOpening inputs
 
         return Result.isOk result = sample.Accepted
     }
@@ -142,31 +146,20 @@ let private textLimit =
     | Insurer -> 200
 
 let private validateText target value =
-    let facts =
+    let field =
         match target with
-        | Country ->
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.IncidentCountry, (value) ]
-                (registration))
-        | Claimant ->
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.ClaimantName, (value) ]
-                (registration))
-        | Insurer ->
-            (ClaimCore.TestSupport.Inputs.registrationWith
-                [ BusinessField.InsurerName, (value) ]
-                (registration))
-        | Reference -> registration
+        | Reference -> BusinessField.CaseReference
+        | Country -> BusinessField.IncidentCountry
+        | Claimant -> BusinessField.ClaimantName
+        | Insurer -> BusinessField.InsurerName
 
-    let candidate = request 0L (AuthoredCaseAct.Open facts)
+    let values =
+        Map.add
+            (TaskInputId.Target(InputTarget.Field field))
+            (InputValue.Text value)
+            TaskBuilders.openingInputs.Values
 
-    let candidate =
-        if target = Reference then
-            { candidate with CaseReference = value }
-        else
-            candidate
-
-    CaseFixtures.decide today Map.empty candidate None |> Result.map ignore
+    admitOpening (InputMap.create values Map.empty |> Option.get)
 
 let private validText =
     gen {

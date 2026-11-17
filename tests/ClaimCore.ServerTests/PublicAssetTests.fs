@@ -6,7 +6,11 @@ open System.Net
 open System.Text
 open System.Text.Json
 open System.Threading.Tasks
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open Expecto
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection

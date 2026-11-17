@@ -169,6 +169,20 @@ module TimelineScreen =
                     PresentedValue.money
                     change.Change
             ]
+        | TimelineChange.Disposition disposition ->
+            [
+                section
+                    "field.reason.label"
+                    [
+                        value
+                            "reason"
+                            "field.reason.label"
+                            Prominence.Primary
+                            (PresentedValue.Narrative(
+                                Reason.format (CaseDisposition.reason disposition)
+                            ))
+                    ]
+            ]
         | TimelineChange.Lifecycle change ->
             [
                 difference
@@ -216,59 +230,10 @@ module TimelineScreen =
         | TimelineChange.Payments change -> paymentSections false change
 
     let timelineEntry (entry: CaseTimelineEntry) =
-        let act, revision, identifiers =
-            match entry.Subject with
-            | TimelineSubject.CaseFact(revision, act) ->
-                PresentedValue.Code(Vocabulary.name CaseActKind.vocabulary, CaseActKind.token act),
-                Some revision,
-                []
-            | TimelineSubject.Work(revision, act) ->
-                PresentedValue.Code(Vocabulary.name WorkActKind.vocabulary, WorkActKind.token act),
-                Some revision,
-                []
-            | TimelineSubject.Note(act, id) ->
-                code NoteActKind.vocabulary act,
-                None,
-                [
-                    value
-                        "noteId"
-                        "field.noteId.label"
-                        Prominence.Detail
-                        (PresentedValue.Identifier(NoteId.format id))
-                ]
-            | TimelineSubject.Reminder(act, id, revision, next) ->
-                let identifiers =
-                    [
-                        yield
-                            value
-                                "reminderId"
-                                "field.reminderId.label"
-                                Prominence.Detail
-                                (PresentedValue.Identifier(ReminderId.format id))
-                        match next with
-                        | Some(id, revision) ->
-                            yield
-                                value
-                                    "nextReminderId"
-                                    "field.reminderId.label"
-                                    Prominence.Detail
-                                    (PresentedValue.Identifier(ReminderId.format id))
+        let act = PresentedValue.Message("task." + TaskId.token entry.Task + ".label")
+        let revision = Some entry.Subject.Revision
 
-                            yield
-                                value
-                                    "nextReminderRevision"
-                                    "label.reminderRevision"
-                                    Prominence.Detail
-                                    (PresentedValue.Identifier(Revision.format revision))
-                        | None -> ()
-                    ]
-
-                PresentedValue.Code(
-                    Vocabulary.name ReminderActKind.vocabulary,
-                    ReminderActKind.token act
-                ),
-                Some revision,
-                identifiers
+        let identifiers = [ partIdentity entry.Subject.PartKind entry.Subject.PartId ]
 
         [
             yield
@@ -363,11 +328,7 @@ module TimelineScreen =
                 false
                 (fun (item: CaseTimelineEntry) -> PresentedValue.Actor item.RecordedBy)
             column "act" "label.action" Prominence.Primary false (fun item ->
-                match item.Subject with
-                | TimelineSubject.CaseFact(_, act) -> code CaseActKind.vocabulary act
-                | TimelineSubject.Work(_, act) -> code WorkActKind.vocabulary act
-                | TimelineSubject.Note(act, _) -> code NoteActKind.vocabulary act
-                | TimelineSubject.Reminder(act, _, _, _) -> code ReminderActKind.vocabulary act)
+                PresentedValue.Message("task." + TaskId.token item.Task + ".label"))
             column "recordedAt" "label.recordedAt" Prominence.Secondary false (fun item ->
                 PresentedValue.Instant item.RecordedAt)
             column "sequence" "label.effectPosition" Prominence.Detail false (fun item ->
@@ -421,18 +382,11 @@ module TimelineScreen =
     let item (entry: CaseTimelineEntry) =
         let detail = timelineDetail entry |> Option.get
 
-        let act =
-            match entry.Subject with
-            | TimelineSubject.CaseFact(_, act) -> ActKind.Case act
-            | TimelineSubject.Work(_, act) -> ActKind.Work act
-            | TimelineSubject.Note(act, _) -> ActKind.Note act
-            | TimelineSubject.Reminder(act, _, _, _) -> ActKind.Reminder act
-
         let summary =
             defaultArg
                 detail.Summary
                 {
-                    MessageId = Vocabulary.messageKey ActKind.vocabulary act "label"
+                    MessageId = "task." + TaskId.token entry.Task + ".label"
                     Arguments = Map.empty
                 }
 

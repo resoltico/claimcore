@@ -3,9 +3,15 @@ module ClaimCore.IntegrationTests.ReviewedMutationTests
 open System
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -13,7 +19,7 @@ open ClaimCore.IntegrationTests.VerificationSupport
 
 let private acceptedChange service input =
     task {
-        let! reply = Service.execute service input token
+        let! reply = Service.executeSubmission service input token
 
         match reply.Outcome with
         | ExecuteResult.Accepted receipt -> return receipt
@@ -29,14 +35,27 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             PrincipalKey.human "https://review.example/" "person"
             |> Result.defaultWith (fun _ -> failtest "principal")
 
-        let people number expected act =
-            OperationInput.People
-                {
-                    OperationId = id fixture number
-                    ExpectedRevision = expected
-                    Target = PrincipalKey.toInput principal
-                    Act = act
-                }
+        let people number expected taskName values =
+            let declaration =
+                ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral taskName)
+                |> Option.get
+
+            let binding =
+                OperationBinding.People(
+                    (if declaration.Creates then None else Some(id fixture 10)),
+                    expected
+                )
+
+            let authored =
+                if declaration.Creates then
+                    Map.fold
+                        (fun result key value -> Map.add key value result)
+                        values
+                        (Submissions.principal principal)
+                else
+                    values
+
+            Submissions.createRaw taskName (id fixture number) binding authored
 
         let profile name =
             {
@@ -46,7 +65,7 @@ let private peopleRevisions (database: PostgresFixture.Database) =
 
         let grant =
             {
-                AuthoredGrant.Role = Role.CaseReader
+                GrantInput.Role = Role.CaseReader
                 Scope = GrantTarget.Installation
             }
 
@@ -54,20 +73,22 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             acceptedChange
                 owner
                 (people
-                    10
-                    0L
-                    (PeopleAct.Admit
-                        {
-                            Profile = profile "Original"
-                            Grants = [ grant ]
-                        }))
+                    (10)
+                    (0L)
+                    "people.admit"
+                    (ClaimCore.TestSupport.Submissions.profile (profile "Original")
+                     |> Map.add
+                         (TaskInputId.Target InputTarget.Grants)
+                         (ClaimCore.Application.Contracts.SubmissionValue.Rows(
+                             ([ grant ]) |> List.map ClaimCore.TestSupport.Submissions.grant
+                         ))))
 
         let state () =
             task {
                 let! value =
                     fixture.Store.Read
                         {
-                            Work = (fun tx -> tx.PeopleState principal)
+                            Work = (fun tx -> AggregateStorage.principal tx principal)
                             CancellationToken = token
                         }
 
@@ -84,16 +105,26 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             1L
             "Admission's register/profile/grant effects advance once"
 
-        let first = people 11 1L (PeopleAct.SetProfile(profile "First owner"))
+        let first =
+            people
+                (11)
+                (1L)
+                "people.setProfile"
+                (ClaimCore.TestSupport.Submissions.profile ((profile "First owner")))
+
         let! profileChanged = acceptedChange owner first
 
         for stale in
             [
-                people 12 1L (PeopleAct.SetProfile(profile "Second owner"))
-                people 13 1L PeopleAct.EraseProfile
-                people 14 1L PeopleAct.Disable
+                people
+                    (12)
+                    (1L)
+                    "people.setProfile"
+                    (ClaimCore.TestSupport.Submissions.profile ((profile "Second owner")))
+                people (13) (1L) "people.eraseProfile" (Map.empty)
+                people (14) (1L) "people.disable" (Map.empty)
             ] do
-            let! reply = Service.execute owner stale token
+            let! reply = Service.executeSubmission owner stale token
 
             Expect.equal
                 reply.Outcome
@@ -108,16 +139,23 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             (Some "First owner")
             "New private profile survives stale erasure"
 
-        let! _ = acceptedChange owner (people 15 2L PeopleAct.Disable)
-        let! staleEnable = Service.execute owner (people 16 2L PeopleAct.Enable) token
+        let! _ = acceptedChange owner (people (15) (2L) "people.disable" (Map.empty))
+
+        let! staleEnable =
+            Service.executeSubmission owner (people (16) (2L) "people.enable" (Map.empty)) token
 
         Expect.equal
             staleEnable.Outcome
             (ExecuteResult.Rejected(Refusal.People PeopleRefusal.ActorChanged))
             "Stale enable cannot undo a newer disable"
 
-        let! _ = acceptedChange owner (people 17 3L PeopleAct.Enable)
-        let! _ = acceptedChange owner (people 18 4L (PeopleAct.Grant grant))
+        let! _ = acceptedChange owner (people (17) (3L) "people.enable" (Map.empty))
+
+        let! _ =
+            acceptedChange
+                owner
+                (people (18) (4L) "people.grant" (ClaimCore.TestSupport.Submissions.grant (grant)))
+
         let! reaffirmed = state ()
 
         Expect.equal
@@ -125,7 +163,7 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             5L
             "Deliberate reaffirmation advances exactly once"
 
-        let! replay = Service.execute owner first token
+        let! replay = Service.executeSubmission owner first token
 
         match replay.Outcome with
         | ExecuteResult.AlreadyAccepted _ -> ()
@@ -138,24 +176,42 @@ let private peopleRevisions (database: PostgresFixture.Database) =
             reaffirmed.Revision
             "Exact retry appends and advances nothing"
 
-        let changed = people 11 5L (PeopleAct.SetProfile(profile "First owner"))
-        let! conflict = Service.execute owner changed token
+        let changed =
+            people
+                (11)
+                (5L)
+                "people.setProfile"
+                (ClaimCore.TestSupport.Submissions.profile ((profile "First owner")))
+
+        let! conflict = Service.executeSubmission owner changed token
 
         Expect.equal
             conflict.Outcome
             (ExecuteResult.Rejected Refusal.IdempotencyConflict)
             "Changed reviewed basis changes canonical identity"
 
-        let! _ = acceptedChange owner (people 20 5L (PeopleAct.Revoke grant))
-        let! staleGrant = Service.execute owner (people 21 5L (PeopleAct.Grant grant)) token
+        let! _ =
+            acceptedChange
+                owner
+                (people (20) (5L) "people.revoke" (ClaimCore.TestSupport.Submissions.grant (grant)))
+
+        let! staleGrant =
+            Service.executeSubmission
+                owner
+                (people (21) (5L) "people.grant" (ClaimCore.TestSupport.Submissions.grant (grant)))
+                token
 
         Expect.equal
             staleGrant.Outcome
             (ExecuteResult.Rejected(Refusal.People PeopleRefusal.ActorChanged))
             "An old reviewed grant cannot undo a newer revocation"
 
-        let! _ = acceptedChange owner (people 22 6L (PeopleAct.Grant grant))
-        let! _ = acceptedChange owner (people 19 7L PeopleAct.EraseProfile)
+        let! _ =
+            acceptedChange
+                owner
+                (people (22) (6L) "people.grant" (ClaimCore.TestSupport.Submissions.grant (grant)))
+
+        let! _ = acceptedChange owner (people (19) (7L) "people.eraseProfile" (Map.empty))
         let! _ = verified database
         do! enterMaintenance database
         let! checkpoint = LedgerAdministration.head database.OwnerSource token
@@ -165,28 +221,39 @@ let private peopleRevisions (database: PostgresFixture.Database) =
 
         do!
             rewrite database profileChanged.Position.Sequence (fun retained ->
-                match retained.Values with
-                | RetainedOperationValues.People RetainedProfile.Unavailable -> ()
-                | other ->
-                    failtestf "The negative control requires unavailable profile content: %A" other
+                match retained.Changes.Head.Value with
+                | PartValue.Person { Profile = ProfileValue.Present None } -> ()
+                | other -> failtestf "The negative requires unavailable private profile: %A" other
 
-                let command =
-                    match retained.Root.Structure.Command with
-                    | CommandSkeleton.People scope ->
-                        CommandSkeleton.People
-                            { scope with
-                                ExpectedRevision = CaseFixtures.revision 2L
-                            }
-                    | _ -> failtest "Expected retained profile-bearing People root"
+                let binding =
+                    match retained.Root.Structure.Binding with
+                    | Binding.People(id, _) -> Binding.People(id, CaseFixtures.revision 2L)
+                    | _ -> failtest "Person binding required"
 
                 rehashed
                     retained.Root.Header
-                    command
+                    retained.Root.Structure.Task
+                    binding
+                    retained.Root.Structure.Retained
                     retained.Root.Structure.Effects
                     retained.Root.Structure.Compartments)
 
 
-        do! finding VerificationFinding.PeopleFold database
+        let! detected = Verification.verify database.OwnerSource None token
+
+        match detected with
+        | VerificationResult.Diverged failure ->
+            Expect.equal
+                failure.Finding
+                VerificationFinding.StateSequence
+                "The common fold rejects the non-reproduced person decision"
+
+            Expect.equal
+                failure.Sequence
+                (Some profileChanged.Position.Sequence)
+                "The seeded changed binding is the first divergent root"
+        | other -> failtestf "Seeded person decision was not detected: %A" other
+
         return ()
     }
 
@@ -215,9 +282,15 @@ let private familyReview (database: PostgresFixture.Database) =
         let! _ =
             acceptedChange
                 owner
-                (Inputs.caseOperation (
-                    request fixture 30 "FAMILY-REVIEW" 0L (CaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (30)
+                    ("FAMILY-REVIEW")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
 
         let review number =
             task {
@@ -226,14 +299,16 @@ let private familyReview (database: PostgresFixture.Database) =
                 match reply with
                 | Outcome.Succeeded current ->
                     return
-                        OperationInput.Case
-                            {
-                                OperationId = id fixture number
-                                Target = target
-                                ExpectedRevision = Revision.value current.Snapshot.Revision
-                                ExpectedFamilySequence = Some(Sequence.value current.FamilySequence)
-                                Act = CaseAct.Bare BareAct.Erase
-                            }
+                        (ClaimCore.TestSupport.Submissions.createRaw
+                            "case.erase"
+                            (id fixture number)
+                            (ClaimCore.Application.Contracts.OperationBinding.Case(
+                                (target),
+                                (Revision.value current.Snapshot.Revision),
+                                None,
+                                (Some(Sequence.value current.FamilySequence))
+                            ))
+                            (Map.empty))
                 | other -> return failtestf "Review: %A" other
             }
 
@@ -241,7 +316,7 @@ let private familyReview (database: PostgresFixture.Database) =
             task {
                 let! erase = review number
                 let! _ = acceptedChange owner change
-                let! stale = Service.execute owner erase token
+                let! stale = Service.executeSubmission owner erase token
 
                 Expect.equal
                     stale.Outcome
@@ -252,83 +327,117 @@ let private familyReview (database: PostgresFixture.Database) =
         do!
             invalidated
                 31
-                (OperationInput.Note
-                    {
-                        OperationId = id fixture 32
-                        Target = target
-                        Act = AuthoredNoteAct.AddNote "Retained note"
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "note.add"
+                    (id fixture 32)
+                    (ClaimCore.Application.Contracts.OperationBinding.Note((target), None))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.NoteText,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("Retained note")
+                        ]))
 
         do!
             invalidated
                 33
-                (OperationInput.Note
-                    {
-                        OperationId = id fixture 34
-                        Target = target
-                        Act = AuthoredNoteAct.RemoveNote(id fixture 32)
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "note.remove"
+                    (id fixture 34)
+                    (ClaimCore.Application.Contracts.OperationBinding.Note(
+                        (target),
+                        Some((id fixture 32))
+                    ))
+                    (Map.empty))
 
         do!
             invalidated
                 35
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 36
-                        Target = target
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    Summary = WorkValue.Set "Retained work"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 36)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Set "Retained work"
+                        }
+                    )))
 
         do!
             invalidated
                 37
-                (OperationInput.Work
-                    {
-                        OperationId = id fixture 38
-                        Target = target
-                        ExpectedRevision = 1L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    Summary = WorkValue.Clear
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id fixture 38)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work((target), (1L)))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Clear
+                        }
+                    )))
 
-        let plan =
-            {
-                ReminderPlanInput.Action = "Follow up"
-                Due = "2026-01-01"
-            }
+        let plan = Submissions.reminderPlan "Follow up" "2026-01-01"
 
-        let reminder number act =
-            OperationInput.Reminder
-                {
-                    OperationId = id fixture number
-                    Target = target
-                    Act = act
-                }
+        let reminder number taskName selected values =
+            Submissions.createRaw
+                taskName
+                (id fixture number)
+                (OperationBinding.Reminder((target), selected))
+                values
 
-        do! invalidated 39 (reminder 40 (ReminderAct.Create plan))
+        do! invalidated 39 (reminder (40) "reminder.create" (None) (plan))
 
         do!
             invalidated
                 41
                 (reminder
-                    42
-                    (ReminderAct.Update(id fixture 40, 1L, { plan with Action = "Updated" })))
+                    (42)
+                    "reminder.update"
+                    (Some((id fixture 40), (1L)))
+                    (Submissions.reminderPlan "Updated" "2026-01-01"))
 
-        do! invalidated 43 (reminder 44 (ReminderAct.Complete(id fixture 40, 2L)))
-        do! invalidated 45 (reminder 46 (ReminderAct.Reopen(id fixture 40, 3L, "2026-01-02")))
-        do! invalidated 47 (reminder 48 (ReminderAct.Cancel(id fixture 40, 4L)))
-        do! invalidated 49 (reminder 50 (ReminderAct.Reopen(id fixture 40, 5L, "2026-01-03")))
-        do! invalidated 51 (reminder 52 (ReminderAct.CompleteAndPlanNext(id fixture 40, 6L, plan)))
+        do!
+            invalidated
+                43
+                (reminder (44) "reminder.complete" (Some((id fixture 40), (2L))) (Map.empty))
+
+        do!
+            invalidated
+                45
+                (reminder
+                    (46)
+                    "reminder.reopen"
+                    (Some((id fixture 40), (3L)))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.ReminderDueDate,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("2026-01-02")
+                        ]))
+
+        do!
+            invalidated
+                47
+                (reminder (48) "reminder.cancel" (Some((id fixture 40), (4L))) (Map.empty))
+
+        do!
+            invalidated
+                49
+                (reminder
+                    (50)
+                    "reminder.reopen"
+                    (Some((id fixture 40), (5L)))
+                    (Map.ofList
+                        [
+                            TaskInputId.Target InputTarget.ReminderDueDate,
+                            ClaimCore.Application.Contracts.SubmissionValue.Text("2026-01-03")
+                        ]))
+
+        do!
+            invalidated
+                51
+                (reminder (52) "reminder.completeAndPlanNext" (Some((id fixture 40), (6L))) (plan))
+
         let! erase = review 53
 
         let! _ =
@@ -342,29 +451,33 @@ let private familyReview (database: PostgresFixture.Database) =
                 }
                 true
 
-        let! accepted = Service.execute owner erase token
+        let! accepted = Service.executeSubmission owner erase token
 
         let erased =
             match accepted.Outcome with
             | ExecuteResult.Accepted receipt -> receipt
             | other -> failtestf "Unrelated People activity must not invalidate erasure: %A" other
 
-        let! replayed = Service.execute owner erase token
+        let! replayed = Service.executeSubmission owner erase token
 
         match replayed.Outcome with
         | ExecuteResult.AlreadyAccepted _ -> ()
         | other -> failtestf "Erased family exact retry resolves acceptance first: %A" other
 
-        let changedBasis =
-            match erase with
-            | OperationInput.Case request ->
-                OperationInput.Case
-                    { request with
-                        ExpectedFamilySequence = Some 1L
-                    }
-            | _ -> failtest "Erasure input"
+        let changedBinding =
+            match erase.Envelope.Binding with
+            | OperationBinding.Case(target, revision, payment, _) ->
+                OperationBinding.Case(target, revision, payment, Some 1L)
+            | _ -> failtest "Erasure binding required"
 
-        let! changed = Service.execute owner changedBasis token
+        let changedBasis =
+            Submissions.createRaw
+                (TaskId.token erase.Task)
+                erase.OperationId
+                changedBinding
+                erase.Envelope.Inputs
+
+        let! changed = Service.executeSubmission owner changedBasis token
 
         Expect.equal
             changed.Outcome
@@ -380,21 +493,20 @@ let private familyReview (database: PostgresFixture.Database) =
 
         do!
             rewrite database erased.Position.Sequence (fun retained ->
-                let command =
-                    match retained.Root.Structure.Command with
-                    | CommandSkeleton.Case scope ->
-                        CommandSkeleton.Case
-                            { scope with
-                                ExpectedFamilySequence = Some(CaseFixtures.sequence 1L)
-                            }
-                    | _ -> failtest "Expected retained case erasure"
+                let binding =
+                    match retained.Root.Structure.Binding with
+                    | Binding.CaseErase(target, revision, _) ->
+                        Binding.CaseErase(target, revision, CaseFixtures.sequence 1L)
+                    | _ -> failtest "Erasure binding required"
 
-                OperationRoot.append
+                rehashed
                     retained.Root.Header
-                    command
+                    retained.Root.Structure.Task
+                    binding
+                    retained.Root.Structure.Retained
                     retained.Root.Structure.Effects
-                    retained.Root.Structure.Compartments
-                |> Result.defaultWith (string >> failtest))
+                    retained.Root.Structure.Compartments)
+
 
         do! finding VerificationFinding.StateSequence database
         return ()

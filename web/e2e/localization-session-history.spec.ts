@@ -61,8 +61,8 @@ test("updates supplied records without refetching while receipt disclosure refre
       displayLocale: "ar-EG",
     });
     await history.locator("details > summary").click();
-    await expect(history.locator("details")).toContainText("١٬٢٠٠٫٥٠");
-    await expect(history.locator("details")).toContainText("Synthetic claimant");
+    await expect(history).toContainText("١٬٢٠٠٫٥٠");
+    await expect(history).toContainText("Synthetic claimant");
     await history.locator("details > summary").click();
   }
   expect(requests.filter((request) => request !== "POST /api/operation.get")).toEqual([]);
@@ -111,7 +111,7 @@ test("preserves language and independent display preferences through real logout
   await expectPreferences(page, {
     displayLocale: "lv-LV",
   });
-  await login(page, ui("ar", "ui.cases"), ui("ar", "ui.signIn"));
+  await login(page, ui("ar", "label.cases"), ui("ar", "ui.signIn"));
   await expectPreferences(page, {
     language: "ar",
   });
@@ -120,7 +120,7 @@ test("preserves language and independent display preferences through real logout
   });
   await expect(
     page.getByRole("heading", {
-      name: ui("ar", "ui.cases"),
+      name: ui("ar", "label.cases"),
       exact: true,
       level: 1,
     }),

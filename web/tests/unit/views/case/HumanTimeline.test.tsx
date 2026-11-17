@@ -3,14 +3,14 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
 import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
-import type { HumanReadDocument_case_timeline } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 
 const target = { kind: "REFERENCE", caseReference: "Original reference Ω" } as const;
 const document = (
   caption: string,
   disclosure: "FULL" | "SUMMARY",
   nextCursor: string | null,
-): HumanReadDocument_case_timeline => ({
+): HumanDocument => ({
   screen: {
     regions: [
       {
@@ -27,7 +27,7 @@ const document = (
                 principalKind: "HUMAN",
                 availability: "AVAILABLE",
               },
-              summary: { messageId: "timeline.event.caseOpened", arguments: [] },
+              summary: { messageId: "change.CASE.recorded", arguments: [] },
               highlights: [],
               details: [],
             },
@@ -51,7 +51,7 @@ const document = (
   },
   disclosure,
 });
-const reply = (doc: HumanReadDocument_case_timeline) =>
+const reply = (doc: HumanDocument) =>
   new Response(
     JSON.stringify({ representation: "HUMAN", outcome: { kind: "SUCCEEDED", document: doc } }),
     { status: 200, headers: { "Content-Type": "application/json" } },

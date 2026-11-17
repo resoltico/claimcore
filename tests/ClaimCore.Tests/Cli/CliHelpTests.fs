@@ -152,7 +152,7 @@ let dryRunUsage =
 [<Tests>]
 let usageRequiredness =
     testCase "usage reflects executable and draft requirements and lists schema exports" (fun () ->
-        let erase = TaskId.Operation(ActKind.Case CaseActKind.Erase)
+        let erase = "case.erase"
         let execute = CommandGrammar.synopsis erase
 
         Expect.stringContains

@@ -12,8 +12,8 @@ import {
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { randomUUID } from "node:crypto";
 import { registration as registrationInput } from "../tests/support/inputs";
-import type { Browser, BrowserContext, Page } from "@playwright/test";
-import { expect } from "@playwright/test";
+import { type Browser, type BrowserContext, type Page, expect } from "@playwright/test";
+
 import { referencePath, actPath } from "../src/routing/routes";
 
 import { browserRequest, openAuthenticated, sessionToken, installationId } from "./session-helpers";
@@ -76,12 +76,19 @@ const caseAct = async (
   return execute(page, {
     ...authored,
     operationId: mintOperationId(),
-    binding: {
-      kind: "CASE",
-      target,
-      expectedRevision: revision,
-      ...(family === undefined ? {} : { expectedFamilySequence: family }),
-    },
+    inputs:
+      authored.task === "case.open"
+        ? { ...authored.inputs, "field:caseReference": reference }
+        : authored.inputs,
+    binding:
+      authored.task === "case.open"
+        ? { kind: "CASE", expectedRevision: 0 }
+        : {
+            kind: "CASE",
+            target,
+            expectedRevision: revision,
+            ...(family === undefined ? {} : { expectedFamilySequence: family }),
+          },
   } as CaseSubmission);
 };
 const workAct = (

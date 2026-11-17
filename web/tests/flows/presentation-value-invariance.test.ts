@@ -53,7 +53,6 @@ it("preserves canonical values and frozen request identity over 500 seeded displ
         ...initialOperationValues(
           operationAffordance("case.open", {
             kind: "CASE",
-            target: { kind: "REFERENCE", caseReference: "" },
             expectedRevision: 0,
           }),
         ),

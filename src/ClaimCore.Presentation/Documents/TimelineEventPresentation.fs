@@ -10,22 +10,6 @@ type TimelineEventDescription =
 
 /// Recorded-event wording and argument meaning belong to the Core; interfaces only format typed values.
 module TimelineEventPresentation =
-    let caseKind =
-        function
-        | CaseActKind.Open -> "CASE_OPENED", "timeline.event.caseOpened"
-        | CaseActKind.AmendRegistration ->
-            "REGISTRATION_AMENDED", "timeline.event.registrationAmended"
-        | CaseActKind.Correct -> "FACTS_CORRECTED", "timeline.event.factsCorrected"
-        | CaseActKind.Decide -> "DECISION_RECORDED", "timeline.event.decisionRecorded"
-        | CaseActKind.WithdrawDecision -> "DECISION_WITHDRAWN", "timeline.event.decisionWithdrawn"
-        | CaseActKind.RecordPayment -> "PAYMENT_RECORDED", "timeline.event.paymentRecorded"
-        | CaseActKind.RemovePayment -> "PAYMENT_REMOVED", "timeline.event.paymentRemoved"
-        | CaseActKind.Close -> "CASE_CLOSED", "timeline.event.caseClosed"
-        | CaseActKind.Reopen -> "CASE_REOPENED", "timeline.event.caseReopened"
-        | CaseActKind.Void -> "CASE_VOIDED", "timeline.event.caseVoided"
-        | CaseActKind.Reinstate -> "CASE_REINSTATED", "timeline.event.caseReinstated"
-        | CaseActKind.Erase -> "CASE_ERASED", "timeline.event.caseErased"
-
     let private description key arguments =
         {
             MessageId = "timeline.event." + key
@@ -76,13 +60,15 @@ module TimelineEventPresentation =
 
     let private withoutArguments =
         function
-        | TimelineEvent.NoteRecorded act -> Some(description (NoteActKind.token act) [])
-        | TimelineEvent.CaseActRecorded act ->
+        | TimelineEvent.PartChanged kind ->
             Some
                 {
-                    MessageId = caseKind act |> snd
+                    MessageId =
+                        "change." + ClaimCore.Domain.Changes.PartKind.token kind + ".recorded"
                     Arguments = Map.empty
                 }
+        | TimelineEvent.NoteRecorded removed ->
+            Some(description (if removed then "noteRemoved" else "noteAdded") [])
         | TimelineEvent.WorkRecorded -> Some(description "workRecorded" [])
         | TimelineEvent.HandlingSummaryAdded -> Some(description "handlingSummaryAdded" [])
         | TimelineEvent.HandlingSummaryChanged -> Some(description "handlingSummaryChanged" [])
@@ -95,10 +81,12 @@ module TimelineEventPresentation =
     /// Message argument contracts are checked before generated catalogs reach either renderer.
     let contracts =
         [
-            for act in Vocabulary.all NoteActKind.vocabulary do
-                yield "timeline.event." + NoteActKind.token act, Set.empty
-            for act in CaseActKind.all do
-                yield caseKind act |> snd, Set.empty
+            for kind in Vocabulary.all ClaimCore.Domain.Changes.PartKind.vocabulary do
+                yield
+                    "change." + ClaimCore.Domain.Changes.PartKind.token kind + ".recorded",
+                    Set.empty
+            yield "timeline.event.noteRemoved", Set.empty
+            yield "timeline.event.noteAdded", Set.empty
             for key, arguments in
                 [
                     "responsibilityAssigned", [ "person" ]

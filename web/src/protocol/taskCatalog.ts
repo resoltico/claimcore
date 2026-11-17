@@ -1,3 +1,5 @@
+import { productMetadata } from "./productMetadata";
+import type { FieldCatalogEntry } from "./types";
 import {
   taskDefinitions,
   taskInputDefinitions,
@@ -25,7 +27,7 @@ export const taskForAct = (
 ): OperationTaskDefinition => {
   const task = taskDefinitions.find(
     (candidate): candidate is OperationTaskDefinition =>
-      candidate.kind === "OPERATION" && candidate.subject === subject && candidate.act === act,
+      candidate.kind === "OPERATION" && candidate.subject === subject && candidate.id === act,
   );
   if (task === undefined) {
     throw new Error("Unknown operation action.");
@@ -59,4 +61,11 @@ export const queryInput = (
     throw new Error("Missing declared query input.");
   }
   return { ...taskInput(id), choices: input.choices };
+};
+
+export const taskScalar = (id: TaskInputId): FieldCatalogEntry | undefined => {
+  const { key } = taskInput(id);
+  return [...productMetadata.catalog.fields, ...productMetadata.catalog.inputFields].find(
+    (field): field is FieldCatalogEntry => field.scalar !== null && field.name === key,
+  );
 };

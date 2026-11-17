@@ -79,12 +79,12 @@ let private examples () =
                 |> nonNull
 
             Expect.equal
-                (ReplyKind.token classification.Kind)
+                (ReplyKind.token classification)
                 kind
                 "Endpoint-owned classification agrees with the independent wire outcome"
 
             Expect.equal
-                (ExitCode.value classification.ExitCode)
+                (classification |> ClaimCore.Cli.ReplyExitCode.ofKind |> ExitCode.value)
                 (expectedExit kind)
                 "Every wire outcome retains its declared exit meaning"
 
@@ -141,7 +141,7 @@ let private malformed () =
             "{\"acts\":[],\"history\":\""
             + token
             + "\",\"maintenance\":{\"active\":false},\"recommended\":null}"
-            |> Fixtures.completeAdviceWire
+            |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
         let advice = Codec.decode 4096 ResponseCodecs.caseAdvice raw |> accepted
@@ -152,7 +152,7 @@ let private malformed () =
             "{\"acts\":[],\"history\":"
             + oldShape
             + ",\"maintenance\":{\"active\":false},\"recommended\":null}"
-            |> Fixtures.completeAdviceWire
+            |> ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire
             |> bytes
 
         Expect.isError
@@ -174,12 +174,15 @@ let private malformed () =
             (Codec.decode
                 4096
                 ResponseCodecs.caseAdvice
-                (Fixtures.completeAdviceWire valid |> bytes))
+                (ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire valid |> bytes))
             "The matching complete advice admits"
 
     for raw in [ ordinary; missing ] do
         Expect.isError
-            (Codec.decode 4096 ResponseCodecs.caseAdvice (Fixtures.completeAdviceWire raw |> bytes))
+            (Codec.decode
+                4096
+                ResponseCodecs.caseAdvice
+                (ClaimCore.Tests.AdviceWireFixtures.completeAdviceWire raw |> bytes))
             "Correction advice is conditional"
 
     Expect.isError
@@ -242,13 +245,11 @@ let private checkDiscriminators (root: JsonElement) =
     for name, property, expected in
         [
             "ReceiptSubject", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
-            "OperationReview", "kind", [ "CASE"; "PEOPLE"; "WORK"; "REMINDER"; "NOTE" ]
+            "PartDescription", "kind", [ "CASE"; "PERSON"; "WORK"; "REMINDER"; "NOTE"; "PAYMENT" ]
             "OperationSubmission",
             "task",
-            (TaskId.all
-             |> List.choose (function
-                 | TaskId.Operation act -> Some(ActKind.token act)
-                 | _ -> None))
+            (ClaimCore.Domain.Tasks.Registry.clientDeclarations
+             |> List.map (fun declaration -> TaskId.token declaration.Id))
         ] do
         let union = schemas.GetProperty name
         let discriminator = union.GetProperty "discriminator"

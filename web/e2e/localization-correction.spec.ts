@@ -79,7 +79,9 @@ const preserveChoice = async (page: Page, modes: Modes) => {
   const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(ui(language, "label.correctionSelection"), { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
     ).toBeVisible();
@@ -187,14 +189,19 @@ for (const status of ["CLOSED"] as const) {
             },
           });
           await expect(page.locator("#case-detail-title")).toBeVisible();
-          await expect(page.locator(".success-toast")).toBeVisible();
+          await expect(page.locator(".accepted-receipt")).toBeVisible();
           await expectRecordedClaimantWarning(page, language);
           expectResultFields(before, await currentCase(page, reference), modes);
           const acceptedHistory = await history(page, reference);
-          expect(acceptedHistory).toHaveLength(before.revision + 1);
+          expect(acceptedHistory.filter((entry) => entry.subject.partKind === "CASE")).toHaveLength(
+            before.revision + 1,
+          );
+          expect(
+            acceptedHistory.filter((entry) => entry.subject.partKind === "PAYMENT"),
+          ).toHaveLength(1);
           expect(
             acceptedHistory.some(
-              (entry) => entry.kind === "CASE_FACT" && entry.act === "case.correct",
+              (entry) => entry.subject.partKind === "CASE" && entry.task === "case.correct",
             ),
           ).toBe(true);
         } else {
@@ -202,7 +209,13 @@ for (const status of ["CLOSED"] as const) {
           await expect(page.getByRole("alert")).toBeVisible();
           await expectPaymentGuidance(page, refusal);
           expect(await currentCase(page, reference)).toEqual(before);
-          expect(await history(page, reference)).toHaveLength(before.revision);
+          const unchangedHistory = await history(page, reference);
+          expect(
+            unchangedHistory.filter((entry) => entry.subject.partKind === "CASE"),
+          ).toHaveLength(before.revision);
+          expect(
+            unchangedHistory.filter((entry) => entry.subject.partKind === "PAYMENT"),
+          ).toHaveLength(1);
         }
       });
     }

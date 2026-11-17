@@ -137,9 +137,6 @@ module HumanReplies =
                 | Outcome.Failed value -> HumanPreviewResult.Failed value
         }
 
-    let preview input reply =
-        previewWith (HumanReviewDocument.ofCore input) reply
-
     let previewSubmission input reply =
         previewWith (HumanReviewDocument.ofSubmission input) reply
 

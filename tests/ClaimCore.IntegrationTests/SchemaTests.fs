@@ -13,7 +13,11 @@ open System.Text
 open System.Text.RegularExpressions
 open Expecto
 open Npgsql
-open ClaimCore.Postgres
+open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.IntegrationTests.VerificationSupport
 
 let private runFile (database: PostgresFixture.Database) user name =
@@ -113,7 +117,7 @@ let private calendarBounds (database: PostgresFixture.Database) =
                 let! count =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE command->>'kind'='CASE'"
+                        "UPDATE claimcore.ledger SET business_date=$1::text::date WHERE business_date IS NOT NULL"
                         [| box value |]
                         token
 

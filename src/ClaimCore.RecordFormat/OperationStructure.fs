@@ -2,8 +2,9 @@ namespace ClaimCore.RecordFormat
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 
-/// Public here means retained structural metadata, never anonymous API disclosure.
+/// Public means retained structural metadata, never anonymous API disclosure.
 type OperationHeader =
     {
         InstallationId: Guid
@@ -15,365 +16,138 @@ type OperationHeader =
         BusinessDate: DateOnly option
     }
 
-type CaseCommandSkeleton =
+/// The public value has no private bytes; its compartment supplies them when available.
+type RecordedPart =
     {
-        CaseId: CaseId
-        Reference: CaseReference
-        ExpectedRevision: Revision
-        Act: CaseActKind
-        ExpectedFamilySequence: Sequence option
-        SelectedPayment: OperationId option
+        Change: PartChange
+        Compartment: int option
     }
-
-module CaseCommandSkeleton =
-    let compartment (command: CaseCommandSkeleton) =
-        if command.Act = CaseActKind.Erase then None else Some 0
-
-type PeopleCommandSkeleton =
-    {
-        ExpectedRevision: Revision
-        TargetActorId: ActorId
-        Principal: PrincipalKey
-        // Profile values are replaced by a compartment ordinal, not a dummy private profile.
-        Act: PeopleAct<ActorGrant, int>
-    }
-
-type ReminderCommandSkeleton =
-    {
-        CaseId: CaseId
-        Act: ReminderActKind
-        ReminderId: ReminderId option
-        ExpectedRevision: Revision option
-    }
-
-[<RequireQualifiedAccess>]
-type NoteCommandSkeleton =
-    | Add of CaseId
-    | Remove of CaseId * NoteId
-
-[<RequireQualifiedAccess>]
-type CommandSkeleton =
-    | Case of CaseCommandSkeleton
-    | People of PeopleCommandSkeleton
-    | Work of CaseId * Revision
-    | Note of NoteCommandSkeleton
-    | Reminder of ReminderCommandSkeleton
-
-[<RequireQualifiedAccess>]
-type PaymentReference =
-    | Recorded of OperationId
-    | Removed of OperationId
-
-[<RequireQualifiedAccess>]
-type PeopleEffectDescriptor =
-    | ProvisionOwner of PrincipalKey
-    | Register of PrincipalKey
-    | SetProfile of compartmentOrdinal: int
-    | EraseProfile
-    | Grant of ActorGrant
-    | Revoke of ActorGrant
-    | Enable
-    | Disable
-
-/// No amounts, payment dates, narratives, summaries, responsibility or profile values belong here.
-[<RequireQualifiedAccess>]
-type EffectDescriptor =
-    | Case of
-        CaseId *
-        Revision *
-        CaseActKind *
-        creationReference: CaseReference option *
-        PaymentReference option
-    | People of ActorId * PeopleEffectDescriptor
-    | Work of CaseId * Revision
-    | NoteAdded of CaseId * NoteId
-    | NoteRemoved of CaseId * NoteId
-    | ReminderCreated of CaseId * ReminderId * Revision
-    | ReminderChanged of CaseId * ReminderId * Revision * ReminderActKind
 
 [<RequireQualifiedAccess>]
 type OperationStructureProblem =
     | Header
-    | Command
+    | Task
+    | Binding
+    | Inputs
     | Effects
     | Compartments
     | CompartmentBinding
     | UnavailableAppendContent
 
-/// A closed structural operation can have unavailable private values after authorized erasure.
-/// Semantic replay and the later erase evidence are separate requirements.
 type OperationStructure =
     private
         {
             HeaderValue: OperationHeader
-            CommandValue: CommandSkeleton
-            EffectsValue: EffectDescriptor list
+            TaskValue: TaskId
+            BindingValue: Binding
+            RetainedValue: InputMap
+            EffectsValue: RecordedPart list
             CompartmentsValue: Compartment list
         }
 
     member this.Header = this.HeaderValue
-    member this.Command = this.CommandValue
+    member this.Task = this.TaskValue
+    member this.Binding = this.BindingValue
+    member this.Retained = this.RetainedValue
     member this.Effects = this.EffectsValue
     member this.Compartments = this.CompartmentsValue
 
 module OperationStructure =
-    // ADMIT has register/profile plus the Domain's bounded grant collection.
-    let MaximumEffects = 2 + PeopleAdmission.MaximumGrants
+    [<Literal>]
+    let MaximumEffects = 50
 
-    let private successor revision =
-        if revision < Revision.zero || Revision.value revision >= Revision.Maximum then
-            None
-        else
-            Some(Revision.successor revision)
+    [<Literal>]
+    let MaximumCompartments = 2
 
-    let private descriptor owner purpose references =
-        CompartmentDescriptor.create 0 owner purpose references
-        |> Result.mapError (fun _ -> OperationStructureProblem.Compartments)
+    let internal validHeader (header: OperationHeader) =
+        header.InstallationId <> Guid.Empty
+        && header.Sequence >= Sequence.first
+        && RecordedInstant.hasMicrosecondPrecision header.RecordedAt
 
-    let private caseShape header (command: CaseCommandSkeleton) =
-        let opening = command.Act = CaseActKind.Open
-        let removing = command.Act = CaseActKind.RemovePayment
-
-        if
-            (opening
-             && (command.ExpectedRevision <> Revision.zero
-                 || command.CaseId <> CaseId.ofOperationId header.OperationId))
-            || (not opening && command.ExpectedRevision < Revision.first)
-            || ((command.Act = CaseActKind.Erase) <> command.ExpectedFamilySequence.IsSome)
-            || (command.ExpectedFamilySequence
-                |> Option.exists (fun value -> value <= Sequence.zero || value >= header.Sequence))
-            || (removing <> command.SelectedPayment.IsSome)
-        then
-            Error OperationStructureProblem.Command
-        else
-            match successor command.ExpectedRevision with
-            | None -> Error OperationStructureProblem.Command
-            | Some revision ->
-                let payment =
-                    match command.Act, command.SelectedPayment with
-                    | CaseActKind.RecordPayment, _ ->
-                        Some(PaymentReference.Recorded header.OperationId)
-                    | CaseActKind.RemovePayment, Some selected ->
-                        Some(PaymentReference.Removed selected)
-                    | _ -> None
-
-                let effect =
-                    EffectDescriptor.Case(
-                        command.CaseId,
-                        revision,
-                        command.Act,
-                        (if opening then Some command.Reference else None),
-                        payment
-                    )
-
-                if CaseCommandSkeleton.compartment command = None then
-                    Ok([ effect ], [])
-                else
-                    descriptor (CompartmentOwner.Case command.CaseId) CompartmentPurpose.Case [ 0 ]
-                    |> Result.map (fun content -> [ effect ], [ content ])
-
-    let private peopleShape header (command: PeopleCommandSkeleton) =
-        let target = command.TargetActorId
-        let bind = List.map (fun effect -> EffectDescriptor.People(target, effect))
-
-        let profile index effects =
-            descriptor (CompartmentOwner.ActorProfile target) CompartmentPurpose.Profile [ index ]
-            |> Result.map (fun content -> bind effects, [ content ])
-
-        let registering =
-            match command.Act with
-            | PeopleAct.Register _
-            | PeopleAct.Admit _
-            | PeopleAct.ProvisionOwner _ -> true
-            | _ -> false
-
-        let duplicateGrants grants = List.distinct grants <> grants
-
-        if
-            (registering && command.ExpectedRevision <> Revision.zero)
-            || (not registering && command.ExpectedRevision = Revision.zero)
-            || (registering && target <> ActorId.ofOperationId header.OperationId)
-        then
-            Error OperationStructureProblem.Command
-        else
-            match command.Act with
-            | PeopleAct.Register 0 ->
-                profile
-                    1
-                    [
-                        PeopleEffectDescriptor.Register command.Principal
-                        PeopleEffectDescriptor.SetProfile 0
-                    ]
-            | PeopleAct.Admit value when
-                value.Profile = 0
-                && not value.Grants.IsEmpty
-                && value.Grants.Length <= PeopleAdmission.MaximumGrants
-                && not (duplicateGrants value.Grants)
-                ->
-                profile
-                    1
-                    (PeopleEffectDescriptor.Register command.Principal
-                     :: PeopleEffectDescriptor.SetProfile 0
-                     :: (value.Grants |> List.map PeopleEffectDescriptor.Grant))
-            | PeopleAct.ProvisionOwner(0, roles) when
-                header.Sequence = Sequence.first
-                && header.ActorId = target
-                && PrincipalKey.isHuman command.Principal
-                && Result.isOk (People.validateInitialOwnerRoles roles)
-                ->
-                profile
-                    1
-                    [
-                        yield PeopleEffectDescriptor.ProvisionOwner command.Principal
-                        yield PeopleEffectDescriptor.SetProfile 0
-                        for role in roles ->
-                            PeopleEffectDescriptor.Grant
-                                {
-                                    Role = role
-                                    Scope = Scope.Installation
-                                }
-                    ]
-            | PeopleAct.SetProfile 0 -> profile 0 [ PeopleEffectDescriptor.SetProfile 0 ]
-            | PeopleAct.EraseProfile -> Ok(bind [ PeopleEffectDescriptor.EraseProfile ], [])
-            | PeopleAct.Grant grant -> Ok(bind [ PeopleEffectDescriptor.Grant grant ], [])
-            | PeopleAct.Revoke grant -> Ok(bind [ PeopleEffectDescriptor.Revoke grant ], [])
-            | PeopleAct.Enable -> Ok(bind [ PeopleEffectDescriptor.Enable ], [])
-            | PeopleAct.Disable -> Ok(bind [ PeopleEffectDescriptor.Disable ], [])
-            | _ -> Error OperationStructureProblem.Command
-
-    let private reminderShape header (command: ReminderCommandSkeleton) =
-        let next = ReminderId.ofOperationId header.OperationId
-
-        let shape =
-            match command.Act, command.ReminderId, command.ExpectedRevision with
-            | ReminderActKind.Create, None, None ->
-                Some [ EffectDescriptor.ReminderCreated(command.CaseId, next, Revision.first) ]
-            | act, Some target, Some expected when
-                act <> ReminderActKind.Create && expected >= Revision.first
-                ->
-                successor expected
-                |> Option.bind (fun revision ->
-                    if act = ReminderActKind.CompleteAndPlanNext then
-                        if target = next then
-                            None
-                        else
-                            Some
-                                [
-                                    EffectDescriptor.ReminderChanged(
-                                        command.CaseId,
-                                        target,
-                                        revision,
-                                        ReminderActKind.Complete
-                                    )
-                                    EffectDescriptor.ReminderCreated(
-                                        command.CaseId,
-                                        next,
-                                        Revision.first
-                                    )
-                                ]
-                    else
-                        Some
-                            [
-                                EffectDescriptor.ReminderChanged(
-                                    command.CaseId,
-                                    target,
-                                    revision,
-                                    act
-                                )
-                            ])
-            | _ -> None
-
-        match shape with
-        | None -> Error OperationStructureProblem.Command
-        | Some effects ->
-            descriptor
-                (CompartmentOwner.Case command.CaseId)
-                CompartmentPurpose.Reminder
-                [ 0 .. effects.Length - 1 ]
-            |> Result.map (fun content -> effects, [ content ])
-
-    /// Derivation owns the expected closure; callers cannot invent independent child headers.
-    let expected header command =
-        match command with
-        | CommandSkeleton.Case value -> caseShape header value
-        | CommandSkeleton.People value -> peopleShape header value
-        | CommandSkeleton.Reminder value -> reminderShape header value
-        | CommandSkeleton.Work(parent, expected) ->
-            match successor expected with
-            | None -> Error OperationStructureProblem.Command
-            | Some revision ->
-                descriptor (CompartmentOwner.Case parent) CompartmentPurpose.Work [ 0 ]
-                |> Result.map (fun content ->
-                    [ EffectDescriptor.Work(parent, revision) ], [ content ])
-        | CommandSkeleton.Note(NoteCommandSkeleton.Add parent) ->
-            descriptor (CompartmentOwner.Case parent) CompartmentPurpose.Note [ 0 ]
-            |> Result.map (fun content ->
-                [ EffectDescriptor.NoteAdded(parent, NoteId.ofOperationId header.OperationId) ],
-                [ content ])
-        | CommandSkeleton.Note(NoteCommandSkeleton.Remove(parent, note)) ->
-            Ok([ EffectDescriptor.NoteRemoved(parent, note) ], [])
-
-    let validateHeader (header: OperationHeader) command =
-        let people =
-            match command with
-            | CommandSkeleton.People _ -> true
-            | _ -> false
-
-        if
-            header.InstallationId = Guid.Empty
-            || header.Sequence < Sequence.first
-            || not (RecordedInstant.hasMicrosecondPrecision header.RecordedAt)
-            || (people = header.BusinessDate.IsSome)
-        then
+    let create
+        header
+        task
+        binding
+        retained
+        (effects: RecordedPart list)
+        (compartments: Compartment list)
+        =
+        if not (validHeader header) then
             Error OperationStructureProblem.Header
+        elif effects.IsEmpty || effects.Length > MaximumEffects then
+            Error OperationStructureProblem.Effects
         else
-            Ok()
+            let first = effects.Head.Change
+            let owner = PartChange.owner first
 
-    let private assemble header command effects compartments =
-        match validateHeader header command with
-        | Error error -> Error error
-        | Ok() ->
-            expected header command
-            |> Result.bind (fun (requiredEffects, requiredContents) ->
-                if
-                    effects <> requiredEffects
-                    || effects.IsEmpty
-                    || effects.Length > MaximumEffects
-                then
-                    Error OperationStructureProblem.Effects
-                elif
-                    (compartments |> List.map (fun (content: Compartment) -> content.Descriptor))
-                    <> requiredContents
-                then
-                    Error OperationStructureProblem.Compartments
-                elif
-                    compartments
-                    |> List.exists (fun content ->
-                        content.InstallationId <> header.InstallationId
-                        || content.OperationId <> header.OperationId)
-                then
-                    Error OperationStructureProblem.CompartmentBinding
-                else
-                    Ok
-                        {
-                            HeaderValue =
-                                { header with
-                                    RecordedAt = header.RecordedAt.ToUniversalTime()
-                                }
-                            CommandValue = command
-                            EffectsValue = effects
-                            CompartmentsValue = compartments
-                        })
+            let sameHeader index (part: RecordedPart) =
+                let stamp = part.Change.Stamp
 
-    /// Stored erased compartments remain structurally interpretable; replay must prove their erasure.
-    let restore header command effects compartments =
-        assemble header command effects compartments
+                stamp.OperationId = header.OperationId
+                && stamp.ActorId = header.ActorId
+                && stamp.RecordedAt = header.RecordedAt
+                && EffectPosition.sequence stamp.Position = header.Sequence
+                && EffectPosition.index stamp.Position = index
 
-    /// A new append must carry every required private value, never a pre-erased placeholder.
-    let append header command effects compartments =
-        assemble header command effects compartments
-        |> Result.bind (fun value ->
-            if value.Compartments |> List.exists (Compartment.content >> Option.isNone) then
-                Error OperationStructureProblem.UnavailableAppendContent
+            let effectsValid =
+                effects |> List.mapi sameHeader |> List.forall id
+                && (effects
+                    |> List.forall (fun part ->
+                        part.Change.Aggregate = first.Aggregate
+                        && part.Change.PartId <> Guid.Empty
+                        && part.Change.Revision >= Revision.first
+                        && PartChange.validErasure part.Change
+                        && (part.Change.NaturalKey |> Option.forall UnicodeText.isPersisted)))
+
+            let dated =
+                match first.Aggregate with
+                | AggregateReference.Family _ -> header.BusinessDate.IsSome
+                | AggregateReference.Person _ -> header.BusinessDate.IsNone
+
+            let descriptors = compartments |> List.map _.Descriptor
+            let ordinals = descriptors |> List.map _.Ordinal
+
+            let compartmentsValid =
+                compartments.Length <= MaximumCompartments
+                && ordinals = [ 0 .. compartments.Length - 1 ]
+                && (descriptors |> List.map _.Owner |> List.distinct |> List.length) =
+                    compartments.Length
+                && (descriptors |> List.forall (fun descriptor -> descriptor.Owner = owner))
+                && Compartment.distinctAvailableNonces compartments
+
+            let referencesValid =
+                effects
+                |> List.forall (fun part ->
+                    PartCodecs.hasPrivate part.Change.Value = part.Compartment.IsSome
+                    && (part.Compartment
+                        |> Option.forall (fun index ->
+                            descriptors
+                            |> List.tryItem index
+                            |> Option.exists (fun descriptor ->
+                                descriptor.Owner = PartChange.owner part.Change))))
+
+            if not effectsValid || not dated then
+                Error OperationStructureProblem.Effects
+            elif not compartmentsValid then
+                Error OperationStructureProblem.Compartments
+            elif not referencesValid then
+                Error OperationStructureProblem.CompartmentBinding
             else
-                Ok value)
+                Ok
+                    {
+                        HeaderValue = header
+                        TaskValue = task
+                        BindingValue = binding
+                        RetainedValue = retained
+                        EffectsValue = effects
+                        CompartmentsValue = compartments
+                    }
+
+    let append header task binding retained effects compartments =
+        if
+            compartments
+            |> List.exists (fun value -> Compartment.content value |> Option.isNone)
+        then
+            Error OperationStructureProblem.UnavailableAppendContent
+        else
+            create header task binding retained effects compartments

@@ -1,3 +1,4 @@
+import { caseLinkId } from "../src/routing/coreLinks";
 import {
   type Screen,
   type ResponseFor,
@@ -26,8 +27,10 @@ export const displayLocaleFor = (language: Dimension["language"]) =>
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
   await page.setViewportSize({
-    width: dimension.width,
-    height: 900,
+    // Reflow uses the CSS viewport produced by browser zoom. Root CSS zoom instead
+    // mixes scaled client rects with unscaled overlay offsets and does not resize media queries.
+    width: dimension.width / (dimension.reflowScale ?? 1),
+    height: 900 / (dimension.reflowScale ?? 1),
   });
   await page.emulateMedia({
     reducedMotion: "reduce",
@@ -124,11 +127,12 @@ const assertListPresentation = async (
   }
   await expect(rows).toHaveCount(table.rows.length);
   for (const [index, item] of table.rows.entries()) {
-    if (item.link?.endpoint !== "case.get" || item.link.input.target.kind !== "ID") {
+    const caseId = item.link === undefined ? undefined : caseLinkId(item.link);
+    if (caseId === undefined) {
       throw new Error("Case query required");
     }
     const row = rows.nth(index);
-    await expect(row.locator(`a[href="/cases/id/${item.link.input.target.caseId}"]`)).toBeVisible();
+    await expect(row.locator(`a[href="/cases/id/${caseId}"]`)).toBeVisible();
     await expect(row.locator("td[data-column]")).toHaveCount(table.columns.length);
   }
   if (route.expectedReference === undefined) {
@@ -304,11 +308,6 @@ const openReadRoute = async (page: Page, route: MatrixRoute, dimension: Dimensio
 export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dimension) => {
   const apiRequests = observeApiRequests(page);
   await openReadRoute(page, route, dimension);
-  if (dimension.zoom !== undefined) {
-    await page.evaluate((zoom) => {
-      document.documentElement.style.zoom = String(zoom);
-    }, dimension.zoom);
-  }
   await ready(page, route);
   if (route.id === "editor-work") {
     await page.locator("#case-work-summary").click();
@@ -335,12 +334,9 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     dimension.language === "ar" ? "rtl" : "ltr",
   );
   await expect(page.locator("html")).toHaveAttribute("data-mode", dimension.mode);
-  if (dimension.zoom !== undefined) {
-    expect(
-      await page.evaluate(
-        () => window.innerWidth / Number(getComputedStyle(document.documentElement).zoom),
-      ),
-    ).toBe(320);
+  if (dimension.reflowScale !== undefined) {
+    expect(await page.evaluate(() => window.innerWidth)).toBe(320);
+    expect(await page.evaluate(() => matchMedia("(width < 40rem)").matches)).toBe(true);
   }
 };
 const primaryByFrame: Readonly<Record<string, string | null>> = {
@@ -360,7 +356,7 @@ export const checkFrame = async (
 ) => {
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
-  await noHorizontalOverflow(page, dimension.zoom === undefined ? "narrow" : "zoom");
+  await noHorizontalOverflow(page, dimension.reflowScale === undefined ? "narrow" : "zoom");
 };
 export const matrixEvidenceDirectory = async (): Promise<string> => {
   const configured =

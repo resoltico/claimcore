@@ -14,7 +14,11 @@ open System.Security.Cryptography
 open System.Threading
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
+open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 
 
@@ -67,31 +71,33 @@ let internal populated (database: PostgresFixture.Database) =
         let! actor = caseWorker database.Fixture
 
         let! outcome =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        10
-                        "synthetic-a"
-                        0L
-                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (10)
+                    ("synthetic-a")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         let receipt = accepted outcome
 
         let! second =
-            (Service.execute
+            (Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        11
-                        "synthetic-b"
-                        0L
-                        (ClaimCore.Domain.AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (database.Fixture)
+                    (11)
+                    ("synthetic-b")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 (token))
 
         accepted second |> ignore
@@ -123,11 +129,9 @@ let internal erasureFixture (database: PostgresFixture.Database) =
 
 let internal erased fixture (actor: ServiceContext) =
     task {
-        let request =
-            actRequest fixture 13 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+        let request = request (fixture) (13) ("synthetic-a") (1L) "case.erase" (Map.empty)
 
-        let! result =
-            (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation request) (token))
+        let! result = (Service.executeSubmission actor ((request)) (token))
 
         return accepted result
     }
@@ -156,7 +160,7 @@ let internal exec (database: PostgresFixture.Database) arguments =
 let internal initialOwner (database: PostgresFixture.Database) : InitialOwner =
     {
         Principal = database.Fixture.Owner
-        Profile = Inputs.ownerProfile
+        Profile = DomainInputs.ownerProfile
         Roles = []
     }
 

@@ -8,6 +8,10 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Presentation
 open ClaimCore.Wire
 open ClaimCore.Json
@@ -18,16 +22,156 @@ let private required value =
     Result.defaultWith (fun error -> failtestf "%A" error) value
 
 let private services =
-    ClaimCore.Tests.DecisionFixtures.services
-        ClaimCore.Tests.DecisionFixtures.installation
-        ClaimCore.Tests.DecisionFixtures.calendar
-        ClaimCore.Tests.DecisionFixtures.owner
+    ClaimCore.Tests.ReadFixtures.services
+        ClaimCore.Tests.ReadFixtures.installation
+        ClaimCore.Tests.ReadFixtures.calendar
+        ClaimCore.Tests.ReadFixtures.owner
 
 [<Tests>]
 let tests =
     testList
         "human read transport boundary"
         [
+            testCase
+                "section controls have one visible placement and form context preserves the current date"
+                (fun () ->
+                    let original = ResponseExamples.caseRead
+                    let amend = TaskId.ofLiteral "case.amendRegistration"
+                    let decide = TaskId.ofLiteral "case.decide"
+                    let payment = TaskId.ofLiteral "case.recordPayment"
+                    let offered = [ amend; decide; payment ]
+
+                    let blocked =
+                        original.Advice.Blocked
+                        |> List.filter (fun item -> not (List.contains item.Act offered))
+
+                    let available editable : Availability =
+                        {
+                            Seeds = Map.empty
+                            Selections = Set.empty
+                            Editable = editable
+                            Choices = Map.empty
+                            Blocked = None
+                            Recommendation = None
+                        }
+
+                    let binding =
+                        Binding.Case(
+                            CaseSelector.Id original.Snapshot.CaseId,
+                            original.Snapshot.Revision
+                        )
+
+                    let date = TaskInputId.Target(InputTarget.Field BusinessField.PaymentDate)
+
+                    let advice =
+                        CaseAdvice.create offered None HistoryAccess.None blocked
+                        |> required
+                        |> CaseAdvice.withOffers
+                            [
+                                TaskOffer.Available(amend, binding, available [])
+                                TaskOffer.Available(decide, binding, available [])
+                                TaskOffer.Available(
+                                    payment,
+                                    binding,
+                                    available
+                                        [
+                                            date
+                                            TaskInputId.Target(
+                                                InputTarget.Field BusinessField.PaidAmount
+                                            )
+                                            TaskInputId.Target(
+                                                InputTarget.Field BusinessField.PaidCurrency
+                                            )
+                                        ]
+                                )
+                            ]
+                        |> CaseAdvice.withRecommendation (Some decide)
+                        |> required
+
+                    let document = HumanCaseDocument.ofCore { original with Advice = advice }
+
+                    let visible =
+                        document.Actions
+                        @ (document.Screen.Regions
+                           |> List.filter (fun region -> region.Role <> RegionRole.Context)
+                           |> List.collect _.Actions)
+
+                    Expect.isEmpty
+                        (visible
+                         |> List.countBy _.Task
+                         |> List.filter (fun (_, count) -> count <> 1))
+                        "A control has one visible location"
+
+                    let section role =
+                        document.Screen.Regions |> List.find (fun region -> region.Role = role)
+
+                    Expect.equal
+                        ((section RegionRole.Facts).Actions |> List.map _.Task)
+                        [ amend ]
+                        "Claim details own their update control"
+
+                    Expect.equal
+                        ((section RegionRole.Recommendation).Actions |> List.map _.Task)
+                        [ decide ]
+                        "The recommendation has one authoritative location"
+
+                    Expect.isEmpty
+                        (section RegionRole.Payments).Actions
+                        "The recommended action is not repeated in its section"
+
+                    let context = (section RegionRole.Context).Actions |> List.exactlyOne
+
+                    Expect.equal
+                        context.Task
+                        payment
+                        "The associated form context carries the selected operation"
+
+                    Expect.equal
+                        context.Seeds[date]
+                        (InputValue.Text "2026-08-31")
+                        "Core supplies the observed business date"
+
+                    let contextOnly =
+                        ScreenEntries.value
+                            "formContext"
+                            "label.details"
+                            Prominence.Primary
+                            (PresentedValue.Text "FORM_CONTEXT_CANARY")
+
+                    let regions =
+                        document.Screen.Regions
+                        |> List.map (fun region ->
+                            if region.Role = RegionRole.Context then
+                                { region with
+                                    Content = RegionContent.Entries [ contextOnly ]
+                                }
+                            else
+                                region)
+
+                    let document =
+                        { document with
+                            Screen =
+                                { document.Screen with
+                                    Regions = regions
+                                }
+                        }
+
+                    let rendered =
+                        ViewText.renderDocument false "en" document |> String.concat "\n"
+
+                    Expect.stringContains
+                        rendered
+                        "Update claim details"
+                        "Native text lists the section's supplied control"
+
+                    Expect.stringContains
+                        rendered
+                        "Record payment decision"
+                        "Native text lists the recommendation"
+
+                    Expect.isFalse
+                        (rendered.Contains "FORM_CONTEXT_CANARY")
+                        "Form context is not a second current-fact display")
             testCaseAsync
                 "a selected representation projects one use-case result without a second invocation"
                 (async {
@@ -171,19 +315,17 @@ let tests =
                     let bait =
                         RegistrationInput.replace
                             [ BusinessField.ClaimantName, "Input bait must not display" ]
-                            Inputs.registration
+                            DomainInputs.registration
                         |> required
 
                     let action =
                         TaskAffordances.caseAction
-                            CaseActKind.AmendRegistration
+                            (TaskId.ofLiteral "case.amendRegistration")
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
                             Sequence.zero
                             (RegistrationInput.values bait |> TaskAffordances.fields)
-                            (TaskAffordances.authored (
-                                TaskId.Operation(ActKind.Case CaseActKind.AmendRegistration)
-                            ))
+                            (TaskAffordances.authored (TaskId.ofLiteral "case.amendRegistration"))
                             Map.empty
 
                     let screen =
@@ -238,11 +380,12 @@ let tests =
 
                     let action =
                         TaskAffordances.caseAction
-                            CaseActKind.AmendRegistration
+                            (TaskId.ofLiteral "case.amendRegistration")
                             ResponseExamples.snapshot.CaseId
                             ResponseExamples.snapshot.Revision
                             Sequence.zero
-                            (RegistrationInput.values Inputs.registration |> TaskAffordances.fields)
+                            (RegistrationInput.values DomainInputs.registration
+                             |> TaskAffordances.fields)
                             []
                             Map.empty
 
@@ -264,33 +407,24 @@ let tests =
                         (fun () ->
                             Affordance.create
                                 action.Task
-                                (OperationBinding.People(None, 0L))
+                                (Some(Binding.PeopleNew Revision.zero))
                                 action.Seeds
                                 []
                                 Map.empty
-                                false
                                 None
                             |> ignore)
                         "An operation cannot acquire another subject's binding")
             testCase
                 "native selection is correlated without entering frozen business bytes"
                 (fun () ->
-                    let input: OperationInput =
-                        OperationInput.Case
-                            {
-                                ExpectedFamilySequence = None
-                                OperationId =
-                                    OperationId.value ResponseExamples.receipt.OperationId
-                                Target = CaseSelector.Reference "CASE-1"
-                                ExpectedRevision = 1L
-                                Act = CaseAct.Bare BareAct.Close
-                            }
+                    let input =
+                        Submissions.create
+                            "case.close"
+                            (OperationId.value ResponseExamples.receipt.OperationId)
+                            (Binding.Case(CaseSelector.Reference "CASE-1", Revision.first))
+                            Map.empty
 
-                    let original =
-                        (Frames.create Api.operationExecute
-                         << ClaimCore.TestSupport.Submissions.ofCommand None)
-                            input
-                        |> required
+                    let original = Frames.create Api.operationExecute input |> required
 
                     let human = Frames.withRepresentation Representation.Human original
                     let data = Frames.withRepresentation Representation.Data original

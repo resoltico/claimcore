@@ -1,7 +1,7 @@
 import { useReviewEntry } from "./useReviewEntry";
 import { ScreenView } from "../../ui/ScreenView";
 import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
-import type { HumanReadDocument_people_grants } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
@@ -16,6 +16,7 @@ import { Dialog } from "../../ui/Dialog";
 import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
+import { operationTask, taskInput } from "../../protocol/taskCatalog";
 const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string, string]> => {
   const input = model.prepared?.input;
   if (input === undefined) {
@@ -24,7 +25,18 @@ const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string,
   return [
     ["operationId", input.operationId],
     ["act", input.task],
-    ...(input.binding.kind === "CASE" && model.disclosureCurrent
+    ...(model.disclosureCurrent
+      ? operationTask(input.task).inputs.flatMap((declaration): [string, string][] => {
+          const metadata = taskInput(declaration.id);
+          const value: unknown = Object.entries(input.inputs).find(
+            ([key]) => key === declaration.id,
+          )?.[1];
+          return metadata.key === "caseReference" && typeof value === "string"
+            ? [[metadata.key, value]]
+            : [];
+        })
+      : []),
+    ...(input.binding.kind === "CASE" && "target" in input.binding && model.disclosureCurrent
       ? ([
           [
             input.binding.target.kind === "REFERENCE" ? "caseReference" : "caseId",
@@ -114,7 +126,7 @@ type Props = Omit<OperationFormProps, "onAct" | "model"> & {
   model: OperationModel;
   disclosureAvailable?: boolean;
   open?: boolean;
-  person?: HumanReadDocument_people_grants;
+  person?: HumanDocument;
   completionAnchor?: React.RefObject<HTMLElement | null>;
 };
 type DiscardProps = {
@@ -336,7 +348,7 @@ const OperationTarget = ({
 }: {
   current: Props["current"];
   model: OperationModel;
-  person: HumanReadDocument_people_grants | undefined;
+  person: HumanDocument | undefined;
 }) => {
   const document = model.review?.document ?? current ?? person ?? null;
   if (document !== null) {

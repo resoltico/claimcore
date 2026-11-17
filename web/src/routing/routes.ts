@@ -1,3 +1,4 @@
+import { isObject } from "../protocol/client";
 import type { CaseSelector } from "@contracts/client";
 export type Route =
   | { screen: "cases"; query: string }
@@ -6,7 +7,12 @@ export type Route =
   | { screen: "settings" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector; reminderId?: string }
-  | { screen: "caseAct"; target: CaseSelector; act: string; paymentId?: string }
+  | {
+      screen: "caseAct";
+      target: CaseSelector;
+      act: string;
+      binding?: Readonly<Record<string, unknown>>;
+    }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
   | { screen: "peopleHistory"; actorId: string }
@@ -40,21 +46,37 @@ const referenceFrom = (segment: string): string => {
 export const casePath = (caseId: string): string => `/cases/id/${encodeURIComponent(caseId)}`;
 export const referencePath = (reference: string): string =>
   `/cases/reference/${referenceSegment(reference)}`;
-export const actPath = (target: CaseSelector, act: string): string =>
-  `${target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference)}/acts/${encodeURIComponent(act)}`;
-
+/** Route selection carries identity fields; current Core affordances supply reviewed versions. */
+export const actPath = (
+  target: CaseSelector,
+  act: string,
+  binding?: Readonly<Record<string, unknown>>,
+): string => {
+  const path = `${target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference)}/acts/${encodeURIComponent(act)}`;
+  if (binding === undefined) {
+    return path;
+  }
+  const selection = Object.fromEntries(
+    Object.entries(binding).filter(
+      ([key]) => !["target", "expectedRevision", "expectedFamilySequence"].includes(key),
+    ),
+  );
+  return `${path}?${new URLSearchParams({ binding: JSON.stringify(selection) })}`;
+};
 const caseActRoute = (target: CaseSelector, segment: string, query: string): Route => {
   const act = decodeURIComponent(segment);
-  const paymentIds = new URLSearchParams(query).getAll("paymentId");
-  if (act === "case.removePayment" && (paymentIds.length !== 1 || paymentIds[0] === "")) {
+  const values = new URLSearchParams(query).getAll("binding");
+  if (values.length === 0) {
+    return { screen: "caseAct", target, act };
+  }
+  if (values.length !== 1) {
     return { screen: "missing" };
   }
-  return {
-    screen: "caseAct",
-    target,
-    act,
-    ...(act === "case.removePayment" ? { paymentId: paymentIds[0]! } : {}),
-  };
+  const selected: unknown = JSON.parse(values[0]!);
+  if (!isObject(selected)) {
+    return { screen: "missing" };
+  }
+  return { screen: "caseAct", target, act, binding: selected };
 };
 const caseRoute = (segments: string[], query: string): Route => {
   if (segments.length === 2 && segments[1] === "new") {

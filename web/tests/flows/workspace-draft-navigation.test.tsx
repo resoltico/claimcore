@@ -21,7 +21,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
         actions: [
           operationAffordance(
             "case.open",
-            { kind: "CASE", target: { kind: "REFERENCE", caseReference: "" }, expectedRevision: 0 },
+            { kind: "CASE", expectedRevision: 0 },
             {},
             undefined,
             {},

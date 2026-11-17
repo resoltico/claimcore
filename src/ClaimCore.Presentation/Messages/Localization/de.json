@@ -1392,12 +1392,12 @@
     "source": "57a856554f42"
   },
   "field.grants.label": {
-    "text": "Zugriffszuweisungen",
-    "source": "2fd169b4b39d"
+    "text": "Rollen",
+    "source": "c25337055464"
   },
   "diagnostic.GRANT_COUNT_RANGE": {
-    "text": "Wählen Sie zwischen 1 und {maximumGrants} Zugriffszuweisungen.",
-    "source": "d7a1ec1278fd"
+    "text": "Wählen Sie zwischen 1 und {maximumGrants} Rollen.",
+    "source": "478dfffa2d20"
   },
   "diagnostic.DUPLICATE_GRANT": {
     "text": "Wählen Sie jede Kombination aus Rolle und Geltungsbereich nur einmal.",
@@ -2239,50 +2239,6 @@
     "text": "Sieht Fälle und ihren vollständigen Verlauf. Mit dieser Rolle für alle Fälle sieht die Person auch Personen und Zugriff. Kann nichts ändern.",
     "source": "5c16effd2666"
   },
-  "timeline.event.caseOpened": {
-    "text": "Fall eröffnet",
-    "source": "06d0c814073c"
-  },
-  "timeline.event.registrationAmended": {
-    "text": "Anspruchsangaben aktualisiert",
-    "source": "3464951cbb5f"
-  },
-  "timeline.event.factsCorrected": {
-    "text": "Daten korrigiert",
-    "source": "b90ba017d774"
-  },
-  "timeline.event.decisionRecorded": {
-    "text": "Zahlungsentscheidung erfasst",
-    "source": "17798f3d21af"
-  },
-  "timeline.event.decisionWithdrawn": {
-    "text": "Zahlungsentscheidung zurückgenommen",
-    "source": "0f54656f1d92"
-  },
-  "timeline.event.paymentRecorded": {
-    "text": "Zahlungsdatum erfasst",
-    "source": "bba7521a5c9f"
-  },
-  "timeline.event.caseClosed": {
-    "text": "Fall geschlossen",
-    "source": "aa56ad4b2d16"
-  },
-  "timeline.event.caseReopened": {
-    "text": "Fall wieder geöffnet",
-    "source": "00dae005cb0c"
-  },
-  "timeline.event.caseVoided": {
-    "text": "Fall storniert",
-    "source": "38d380a51a59"
-  },
-  "timeline.event.caseReinstated": {
-    "text": "Fall wiederhergestellt",
-    "source": "d9c28b4df570"
-  },
-  "timeline.event.caseErased": {
-    "text": "Fall gelöscht",
-    "source": "258332be465d"
-  },
   "timeline.event.responsibilityAssigned": {
     "text": "Zuständigkeit zugewiesen: {person}",
     "source": "1cea0340442f"
@@ -2539,10 +2495,6 @@
     "text": "Teilweise bezahlt",
     "source": "04739c2e8186"
   },
-  "timeline.event.paymentRemoved": {
-    "text": "Zahlungseintrag entfernt",
-    "source": "49cb55fa2f47"
-  },
   "diagnostic.PAYMENT_AMOUNT_POSITIVE": {
     "text": "Geben Sie einen Zahlungsbetrag größer als null ein.",
     "source": "dc72fea18ef9"
@@ -2639,14 +2591,6 @@
     "text": "Notiz",
     "source": "d8da2c49df39"
   },
-  "timeline.event.note.add": {
-    "text": "Notiz hinzugefügt",
-    "source": "a7886ebc4ffd"
-  },
-  "timeline.event.note.remove": {
-    "text": "Notiz entfernt",
-    "source": "b9096ff4a83e"
-  },
   "timelineFilter.NOTES.label": {
     "text": "Notizen",
     "source": "8a7525b1492f"
@@ -2722,5 +2666,133 @@
   "field.expectedFamilySequence.rule": {
     "text": "Verwenden Sie die von case.get gelieferte Familiensequenz des zur Löschung geprüften Falls.",
     "source": "8d258a9cf42b"
+  },
+  "change.CASE.recorded": {
+    "text": "Falldaten erfasst",
+    "source": "8e5b5d6ba758"
+  },
+  "change.PAYMENT.recorded": {
+    "text": "Zahlungsänderung erfasst",
+    "source": "5fda4f37c572"
+  },
+  "change.WORK.recorded": {
+    "text": "Fallbearbeitung erfasst",
+    "source": "d970b01f341f"
+  },
+  "change.REMINDER.recorded": {
+    "text": "Erinnerungsänderung erfasst",
+    "source": "6050baf70370"
+  },
+  "change.NOTE.recorded": {
+    "text": "Notizänderung erfasst",
+    "source": "db3aa5c9b123"
+  },
+  "change.PERSON.recorded": {
+    "text": "Kontoänderung erfasst",
+    "source": "6d1a5a30e98a"
+  },
+  "timeline.event.noteAdded": {
+    "text": "Notiz hinzugefügt",
+    "source": "a7886ebc4ffd"
+  },
+  "timeline.event.noteRemoved": {
+    "text": "Notiz entfernt",
+    "source": "b9096ff4a83e"
+  },
+  "change.NOTE.removed": {
+    "text": "Notiz entfernt",
+    "source": "b9096ff4a83e"
+  },
+  "label.profile": {
+    "text": "Gespeichertes Profil",
+    "source": "52c48ed49e09"
+  },
+  "label.correctionSelection": {
+    "text": "Wählen Sie, was mit jeder Gruppe von Angaben geschehen soll.",
+    "source": "fe14963d4faf"
+  },
+  "label.roleNotAvailableAtScope": {
+    "text": "Für die ausgewählten Fälle nicht verfügbar",
+    "source": "008dd6597126"
+  },
+  "label.roleNotAvailableForService": {
+    "text": "Für Dienstkonten nicht verfügbar",
+    "source": "23a43af3092c"
+  },
+  "label.accessDisabled": {
+    "text": "Dieses Konto ist deaktiviert",
+    "source": "3c476460f303"
+  },
+  "label.accessPending": {
+    "text": "Sie haben noch keinen Zugriff",
+    "source": "329f122dcf0f"
+  },
+  "label.accessRequested": {
+    "text": "Wir haben die Inhaber informiert. Ein Inhaber kann diesem Konto Zugriff gewähren.",
+    "source": "fbdca8dba390"
+  },
+  "label.noPayments": {
+    "text": "Keine Zahlungseinträge erfasst.",
+    "source": "131347633495"
+  },
+  "label.noReminders": {
+    "text": "Keine Wiedervorlagen passen zu dieser Ansicht.",
+    "source": "3200239466d8"
+  },
+  "label.reminderQueueHint": {
+    "text": "Fälligkeitsfilter gelten hier für jede Wiedervorlage. Falllisten verwenden die früheste Wiedervorlage jedes Falls.",
+    "source": "f1ad60c57bf8"
+  },
+  "label.noPeople": {
+    "text": "Keine Personen anzuzeigen.",
+    "source": "6a83dad36c14"
+  },
+  "label.noCases": {
+    "text": "Keine Fälle anzuzeigen.",
+    "source": "4b74e082b9b3"
+  },
+  "label.noCasesForView": {
+    "text": "Keine Fälle passen zu dieser Ansicht.",
+    "source": "8b8a577e5f3b"
+  },
+  "label.noEligibleAccounts": {
+    "text": "Keine zuweisbaren Konten auf dieser Seite.",
+    "source": "f9c5ece19d4b"
+  },
+  "label.caseDetail": {
+    "text": "Falldetails",
+    "source": "e6aad002458d"
+  },
+  "label.accessChange": {
+    "text": "Zugriffsänderung",
+    "source": "295239c1b29a"
+  },
+  "label.chooseRole": {
+    "text": "Rolle wählen",
+    "source": "a49c49b04c4d"
+  },
+  "label.existingCaseSelectionHint": {
+    "text": "Wählen Sie einen vorhandenen Fall anhand seiner Referenz oder ID.",
+    "source": "bd52439b9b7f"
+  },
+  "label.caseSelection": {
+    "text": "Fall auswählen über",
+    "source": "c1020f56efc0"
+  },
+  "label.queueDescription": {
+    "text": "Finden Sie Fälle mit Handlungsbedarf und setzen Sie ihre Bearbeitung fort.",
+    "source": "758595a14f42"
+  },
+  "label.caseChanged": {
+    "text": "Dieser Fall hat sich geändert",
+    "source": "ae4ec9da2e36"
+  },
+  "label.noAccessRequests": {
+    "text": "Keine ausstehenden Zugriffsanfragen.",
+    "source": "f258e3645b02"
+  },
+  "label.actionNotOffered": {
+    "text": "Diese Aktion wird für diesen Fall derzeit nicht angeboten.",
+    "source": "78dafa13c3bd"
   }
 }

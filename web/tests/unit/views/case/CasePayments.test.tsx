@@ -89,7 +89,12 @@ it("renders supplied payment facts and binds reordered row removal by entry iden
   await userEvent
     .setup()
     .click(screen.getAllByRole("button", { name: "Remove payment entry" })[0]!);
-  expect(onAct).toHaveBeenCalledExactlyOnceWith("case.removePayment", second);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining<{ task: string; binding: unknown }>({
+      task: "case.removePayment",
+      binding: expect.objectContaining({ paymentId: second }),
+    }),
+  );
 });
 it("offers no removal when Core withdraws its row controls", () => {
   render(

@@ -6,8 +6,12 @@ open Expecto
 open ClaimCore.RecordFormat
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -29,43 +33,41 @@ let private seeded database =
         let! actor = populated database
 
         let! work =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (OperationInput.Work
-                    {
-                        OperationId = id database.Fixture 100
-                        Target = CaseSelector.Reference "synthetic-a"
-                        ExpectedRevision = 0L
-                        Act =
-                            WorkAct.UpdateWork
-                                {
-                                    Responsible =
-                                        WorkValue.Set(
-                                            ActorId.format (
-                                                CaseFixtures.actorId (id database.Fixture 1)
-                                            )
-                                        )
-                                    Summary = WorkValue.Set "Await the report"
-                                }
-                    })
+                ((ClaimCore.TestSupport.Submissions.createRaw)
+                    "work.update"
+                    (id database.Fixture 100)
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(
+                        (CaseSelector.Reference "synthetic-a"),
+                        (0L)
+                    ))
+                    (ClaimCore.TestSupport.Submissions.work (
+                        {
+                            Responsible =
+                                WorkValue.Set(
+                                    ActorId.format (CaseFixtures.actorId (id database.Fixture 1))
+                                )
+                            Summary = WorkValue.Set "Await the report"
+                        }
+                    )))
                 token
 
         accepted work |> ignore
 
         let reminderRequest =
-            OperationInput.Reminder
-                {
-                    OperationId = id database.Fixture 101
-                    Target = CaseSelector.Reference "synthetic-a"
-                    Act =
-                        AuthoredReminderAct.Create
-                            {
-                                Action = "Request the report"
-                                Due = "2027-12-31"
-                            }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "reminder.create"
+                (id database.Fixture 101)
+                (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                    (CaseSelector.Reference "synthetic-a"),
+                    None
+                ))
+                (ClaimCore.TestSupport.Submissions.reminderPlan
+                    ("Request the report")
+                    ("2027-12-31"))
 
-        let! reminder = Service.execute actor reminderRequest token
+        let! reminder = Service.executeSubmission actor reminderRequest token
 
         accepted reminder |> ignore
 
@@ -112,7 +114,7 @@ let private repairs database =
                         ActorId = CaseFixtures.actorId (id database.Fixture 1)
                         DisplayName =
                             DisplayName.Named(
-                                PartyName.parse Inputs.ownerProfile.DisplayName
+                                PartyName.parse DomainInputs.ownerProfile.DisplayName
                                 |> Result.defaultWith (string >> failtest)
                             )
                         PrincipalKind = PrincipalKind.Human
@@ -122,7 +124,7 @@ let private repairs database =
 
             Expect.equal
                 current.Work.FollowUp
-                (Some(Inputs.date "2027-12-31"))
+                (Some(DomainInputs.date "2027-12-31"))
                 "Planned date survives replacement"
         | _ -> failtest "Rebuilt work must remain readable"
 
@@ -210,16 +212,9 @@ let private erasedIdentity database =
         | _ -> failtestf "Erasure grant refused: %A" permission
 
         let! erased =
-            Service.execute
+            Service.executeSubmission
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request
-                        database.Fixture
-                        103
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.Bare BareAct.Erase)
-                ))
+                (((request (database.Fixture) (103) ("synthetic-a") (1L) "case.erase" (Map.empty))))
                 token
 
         accepted erased |> ignore

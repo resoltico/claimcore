@@ -12,29 +12,23 @@ import { Actions } from "../../ui/regions/Actions";
 export const PaymentRows = ({
   content,
   zone,
-  onRemove,
+  onAction,
 }: {
   content: Extract<RegionContent, { kind: "TABLE" }>;
   zone: string;
-  onRemove: (paymentId: string) => void;
+  onAction: (action: Affordance) => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
   const id = useId();
-  const remove = (action: Affordance) => {
-    if (
-      action.task === "case.removePayment" &&
-      action.binding.kind === "CASE" &&
-      "paymentId" in action.binding
-    ) {
-      onRemove(action.binding.paymentId);
-    }
+  const select = (action: Affordance) => {
+    onAction(action);
   };
   if (compact) {
     return (
       <ul className="payment-cards">
         {content.rows.map((row) => {
-          const action = <Actions actions={row.actions ?? []} compact onAction={remove} />;
+          const action = <Actions actions={row.actions ?? []} compact onAction={select} />;
           return (
             <li key={row.key}>
               <dl id={`${id}-${row.key}`}>
@@ -70,7 +64,7 @@ export const PaymentRows = ({
     <Table
       view={{ kind: "TABLE", columns: content.columns, rows: content.rows }}
       timeZone={zone}
-      onAction={remove}
+      onAction={select}
     />
   );
 };

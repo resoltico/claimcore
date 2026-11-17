@@ -1,4 +1,4 @@
-import { operationAffordance } from "./affordances.fixtures";
+import { operationAffordance, reviewSeeds } from "./affordances.fixtures";
 import type { HumanReview } from "@contracts/client";
 import { workBasis } from "./inputs";
 import { vi } from "vitest";
@@ -21,7 +21,7 @@ export const peopleReview = (input: PeopleInput): HumanReview => {
         confirmation: { kind: "OPERATION", operationId: input.operationId },
         consequence: task.consequence,
       },
-      actions: [operationAffordance(input.task, input.binding, input.inputs, [])],
+      actions: [operationAffordance(input.task, input.binding, reviewSeeds(input.inputs), [])],
       links: [],
       history: null,
       nextCursor: null,

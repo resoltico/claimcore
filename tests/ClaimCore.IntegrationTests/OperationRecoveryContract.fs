@@ -4,6 +4,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
@@ -18,16 +22,20 @@ let internal rolelessAuthorship fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 10)
-                        target
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 10))
+                        (target)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (owner) submission (CancellationToken.None)
+            })
 
         acceptedPeople registered
 
@@ -46,11 +54,17 @@ let internal rolelessAuthorship fixture =
         let author = core fixture target
 
         let! opened =
-            Service.execute
+            Service.executeSubmission
                 author
-                (Inputs.caseOperation (
-                    request fixture 20 "ROLELESS-RECEIPT" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (20)
+                    ("ROLELESS-RECEIPT")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 CancellationToken.None
 
         accepted opened |> ignore
@@ -125,12 +139,18 @@ let internal rolelessAuthorship fixture =
         | other -> failtestf "Authorized foreign receipt must identify other authorship: %A" other
 
         let! disabled =
-            Service.execute
-                owner
-                (OperationInput.People(
-                    reviewedPeopleRequest fixture.Store (id fixture 31) target PeopleAct.Disable
-                ))
-                CancellationToken.None
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 31))
+                        (target)
+                        (None)
+                        "people.disable"
+                        (Map.empty)
+
+                return! Service.executeSubmission (owner) submission (CancellationToken.None)
+            })
 
         acceptedPeople disabled
 

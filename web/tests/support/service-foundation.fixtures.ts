@@ -1,5 +1,5 @@
 import { registration } from "./inputs";
-import type { CaseFields } from "../../src/api/service";
+import type { CaseFields } from "@contracts/client";
 export const caseFields: CaseFields = {
   caseReference: "CASE-1",
   status: "OPENED",

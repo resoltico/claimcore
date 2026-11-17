@@ -7,6 +7,10 @@ open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open ClaimCore.Server.Composition
 open ClaimCore.Wire
@@ -116,7 +120,7 @@ let private mappedExamples () =
 
             Expect.equal
                 kind
-                (Some(JsonValue.String(ReplyKind.token reply.Class.Kind)))
+                (Some(JsonValue.String(ReplyKind.token reply.Class)))
                 "Typed classification agrees with the actual server outcome"
 
             assertServerIdentity endpoint input reply.Wire
@@ -134,14 +138,14 @@ let private cancellationPolicy () =
         let! _ = caseWorker fixture |> Async.AwaitTask
         let actor = core fixture owner
 
-        let input =
-            ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 91 "MAPPING-001")
+        let input = ((openRequest fixture 91 "MAPPING-001"))
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
 
         let! preview =
-            (Service.preview actor (input) (cancellation.Token)) |> Async.AwaitTask
+            (Service.previewSubmission actor (input) (cancellation.Token))
+            |> Async.AwaitTask
 
         Expect.equal
             preview.Outcome
@@ -149,7 +153,8 @@ let private cancellationPolicy () =
             "Preview observes caller cancellation."
 
         let! execute =
-            (Service.execute actor (input) (CancellationToken.None)) |> Async.AwaitTask
+            (Service.executeSubmission actor (input) (CancellationToken.None))
+            |> Async.AwaitTask
 
         match execute.Outcome with
         | ExecuteResult.Accepted _ -> ()

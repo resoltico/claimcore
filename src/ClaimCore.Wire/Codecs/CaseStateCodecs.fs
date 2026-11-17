@@ -29,3 +29,36 @@ module internal CaseStateCodecs =
                     fields
                 unitVariant "ERASED" CaseState.Erased
             ]
+
+    let disposition =
+        let reason =
+            text
+            |> interpret
+                (fun path raw ->
+                    Reason.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid disposition reason."
+                        }))
+                Reason.format
+
+        tagged
+            "CaseDisposition"
+            [
+                variant
+                    "case.void"
+                    CaseDisposition.Voided
+                    (function
+                    | CaseDisposition.Voided reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+                variant
+                    "case.reinstate"
+                    CaseDisposition.Reinstated
+                    (function
+                    | CaseDisposition.Reinstated reason -> Some reason
+                    | _ -> None)
+                    (record id |> field "reason" id reason)
+            ]
+        |> Codec.vocabulary "task"

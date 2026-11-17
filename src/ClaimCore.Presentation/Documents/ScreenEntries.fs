@@ -2,6 +2,7 @@ namespace ClaimCore.Presentation
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 
 module ScreenEntries =
@@ -78,6 +79,22 @@ module ScreenEntries =
             Prominence = prominence
             Value = value
         }
+
+    let partIdentity kind (id: System.Guid) =
+        let label =
+            match kind with
+            | PartKind.Case
+            | PartKind.Work -> "input.caseId.label"
+            | PartKind.Person -> "input.actorId.label"
+            | PartKind.Payment -> "field.paymentId.label"
+            | PartKind.Reminder -> "field.reminderId.label"
+            | PartKind.Note -> "field.noteId.label"
+
+        value
+            (id.ToString("D") + ".id")
+            label
+            Prominence.Detail
+            (PresentedValue.Identifier(id.ToString("D")))
 
     let optional format =
         Option.map format >> Option.defaultValue absent

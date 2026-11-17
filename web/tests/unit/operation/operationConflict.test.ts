@@ -230,5 +230,5 @@ it("refreshes both erasure preconditions from the supplied current action after 
   expect(old.input.binding).toMatchObject({ expectedRevision: 4, expectedFamilySequence: 12 });
   expect(() => {
     rebasedOperationBinding(old.input, 8, []);
-  }).toThrow("A fresh erasure action is required.");
+  }).toThrow("A fresh reviewed action is required.");
 });

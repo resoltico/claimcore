@@ -2,6 +2,7 @@ namespace ClaimCore.Json
 
 /// Public codec construction stays together; implementation parts follow grammar responsibility.
 module Codec =
+    let jsonObject = CodecScalars.jsonObject
     let text = CodecScalars.text
 
     let boundedText minimum maximum =

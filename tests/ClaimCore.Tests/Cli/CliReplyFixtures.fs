@@ -11,18 +11,19 @@ open ClaimCore.Json
 
 let id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
-let peopleRequest: PeopleRequest =
-    {
-        ExpectedRevision = 0L
-        OperationId = id
-        Target =
-            {
-                Kind = PrincipalKind.Human
-                Issuer = "https://issuer.example/"
-                Subject = "synthetic"
-            }
-        Act = (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-    }
+let peopleRequest =
+    Submissions.create
+        "people.register"
+        id
+        (Binding.PeopleNew Revision.zero)
+        (Submissions.principal (
+            PrincipalKey.human "https://issuer.example/" "synthetic"
+            |> Result.toOption
+            |> Option.get
+         )
+         |> Map.fold
+             (fun values key value -> Map.add key value values)
+             (Submissions.profile DomainInputs.actorProfile))
 
 let snapshot =
     let fields: CaseFields =
@@ -31,13 +32,13 @@ let snapshot =
             Status = CaseStatus.Opened
             Registration =
                 CaseFixtures.registration (
-                    ClaimCore.TestSupport.Inputs.registrationWith
+                    ClaimCore.TestSupport.DomainInputs.registrationWith
                         [
                             BusinessField.ClaimantName, ("x")
                             BusinessField.InsurerName, ("x")
                             BusinessField.ClaimedAmount, ("0")
                         ]
-                        ((Inputs.registrationOn "2026-01-01" "2026-01-01"))
+                        ((DomainInputs.registrationOn "2026-01-01" "2026-01-01"))
                 )
             Finance = FinancialPosition.undecided
         }
@@ -67,7 +68,7 @@ let receipt: OperationReceipt =
                     CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference "x"
                     Revision = CaseFixtures.revision 1L
-                    Act = CaseActKind.Open
+                    Act = (TaskId.ofLiteral "case.open")
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
@@ -77,5 +78,5 @@ let receipt: OperationReceipt =
                 BusinessDate = DateOnly(2026, 1, 1)
                 TimeZoneId = "Etc/UTC"
             }
-        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
+        RecordedBy = ClaimCore.TestSupport.DomainInputs.actorReference ((CaseFixtures.actorId (id)))
     }

@@ -6,6 +6,8 @@ open ClaimCore.Presentation
 open ClaimCore.TestSupport
 
 open ClaimCore.Domain
+open ClaimCore.Domain.Aggregates
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
@@ -264,7 +266,7 @@ let private offlineDiscovery () =
             helpJson [ "case"; "--language"; language ]
             |> Option.defaultWith (fun () -> failtest "Overview help required")
             |> StrictJson.read Limits.MaximumResponseBytes
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
 
         let text =
             match JsonValue.tryMember "text" document with
@@ -298,63 +300,76 @@ let private exampleFrames () =
         Directory.GetFiles(Path.Combine(root, "examples"), "*.json") |> Array.sort
 
     Expect.equal files.Length 9 "Every published example frame is reached"
-    let mutable current: CaseSubjectState option = None
+    let mutable current: CaseFamily option = None
 
     for index, path in Array.indexed files do
         let input =
             StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
-            |> Fixtures.accepted
+            |> CaseBuilders.accepted
             |> WireWriter.bytes
 
-        let invocation = Frames.admit input |> Fixtures.accepted
+        let invocation = Frames.admit input |> CaseBuilders.accepted
 
         Expect.equal
             (frameEndpoint invocation |> Api.id)
             "operation.execute"
-            "Business and stewardship share execution"
+            "Shared execution endpoint"
 
-        let request =
-            match
-                Api.operationExecute.Input.Read "$" (Frames.input invocation)
-                |> Fixtures.accepted
-                |> Submissions.command
-            with
-            | OperationInput.Case request -> Inputs.referencedCase request
-            | _ -> failtest "Example must be a case request"
+        let submission =
+            Api.operationExecute.Input.Read "$" (Frames.input invocation)
+            |> CaseBuilders.accepted
 
-        let command =
-            Case.admit (DateOnly(2026, 10, 15)) (current |> Option.bind _.Snapshot) request
-            |> Fixtures.accepted
+        let command = Submissions.command submission
+        let selected = ClaimCore.Domain.Tasks.Registry.find submission.Task |> Option.get
 
-        let decision =
-            CaseSubject.decide
-                (CaseFixtures.recordedContext (DateOnly(2026, 10, 15)))
-                current
-                command
-            |> Fixtures.accepted
+        let task =
+            match selected with
+            | ClaimCore.Domain.Tasks.Task.Family task -> task
+            | _ -> failtest "Family task expected"
 
         let stamp =
             {
                 SubjectStamp.Position =
                     EffectPosition.create (CaseFixtures.sequence (int64 index + 1L)) 0 |> Option.get
-                OperationId = command.OperationId
-                ActorId = CaseFixtures.actorId (Guid.Parse "10000000-0000-4000-8000-000000000001")
+                OperationId = OperationId.create submission.OperationId |> Option.get
+                ActorId = ClaimCore.Tests.TaskBuilders.actorId
                 RecordedAt = DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)
             }
 
-        let next = CaseSubject.apply stamp current decision |> Option.get
+        let context =
+            {
+                TaskContext.Stamp = stamp
+                Decision =
+                    { (ClaimCore.Tests.TaskBuilders.context (index + 1)).Decision with
+                        BusinessDate = Some(DateOnly(2026, 10, 15))
+                        ObservedAt = stamp.RecordedAt
+                        Lifetime = DecisionLifetime.Recorded
+                    }
+            }
+
+        let changes =
+            task.Decide
+                context
+                ClaimCore.Tests.TaskBuilders.environment
+                current
+                command.Binding
+                command.Inputs
+            |> CaseBuilders.accepted
+
+        current <-
+            changes
+            |> List.fold
+                (fun state change -> CaseFamily.apply state change |> CaseBuilders.accepted |> Some)
+                current
 
         Expect.equal
-            next.Revision
-            (CaseFixtures.revision (int64 (index + 1)))
+            (current.Value.Case.Revision |> Revision.value)
+            (int64 (index + 1))
             "Example revision sequence"
 
-        current <- Some next
-
-    let final = current |> Option.bind _.Snapshot |> Option.get
+    let final = current.Value
     Expect.equal (CaseReference.format final.Reference) "DEMO-0001" "Original reference retained"
-
-    Expect.equal final.State ClaimCore.Domain.CaseState.Erased "Examples end with explicit erasure"
+    Expect.equal final.Case.Value.Lifecycle Lifecycle.Erased "Explicit erasure"
 
 [<Tests>]
 let tests =

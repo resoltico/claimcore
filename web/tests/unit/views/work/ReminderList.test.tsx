@@ -9,7 +9,7 @@ import { humanReadHttpReply as response } from "../../../support/human-read-repl
 import { ReminderList } from "../../../../src/views/work/ReminderList";
 import { preferenceKey } from "../../../../src/presentation/preferences";
 import type {
-  HumanReadDocument_reminder_list,
+  HumanDocument,
   RegionRow,
   PresentedValue,
   WorkDateBasis,
@@ -75,7 +75,7 @@ const documentFor = (
   nextCursor: string | null = null,
   observed: WorkDateBasis = basis,
   details: Region = observation("2026-11-03", "Etc/UTC"),
-): HumanReadDocument_reminder_list => ({
+): HumanDocument => ({
   screen: {
     regions: [
       {

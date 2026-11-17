@@ -66,7 +66,7 @@ let private qualify () =
         let input = frame["input"] |> nonNull
         input["operationId"] <- JsonValue.Create operation
 
-        ((input["binding"] |> nonNull)["target"] |> nonNull)["caseReference"] <-
+        (input["inputs"] |> nonNull)["field:caseReference"] <-
             JsonValue.Create("DRAIN-" + operation)
 
         let bytes = Encoding.UTF8.GetBytes(frame.ToJsonString())

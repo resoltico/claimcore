@@ -40,35 +40,6 @@ module WorkCodecs =
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Reminder"
 
-    let effects =
-        tagged
-            "ReminderEffects"
-            [
-                variant
-                    "CREATED"
-                    ReminderEffects.Created
-                    (function
-                    | ReminderEffects.Created value -> Some value
-                    | _ -> None)
-                    (record id |> field "reminder" id reminder)
-                variant
-                    "CHANGED"
-                    ReminderEffects.Changed
-                    (function
-                    | ReminderEffects.Changed value -> Some value
-                    | _ -> None)
-                    (record id |> field "reminder" id reminder)
-                variant
-                    "COMPLETED_AND_PLANNED"
-                    (fun (completed, next) -> ReminderEffects.CompletedAndPlanned(completed, next))
-                    (function
-                    | ReminderEffects.CompletedAndPlanned(completed, next) -> Some(completed, next)
-                    | _ -> None)
-                    (record (fun completed next -> completed, next)
-                     |> field "completed" fst reminder
-                     |> field "next" snd reminder)
-            ]
-
     let reminderRead =
         (record
             (fun reminder reference claimant responsible recordedAt recordedBy acts active timing ->
@@ -79,7 +50,7 @@ module WorkCodecs =
                     Responsible = responsible
                     RecordedAt = recordedAt
                     RecordedBy = recordedBy
-                    Acts = acts
+                    Offers = acts |> List.map TaskOffer.Declared
                     Active = active
                     Timing = timing
                 })
@@ -93,7 +64,9 @@ module WorkCodecs =
         |> field
             "acts"
             _.Acts
-            (list ReminderActKind.all.Length (VocabularyCodec.create ReminderActKind.vocabulary))
+            (list
+                (TaskVocabulary.count ActSubject.Reminder)
+                (TaskVocabulary.forSubject ActSubject.Reminder))
         |> field "active" _.Active boolean
         |> field "timing" _.Timing (nullable (VocabularyCodec.create ReminderDue.vocabulary))
         |> build

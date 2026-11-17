@@ -1,3 +1,4 @@
+import type { RequesterDocument } from "../src/protocol/types";
 import {
   installationActions,
   requesterLinks,
@@ -29,10 +30,10 @@ import {
   presentationLanguageOptions,
   type RequestByEndpoint,
   type ResponseFor,
-  type HumanReadDocument_context,
+  type HumanDocument,
 } from "@contracts/client";
 import { actorRefInput } from "../tests/support/inputs";
-import { contrastRatio } from "../src/theme/contrast";
+import { contrastRatio } from "../tests/support/themeContrast";
 import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 const presentationBasis = {
@@ -1034,7 +1035,7 @@ for (const language of ["en", "ar"] as const) {
       const entry = {
         ...openedTimelineEntry,
         summary: {
-          messageId: "timeline.event.factsCorrected",
+          messageId: "change.CASE.recorded",
           arguments: [],
         },
         highlights: [
@@ -1199,7 +1200,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
   }) => {
     const clean = await observe(page, true);
     await seed(page);
-    const requester: HumanReadDocument_context = {
+    const requester: HumanDocument = {
       screen: {
         regions: [
           {
@@ -1273,7 +1274,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
 }) => {
   const clean = await observe(page, true);
   await seed(page);
-  const active: HumanReadDocument_context = {
+  const active: RequesterDocument = {
     ...activeRequester,
     actions: installationActions(
       [
@@ -1312,7 +1313,13 @@ test("same-requester access loss retains unknown bytes and a visible departure g
             ? active
             : {
                 screen: {
-                  regions: [],
+                  regions: [
+                    {
+                      role: "IDENTITY",
+                      titleId: "label.accessPending",
+                      content: { kind: "ENTRIES", entries: [] },
+                    },
+                  ],
                 },
                 subject: {
                   kind: "REQUESTER",
@@ -2670,7 +2677,7 @@ test("People uses core roles and state without row reads and forwards known-zero
     waitUntil: "commit",
   });
   const table = page.getByRole("table", {
-    name: "People & access",
+    name: "People and access",
   });
   const row = table.getByRole("row").filter({
     hasText: "People owner",

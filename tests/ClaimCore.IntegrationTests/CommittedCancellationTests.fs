@@ -4,6 +4,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -17,30 +21,24 @@ let tests =
                 PrincipalKey.human "https://issuer.example/" "other"
                 |> Result.defaultWith (string >> failtest)
 
-            let requestIds _ reference revision act : UnvalidatedCaseRequest =
-                {
-                    ExpectedFamilySequence =
-                        if CaseAct.kind act = CaseActKind.Erase then
-                            Some 1L
-                        else
-                            None
-                    OperationId = OperationIds.fresh ()
-                    CaseReference = reference
-                    ExpectedRevision = revision
-                    Act = act
-                }
-
             let inputs =
                 [
-                    Inputs.caseOperation (
-                        requestIds 470 "BOUNDARY" 0L (AuthoredCaseAct.Open registration)
-                    )
-                    OperationInput.People(
-                        peopleRequest
-                            (OperationIds.fresh ())
-                            target
-                            (PeopleAct.Register Inputs.actorProfile)
-                    )
+                    Submissions.createRaw
+                        "case.open"
+                        (OperationIds.fresh ())
+                        (OperationBinding.CaseNew 0L)
+                        (Submissions.fields (RegistrationInput.values registration)
+                         |> Map.add
+                             (Submissions.field BusinessField.CaseReference)
+                             (SubmissionValue.Text "BOUNDARY"))
+                    Submissions.createRaw
+                        "people.register"
+                        (OperationIds.fresh ())
+                        (OperationBinding.People(None, 0L))
+                        (Map.fold
+                            (fun values key value -> Map.add key value values)
+                            (Submissions.principal target)
+                            (Submissions.profile DomainInputs.actorProfile))
                 ]
 
             for input in inputs do
@@ -97,14 +95,13 @@ let tests =
                             database.Fixture.Owner
 
                     let! reply =
-                        (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
+                        (Service.executeSubmission core (input) (cancellation.Token))
+                        |> Async.AwaitTask
 
                     let! observed =
                         Service.operationGet
                             core
-                            {
-                                OperationId = OperationInput.operationId input
-                            }
+                            { OperationId = input.OperationId }
                             CancellationToken.None
                         |> Async.AwaitTask
 

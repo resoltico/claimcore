@@ -10,6 +10,10 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 
 let private principal () =
     for kind in [ PrincipalKind.Human; PrincipalKind.Service ] do

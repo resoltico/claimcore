@@ -78,7 +78,7 @@ it("renders supplied stage controls and follows its supplied query link", async 
     seeds: {},
     editable: [],
     choices: {},
-    primary: true,
+
     blocked: null,
   } as const;
   const onAction = vi.fn();
@@ -109,7 +109,7 @@ it("renders supplied stage controls and follows its supplied query link", async 
     />,
   );
   const button = screen.getByRole("button", { name: "Close the case" });
-  expect(button.classList.contains("primary")).toBe(true);
+  expect(button).toBeEnabled();
   await userEvent.setup().click(button);
   expect(onAction).toHaveBeenCalledExactlyOnceWith(action, undefined, expect.any(String));
   const link = screen.getByRole("link", { name: "Opened" });
@@ -145,7 +145,7 @@ it("keeps a supplied blocked stage action disabled", async () => {
                   seeds: {},
                   editable: [],
                   choices: {},
-                  primary: false,
+
                   blocked: {
                     action: "ASK_FOR_ACCESS",
                     message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },

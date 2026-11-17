@@ -12,8 +12,8 @@ import {
   useWorkspaceViews,
   WorkspaceViewsStatus,
 } from "../../../src/views/WorkspaceViews";
-import type { HumanReadDocument_work_views } from "@contracts/client";
-const result = (document: HumanReadDocument_work_views) => ({
+import type { HumanDocument } from "@contracts/client";
+const result = (document: HumanDocument) => ({
   kind: "outcome" as const,
   status: 200,
   value: {

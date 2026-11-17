@@ -1,3 +1,5 @@
+import { apiEndpoints } from "../../api/service";
+import { isOperationAffordance } from "../../operation/affordances";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { Actions } from "../../ui/regions/Actions";
 import type { CaseSelector, Affordance } from "@contracts/client";
@@ -33,7 +35,7 @@ export const SelectedReminder = ({
   onDisclosureRefused: () => void;
 }) => {
   const p = usePresentation();
-  const read = useEndpoint("reminder.get", { target, reminderId }, enabled, observation);
+  const read = useEndpoint(apiEndpoints.reminderGet, { target, reminderId }, enabled, observation);
   const notified = useRef(false);
   useEffect(() => {
     if (!enabled) {
@@ -50,7 +52,7 @@ export const SelectedReminder = ({
   }, [enabled, read.result, read.value, onDisclosureRefused]);
   const document = read.value?.outcome.kind === "SUCCEEDED" ? read.value.outcome.document : null;
   const onAction = (action: Affordance, originId?: string) => {
-    if (action.task !== "people.requests.dismiss") {
+    if (isOperationAffordance(action)) {
       onAct(action, originId);
     }
   };

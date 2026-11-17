@@ -128,14 +128,20 @@ module ResponseCodecs =
 
     let private historyAccess = VocabularyCodec.create HistoryAccess.vocabulary
 
-    let private peopleKind =
-        VocabularyCodec.select ((<>) PeopleActKind.ProvisionOwner) PeopleActKind.vocabulary
+    let private peopleKind = TaskVocabulary.forSubject ActSubject.People
+    let private maximumInstallationOffers = 1 + TaskVocabulary.count ActSubject.People
 
-    let private maximumInstallationOffers =
-        1
-        + (PeopleActKind.all
-           |> List.filter ((<>) PeopleActKind.ProvisionOwner)
-           |> List.length)
+    let private profileInput =
+        (record (fun name contact ->
+            {
+                ActorProfileInput.DisplayName = name
+                Contact = contact
+            })
+        : Fields<ActorProfileInput, _>)
+        |> field "displayName" _.DisplayName text
+        |> field "contact" _.Contact (nullable text)
+        |> build
+        |> named "ActorProfileInput"
 
     let private dateValue =
         date
@@ -157,15 +163,19 @@ module ResponseCodecs =
             (list
                 2
                 (VocabularyCodec.select
-                    (fun value -> List.contains value Amendment.actions)
+                    (fun value ->
+                        List.contains
+                            value
+                            (CorrectionGroupAction.actions RecordGroup.Registration))
                     CorrectionGroupAction.vocabulary))
         |> field
             "decision"
             _.Decision
             (list
-                Change.actions.Length
+                (CorrectionGroupAction.actions RecordGroup.Decision).Length
                 (VocabularyCodec.select
-                    (fun value -> List.contains value Change.actions)
+                    (fun value ->
+                        List.contains value (CorrectionGroupAction.actions RecordGroup.Decision))
                     CorrectionGroupAction.vocabulary))
         |> build
         |> named "CorrectionAdvice"
@@ -179,14 +189,14 @@ module ResponseCodecs =
     let private blockedCaseAct =
         (record (fun act reason ->
             {
-                CaseActRefusal.Act = act
+                CaseTaskRefusal.Act = act
                 Reason = reason
             })
-        : Fields<CaseActRefusal, _>)
-        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
+        : Fields<CaseTaskRefusal, _>)
+        |> field "act" _.Act (TaskVocabulary.forSubject ActSubject.Case)
         |> field "reason" _.Reason DiagnosticCodecs.caseActAvailability
         |> build
-        |> named "CaseActRefusal"
+        |> named "CaseTaskRefusal"
 
     let caseAdvice =
         record (fun acts correction history maintenance recommended blocked ->
@@ -194,7 +204,7 @@ module ResponseCodecs =
         |> field
             "acts"
             (fun (acts, _, _, _, _, _) -> acts)
-            (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
+            (list (TaskVocabulary.count ActSubject.Case) (TaskVocabulary.forSubject ActSubject.Case))
         |> optionalField
             "correction"
             (fun (_, correction, _, _, _, _) -> correction)
@@ -204,11 +214,11 @@ module ResponseCodecs =
         |> field
             "recommended"
             (fun (_, _, _, _, recommended, _) -> recommended)
-            (nullable (VocabularyCodec.create CaseActKind.vocabulary))
+            (nullable (TaskVocabulary.forSubject ActSubject.Case))
         |> field
             "blocked"
             (fun (_, _, _, _, _, blocked) -> blocked)
-            (list CaseActKind.all.Length blockedCaseAct)
+            (list (TaskVocabulary.count ActSubject.Case) blockedCaseAct)
         |> build
         |> interpret
             (fun path (acts, correction, history, maintenance, recommended, blocked) ->
@@ -222,41 +232,16 @@ module ResponseCodecs =
                 advice.Maintenance,
                 advice.Recommended,
                 advice.Blocked)
-        |> enumPartition (CaseActKind.all |> List.map CaseActKind.token) "acts" "blocked" "act"
+        |> enumPartition
+            (TaskVocabulary.all
+             |> List.filter (fun id ->
+                 (ClaimCore.Domain.Tasks.Registry.findDeclaration id |> Option.get).Target =
+                     ActSubject.Case)
+             |> List.map TaskId.token)
+            "acts"
+            "blocked"
+            "act"
         |> named "CaseAdvice"
-
-    let private disposition =
-        let reason =
-            text
-            |> interpret
-                (fun path raw ->
-                    Reason.parse raw
-                    |> Result.mapError (fun _ ->
-                        {
-                            Path = path
-                            Reason = "Invalid disposition reason."
-                        }))
-                Reason.format
-
-        tagged
-            "CaseDisposition"
-            [
-                variant
-                    (CaseActKind.token CaseActKind.Void)
-                    CaseDisposition.Voided
-                    (function
-                    | CaseDisposition.Voided reason -> Some reason
-                    | _ -> None)
-                    (record id |> field "reason" id reason)
-                variant
-                    (CaseActKind.token CaseActKind.Reinstate)
-                    CaseDisposition.Reinstated
-                    (function
-                    | CaseDisposition.Reinstated reason -> Some reason
-                    | _ -> None)
-                    (record id |> field "reason" id reason)
-            ]
-        |> Codec.vocabulary (Vocabulary.name CaseActKind.vocabulary)
 
     let caseView =
         (record
@@ -314,7 +299,7 @@ module ResponseCodecs =
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> field "stages" _.Stages CaseStageCodecs.display
-        |> field "disposition" _.Disposition (nullable disposition)
+        |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
         |> field
@@ -331,7 +316,7 @@ module ResponseCodecs =
         tagged
             "InstallationOffer"
             [
-                unitVariant (CaseActKind.token CaseActKind.Open) InstallationOffer.Open
+                unitVariant "case.open" InstallationOffer.Open
                 variant
                     "PEOPLE_ACT"
                     InstallationOffer.PeopleAct
@@ -638,6 +623,7 @@ module ResponseCodecs =
         (record (fun role scope at by ->
             {
                 GrantReadModel.Role = role
+                Controls = []
                 Scope = scope
                 GrantedAt = at
                 GrantedBy = by
@@ -655,6 +641,7 @@ module ResponseCodecs =
             {
                 Basis = basis
                 PeopleGrantPage.Actor = v0
+                Controls = []
                 Revision = revision
                 Offers = offers
                 ProfileSeed = seed
@@ -665,11 +652,8 @@ module ResponseCodecs =
         |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
         |> field "revision" _.Revision positiveRevision
-        |> field
-            "offers"
-            _.Offers
-            (list PeopleActKind.all.Length (VocabularyCodec.create PeopleActKind.vocabulary))
-        |> field "profileSeed" _.ProfileSeed (nullable CanonicalInputs.actorProfileInput)
+        |> field "offers" _.Offers (list (TaskVocabulary.count ActSubject.People) peopleKind)
+        |> field "profileSeed" _.ProfileSeed (nullable profileInput)
         |> field "items" _.Items (list 50 grantRead)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

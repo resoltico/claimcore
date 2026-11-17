@@ -19,14 +19,6 @@
     "text": "Color de acento establecido en {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "Cambio registrado",
-    "source": "595214b94033"
-  },
-  "ui.account": {
-    "text": "Cuenta",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actDescription": {
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
@@ -34,10 +26,6 @@
   "ui.actorRequestRetained": {
     "text": "Se conserva tu solicitud actual. Continúala o descártala antes de iniciar otra acción.",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "Añadir un rol",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "Después: {value}",
@@ -50,10 +38,6 @@
   "ui.appearance": {
     "text": "Apariencia",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "Cambio de acceso",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "Volver a los expedientes",
@@ -70,14 +54,6 @@
   "ui.canonicalCopyHint": {
     "text": "Copiar este valor.",
     "source": "8a31fb4c608d"
-  },
-  "ui.caseDetail": {
-    "text": "Detalle del expediente",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "Expedientes",
-    "source": "2249bd503ec4"
   },
   "ui.changeActDescription": {
     "text": "¿Descartar este borrador y elegir otra acción?",
@@ -98,10 +74,6 @@
   "ui.checkUnresolvedOperation": {
     "text": "Comprobar ahora",
     "source": "2937cffb37ab"
-  },
-  "ui.chooseRole": {
-    "text": "Elegir un rol",
-    "source": "a49c49b04c4d"
   },
   "ui.clearFilters": {
     "text": "Quitar los filtros",
@@ -130,10 +102,6 @@
   "ui.copyFallback": {
     "text": "Alternativa para copiar {label}",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "Elige qué hacer con cada grupo de datos.",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}: {name}",
@@ -206,18 +174,6 @@
   "ui.generalOperationLookup": {
     "text": "Consulta general de operaciones",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "Rol {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "Se muestran todos los roles.",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "Solo se muestran algunos roles.",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore envió una respuesta incompleta.",
@@ -303,10 +259,6 @@
     "text": "Cargar más expedientes",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "Más asignaciones",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "Cargar más actividad",
     "source": "e3f0587b4839"
@@ -323,29 +275,9 @@
     "text": "Mes siguiente",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "No hay personas que mostrar.",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "No hay expedientes que mostrar.",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "No hay actividad que mostrar.",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "No hay expedientes que coincidan con esta vista.",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "No hay cuentas aptas en esta página.",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noReminders": {
-    "text": "No hay recordatorios que coincidan con esta vista.",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "No hay vistas de trabajo disponibles.",
@@ -383,14 +315,6 @@
     "text": "{first} y {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "Persona",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "Roles",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "Las preferencias funcionan durante esta sesión, pero no se han podido guardar en este navegador.",
     "source": "861ebb38b269"
@@ -418,10 +342,6 @@
   "ui.pseudo": {
     "text": "Inglés ampliado (prueba de diseño)",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "Busca y continúa la tramitación de los expedientes que requieren atención.",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "Registrar {field} (opcional)",
@@ -475,10 +395,6 @@
     "text": "Volver a cargar el expediente actual",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "Volver a cargar las asignaciones",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "Recargar actividad",
     "source": "10d39b0ca399"
@@ -486,14 +402,6 @@
   "ui.reloadInterface": {
     "text": "Volver a cargar la interfaz",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "Aquí los filtros de vencimiento se aplican a cada recordatorio. Las listas de expedientes usan el recordatorio más próximo de cada expediente.",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "Eliminar el rol",
-    "source": "9a1fb81f279f"
   },
   "ui.retryExact": {
     "text": "Enviar de nuevo",
@@ -527,14 +435,6 @@
     "text": "De derecha a izquierda",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "No disponible para los expedientes seleccionados",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "No disponible para cuentas de servicio",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "Caracteres: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -566,10 +466,6 @@
   "ui.shell.checkNow": {
     "text": "Comprobar ahora",
     "source": "2937cffb37ab"
-  },
-  "ui.shell.people": {
-    "text": "Personas y acceso",
-    "source": "8df747cef67a"
   },
   "ui.shell.searchCases": {
     "text": "Buscar expedientes",
@@ -671,33 +567,13 @@
     "text": "Cargar más",
     "source": "ac8991ef0101"
   },
-  "ui.accessState.title": {
-    "text": "Aún no tienes acceso",
-    "source": "329f122dcf0f"
-  },
-  "ui.accessState.disabled": {
-    "text": "Esta cuenta está desactivada",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
-    "source": "fbdca8dba390"
-  },
   "ui.accessState.check": {
     "text": "Comprobar el acceso",
     "source": "abb9a172a69b"
   },
-  "ui.stage.recorded": {
-    "text": "Registrado",
-    "source": "c7175fa7a0db"
-  },
   "ui.stage.noDate": {
     "text": "Fecha no disponible",
     "source": "a0aa75ba71d2"
-  },
-  "ui.conflict.title": {
-    "text": "Este expediente ha cambiado",
-    "source": "ae4ec9da2e36"
   },
   "ui.conflict.kept": {
     "text": "Se conserva tu borrador. Revisa los cambios antes de prepararlo con respecto a la última versión.",
@@ -723,10 +599,6 @@
     "text": "Comprobado {when}.",
     "source": "e249af3ff82a"
   },
-  "ui.requests.empty": {
-    "text": "No hay solicitudes de acceso pendientes.",
-    "source": "f258e3645b02"
-  },
   "ui.requests.more": {
     "text": "Cargar más solicitudes de acceso",
     "source": "ffd6062030c9"
@@ -747,10 +619,6 @@
     "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
     "source": "fc1019052c76"
   },
-  "ui.changeDecision": {
-    "text": "Cambiar decisión",
-    "source": "a77099b9ff99"
-  },
   "ui.changeResponsible": {
     "text": "Cambiar",
     "source": "c0bf75bd78bf"
@@ -762,10 +630,6 @@
   "ui.editSummary": {
     "text": "Editar resumen",
     "source": "c04f3d9cb841"
-  },
-  "ui.noPayments": {
-    "text": "No hay asientos de pago registrados.",
-    "source": "131347633495"
   },
   "ui.moreNotes": {
     "text": "Más notas",
@@ -795,10 +659,6 @@
     "text": "Aquí solo se guarda la identidad del cambio. No se guardan los detalles del expediente ni la solicitud original.",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "Esta acción no está disponible actualmente para este expediente.",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "No disponible con los datos actuales.",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "Este elemento no está disponible.",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "Seleccionar expediente por",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "Más roles",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "Elige un expediente existente mediante su referencia o ID.",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "Volver a cargar roles",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "Se muestran todos los roles.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "Solo se muestran algunos roles.",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "Añadir un rol",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "Eliminar el rol",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "Rol {number}",
+    "source": "00fa69a81cab"
   }
 }

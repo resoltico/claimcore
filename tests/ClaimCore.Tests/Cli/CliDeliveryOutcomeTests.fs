@@ -14,7 +14,7 @@ open ClaimCore.Json
 open CliTransportFixture
 
 let private admittedReply invocation value =
-    CliReply.result invocation value |> Fixtures.accepted
+    CliReply.result invocation value |> CaseBuilders.accepted
 
 [<Tests>]
 let tests =
@@ -184,7 +184,9 @@ let tests =
                 Expect.equal (admittedReply request rejected).ExitCode 2 "Known business refusal")
             testCase "exact resend preserves frozen bytes" (fun () ->
                 let original = frame "operation.execute"
-                let resent = Frames.encodeInvocation original |> Frames.admit |> Fixtures.accepted
+
+                let resent =
+                    Frames.encodeInvocation original |> Frames.admit |> CaseBuilders.accepted
 
                 Expect.equal
                     (Frames.inputBytes resent)

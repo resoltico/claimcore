@@ -1,11 +1,6 @@
 import { prefixedInputs } from "../../support/submission-inputs";
 import { operationAffordance } from "../../support/affordances.fixtures";
-import type {
-  RequestByEndpoint,
-  HumanReadDocument_case_get,
-  HumanReview,
-  HumanReceiptDocument,
-} from "@contracts/client";
+import type { RequestByEndpoint, HumanDocument, HumanReview } from "@contracts/client";
 import { requestAddress, requestText } from "../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -22,7 +17,7 @@ const basis = {
     timeZone: "Etc/UTC",
   },
 } as const;
-const current: HumanReadDocument_case_get = {
+const current: HumanDocument = {
   screen: {
     regions: [],
   },
@@ -79,7 +74,7 @@ const review: HumanReview = {
     disclosure: "CURRENT",
   },
 };
-const receipt: HumanReceiptDocument = {
+const receipt: HumanDocument = {
   screen: {
     regions: [],
   },
@@ -230,7 +225,7 @@ it("keeps the selected revision until explicit rebase and retains the new basis 
                     actualRevision: 12,
                     advice: {
                       message: {
-                        messageId: "ui.conflict.title",
+                        messageId: "label.caseChanged",
                         arguments: [],
                       },
                       action: "REVIEW_LATEST",

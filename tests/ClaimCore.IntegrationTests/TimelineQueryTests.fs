@@ -4,6 +4,10 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -17,7 +21,7 @@ let private read =
     | other -> failtestf "Expected a readable timeline: %A" other
 
 let private execute owner input =
-    task { let! reply = Service.execute owner input token in return accepted reply }
+    task { let! reply = Service.executeSubmission owner input token in return accepted reply }
 
 [<Tests>]
 let tests =
@@ -37,7 +41,7 @@ let tests =
                     }
 
                 let facts =
-                    Inputs.registrationWith
+                    DomainInputs.registrationWith
                         [
                             BusinessField.ClaimedAmount, "1000"
                             BusinessField.ClaimedCurrency, "EUR"
@@ -47,14 +51,15 @@ let tests =
                 let! _ =
                     execute
                         owner
-                        (Inputs.caseOperation (
-                            StoreFixtures.request
-                                fixture
-                                99200
-                                "TIMELINE-API"
-                                0L
-                                (AuthoredCaseAct.Open facts)
-                        ))
+                        (((StoreFixtures.request
+                            (fixture)
+                            (99200)
+                            ("TIMELINE-API")
+                            (0L)
+                            "case.open"
+                            (ClaimCore.TestSupport.Submissions.fields (
+                                RegistrationInput.values (facts)
+                            )))))
 
                 let! empty =
                     Service.timeline
@@ -71,42 +76,29 @@ let tests =
                     HistoryDisclosure.Full
                     "An empty page retains an authoritative disclosure signal."
 
-                for number, act in
+                for number, taskName, selected, values in
                     [
                         99201,
-                        AuthoredReminderAct.Create
-                            {
-                                Action = "First action"
-                                Due = "2027-12-30"
-                            }
+                        "reminder.create",
+                        None,
+                        Submissions.reminderPlan "First action" "2027-12-30"
                         99202,
-                        AuthoredReminderAct.CompleteAndPlanNext(
-                            id fixture 99201,
-                            1L,
-                            {
-                                Action = "Next action"
-                                Due = "2027-12-31"
-                            }
-                        )
+                        "reminder.completeAndPlanNext",
+                        Some(id fixture 99201, 1L),
+                        Submissions.reminderPlan "Next action" "2027-12-31"
                         99203,
-                        AuthoredReminderAct.Update(
-                            id fixture 99202,
-                            1L,
-                            {
-                                Action = "Updated next action"
-                                Due = "2027-12-31"
-                            }
-                        )
+                        "reminder.update",
+                        Some(id fixture 99202, 1L),
+                        Submissions.reminderPlan "Updated next action" "2027-12-31"
                     ] do
                     let! _ =
                         execute
                             owner
-                            (OperationInput.Reminder
-                                {
-                                    OperationId = id fixture number
-                                    Target = target
-                                    Act = act
-                                })
+                            (Submissions.createRaw
+                                taskName
+                                (id fixture number)
+                                (OperationBinding.Reminder(target, selected))
+                                values)
 
                     ()
 
@@ -184,16 +176,16 @@ let tests =
                     PrincipalKey.human "https://issuer.example/" "timeline-reader"
                     |> Result.defaultWith (fun _ -> failtest "Principal fixture")
 
-                let! _ =
-                    execute
-                        owner
-                        (OperationInput.People(
-                            reviewedPeopleRequest
-                                fixture.Store
-                                (id fixture 99210)
-                                principal
-                                (PeopleAct.Register Inputs.actorProfile)
-                        ))
+                let! registration =
+                    personSubmission
+                        fixture.Store
+                        (id fixture 99210)
+                        principal
+                        None
+                        "people.register"
+                        (Submissions.profile DomainInputs.actorProfile)
+
+                let! _ = execute owner registration
 
                 let grantValue =
                     {
@@ -251,18 +243,19 @@ let tests =
                     let! _ =
                         execute
                             owner
-                            (OperationInput.Work
-                                {
-                                    OperationId = id fixture number
-                                    Target = target
-                                    ExpectedRevision = revision
-                                    Act =
-                                        WorkAct.UpdateWork
-                                            {
-                                                Responsible = responsibility
-                                                Summary = WorkValue.Keep
-                                            }
-                                })
+                            ((ClaimCore.TestSupport.Submissions.createRaw)
+                                "work.update"
+                                (id fixture number)
+                                (ClaimCore.Application.Contracts.OperationBinding.Work(
+                                    (target),
+                                    (revision)
+                                ))
+                                (ClaimCore.TestSupport.Submissions.work (
+                                    {
+                                        Responsible = responsibility
+                                        Summary = WorkValue.Keep
+                                    }
+                                )))
 
                     ()
 
@@ -280,16 +273,16 @@ let tests =
                     Expect.isNone difference.After "The latest work value is actually cleared"
                 | other -> failtestf "Unexpected responsibility difference: %A" other
 
-                let! disabled =
-                    execute
-                        owner
-                        (OperationInput.People(
-                            reviewedPeopleRequest
-                                fixture.Store
-                                (id fixture 99215)
-                                principal
-                                PeopleAct.Disable
-                        ))
+                let! disable =
+                    personSubmission
+                        fixture.Store
+                        (id fixture 99215)
+                        principal
+                        None
+                        "people.disable"
+                        Map.empty
+
+                let! disabled = execute owner disable
 
                 disabled |> ignore
                 let! denied = Service.timeline reader request token
@@ -310,14 +303,15 @@ let tests =
                 let! _ =
                     execute
                         owner
-                        (Inputs.caseOperation (
-                            StoreFixtures.request
-                                fixture
-                                99216
-                                "TIMELINE-API"
-                                1L
-                                (AuthoredCaseAct.AmendRegistration update)
-                        ))
+                        (((StoreFixtures.request
+                            (fixture)
+                            (99216)
+                            ("TIMELINE-API")
+                            (1L)
+                            "case.amendRegistration"
+                            (ClaimCore.TestSupport.Submissions.updates (
+                                RegistrationUpdateInput.values (update)
+                            )))))
 
                 let! money = Service.timeline owner request token
 
@@ -388,14 +382,13 @@ let tests =
                 let! _ =
                     execute
                         owner
-                        (Inputs.caseOperation (
-                            StoreFixtures.request
-                                fixture
-                                99219
-                                "TIMELINE-API"
-                                2L
-                                (AuthoredCaseAct.Bare BareAct.Erase)
-                        ))
+                        (((StoreFixtures.request
+                            (fixture)
+                            (99219)
+                            ("TIMELINE-API")
+                            (2L)
+                            "case.erase"
+                            (Map.empty))))
 
                 let! erased = Service.timeline owner { request with Limit = 50 } token
 

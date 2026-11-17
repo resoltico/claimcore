@@ -4,7 +4,12 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
@@ -24,7 +29,8 @@ let private read fixture action =
 
 let private operation fixture id =
     task {
-        let! result = read fixture (fun tx -> tx.FindOperation(CaseFixtures.operationId id))
+        let! result =
+            read fixture (fun tx -> LedgerReads.findOperation tx (CaseFixtures.operationId id))
 
         return
             result
@@ -32,11 +38,11 @@ let private operation fixture id =
             |> Option.defaultWith (fun () -> failtest "Accepted metadata is missing")
     }
 
-let private execute owner operation target act =
-    Service.execute
-        owner
-        (OperationInput.People(reviewedPeopleRequest owner.Store operation target act))
-        token
+let private execute (owner: ServiceContext) operation target taskName values =
+    task {
+        let! input = personSubmission owner.Store operation target (None) taskName values
+        return! Service.executeSubmission owner input token
+    }
 
 let private self owner =
     task {
@@ -61,7 +67,12 @@ let internal lifecycle fixture =
             }
 
         let! changed =
-            execute owner (id fixture 301) fixture.Owner (PeopleAct.SetProfile profile)
+            execute
+                (owner)
+                ((id fixture 301))
+                (fixture.Owner)
+                "people.setProfile"
+                (ClaimCore.TestSupport.Submissions.profile (profile))
 
         let changed = accepted changed
 
@@ -75,20 +86,25 @@ let internal lifecycle fixture =
 
         let! granted =
             execute
-                owner
-                (id fixture 302)
-                fixture.Owner
-                (PeopleAct.Grant
+                (owner)
+                ((id fixture 302))
+                (fixture.Owner)
+                "people.grant"
+                (ClaimCore.TestSupport.Submissions.grant (
                     {
                         Role = Role.Auditor
                         Scope = GrantTarget.Installation
-                    })
+                    }
+                ))
 
         accepted granted |> ignore
         let! identityBefore = operation fixture (id fixture 1)
         let! grantBefore = operation fixture (id fixture 302)
         let! profileBefore = operation fixture (id fixture 301)
-        let! erased = execute owner (id fixture 303) fixture.Owner PeopleAct.EraseProfile
+
+        let! erased =
+            execute (owner) ((id fixture 303)) (fixture.Owner) "people.eraseProfile" (Map.empty)
+
         let erased = accepted erased
 
         Expect.equal
@@ -104,20 +120,25 @@ let internal lifecycle fixture =
         let! profileAfter = operation fixture (id fixture 301)
 
         Expect.equal
-            identityAfter.Position
-            identityBefore.Position
+            identityAfter.Root.Position
+            identityBefore.Root.Position
             "Registration proof position is unchanged"
 
         Expect.equal
-            identityAfter.Root.Structure.Command
-            identityBefore.Root.Structure.Command
+            identityAfter.Root.Structure.Binding
+            identityBefore.Root.Structure.Binding
             "Registration identity remains live"
 
-        Expect.equal grantAfter.Root grantBefore.Root "Grant meaning remains live"
+        Expect.equal grantAfter.Root.Hash grantBefore.Root.Hash "Accepted grant proof remains live"
 
         Expect.equal
-            profileAfter.Position
-            profileBefore.Position
+            (grantAfter.Changes.Head.Value |> PartValue.clear)
+            (grantBefore.Changes.Head.Value |> PartValue.clear)
+            "Public grant meaning survives"
+
+        Expect.equal
+            profileAfter.Root.Position
+            profileBefore.Root.Position
             "Profile proof position is unchanged"
 
         Expect.isTrue
@@ -125,15 +146,12 @@ let internal lifecycle fixture =
              |> List.forall (Compartment.content >> Option.isNone))
             "Profile bytes and nonce are cleared together"
 
-        let validated =
-            LedgerEntries.validateOperation fixture.InstallationId identityAfter |> required
-
         Expect.isNone
-            (LedgerEntries.identityBytesOperation validated)
+            (OperationIntent.accepted identityAfter (fun _ -> None))
             "Erased registration profile prevents exact replay"
 
         let! replay =
-            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -144,7 +162,10 @@ let internal lifecycle fixture =
 
         match resolved.Outcome with
         | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) ->
-            Expect.equal receipt.Position profileBefore.Position "Lookup keeps accepted metadata"
+            Expect.equal
+                receipt.Position
+                profileBefore.Root.Position
+                "Lookup keeps accepted metadata"
         | other -> failtestf "Erasure keeps accepted metadata available: %A" other
 
         let replacement: ActorProfileInput =
@@ -154,7 +175,12 @@ let internal lifecycle fixture =
             }
 
         let! renamed =
-            execute owner (id fixture 304) fixture.Owner (PeopleAct.SetProfile replacement)
+            execute
+                (owner)
+                ((id fixture 304))
+                (fixture.Owner)
+                "people.setProfile"
+                (ClaimCore.TestSupport.Submissions.profile (replacement))
 
         accepted renamed |> ignore
 
@@ -164,20 +190,12 @@ let internal lifecycle fixture =
                     Work =
                         (fun tx ->
                             task {
-                                let! state = tx.PeopleState fixture.Owner
-                                let rows = state |> Option.bind PeopleSubject.rows |> Option.get
-
-                                do!
-                                    tx.ProjectPeople
-                                        { rows with
-                                            ProfileErasure =
-                                                Some(
-                                                    EffectPosition.create
-                                                        erased.Position.Sequence
-                                                        0
-                                                    |> Option.get
-                                                )
-                                        }
+                                let! _ =
+                                    DatabaseSession.execute
+                                        tx.Connection
+                                        "SELECT claimcore.clear_owner('PROFILE',$1)"
+                                        [| box (ActorId.value ownerId) |]
+                                        token
 
                                 return Verdict.Proceed()
                             })
@@ -204,7 +222,7 @@ let internal lifecycle fixture =
             "Later profile content survives"
 
         let! replay =
-            Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile [] token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -213,7 +231,8 @@ let internal lifecycle fixture =
 
         let! grants =
             read fixture (fun tx ->
-                tx.GrantPage
+                PeopleReads.grantPage
+                    tx
                     {
                         ActorId = ownerId
                         AfterGrant = None
@@ -240,33 +259,43 @@ let internal registrationIsolation fixture =
             }
 
         let! registered =
-            execute owner (id fixture 311) principal (PeopleAct.Register profile)
+            execute
+                (owner)
+                ((id fixture 311))
+                (principal)
+                "people.register"
+                (ClaimCore.TestSupport.Submissions.profile (profile))
 
         let receipt = accepted registered
         let! stored = operation fixture (id fixture 311)
 
         Expect.equal
             stored.Root.Structure.Effects.Length
-            2
-            "Registration has identity and profile effects"
+            1
+            "Registration has one accepting person part"
 
-        Expect.equal receipt.Position stored.Position "One root proves the complete registration"
+        Expect.equal
+            receipt.Position
+            stored.Root.Position
+            "One root proves the complete registration"
 
-        match stored.Root.Structure.Command, stored.Values with
-        | CommandSkeleton.People scope,
-          RetainedOperationValues.People(RetainedProfile.Available saved) ->
-            Expect.equal scope.Principal principal "Public identity remains exact"
+        Expect.equal
+            stored.Root.Structure.Task
+            (TaskId.ofLiteral "people.register")
+            "The task is retained"
 
-            match scope.Act with
-            | PeopleAct.Register ordinal ->
-                Expect.equal ordinal 0 "Registration references its profile compartment"
-            | _ -> failtest "Expected a registration command"
+        match stored.Changes.Head.Value with
+        | PartValue.Person {
+                               Principal = Some actual
+                               Profile = ProfileValue.Present(Some saved)
+                           } ->
+            Expect.equal actual principal "Public principal remains exact"
 
             Expect.equal
                 (ActorProfile.authored saved)
                 profile
                 "The profile compartment owns all private values"
-        | _ -> failtest "Expected complete registration values"
+        | _ -> failtest "Complete person registration required"
 
         Expect.equal
             stored.Root.Structure.Compartments.Length
@@ -315,93 +344,124 @@ let internal atomicWrites fixture =
         let target =
             PrincipalKey.human "https://issuer.example/" "rolled-back-profile" |> required
 
-        let fail operation principal act after =
-            let command =
-                People.parse (Inputs.peopleRequest operation principal act) |> required
-
+        let fail (submission: OperationSubmission) phase =
             fixture.Store.Write
                 {
-                    Work =
-                        (fun tx ->
-                            task {
-                                let! view =
-                                    ExecutionFacts.target
-                                        owner
-                                        tx
-                                        (People.factsNeeded command.Act)
-                                        command.OperationId
-                                        command.Target
-                                        []
-
-                                match
-                                    ClaimCore.TestSupport.StoreFixtures.executePeople
-                                        owner
-                                        command
-                                        {
-                                            Head = tx.Head
-
-                                            NewPayloadNonce = tx.NewPayloadNonce
-                                        }
-                                        view
-                                with
-                                | Verdict.Proceed(operation, rows, _) ->
-                                    do! tx.Append operation
-
-                                    let partial =
-                                        if after = 1 then
-                                            { rows with
-                                                Actor = { rows.Actor with Profile = None }
-                                                DisplayNameSearch = None
-                                                ContactSearch = None
-                                            }
-                                        else
-                                            rows
-
-                                    do! tx.ProjectPeople partial
-
-                                    return failwith "injected after people effect and projection"
-                                | other ->
-                                    return failtestf "Injection requires admitted work: %A" other
-                            })
                     CancellationToken = token
+                    Work =
+                        fun tx ->
+                            task {
+                                let selected =
+                                    ClaimCore.Domain.Tasks.Registry.find submission.Task
+                                    |> Option.get
+
+                                let input = Submissions.command submission
+
+                                let context =
+                                    {
+                                        DecisionContext.BusinessDate = None
+                                        ObservedAt = tx.ObservedAt
+                                        Principal = owner.Principal
+                                        Access = AccessView.empty
+                                        Maintenance = false
+                                        Lifetime = DecisionLifetime.Execution None
+                                    }
+
+                                let! prepared =
+                                    Engine.prepare
+                                        tx
+                                        tx.Head
+                                        context
+                                        selected
+                                        (CaseFixtures.operationId submission.OperationId)
+                                        input.Binding
+                                        input.Inputs
+
+                                let plan = prepared |> required
+
+                                let record =
+                                    RetainedOperation.create
+                                        plan.Header
+                                        submission.Task
+                                        plan.Binding
+                                        plan.Inputs
+                                        plan.Changes
+                                        tx.NewPayloadNonce
+                                    |> required
+
+                                do! tx.Append record
+
+                                let rows =
+                                    match plan.After with
+                                    | AggregateState.Person(Some person) ->
+                                        ProjectionRows.person person |> required
+                                    | _ -> failtest "Person plan required"
+
+                                if phase = 1 then
+                                    do! PartProjections.personIdentity tx.Connection rows token
+                                else
+                                    do! tx.ProjectPerson rows
+
+                                return
+                                    failwith
+                                        "injected after actual person append and projection phase"
+                            }
                 }
 
-        for operation, after in [ id fixture 321, 1; id fixture 322, 2 ] do
-            let! failed = fail operation target (PeopleAct.Register Inputs.actorProfile) after
+        for number, phase in [ 321, 1; 322, 2 ] do
+            let! input =
+                personSubmission
+                    fixture.Store
+                    (id fixture number)
+                    target
+                    (Some 0L)
+                    "people.register"
+                    (Submissions.profile DomainInputs.actorProfile)
+
+            let! failed = fail input phase
 
             Expect.equal
                 failed
                 (Error StoreFailure.Internal: Result<Verdict<unit>, StoreFailure>)
-                "Every partial or complete group rolls back on failure"
+                "Partial and complete person projection both roll back"
 
             let! existing =
-                read fixture (fun tx -> tx.FindOperation(CaseFixtures.operationId operation))
+                read fixture (fun tx ->
+                    LedgerReads.findOperation tx (CaseFixtures.operationId input.OperationId))
 
-            Expect.equal existing (Ok None) "No accepted root or effect remains"
-
-            let! actor = read fixture (fun tx -> tx.Access { Principal = target; CaseId = None })
-
-            Expect.isNone ((actor |> required).Actor) "No profile-less registration remains"
+            Expect.equal existing (Ok None) "No root or effect remains"
+            let! actor = read fixture (fun tx -> AccessReads.access tx target None)
+            Expect.isNone (actor |> required).Actor "No profile-less registration remains"
 
         let! original = operation fixture (id fixture 1)
-        let! failed = fail (id fixture 323) fixture.Owner PeopleAct.EraseProfile 1
+
+        let! erase =
+            personSubmission
+                fixture.Store
+                (id fixture 323)
+                fixture.Owner
+                None
+                "people.eraseProfile"
+                Map.empty
+
+        let! failed = fail erase 2
 
         Expect.equal
             failed
             (Error StoreFailure.Internal: Result<Verdict<unit>, StoreFailure>)
-            "Erasure projection participates in rollback"
+            "Private erasure participates in rollback"
 
         let! restored = operation fixture (id fixture 1)
 
         Expect.equal
             restored.Root
             original.Root
-            "Rollback restores profile bytes, nonce and proof metadata"
+            "Rollback restores private bytes, nonce and root metadata"
 
         let! current = self owner
 
         Expect.equal
             current.DisplayName
-            (DisplayName.Named(PartyName.parse Inputs.ownerProfile.DisplayName |> required))
-            "Rollback restores current profile projection"
+            (DisplayName.Named(PartyName.parse DomainInputs.ownerProfile.DisplayName |> required))
+            "Rollback restores the current profile"
     }

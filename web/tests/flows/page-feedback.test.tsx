@@ -5,15 +5,15 @@ import { render, screen } from "../support/presentation-test-support";
 import { PageStatus } from "../../src/components/PageStatus";
 it("an empty short nonterminal page never claims the end of visible scope", () => {
   const { rerender } = render(
-    <PageStatus empty cursor="synthetic-continuation" emptyMessage="ui.noAccessibleCases" />,
+    <PageStatus empty cursor="synthetic-continuation" emptyMessage="label.noCases" />,
   );
   expect(screen.getByText("No cases to show.")).toBeVisible();
   expect(screen.getByText("More results are available.")).toBeVisible();
   expect(screen.queryByText("All results shown.")).toBeNull();
-  rerender(<PageStatus empty cursor={null} emptyMessage="ui.noAccessibleCases" />);
+  rerender(<PageStatus empty cursor={null} emptyMessage="label.noCases" />);
   expect(screen.getByText("No cases to show.")).toBeVisible();
   expect(screen.queryByText("All results shown.")).toBeNull();
-  rerender(<PageStatus empty={false} cursor={null} emptyMessage="ui.noAccessibleCases" />);
+  rerender(<PageStatus empty={false} cursor={null} emptyMessage="label.noCases" />);
   expect(screen.getByText("All results shown.")).toBeVisible();
 });
 afterEach(() => {

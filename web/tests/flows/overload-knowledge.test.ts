@@ -1,6 +1,7 @@
+import { mutationUncertain } from "../../src/protocol/delivery";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { beforeEach, expect, it, vi } from "vitest";
-import { isMutationUncertain, service } from "../../src/api/service";
+import { service } from "../../src/api/service";
 import { operationId } from "../support/service-ui.fixtures";
 const overloaded = (executionPhase: string | null) =>
   new Response(
@@ -40,7 +41,7 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
     kind: "hostFailure",
     status: 429,
   });
-  expect(isMutationUncertain(refused)).toBe(false);
+  expect(mutationUncertain(refused)).toBe(false);
   fetch.mockResolvedValueOnce(overloaded(null));
   const invalid = await service.execute(
     prepareRequest("operation.execute", draft),
@@ -48,5 +49,5 @@ it("classifies verified overload as not started and refuses the old ambiguous bu
     "90000000-0000-4000-8000-000000000001",
   );
   expect(invalid.kind).toBe("deliveryFailure");
-  expect(isMutationUncertain(invalid)).toBe(true);
+  expect(mutationUncertain(invalid)).toBe(true);
 });

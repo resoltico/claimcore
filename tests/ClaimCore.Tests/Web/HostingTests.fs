@@ -9,6 +9,10 @@ open System
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server.Composition
 
 [<Tests>]
@@ -54,7 +58,7 @@ let tests =
             testCaseAsync
                 "shutdown preserves an admitted accepted result"
                 (async {
-                    let _, _, _, receipt = DecisionFixtures.created 490 "LIFETIME"
+                    let receipt = ClaimCore.TestSupport.ResponseExamples.receipt
 
                     let expected: ExecuteReply =
                         {
@@ -71,7 +75,7 @@ let tests =
                             (fun _ ->
                                 factoryCalls <- factoryCalls + 1
                                 ())
-                            DecisionFixtures.owner
+                            ReadFixtures.owner
                             action
 
                     let finish =

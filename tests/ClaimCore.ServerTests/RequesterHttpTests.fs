@@ -7,14 +7,27 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.TestServerFixture
 
 let private claimsReachContext () =
     task {
-        let installation = Guid.NewGuid()
-        let storage = HandlerStub.ScriptedStore(DateTimeOffset.UtcNow, None)
+        let! database = PostgresFixture.create ()
+
+        use _owned =
+            { new IDisposable with
+                member _.Dispose() = database.Fixture.Dispose()
+            }
+
+        let installation = database.Fixture.InstallationId
+
+        let storage =
+            HandlerStub.ScriptedStore(DateTimeOffset.UtcNow, None, reads = database.Fixture.Store)
 
         let calendar =
             { new IBusinessCalendar with

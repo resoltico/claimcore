@@ -1,4 +1,10 @@
-import { operationAffordance } from "../../../support/affordances.fixtures";
+import { allActions } from "../../../../src/operation/affordances";
+import {
+  withRecommendation,
+  operationAffordance,
+  requireOperationAffordance,
+} from "../../../support/affordances.fixtures";
+
 import type { RequestByEndpoint, HumanReview } from "@contracts/client";
 import { requestText } from "../../../support/transport-response.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
@@ -13,34 +19,37 @@ import { navigate } from "../../../../src/routing/navigation";
 import type { PersonDocument } from "../../../../src/protocol/types";
 const firstId = "00000000-0000-4000-8000-000000000001";
 const secondId = "00000000-0000-4000-8000-000000000002";
-const person = (actorId: string, _subject: string): PersonDocument => ({
-  screen: {
-    regions: [],
-  },
-  subject: { kind: "PERSON", actorId },
-  actions: [
-    operationAffordance(
-      "people.enable",
-      { kind: "PEOPLE", actorId, expectedRevision: 1 },
-      {},
-      undefined,
-      {},
-      true,
-    ),
-  ],
-  links: [],
-  history: null,
-  nextCursor: null,
-  basis: {
-    kind: "SNAPSHOT",
-    observation: {
-      observedAt: "2026-11-09T12:00:00.000000Z",
-      businessDate: "2026-11-09",
-      timeZone: "Etc/UTC",
+const person = (actorId: string, _subject: string): PersonDocument =>
+  withRecommendation(
+    {
+      screen: {
+        regions: [],
+      },
+      subject: { kind: "PERSON", actorId },
+      actions: [
+        operationAffordance(
+          "people.enable",
+          { kind: "PEOPLE", actorId, expectedRevision: 1 },
+          {},
+          undefined,
+          {},
+        ),
+      ],
+      links: [],
+      history: null,
+      nextCursor: null,
+      basis: {
+        kind: "SNAPSHOT",
+        observation: {
+          observedAt: "2026-11-09T12:00:00.000000Z",
+          businessDate: "2026-11-09",
+          timeZone: "Etc/UTC",
+        },
+      },
+      disclosure: "CURRENT",
     },
-  },
-  disclosure: "CURRENT",
-});
+    "people.enable",
+  );
 const first = person(firstId, "person-a");
 const second = person(secondId, "person-b");
 const fixture = () => {
@@ -167,7 +176,11 @@ it("keeps a retained request on person A until explicit discard consent binds th
   });
   await act(() =>
     Promise.try(() => {
-      f.target().begin(second.actions.find((action) => action.task === "people.enable")!);
+      f.target().begin(
+        requireOperationAffordance(
+          allActions(second).find((action) => action.task === "people.enable"),
+        ),
+      );
     }),
   );
   expect(f.target().model.pendingDiscard).toBe("people.enable");
@@ -195,43 +208,45 @@ it("uses the permitted profile seed rather than saved account presentation and i
     }),
   );
   expect(f.target().offered).toEqual([]);
-  const profile: PersonDocument = {
-    ...first,
-    screen: {
-      regions: [
-        {
-          role: "ACCOUNT",
-          content: {
-            kind: "ENTRIES",
-            entries: [
-              {
-                key: "actor",
-                labelId: "field.profile.displayName.label",
-                prominence: "PRIMARY",
-                value: {
-                  kind: "TEXT",
-                  value: "Saved read-only caption",
+  const profile: PersonDocument = withRecommendation(
+    {
+      ...first,
+      screen: {
+        regions: [
+          {
+            role: "ACCOUNT",
+            content: {
+              kind: "ENTRIES",
+              entries: [
+                {
+                  key: "actor",
+                  labelId: "field.profile.displayName.label",
+                  prominence: "PRIMARY",
+                  value: {
+                    kind: "TEXT",
+                    value: "Saved read-only caption",
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
-        },
+        ],
+      },
+      actions: [
+        operationAffordance(
+          "people.setProfile",
+          { kind: "PEOPLE", expectedRevision: 1, actorId: firstId },
+          {
+            "input:profile.displayName": "Core editable profile seed",
+            "input:profile.contact": "contact@example.test",
+          },
+          undefined,
+          {},
+        ),
       ],
     },
-    actions: [
-      operationAffordance(
-        "people.setProfile",
-        { kind: "PEOPLE", expectedRevision: 1, actorId: firstId },
-        {
-          "input:profile.displayName": "Core editable profile seed",
-          "input:profile.contact": "contact@example.test",
-        },
-        undefined,
-        {},
-        true,
-      ),
-    ],
-  };
+    "people.setProfile",
+  );
   await act(() =>
     Promise.try(() => {
       f.target().observe(profile);
@@ -239,7 +254,11 @@ it("uses the permitted profile seed rather than saved account presentation and i
   );
   await act(() =>
     Promise.try(() => {
-      f.target().begin(profile.actions.find((action) => action.task === "people.setProfile")!);
+      f.target().begin(
+        requireOperationAffordance(
+          allActions(profile).find((action) => action.task === "people.setProfile"),
+        ),
+      );
     }),
   );
   expect(f.target().model.values).toEqual({
@@ -256,19 +275,22 @@ it("uses the permitted profile seed rather than saved account presentation and i
 
 it("requires explicit latest review before replacing a People revision and keeps authored values without dispatch", async () => {
   const f = fixture();
-  const profile = (revision: number): PersonDocument => ({
-    ...first,
-    actions: [
-      operationAffordance(
-        "people.setProfile",
-        { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
-        { "input:profile.displayName": "Current saved name" },
-        undefined,
-        {},
-        true,
-      ),
-    ],
-  });
+  const profile = (revision: number): PersonDocument =>
+    withRecommendation(
+      {
+        ...first,
+        actions: [
+          operationAffordance(
+            "people.setProfile",
+            { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
+            { "input:profile.displayName": "Current saved name" },
+            undefined,
+            {},
+          ),
+        ],
+      },
+      "people.setProfile",
+    );
   await act(() =>
     Promise.try(() => {
       f.target().observe(profile(1));
@@ -307,19 +329,22 @@ it("requires explicit latest review before replacing a People revision and keeps
 
 it("does not let a late fresh-review response retarget authored work to another selected actor", async () => {
   const f = fixture();
-  const profile = (actorId: string, revision: number): PersonDocument => ({
-    ...person(actorId, "person"),
-    actions: [
-      operationAffordance(
-        "people.setProfile",
-        { kind: "PEOPLE", actorId, expectedRevision: revision },
-        { "input:profile.displayName": "Saved name" },
-        undefined,
-        {},
-        true,
-      ),
-    ],
-  });
+  const profile = (actorId: string, revision: number): PersonDocument =>
+    withRecommendation(
+      {
+        ...person(actorId, "person"),
+        actions: [
+          operationAffordance(
+            "people.setProfile",
+            { kind: "PEOPLE", actorId, expectedRevision: revision },
+            { "input:profile.displayName": "Saved name" },
+            undefined,
+            {},
+          ),
+        ],
+      },
+      "people.setProfile",
+    );
   await act(() =>
     Promise.try(() => {
       f.target().observe(profile(firstId, 1));
@@ -361,24 +386,27 @@ it.each([
   "fresh explicit review keeps a noneditable grant target and advances only its reviewed binding: %j",
   async (selection) => {
     const f = fixture();
-    const profile = (revision: number): PersonDocument => ({
-      ...first,
-      actions: [
-        operationAffordance("people.revoke", {
-          kind: "PEOPLE",
-          actorId: firstId,
-          expectedRevision: revision,
-        }),
-        operationAffordance(
-          "people.revoke",
-          { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
-          { "input:role": "CASE_READER", ...selection },
-          [],
-          {},
-          true,
-        ),
-      ],
-    });
+    const profile = (revision: number): PersonDocument =>
+      withRecommendation(
+        {
+          ...first,
+          actions: [
+            operationAffordance(
+              "people.revoke",
+              { kind: "PEOPLE", actorId: firstId, expectedRevision: revision },
+              { "input:role": "CASE_READER", ...selection },
+              [],
+              {},
+            ),
+            operationAffordance("people.revoke", {
+              kind: "PEOPLE",
+              actorId: firstId,
+              expectedRevision: revision,
+            }),
+          ],
+        },
+        "people.revoke",
+      );
     await act(() =>
       Promise.try(() => {
         f.target().observe(profile(1));

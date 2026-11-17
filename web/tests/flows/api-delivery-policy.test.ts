@@ -1,6 +1,7 @@
+import { mutationUncertain } from "../../src/protocol/delivery";
 import { prepareRequest } from "../../src/protocol/preparedRequest";
 import { it, expect, vi, afterEach } from "vitest";
-import { service, isMutationUncertain } from "../../src/api/service";
+import { service } from "../../src/api/service";
 afterEach(() => vi.unstubAllGlobals());
 it("fetch never follows redirects and dispatched delivery loss remains uncertain", async () => {
   vi.stubGlobal(
@@ -21,7 +22,7 @@ it("fetch never follows redirects and dispatched delivery loss remains uncertain
     "csrf",
     "90000000-0000-4000-8000-000000000001",
   );
-  expect(isMutationUncertain(result)).toBe(true);
+  expect(mutationUncertain(result)).toBe(true);
   expect(vi.mocked(fetch).mock.calls[0]?.[1]).toMatchObject({
     redirect: "error",
     credentials: "same-origin",

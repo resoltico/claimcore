@@ -1,20 +1,39 @@
-import type {
-  Affordance,
-  HumanDocument,
-  OperationTaskId,
-  OperationTaskDefinition,
+import {
+  type Affordance,
+  type HumanDocument,
+  type OperationTaskId,
+  type OperationTaskDefinition,
+  type OperationSubmission,
+  taskDefinitions,
 } from "@contracts/client";
+
 import { operationTask } from "../protocol/taskCatalog";
 import type { FormValue, FormValues } from "../protocol/forms";
-export type OperationAffordance = Extract<Affordance, { task: OperationTaskId }>;
+export type OperationAffordance = Affordance & {
+  readonly task: OperationTaskId;
+  readonly binding: OperationSubmission["binding"];
+};
+export type BoundOperationAffordance<K extends OperationSubmission["binding"]["kind"]> =
+  OperationAffordance & {
+    readonly binding: Extract<OperationSubmission["binding"], { kind: K }>;
+  };
+export const isOperationAffordance = (action: Affordance): action is OperationAffordance =>
+  taskDefinitions.some((task) => task.id === action.task && task.kind === "OPERATION") &&
+  "kind" in action.binding;
+export const hasOperationBinding = <K extends OperationSubmission["binding"]["kind"]>(
+  action: Affordance,
+  kind: K,
+): action is BoundOperationAffordance<K> =>
+  isOperationAffordance(action) && action.binding.kind === kind;
 export const operationActions = (actions: ReadonlyArray<Affordance>) =>
-  actions.filter(
-    (action): action is OperationAffordance => action.task !== "people.requests.dismiss",
-  );
-export const allActions = (document: HumanDocument): ReadonlyArray<Affordance> => [
+  actions.filter(isOperationAffordance);
+export const documentActions = (document: HumanDocument): ReadonlyArray<Affordance> => [
+  ...document.screen.regions.flatMap((region) => region.actions ?? []),
   ...document.actions,
+];
+export const allActions = (document: HumanDocument): ReadonlyArray<Affordance> => [
+  ...documentActions(document),
   ...document.screen.regions.flatMap((region) => [
-    ...(region.actions ?? []),
     ...(region.content.kind === "TABLE"
       ? region.content.rows.flatMap((row) => row.actions ?? [])
       : []),
@@ -30,23 +49,14 @@ const seedValues = (
   action: OperationAffordance,
   declaration: OperationTaskDefinition,
 ): FormValues => {
-  // Core owns the closed per-task seed map; this adapter only gives collection rows local identities.
-  const seeds = action.seeds as Readonly<Record<string, FormValue | ReadonlyArray<FormValues>>>;
-  const values: Record<string, FormValue> = {};
-  for (const input of declaration.inputs) {
-    if (Object.hasOwn(seeds, input.id)) {
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Scalar declarations select scalar Core seeds.
-      values[input.id] = seeds[input.id] as FormValue;
-    }
-  }
+  const values: Record<string, FormValue> = { ...action.seeds };
   for (const collection of declaration.collections) {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Core collection seeds are closed row maps.
-    const rows = seeds[collection.input] as ReadonlyArray<FormValues> | undefined;
     values[collection.id] = {
       kind: "COLLECTION",
-      rows: (rows ?? Array.from({ length: collection.minimumRows }, () => ({}))).map(
-        (rowValues) => ({ key: crypto.randomUUID(), values: rowValues }),
-      ),
+      rows: Array.from({ length: collection.minimumRows }, () => ({
+        key: crypto.randomUUID(),
+        values: { ...collection.defaults },
+      })),
     };
   }
   return values;
@@ -59,13 +69,10 @@ export const initialCollectionRow = (
   if (action === undefined) {
     return {};
   }
-  const value = seedValues(action, operationTask(action.task))[collectionId];
-  return typeof value === "object" &&
-    value !== null &&
-    "kind" in value &&
-    value.kind === "COLLECTION"
-    ? (value.rows[0]?.values ?? {})
-    : {};
+  const collection = operationTask(action.task).collections.find(
+    (candidate) => candidate.id === collectionId,
+  );
+  return collection === undefined ? {} : { ...collection.defaults };
 };
 /** Acquire seeds without activating editable UPDATE inputs; those seeds are display hints. */
 export const initialAffordanceSeeds = (action: OperationAffordance): FormValues => {

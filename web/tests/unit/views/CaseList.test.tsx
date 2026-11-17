@@ -4,12 +4,12 @@ import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { CaseList } from "../../../src/views/CaseList";
 import { navigate } from "../../../src/routing/navigation";
-import type { HumanReadDocument_case_list } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { humanReadHttpReply as response } from "../../support/human-read-reply.fixtures";
 import { endpointResponse } from "../../support/transport-response.fixtures";
 // The list unit exercises page advice and cursors; summary loading is covered by SummaryBand's own tests.
 vi.mock("../../../src/views/worklist/SummaryBand", () => ({ SummaryBand: () => null }));
-const listed: HumanReadDocument_case_list = {
+const listed: HumanDocument = {
   screen: {
     regions: [
       {

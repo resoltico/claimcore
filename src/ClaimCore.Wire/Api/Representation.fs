@@ -54,7 +54,7 @@ module RepresentationReply =
         | RepresentationReply.Data value -> data value
 
 module RepresentationCodecs =
-    let reply name human data =
+    let private representedReply name humanName human data =
         Codec.choice
             name
             [
@@ -67,7 +67,7 @@ module RepresentationCodecs =
                      |> Codec.withLiteral
                          "representation"
                          (Representation.token Representation.Human)
-                     |> Codec.named (name + ".HUMAN"))
+                     |> Codec.named humanName)
                 Codec.branch
                     RepresentationReply.Data
                     (function
@@ -79,3 +79,9 @@ module RepresentationCodecs =
                          (Representation.token Representation.Data)
                      |> Codec.named (name + ".DATA"))
             ]
+
+    let reply name human data =
+        representedReply name (name + ".HUMAN") human data
+
+    let readReply name human data =
+        representedReply name "HumanReadReply" human data

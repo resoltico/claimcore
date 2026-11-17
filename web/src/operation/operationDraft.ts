@@ -1,9 +1,10 @@
-import { grantScope, grantTarget, withGrantTarget, isGrantTarget } from "./grantTargetDraft";
+import { grantFields, grantTarget, withGrantTarget, isGrantTarget } from "./grantTargetDraft";
 import type { OperationAffordance } from "./affordances";
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
-import { roleAdmitted } from "./roleAvailability";
+import { inputChoiceAllowed } from "./inputChoices";
+import { operationEntry, type OperationSelection } from "../protocol/operationCatalog";
 import type { OperationAction, OperationDraft } from "./operationTypes";
-import type { OperationSelection } from "../protocol/operationCatalog";
+
 import type { FormValue, FormValues } from "../protocol/forms";
 import type { OwnerScope } from "../protocol/ownerScope";
 import type { OperationBinding } from "@contracts/client";
@@ -39,10 +40,9 @@ export const createDraft = (
   owner: OwnerScope | null,
   affordance: OperationAffordance | null,
 ): OperationDraft => {
-  const values =
-    entry.subject === "PEOPLE" && ["people.grant", "people.revoke"].includes(entry.kind)
-      ? withGrantTarget(authored, grantTarget(authored))
-      : { ...authored };
+  const values = operationEntry(entry).inputs.some((input) => input.id === "input:scope")
+    ? withGrantTarget(authored, grantTarget(authored))
+    : { ...authored };
   return {
     owner,
     affordance,
@@ -58,22 +58,17 @@ export const createDraft = (
 };
 
 type Edit = Extract<OperationAction, { type: "EDIT" }>;
-const clearsRoleSelection = (draft: OperationDraft, action: Edit): boolean => {
-  if (
-    draft.entry.subject !== "PEOPLE" ||
-    draft.entry.kind !== "people.grant" ||
-    (action.path !== "input:principal.kind" && action.path !== "input:scope")
-  ) {
-    return false;
-  }
-  const values = { ...draft.values, [action.path]: action.value };
-  const role = values["input:role"];
-  const principal = values["input:principal.kind"];
-  const scope = grantScope(values);
-  return (
-    typeof role === "string" &&
-    typeof principal === "string" &&
-    !roleAdmitted(role, principal, typeof scope === "string" ? scope : undefined)
+const invalidatedChoices = (draft: OperationDraft, action: Edit): FormValues => {
+  const values = grantFields(editGrantInput(draft.values, action.path, action.value));
+  return Object.fromEntries(
+    operationEntry(draft.entry).inputs.flatMap((input) => {
+      const selected = values[input.id];
+      return typeof selected === "string" &&
+        input.choicesWhen.some((rule) => rule.input === action.path) &&
+        !inputChoiceAllowed(input, selected, values)
+        ? [[input.id, ""]]
+        : [];
+    }),
   );
 };
 export const editDraft = (draft: OperationDraft, action: Edit): OperationDraft => {
@@ -89,7 +84,7 @@ export const editDraft = (draft: OperationDraft, action: Edit): OperationDraft =
       ...(draft.entry.subject === "PEOPLE"
         ? editGrantInput(draft.values, action.path, action.value)
         : { ...draft.values, [action.path]: action.value }),
-      ...(clearsRoleSelection(draft, action) ? { "input:role": "" } : {}),
+      ...invalidatedChoices(draft, action),
     },
   };
 };

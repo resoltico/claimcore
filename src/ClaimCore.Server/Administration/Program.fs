@@ -9,12 +9,14 @@ open ClaimCore.Presentation
 
 open System
 open ClaimCore.Application
-open ClaimCore.Postgres
+open ClaimCore.Application.Administration
+open ClaimCore.Application
+open ClaimCore.Application.Administration
 open ClaimCore.HostSecurity
 
 let main arguments =
     use _diagnostics = ClaimCore.Server.StorageFailureLog.attach Console.Error
-    use _correlation = StorageDiagnostics.correlate (Guid.NewGuid())
+    use _correlation = ClaimCore.Application.Runtime.correlate (Guid.NewGuid())
     use lifetime = new ClaimCore.Server.ProcessLifetime()
 
     let bytes, code, deliveryUnknown =

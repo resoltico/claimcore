@@ -143,15 +143,18 @@ let tests =
                 (fun () ->
                     let operation kind =
                         CommandGrammar.operations
-                        |> List.find (fun operation ->
-                            TaskRouting.act operation = Some(ActKind.Case kind))
+                        |> List.find (fun operation -> TaskRouting.act operation = Some kind)
 
                     Expect.isFalse
-                        ((CommandGrammar.synopsis (operation CaseActKind.Open)).Contains "--clear-")
+                        ((CommandGrammar.synopsis (operation (TaskId.ofLiteral "case.open")))
+                            .Contains
+                            "--clear-")
                         "OPEN offers no clears"
 
                     Expect.stringContains
-                        (CommandGrammar.synopsis (operation CaseActKind.AmendRegistration))
+                        (CommandGrammar.synopsis (
+                            operation (TaskId.ofLiteral "case.amendRegistration")
+                        ))
                         "--clear-incident-description"
                         "Updates retain explicit clearing"
 
@@ -205,15 +208,13 @@ let suggestionScope =
 
 [<Tests>]
 let historyTraversal =
-    testCase
-        "CLI history help does not advertise traversal the people CSV path cannot perform"
-        (fun () ->
-            let code, help = inspect [ "people"; "history"; "--help" ]
-            Expect.equal code 0 "People history has grammar-derived help"
+    testCase "CLI history help advertises its declared traversal capability" (fun () ->
+        let code, help = inspect [ "people"; "history"; "--help" ]
+        Expect.equal code 0 "People history has grammar-derived help"
 
-            Expect.isFalse
-                (help.Contains "--all")
-                "The current people exporter returns one page with a cursor")
+        Expect.isTrue
+            (help.Contains "--all")
+            "The common pager traverses the declared people history pages")
 
 [<Tests>]
 let assignedLanguage =

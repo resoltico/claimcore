@@ -1,3 +1,4 @@
+import { apiEndpoints } from "../../api/service";
 import {
   taskChoices,
   type CaseTimelineRequest,
@@ -17,7 +18,7 @@ import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import {} from "./timeline.css";
-const select = (reply: HumanResponseByEndpoint["case.timeline"]) => {
+const select = (reply: HumanResponseByEndpoint[typeof apiEndpoints.caseTimeline]) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -89,12 +90,11 @@ export const CaseTimeline = ({
     }),
     [targetKind, targetValue, filter],
   );
-  const result = useEndpointPage<"case.timeline", RegionTimelineEntry, TimelinePage>(
-    "case.timeline",
-    input,
-    select,
-    onDisclosureChanged,
-  );
+  const result = useEndpointPage<
+    typeof apiEndpoints.caseTimeline,
+    RegionTimelineEntry,
+    TimelinePage
+  >(apiEndpoints.caseTimeline, input, select, onDisclosureChanged);
   const suppressed = useTimelineDisclosure(result.page, disclosure, result.loading, result.load);
 
   return (

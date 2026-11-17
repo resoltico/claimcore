@@ -4,10 +4,17 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
+open ClaimCore.Domain.Aggregates
 open ClaimCore.Application
+open ClaimCore.Application.Administration
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
-open ClaimCore.Postgres
+open ClaimCore.Application
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
@@ -23,11 +30,11 @@ let private runtime () =
         let service = core fixture fixture.Owner
 
         let bootstrap =
-            PeopleOperations.provisionStore
+            Service.provisionOwner
                 service
                 (id fixture 1)
-                Inputs.ownerProfile
-                People.initialOwnerRoles
+                DomainInputs.ownerProfile
+                ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
                 token
             |> sync
 
@@ -36,11 +43,17 @@ let private runtime () =
         | other -> failtestf "Bootstrap required: %A" other
 
         let opened =
-            Service.execute
+            Service.executeSubmission
                 service
-                (Inputs.caseOperation (
-                    actRequest fixture 2 "ROOT-READ" 0L (AuthoredCaseAct.Open registration)
-                ))
+                (((request
+                    (fixture)
+                    (2)
+                    ("ROOT-READ")
+                    (0L)
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values (registration)
+                    )))))
                 token
             |> sync
             |> accepted
@@ -48,7 +61,7 @@ let private runtime () =
         Expect.equal
             opened.Position.Sequence
             (Sequence.create 2L |> Option.get)
-            "Bootstrap six effects consume one operation position"
+            "Bootstrap person part consumes one operation position"
 
         let caseId = (caseReceipt opened).CaseId
 
@@ -63,7 +76,8 @@ let private runtime () =
 
         let first =
             read (fun tx ->
-                tx.PeopleHistoryPage
+                PeopleReads.peopleHistoryPage
+                    tx
                     {
                         TargetActorId = None
                         BeforePosition = None
@@ -72,31 +86,23 @@ let private runtime () =
 
         Expect.equal
             (first.Items |> List.map _.Index)
-            [ 5; 4 ]
-            "Descending effect ordinals within bootstrap"
+            [ 0 ]
+            "Bootstrap has one person part containing every initial role"
 
-        let second =
-            read (fun tx ->
-                tx.PeopleHistoryPage
-                    {
-                        TargetActorId = None
-                        BeforePosition = first.Next
-                        Limit = 2
-                    })
+        Expect.isNone first.Next "The complete bootstrap fits in one part"
 
-        Expect.equal
-            (second.Items |> List.map _.Index)
-            [ 3; 2 ]
-            "Continuation includes remaining effects of same root"
-
-        Expect.equal
-            first.Items.Head.OperationId
-            second.Items.Head.OperationId
-            "One owning operation"
+        match first.Items.Head.Change.Value with
+        | PartValue.Person person ->
+            Expect.equal
+                person.Grants.Length
+                5
+                "All explicit initial assignments are retained in that part"
+        | _ -> failtest "Bootstrap person part required"
 
         let timeline =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -112,7 +118,8 @@ let private runtime () =
             opened.OperationId
             "Timeline binds actual retained root"
 
-        let retained = read (fun tx -> tx.FindOperation opened.OperationId) |> Option.get
+        let retained =
+            read (fun tx -> LedgerReads.findOperation tx opened.OperationId) |> Option.get
 
         Expect.equal
             retained.Root.Hash
@@ -122,37 +129,39 @@ let private runtime () =
         let target = CaseSelector.Id caseId
 
         let execute input =
-            Service.execute service input token |> sync |> accepted
+            Service.executeSubmission service input token |> sync |> accepted
 
         execute (
-            OperationInput.Work
-                {
-                    OperationId = id fixture 3
-                    Target = target
-                    ExpectedRevision = 0L
-                    Act =
-                        WorkAct.UpdateWork
-                            {
-                                Responsible = WorkValue.Keep
-                                Summary = WorkValue.Set "Root summary"
-                            }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "work.update"
+                (id fixture 3)
+                (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                (ClaimCore.TestSupport.Submissions.work (
+                    {
+                        Responsible = WorkValue.Keep
+                        Summary = WorkValue.Set "Root summary"
+                    }
+                ))
         )
         |> ignore
 
         execute (
-            OperationInput.Note
-                {
-                    OperationId = id fixture 4
-                    Target = target
-                    Act = AuthoredNoteAct.AddNote "Root note"
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "note.add"
+                (id fixture 4)
+                (ClaimCore.Application.Contracts.OperationBinding.Note((target), None))
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.NoteText,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text("Root note")
+                    ])
         )
         |> ignore
 
         let notes =
             read (fun tx ->
-                tx.NotePage
+                NoteReads.notePage
+                    tx
                     {
                         CaseId = caseId
                         Before = None
@@ -172,33 +181,30 @@ let private runtime () =
                 .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
 
         execute (
-            OperationInput.Reminder
-                {
-                    OperationId = id fixture 5
-                    Target = target
-                    Act = AuthoredReminderAct.Create { Action = "First reminder"; Due = due }
-                }
+            (ClaimCore.TestSupport.Submissions.createRaw)
+                "reminder.create"
+                (id fixture 5)
+                (ClaimCore.Application.Contracts.OperationBinding.Reminder((target), None))
+                (ClaimCore.TestSupport.Submissions.reminderPlan ("First reminder") (due))
         )
         |> ignore
 
         let compound =
             execute (
-                OperationInput.Reminder
-                    {
-                        OperationId = id fixture 6
-                        Target = target
-                        Act =
-                            AuthoredReminderAct.CompleteAndPlanNext(
-                                id fixture 5,
-                                1L,
-                                { Action = "Next reminder"; Due = due }
-                            )
-                    }
+                (ClaimCore.TestSupport.Submissions.createRaw)
+                    "reminder.completeAndPlanNext"
+                    (id fixture 6)
+                    (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                        (target),
+                        Some((id fixture 5), (1L))
+                    ))
+                    (ClaimCore.TestSupport.Submissions.reminderPlan ("Next reminder") (due))
             )
 
         let compoundPage =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -211,7 +217,8 @@ let private runtime () =
 
         let primaryPage =
             read (fun tx ->
-                tx.TimelinePage
+                LedgerReads.timelinePage
+                    tx
                     {
                         CaseId = caseId
                         Filter = None
@@ -227,7 +234,7 @@ let private runtime () =
             compound.OperationId
             "Both effects bind one root"
 
-        let predecessors = read (fun tx -> tx.PreviousEntries primaryPage.Items)
+        let predecessors = read (fun tx -> LedgerReads.previousEntries tx primaryPage.Items)
 
         Expect.equal
             predecessors.Count
@@ -236,12 +243,14 @@ let private runtime () =
 
         let finalReceipt =
             execute (
-                OperationInput.Note
-                    {
-                        OperationId = id fixture 7
-                        Target = target
-                        Act = AuthoredNoteAct.RemoveNote(id fixture 4)
-                    }
+                (ClaimCore.TestSupport.Submissions.createRaw)
+                    "note.remove"
+                    (id fixture 7)
+                    (ClaimCore.Application.Contracts.OperationBinding.Note(
+                        (target),
+                        Some((id fixture 4))
+                    ))
+                    (Map.empty)
             )
 
         use administration =
@@ -263,7 +272,7 @@ let private runtime () =
 
         DatabaseSession.execute
             ownerConnection
-            "UPDATE claimcore.grants SET granted_effect_index=0 WHERE role='CASE_HANDLER'"
+            "UPDATE claimcore.grants SET granted_sequence=2,granted_effect_index=0 WHERE role='CASE_HANDLER'"
             [||]
             token
         |> sync
@@ -274,7 +283,7 @@ let private runtime () =
             Expect.equal
                 finding.Finding
                 VerificationFinding.PeopleProjection
-                "Wrong effect ordinal is detected independently of valid source FK"
+                "Wrong accepting part is detected independently of valid source FK"
         | other -> failtestf "Poisoned grant provenance must diverge: %A" other
 
         administration.Maintenance(MaintenanceChange.On, token) |> sync |> ignore
@@ -326,81 +335,119 @@ let private profileReplayBeforeAdmission () =
         let target = ActorId.ofOperationId (CaseFixtures.operationId (id fixture 1))
 
         let acceptedRoot =
-            DatabaseSession.transaction
-                database.RuntimeSource
-                System.Data.IsolationLevel.ReadCommitted
-                token
-                (fun connection transaction ->
-                    task {
-                        let! head, observed = Transactions.head connection token
+            fixture.Store.Write
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! before = AggregateStorage.principal tx fixture.Owner
+                                let person = before |> Option.get
 
-                        let header =
-                            {
-                                OperationHeader.InstallationId = fixture.InstallationId
-                                Sequence = Sequence.successor head.Sequence
-                                PreviousHash = head.EntryHash
-                                OperationId = identity
-                                ActorId = target
-                                RecordedAt = observed
-                                BusinessDate = None
-                            }
-                        // Accepted historical input deliberately differs from current authoring policy.
-                        let retained =
-                            RetainedOperation.create
-                                header
-                                (CommandSkeleton.People
+                                let header =
                                     {
-                                        ExpectedRevision = Revision.first
-                                        TargetActorId = target
-                                        Principal = fixture.Owner
-                                        Act = PeopleAct.SetProfile 0
-                                    })
-                                (OperationValues.People { Profile = Some profile })
-                                (fun () -> Security.Cryptography.RandomNumberGenerator.GetBytes 32)
-                            |> Result.defaultWith (fun error -> failtestf "%A" error)
+                                        OperationHeader.InstallationId = fixture.InstallationId
+                                        Sequence = Sequence.successor tx.Head.Sequence
+                                        PreviousHash = tx.Head.EntryHash
+                                        OperationId = identity
+                                        ActorId = target
+                                        RecordedAt = tx.ObservedAt
+                                        BusinessDate = None
+                                    }
 
-                        let! before = PeopleStateStorage.load connection fixture.Owner token
-                        let! _ = OperationStorage.append connection retained.Root token
-                        let person = before.Value
+                                let change =
+                                    {
+                                        PartChange.Aggregate = AggregateReference.Person target
+                                        PartId = ActorId.value target
+                                        Revision = Revision.successor person.Revision
+                                        NaturalKey = None
+                                        Value =
+                                            PartValue.Person
+                                                {
+                                                    Principal = None
+                                                    Enabled = person.Actor.Enabled
+                                                    Grants = []
+                                                    Profile = ProfileValue.Present(Some profile)
+                                                }
+                                        Erases = None
+                                        Stamp =
+                                            {
+                                                Position =
+                                                    EffectPosition.create header.Sequence 0
+                                                    |> Option.get
+                                                OperationId = identity
+                                                RecordedAt = tx.ObservedAt
+                                                ActorId = target
+                                            }
+                                    }
 
-                        let rows =
-                            PeopleSubject.rows
-                                { person with
-                                    Revision = Revision.successor person.Revision
-                                    Actor =
-                                        { person.Actor with
-                                            Profile = Some profile
-                                        }
-                                    ProfileErasure = None
-                                }
-                            |> Option.get
+                                let inputs =
+                                    InputMap.create
+                                        (Map.ofList
+                                            [
+                                                Submissions.input InputTarget.ProfileDisplayName,
+                                                InputValue.Text input.DisplayName
+                                                Submissions.input InputTarget.ProfileContact,
+                                                InputValue.Text input.Contact.Value
+                                            ])
+                                        Map.empty
+                                    |> Option.get
 
-                        do! Persistence.people connection rows token
+                                let retained =
+                                    RetainedOperation.create
+                                        header
+                                        (TaskId.ofLiteral "people.setProfile")
+                                        (Binding.People(target, Revision.first))
+                                        inputs
+                                        [ change ]
+                                        tx.NewPayloadNonce
+                                    |> Result.defaultWith (fun error -> failtestf "%A" error)
 
-                        do! DatabaseSession.commit transaction token
-                        return retained
-                    })
+                                do! tx.Append retained
+
+                                let after =
+                                    Person.apply (Some person) change
+                                    |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+                                let rows =
+                                    ProjectionRows.person after
+                                    |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+                                do! tx.ProjectPerson rows
+                                return Verdict.Proceed retained
+                            }
+                    CancellationToken = token
+                }
+            |> sync
+            |> Result.defaultWith (fun error -> failtestf "Historical profile setup: %A" error)
+            |> function
+                | Verdict.Proceed retained -> retained
+                | other -> failtestf "Historical profile setup verdict: %A" other
+
+        let execute operation expected =
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (service).Store
+                        (operation)
+                        (fixture.Owner)
+                        (Some expected)
+                        "people.setProfile"
+                        (ClaimCore.TestSupport.Submissions.profile (input))
+
+                return! Service.executeSubmission (service) submission (token)
+            })
             |> sync
 
-        let execute operation =
-            Service.execute
-                service
-                (OperationInput.People(
-                    Inputs.peopleRequest operation fixture.Owner (PeopleAct.SetProfile input)
-                ))
-                token
-            |> sync
-
-        let replayed = execute raw |> replayReceipt
+        let replayed = execute raw 1L |> replayReceipt
 
         Expect.equal
             replayed.OperationId
             identity
             "Exact accepted retry precedes current profile admission"
 
-        Expect.equal replayed.Position acceptedRoot.Position "Replay retains original proof"
+        Expect.equal replayed.Position acceptedRoot.Root.Position "Replay retains original proof"
 
-        match (execute (Guid.CreateVersion7())).Outcome with
+        match (execute (Guid.CreateVersion7()) 2L).Outcome with
         | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
             Expect.equal
                 (InputIssues.toList issues |> List.map _.Target)
@@ -416,7 +463,7 @@ let private profileReplayBeforeAdmission () =
 
         Expect.equal
             (administration.Head token |> sync |> _.Position)
-            acceptedRoot.Position
+            acceptedRoot.Root.Position
             "Refusal does not append"
 
         match administration.Verify(None, token) |> sync with

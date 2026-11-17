@@ -5,8 +5,15 @@ import type {
   RequestByEndpoint,
   HumanDocument,
 } from "@contracts/client";
-import type { PresentedPage, ServiceResponse } from "../api/service";
-import { requestEndpoint } from "../api/service";
+import {
+  type PresentedPage,
+  type ServiceResponse,
+  requestEndpoint,
+  resultNotice,
+  type ApiResult,
+  type EndpointOutcome,
+} from "../api/service";
+
 import { useEndpointCache } from "./EndpointProvider";
 import { endpointCacheKey, typedResult, type EndpointCache } from "./endpointCache";
 import { useCredential, useSessionContext } from "../session/SessionContext";
@@ -19,9 +26,10 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
+
 import { isDisclosureRefused } from "../api/outcomes";
 
 type Page<T> = {

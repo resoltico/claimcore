@@ -83,6 +83,9 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseReadsSettled(page);
   const receipt = outcome.document;
+  if (receipt.subject.kind !== "RECEIPT") {
+    throw new Error("Receipt subject required");
+  }
   const subject = await acceptedSubject(
     page,
     receipt.subject.operationId,
@@ -204,7 +207,7 @@ export const showCaseActionMenu = async (page: Page): Promise<void> => {
 /** Reveal a Core-offered case action and check its complete localized accessible name. */
 export const caseActionButton = async (
   page: Page,
-  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   language: Language,
 ) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -244,7 +247,7 @@ export const caseActionButton = async (
 };
 export const startAct = async (
   page: Page,
-  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   language: Language,
 ): Promise<void> => {
   await (
@@ -308,7 +311,7 @@ const submit = async (page: Page): Promise<void> => {
 /** Complete an English case form; localized action-only callers use startAct with their language. */
 export const completeAct = async (
   page: Page,
-  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["act"],
+  kind: Extract<OperationTaskDefinition, { subject: "CASE" }>["id"],
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
   await startAct(page, kind, "en");

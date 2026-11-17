@@ -1,6 +1,10 @@
+import { hasStaticMessage } from "../presentation/messages";
+import { apiEndpoints, type CaseLinkedReceipt, type ServiceResponse } from "../api/service";
+import { hasDocumentSubject, type RequesterDocument } from "../protocol/types";
 import { InlineNoteDraftProvider, InlineNoteRecovery } from "./case/InlineNoteDraft";
 import { LinkNavigationContext } from "../routing/LinkNavigationContext";
-import type { Link, HumanReadDocument_context, TaskId } from "@contracts/client";
+import type { Link, TaskId, Region, Screen } from "@contracts/client";
+
 import type { OwnerScope } from "../protocol/ownerScope";
 import { isDisclosureRefused } from "../api/outcomes";
 import { ObservedReceipt } from "./operation/ObservedReceipt";
@@ -25,7 +29,7 @@ import { RecoveryBanner } from "./RecoveryBanner";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { CaseLinkedReceipt, ServiceResponse } from "../api/service";
+
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -56,11 +60,11 @@ const availableRoute = (
     case "recovery":
       return true;
     case "people":
-      return views.includes("people.list");
+      return views.includes(apiEndpoints.peopleList);
     case "peopleHistory":
-      return tasks.includes("people.history");
+      return tasks.includes(apiEndpoints.peopleHistory);
     case "cases":
-      return views.includes("case.list");
+      return views.includes(apiEndpoints.caseList);
   }
 };
 /** Only default entry chooses an area. Explicit deep links retain their URL and refusal state. */
@@ -74,10 +78,10 @@ const useInitialAllowedRoute = (
       return;
     }
     let initial = "/settings";
-    if (views.includes("people.list")) {
+    if (views.includes(apiEndpoints.peopleList)) {
       initial = "/people";
     }
-    if (views.includes("case.list")) {
+    if (views.includes(apiEndpoints.caseList)) {
       initial = "/cases";
     }
     navigate(initial, true);
@@ -174,7 +178,11 @@ const useRouteHeading = (route: Route, owner: string | null, ready: boolean) => 
   }, [identity, ready]);
   return content;
 };
-const WorkspaceStatus = ({ context }: { context: ReturnType<typeof useEndpoint<"context">> }) => {
+const WorkspaceStatus = ({
+  context,
+}: {
+  context: ReturnType<typeof useEndpoint<typeof apiEndpoints.context>>;
+}) => {
   const p = usePresentation();
   return (
     <>
@@ -190,7 +198,7 @@ const WorkspaceStatus = ({ context }: { context: ReturnType<typeof useEndpoint<"
     </>
   );
 };
-const AcceptedToast = ({
+const AcceptedReceipt = ({
   route,
   receipt,
   close,
@@ -209,17 +217,55 @@ const AcceptedToast = ({
     return null;
   }
   return (
-    <section className="success-toast receipt" aria-label={p.text("ui.acceptedOperation")}>
+    <section className="accepted-receipt receipt" aria-label={p.text("label.recordedChange")}>
+      <div className="accepted-receipt-actions">
+        <button type="button" onClick={close}>
+          {p.text("ui.close")}
+        </button>
+      </div>
       <ObservedReceipt key={receipt.operationId} operationId={receipt.operationId} />
-      <button type="button" onClick={close}>
-        {p.text("ui.close")}
-      </button>
     </section>
   );
 };
-const succeededRequester = (response: ServiceResponse<"context"> | null) =>
-  response?.outcome.kind === "SUCCEEDED" ? response.outcome.document : null;
-const workspaceRequester = (context: ReturnType<typeof useEndpoint<"context">>) => {
+const succeededRequester = (response: ServiceResponse<typeof apiEndpoints.context> | null) =>
+  response?.outcome.kind === "SUCCEEDED" &&
+  hasDocumentSubject(response.outcome.document, "REQUESTER")
+    ? response.outcome.document
+    : null;
+/** An unreachable refresh retains static Core guidance while removing caller facts and controls. */
+const requesterGuidance = (requester: RequesterDocument): Screen => ({
+  regions: requester.screen.regions.flatMap<Region>((region) => {
+    if (
+      region.role === "IDENTITY" &&
+      region.titleId !== undefined &&
+      hasStaticMessage(region.titleId)
+    ) {
+      return [
+        { role: "IDENTITY", titleId: region.titleId, content: { kind: "ENTRIES", entries: [] } },
+      ];
+    }
+    if (
+      region.role === "NOTICE" &&
+      region.content.kind === "NOTICE" &&
+      hasStaticMessage(region.content.messageId)
+    ) {
+      return [
+        {
+          role: "NOTICE",
+          content: {
+            kind: "NOTICE",
+            messageId: region.content.messageId,
+            tone: region.content.tone,
+          },
+        },
+      ];
+    }
+    return [];
+  }),
+});
+const workspaceRequester = (
+  context: ReturnType<typeof useEndpoint<typeof apiEndpoints.context>>,
+) => {
   const observed = succeededRequester(context.value);
   const previous = succeededRequester(context.previous);
   const unreachable =
@@ -229,12 +275,12 @@ const workspaceRequester = (context: ReturnType<typeof useEndpoint<"context">>) 
   const requester =
     observed ??
     ((context.loading || unreachable) && previous !== null && !isActiveRequester(previous)
-      ? { ...previous, screen: { regions: [] } }
+      ? { ...previous, screen: requesterGuidance(previous), actions: [], links: [] }
       : null);
   return requester;
 };
 const useWorkspaceAccess = (route: Route) => {
-  const context = useEndpoint("context", {});
+  const context = useEndpoint(apiEndpoints.context, {});
   const requester = workspaceRequester(context);
   const presentation = requester?.screen ?? null;
   const actorContext = requester !== null && isActiveRequester(requester) ? requester : null;
@@ -249,16 +295,16 @@ const useWorkspaceAccess = (route: Route) => {
 };
 const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   const p = usePresentation();
-  let title = p.text("ui.cases");
+  let title = p.text("label.cases");
   if (route.screen === "recovery") {
     title = p.text("ui.operationLookup");
   }
   if (route.screen === "case") {
-    title = p.text("ui.caseDetail");
+    title = p.text("label.caseDetail");
   } else if (route.screen === "peopleHistory") {
     title = p.text("endpoint.people.history.label");
   } else if (route.screen === "people") {
-    title = p.text("ui.shell.people");
+    title = p.text("view.PEOPLE.label");
   }
   return (
     <section>
@@ -334,9 +380,9 @@ const WorkspaceArea = ({
     >
       <RoutedContent
         {...routing}
-        peopleAvailable={views.includes("people.list")}
-        caseAvailable={views.includes("case.list")}
-        caseAuthoringAvailable={views.includes("case.list") || checking}
+        peopleAvailable={views.includes(apiEndpoints.peopleList)}
+        caseAvailable={views.includes(apiEndpoints.caseList)}
+        caseAuthoringAvailable={views.includes(apiEndpoints.caseList) || checking}
       />
     </WorkspaceContents>
   );
@@ -350,7 +396,7 @@ type WorkspaceOwner = OwnerScope & { credential: string };
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (
   owner: WorkspaceOwner | null,
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
   refused: boolean,
 ) => {
   const [accepted, setAccepted] = useState<{
@@ -361,7 +407,9 @@ const useAcceptanceFeedback = (
     owner !== null &&
     requester !== null &&
     isActiveRequester(requester) &&
-    requester.links.some((named) => named.rel === "VIEW" && named.link.endpoint === "case.list") &&
+    requester.links.some(
+      (named) => named.rel === "VIEW" && named.link.endpoint === apiEndpoints.caseList,
+    ) &&
     requester.subject.actorId === owner.actorId &&
     requester.subject.installationId === owner.installationId;
   const denied = refused || (requester !== null && !available);
@@ -431,7 +479,7 @@ const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
 };
 /** Retain local consent only for the same verified actor and authenticated session. */
 const retainInactiveWorkspace = (
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
   owner: WorkspaceOwner | null,
   session: SessionState,
 ) => {
@@ -461,7 +509,7 @@ const WorkspacePresence = ({
   feedback,
   children,
 }: {
-  inactive: HumanReadDocument_context | null;
+  inactive: RequesterDocument | null;
   retained: boolean;
   locked: boolean;
   onCheck: () => void;
@@ -483,7 +531,7 @@ const WorkspacePresence = ({
 const matchingLockOwner = (
   owner: WorkspaceOwner | null,
   session: SessionState,
-  requester: HumanReadDocument_context | null,
+  requester: RequesterDocument | null,
 ): WorkspaceOwner | null => {
   if (
     owner === null ||
@@ -566,7 +614,7 @@ export const Dashboard = () => {
                   locked={locked}
                 />
                 <main className="app-shell">
-                  <AcceptedToast
+                  <AcceptedReceipt
                     route={route}
                     receipt={feedback.receipt}
                     close={() => {

@@ -1,6 +1,7 @@
-import { operationAffordance } from "../support/affordances.fixtures";
+import { withRecommendation, operationAffordance } from "../support/affordances.fixtures";
+
 import { humanReadReply } from "../support/human-read-reply.fixtures";
-import type { HumanReadDocument_people_grants } from "@contracts/client";
+import type { HumanDocument } from "@contracts/client";
 import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { workBasis } from "../support/inputs";
 import {
@@ -31,7 +32,11 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.document.subject.state !== "ACTIVE") {
+  if (
+    value.outcome.kind !== "SUCCEEDED" ||
+    value.outcome.document.subject.kind !== "REQUESTER" ||
+    value.outcome.document.subject.state !== "ACTIVE"
+  ) {
     throw new Error("Missing context fixture");
   }
   return {
@@ -60,50 +65,52 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
     },
   };
 };
-const existing: HumanReadDocument_people_grants = {
-  screen: {
-    regions: [
-      {
-        role: "ACCOUNT",
-        content: {
-          kind: "ENTRIES",
-          entries: [
-            {
-              key: "actor",
-              labelId: "field.profile.displayName.label",
-              prominence: "PRIMARY",
-              value: {
-                kind: "ACTOR",
+const existing: HumanDocument = withRecommendation(
+  {
+    screen: {
+      regions: [
+        {
+          role: "ACCOUNT",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "actor",
+                labelId: "field.profile.displayName.label",
+                prominence: "PRIMARY",
                 value: {
-                  actorId: "10000000-0000-4000-8000-000000000001",
-                  displayName: { kind: "NAMED", value: "Synthetic existing person" },
-                  principalKind: "HUMAN",
-                  availability: "AVAILABLE",
+                  kind: "ACTOR",
+                  value: {
+                    actorId: "10000000-0000-4000-8000-000000000001",
+                    displayName: { kind: "NAMED", value: "Synthetic existing person" },
+                    principalKind: "HUMAN",
+                    availability: "AVAILABLE",
+                  },
                 },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
+      ],
+    },
+    subject: { kind: "PERSON", actorId: "10000000-0000-4000-8000-000000000001" },
+    actions: [
+      operationAffordance(
+        "people.disable",
+        { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000001" },
+        {},
+        undefined,
+        {},
+      ),
     ],
+    links: [],
+    history: null,
+    nextCursor: null,
+    basis: { kind: "SNAPSHOT", observation: workBasis },
+    disclosure: "CURRENT",
   },
-  subject: { kind: "PERSON", actorId: "10000000-0000-4000-8000-000000000001" },
-  actions: [
-    operationAffordance(
-      "people.disable",
-      { kind: "PEOPLE", expectedRevision: 1, actorId: "10000000-0000-4000-8000-000000000001" },
-      {},
-      undefined,
-      {},
-      true,
-    ),
-  ],
-  links: [],
-  history: null,
-  nextCursor: null,
-  basis: { kind: "SNAPSHOT", observation: workBasis },
-  disclosure: "CURRENT",
-};
+  "people.disable",
+);
 const listing = (): ApiResult<ServiceResponse<"people.list">> => ({
   kind: "outcome",
   status: 200,

@@ -1,19 +1,30 @@
-import type { Affordance, Principal, RegionRow } from "@contracts/client";
-import type { OperationAffordance } from "../../operation/affordances";
+import { renderCatalogKey } from "../../presentation/messages";
+import { assembleCommand } from "../../operation/taskForm";
+import {
+  taskDefinitions,
+  type Affordance,
+  type RegionRow,
+  type TaskDefinition,
+  type HumanDocument,
+} from "@contracts/client";
+import { operationTask } from "../../protocol/taskCatalog";
+import {
+  apiEndpoints,
+  requestEndpoint,
+  resultNotice,
+  type ServiceResponse,
+} from "../../api/service";
+import { isOperationAffordance, type OperationAffordance } from "../../operation/affordances";
+
 import { ScreenView } from "../../ui/ScreenView";
 import type { PresentedPage } from "../../protocol/types";
 import { pageItemIndex } from "../../ui/PageTables";
 import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type AccessRequestControl = Extract<OperationAffordance, { task: "people.admit" }>;
-type DismissControl = Extract<Affordance, { task: "people.requests.dismiss" }>;
-const requestPrincipal = (action: AccessRequestControl | DismissControl): Principal => ({
-  kind: action.seeds["input:principal.kind"]!,
-  issuer: action.seeds["input:principal.issuer"]!,
-  subject: action.seeds["input:principal.subject"]!,
-});
-import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
+export type AccessRequestControl = OperationAffordance;
+type DismissControl = Affordance;
+
 import { isDisclosureRefused } from "../../api/outcomes";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { useCredential, useSessionContext } from "../../session/SessionContext";
@@ -32,7 +43,7 @@ type Props = {
   onDisclosureRefused: (notice?: Notice) => void;
 };
 const input = (cursor: string | null) => ({ limit: 50, ...(cursor === null ? {} : { cursor }) });
-const select = (reply: ServiceResponse<"people.requests">) => {
+const select = (reply: ServiceResponse<typeof apiEndpoints.peopleRequests>) => {
   if (reply.outcome.kind !== "SUCCEEDED") {
     return null;
   }
@@ -53,13 +64,13 @@ const select = (reply: ServiceResponse<"people.requests">) => {
 type RequestPage = NonNullable<ReturnType<typeof select>>;
 const RequestFeedback = ({
   loading,
-  dismissed,
+  completion,
   message,
   notice,
   empty,
 }: {
   loading: boolean;
-  dismissed: boolean;
+  completion: HumanDocument | null;
   message: Notice | null;
   notice: Notice | null;
   empty: boolean;
@@ -68,7 +79,14 @@ const RequestFeedback = ({
   return (
     <>
       {loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {dismissed ? <p role="status">{p.text("endpoint.people.requests.dismiss.done")}</p> : null}
+      {completion === null ? null : (
+        <ScreenView
+          view={completion.screen}
+          timeZone={
+            completion.basis.kind === "SNAPSHOT" ? completion.basis.observation.timeZone : "UTC"
+          }
+        />
+      )}
       {message === null ? null : (
         <p role="alert">
           <NoticeView value={message} />
@@ -80,7 +98,7 @@ const RequestFeedback = ({
         </p>
       )}
       {!loading && message === null && notice === null && empty ? (
-        <p>{p.text("ui.requests.empty")}</p>
+        <p>{p.text("label.noAccessRequests")}</p>
       ) : null}
     </>
   );
@@ -95,11 +113,12 @@ const AvailableRequests = ({
   const credential = useCredential();
   const [selected, setSelected] = useState<{
     control: DismissControl;
+    definition: Extract<TaskDefinition, { kind: "COMMAND" }>;
     row: RegionRow;
     view: PresentedPage;
   } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [completion, setCompletion] = useState<HumanDocument | null>(null);
   const [pending, setPending] = useState(false);
   const [refused, setRefused] = useState(false);
   const controller = useRef<AbortController | null>(null);
@@ -109,13 +128,14 @@ const AvailableRequests = ({
       controller.current = null;
       setPending(false);
       setSelected(null);
+      setCompletion(null);
       setRefused(true);
       onDisclosureRefused(message);
     },
     [onDisclosureRefused],
   );
-  const page = useEndpointPage<"people.requests", RegionRow, RequestPage>(
-    "people.requests",
+  const page = useEndpointPage<typeof apiEndpoints.peopleRequests, RegionRow, RequestPage>(
+    apiEndpoints.peopleRequests,
     input,
     select,
     refuseDisclosure,
@@ -125,14 +145,19 @@ const AvailableRequests = ({
     if (busy || selected === null || controller.current !== null) {
       return;
     }
+    const command = assembleCommand(selected.control);
+    if (command === null) {
+      setNotice({ kind: "local", reason: "incomplete" });
+      return;
+    }
     const current = new AbortController();
     controller.current = current;
     setPending(true);
     setNotice(null);
     const result = await requestEndpoint(
-      "people.requests.dismiss",
+      command.endpoint,
       credential,
-      requestPrincipal(selected.control),
+      command.input,
       current.signal,
     );
     if (current.signal.aborted) {
@@ -144,7 +169,7 @@ const AvailableRequests = ({
       refuseDisclosure(resultNotice(result));
     } else if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
       setSelected(null);
-      setDismissed(true);
+      setCompletion(result.value.outcome.document);
       await page.load(null);
     } else {
       setNotice(resultNotice(result));
@@ -155,13 +180,15 @@ const AvailableRequests = ({
   if (refused) {
     return null;
   }
+  const commandText = (part: "labelId" | "meaningId") =>
+    renderCatalogKey(p, selected?.definition[part] ?? "label.accessRequest");
   const disabled = busy || pending;
   return (
     <section className="access-requests" aria-labelledby="access-requests-title">
       <h2 id="access-requests-title">{p.text("endpoint.people.requests.label")}</h2>
       <RequestFeedback
         loading={page.loading}
-        dismissed={dismissed}
+        completion={completion}
         message={page.message}
         notice={notice}
         empty={page.page !== null && page.cursor === null && page.items.length === 0}
@@ -176,13 +203,18 @@ const AvailableRequests = ({
             if (disabled) {
               return;
             }
-            if (action.task === "people.admit" && mayAdmit) {
+            if (isOperationAffordance(action) && operationTask(action.task).creates && mayAdmit) {
               onAdmit(action);
             }
-            if (action.task === "people.requests.dismiss" && row !== undefined) {
-              setDismissed(false);
+            const definition = taskDefinitions.find(
+              (task): task is Extract<TaskDefinition, { kind: "COMMAND" }> =>
+                task.id === action.task && task.kind === "COMMAND",
+            );
+            if (definition !== undefined && row !== undefined) {
+              setCompletion(null);
               setSelected({
                 control: action,
+                definition,
                 row,
                 view: { view: observed.screen, basis: observed.basis },
               });
@@ -219,8 +251,8 @@ const AvailableRequests = ({
         </p>
       )}
       <Dialog
-        title={p.text("endpoint.people.requests.dismiss.label")}
-        description={p.text("endpoint.people.requests.dismiss.meaning")}
+        title={commandText("labelId")}
+        description={commandText("meaningId")}
         closeLabel={p.text("ui.close")}
         isOpen={selected !== null}
         isDismissable={!pending}
@@ -247,7 +279,7 @@ const AvailableRequests = ({
                 void dismiss();
               }}
             >
-              {p.text("endpoint.people.requests.dismiss.label")}
+              {commandText("labelId")}
             </Button>
           </>
         }

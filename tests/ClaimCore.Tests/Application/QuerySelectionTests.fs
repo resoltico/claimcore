@@ -4,12 +4,17 @@ open ClaimCore.TestSupport
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.TestSupport.StoreFixtures
-open ClaimCore.Tests.DecisionFixtures
+open ClaimCore.Tests.ReadFixtures
 
 
 let private peopleAndCursor () =
@@ -27,7 +32,7 @@ let private peopleAndCursor () =
         (Queries.selectCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            Inputs.workBasis
+            DomainInputs.workBasis
             (ClaimCore.TestSupport.Inputs.caseListPage (page))
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
@@ -130,48 +135,59 @@ let private peopleAndCursor () =
     Expect.isFalse (Access.validActor owner AccessView.empty) "Absent actor has no context"
 
 let private history () =
-    let _, entry, _, _ = created 460 "QUERY-HISTORY"
+    let current = current ()
 
     let reader = actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseReader ] []
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            reader
-            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        (Engine.canObserve owner reader (AggregateReference.Person(CaseFixtures.actorId (id 1))))
         "Case rights cannot observe people entries"
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner reader (LedgerEntries.primary entry).Subject)
+        (Engine.canObserve owner reader (AggregateReference.Family current.CaseId))
         "Case rights observe accepted case metadata"
 
 let private resources () =
-    let _, _, current, _ = created 461 "QUERY-PRIVATE"
+    let current = current ()
     let revoked = actor owner ((CaseFixtures.actorId (id 1))) [ Role.Owner ] []
-    let read = (locked revoked (Some current) None).Read
+
+    let read: CaseReadFacts =
+        {
+            ObservedAt = instant
+            Maintenance = RegisterMaintenance.initial
+            Actor = revoked
+            Case = Some current
+            FamilySequence = Sequence.first
+        }
+    // An unavailable read must refuse before touching its transaction.
+    let tx = Unchecked.defaultof<ReadTx>
     let expected = Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     Expect.equal
         (Queries.caseResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
+            tx
             read
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay current.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-            [])
+            []
+         |> fun pending -> pending.GetAwaiter().GetResult())
         expected
         "Inaccessible live case"
 
     Expect.equal
         (Queries.caseResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
+            tx
             { read with Case = None }
             (Inputs.workView current.Snapshot.State)
-            (Inputs.stageDisplay current.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay current.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-            [])
+            []
+         |> fun pending -> pending.GetAwaiter().GetResult())
         expected
         "Absent case is indistinguishable"
 
@@ -185,13 +201,15 @@ let private resources () =
 
     Expect.equal
         (Queries.caseResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
+            tx
             { read with Case = Some erased }
             (Inputs.workView erased.Snapshot.State)
-            (Inputs.stageDisplay erased.Snapshot.State)
-            Inputs.workBasis.ObservedAt
+            (DomainInputs.stageDisplay erased.Snapshot.State)
+            DomainInputs.workBasis.ObservedAt
             ClaimCore.TestSupport.ResponseExamples.caseRead.RecordedBy
-            [])
+            []
+         |> fun pending -> pending.GetAwaiter().GetResult())
         expected
         "Erased beyond view is indistinguishable"
 
@@ -202,7 +220,7 @@ let private context () =
 
     match
         Queries.contextResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
             view
@@ -226,7 +244,7 @@ let private context () =
 
     match
         Queries.contextResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
             AccessView.empty
@@ -250,7 +268,7 @@ let private context () =
 
     match
         Queries.contextResult
-            (DecisionFixtures.services installation calendar owner)
+            (ReadFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
             disabled
@@ -265,20 +283,17 @@ let private context () =
             "Disabled context identifies only its caller"
     | other -> failtestf "Disabled caller needs own requester state: %A" other
 
-    let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
+    let current = current ()
 
     let scoped =
         actor owner ((CaseFixtures.actorId (id 1))) [] [ current.CaseId, [ Role.Auditor ] ]
 
     Expect.isTrue
-        (LedgerEntries.canObserve owner scoped (LedgerEntries.primary entry).Subject)
+        (Engine.canObserve owner scoped (AggregateReference.Family current.CaseId))
         "Scoped auditor reads its case metadata"
 
     Expect.isFalse
-        (LedgerEntries.canObserve
-            owner
-            scoped
-            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        (Engine.canObserve owner scoped (AggregateReference.Person(CaseFixtures.actorId (id 1))))
         "Scoped auditor cannot observe installation people"
 
     Expect.equal
@@ -296,10 +311,7 @@ let private context () =
         "Scoped audit cannot enumerate installation actors"
 
     Expect.isTrue
-        (LedgerEntries.canObserve
-            owner
-            worker
-            (EntryTarget.People((CaseFixtures.actorId (id 1)), PeopleActKind.Register)))
+        (Engine.canObserve owner worker (AggregateReference.Person(CaseFixtures.actorId (id 1))))
         "Installation owner may observe people"
 
 [<Tests>]

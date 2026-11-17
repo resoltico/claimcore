@@ -1,3 +1,4 @@
+import { documentActions } from "../operation/affordances";
 import { isCaseAct } from "../operation/metadata";
 import { linkedCaseReceipt } from "../protocol/types";
 
@@ -21,12 +22,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
     ...(props.affordance === undefined ? {} : { affordance: props.affordance }),
     kind: props.initialAct,
     current: props.current,
-    prefill: {
-      ...(props.initialAct === "case.recordPayment" && props.current !== null
-        ? { "field:paymentDate": props.current.basis.observation.businessDate }
-        : {}),
-      ...props.prefill,
-    },
+    prefill: props.prefill ?? {},
     ...(props.binding === undefined ? {} : { binding: props.binding }),
     credential,
     normalizeValues: normalizeAmountValues,
@@ -101,7 +97,7 @@ const caseOffers = (
 ) =>
   [
     ...(_props.affordance === undefined ? [] : [_props.affordance]),
-    ...(current?.actions ?? requester?.actions ?? []),
+    ...(current === null ? (requester?.actions ?? []) : documentActions(current)),
   ]
     .filter((action) => isCaseAct(action.task) && action.blocked === null)
     .map((action) => action.task);

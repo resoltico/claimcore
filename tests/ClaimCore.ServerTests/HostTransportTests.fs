@@ -3,6 +3,7 @@ module ClaimCore.ServerTests.HostTransportTests
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
@@ -14,6 +15,10 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.Server
 open ClaimCore.TestSupport.HandlerStub
 open ClaimCore.TestSupport.TestServerFixture
@@ -343,12 +348,22 @@ let private peoplePreview () =
         match Codec.decode 100000 Api.operationPreview.Output response with
         | Ok(RepresentationReply.Data {
                                           OperationId = id
-                                          Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.People review))
+                                          Outcome = Outcome.Succeeded(Previewed.Reviewed review)
                                       }) ->
             Expect.equal id fresh "Original operation identity"
-            Expect.isNone review.Target "Registration has no accepted target yet"
-            Expect.isFalse review.Before.Enabled "Registration begins absent"
-            Expect.isTrue review.After.Enabled "Registration proposes enabled people"
+
+            Expect.equal
+                review.Target
+                (ReviewTarget.Person None)
+                "Registration has no accepted actor target"
+
+            match review.Changes.Head.Description with
+            | PartDescription.Person changes ->
+                Expect.equal
+                    changes.Enabled
+                    (Some { Before = None; After = Some true })
+                    "Creation begins absent and proposes enabled"
+            | _ -> failtest "Expected person part description"
         | _ -> failtest "Expected a DATA people review"
 
         let! humanStatus, human =
@@ -365,12 +380,12 @@ let private peoplePreview () =
 
             Expect.isTrue
                 (review.Presentation.Changes
-                 |> List.exists (fun change -> change.Key = "enabled"))
+                 |> List.exists (fun change -> change.LabelId = "label.enabled"))
                 "The actual ApiRoutes adapter supplies core changes"
 
             Expect.isTrue
                 (review.Presentation.Changes
-                 |> List.exists (fun change -> change.Key = "profileName"))
+                 |> List.exists (fun change -> change.LabelId = "field.profile.displayName.label"))
                 "Registration profile is a supplied change"
         | _ -> failtest "Expected a HUMAN people review"
 
@@ -405,8 +420,8 @@ let private peoplePreview () =
                                       }) ->
             Expect.equal
                 (receipt.Effects |> List.map _.Act)
-                [ PeopleActKind.Register; PeopleActKind.SetProfile ]
-                "DATA retains identity and erasable profile effects without another acceptance"
+                [ TaskId.ofLiteral "people.register" ]
+                "DATA retains the single accepting person part without another acceptance"
         | _ -> failtest "Expected same acceptance through DATA"
 
         let! humanStatus, human =
@@ -443,7 +458,7 @@ let private peoplePreview () =
                         Map.add
                             (TaskInputId.Target InputTarget.ProfileDisplayName)
                             (SubmissionValue.Text "Changed after acceptance")
-                            authored.Inputs
+                            authored.Envelope.Inputs
                 }
             |> Result.defaultWith (fun () -> failtest "Valid changed registration shape")
             |> Codec.encode Api.operationExecute.Input

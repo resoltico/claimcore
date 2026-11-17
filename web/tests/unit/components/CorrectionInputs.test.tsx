@@ -63,14 +63,8 @@ const current: CurrentCase = {
       { "group:registration": "KEEP", "group:decision": "KEEP" },
       [],
       {
-        "group:registration": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP"],
-        }.registration,
-        "group:decision": {
-          registration: ["KEEP", "UPDATE"],
-          decision: ["KEEP"],
-        }.decision,
+        "group:registration": ["KEEP", "UPDATE"],
+        "group:decision": ["KEEP"],
       },
     ),
   ],

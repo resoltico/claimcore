@@ -55,7 +55,7 @@ const content: Extract<RegionContent, { kind: "TABLE" }> = {
 };
 it("renders narrow payment cards from supplied columns and keeps technical identity in Details", async () => {
   const remove = vi.fn();
-  render(<PaymentRows content={content} zone="UTC" onRemove={remove} />);
+  render(<PaymentRows content={content} zone="UTC" onAction={remove} />);
   const card = within(screen.getByRole("list")).getByRole("listitem");
   expect(within(card).getByText("Payment date")).toBeVisible();
   expect(within(card).getByText("Paid amount")).toBeVisible();
@@ -64,5 +64,5 @@ it("renders narrow payment cards from supplied columns and keeps technical ident
   await userEvent.click(within(card).getByText("Record details", { selector: "summary" }));
   expect(within(card).getByText(paymentId)).toBeVisible();
   await userEvent.click(within(card).getByRole("button", { name: "Remove payment entry" }));
-  expect(remove).toHaveBeenCalledExactlyOnceWith(paymentId);
+  expect(remove).toHaveBeenCalledExactlyOnceWith(content.rows[0]!.actions![0]);
 });

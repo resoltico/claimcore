@@ -1,4 +1,10 @@
-namespace ClaimCore.Application
+namespace ClaimCore.Application.Reads
+
+open ClaimCore.Application.Storage
+
+open ClaimCore.Application.Execution
+
+open ClaimCore.Application
 
 open System
 open ClaimCore.Domain
@@ -12,107 +18,57 @@ module internal Queries =
     let fault = QueryResults.fault
     let failure = QueryResults.failure
 
-    let caseRecord
-        (services: ServiceContext)
-        actor
-        familySequence
-        work
-        stages
-        changedAt
-        recordedBy
-        payments
-        record
-        =
-        Advice.caseRecord
-            services
-            actor
-            familySequence
-            work
-            stages
-            changedAt
-            recordedBy
-            payments
-            record
-
     let caseResult
         (services: ServiceContext)
-        (view: CaseFacts)
+        (tx: ReadTx)
+        (view: CaseReadFacts)
         work
         stages
         changedAt
         recordedBy
         payments
         =
-        let principal = services.Principal
-
-        if not (CaseOperations.authorize principal view.Actor Capability.ReadCase view.Case) then
-            unavailable
-        else
-            match view.Case with
-            | Some record ->
-                caseRecord
-                    services
-                    view.Actor
-                    view.FamilySequence
-                    work
-                    stages
-                    changedAt
-                    recordedBy
-                    payments
-                    record
-                |> Result.map (fun model ->
-                    { model with
-                        FamilySequence = view.FamilySequence
-                        Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
-                        Work =
-                            if view.Maintenance.Active then
-                                { model.Work with
-                                    CanAssign = false
-                                    CanUpdateSummary = false
-                                    CanCreateReminder = false
-                                }
-                            else
-                                model.Work
-                    })
-                |> succeeded
-            | None -> Outcome.Failed CoreFault.StoreIntegrityError
-
-    let private disposition installation (record: StoredCase) (facts: CaseStageFacts) =
-        let invalid = Error CoreFault.StoreIntegrityError
-
-        match facts.LastAct, facts.DispositionEntry with
-        | (CaseActKind.Void | CaseActKind.Reinstate), Some entry ->
-            match entry.Subject with
-            | EntryTarget.Case(id, revision, act, _) when
-                id = record.CaseId
-                && revision = record.Snapshot.Revision
-                && act = facts.LastAct
-                && entry.ActorId = facts.RecordedBy
-                && entry.RecordedAt = facts.RecordedAt
-                ->
-                match
-                    LedgerEntries.validate installation entry |> Result.map LedgerEntries.content
-                with
-                | Ok(EntryContent.Case(request, Some decision)) when
-                    decision.After = record.Snapshot
-                    ->
-                    match request.Act with
-                    | CaseAct.Void reason -> Ok(Some(CaseDisposition.Voided reason))
-                    | CaseAct.Reinstate reason -> Ok(Some(CaseDisposition.Reinstated reason))
-                    | _ -> invalid
-                | _ -> invalid
-            | _ -> invalid
-        | (CaseActKind.Void | CaseActKind.Reinstate), None -> invalid
-        | _, None -> Ok None
-        | _, Some _ -> invalid
-
-    let private stageDisplay installation (tx: IReadTx) (record: StoredCase) =
         task {
-            let! facts = tx.CaseStageFacts record.CaseId
+            if
+                not (
+                    CaseRecords.authorize
+                        services.Principal
+                        view.Actor
+                        Capability.ReadCase
+                        view.Case
+                )
+            then
+                return unavailable
+            else
+                match view.Case with
+                | None -> return Outcome.Failed CoreFault.StoreIntegrityError
+                | Some record ->
+                    let! model =
+                        Advice.caseRecord
+                            services
+                            tx
+                            view.Actor
+                            view.Maintenance
+                            view.FamilySequence
+                            work
+                            stages
+                            changedAt
+                            recordedBy
+                            payments
+                            record
+
+                    return model |> succeeded
+        }
+
+    let private stageDisplay _installation (tx: ReadTx) (record: StoredCase) =
+        task {
+            let! facts = FamilyReads.caseStageFacts tx record.CaseId
 
             match facts with
-            | Some facts when facts.Revision = record.Snapshot.Revision ->
-                let! authors = tx.ActorRefs [ facts.RecordedBy ]
+            | Some facts when
+                facts.Revision = record.Snapshot.Revision && facts.Snapshot = record.Snapshot
+                ->
+                let! authors = PeopleReads.actorRefs tx [ facts.RecordedBy ]
 
                 return
                     match
@@ -121,7 +77,7 @@ module internal Queries =
                             (Some facts.OpenedOn)
                             facts.ClosedOn,
                         Map.tryFind facts.RecordedBy authors,
-                        disposition installation record facts
+                        Ok facts.Disposition
                     with
                     | Ok stages, Some author, Ok disposition when author.ActorId = facts.RecordedBy ->
                         Ok(stages, disposition, facts.RecordedAt, author)
@@ -133,7 +89,7 @@ module internal Queries =
         let store = services.Store
 
         task {
-            match CaseOperations.validateSelector selector with
+            match CaseRecords.validateSelector selector with
             | Error refusal -> return! RequestRefusals.read services token refusal
             | Ok _ ->
                 let! result =
@@ -142,12 +98,11 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! view =
-                                            ExecutionFacts.case services tx None selector None
+                                        let! view = CaseReadContext.load services tx selector
 
                                         match view.Case with
                                         | Some record when
-                                            CaseOperations.authorize
+                                            CaseRecords.authorize
                                                 services.Principal
                                                 view.Actor
                                                 Capability.ReadCase
@@ -190,10 +145,10 @@ module internal Queries =
                                                     | None ->
                                                         System.Threading.Tasks.Task.FromResult []
                                                     | Some _ ->
-                                                        tx.LatestPayments(
-                                                            record.CaseId,
-                                                            PaymentPaging.PreviewLimit
-                                                        )
+                                                        PaymentReads.latestPayments
+                                                            tx
+                                                            (record.CaseId,
+                                                             PaymentPaging.PreviewLimit)
 
                                                 let count =
                                                     CaseState.fields record.Snapshot.State
@@ -209,22 +164,27 @@ module internal Queries =
                                                                 count
                                                         )
 
-                                                return
-                                                    match nextActions, notes with
-                                                    | Error fault, _
-                                                    | _, Error fault -> Outcome.Failed fault
-                                                    | Ok _, Ok _ when not validPayments ->
+                                                match nextActions, notes with
+                                                | Error fault, _
+                                                | _, Error fault -> return Outcome.Failed fault
+                                                | Ok _, Ok _ when not validPayments ->
+                                                    return
                                                         Outcome.Failed
                                                             CoreFault.StoreIntegrityError
-                                                    | Ok items, Ok notes ->
+                                                | Ok items, Ok notes ->
+                                                    let! currentResult =
                                                         caseResult
                                                             services
+                                                            tx
                                                             view
                                                             work
                                                             stages
                                                             changedAt
                                                             recordedBy
                                                             payments
+
+                                                    return
+                                                        currentResult
                                                         |> Outcome.fold
                                                             (fun current ->
                                                                 Outcome.Succeeded
@@ -251,7 +211,7 @@ module internal Queries =
             if not (validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
             else
-                match CaseOperations.validateSelector request.Target with
+                match CaseRecords.validateSelector request.Target with
                 | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
@@ -260,14 +220,13 @@ module internal Queries =
                                 Work =
                                     fun tx ->
                                         task {
-                                            let! record = ExecutionFacts.findCase tx request.Target
+                                            let! record = CaseReadContext.find tx request.Target
 
                                             let! actor =
-                                                tx.Access
-                                                    {
-                                                        Principal = services.Principal
-                                                        CaseId = record |> Option.map _.CaseId
-                                                    }
+                                                AccessReads.access
+                                                    tx
+                                                    (services.Principal)
+                                                    (record |> Option.map _.CaseId)
 
                                             match record with
                                             | Some record when
@@ -292,7 +251,7 @@ module internal Queries =
                                                 with
                                                 | Error refusal -> return Outcome.Rejected refusal
                                                 | Ok after ->
-                                                    let! work = tx.FindWork record.CaseId
+                                                    let! work = WorkReads.findWork tx record.CaseId
 
                                                     match work with
                                                     | Some work when
@@ -302,7 +261,8 @@ module internal Queries =
                                                                 snapshot.Revision = work.Revision))
                                                         ->
                                                         let! page =
-                                                            tx.AssigneePage
+                                                            AccessReads.assigneePage
+                                                                tx
                                                                 {
                                                                     CaseId = record.CaseId
                                                                     ReadRoles =
@@ -451,7 +411,13 @@ module internal Queries =
                 |> readResult
         }
 
-    let selectCases installation principal basis (request: CaseListRequest) actor =
+    let selectCases
+        installation
+        principal
+        basis
+        (request: CaseListRequest)
+        actor
+        : Result<TransactionPages.CaseQuery, Refusal> =
         currentActor principal actor
         |> Result.bind (fun actor ->
             match Access.visibility principal actor with
@@ -464,7 +430,7 @@ module internal Queries =
                     cursor (Cursors.decodeCases installation filter) request.Page.AfterCursor
                     |> Result.map (fun after ->
                         {
-                            CasePageQuery.Selection =
+                            TransactionPages.CaseQuery.Selection =
                                 {
                                     DateBasis = basis
                                     Visibility = visibility
@@ -479,7 +445,7 @@ module internal Queries =
 
 
     let private summary installation principal actor paused (work: CaseWorkView) next record =
-        CaseOperations.current installation record
+        CaseRecords.current installation record
         |> Result.map (fun _ ->
             {
                 CaseSummary.CaseId = record.Snapshot.CaseId
@@ -527,7 +493,7 @@ module internal Queries =
 
     let private summaries
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         basis
         paused
         (items: CasePageItem list)
@@ -542,7 +508,9 @@ module internal Queries =
                 |> Map.ofList
 
             let! work = CaseWorkReads.viewsFromSummaries tx basis records supplied
-            let! actor = tx.AccessCases(services.Principal, records |> List.map _.CaseId)
+
+            let! actor =
+                AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
 
             return
                 work
@@ -567,7 +535,7 @@ module internal Queries =
 
     let private exactReference
         (services: ServiceContext)
-        (tx: IReadTx)
+        (tx: ReadTx)
         (items: CaseSummary list)
         text
         =
@@ -591,21 +559,17 @@ module internal Queries =
                                 CaseReference = item.Reference
                             }
                 | None ->
-                    let! record = tx.FindCaseByReference(CaseReference.format reference)
+                    let! record =
+                        FamilyReads.findCaseByReference tx (CaseReference.format reference)
 
                     match record with
                     | None -> return None
                     | Some record ->
-                        let! actor =
-                            tx.Access
-                                {
-                                    Principal = services.Principal
-                                    CaseId = Some record.CaseId
-                                }
+                        let! actor = AccessReads.access tx (services.Principal) (Some record.CaseId)
 
                         return
                             if
-                                CaseOperations.authorize
+                                CaseRecords.authorize
                                     services.Principal
                                     actor
                                     Capability.ReadCase
@@ -634,7 +598,7 @@ module internal Queries =
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
-                                        let! facts = tx.GlobalReadFacts principal
+                                        let! facts = AccessReads.globalReadFacts tx principal
                                         let actor = facts.People
 
                                         match
@@ -647,7 +611,7 @@ module internal Queries =
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
                                         | Ok selection ->
-                                            let! page = tx.CasePage selection
+                                            let! page = FamilyReads.casePage tx selection
                                             let maintenance = facts.Maintenance
 
                                             if page.Items.Length > Paging.MaximumPageSize then
@@ -711,12 +675,7 @@ module internal Queries =
                         Work =
                             fun tx ->
                                 task {
-                                    let! actor =
-                                        tx.Access
-                                            {
-                                                Principal = services.Principal
-                                                CaseId = None
-                                            }
+                                    let! actor = AccessReads.access tx (services.Principal) (None)
 
                                     let request =
                                         {
@@ -734,7 +693,9 @@ module internal Queries =
                                     with
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
-                                        let! summary = tx.CaseSummary selection.Selection
+                                        let! summary =
+                                            FamilyReads.caseSummary tx selection.Selection
+
                                         return Outcome.Succeeded summary
                                 }
                         CancellationToken = token

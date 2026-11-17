@@ -2,11 +2,9 @@ import { localNotice } from "../../src/protocol/notices";
 import { render, screen } from "../support/presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isEndpointId } from "../../src/protocol/client";
 import { CopyValue } from "../../src/components/CopyValue";
 import { CatalogField } from "../../src/components/CatalogField";
-import { LabeledTextInput } from "../../src/components/LabeledTextInput";
-import { hasSuspiciousCharacters, suspiciousCodePoints } from "../../src/utils/text";
+import { suspiciousCodePoints } from "../../src/utils/text";
 import { definition } from "../support/service-ui.fixtures";
 
 it("copies safe values and provides an accessible fallback when clipboard access is unavailable", async () => {
@@ -23,46 +21,21 @@ it("copies safe values and provides an accessible fallback when clipboard access
   view.unmount();
 });
 
-it("associates optional field errors and supports password text input", () => {
-  const onChange = vi.fn();
+it("associates catalog field errors", () => {
   render(
-    <>
-      <LabeledTextInput
-        id="credential"
-        label="Credential"
-        value="secret"
-        onChange={onChange}
-        type="password"
-        error="Required"
-      />
-      <CatalogField
-        field={definition.catalog.fields[0]!}
-        value="CASE-1"
-        error={localNotice("unreachable")}
-        onChange={onChange}
-      />
-    </>,
+    <CatalogField
+      field={definition.catalog.fields[0]!}
+      value="CASE-1"
+      error={localNotice("unreachable")}
+      onChange={vi.fn()}
+    />,
   );
-  expect(screen.getByLabelText("Credential")).toHaveAttribute("type", "password");
-  expect(screen.getAllByText(/Required|could not be reached/u)).toHaveLength(2);
+  expect(screen.getByText(/could not be reached/u)).toBeVisible();
 });
 
-it("renders ordinary text input without an error and forwards edits", async () => {
-  const user = userEvent.setup();
-  const onChange = vi.fn();
-  render(<LabeledTextInput id="reference" label="Reference" value="" onChange={onChange} />);
-  const input = screen.getByRole("textbox", { name: "Reference" });
-  expect(input).toHaveAttribute("type", "text");
-  expect(screen.queryByRole("alert")).toBeNull();
-  await user.type(input, "A");
-  expect(onChange).toHaveBeenCalledWith("A");
-});
-
-it("keeps generated endpoint inventory callable and presents suspicious Unicode defensively", () => {
-  expect(isEndpointId("operation.preview")).toBe(true);
-  expect(isEndpointId("nope")).toBe(false);
-  expect(hasSuspiciousCharacters("plain")).toBe(false);
-  expect(hasSuspiciousCharacters("a\u202Eb")).toBe(true);
+it("presents suspicious Unicode defensively", () => {
+  expect(suspiciousCodePoints("plain").length > 0).toBe(false);
+  expect(suspiciousCodePoints("a\u202Eb").length > 0).toBe(true);
   expect(suspiciousCodePoints("a\u202Eb")).toEqual(["U+202E"]);
   expect(suspiciousCodePoints("\u0085\u00AD\u2028\u2029")).toEqual([
     "U+85",

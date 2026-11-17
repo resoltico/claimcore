@@ -35,59 +35,27 @@ module internal ReplyText =
         readPresenter endpoint (fun details language (reply: Presented<_>) ->
             ViewText.renderSelected details language reply.View)
 
-    let private actorScreenPresenter endpoint =
-        presenter endpoint (fun details language _ reply ->
-            match reply with
-            | RepresentationReply.Human value -> HumanText.read details language value
-            | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
-        |> snd
-
     let private presenterFor =
         function
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CasePayments) ->
-            actorScreenPresenter Api.casePayments
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseNotes) ->
-            actorScreenPresenter Api.caseNotes
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->
-            actorScreenPresenter Api.caseTimeline
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderGet) ->
-            actorScreenPresenter Api.reminder
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList) ->
-            actorScreenPresenter Api.reminders
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.WorkViews) ->
-            actorScreenPresenter Api.workViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseGet) ->
-            presenter Api.caseGet (fun details language _ reply ->
-                match reply with
-                | RepresentationReply.Human value -> HumanText.read details language value
-                | RepresentationReply.Data _ -> invalidOp "Human text requires a HUMAN response.")
-            |> snd
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseAssignees) ->
-            actorScreenPresenter Api.caseAssignees
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) ->
-            actorScreenPresenter Api.caseList
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary) ->
-            actorScreenPresenter Api.caseSummary
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.Context) ->
-            actorScreenPresenter Api.context
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleList) ->
-            actorScreenPresenter Api.peopleList
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleGrants) ->
-            actorScreenPresenter Api.peopleGrants
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleHistory) ->
-            actorScreenPresenter Api.peopleHistory
-        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleRequests) ->
-            actorScreenPresenter Api.peopleRequests
-        | EndpointId.Actor(ActorEndpoint.Command CommandTaskId.PeopleRequestsDismiss) ->
-            actorScreenPresenter Api.peopleRequestsDismiss
-        | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
-        | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
             presenter Api.operationGet (fun details language _ reply ->
                 OperationText.getLinesWithDetails details language reply)
             |> snd
+        | EndpointId.Actor(ActorEndpoint.Query _ | ActorEndpoint.Command _) ->
+            fun details language request (reply: ServiceReply) ->
+                match EndpointValues.readReply reply.Typed with
+                | Some(RepresentationReply.Human value) -> HumanText.read details language value
+                | Some(RepresentationReply.Data outcome) ->
+                    DiagnosticText.readLinesFor
+                        language
+                        (DiagnosticText.reference request)
+                        (fun _ -> invalidOp "Human text requires a HUMAN success response.")
+                        outcome
+                | None -> invalidOp "A query requires an admitted read reply."
+        | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
+            presenter Api.operationPreview OperationText.previewLinesWithDetails |> snd
+        | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
+            presenter Api.operationExecute OperationText.executeLinesForWithDetails |> snd
         | EndpointId.Host HostEndpoint.Session -> screenPresenter Api.session
         | EndpointId.Host HostEndpoint.Logout -> screenPresenter Api.logout
 

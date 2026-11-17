@@ -19,29 +19,9 @@
     "text": "Akcenta krāsa iestatīta: {value}.",
     "source": "f4c95f4f6a4b"
   },
-  "ui.acceptedOperation": {
-    "text": "Reģistrētā izmaiņa",
-    "source": "595214b94033"
-  },
   "ui.accessState.check": {
     "text": "Pārbaudīt piekļuvi",
     "source": "abb9a172a69b"
-  },
-  "ui.accessState.disabled": {
-    "text": "Šis konts ir atspējots",
-    "source": "3c476460f303"
-  },
-  "ui.accessState.requested": {
-    "text": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
-    "source": "fbdca8dba390"
-  },
-  "ui.accessState.title": {
-    "text": "Jums vēl nav piekļuves",
-    "source": "329f122dcf0f"
-  },
-  "ui.account": {
-    "text": "Konts",
-    "source": "7e1b0d5641f2"
   },
   "ui.actDescription": {
     "text": "{label}: {meaning}",
@@ -50,10 +30,6 @@
   "ui.actorRequestRetained": {
     "text": "Pašreizējais pieprasījums ir saglabāts. Turpiniet to vai atmetiet pirms citas darbības sākšanas.",
     "source": "700957242358"
-  },
-  "ui.addGrant": {
-    "text": "Pievienot lomu",
-    "source": "e53a93625e74"
   },
   "ui.after": {
     "text": "Pēc: {value}",
@@ -66,10 +42,6 @@
   "ui.appearance": {
     "text": "Izskats",
     "source": "3907fa7f8072"
-  },
-  "ui.peopleAction": {
-    "text": "Piekļuves izmaiņa",
-    "source": "295239c1b29a"
   },
   "ui.backToCases": {
     "text": "Atpakaļ uz lietām",
@@ -87,14 +59,6 @@
     "text": "Kopēt šo vērtību.",
     "source": "8a31fb4c608d"
   },
-  "ui.caseDetail": {
-    "text": "Lietas informācija",
-    "source": "e6aad002458d"
-  },
-  "ui.cases": {
-    "text": "Lietas",
-    "source": "2249bd503ec4"
-  },
   "ui.changeActDescription": {
     "text": "Vai atmest šo melnrakstu un izvēlēties citu komandu?",
     "source": "0db8e85a3b26"
@@ -102,10 +66,6 @@
   "ui.changeActTitle": {
     "text": "Atmest šīs melnraksta izmaiņas?",
     "source": "7dbba5ad2b76"
-  },
-  "ui.changeDecision": {
-    "text": "Mainīt lēmumu",
-    "source": "a77099b9ff99"
   },
   "ui.changeFact": {
     "text": "Mainīt: {field}",
@@ -127,10 +87,6 @@
     "text": "Tiek pārbaudīts",
     "source": "0dfe1d63c9d8"
   },
-  "ui.chooseRole": {
-    "text": "Izvēlieties lomu",
-    "source": "a49c49b04c4d"
-  },
   "ui.clearFilters": {
     "text": "Notīrīt filtrus",
     "source": "7179ea0035fc"
@@ -151,10 +107,6 @@
     "text": "Pārskatīt pret jaunāko versiju",
     "source": "f0124537d549"
   },
-  "ui.conflict.title": {
-    "text": "Lieta ir mainījusies",
-    "source": "ae4ec9da2e36"
-  },
   "ui.continuePeopleRequest": {
     "text": "Turpināt pašreizējo pieprasījumu",
     "source": "ec9e7079a21a"
@@ -174,10 +126,6 @@
   "ui.copyFallback": {
     "text": "Kopēšanas alternatīva: {label}",
     "source": "540c6468b0a7"
-  },
-  "ui.correctionHint": {
-    "text": "Izvēlieties, ko darīt ar katru informācijas grupu.",
-    "source": "fe14963d4faf"
   },
   "ui.countryName": {
     "text": "{code}: {name}",
@@ -258,18 +206,6 @@
   "ui.generalOperationLookup": {
     "text": "Vispārīga darbības meklēšana",
     "source": "a87469ec1ea3"
-  },
-  "ui.grantNumber": {
-    "text": "Loma {number}",
-    "source": "00fa69a81cab"
-  },
-  "ui.grantsEnd": {
-    "text": "Parādītas visas lomas.",
-    "source": "d7fa749d2b8a"
-  },
-  "ui.grantsPartial": {
-    "text": "Parādīta tikai daļa lomu.",
-    "source": "391d53d153f3"
   },
   "ui.incompleteResponse": {
     "text": "ClaimCore nosūtīja nepilnīgu atbildi.",
@@ -363,10 +299,6 @@
     "text": "Ielādēt vēl lietas",
     "source": "cd681597c17e"
   },
-  "ui.moreGrants": {
-    "text": "Vairāk pilnvaru",
-    "source": "27f0be44c2db"
-  },
   "ui.moreHistory": {
     "text": "Ielādēt vairāk aktivitātes",
     "source": "e3f0587b4839"
@@ -383,33 +315,9 @@
     "text": "Nākamais mēnesis",
     "source": "74e53211fef4"
   },
-  "ui.noAccessibleActors": {
-    "text": "Nav personu, ko rādīt.",
-    "source": "6a83dad36c14"
-  },
-  "ui.noAccessibleCases": {
-    "text": "Nav lietu, ko rādīt.",
-    "source": "4b74e082b9b3"
-  },
   "ui.noAccessibleHistory": {
     "text": "Nav aktivitātes, ko rādīt.",
     "source": "5ddccb9ef206"
-  },
-  "ui.noCasesForView": {
-    "text": "Šim skatam nav atbilstošu lietu.",
-    "source": "8b8a577e5f3b"
-  },
-  "ui.noEligibleAccounts": {
-    "text": "Šajā lapā nav atbilstošu kontu.",
-    "source": "f9c5ece19d4b"
-  },
-  "ui.noPayments": {
-    "text": "Maksājumu ierakstu vēl nav.",
-    "source": "131347633495"
-  },
-  "ui.noReminders": {
-    "text": "Šim skatam nav atbilstošu atgādinājumu.",
-    "source": "3200239466d8"
   },
   "ui.noViews": {
     "text": "Nav pieejamu darba skatu.",
@@ -447,14 +355,6 @@
     "text": "{first} un {second}",
     "source": "a8c60ace0cf1"
   },
-  "ui.people.person": {
-    "text": "Persona",
-    "source": "6007db63e18e"
-  },
-  "ui.people.roles": {
-    "text": "Lomas",
-    "source": "c25337055464"
-  },
   "ui.preferencesNotSaved": {
     "text": "Iestatījumi darbojas šajā sesijā, taču tos neizdevās saglabāt pārlūkā.",
     "source": "861ebb38b269"
@@ -482,10 +382,6 @@
   "ui.pseudo": {
     "text": "Izvērsta angļu valoda (izkārtojuma pārbaude)",
     "source": "6f81f6466cb2"
-  },
-  "ui.queueDescription": {
-    "text": "Atrodiet un turpiniet lietu apstrādi, kam nepieciešama uzmanība.",
-    "source": "758595a14f42"
   },
   "ui.recordOptionalFact": {
     "text": "Reģistrēt: {field} (neobligāti)",
@@ -539,10 +435,6 @@
     "text": "Pārlādēt pašreizējo lietu",
     "source": "dfad4aa77ca3"
   },
-  "ui.reloadGrants": {
-    "text": "Pārlādēt pilnvaras",
-    "source": "6e21644bbc15"
-  },
   "ui.reloadHistory": {
     "text": "Pārlādēt aktivitāti",
     "source": "10d39b0ca399"
@@ -550,18 +442,6 @@
   "ui.reloadInterface": {
     "text": "Pārlādēt saskarni",
     "source": "bdc3a5a1699e"
-  },
-  "ui.reminderQueueHint": {
-    "text": "Šeit izpildes datumu filtri attiecas uz katru atgādinājumu. Lietu sarakstos izmanto katras lietas agrāko atgādinājumu.",
-    "source": "f1ad60c57bf8"
-  },
-  "ui.removeGrant": {
-    "text": "Noņemt lomu",
-    "source": "9a1fb81f279f"
-  },
-  "ui.requests.empty": {
-    "text": "Nav neizskatītu piekļuves pieprasījumu.",
-    "source": "f258e3645b02"
   },
   "ui.requests.more": {
     "text": "Ielādēt vēl piekļuves pieprasījumus",
@@ -611,14 +491,6 @@
     "text": "No labās uz kreiso",
     "source": "4667424121a6"
   },
-  "ui.roleNotAvailableAtScope": {
-    "text": "Nav pieejama atlasītajām lietām",
-    "source": "008dd6597126"
-  },
-  "ui.roleNotAvailableForService": {
-    "text": "Nav pieejama pakalpojuma kontiem",
-    "source": "23a43af3092c"
-  },
   "ui.scalarCount": {
     "text": "Rakstzīmes: {count}/{maximum}",
     "source": "907b0d890dff"
@@ -651,10 +523,6 @@
     "text": "Pārbaudīt tagad",
     "source": "2937cffb37ab"
   },
-  "ui.shell.people": {
-    "text": "Cilvēki un piekļuve",
-    "source": "8df747cef67a"
-  },
   "ui.shell.searchCases": {
     "text": "Meklēt lietas",
     "source": "22c2a4061665"
@@ -678,10 +546,6 @@
   "ui.stage.noDate": {
     "text": "Datums nav pieejams",
     "source": "a0aa75ba71d2"
-  },
-  "ui.stage.recorded": {
-    "text": "Reģistrēts",
-    "source": "c7175fa7a0db"
   },
   "ui.submitting": {
     "text": "Reģistrē…",
@@ -795,10 +659,6 @@
     "text": "Šeit saglabāta tikai izmaiņas identitāte. Lietas dati un sākotnējais pieprasījums netiek glabāti.",
     "source": "17dd96ae28f7"
   },
-  "ui.actionNotOffered": {
-    "text": "Šī darbība pašlaik nav pieejama šai lietai.",
-    "source": "78dafa13c3bd"
-  },
   "ui.choiceNotOffered": {
     "text": "Šī izvēle nav pieejama pašreizējo faktu dēļ.",
     "source": "d43925e74ff6"
@@ -819,12 +679,32 @@
     "text": "Šis vienums nav pieejams.",
     "source": "46275555e5f4"
   },
-  "ui.caseSelection": {
-    "text": "Lietas atlase pēc",
-    "source": "c1020f56efc0"
+  "ui.moreRoles": {
+    "text": "Vairāk lomu",
+    "source": "729c5362a7b7"
   },
-  "ui.existingCaseSelectionHint": {
-    "text": "Izvēlieties esošu lietu pēc tās atsauces vai ID.",
-    "source": "bd52439b9b7f"
+  "ui.reloadRoles": {
+    "text": "Pārlādēt lomas",
+    "source": "ecbf19f17ed8"
+  },
+  "ui.rolesEnd": {
+    "text": "Parādītas visas lomas.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.rolesPartial": {
+    "text": "Parādīta tikai daļa lomu.",
+    "source": "391d53d153f3"
+  },
+  "ui.addRole": {
+    "text": "Pievienot lomu",
+    "source": "e53a93625e74"
+  },
+  "ui.removeRole": {
+    "text": "Noņemt lomu",
+    "source": "9a1fb81f279f"
+  },
+  "ui.roleNumber": {
+    "text": "Loma {number}",
+    "source": "00fa69a81cab"
   }
 }

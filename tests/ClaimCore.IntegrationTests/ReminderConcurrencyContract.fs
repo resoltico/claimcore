@@ -6,6 +6,10 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Application.Execution
+open ClaimCore.Application.Verification
 open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
@@ -18,21 +22,20 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected current read: %A" other
 
-let private caseAct fixture actor number reference revision act =
-    Service.execute
+let private caseAct fixture actor number reference revision taskName values =
+    Service.executeSubmission
         actor
-        (Inputs.caseOperation (request fixture number reference revision act))
+        (request fixture number reference revision taskName values)
         token
 
-let private reminder fixture actor number target act =
-    Service.execute
+let private reminder fixture actor number target taskName selected values =
+    Service.executeSubmission
         actor
-        (OperationInput.Reminder
-            {
-                OperationId = id fixture number
-                Target = target
-                Act = act
-            })
+        (Submissions.createRaw
+            taskName
+            (id fixture number)
+            (OperationBinding.Reminder(target, selected))
+            values)
         token
 
 let private acceptedCount (replies: ExecuteReply array) =
@@ -60,11 +63,20 @@ let private storeRead (fixture: Fixture) work =
 
 let private find fixture number =
     storeRead fixture (fun tx ->
-        tx.FindReminder(ReminderId.create (id fixture number) |> Option.get))
+        ReminderReads.findReminder tx (ReminderId.create (id fixture number) |> Option.get))
 
 let private opened fixture actor number reference =
     task {
-        let! result = caseAct fixture actor number reference 0L (CaseAct.Open registration)
+        let! result =
+            caseAct
+                fixture
+                actor
+                number
+                reference
+                0L
+                "case.open"
+                (Submissions.fields (RegistrationInput.values registration))
+
         return accepted result |> caseReceipt |> _.CaseId
     }
 
@@ -72,11 +84,13 @@ let private seed fixture actor number target text =
     task {
         let! result =
             reminder
-                fixture
-                actor
-                number
-                target
-                (AuthoredReminderAct.Create { Action = text; Due = "2026-11-10" })
+                (fixture)
+                (actor)
+                (number)
+                (target)
+                "reminder.create"
+                (None)
+                (ClaimCore.TestSupport.Submissions.reminderPlan (text) ("2026-11-10"))
 
         accepted result |> ignore
     }
@@ -94,15 +108,19 @@ let internal independentRevisions fixture =
         let patch =
             (RegistrationUpdateInput.replace
                 [ BusinessField.ClaimantName, Some "Financial preview remains valid" ]
-                (Inputs.registrationUpdate registration)
+                (DomainInputs.registrationUpdate registration)
              |> Result.defaultWith failtest)
 
         let financial =
-            Inputs.caseOperation (
-                request fixture 103 "REMINDER-CONCURRENCY" 1L (CaseAct.AmendRegistration patch)
-            )
+            ((request
+                (fixture)
+                (103)
+                ("REMINDER-CONCURRENCY")
+                (1L)
+                "case.amendRegistration"
+                (ClaimCore.TestSupport.Submissions.updates (RegistrationUpdateInput.values (patch)))))
 
-        let! preview = Service.preview actor financial token
+        let! preview = Service.previewSubmission actor financial token
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -112,31 +130,25 @@ let internal independentRevisions fixture =
             Task.WhenAll(
                 [|
                     reminder
-                        fixture
-                        actor
-                        104
-                        target
-                        (AuthoredReminderAct.Update(
-                            id fixture 101,
-                            1L,
-                            {
-                                Action = "First independent edit"
-                                Due = "2026-11-11"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (104)
+                        (target)
+                        "reminder.update"
+                        (Some((id fixture 101), (1L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("First independent edit")
+                            ("2026-11-11"))
                     reminder
-                        fixture
-                        actor
-                        105
-                        target
-                        (AuthoredReminderAct.Update(
-                            id fixture 102,
-                            1L,
-                            {
-                                Action = "Second independent edit"
-                                Due = "2026-11-12"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (105)
+                        (target)
+                        "reminder.update"
+                        (Some((id fixture 102), (1L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Second independent edit")
+                            ("2026-11-12"))
                 |]
             )
 
@@ -157,38 +169,32 @@ let internal independentRevisions fixture =
             0L
             "No work root revision from reminders"
 
-        let! financialResult = Service.execute actor financial token
+        let! financialResult = Service.executeSubmission actor financial token
         accepted financialResult |> ignore
 
         let! raced =
             Task.WhenAll(
                 [|
                     reminder
-                        fixture
-                        actor
-                        106
-                        target
-                        (AuthoredReminderAct.Update(
-                            id fixture 101,
-                            2L,
-                            {
-                                Action = "Concurrent edit A"
-                                Due = "2026-11-13"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (106)
+                        (target)
+                        "reminder.update"
+                        (Some((id fixture 101), (2L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Concurrent edit A")
+                            ("2026-11-13"))
                     reminder
-                        fixture
-                        actor
-                        107
-                        target
-                        (AuthoredReminderAct.Update(
-                            id fixture 101,
-                            2L,
-                            {
-                                Action = "Concurrent edit B"
-                                Due = "2026-11-14"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (107)
+                        (target)
+                        "reminder.update"
+                        (Some((id fixture 101), (2L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Concurrent edit B")
+                            ("2026-11-14"))
                 |]
             )
 
@@ -228,39 +234,32 @@ let internal independentRevisions fixture =
         let! assigned =
             Task.WhenAll(
                 [|
-                    Service.execute
+                    Service.executeSubmission
                         actor
-                        (OperationInput.Work
-                            {
-                                OperationId = id fixture 108
-                                Target = target
-                                ExpectedRevision = 0L
-                                Act =
-                                    WorkAct.UpdateWork
-                                        {
-                                            Responsible =
-                                                WorkValue.Set(
-                                                    ActorId.format (
-                                                        CaseFixtures.actorId (id fixture 1)
-                                                    )
-                                                )
-                                            Summary = WorkValue.Keep
-                                        }
-                            })
+                        ((ClaimCore.TestSupport.Submissions.createRaw)
+                            "work.update"
+                            (id fixture 108)
+                            (ClaimCore.Application.Contracts.OperationBinding.Work((target), (0L)))
+                            (ClaimCore.TestSupport.Submissions.work (
+                                {
+                                    Responsible =
+                                        WorkValue.Set(
+                                            ActorId.format (CaseFixtures.actorId (id fixture 1))
+                                        )
+                                    Summary = WorkValue.Keep
+                                }
+                            )))
                         token
                     reminder
-                        fixture
-                        actor
-                        109
-                        target
-                        (AuthoredReminderAct.Update(
-                            id fixture 102,
-                            2L,
-                            {
-                                Action = "Edit alongside assignment"
-                                Due = "2026-11-15"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (109)
+                        (target)
+                        "reminder.update"
+                        (Some((id fixture 102), (2L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Edit alongside assignment")
+                            ("2026-11-15"))
                 |]
             )
 
@@ -295,20 +294,17 @@ let internal closeAndCompound fixture =
         let! replies =
             Task.WhenAll(
                 [|
-                    caseAct fixture actor 102 "REMINDER-CLOSE-RACE" 1L (CaseAct.Bare BareAct.Close)
+                    caseAct fixture actor 102 "REMINDER-CLOSE-RACE" 1L "case.close" Map.empty
                     reminder
-                        fixture
-                        actor
-                        103
-                        target
-                        (AuthoredReminderAct.CompleteAndPlanNext(
-                            id fixture 101,
-                            1L,
-                            {
-                                Action = "Replacement outstanding action"
-                                Due = "2026-11-11"
-                            }
-                        ))
+                        (fixture)
+                        (actor)
+                        (103)
+                        (target)
+                        "reminder.completeAndPlanNext"
+                        (Some((id fixture 101), (1L)))
+                        (ClaimCore.TestSupport.Submissions.reminderPlan
+                            ("Replacement outstanding action")
+                            ("2026-11-11"))
                 |]
             )
 
@@ -371,31 +367,24 @@ let internal erasureRaces fixture =
             if compound then
                 do! seed fixture actor (number + 1) target "Erasable source action"
 
-            let act =
+            let taskName, selected, values =
                 if compound then
-                    AuthoredReminderAct.CompleteAndPlanNext(
-                        id fixture (number + 1),
-                        1L,
-                        {
-                            Action = "Erasable replacement action"
-                            Due = "2026-11-11"
-                        }
-                    )
+                    "reminder.completeAndPlanNext",
+                    Some(id fixture (number + 1), 1L),
+                    Submissions.reminderPlan "Erasable replacement action" "2026-11-11"
                 else
-                    AuthoredReminderAct.Create
-                        {
-                            Action = "Erasable new action"
-                            Due = "2026-11-11"
-                        }
+                    "reminder.create",
+                    None,
+                    Submissions.reminderPlan "Erasable new action" "2026-11-11"
 
             let reviewed =
-                request fixture (number + 3) reference 1L (CaseAct.Bare BareAct.Erase)
+                request (fixture) ((number + 3)) (reference) (1L) "case.erase" (Map.empty)
 
             let! replies =
                 Task.WhenAll(
                     [|
-                        Service.execute actor (Inputs.caseOperation reviewed) token
-                        reminder fixture actor (number + 2) target act
+                        Service.executeSubmission actor ((reviewed)) token
+                        reminder fixture actor (number + 2) target taskName selected values
                     |]
                 )
 
@@ -417,18 +406,21 @@ let internal erasureRaces fixture =
 
                 let! refusedRoot =
                     storeRead fixture (fun tx ->
-                        tx.FindOperation(OperationId.create reviewed.OperationId |> Option.get))
+                        LedgerReads.findOperation
+                            tx
+                            (OperationId.create reviewed.OperationId |> Option.get))
 
                 Expect.isNone refusedRoot "The stale erasure appended nothing"
                 // A separate explicit review/new operation, never an automatic retry of the stale bytes.
-                let fresh = request fixture (number + 4) reference 1L (CaseAct.Bare BareAct.Erase)
+                let fresh =
+                    request (fixture) ((number + 4)) (reference) (1L) "case.erase" (Map.empty)
 
                 Expect.notEqual
-                    fresh.ExpectedFamilySequence
-                    reviewed.ExpectedFamilySequence
+                    fresh.Envelope.Binding
+                    reviewed.Envelope.Binding
                     "Fresh erasure observes the accepted child"
 
-                let! erased = Service.execute actor (Inputs.caseOperation fresh) token
+                let! erased = Service.executeSubmission actor ((fresh)) token
                 accepted erased |> ignore
             | other -> failtestf "Invalid erase/reminder ordering: %A" other
 
@@ -442,9 +434,9 @@ let internal erasureRaces fixture =
 
                 let! entry =
                     storeRead fixture (fun tx ->
-                        tx.FindOperation(
-                            OperationId.create (id fixture (number + 2)) |> Option.get
-                        ))
+                        LedgerReads.findOperation
+                            tx
+                            (OperationId.create (id fixture (number + 2)) |> Option.get))
 
                 Expect.isTrue
                     ((Option.get entry).Root.Structure.Compartments
@@ -476,16 +468,20 @@ let internal revocationAndCompound fixture =
             |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            Service.execute
-                actor
-                (OperationInput.People(
-                    reviewedPeopleRequest
-                        fixture.Store
-                        (id fixture 10)
-                        person
-                        (PeopleAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
-                ))
-                token
+            (task {
+                let! submission =
+                    ClaimCore.TestSupport.StoreFixtures.personSubmission
+                        (fixture.Store)
+                        ((id fixture 10))
+                        (person)
+                        (None)
+                        "people.register"
+                        (ClaimCore.TestSupport.Submissions.profile (
+                            ClaimCore.TestSupport.DomainInputs.actorProfile
+                        ))
+
+                return! Service.executeSubmission (actor) submission (token)
+            })
 
         acceptedPeople registered
         let! parent = opened fixture actor 100 "REVOKE-COMPOUND-RACE"
@@ -508,22 +504,20 @@ let internal revocationAndCompound fixture =
         do! seed fixture actor 101 target "Permission-sensitive action"
 
         let request =
-            {
-                ReminderOperationRequest.OperationId = id fixture 103
-                Target = target
-                Act =
-                    AuthoredReminderAct.CompleteAndPlanNext(
-                        id fixture 101,
-                        1L,
-                        {
-                            Action = "Replacement after authorised completion"
-                            Due = "2026-11-11"
-                        }
-                    )
-            }
+            ClaimCore.TestSupport.Submissions.createRaw
+                "reminder.completeAndPlanNext"
+                (id fixture 103)
+                (ClaimCore.Application.Contracts.OperationBinding.Reminder(
+                    (target),
+                    Some((id fixture 101), (1L))
+                ))
+                (ClaimCore.TestSupport.Submissions.reminderPlan
+                    ("Replacement after authorised completion")
+                    ("2026-11-11"))
 
         let handler = core fixture person
-        let! preview = Service.preview handler (OperationInput.Reminder request) token
+
+        let! preview = Service.previewSubmission handler ((request)) token
 
         match preview.Outcome with
         | Outcome.Succeeded(Previewed.Reviewed _) -> ()
@@ -541,7 +535,7 @@ let internal revocationAndCompound fixture =
                             Scope = GrantTarget.CaseId parent
                         }
                         false
-                    Service.execute handler (OperationInput.Reminder request) token
+                    Service.executeSubmission handler ((request)) token
                 |]
             )
 
@@ -570,12 +564,9 @@ let internal revocationAndCompound fixture =
         | other -> failtestf "Invalid revoke/compound outcome: %A" other
 
         let! after =
-            Service.execute
+            Service.executeSubmission
                 handler
-                (OperationInput.Reminder
-                    { request with
-                        OperationId = id fixture 104
-                    })
+                ((ClaimCore.TestSupport.Submissions.withOperationId (id fixture 104) (request)))
                 token
 
         Expect.equal
@@ -593,8 +584,8 @@ let internal notOffered fixture =
         let target = CaseSelector.Id parent
         do! seed fixture actor 101 target "Inspect current state"
 
-        let change number act =
-            reminder fixture actor number target act
+        let change number taskName selected values =
+            reminder fixture actor number target taskName selected values
 
         let expect refusal (reply: ExecuteReply) =
             Expect.equal
@@ -603,44 +594,68 @@ let internal notOffered fixture =
                 "Current business state is reported only after authorization"
 
         let! pending =
-            change 102 (AuthoredReminderAct.Reopen(id fixture 101, 1L, "2026-11-11"))
+            change
+                (102)
+                "reminder.reopen"
+                (Some((id fixture 101), (1L)))
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.ReminderDueDate,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text("2026-11-11")
+                    ])
 
         expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Pending)) pending
-        let! completed = change 103 (AuthoredReminderAct.Complete(id fixture 101, 1L))
+
+        let! completed =
+            change (103) "reminder.complete" (Some((id fixture 101), (1L))) (Map.empty)
+
         accepted completed |> ignore
-        let! repeated = change 104 (AuthoredReminderAct.Complete(id fixture 101, 2L))
+
+        let! repeated =
+            change (104) "reminder.complete" (Some((id fixture 101), (2L))) (Map.empty)
+
         expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Completed)) repeated
 
         let! reopened =
-            change 105 (AuthoredReminderAct.Reopen(id fixture 101, 2L, "2026-11-11"))
+            change
+                (105)
+                "reminder.reopen"
+                (Some((id fixture 101), (2L)))
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.ReminderDueDate,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text("2026-11-11")
+                    ])
 
         accepted reopened |> ignore
-        let! cancelled = change 106 (AuthoredReminderAct.Cancel(id fixture 101, 3L))
+
+        let! cancelled =
+            change (106) "reminder.cancel" (Some((id fixture 101), (3L))) (Map.empty)
+
         accepted cancelled |> ignore
 
-        let update =
-            AuthoredReminderAct.Update(
-                id fixture 101,
-                4L,
-                {
-                    Action = "Updated action"
-                    Due = "2026-11-12"
-                }
-            )
+        let update = Submissions.reminderPlan "Updated action" "2026-11-12"
 
-        let! unavailable = change 107 update
+        let! unavailable = change 107 "reminder.update" (Some(id fixture 101, 4L)) update
 
         expect
             (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Cancelled))
             unavailable
 
-        let! closed =
-            caseAct fixture actor 108 "REMINDER-STATE" 1L (AuthoredCaseAct.Bare BareAct.Close)
+        let! closed = caseAct fixture actor 108 "REMINDER-STATE" 1L "case.close" Map.empty
 
         accepted closed |> ignore
 
         let! parentClosed =
-            change 109 (AuthoredReminderAct.Reopen(id fixture 101, 4L, "2026-11-11"))
+            change
+                (109)
+                "reminder.reopen"
+                (Some((id fixture 101), (4L)))
+                (Map.ofList
+                    [
+                        TaskInputId.Target InputTarget.ReminderDueDate,
+                        ClaimCore.Application.Contracts.SubmissionValue.Text("2026-11-11")
+                    ])
 
         expect (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)) parentClosed
 
@@ -657,10 +672,10 @@ let internal notOffered fixture =
 
         let! revoked = revoke 110 Role.CaseHandler
         acceptedPeople revoked
-        let! noCapability = change 111 update
+        let! noCapability = change 111 "reminder.update" (Some(id fixture 101, 4L)) update
         expect (Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)) noCapability
         let! revoked = revoke 112 Role.PaymentRecorder
         acceptedPeople revoked
-        let! unreadable = change 113 update
+        let! unreadable = change 113 "reminder.update" (Some(id fixture 101, 4L)) update
         expect (Refusal.Access AccessRefusal.ResourceUnavailable) unreadable
     }
