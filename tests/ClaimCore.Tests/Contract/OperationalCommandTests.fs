@@ -201,7 +201,10 @@ let tests =
                     "Explicit nonledger uncertainty"
 
                 let document = HumanReadDocuments.terminationUnknown ()
-                let text = ViewText.renderDocument false "en" document |> String.concat "\n"
+
+                let text =
+                    ViewText.renderDocument false (RenderingContext.forLanguage "en") document
+                    |> String.concat "\n"
 
                 Expect.stringContains
                     text

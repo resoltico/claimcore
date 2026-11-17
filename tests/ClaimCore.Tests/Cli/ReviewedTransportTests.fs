@@ -544,6 +544,259 @@ let tests =
                     Expect.equal executions 0 "No retargeted execute HTTP"
                     Expect.equal code 3 "Visible installation mismatch refusal")
             testCase
+                "ID erasure preserves the previewed selector and bytes through confirmation and final outcomes"
+                (fun () ->
+                    for scenario in
+                        [
+                            "wrong confirmation"
+                            "accepted"
+                            "already accepted"
+                            "preview refused"
+                            "conflict"
+                        ] do
+                        let clock = Clock()
+                        let directory = Directory.CreateTempSubdirectory("claimcore-id-erasure-")
+
+                        try
+                            let bodies = ResizeArray<string * string>()
+                            let mutable contexts = 0
+                            let mutable executions = 0
+
+                            use handler =
+                                new CliTransportFixture.Handler(fun request ->
+                                    task {
+                                        let path =
+                                            (request.RequestUri |> Option.ofObj |> Option.get)
+                                                .AbsolutePath
+
+                                        if path = "/api/context" then
+                                            contexts <- contexts + 1
+
+                                            return
+                                                reply (
+                                                    contextReply
+                                                        (representation request)
+                                                        installation
+                                                )
+                                        else
+                                            let! body =
+                                                (request.Content |> Option.ofObj |> Option.get)
+                                                    .ReadAsStringAsync()
+
+                                            bodies.Add(path, body)
+
+                                            let input =
+                                                Codec.decode
+                                                    Limits.MaximumRequestBytes
+                                                    Api.operationPreview.Input
+                                                    (Encoding.UTF8.GetBytes body)
+                                                |> required
+
+                                            Expect.equal
+                                                input.Envelope.Binding
+                                                (OperationBinding.Case(
+                                                    CaseSelector.Id(
+                                                        CaseId.create (
+                                                            Guid.Parse
+                                                                "10000000-0000-4000-8000-000000000001"
+                                                        )
+                                                        |> Option.get
+                                                    ),
+                                                    7L,
+                                                    None,
+                                                    Some 11L
+                                                ))
+                                                "The supplied ID and reviewed versions survive; no reference rebinding"
+
+                                            Expect.equal
+                                                (request.Headers.GetValues(
+                                                    "ClaimCore-Installation"
+                                                 )
+                                                 |> Seq.exactlyOne)
+                                                (installation.ToString("D"))
+                                                "Every write phase retains the preview installation"
+
+                                            if path = "/api/operation.preview" then
+                                                if scenario = "preview refused" then
+                                                    return
+                                                        reply (
+                                                            HumanReplies.previewSubmission
+                                                                input
+                                                                {
+                                                                    PreviewReply.OperationId =
+                                                                        input.OperationId
+                                                                    Outcome =
+                                                                        Outcome.Rejected(
+                                                                            Refusal.Access
+                                                                                AccessRefusal
+                                                                                    .ResourceUnavailable
+                                                                        )
+                                                                }
+                                                            |> RepresentationReply.Human
+                                                            |> Codec.encode
+                                                                Api.operationPreview.Output
+                                                        )
+                                                elif scenario = "already accepted" then
+                                                    let accepted =
+                                                        acceptedReply input.OperationId
+                                                        |> Codec.decode
+                                                            Limits.MaximumResponseBytes
+                                                            Api.operationExecute.Output
+                                                        |> required
+
+                                                    match accepted with
+                                                    | RepresentationReply.Human {
+                                                                                    Outcome = HumanExecuteResult.Accepted document
+                                                                                } ->
+                                                        return
+                                                            reply (
+                                                                RepresentationReply.Human
+                                                                    {
+                                                                        OperationId =
+                                                                            input.OperationId
+                                                                        Outcome =
+                                                                            HumanPreviewResult
+                                                                                .AlreadyAccepted
+                                                                                document
+                                                                    }
+                                                                |> Codec.encode
+                                                                    Api.operationPreview.Output
+                                                            )
+                                                    | _ ->
+                                                        return
+                                                            failtest
+                                                                "Accepted HUMAN fixture required"
+                                                else
+                                                    return
+                                                        reply (
+                                                            previewReply input.OperationId true
+                                                        )
+                                            elif path = "/api/operation.execute" then
+                                                executions <- executions + 1
+
+                                                if scenario = "conflict" then
+                                                    return
+                                                        reply (
+                                                            HumanReplies.execute
+                                                                {
+                                                                    ExecuteReply.OperationId =
+                                                                        input.OperationId
+                                                                    Outcome =
+                                                                        ExecuteResult.Rejected(
+                                                                            Refusal
+                                                                                .RevisionConflict(
+                                                                                    RevisionConflictInfo
+                                                                                        .at (
+                                                                                            CaseFixtures
+                                                                                                .revision
+                                                                                                8L
+                                                                                        )
+                                                                                    |> RevisionConflictInfo
+                                                                                        .explain
+                                                                                        ConflictChanges
+                                                                                            .Withheld
+                                                                                )
+                                                                        )
+                                                                }
+                                                            |> RepresentationReply.Human
+                                                            |> Codec.encode
+                                                                Api.operationExecute.Output
+                                                        )
+                                                else
+                                                    return reply (acceptedReply input.OperationId)
+                                            else
+                                                return failtestf "Unexpected path %s" path
+                                    })
+
+                            use client = new HttpClient(handler)
+                            use output = new MemoryStream()
+                            use errors = new MemoryStream()
+
+                            let access =
+                                {
+                                    Configuration = configuration
+                                    Client = client
+                                    IsCurrent = (fun _ -> true)
+                                    Clock = clock
+                                    JournalDirectory = (fun () -> Ok directory.FullName)
+                                }
+
+                            use processor =
+                                RemoteFrameProcessor.ForAuthenticatedTest(
+                                    {
+                                        Input = Stream.Null
+                                        Output = output
+                                        Errors = errors
+                                    },
+                                    access,
+                                    token clock
+                                )
+
+                            let io =
+                                {
+                                    Output = output
+                                    Errors = errors
+                                    Review =
+                                        {
+                                            IsInteractive = false
+                                            ReadLine = (fun () -> None)
+                                            Write = ignore
+                                        }
+                                }
+
+                            let code =
+                                VerbRunner.run
+                                    io
+                                    processor
+                                    [
+                                        "case"
+                                        "erase"
+                                        "--case-id"
+                                        "10000000-0000-4000-8000-000000000001"
+                                        "--expected-revision"
+                                        "7"
+                                        "--expected-family-sequence"
+                                        "11"
+                                        "--confirm"
+                                        (if scenario = "wrong confirmation" then
+                                             "OTHER"
+                                         else
+                                             "CASE-1")
+                                    ]
+                                    CancellationToken.None
+                                |> sync
+
+                            let executes = scenario = "accepted" || scenario = "conflict"
+                            Expect.equal executions (if executes then 1 else 0) scenario
+
+                            Expect.equal
+                                contexts
+                                (if executes then 2 else 1)
+                                "No selector lookup or automatic rebase"
+
+                            Expect.equal
+                                bodies.Count
+                                (if executes then 2 else 1)
+                                "Exactly one preview and at most one execute"
+
+                            if executes then
+                                Expect.equal
+                                    (snd bodies[0])
+                                    (snd bodies[1])
+                                    "Execute is the identical prepared request"
+
+                            Expect.equal
+                                code
+                                (if scenario = "conflict" || scenario = "preview refused" then
+                                     2
+                                 elif scenario = "wrong confirmation" then
+                                     64
+                                 else
+                                     0)
+                                scenario
+                        finally
+                            directory.Delete(true))
+            testCase
                 "copied read hints preserve every repeated view filter in supplied order"
                 (fun () ->
                     let filter =
