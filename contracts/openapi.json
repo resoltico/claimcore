@@ -10467,14 +10467,22 @@
           "position": {
             "$ref": "#/components/schemas/EffectPosition"
           },
-          "canRemove": {
-            "type": "boolean"
+          "actions": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "case.removePayment",
+                "case.correctPayment"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 2
           }
         },
         "required": [
           "entry",
           "position",
-          "canRemove"
+          "actions"
         ]
       },
       "CasePaymentPage": {
