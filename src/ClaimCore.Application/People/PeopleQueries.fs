@@ -242,46 +242,61 @@ module internal PeopleQueries =
                                                                 viewer
                                                                 maintenance
 
-                                                        let! requester =
-                                                            ExecutionEnvironment.requester
-                                                                tx
-                                                                services.Principal
+                                                        let! controls =
+                                                            task {
+                                                                if List.isEmpty offers then
+                                                                    return []
+                                                                else
+                                                                    let! requester =
+                                                                        ExecutionEnvironment
+                                                                            .requester
+                                                                            tx
+                                                                            services.Principal
 
-                                                        let mutable controls = []
+                                                                    let mutable controls = []
 
-                                                        for id in offers do
-                                                            let selected =
-                                                                ClaimCore.Domain.Tasks.Registry.find
-                                                                    id
-                                                                |> Option.get
+                                                                    for id in offers do
+                                                                        let selected =
+                                                                            ClaimCore.Domain.Tasks
+                                                                                .Registry.find
+                                                                                id
+                                                                            |> Option.get
 
-                                                            let binding =
-                                                                Binding.People(actorId, revision)
+                                                                        let binding =
+                                                                            Binding.People(
+                                                                                actorId,
+                                                                                revision
+                                                                            )
 
-                                                            let! snapshot =
-                                                                ExecutionEnvironment.fromStorage
-                                                                    tx
-                                                                    services.Principal
-                                                                    requester
-                                                                    maintenance.Active
-                                                                    selected
-                                                                    binding
-                                                                    (Some InputMap.empty)
-                                                                    None
+                                                                        let! snapshot =
+                                                                            ExecutionEnvironment
+                                                                                .fromStorage
+                                                                                tx
+                                                                                services.Principal
+                                                                                requester
+                                                                                maintenance.Active
+                                                                                selected
+                                                                                binding
+                                                                                (Some InputMap.empty)
+                                                                                None
 
-                                                            let available =
-                                                                snapshot.Availability binding
+                                                                        let available =
+                                                                            snapshot.Availability
+                                                                                binding
 
-                                                            if available.Blocked.IsNone then
-                                                                controls <-
-                                                                    TaskOffer.Available(
-                                                                        id,
-                                                                        binding,
-                                                                        available
-                                                                    )
-                                                                    :: controls
+                                                                        if
+                                                                            available.Blocked.IsNone
+                                                                        then
+                                                                            controls <-
+                                                                                TaskOffer.Available(
+                                                                                    id,
+                                                                                    binding,
+                                                                                    available
+                                                                                )
+                                                                                :: controls
 
-                                                        let controls = List.rev controls
+                                                                    return List.rev controls
+                                                            }
 
                                                         let profileSeed =
                                                             if
