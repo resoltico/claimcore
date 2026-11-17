@@ -190,3 +190,13 @@ or execute a transfer, and the original assertion remains in history until erasu
 Use **Download CSV** on the case list, case timeline or reminder queue to download the selected
 filters from their first page. Downloads are bounded and complete only after every authorized page
 succeeds. A refusal or resource limit returns an explanation instead of a partial CSV.
+
+### Case reminder queue
+
+The case workspace supplies a **Case reminders** link for a readable case that has not been erased.
+It opens the queue with that case reference and includes inactive cases, so closed or voided case
+reminders remain reachable. The queue visibly identifies whether the restriction uses a case
+reference or ID. State, due, assignment and text selections compose with it and survive reload.
+**Clear case restriction** removes only the case target, preserving the remaining filters and
+starting from the first page. The query still checks current access; the caption does not establish
+that a requested case exists or is readable.
