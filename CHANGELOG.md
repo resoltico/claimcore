@@ -7,15 +7,14 @@
 - End all of your ClaimCore browser sessions or, as an owner, a person's sessions; identity-provider sessions and bearer tokens remain valid. Unconfirmed deletion is never retried automatically.
 - Invalid or duplicate reminder URL filters show a recoverable error without losing the signed-in workspace or dispatching a broader reminder query.
 - Summary-only edits omit dormant assignee values, including when assignments are unavailable on a closed case.
-
 - Download complete bounded CSV for case lists, timelines, reminders and people history; each page rechecks rights, and late failure produces no successful partial file.
-
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
 - CLI wording and display locale are independent; --display-locale, CLAIMCORE_DISPLAY_LOCALE and profile displayLocale control dates, numbers, money and counts.
 - Long CLI reviews preserve the previewed identity and installation; operational uncertainty has no ledger journal or automatic retry, and copied hints retain all filters and update choices.
 - Correct erroneous payment entries atomically on open cases, including fully paid cases; receipts retain removed and replacement entry identities.
 - Browser response decoding rejects malformed structures before recovery or date observation; uncertain delivery keeps its recovery identity.
+- Contract generation refuses unsupported browser scalar formats and regex syntax; generated guards preserve complete strings and declared Unicode, byte and calendar bounds.
 - CLI case selectors accept explicit IDs; ID-based erasure confirms the previewed reference, and grant/revoke IDs select case scope.
 - CLI HUMAN output includes supplied receipts, links and controls, with preview/dry-run action hints that preserve observed bindings.
 - The people workspace offers account-only registration and admission separately; reminder selection includes assignment and case-target URL round trips.

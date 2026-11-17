@@ -198,6 +198,7 @@
     <Compile Include="Contract/ScreenCompositionTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
+    <Compile Include="ContractGenerator/ResponseDecoderTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
     <Compile Include="Contract/OperationSubmissionTests.fs" />
     <Compile Include="Contract/TaskCatalogTests.fs" />

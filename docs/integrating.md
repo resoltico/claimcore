@@ -7,8 +7,13 @@ current verbs and flags from task declarations; use these sources instead of cop
 
 Use matching server, browser and CLI builds. Regenerate integrations when the contract identity changes.
 The generated [TypeScript client](../contracts/client.ts) provides types, endpoint/task metadata and
-transport constants. It does not provide request or response validators. The native CLI decodes complete
-replies with its codecs.
+transport constants and structural response guards derived from Wire schemas. Invoke them after strict
+byte admission; interpretation, ownership and operation correlation remain consumer checks. They preserve
+strings and check declared Gregorian dates, scalar/UTF-8 bounds and complete pattern consumption. The
+generator refuses unsupported scalar formats and regex syntax rather than emitting an unchecked browser
+pattern. Its supported syntax is deliberately finite; it does not translate arbitrary native regexes.
+These guards cannot recover duplicate members or numeric lexemes already lost by `JSON.parse`. The
+native CLI decodes complete replies with its codecs.
 
 ## Authenticate
 
