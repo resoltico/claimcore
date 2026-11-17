@@ -414,17 +414,36 @@ let assigneePresentation =
                 let instants =
                     match language with
                     | "ar" -> [ " 12:00\u00a0م +00:00"; " 12:00 م +00:00" ]
-                    | "ko" -> [ " 오후 12:00 +00:00" ]
+                    // ICU 77 uses wide Korean day periods; ICU 78 defaults to the abbreviated set.
+                    | "ko" -> [ " 오후 12:00 +00:00"; " PM 12:00 +00:00" ]
                     | "zh-Hant" -> [ " 下午12:00 +00:00" ]
                     | _ -> [ " 12:00 +00:00" ]
                     |> List.map (fun time -> date + time)
 
+                let includesObservation (output: string) =
+                    instants |> List.exists (fun instant -> output.Contains instant)
+
                 Expect.isTrue
-                    (instants |> List.exists (fun instant -> text.Contains instant))
+                    (includesObservation text)
                     (sprintf
                         "Actual supplied observation retains the exact date, time and business-zone offset. Expected one of %A in %s"
                         instants
                         text)
+
+                if language = "ko" then
+                    let observation = instants |> List.find (fun instant -> text.Contains instant)
+
+                    for incorrect in
+                        [
+                            observation.Replace("2026년 8월 31일", "31 Aug 2026")
+                            observation.Replace("2026년 8월 31일", "2026년 8월 30일")
+                            observation.Replace("12:00", "12:01")
+                            observation.Replace("+00:00", "+01:00")
+                            observation.Replace(" 오후 ", " 오전 ").Replace(" PM ", " AM ")
+                        ] do
+                        Expect.isFalse
+                            (includesObservation incorrect)
+                            "Finite locale-data variants still reject a wrong locale, date, time, offset or day period"
 
                 Expect.stringContains text "UTC" "Installation zone is rendered"
                 Expect.isFalse (text.Contains "{\"") "No JSON fallback"
