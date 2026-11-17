@@ -19,3 +19,5 @@ module ClientCompositions =
     let noteRemoval = declared "note.remove"
     let paymentRemoval = declared "case.removePayment"
     let paymentCorrection = declared "case.correctPayment"
+
+    let paymentActions = [ paymentRemoval; paymentCorrection ]

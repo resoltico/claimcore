@@ -6,7 +6,7 @@ type CasePaymentItem =
     {
         Entry: PaymentEntry
         Position: EffectPosition
-        CanRemove: bool
+        Actions: TaskId list
     }
 
 type CasePaymentPage =

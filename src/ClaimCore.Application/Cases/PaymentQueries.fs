@@ -97,76 +97,102 @@ module internal PaymentQueries =
                                                                      fst >> PaymentEntry.id
                                                                  ))
 
-                                                        let removable =
-                                                            ClaimCore.Domain.Tasks.Registry.find
-                                                                ClientCompositions.paymentRemoval
-                                                            |> Option.bind (function
-                                                                | ClaimCore.Domain.Tasks.Task.Family task ->
-                                                                    Some task
-                                                                | _ -> None)
-
-                                                        let canRemove =
-                                                            match family, removable with
-                                                            | Some { Facts = family }, Some task ->
-                                                                let environment =
-                                                                    {
-                                                                        FamilyEnvironment.Requester =
-                                                                            view.Actor
-                                                                        RequesterPrincipal =
-                                                                            services.Principal
-                                                                        Maintenance =
-                                                                            view.Maintenance.Active
-                                                                        AssigneeEligible =
-                                                                            fun _ -> false
-                                                                    }
-
-                                                                (task.Availability
-                                                                    environment
-                                                                    (Some family)
-                                                                    (Binding.Case(
-                                                                        CaseSelector.Id family.Id,
-                                                                        family.Case.Revision
-                                                                    )))
-                                                                    .Blocked.IsNone
-                                                            | _ -> false
-
-                                                        return
-                                                            Outcome.Succeeded
+                                                        match family with
+                                                        | None ->
+                                                            return
+                                                                Outcome.Failed
+                                                                    CoreFault.StoreIntegrityError
+                                                        | Some { Facts = family } ->
+                                                            let environment =
                                                                 {
-                                                                    Basis =
-                                                                        ServiceContext.basis
-                                                                            services
-                                                                            tx.ObservedAt
-                                                                    CaseId = parent.CaseId
-                                                                    Reference =
-                                                                        parent.Snapshot.Reference
-                                                                    Revision =
-                                                                        parent.Snapshot.Revision
-                                                                    WorkRevision = work.Revision
-                                                                    State =
-                                                                        CaseState.map
-                                                                            _.Finance
-                                                                            parent.Snapshot.State
-                                                                    Items =
-                                                                        rows.Items
-                                                                        |> List.map
-                                                                            (fun (entry, position) ->
-                                                                                {
-                                                                                    Entry = entry
-                                                                                    Position =
-                                                                                        position
-                                                                                    CanRemove =
-                                                                                        canRemove
-                                                                                })
-                                                                    NextCursor =
-                                                                        rows.Next
-                                                                        |> Option.map (
-                                                                            Cursors.encodePayments
-                                                                                services
-                                                                                    .InstallationId
-                                                                                parent.CaseId
-                                                                        )
+                                                                    FamilyEnvironment.Requester =
+                                                                        view.Actor
+                                                                    RequesterPrincipal =
+                                                                        services.Principal
+                                                                    Maintenance =
+                                                                        view.Maintenance.Active
+                                                                    AssigneeEligible =
+                                                                        fun _ -> false
                                                                 }
+
+                                                            let tasks =
+                                                                ClientCompositions.paymentActions
+                                                                |> List.map (fun id ->
+                                                                    match
+                                                                        ClaimCore.Domain.Tasks
+                                                                            .Registry.find
+                                                                            id
+                                                                    with
+                                                                    | Some(ClaimCore.Domain.Tasks.Task.Family task) ->
+                                                                        id, task
+                                                                    | _ ->
+                                                                        invalidOp
+                                                                            "A payment action requires a declared family task.")
+
+                                                            let actions entry =
+                                                                let binding =
+                                                                    Binding.CasePayment(
+                                                                        CaseSelector.Id family.Id,
+                                                                        family.Case.Revision,
+                                                                        PaymentEntry.id entry
+                                                                    )
+
+                                                                tasks
+                                                                |> List.choose (fun (id, task) ->
+                                                                    if
+                                                                        (task.Availability
+                                                                            environment
+                                                                            (Some family)
+                                                                            binding)
+                                                                            .Blocked.IsNone
+                                                                    then
+                                                                        Some id
+                                                                    else
+                                                                        None)
+
+                                                            return
+                                                                Outcome.Succeeded
+                                                                    {
+                                                                        Basis =
+                                                                            ServiceContext.basis
+                                                                                services
+                                                                                tx.ObservedAt
+                                                                        CaseId = parent.CaseId
+                                                                        Reference =
+                                                                            parent.Snapshot
+                                                                                .Reference
+                                                                        Revision =
+                                                                            parent.Snapshot.Revision
+                                                                        WorkRevision = work.Revision
+                                                                        State =
+                                                                            CaseState.map
+                                                                                _.Finance
+                                                                                parent.Snapshot
+                                                                                    .State
+                                                                        Items =
+                                                                            rows.Items
+                                                                            |> List.map
+                                                                                (fun
+                                                                                    (entry, position) ->
+                                                                                    {
+                                                                                        Entry =
+                                                                                            entry
+                                                                                        Position =
+                                                                                            position
+                                                                                        Actions =
+                                                                                            actions
+                                                                                                entry
+                                                                                    })
+                                                                        NextCursor =
+                                                                            rows.Next
+                                                                            |> Option.map (
+                                                                                Cursors
+                                                                                    .encodePayments
+                                                                                    services
+                                                                                        .InstallationId
+                                                                                    parent.CaseId
+                                                                            )
+                                                                    }
                                                     | _ ->
                                                         return
                                                             Outcome.Failed

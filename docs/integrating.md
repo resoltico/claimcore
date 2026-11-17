@@ -236,7 +236,9 @@ For the business workflow and terminology, see [Case work](case-work.md) and the
 Use a fresh format 6 installation with matching builds. Case receipts expose `payments`, an ordered
 list of entry differences; there is no singular `payment` member. `case.correctPayment` binds the
 selected `paymentId` and one case revision, then returns both removed and recorded differences in
-one accepted operation. HUMAN controls include their shared `labelId`. Command bindings use a
+one accepted operation. DATA payment-page items expose `actions`, a finite list of independently
+available task IDs, replacing `canRemove`; consumers must not infer correction from removal.
+Presentation attaches exactly those supplied actions to the selected entry. HUMAN controls include their shared `labelId`. Command bindings use a
 closed `COMMAND` branch containing the complete validated operational request rather than seeds.
 
 Browser response admission is generated from the finite Wire codec schemas. It rejects malformed

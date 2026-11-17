@@ -126,13 +126,14 @@ module TaskAffordances =
             Map.empty
 
     let paymentEntryActions id revision currency (item: CasePaymentItem) =
-        if item.CanRemove then
-            [
+        item.Actions
+        |> List.map (fun task ->
+            if task = ClientCompositions.paymentRemoval then
                 paymentRemoveEntry id revision item.Entry
+            elif task = ClientCompositions.paymentCorrection then
                 paymentCorrectionEntry id revision currency item.Entry
-            ]
-        else
-            []
+            else
+                invalidArg "item" "A payment item contains an undeclared action.")
 
     let fromOffer =
         function

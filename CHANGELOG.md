@@ -4,6 +4,7 @@
 
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
+- DATA payment-page items replace canRemove with independently available task IDs in actions; removal and correction controls follow exactly those supplied IDs.
 - Ordinary case reads and selected child operations acquire bounded live facts and write projection deltas; full verification and rebuild still reconstruct complete history.
 - Clear actor profiles only with current accepted erasure evidence; older erasures cannot clear replacement profiles.
 - End all of your ClaimCore browser sessions or, as an owner, a person's sessions; identity-provider sessions and bearer tokens remain valid. Unconfirmed deletion is never retried automatically.
