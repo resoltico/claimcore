@@ -109,8 +109,9 @@ reminders retain their own page's basis until refreshed.
 
 A work view is a named selection of readable cases or reminders. Attention explains work needing action;
 a headline describes composite case state, combining lifecycle, status and payment progress. Inactive
-reminder parents report coarse case state without inferring an open/closed status. The recommendation is an offered next action. The HUMAN document carries a Screen of ordered semantic regions with seven content kinds. Human clients render these
-values generically; typed data remains available for interaction and machine output.
+reminder parents report coarse case state without inferring an open/closed status. The recommendation is an offered next action. The HUMAN document carries a Screen of ordered semantic regions containing entries, tables, stages,
+codes, notices or timelines. Human clients render these values generically; DATA remains available
+for automation.
 
 ## Change and unconfirmed changes
 

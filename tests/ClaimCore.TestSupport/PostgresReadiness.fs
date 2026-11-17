@@ -26,7 +26,7 @@ let hostReady connectionString =
     }
 
 let strategy () =
-    // An explicit strategy suppresses the module default in Testcontainers 4.15.0.
+    // An explicit strategy replaces the PostgreSQL module default.
     // Retain its protocol check and mapped TCP check; authenticate over the host path too.
     let protocol =
         [|

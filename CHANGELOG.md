@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-17
+
 - Use a fresh installation for format 5; format 4 databases have no migration or cross-version reader. Use fresh CLI state for recovery journal format 4.
 - Rebuild integrations for shape-based bindings; case.open now authors field:caseReference in inputs; case/person creation has no target selector.
 - Regenerate HUMAN clients for one document/read grammar, generic affordances and links, scalar seeds, and recommendation/context regions replacing primary flags.
@@ -18,6 +20,7 @@
 - Format 5 retains opaque task/input/effect structure with owner compartments; SQL enforces revision chains, ownership and authorized clearing without business task lists.
 - Core supplies business wording and action placement; browser and CLI acquire operations from declarations and controls instead of task branches.
 - Business catalogs are current in all nine languages; translated changes remain AI-assisted and require human linguistic review.
+- Update OpenAPI, Testcontainers, user-event, oxlint and minimatch dependencies; refresh the Keycloak test image digest.
 
 ## [0.18.0] - 2026-11-15
 

@@ -10,8 +10,8 @@ adjudicate coverage or transfer money.
 Follow [Getting started](docs/getting-started.md) for a fresh synthetic installation, sign-in and first
 case. The [examples](examples/README.md) demonstrate changes through JSON calls and human commands.
 Operators manage identity, access, backups and erasure of copies outside the live database.
-This revision uses installation format 5 and requires a fresh installation and matching clients.
-Older CLI recovery state is incompatible with journal format 4.
+Initialize an empty database with the [supported installation format](src/ClaimCore.RecordFormat/InstallationFormat.fs)
+and matching clients. CLI recovery records must match the [supported journal grammar](src/ClaimCore.Cli/Recovery/RecoveryJournal.fs).
 Build with the SDK pinned in [global.json](global.json); framework-dependent CLI distributions require its matching .NET runtime.
 
 The [HTTP contract](contracts/openapi.json) defines the endpoints. Actor endpoints negotiate HUMAN documents
@@ -49,9 +49,9 @@ Help and discovery work offline. Live commands require the [CLI configuration](d
 | Record case handling | Facts, responsibility, notes, reminders, payment decisions and entries | Coverage adjudication and real-world verification |
 | Control access | OIDC principals, scoped roles and current authorization on reads and writes | Identity-provider membership and account security |
 | Coordinate changes | Reviewed versions, atomic acceptance and exact-operation recovery | Resolving business conflicts and uncertain external actions |
-| Inspect recorded work | Retained changes, verification and independently retained checkpoints | Evidence custody and protection against a trusted administrator rewriting it |
+| Inspect recorded work | Authorized receipts and history, verification and checkpoint comparison | Independent checkpoint custody and protection against trusted-administrator rewriting |
 | Remove private contents | Case/profile erasure within the live installation | Retention and disposal of backups, exports and other copies |
-| Run the service | HTTPS server, CLI and a local evaluation Compose setup | Production deployment, monitoring, certificates and backups |
+| Run the service | HTTPS host, source-built CLI and a local evaluation Compose setup | Production deployment, capacity, monitoring, certificates and backups |
 | Handle money | Payment decisions and assertions of actual payments | Transfers, refunds, banking and accounting integrations |
 
 ## Languages

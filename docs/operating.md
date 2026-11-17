@@ -15,10 +15,10 @@ server and its assets; the human CLI is distributed separately.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
-The current installation format is 5. Format 4 databases cannot be migrated or rebuilt into this
-format by this build: initialize a separate empty database with matching tools. The runtime refuses
-unsupported baseline identities and formats without converting them. Use fresh CLI state for recovery
-journal format 4; retain older installations and their matching tools separately where needed.
+Use installation format 5 and CLI recovery journal format 4 with matching builds. Initialization
+requires an empty database; the runtime refuses unsupported baseline identities and formats without
+converting them. Migration and cross-format reconstruction are unsupported. Protect existing data
+and recovery records rather than attempting to initialize or convert them in place.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
@@ -151,7 +151,6 @@ clamped to the expiry frontier. An arbitrary forward clock jump cannot be distin
 idle time. Keep clocks synchronized and retain checkpoint evidence independently of database backups;
 restoring an older database can lose later accepted history and confirmed expiry observations.
 
-
 ## Certificate, key and host replacement
 
 Prepare the replacement certificate/private key with the configured hostname, server-authentication
@@ -210,7 +209,6 @@ Rebuild preserves erased identities and removal markers while keeping private co
 prior divergence for investigation, and review later erasures and affected copies: a pre-erasure backup
 can restore private content. Inspect restored status and turn maintenance off only after successful
 verification, then reopen traffic.
-
 
 ## Monitoring
 

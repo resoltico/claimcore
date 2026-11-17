@@ -70,6 +70,11 @@ reviews, receipts and history.
 selected authored values with a real reviewed basis. Presentation attaches wording to those identities.
 Generated types and task metadata live in `contracts/client.ts`; collection row keys stay outside submissions.
 
+Browser operations use one reducer in `web/src/operation/operationState.ts`. Draft authoring,
+delivery transitions and disclosed reads have separate owners in the adjacent modules; the reducer
+coordinates their transitions. `protocol/ownerScope.ts` defines ephemeral origin/installation/actor/
+session ownership; durable recovery records retain principal scope without a session epoch.
+
 RecordFormat owns canonical business-input codecs and the single installation format. Wire owns closed submission maps and transport choices. Domain vocabularies supply business tokens. [Compiled negative controls](../tests/ClaimCore.Tests/Architecture/NegativeFixtures.fs)
 exercise the architecture boundaries, including synchronous and asynchronous calls.
 
@@ -259,9 +264,9 @@ It is excluded from the gate, has no thresholds and writes no reports. It is not
 [Directory.Packages.props](../Directory.Packages.props) and reviewed lockfiles pin .NET dependencies;
 [web/package.json](../web/package.json) and its lockfile pin the frontend. Retain container image digests.
 Use locked restore and `npm ci`; update affected consumers, notices and checks together.
-Playwright is pinned to 1.64.1 because the current 1.65.1 Firefox build crashes when accessible-name
-references are read across execution worlds; see the [upstream issue](https://github.com/microsoft/playwright/issues/43967).
-Review the browser build and its regression reproduction before changing this pin.
+The Playwright version in [web/package.json](../web/package.json) is constrained by the
+[Firefox accessible-name regression](https://github.com/microsoft/playwright/issues/43967). Verify
+that accessible-name references work across execution worlds before changing that pin.
 Keep actual authentication, CSP, origin/antiforgery, erasure, private-file and disclosure controls intact.
 
 ## Source releases
@@ -272,7 +277,8 @@ Prepare dependencies, documentation, the version in [Directory.Build.props](../D
 and the dated release notes together. Regenerate contracts after changing the version. Keep an empty
 `Unreleased` section above the dated section and leave published release history unchanged.
 
-Merge the reviewed candidate through a pull request. Let its automatic CI finish, then use the automatic
+Qualify the complete candidate in one pull request, including its dependency, documentation, version
+and release-note changes. Merge after review and the automatic PR checks pass. Use the automatic
 main-push CI result for the exact merged commit; do not dispatch a duplicate qualification run. Deployment
 changes also require the separate Compose restart workflow. After those checks succeed, create an
 annotated `vMAJOR.MINOR.PATCH` tag at that commit, push it and dispatch publication from main.
@@ -301,8 +307,3 @@ keep inputs stable through frontend and native publication and inspect the archi
 Source archives retain a `SOURCE-FILES` inventory for rebuilding publications without Git. When adding
 files to an extracted source tree, initialize a Git checkout and stage its source before publishing.
 Build and publish require Git (for checkouts), Bash, tar and gzip, in addition to the pinned .NET and frontend toolchains.
-
-Browser operations use one reducer in `web/src/operation/operationState.ts`. Draft authoring,
-delivery transitions and disclosed reads have separate owners in the adjacent modules; the reducer
-coordinates their transitions. `protocol/ownerScope.ts` defines ephemeral origin/installation/actor/
-session ownership; durable recovery records retain principal scope without a session epoch.

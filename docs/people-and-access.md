@@ -33,7 +33,7 @@ registering someone does not change their sign-in-provider membership.
 ## Handle access requests
 
 A signed-in person who is not registered sees an explanation that an owner needs to add their account.
-Their access request appears in People & access. Select it to review the supplied identity and any
+Their access request appears in People and access. Select it to review the supplied identity and any
 optional sign-in hints. Confirm the name yourself, choose roles, and add the account. Sign-in hints are
 suggestions, not an authored profile or evidence of permission.
 

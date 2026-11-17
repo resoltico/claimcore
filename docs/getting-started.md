@@ -138,7 +138,7 @@ Choose **Open a case** and enter synthetic values. Use dates no later than the c
 
 Open-case optional text fields are directly editable; leaving them blank omits the value.
 Incident description is optional; use it for a short account of what happened. Review the proposed
-facts and choose **Open case**. Expect **Case opened** and the case workspace. Return to Cases and
+facts and choose **Open a case**. Expect **Case opened** and the case workspace. Return to Cases and
 search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.
 **Needs attention** includes the new case. **Mine** includes it only after responsibility is explicitly
 assigned to your account.

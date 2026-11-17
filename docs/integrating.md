@@ -56,8 +56,8 @@ retain endpoint-specific automation types.
 An `Affordance` carries `task`, `binding`, scalar-or-null `seeds`, `editable`, contextual `choices` and
 `blocked`. Read task kind, endpoint, consequence, creation and input metadata from `taskDefinitions`.
 Operation controls preview and execute; command controls post seeds plus edits to their declared
-endpoint. Collection rows start from the declaration's minimum rows and defaults, rather than nested
-seeds. Recommendations live in `RECOMMENDATION` screen regions. There is no action `primary` flag.
+endpoint. Collection rows start from the declaration's minimum rows and defaults. Recommendations live in
+`RECOMMENDATION` screen regions.
 A `CONTEXT` region associates form context with its supplied actions; show it for the selected task,
 rather than presenting it as another set of current facts. Other section and row actions retain their
 supplied bindings.
@@ -99,7 +99,7 @@ tokens. Omit Update inputs to keep values; use `null` only where `clearable` per
 changes select an actor ID and require `binding.expectedRevision`. Acquire the positive account
 `revision` from the DATA `people.grants` reply (or use the supplied HUMAN action binding). Creation
 of a case or person uses an explicit zero revision and no new-target selector. `case.open` authors
-`field:caseReference` in `inputs`. Creating a reminder or note still selects its parent case, without a
+`field:caseReference` in `inputs`. Creating a reminder or note selects its parent case, without a
 child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
 selection, work, reminder, note and person shapes; command controls use the shared empty binding.
 CLI automation supplies reviewed version flags where the task declares them; interactive commands can
@@ -139,8 +139,8 @@ the input token and submitted row ordinal; correlate that ordinal with the immut
 
 Disclosed case receipts include nullable `disposition` from that accepted operation. DATA timeline
 changes use `DISPOSITION` for the same typed void/reinstate reason. Later case updates do not replace
-historical reasons; current permissions and owner erasure still control disclosure. Regenerate typed
-DATA clients for these members/variants. This output correction does not change installation format.
+the reason recorded by each accepted operation. Current permissions and owner erasure control
+disclosure of these values in both representations.
 
 Successful payloads vary by endpoint. Rejections use the shared representation-specific rejection
 shape, and failures use the common fault shape with a Core message ID. Input issues target declared
@@ -160,16 +160,16 @@ request schema. For example, `people.requests.dismiss` accepts:
 }
 ```
 
-The earlier `kind`, `issuer` and `subject` member names are rejected. Render the returned HUMAN
-document for command feedback. Do not repeat an uncertain operational write automatically.
+Command requests admit only their declared semantic input keys. Render the returned HUMAN document
+for command feedback. Do not repeat an uncertain operational write automatically.
 
 ## Recover an uncertain change
 
 Before sending a mutation, retain enough identity to confirm it after interruption. The built-in
 clients maintain a local recovery journal without storing the request body or entered personal facts.
 Recovery records belong to a specific service, installation and account. The CLI journal uses format 4
-and stores the task token instead of separate subject/act fields. Earlier CLI state requires a fresh
-state directory; there is no cross-format journal reader.
+and stores the task token with operation/attempt identity and ownership scope. Journal admission
+requires the supported format; incompatible records are refused without conversion.
 
 If delivery is uncertain:
 
