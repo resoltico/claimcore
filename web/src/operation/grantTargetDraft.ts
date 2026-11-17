@@ -12,8 +12,9 @@ export const grantTarget = (values: FormValues): GrantTargetDraft => {
   if (isGrantTarget(value)) {
     return value;
   }
-  if (value !== undefined && value !== "INSTALLATION" && value !== "CASE")
-    {throw new Error("Invalid grant scope.");}
+  if (value !== undefined && value !== "INSTALLATION" && value !== "CASE") {
+    throw new Error("Invalid grant scope.");
+  }
   if (
     value === undefined &&
     (Object.hasOwn(values, "input:caseId") || Object.hasOwn(values, "field:caseReference"))

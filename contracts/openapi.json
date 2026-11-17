@@ -2571,7 +2571,7 @@
         },
         "responses": {
           "200": {
-            "description": "A complete bounded CSV document, or a typed JSON failure. No successful partial export is sent.",
+            "description": "HTTP 200",
             "headers": {
               "Content-Length": {
                 "required": true,
@@ -2582,13 +2582,13 @@
                 }
               },
               "Content-Encoding": {
-                "description": "CSV success only",
+                "x-claimcore-csv-success-only": true,
                 "schema": {
                   "const": "identity"
                 }
               },
               "Content-Disposition": {
-                "description": "CSV success only",
+                "x-claimcore-csv-success-only": true,
                 "schema": {
                   "type": "string"
                 }
