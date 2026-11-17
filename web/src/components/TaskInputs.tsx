@@ -1,10 +1,6 @@
 import { Select } from "../ui/Select";
 import { grantFields, grantScope, grantTarget } from "../operation/grantTargetDraft";
-import {
-  initialCollectionRow,
-  affordanceSeed,
-  type OperationAffordance,
-} from "../operation/affordances";
+import { affordanceSeed, type OperationAffordance } from "../operation/affordances";
 import { usePresentation } from "../presentation/context";
 import { renderCatalogKey } from "../presentation/messages";
 import { isTerm, isVocabulary } from "../presentation/terms";
@@ -87,13 +83,8 @@ const TaskInputHelp = ({
     </>
   );
 };
-type ControlProps = Props & { input: Input; errorKey?: string };
-const initialChoice = (input: Input) => {
-  if (input.id === "input:scope") {
-    return "INSTALLATION";
-  }
-  return taskInput(input.id).kind === "GROUP" ? "KEEP" : "";
-};
+type InputProps = Props & { defaults: FormValues };
+type ControlProps = InputProps & { input: Input; errorKey?: string };
 const choiceHint = (input: Input, props: Props, offered: ReadonlyArray<string>, value: string) => {
   if (!offered.includes(value)) {
     return "ui.choiceNotOffered";
@@ -110,7 +101,9 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
   const label = renderCatalogKey(p, metadata.labelId);
   const error = props.errors[errorKey];
   const offered = choicesFor(input, props.affordance);
-  const selected = formValueText(props.values[input.id]);
+  const selected = formValueText(
+    Object.hasOwn(props.values, input.id) ? props.values[input.id] : props.defaults[input.id],
+  );
   const options =
     offered.includes(selected) || !input.choices.some((value) => value === selected)
       ? offered
@@ -150,7 +143,7 @@ const ChoiceInput = ({ input, errorKey = input.id, ...props }: ControlProps) => 
                 value={value}
                 disabled={props.disabled || hint !== null}
                 aria-describedby={hint === null ? undefined : hintId}
-                checked={(selected || initialChoice(input)) === value}
+                checked={selected === value}
                 onChange={() => {
                   props.onChange(input.id, value);
                 }}
@@ -228,7 +221,7 @@ const InputControl = ({ input, errorKey = input.id, ...props }: ControlProps) =>
     </div>
   );
 };
-const SelectedValue = ({ input, peer, ...props }: Props & { input: Input; peer?: Input }) => {
+const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; peer?: Input }) => {
   const p = usePresentation();
   const members = peer === undefined ? [input] : [input, peer];
   const ids = members.map((member) => member.id);
@@ -335,7 +328,7 @@ const GrantTargetInput = ({
   errorKey,
   editableTarget,
   ...props
-}: Props & {
+}: InputProps & {
   inputs: ReadonlyArray<Input>;
   errorKey?: (id: TaskInputId) => string;
   editableTarget?: ReadonlyArray<string>;
@@ -407,7 +400,7 @@ const GrantTargetInput = ({
 };
 const isGrantInput = (input: Input) =>
   ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
-const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) => {
+const Fields = ({ inputs, ...props }: InputProps & { inputs: ReadonlyArray<Input> }) => {
   const render = (input: Input) => {
     const field = productMetadata.catalog.fields.find(
       (candidate) => candidate.name === taskInput(input.id).key,
@@ -455,7 +448,7 @@ const Fields = ({ inputs, ...props }: Props & { inputs: ReadonlyArray<Input> }) 
 const GrantRows = ({
   collection,
   ...props
-}: Props & { collection: OperationTaskDefinition["collections"][number] }) => {
+}: InputProps & { collection: OperationTaskDefinition["collections"][number] }) => {
   const p = usePresentation();
   const value = props.values[collection.id];
   const rows = isFormCollection(value) ? value.rows : [];
@@ -470,6 +463,7 @@ const GrantRows = ({
           <legend>{p.text("ui.roleNumber", { number: p.integer(index + 1) })}</legend>
           <GrantTargetInput
             {...props}
+            defaults={collection.defaults}
             inputs={collection.inputs}
             editableTarget={collection.inputs.map((input) => input.id)}
             values={row.values}
@@ -492,6 +486,7 @@ const GrantRows = ({
                 key={input.id}
                 {...props}
                 input={input}
+                defaults={collection.defaults}
                 current={null}
                 constraintValues={props.values}
                 values={row.values}
@@ -527,7 +522,7 @@ const GrantRows = ({
             ...rows,
             {
               key: crypto.randomUUID(),
-              values: initialCollectionRow(props.affordance, collection.id),
+              values: { ...collection.defaults },
             },
           ]);
         }}
@@ -538,6 +533,7 @@ const GrantRows = ({
   );
 };
 export const TaskInputs = (props: Props) => {
+  const inputProps = { ...props, defaults: props.task.defaults };
   const visible = props.task.inputs.filter((input) => permitted(input, props));
   const groups = visible.filter((input) => taskInput(input.id).kind === "GROUP");
   const groupNames = new Set(groups.map((input) => taskInput(input.id).group));
@@ -546,7 +542,7 @@ export const TaskInputs = (props: Props) => {
   );
   return (
     <>
-      <Fields inputs={ordinary} {...props} />
+      <Fields inputs={ordinary} {...inputProps} />
       {groups.map((group) => {
         const metadata = taskInput(group.id);
         const children = visible.filter(
@@ -557,17 +553,17 @@ export const TaskInputs = (props: Props) => {
         );
         return (
           <section className="correction-group" key={group.id}>
-            <InputControl input={group} {...props} />
+            <InputControl input={group} {...inputProps} />
             {props.values[group.id] === "UPDATE" ? (
               <CorrectionInputs group={metadata.group} current={props.current}>
-                <Fields inputs={children} {...props} />
+                <Fields inputs={children} {...inputProps} />
               </CorrectionInputs>
             ) : null}
           </section>
         );
       })}
       {props.task.collections.map((collection) => (
-        <GrantRows key={collection.id} collection={collection} {...props} />
+        <GrantRows key={collection.id} collection={collection} {...inputProps} />
       ))}
     </>
   );

@@ -199,7 +199,7 @@ module CliInvocations =
 
     let private wantsCommandHelp (arguments: string list) =
         let helpRequested =
-            arguments
+            VerbOptions.beforeTerminator arguments
             |> List.exists (fun argument -> List.contains argument CliCommands.aliases)
 
         let commandPath =
@@ -262,7 +262,7 @@ module CliInvocations =
         match invocation with
         | CliInvocation.Verb words ->
             let explicit =
-                words
+                VerbOptions.beforeTerminator words
                 |> List.exists (fun (word: string) ->
                     word = "--issuer"
                     || word.StartsWith("--issuer=", System.StringComparison.Ordinal))
@@ -277,11 +277,14 @@ module CliInvocations =
                         input.Name = TaskInputId.Target InputTarget.PrincipalIssuer))
 
             match explicit, acceptsIssuer, Map.tryFind CliSetting.Issuer profile with
-            | false, true, Some issuer -> CliInvocation.Verb(words @ [ "--issuer"; issuer ])
+            | false, true, Some issuer ->
+                CliInvocation.Verb(VerbOptions.insertOptions [ "--issuer"; issuer ] words)
             | _ -> invocation
         | _ -> invocation
 
     let private flagValues flag (arguments: string list) =
+        let arguments = VerbOptions.beforeTerminator arguments
+
         arguments
         |> List.mapi (fun index argument ->
             if argument = flag then
@@ -310,11 +313,13 @@ module CliInvocations =
         let locales = flagValues "--display-locale" arguments
         let suppliedLocale = List.tryHead locales
 
+        let optionArguments = VerbOptions.beforeTerminator arguments
+
         let missingLocale =
-            arguments
+            optionArguments
             |> List.mapi (fun index argument ->
                 argument = "--display-locale"
-                && (List.tryItem (index + 1) arguments
+                && (List.tryItem (index + 1) optionArguments
                     |> Option.forall (fun value ->
                         value.StartsWith("--", System.StringComparison.Ordinal))))
             |> List.exists id
@@ -372,13 +377,17 @@ module CliInvocations =
                                     ->
                                     let words =
                                         if languages.IsEmpty then
-                                            words @ [ "--language"; context.Language ]
+                                            VerbOptions.insertOptions
+                                                [ "--language"; context.Language ]
+                                                words
                                         else
                                             words
 
                                     let words =
                                         if locales.IsEmpty then
-                                            words @ [ "--display-locale"; context.DisplayLocale ]
+                                            VerbOptions.insertOptions
+                                                [ "--display-locale"; context.DisplayLocale ]
+                                                words
                                         else
                                             words
 
@@ -391,6 +400,8 @@ module CliInvocations =
         admitConfiguredWith CliLanguage.environment arguments
 
     let usageLanguage arguments =
+        let arguments = VerbOptions.beforeTerminator arguments
+
         let separate =
             arguments
             |> List.pairwise

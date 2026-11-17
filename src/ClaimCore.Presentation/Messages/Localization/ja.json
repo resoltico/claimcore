@@ -2854,5 +2854,17 @@
   "label.exportCsv": {
     "text": "CSVをダウンロード",
     "source": "a4023b89022f"
+  },
+  "label.caseReminders": {
+    "text": "この案件のリマインダー",
+    "source": "faacc37040ae"
+  },
+  "label.remindersForCaseReference": {
+    "text": "案件 {case} のリマインダー",
+    "source": "a6e15367a09d"
+  },
+  "label.remindersForCaseId": {
+    "text": "案件 ID {case} のリマインダー",
+    "source": "f8c19ce78013"
   }
 }

@@ -10,7 +10,12 @@ const session = vi.hoisted(() => ({
   logout: vi.fn(),
 }));
 vi.mock("../../src/session/useSession", () => ({ useSession: () => session }));
-it.each(["state=INVALID", "state=PENDING&state=COMPLETED"])(
+it.each([
+  "state=INVALID",
+  "state=PENDING&state=COMPLETED",
+  "caseId=INVALID",
+  "caseId=10000000-0000-4000-8000-000000000001&caseReference=CONFLICTING",
+])(
   "keeps malformed reminder selection %s recoverable inside the authenticated app",
   async (query) => {
     stubDashboardContext();

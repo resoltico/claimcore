@@ -57,7 +57,7 @@ module UsageText =
                             CliIdentity.programName
                             + " "
                             + CommandGrammar.synopsisForDraft
-                                (List.contains "--dry-run" arguments)
+                                (VerbOptions.hasOption "--dry-run" arguments)
                                 entry
                         ))
                 ]

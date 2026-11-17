@@ -265,16 +265,12 @@ module CommandGrammar =
 
         let arguments =
             declarations
+            |> List.filter (fun input ->
+                not (input.Name = TaskInputId.CaseId && selectsExistingCase operation))
             |> List.choose (fun input ->
                 match input.Argument with
-                | CommandArgument.Implicit -> None
-                | CommandArgument.Operand when
-                    input.Name = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
-                    && selectsExistingCase operation
-                    ->
-                    Some "(CASE-REFERENCE | --case-id UUID)"
-                | CommandArgument.Operand ->
-                    Some(kebab (inputName input.Name) |> _.ToUpperInvariant())
+                | CommandArgument.Implicit
+                | CommandArgument.Operand -> None
                 | CommandArgument.Named ->
                     let suffix = placeholder input.Atom
 
@@ -331,6 +327,26 @@ module CommandGrammar =
                      "[" + syntax + "]")
                 + "...")
 
-        String.concat " " (words operation @ arguments @ repeated @ textSources @ clears @ globals)
+        let operands =
+            declarations
+            |> List.filter (fun input -> input.Argument = CommandArgument.Operand)
+            |> List.map (fun input -> kebab (inputName input.Name) |> _.ToUpperInvariant())
+
+        let operands =
+            match operands with
+            | [] -> []
+            | [ "CASE-REFERENCE" ] when selectsExistingCase operation ->
+                [ "(--case-id UUID | [--] CASE-REFERENCE)" ]
+            | values -> "[--]" :: values
+
+        String.concat
+            " "
+            (words operation
+             @ arguments
+             @ repeated
+             @ textSources
+             @ clears
+             @ globals
+             @ operands)
 
     let synopsis operation = synopsisForDraft false operation

@@ -33,6 +33,18 @@ module internal VerbOptions =
         |> List.truncate 3
         |> List.map snd
 
+    /// A terminator protects every following argv token from option interpretation.
+    let beforeTerminator arguments = arguments |> List.takeWhile ((<>) "--")
+
+    let insertOptions added arguments =
+        let prefix = beforeTerminator arguments
+        prefix @ added @ (arguments |> List.skip prefix.Length)
+
+    let hasOption name arguments =
+        beforeTerminator arguments
+        |> List.exists (fun (value: string) ->
+            value = name || value.StartsWith(name + "=", StringComparison.Ordinal))
+
     let private assigned (argument: string) =
         let separator = argument.IndexOf '='
 
@@ -57,6 +69,7 @@ module internal VerbOptions =
         let rec scan =
             function
             | [] -> ()
+            | "--" :: rest -> operands.AddRange rest
             | (argument: string) :: rest when argument.StartsWith("--", StringComparison.Ordinal) ->
                 let name, explicit =
                     match assigned argument with

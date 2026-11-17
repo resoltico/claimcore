@@ -316,7 +316,7 @@ module Grammar =
                             (match (Frames.endpoint invocation).Id with
                              | EndpointId.Actor(ActorEndpoint.Operation _) -> false
                              | _ -> true)
-                            || (arguments
+                            || (VerbOptions.beforeTerminator arguments
                                 |> List.exists (fun word ->
                                     word = "--operation-id"
                                     || word.StartsWith(
@@ -343,7 +343,7 @@ module Grammar =
             CommandGrammar.tryOperation arguments
             |> Option.exists (fun operation -> (TaskRouting.act operation).IsSome)
 
-        if not mutation || not (List.contains "--dry-run" arguments) then
+        if not mutation || not (VerbOptions.hasOption "--dry-run" arguments) then
             Ok None
         else
             let admit endpoint =

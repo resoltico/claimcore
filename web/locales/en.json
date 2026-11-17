@@ -174,5 +174,6 @@
   "ui.addRole": "Add role",
   "ui.removeRole": "Remove role",
   "ui.roleNumber": "Role {number}",
-  "ui.downloadFailed": "The browser could not save the download. Try again."
+  "ui.downloadFailed": "The browser could not save the download. Try again.",
+  "ui.clearCaseRestriction": "Clear case restriction"
 }

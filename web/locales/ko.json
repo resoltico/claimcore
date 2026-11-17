@@ -702,5 +702,9 @@
   "ui.downloadFailed": {
     "text": "브라우저가 다운로드를 저장하지 못했습니다. 다시 시도하세요.",
     "source": "e3c4b2089bc4"
+  },
+  "ui.clearCaseRestriction": {
+    "text": "청구 건 제한 해제",
+    "source": "76ab14deda9c"
   }
 }

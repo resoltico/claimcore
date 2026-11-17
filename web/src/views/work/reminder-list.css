@@ -157,3 +157,18 @@
   color: var(--text-primary);
   font: inherit;
 }
+
+.reminder-case-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block: var(--space-2);
+}
+.reminder-case-target p {
+  min-inline-size: 0;
+  margin: 0;
+}
+.reminder-case-target bdi {
+  overflow-wrap: anywhere;
+}

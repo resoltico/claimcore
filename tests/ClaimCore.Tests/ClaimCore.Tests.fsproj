@@ -141,6 +141,7 @@
     <Compile Include="RecordFormat/RetainedOperationPropertyTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
+    <Compile Include="Contract/ReminderTargetPresentationTests.fs" />
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
     <Compile Include="Contract/PartReviewPresentationTests.fs" />
     <Compile Include="Contract/AffordanceTests.fs" />
@@ -217,6 +218,7 @@
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/ReviewedTransportTests.fs" />
+    <Compile Include="Cli/CliArgumentBoundaryTests.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
     <Compile Include="Cli/TransportBodyScenarios.fs" />
     <Compile Include="Cli/CliTransportTests.fs" />

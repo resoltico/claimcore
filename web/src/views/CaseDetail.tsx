@@ -1,3 +1,7 @@
+import { coreLinkPath } from "../routing/coreLinks";
+import { followLink } from "../routing/followLink";
+import { navigate } from "../routing/navigation";
+import { renderCatalogKey } from "../presentation/messages";
 import { isNarrativeCreationId, type ActKind } from "../operation/metadata";
 import type { Affordance, CaseSelector, HumanDocument, Screen } from "@contracts/client";
 import { useContentRoute } from "../hooks/SettingsDetourContext";
@@ -150,6 +154,22 @@ const CaseHeader = ({
             requestedReference={target.kind === "REFERENCE" ? target.caseReference : undefined}
             timeZone={state?.basis.kind === "SNAPSHOT" ? state.basis.observation.timeZone : "UTC"}
           />
+          {current?.links.map((named) => {
+            const href = coreLinkPath(named.link);
+            return href === undefined ? null : (
+              <a
+                key={JSON.stringify(named.link)}
+                href={href}
+                onClick={(event) => {
+                  followLink(event, () => {
+                    navigate(href);
+                  });
+                }}
+              >
+                {renderCatalogKey(p, named.labelId)}
+              </a>
+            );
+          })}
           {current === null ? null : (
             <div className="case-header-actions">
               <CaseActions
