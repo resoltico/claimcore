@@ -34,7 +34,7 @@ module internal CliConfigure =
 
         loop Map.empty arguments
 
-    let private shown effective path (values: Map<CliSetting, string option * string>) =
+    let private shown effective display path (values: Map<CliSetting, string option * string>) =
         let fields =
             InputDiagnostics.settings
             |> List.map (fun (setting, name) ->
@@ -58,13 +58,19 @@ module internal CliConfigure =
                         "value", JsonValue.String(fst effective)
                         "source", JsonValue.String(snd effective)
                     ]
+                "effectiveDisplayLocale",
+                JsonValue.Object
+                    [
+                        "value", JsonValue.String(fst display)
+                        "source", JsonValue.String(snd display)
+                    ]
                 "settings", JsonValue.Object fields
             ]
         |> WireWriter.indentedBytes
 
     let showWith environment =
         RemoteConfiguration.sources environment
-        |> Result.map (fun (path, values) ->
+        |> Result.bind (fun (path, values) ->
             let profile =
                 values
                 |> Map.toList
@@ -75,7 +81,12 @@ module internal CliConfigure =
                         None)
                 |> Map.ofList
 
-            shown (CliLanguage.choose environment profile) path values)
+            let language = CliLanguage.choose environment profile
+
+            CliLanguage.displayLocale environment profile (fst language) None
+            |> Result.mapError (fun _ -> ClientFailure.Configuration)
+            |> Result.map (fun (context, source) ->
+                shown language (context.DisplayLocale, source) path values))
 
     let show () =
         showWith RemoteConfiguration.environment

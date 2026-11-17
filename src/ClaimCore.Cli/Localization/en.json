@@ -32,7 +32,7 @@
   "cli.help.commands": "Run {command} for commands.",
   "cli.help.dryRunUsage": "With --dry-run: {usage}",
   "cli.help.configuration": "Settings are saved in ~/.config/claimcore/profile.json. Environment variables override them.\nSecrets are never saved; supply them through a file.\nRun `claimcore configure --show` to see effective values and their sources.\nSee docs/integrating.md#cli-use.",
-  "cli.help.configure": "Save public connection and language settings in the profile.\nRun `claimcore configure --show` to inspect effective values and their sources.\nSupply secrets through files; they are never saved in the profile.\nSee docs/integrating.md#cli-use.",
+  "cli.help.configure": "Save public connection, language and display-locale settings in the profile.\\nLanguage selects wording; --display-locale selects dates and numbers. Display locale uses flag, CLAIMCORE_DISPLAY_LOCALE, profile, then the language default.\\nRun `claimcore configure --show` to inspect effective values and their sources.\\nSupply secrets through files; they are never saved in the profile.\\nSee docs/integrating.md#cli-use.",
   "cli.help.delivery": "If delivery is unconfirmed, exit code 4 prints the exact request to send again.\nSending it again cannot record it twice.\nUse `claimcore recovery list` and `claimcore recovery check` to see the answer; it becomes final within {window}.",
   "cli.help.examples": "Prepare requests offline, inspect schemas, then send an admitted frame.",
   "cli.help.globalOptions": "Global options",
@@ -65,7 +65,7 @@
   "cli.usage.configureOptions": "Configure accepts --show alone or the documented public settings. Secret options are refused.",
   "cli.usage.duplicateOption": "Option supplied more than once: {flag}.",
   "cli.usage.extraOperand": "Unexpected operand: {operand}.",
-  "cli.usage.helpOptions": "Use help [topic | family [verb]] with --format text|json and an optional --language.",
+  "cli.usage.helpOptions": "Use help [topic | family [verb]] with --format text|json, optional --language and optional --display-locale.",
   "cli.usage.helpTopic": "Unknown help topic.",
   "cli.usage.invalidChoice": "Invalid value {value} for {flag}; expected {allowed}.",
   "cli.usage.invalidInteger": "Invalid whole-number value {value} for {flag}.",
@@ -104,5 +104,6 @@
   "cli.usage.shellInteractiveRequired": "shell requires an interactive terminal and interactive sign-in. Use session for piped requests.",
   "cli.text.recoveryRefusedAttempt": "Refused, awaiting final confirmation — attempt {attemptId}: {subject} {act}; operation {operationId}.",
   "cli.usage.invalidRange": "{flag} must be between {minimum} and {maximum}; received {value}.",
-  "cli.failure.AUTHENTICATION_TIMEOUT": "Sign-in was not completed within two minutes. Run the command again and complete sign-in in the browser."
+  "cli.failure.AUTHENTICATION_TIMEOUT": "Sign-in was not completed within two minutes. Run the command again and complete sign-in in the browser.",
+  "cli.text.operationalUnresolved": "The command's answer was not confirmed. Repeating it may affect newer state."
 }

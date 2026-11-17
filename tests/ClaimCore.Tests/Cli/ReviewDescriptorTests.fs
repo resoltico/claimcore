@@ -48,7 +48,7 @@ let kindGoldens =
                     [
                         "4 Nov 2026 12:00 +00:00"
                         "4 nov. 2026 12:00 +00:00"
-                        "4 نوفمبر 2026 12:00 +00:00"
+                        "4 نوفمبر 2026 12:00\u00a0م +00:00"
                     ]
                     PresentedValue.Party(DomainInputs.name "Tess"), List.replicate 3 "Tess"
                     PresentedValue.Text "Text", List.replicate 3 "Text"
@@ -84,7 +84,7 @@ let kindGoldens =
             for value, expected in rows do
                 for language, expected in List.zip [ "en"; "lv"; "ar" ] expected do
                     Expect.equal
-                        (rendered language value)
+                        (rendered (RenderingContext.forLanguage language) value)
                         expected
                         "Human format is explicitly pinned per language")
 
@@ -132,7 +132,7 @@ let reviews =
 
                     let text =
                         OperationText.previewLines
-                            "en"
+                            (RenderingContext.forLanguage "en")
                             None
                             (RepresentationReply.Human(
                                 HumanReplies.previewSubmission
@@ -215,8 +215,8 @@ let reviews =
                     "The currency is not a competing changed field"
 
                 Expect.equal
-                    (rendered "en" delta.Changes.Head.Before,
-                     rendered "en" delta.Changes.Head.After)
+                    (rendered (RenderingContext.forLanguage "en") delta.Changes.Head.Before,
+                     rendered (RenderingContext.forLanguage "en") delta.Changes.Head.After)
                     ("0.00 EUR", "12.34 EUR")
                     "All accepted money digits and minor units survive"
 
@@ -236,12 +236,18 @@ let reviews =
             testCase
                 "plain text still escapes LF while admitted narratives retain paragraphs"
                 (fun () ->
-                    let plain = rendered "en" (PresentedValue.Text "First\nSecond")
+                    let plain =
+                        rendered
+                            (RenderingContext.forLanguage "en")
+                            (PresentedValue.Text "First\nSecond")
+
                     Expect.isFalse (plain.Contains '\n') "Single-line data cannot inject layout"
                     Expect.stringContains plain "\\u{000A}" "The data escape is atomic and visible"
 
                     Expect.equal
-                        (rendered "en" (PresentedValue.Narrative "First\nSecond"))
+                        (rendered
+                            (RenderingContext.forLanguage "en")
+                            (PresentedValue.Narrative "First\nSecond"))
                         "First\nSecond"
                         "Only the narrative kind admits LF layout")
             testCase
@@ -288,7 +294,7 @@ let reviews =
                     let output =
                         OperationText.receiptLinesWithDetails
                             true
-                            "en"
+                            (RenderingContext.forLanguage "en")
                             false
                             (HumanReceiptDocument.ofCore receipt)
                         |> String.concat "\n"

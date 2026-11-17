@@ -75,8 +75,13 @@ module Frames =
     let value endpoint (invocation: Invocation) =
         EndpointValues.tryInput endpoint invocation.Typed
 
+    /// The frame envelope can retain the optional installation scope used by a preview.
+    let acceptsInstallationBinding (endpoint: ClaimCore.Wire.Route) =
+        Api.requiresInstallation endpoint
+        || endpoint.Id = EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
+
     let bindInstallation installation (invocation: Invocation) =
-        if installation = Guid.Empty || not (Api.requiresInstallation invocation.Target) then
+        if installation = Guid.Empty || not (acceptsInstallationBinding invocation.Target) then
             Error ClientFailure.InvalidFrame
         elif invocation.InstallationId |> Option.exists ((<>) installation) then
             Error ClientFailure.InstallationMismatch
@@ -253,10 +258,12 @@ module Frames =
                 else
                     InvalidFrameReason.Schema))
 
+    let freeze (invocation: Invocation) = { invocation with Provisional = false }
+
     let provisional (invocation: Invocation) = { invocation with Provisional = true }
 
     /// Refresh only an automatically allocated ID that has never reached transport or the journal.
-    let refreshProvisional (invocation: Invocation) =
+    let refreshProvisional (clock: TimeProvider) allocate (invocation: Invocation) =
         let shouldAllocate =
             invocation.Provisional
             && (match operationId invocation with
@@ -264,7 +271,7 @@ module Frames =
                 | Some raw ->
                     OperationId.create raw
                     |> Option.exists (fun operation ->
-                        DateTimeOffset.UtcNow - OperationId.issuedAt operation
+                        clock.GetUtcNow() - OperationId.issuedAt operation
                         >= TimeSpan.FromMinutes 9.)
                 | None -> false)
 
@@ -277,7 +284,7 @@ module Frames =
                         |> List.map (fun (key, value) ->
                             key,
                             if key = "operationId" then
-                                Codec.uuid.Write(Guid.CreateVersion7())
+                                Codec.uuid.Write(allocate ())
                             else
                                 value)
                     )
@@ -470,8 +477,21 @@ module Frames =
 
             Api.effect endpoint = EndpointEffect.LedgerExecution)
 
+    let mayChange frame =
+        frame.Endpoint
+        |> Option.exists (fun id ->
+            let endpoint =
+                match id with
+                | EndpointId.Host host -> Api.forHost host
+                | EndpointId.Actor actor -> Api.forActor actor
+
+            match Api.effect endpoint with
+            | EndpointEffect.Read -> false
+            | EndpointEffect.OperationalWrite
+            | EndpointEffect.LedgerExecution -> true)
+
     let exitCode frame =
-        (if frame.Delivery = DeliveryState.Uncertain && isLedgerExecution frame then
+        (if frame.Delivery = DeliveryState.Uncertain && mayChange frame then
              ExitCode.OutcomeUnknown
          else
              match frame.Result with

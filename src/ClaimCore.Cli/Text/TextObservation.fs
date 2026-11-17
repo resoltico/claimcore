@@ -9,43 +9,39 @@ open ClaimCore.Presentation
 
 /// Observation belongs to the installation snapshot, never the client's current clock.
 module internal TextObservation =
-    let line (language: string) (basis: WorkDateBasis) =
+    let line (rendering: RenderingContext) (basis: WorkDateBasis) =
         let observed =
             try
-                TimeZoneInfo
-                    .ConvertTime(
-                        basis.ObservedAt,
-                        TimeZoneInfo.FindSystemTimeZoneById basis.TimeZoneId
-                    )
-                    .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+                ReplyTextFormat.instantIn rendering basis.TimeZoneId basis.ObservedAt
             with
             | :? TimeZoneNotFoundException
             | :? InvalidTimeZoneException ->
-                basis.ObservedAt
-                    .ToUniversalTime()
-                    .ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)
+                ReplyTextFormat.instantIn rendering "Etc/UTC" basis.ObservedAt + " UTC"
 
         MessageCatalogs.renderCli
-            language
+            rendering.Language
             (CliMessage.Observed(
                 observed,
-                ReplyTextFormat.calendarDate language basis.BusinessDate,
+                ReplyTextFormat.calendarDate rendering basis.BusinessDate,
                 TerminalText.data basis.TimeZoneId
             ))
 
 
-    let footer language count cursor basis allowAll =
+    let footer (rendering: RenderingContext) count cursor basis allowAll =
         [
-            yield MessageCatalogs.renderCli language (CliMessage.PageCount(string count))
+            yield
+                MessageCatalogs.renderCli
+                    rendering.Language
+                    (CliMessage.PageCount(ReplyTextFormat.number rendering (int64 count)))
             match cursor with
             | Some cursor ->
                 yield
                     MessageCatalogs.renderCli
-                        language
+                        rendering.Language
                         (if allowAll then
                              CliMessage.PageMoreAll(TerminalText.data cursor)
                          else
                              CliMessage.PageMore(TerminalText.data cursor))
             | None -> ()
-            yield line language basis
+            yield line rendering basis
         ]

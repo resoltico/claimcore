@@ -26,13 +26,15 @@ type RecoveryInvocation =
     {
         Action: RecoveryAction
         Text: bool
-        Language: string
+        Rendering: RenderingContext
     }
+
+    member this.Language = this.Rendering.Language
 
 [<RequireQualifiedAccess>]
 type CliInvocation =
-    | Help of topic: CliTopic * language: string * json: bool
-    | CommandHelp of words: string list * language: string * json: bool
+    | Help of topic: CliTopic * rendering: RenderingContext * json: bool
+    | CommandHelp of words: string list * rendering: RenderingContext * json: bool
     | Version of json: bool
     | Schema of selection: CliSchema
     | Call
@@ -55,6 +57,18 @@ module CliInvocations =
                 language = None && List.contains value LocalizationPolicy.languages
                 ->
                 collect operands format (Some value) tail
+            | "--display-locale" :: value :: tail ->
+                if List.contains value LocalizationPolicy.displayLocales then
+                    collect operands format language tail
+                else
+                    Error(
+                        UsageError.InvalidChoice(
+                            "--display-locale",
+                            value,
+                            LocalizationPolicy.displayLocales
+                        )
+                    )
+            | [ "--display-locale" ] -> Error(UsageError.MissingValue "--display-locale")
             | value :: _ when value.StartsWith("-", System.StringComparison.Ordinal) ->
                 Error(UsageError.UnknownOption(value, None))
             | value :: tail -> collect (value :: operands) format language tail
@@ -64,16 +78,22 @@ module CliInvocations =
             |> List.collect (fun (argument: string) ->
                 if argument.StartsWith("--language=", System.StringComparison.Ordinal) then
                     [ "--language"; argument.Substring(11) ]
+                elif argument.StartsWith("--display-locale=", System.StringComparison.Ordinal) then
+                    [ "--display-locale"; argument.Substring(17) ]
                 elif argument.StartsWith("--format=", System.StringComparison.Ordinal) then
                     [ "--format"; argument.Substring(9) ]
                 else
                     [ argument ])
 
-        collect [] None None normalized
+        if (normalized |> List.filter ((=) "--display-locale") |> List.length) > 1 then
+            Error(UsageError.DuplicateOption "--display-locale")
+        else
+            collect [] None None normalized
 
     let private help topic language json =
         CliTopic.parse topic
-        |> Option.map (fun topic -> CliInvocation.Help(topic, language, json))
+        |> Option.map (fun topic ->
+            CliInvocation.Help(topic, RenderingContext.forLanguage language, json))
         |> Option.map Ok
         |> Option.defaultValue (Error(UsageError.UnknownTopic topic))
 
@@ -86,7 +106,7 @@ module CliInvocations =
         if List.isEmpty words || List.isEmpty matches then
             Error(UsageError.UnknownCommand(String.concat " " words, []))
         else
-            Ok(CliInvocation.CommandHelp(words, language, json))
+            Ok(CliInvocation.CommandHelp(words, RenderingContext.forLanguage language, json))
 
     let private admitHelp tail =
         options tail
@@ -142,7 +162,8 @@ module CliInvocations =
                         {
                             Action = action
                             Text = format <> Some "json"
-                            Language = Option.defaultValue "en" language
+                            Rendering =
+                                RenderingContext.forLanguage (Option.defaultValue "en" language)
                         }
                 )
 
@@ -158,7 +179,13 @@ module CliInvocations =
     let private admitCommand command tail =
         match tail with
         | [ flag ] when List.contains flag CliCommands.aliases ->
-            Ok(CliInvocation.Help(CliCommands.commandTopic command, "en", false))
+            Ok(
+                CliInvocation.Help(
+                    CliCommands.commandTopic command,
+                    RenderingContext.forLanguage "en",
+                    false
+                )
+            )
         | _ ->
             match command with
             | CliCommand.Help -> admitHelp tail
@@ -194,12 +221,31 @@ module CliInvocations =
 
     let admit (arguments: string list) =
         match arguments with
-        | [] -> Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en", false))
+        | [] ->
+            Ok(
+                CliInvocation.Help(
+                    CliTopic.Help HelpTopic.Overview,
+                    RenderingContext.forLanguage "en",
+                    false
+                )
+            )
         | [ flag ] when List.contains flag CliCommands.aliases ->
-            Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en", false))
+            Ok(
+                CliInvocation.Help(
+                    CliTopic.Help HelpTopic.Overview,
+                    RenderingContext.forLanguage "en",
+                    false
+                )
+            )
         | flag :: tail when List.contains flag CliCommands.aliases -> admitHelp tail
         | head :: tail ->
-            match CliCommand.parse head with
+            // Declared multiword tasks may share a family with an executable command.
+            match
+                (if CommandGrammar.tryOperation arguments |> Option.isSome then
+                     None
+                 else
+                     CliCommand.parse head)
+            with
             | Some command -> admitCommand command tail
             | None when wantsCommandHelp arguments ->
                 options (
@@ -235,42 +281,114 @@ module CliInvocations =
             | _ -> invocation
         | _ -> invocation
 
-    /// Resolve profile/environment defaults only at the executable and shell boundaries.
-    let admitConfigured arguments =
-        let explicit =
-            arguments
-            |> List.exists (fun (argument: string) ->
-                argument = "--language"
-                || argument.StartsWith("--language=", System.StringComparison.Ordinal))
-
-        admit arguments
-        |> Result.map (fun invocation ->
-            if explicit then
-                invocation
+    let private flagValues flag (arguments: string list) =
+        arguments
+        |> List.mapi (fun index argument ->
+            if argument = flag then
+                List.tryItem (index + 1) arguments
+            elif argument.StartsWith(flag + "=", System.StringComparison.Ordinal) then
+                Some(argument.Substring(flag.Length + 1))
             else
-                match invocation with
-                | CliInvocation.Help(topic, _, json) ->
-                    CliInvocation.Help(topic, CliLanguage.effective (), json)
-                | CliInvocation.CommandHelp(words, _, json) ->
-                    CliInvocation.CommandHelp(words, CliLanguage.effective (), json)
-                | CliInvocation.Recovery selected ->
-                    CliInvocation.Recovery
-                        { selected with
-                            Language = CliLanguage.effective ()
-                        }
-                | CliInvocation.Verb words when CommandGrammar.tryOperation words |> Option.isSome ->
-                    CliInvocation.Verb(words @ [ "--language"; CliLanguage.effective () ])
-                | _ -> invocation)
-        |> Result.map (fun invocation ->
-            match invocation with
-            | CliInvocation.Verb _ ->
-                let profile =
-                    CliProfile.location CliLanguage.environment
-                    |> Result.bind CliProfile.read
-                    |> Result.defaultValue Map.empty
+                None)
+        |> List.choose id
 
-                principalIssuer profile invocation
-            | _ -> invocation)
+    let private rendersPreferences =
+        function
+        | CliInvocation.Help _
+        | CliInvocation.CommandHelp _
+        | CliInvocation.Recovery _ -> true
+        | CliInvocation.Verb words -> CommandGrammar.tryOperation words |> Option.isSome
+        | CliInvocation.Version _
+        | CliInvocation.Schema _
+        | CliInvocation.Call
+        | CliInvocation.Session
+        | CliInvocation.Shell
+        | CliInvocation.Configure _ -> false
+
+    /// Resolve public preferences once at each executable or shell command boundary.
+    let admitConfiguredWith environment arguments =
+        let locales = flagValues "--display-locale" arguments
+        let suppliedLocale = List.tryHead locales
+
+        let missingLocale =
+            arguments
+            |> List.mapi (fun index argument ->
+                argument = "--display-locale"
+                && (List.tryItem (index + 1) arguments
+                    |> Option.forall (fun value ->
+                        value.StartsWith("--", System.StringComparison.Ordinal))))
+            |> List.exists id
+
+        if missingLocale then
+            Error(UsageError.MissingValue "--display-locale")
+        elif locales.Length > 1 then
+            Error(UsageError.DuplicateOption "--display-locale")
+        else
+            admit arguments
+            |> Result.bind (fun invocation ->
+                if not (rendersPreferences invocation) then
+                    Ok invocation
+                else
+                    let profile =
+                        CliProfile.location environment
+                        |> Result.bind CliProfile.read
+                        |> Result.mapError (fun _ ->
+                            UsageError.InvalidValue("profile", "configuration"))
+
+                    profile
+                    |> Result.bind (fun profile ->
+                        let languages = flagValues "--language" arguments
+
+                        let selected =
+                            languages
+                            |> List.tryHead
+                            |> Option.defaultWith (fun () ->
+                                CliLanguage.choose environment profile |> fst)
+
+                        let language =
+                            if List.contains selected LocalizationPolicy.languages then
+                                selected
+                            else
+                                "en"
+
+                        CliLanguage.displayLocale environment profile language suppliedLocale
+                        |> Result.mapError (fun value ->
+                            UsageError.InvalidChoice(
+                                "--display-locale",
+                                value,
+                                LocalizationPolicy.displayLocales
+                            ))
+                        |> Result.map (fun (context, _) ->
+                            let invocation =
+                                match invocation with
+                                | CliInvocation.Help(topic, _, json) ->
+                                    CliInvocation.Help(topic, context, json)
+                                | CliInvocation.CommandHelp(words, _, json) ->
+                                    CliInvocation.CommandHelp(words, context, json)
+                                | CliInvocation.Recovery selected ->
+                                    CliInvocation.Recovery { selected with Rendering = context }
+                                | CliInvocation.Verb words when
+                                    CommandGrammar.tryOperation words |> Option.isSome
+                                    ->
+                                    let words =
+                                        if languages.IsEmpty then
+                                            words @ [ "--language"; context.Language ]
+                                        else
+                                            words
+
+                                    let words =
+                                        if locales.IsEmpty then
+                                            words @ [ "--display-locale"; context.DisplayLocale ]
+                                        else
+                                            words
+
+                                    CliInvocation.Verb words
+                                | _ -> invocation
+
+                            principalIssuer profile invocation)))
+
+    let admitConfigured arguments =
+        admitConfiguredWith CliLanguage.environment arguments
 
     let usageLanguage arguments =
         let separate =

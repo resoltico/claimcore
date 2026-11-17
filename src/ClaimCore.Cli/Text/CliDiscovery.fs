@@ -74,7 +74,7 @@ let discovery output errors =
             |> writeDiscovery
                 output
                 errors
-                (fun () -> language)
+                (fun () -> language.Language)
                 "help"
                 (UsageError.UnknownCommand(String.concat " " words, []))
         else
@@ -85,7 +85,7 @@ let discovery output errors =
             | None ->
                 unsupported
                     errors
-                    language
+                    language.Language
                     words
                     (UsageError.UnknownCommand(String.concat " " words, []))
     | CliInvocation.Version false ->

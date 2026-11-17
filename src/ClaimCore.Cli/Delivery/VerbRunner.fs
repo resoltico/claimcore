@@ -27,7 +27,7 @@ module internal VerbRunner =
         else
             ReplyText.bytesForWithDetails
                 prepared.Details
-                prepared.Language
+                prepared.Rendering
                 (Some frame)
                 reply.Frame
 
@@ -122,8 +122,8 @@ module internal VerbRunner =
                 |> Result.defaultWith (fun _ -> invalidOp "A prepared operation must preview.")
                 |> Frames.withRepresentation Representation.Human
 
-            let! reply = processor.Exchange(preview, token)
-            processor.Deliver(render prepared preview, reply)
+            let! dispatched, reply = processor.ExchangePrepared(preview, token)
+            processor.Deliver(render prepared dispatched, reply)
 
             match reply.Frame.Result with
             | FrameResult.Reply value ->
@@ -134,7 +134,16 @@ module internal VerbRunner =
                     match review.Document.Subject with
                     | DocumentSubject.Review(ConfirmationTarget.CaseReference reference,
                                              Consequence.Irreversible) ->
-                        return Ok(CaseReference.format reference)
+                        match Frames.installationId dispatched with
+                        | Some installation ->
+                            let frozen =
+                                Frames.bindInstallation installation prepared.Invocation
+                                |> Result.defaultWith (fun _ ->
+                                    invalidOp "Preview scope must bind its identical execution.")
+                                |> Frames.freeze
+
+                            return Ok(CaseReference.format reference, frozen)
+                        | None -> return Error(ExitCode.value ExitCode.Failed)
                     | _ -> return Error(ExitCode.value ExitCode.Failed)
                 | _ -> return Error reply.ExitCode
             | _ -> return Error reply.ExitCode
@@ -180,7 +189,7 @@ module internal VerbRunner =
             | Ok(prepared, None) when CliConfirmation.needsReferencePreview prepared.Invocation ->
                 match! confirmationReference processor prepared token with
                 | Error exit -> return exit
-                | Ok reference ->
+                | Ok(reference, frozen) ->
                     let issue =
                         match prepared.Confirmation with
                         | Some supplied when supplied <> reference ->
@@ -201,7 +210,7 @@ module internal VerbRunner =
                             prepared.Confirmation.IsSome
                             || CliConfirmation.exactTarget io.Review prepared.Language reference
                         then
-                            return! execute processor prepared prepared.Invocation token
+                            return! execute processor prepared frozen token
                         else
                             CliDiscovery.writeText
                                 io.Output
@@ -275,7 +284,7 @@ module internal VerbRunner =
                     |> WireWriter.bytes
                     |> CliDiscovery.writeOutputBytes io.Output
                 else
-                    DiagnosticText.refusalLines draft.Language refusal
+                    DiagnosticText.refusalLines draft.Rendering refusal
                     |> String.concat "\n"
                     |> fun text -> CliDiscovery.writeText io.Errors (text + "\n")
 
@@ -311,7 +320,7 @@ module internal VerbRunner =
                                     (fun response ->
                                         ReplyText.bytesForWithDetails
                                             (List.contains "--details" arguments)
-                                            draft.Language
+                                            draft.Rendering
                                             (Some frame)
                                             response.Frame),
                                     reply

@@ -240,3 +240,27 @@ and confirms that reference before sending the identical prepared operation.
 Copied ledger action hints use `--preview`; operational hints use `--dry-run`. Hints retain the
 supplied binding and do not allocate an operation ID or refresh a reviewed version. Private text is
 represented by acquisition placeholders. The CLI renders the supplied semantic receipt.
+
+### CLI language and display locale
+
+Human CLI output selects wording independently from dates, times, numbers and money. Use
+`--display-locale` on a human verb or recovery command, `CLAIMCORE_DISPLAY_LOCALE`, or
+`claimcore configure --display-locale de-DE`. The finite shared display-locale catalog is printed
+in command help. Selection uses flag, environment, profile `displayLocale`, then the selected
+language's regional default. An explicit unsupported selected locale refuses visibly, including
+offline preparation. `claimcore configure --show` reports the effective display locale and its source.
+
+Language retains its existing precedence: `--language`, `CLAIMCORE_LANGUAGE`, profile `language`,
+then `LC_ALL`, `LC_MESSAGES` and `LANG` through supported language matching. For example,
+`claimcore case get REF --language en --display-locale lv-LV` uses English wording with Latvian
+date and numeric conventions. Each shell
+command resolves a fresh immutable presentation context; review, paging, receipts and recovery keep
+that command's context. If the client's timezone database lacks the supplied installation zone,
+observation output shows the same instant explicitly labelled UTC; the server's business date is
+retained. Changing a preference does not reinterpret a previously authored amount or
+date. JSON requests/replies, DATA output, CSV, identifiers and protocol tokens remain canonical.
+
+A ledger request's identity and installation are frozen at its first preview. A long confirmation
+cannot silently allocate another operation or switch installations. Expiry requires an explicit new
+review. Operational commands do not acquire ledger recovery identities; uncertain delivery is
+reported without a journal retry frame or automatic repeat.

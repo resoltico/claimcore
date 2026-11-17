@@ -12,11 +12,11 @@ module CliSchemas =
         |> List.map (fun endpoint ->
             Schema.Object(
                 ([ "endpoint", Schema.Const endpoint.Token; "input", endpoint.InputSchema ]
-                 @ (if Api.requiresInstallation endpoint then
+                 @ (if Frames.acceptsInstallationBinding endpoint then
                         [ "installationId", Codec.uuid.Schema ]
                     else
                         [])),
-                (if Api.requiresInstallation endpoint then
+                (if Frames.acceptsInstallationBinding endpoint then
                      [ "installationId" ]
                  else
                      [])

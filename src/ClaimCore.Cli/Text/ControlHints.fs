@@ -70,7 +70,12 @@ module internal ControlHints =
             ]
 
     let private command task values suffix =
-        let values = Map.ofList values
+        let values =
+            values
+            |> List.groupBy fst
+            |> List.map (fun (key, values) -> key, List.map snd values)
+            |> Map.ofList
+
         let inputs = CommandGrammar.inputs task
 
         let args =
@@ -78,35 +83,51 @@ module internal ControlHints =
             |> List.collect (fun input ->
                 match Map.tryFind input.Name values with
                 | None -> []
-                | Some value ->
-                    if input.Argument = CommandArgument.Operand then
-                        [ argument value ]
-                    elif input.Argument = CommandArgument.Implicit then
-                        []
-                    else
-                        [ flag input.Name; argument value ])
+                | Some values ->
+                    values
+                    |> List.collect (fun value ->
+                        if input.Argument = CommandArgument.Operand then
+                            [ argument value ]
+                        elif input.Argument = CommandArgument.Implicit then
+                            []
+                        else
+                            [ flag input.Name; argument value ]))
 
-        String.concat " " (CommandGrammar.commandText task :: args @ suffix)
+        let rows =
+            CommandGrammar.collections task
+            |> List.collect (fun collection ->
+                Map.tryFind collection.Name values
+                |> Option.defaultValue []
+                |> List.collect (fun row ->
+                    [ CommandGrammar.collectionFlag collection; argument row ]))
 
-    let action language (value: Affordance) =
+        String.concat " " (CommandGrammar.commandText task :: args @ rows @ suffix)
+
+    let action (rendering: RenderingContext) (value: Affordance) =
         let task = TaskId.token value.Task
-        let label = ReplyTextFormat.label language value.LabelId
+        let label = ReplyTextFormat.label rendering value.LabelId
 
         match value.Blocked with
         | Some advice ->
             let args =
                 advice.Message.Arguments
-                |> Map.map (fun _ -> TextDescriptorValue.render language)
+                |> Map.map (fun _ -> TextDescriptorValue.render rendering)
 
-            [ label + ": " + MessageCatalogs.render language advice.Message.MessageId args ]
+            [
+                label
+                + ": "
+                + MessageCatalogs.render rendering.Language advice.Message.MessageId args
+            ]
         | None ->
             let values, suffix =
                 match value.Control with
                 | ActionControl.Operation bound ->
                     let fixedValues =
                         value.Seeds
+                        |> SubmissionAssembly.fixedInputs
+                            (TaskRouting.operationDeclaration value.Task)
+                            value.Editable
                         |> Map.toList
-                        |> List.filter (fun (key, _) -> not (List.contains key value.Editable))
                         |> List.map (fun (key, value) ->
                             let declared =
                                 (TaskDeclarations.describe task).Inputs
@@ -135,11 +156,23 @@ module internal ControlHints =
                         |> List.choose (fun input ->
                             (TaskDeclarations.describe task).Inputs
                             |> List.tryFind (fun item ->
-                                item.Input = input && item.Mode = TaskInputMode.Required)
+                                item.Input = input
+                                && (item.Mode = TaskInputMode.Required
+                                    || item.Mode = TaskInputMode.Update))
                             |> Option.map (fun _ ->
                                 input, "<" + CommandGrammar.inputName input + ">"))
 
-                    binding bound @ fixedValues @ editable, [ "--preview" ]
+                    let rows =
+                        CommandGrammar.collections task
+                        |> List.filter (fun collection ->
+                            List.contains collection.Name value.Editable)
+                        |> List.collect (fun collection ->
+                            List.replicate
+                                collection.MinimumItems
+                                (collection.Name,
+                                 "<" + CommandGrammar.collectionPlaceholder collection + ">"))
+
+                    binding bound @ fixedValues @ editable @ rows, [ "--preview" ]
                 | ActionControl.Command(CommandRequest.DismissAccessRequest principal) ->
                     let principal = PrincipalKey.toInput principal
 

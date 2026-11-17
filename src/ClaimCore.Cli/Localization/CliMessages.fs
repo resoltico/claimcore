@@ -33,6 +33,7 @@ type CliMessage =
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
+    | [<MessageKey("cli.text.operationalUnresolved")>] OperationalUnresolved
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput
     | [<MessageKey("cli.next.readCurrent")>] NextReadCurrent
     | [<MessageKey("cli.next.retrySafe")>] NextRetrySafe

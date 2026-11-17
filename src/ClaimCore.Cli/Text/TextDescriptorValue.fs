@@ -9,69 +9,69 @@ open ClaimCore.Presentation
 
 /// Text escaping and locale formatting are interface responsibilities; every value kind is explicit.
 module internal TextDescriptorValue =
-    let private code language vocabulary token =
+    let private code (rendering: RenderingContext) vocabulary token =
         let key = PresentationKeys.code vocabulary token
 
         if vocabulary = "country" then
-            ReplyTextFormat.country language token
+            ReplyTextFormat.country rendering token
             |> Some
-            |> ReplyTextFormat.displayed language
+            |> ReplyTextFormat.displayed rendering
         elif vocabulary = "currency" then
-            ReplyTextFormat.displayed language (Some token)
+            ReplyTextFormat.displayed rendering (Some token)
         else
-            ReplyTextFormat.label language key
+            ReplyTextFormat.label rendering key
 
-    let private codes language vocabulary =
+    let private codes (rendering: RenderingContext) vocabulary =
         function
         | [] -> "—"
-        | tokens -> tokens |> List.map (code language vocabulary) |> String.concat ", "
+        | tokens -> tokens |> List.map (code rendering vocabulary) |> String.concat ", "
 
-    let private text language value =
-        ReplyTextFormat.displayed language (Some value)
+    let private text (rendering: RenderingContext) value =
+        ReplyTextFormat.displayed rendering (Some value)
 
     // This exhaustive semantic-value table keeps every renderer case visible without a fallback.
-    let renderIn timeZone language =
+    let renderIn timeZone (rendering: RenderingContext) =
         function
         | PresentedValue.Money value ->
-            ReplyTextFormat.moneyWithScale language value.Value value.DisplayScale
+            ReplyTextFormat.moneyWithScale rendering value.Value value.DisplayScale
         | PresentedValue.MoneyTotal value ->
             ReplyTextFormat.moneyTotalWithScale
-                language
+                rendering
                 value.Currency
                 value.Value
                 value.DisplayScale
-        | PresentedValue.Date value -> ReplyTextFormat.date language value |> text language
+        | PresentedValue.Date value -> ReplyTextFormat.date rendering value |> text rendering
         | PresentedValue.Instant value ->
-            ReplyTextFormat.instantIn language timeZone value |> text language
-        | PresentedValue.Party value -> PartyName.format value |> text language
-        | PresentedValue.Text value -> text language value
-        | PresentedValue.Narrative value -> ReplyTextFormat.narrative language (Some value)
-        | PresentedValue.Message key -> ReplyTextFormat.label language key
-        | PresentedValue.Code(vocabulary, token) -> code language vocabulary token
-        | PresentedValue.Codes(vocabulary, tokens) -> codes language vocabulary tokens
-        | PresentedValue.Actor value -> ReplyTextFormat.actorName language value |> text language
-        | PresentedValue.State value -> ReplyTextFormat.term language CaseHeadline.vocabulary value
-        | PresentedValue.Count value -> value.ToString(CultureInfo.InvariantCulture)
-        | PresentedValue.Reference value -> CaseReference.format value |> text language
-        | PresentedValue.Identifier value -> text language value
-        | PresentedValue.Absent reason -> ReplyTextFormat.label language reason
+            ReplyTextFormat.instantIn rendering timeZone value |> text rendering
+        | PresentedValue.Party value -> PartyName.format value |> text rendering
+        | PresentedValue.Text value -> text rendering value
+        | PresentedValue.Narrative value -> ReplyTextFormat.narrative rendering (Some value)
+        | PresentedValue.Message key -> ReplyTextFormat.label rendering key
+        | PresentedValue.Code(vocabulary, token) -> code rendering vocabulary token
+        | PresentedValue.Codes(vocabulary, tokens) -> codes rendering vocabulary tokens
+        | PresentedValue.Actor value -> ReplyTextFormat.actorName rendering value |> text rendering
+        | PresentedValue.State value -> ReplyTextFormat.term rendering CaseHeadline.vocabulary value
+        | PresentedValue.Count value -> ReplyTextFormat.number rendering value
+        | PresentedValue.Reference value -> CaseReference.format value |> text rendering
+        | PresentedValue.Identifier value -> text rendering value
+        | PresentedValue.Absent reason -> ReplyTextFormat.label rendering reason
 
-    let render language value = renderIn "UTC" language value
+    let render (rendering: RenderingContext) value = renderIn "UTC" rendering value
 
     /// Tables keep admitted paragraph breaks visible as data inside a single cell.
-    let cellIn timeZone language =
+    let cellIn timeZone (rendering: RenderingContext) =
         function
-        | PresentedValue.Narrative value -> ReplyTextFormat.displayed language (Some value)
-        | value -> renderIn timeZone language value
+        | PresentedValue.Narrative value -> ReplyTextFormat.displayed rendering (Some value)
+        | value -> renderIn timeZone rendering value
 
-    let cell language value = cellIn "UTC" language value
+    let cell (rendering: RenderingContext) value = cellIn "UTC" rendering value
 
-    let entry language (entry: Entry) =
-        ReplyTextFormat.line language entry.LabelId (render language entry.Value)
+    let entry (rendering: RenderingContext) (entry: Entry) =
+        ReplyTextFormat.line rendering entry.LabelId (render rendering entry.Value)
 
-    let entriesIn timeZone language (values: Entry list) =
+    let entriesIn timeZone (rendering: RenderingContext) (values: Entry list) =
         let labels =
-            values |> List.map (fun entry -> ReplyTextFormat.label language entry.LabelId)
+            values |> List.map (fun entry -> ReplyTextFormat.label rendering entry.LabelId)
 
         let width value = StringInfo(value).LengthInTextElements
         let maximum = labels |> List.map width |> List.fold max 0
@@ -81,20 +81,20 @@ module internal TextDescriptorValue =
                 label
                 + String(' ', maximum - width label)
                 + ": "
-                + renderIn timeZone language entry.Value)
+                + renderIn timeZone rendering entry.Value)
             labels
             values
 
-    let entries language values = entriesIn "UTC" language values
+    let entries (rendering: RenderingContext) values = entriesIn "UTC" rendering values
 
-    let sectionsIn timeZone language values =
+    let sectionsIn timeZone (rendering: RenderingContext) values =
         values
         |> List.filter (fun (section: Section) -> not section.Entries.IsEmpty)
         |> List.collect (fun (section: Section) ->
             (if section.Entries |> List.exists (fun entry -> entry.LabelId = section.TitleId) then
                  []
              else
-                 [ ReplyTextFormat.label language section.TitleId ])
-            @ entriesIn timeZone language section.Entries)
+                 [ ReplyTextFormat.label rendering section.TitleId ])
+            @ entriesIn timeZone rendering section.Entries)
 
-    let sections language values = sectionsIn "UTC" language values
+    let sections (rendering: RenderingContext) values = sectionsIn "UTC" rendering values

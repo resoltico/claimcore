@@ -14,7 +14,9 @@ let tests =
         [
             testCase "prepared display cultures are shared and immutable" (fun () ->
                 for language in ClaimCore.Presentation.LocalizationPolicy.languages do
-                    let culture = ReplyTextFormat.displayCulture language
+                    let culture =
+                        ReplyTextFormat.displayCulture (RenderingContext.forLanguage language)
+
                     Expect.isTrue culture.IsReadOnly "Culture is not mutable shared state"
 
                     Expect.isTrue
@@ -26,7 +28,10 @@ let tests =
                         "Money conventions cannot change between calls"
 
                     Expect.isTrue
-                        (obj.ReferenceEquals(culture, ReplyTextFormat.displayCulture language))
+                        (obj.ReferenceEquals(
+                            culture,
+                            ReplyTextFormat.displayCulture (RenderingContext.forLanguage language)
+                        ))
                         "Same finite language resource is reused"
 
                     Expect.throws
@@ -37,7 +42,8 @@ let tests =
                 (fun () ->
                     for language, expected in [ "en", "en-GB"; "lv", "lv-LV"; "ar", "ar-AE" ] do
                         Expect.equal
-                            (ReplyTextFormat.displayCulture language).Name
+                            (ReplyTextFormat.displayCulture (RenderingContext.forLanguage language))
+                                .Name
                             expected
                             "Neutral Arabic differs across Mac and Linux; the Latin-digit Arabic choice is explicit")
             testCase
@@ -81,24 +87,32 @@ let tests =
                         ] do
                         let actual =
                             [
-                                ReplyTextFormat.money language (DomainInputs.money "1234.5" "EUR")
+                                ReplyTextFormat.money
+                                    (RenderingContext.forLanguage language)
+                                    (DomainInputs.money "1234.5" "EUR")
                                 ReplyTextFormat.moneyWithScale
-                                    language
+                                    (RenderingContext.forLanguage language)
                                     (DomainInputs.money "1234.5" "EUR")
                                     4
-                                ReplyTextFormat.money language (DomainInputs.money "1234" "JPY")
-                                ReplyTextFormat.money language (DomainInputs.money "1.2" "JPY")
-                                ReplyTextFormat.money language (DomainInputs.money "1" "BHD")
+                                ReplyTextFormat.money
+                                    (RenderingContext.forLanguage language)
+                                    (DomainInputs.money "1234" "JPY")
+                                ReplyTextFormat.money
+                                    (RenderingContext.forLanguage language)
+                                    (DomainInputs.money "1.2" "JPY")
+                                ReplyTextFormat.money
+                                    (RenderingContext.forLanguage language)
+                                    (DomainInputs.money "1" "BHD")
                                 ReplyTextFormat.moneyWithScale
-                                    language
+                                    (RenderingContext.forLanguage language)
                                     (DomainInputs.money "0" "EUR")
                                     4
                                 ReplyTextFormat.moneyWithScale
-                                    language
+                                    (RenderingContext.forLanguage language)
                                     (DomainInputs.money "1234.5678" "EUR")
                                     1
                                 ReplyTextFormat.money
-                                    language
+                                    (RenderingContext.forLanguage language)
                                     (DomainInputs.money "1234.5678" "JPY")
                             ]
 
@@ -121,7 +135,11 @@ let tests =
                             "ar", "1,234,567,890,123,456,789,012,345,678,901,234,567,890.1234 EUR"
                         ] do
                         Expect.equal
-                            (ReplyTextFormat.moneyTotalWithScale language currency total 4)
+                            (ReplyTextFormat.moneyTotalWithScale
+                                (RenderingContext.forLanguage language)
+                                currency
+                                total
+                                4)
                             expected
                             "No conversion to Amount or floating point"
 
@@ -143,21 +161,23 @@ let tests =
                         [
                             "en",
                             "4 Nov 2026",
-                            "Observed 2026-11-04 12:00 · business date 4 Nov 2026 (Etc/UTC)"
+                            "Observed 4 Nov 2026 12:00 +00:00 · business date 4 Nov 2026 (Etc/UTC)"
                             "lv",
                             "4 nov. 2026",
-                            "Novērots 2026-11-04 12:00 · darba datums 4 nov. 2026 (Etc/UTC)"
+                            "Novērots 4 nov. 2026 12:00 +00:00 · darba datums 4 nov. 2026 (Etc/UTC)"
                             "ar",
                             "4 نوفمبر 2026",
-                            "رُصد في 2026-11-04 12:00 · تاريخ العمل 4 نوفمبر 2026 (Etc/UTC)"
+                            "رُصد في 4 نوفمبر 2026 12:00\u00a0م +00:00 · تاريخ العمل 4 نوفمبر 2026 (Etc/UTC)"
                         ] do
                         Expect.equal
-                            (ReplyTextFormat.date language (DomainInputs.date "2026-11-04"))
+                            (ReplyTextFormat.date
+                                (RenderingContext.forLanguage language)
+                                (DomainInputs.date "2026-11-04"))
                             date
                             "The business date is preserved"
 
                         Expect.equal
-                            (TextObservation.line language basis)
+                            (TextObservation.line (RenderingContext.forLanguage language) basis)
                             footer
                             "Only the supplied snapshot provides the observation")
         ]

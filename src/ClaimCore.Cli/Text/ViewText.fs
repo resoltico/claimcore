@@ -6,28 +6,28 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 
 module internal ViewText =
-    let private message language (message: PresentedMessage) =
+    let private message (rendering: RenderingContext) (message: PresentedMessage) =
         message.Arguments
-        |> Map.map (fun _ value -> TextDescriptorValue.render language value)
-        |> MessageCatalogs.render language message.MessageId
+        |> Map.map (fun _ value -> TextDescriptorValue.render rendering value)
+        |> MessageCatalogs.render rendering.Language message.MessageId
 
     let private renderWithHeader
         timeZone
         includeHeader
         includeDetails
         options
-        language
+        rendering
         (screen: Screen)
         =
-        let text = TextDescriptorValue.renderIn timeZone language
-        let sections = TextDescriptorValue.sectionsIn timeZone language
-        let label = ReplyTextFormat.label language
+        let text = TextDescriptorValue.renderIn timeZone rendering
+        let sections = TextDescriptorValue.sectionsIn timeZone rendering
+        let label = ReplyTextFormat.label rendering
 
         let detailLines =
             function
             | None -> []
             | Some(detail: RowDetail) ->
-                (detail.Summary |> Option.map (message language) |> Option.toList)
+                (detail.Summary |> Option.map (message rendering) |> Option.toList)
                 @ sections detail.Highlights
                 @ (if includeDetails then sections detail.Sections else [])
 
@@ -46,7 +46,7 @@ module internal ViewText =
             let header, render =
                 TextTable.pageIn
                     timeZone
-                    language
+                    rendering
                     options
                     definitions
                     (table.Rows |> List.map _.Values)
@@ -57,7 +57,7 @@ module internal ViewText =
 
             (if table.Meter.IsSome then sections table.Sections else [])
             @ (table.Meter
-               |> Option.map (fun meter -> message language meter.Description)
+               |> Option.map (fun meter -> message rendering meter.Description)
                |> Option.toList)
             @ (if includeHeader && header <> "" then [ header ] else [])
             @ (if table.Groups.IsEmpty then
@@ -115,7 +115,7 @@ module internal ViewText =
 
                         let amount =
                             match step.Meter with
-                            | Some meter -> [ message language meter.Description ]
+                            | Some meter -> [ message rendering meter.Description ]
                             | None ->
                                 step.Amount
                                 |> Option.map PresentedValue.Money
@@ -141,7 +141,7 @@ module internal ViewText =
                     entries
                     |> List.collect (fun entry ->
                         [
-                            message language entry.Summary
+                            message rendering entry.Summary
                             text (PresentedValue.Actor entry.Who)
                             + " · "
                             + text (PresentedValue.Instant entry.When)
@@ -161,32 +161,32 @@ module internal ViewText =
         else
             lines
 
-    let renderWithDetails includeDetails options language screen =
-        renderWithHeader "UTC" true includeDetails options language screen
+    let renderWithDetails includeDetails options (rendering: RenderingContext) screen =
+        renderWithHeader "UTC" true includeDetails options rendering screen
 
-    let renderRowsWithDetails includeDetails options language screen =
-        renderWithHeader "UTC" false includeDetails options language screen
+    let renderRowsWithDetails includeDetails options (rendering: RenderingContext) screen =
+        renderWithHeader "UTC" false includeDetails options rendering screen
 
-    let renderWith options language screen =
-        renderWithDetails false options language screen
+    let renderWith options (rendering: RenderingContext) screen =
+        renderWithDetails false options rendering screen
 
-    let renderRowsWith options language screen =
-        renderRowsWithDetails false options language screen
+    let renderRowsWith options (rendering: RenderingContext) screen =
+        renderRowsWithDetails false options rendering screen
 
-    let renderSelected includeDetails language screen =
-        renderWithDetails includeDetails (TextTable.environment ()) language screen
+    let renderSelected includeDetails (rendering: RenderingContext) screen =
+        renderWithDetails includeDetails (TextTable.environment ()) rendering screen
 
     /// Renders instants in the supplied installation zone instead of UTC.
-    let renderSelectedIn timeZone includeDetails language screen =
-        renderWithHeader timeZone true includeDetails (TextTable.environment ()) language screen
+    let renderSelectedIn timeZone includeDetails (rendering: RenderingContext) screen =
+        renderWithHeader timeZone true includeDetails (TextTable.environment ()) rendering screen
 
-    let render language screen = renderSelected false language screen
+    let render (rendering: RenderingContext) screen = renderSelected false rendering screen
 
     let renderDocumentWithHeader
         options
         includeHeader
         includeDetails
-        language
+        rendering
         (document: HumanDocument)
         =
         let zone =
@@ -202,11 +202,11 @@ module internal ViewText =
             }
 
         let body =
-            renderWithHeader zone includeHeader includeDetails options language screen
+            renderWithHeader zone includeHeader includeDetails options rendering screen
 
         let actions =
             Screen.affordances screen @ document.Actions
-            |> List.collect (ControlHints.action language)
+            |> List.collect (ControlHints.action rendering)
 
         let links =
             (document.Links |> List.map (fun value -> value.LabelId, value.Link))
@@ -223,9 +223,9 @@ module internal ViewText =
                    |> List.map (fun link -> CliMessages.key CliMessage.NextLabel, link)))
             |> List.distinct
             |> List.map (fun (label, link) ->
-                ReplyTextFormat.label language label + ": " + ControlHints.link link)
+                ReplyTextFormat.label rendering label + ": " + ControlHints.link link)
 
         body @ actions @ links
 
-    let renderDocument includeDetails language document =
-        renderDocumentWithHeader (TextTable.environment ()) true includeDetails language document
+    let renderDocument includeDetails (rendering: RenderingContext) document =
+        renderDocumentWithHeader (TextTable.environment ()) true includeDetails rendering document

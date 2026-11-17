@@ -119,7 +119,10 @@ let tests =
             testCase "people review uses the typed branch and localized grants" (fun () ->
                 for language in [ "en"; "lv"; "ar" ] do
                     let lines =
-                        ReplyText.resultLines language None (FrameResult.Reply(peopleReview ()))
+                        ReplyText.resultLines
+                            (RenderingContext.forLanguage language)
+                            None
+                            (FrameResult.Reply(peopleReview ()))
 
                     let text = String.concat "\n" lines
 
@@ -152,7 +155,10 @@ let tests =
                         let render endpoint reply =
                             let typed = CliReplies.ofValue endpoint reply
 
-                            ReplyText.resultLines language None (FrameResult.Reply typed)
+                            ReplyText.resultLines
+                                (RenderingContext.forLanguage language)
+                                None
+                                (FrameResult.Reply typed)
                             |> String.concat "\n"
 
                         let outputs =
@@ -270,7 +276,7 @@ let hostReplyPresentation =
                 let rendered =
                     ReplyText.resultLinesWithDetails
                         true
-                        language
+                        (RenderingContext.forLanguage language)
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
@@ -293,7 +299,7 @@ let hostReplyPresentation =
                 let rejected =
                     ReplyText.resultLinesWithDetails
                         true
-                        language
+                        (RenderingContext.forLanguage language)
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
@@ -310,7 +316,7 @@ let hostReplyPresentation =
                 let logout =
                     ReplyText.resultLinesWithDetails
                         true
-                        language
+                        (RenderingContext.forLanguage language)
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
@@ -368,7 +374,7 @@ let assigneePresentation =
                 let text =
                     ReplyText.resultLinesWithDetails
                         true
-                        language
+                        (RenderingContext.forLanguage language)
                         None
                         (FrameResult.Reply(
                             CliReplies.ofValue
@@ -404,7 +410,11 @@ let assigneePresentation =
                             "zh-Hant", "2026年8月31日"
                         ]
                       |> Map.find language)
-                     + " 12:00 +00:00")
+                     + (match language with
+                        | "ar" -> " 12:00\u00a0م +00:00"
+                        | "ko" -> " 오후 12:00 +00:00"
+                        | "zh-Hant" -> " 下午12:00 +00:00"
+                        | _ -> " 12:00 +00:00"))
                     "Actual supplied observation is rendered in the business zone"
 
                 Expect.stringContains text "UTC" "Installation zone is rendered"
@@ -518,7 +528,11 @@ let fullDirectoryAndAuditDetails =
                 |> CliReplies.ofValue Api.peopleHistory
 
             let text =
-                ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply wire)
+                ReplyText.resultLinesWithDetails
+                    true
+                    (RenderingContext.forLanguage "en")
+                    None
+                    (FrameResult.Reply wire)
                 |> String.concat "\n"
 
             for expected in
@@ -550,7 +564,9 @@ let fullDirectoryAndAuditDetails =
 
             let erasedView = AccessHistoryScreen.rows erased.Entries
 
-            let erasedText = ViewText.render "en" erasedView |> String.concat "\n"
+            let erasedText =
+                ViewText.render (RenderingContext.forLanguage "en") erasedView
+                |> String.concat "\n"
 
             Expect.isFalse
                 (erasedText.Contains "historical-only@example.test")
@@ -586,14 +602,17 @@ let fullDirectoryAndAuditDetails =
                 |> CliReplies.ofValue Api.peopleList
 
             let detailText =
-                ReplyText.resultLines "en" None (FrameResult.Reply directory)
+                ReplyText.resultLines
+                    (RenderingContext.forLanguage "en")
+                    None
+                    (FrameResult.Reply directory)
                 |> String.concat "\n"
 
             for role in [ Role.CaseReader; Role.CaseHandler ] do
                 Expect.stringContains
                     detailText
                     (ReplyTextFormat.label
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (Vocabulary.messageKey Role.vocabulary role "label"))
                     "The directory view preserves the supplied role identities"
 
@@ -637,7 +656,11 @@ let emptyGrantPageDetails =
             |> CliReplies.ofValue Api.peopleGrants
 
         let text =
-            ReplyText.resultLinesWithDetails true "en" None (FrameResult.Reply reply)
+            ReplyText.resultLinesWithDetails
+                true
+                (RenderingContext.forLanguage "en")
+                None
+                (FrameResult.Reply reply)
             |> String.concat "\n"
 
         Expect.stringContains
@@ -675,7 +698,8 @@ let receiptHumanTime =
                  |> List.exists (fun entry -> entry.Key = "recordedAt"))
                 "The human time is not duplicated under technical details"
 
-            let text = ViewText.render "en" view |> String.concat "\n"
+            let text =
+                ViewText.render (RenderingContext.forLanguage "en") view |> String.concat "\n"
 
             Expect.stringContains
                 text

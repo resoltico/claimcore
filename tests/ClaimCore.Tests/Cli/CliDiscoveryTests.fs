@@ -117,7 +117,7 @@ let tests =
                     "The universal version alias is exact"
 
                 Expect.isNone
-                    (Discovery.commandHelp "en" [ "frobnicate" ])
+                    (Discovery.commandHelp (RenderingContext.forLanguage "en") [ "frobnicate" ])
                     "Invalid discovery nodes never return empty successful help"
 
                 for suffix in [ [ "--help" ]; [ "--json" ] ] do
@@ -334,7 +334,11 @@ let failedDiscoveryLanguage =
             (CliDiscovery.discovery
                 describeOutput
                 describeErrors
-                (CliInvocation.CommandHelp([ "unsupported.synthetic" ], "lv", true)))
+                (CliInvocation.CommandHelp(
+                    [ "unsupported.synthetic" ],
+                    (RenderingContext.forLanguage "lv"),
+                    true
+                )))
             64
             "Programmatic missing JSON description remains a refusal"
 

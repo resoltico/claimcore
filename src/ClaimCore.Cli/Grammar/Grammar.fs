@@ -20,10 +20,12 @@ type VerbFormat =
 type OfflineDraft =
     {
         Bytes: byte array
-        Language: string
+        Rendering: RenderingContext
         Format: VerbFormat
         Issues: InputIssues option
     }
+
+    member this.Language = this.Rendering.Language
 
 [<NoEquality; NoComparison>]
 type PreparedVerb =
@@ -34,9 +36,10 @@ type PreparedVerb =
         Format: VerbFormat
         All: bool
         Details: bool
-        Language: string
+        Rendering: RenderingContext
     }
 
+    member this.Language = this.Rendering.Language
     member this.Bytes = Frames.encodeInvocation this.Invocation
 
 module Grammar =
@@ -205,6 +208,28 @@ module Grammar =
 
             let language = option "--language" "en"
 
+            let displayLocale =
+                option
+                    "--display-locale"
+                    (LocalizationPolicy.languageOption (
+                        if List.contains language LocalizationPolicy.languages then
+                            language
+                        else
+                            "en"
+                    ))
+                        .displayLocale
+
+            let rendering = RenderingContext.create language displayLocale
+
+            if not (List.contains displayLocale LocalizationPolicy.displayLocales) then
+                problems.Add(
+                    UsageError.InvalidChoice(
+                        "--display-locale",
+                        displayLocale,
+                        LocalizationPolicy.displayLocales
+                    )
+                )
+
             let listing = CommandGrammar.supportsAll entry
 
             let formats = CommandGrammar.formats entry
@@ -253,7 +278,7 @@ module Grammar =
                          elif format = "json" then VerbFormat.Json
                          else VerbFormat.Text)
                         (options.ContainsKey "--all")
-                        language
+                        (rendering |> Option.get)
                         (options.ContainsKey "--preview")
                         (options.ContainsKey "--details")
                         (match options.TryGetValue "--confirm" with
@@ -307,7 +332,7 @@ module Grammar =
                     Format = format
                     All = all
                     Details = details
-                    Language = language
+                    Rendering = language
                 })
 
         prepareWith false admit finish newId arguments
@@ -341,7 +366,7 @@ module Grammar =
                                     "input", TaskArguments.write intent
                                 ]
                             |> WireWriter.bytes
-                        Language = language
+                        Rendering = language
                         Format = format
                         Issues =
                             match OperationSubmission.syntaxDraft intent with

@@ -42,7 +42,7 @@ module internal MessageCatalogs =
 
     let templates language = catalog language |> Messages.templates
 
-    let render language key arguments =
+    let renderWithNumber formatNumber language key arguments =
         let arguments =
             if key = "endpoint.operation.get.meaning" && Map.isEmpty arguments then
                 let duration =
@@ -50,13 +50,23 @@ module internal MessageCatalogs =
                         (catalog language)
                         "label.operationWindow"
                         (Map.ofList
-                            [ "minutes", string (OperationLifetime.WindowMilliseconds / 60000L) ])
+                            [
+                                "minutes",
+                                formatNumber (OperationLifetime.WindowMilliseconds / 60000L)
+                            ])
 
                 Map.ofList [ "window", duration ]
             else
                 arguments
 
         Messages.render (catalog language) key arguments
+
+    let render language key arguments =
+        renderWithNumber
+            (fun (value: int64) -> value.ToString(Globalization.CultureInfo.InvariantCulture))
+            language
+            key
+            arguments
 
     let template language key =
         catalog language
@@ -74,11 +84,11 @@ module internal MessageCatalogs =
     let renderCli language message =
         renderProduced language (CliMessages.produce message)
 
-    let private window language =
+    let private window formatNumber language =
         render
             language
             "label.operationWindow"
-            (Map.ofList [ "minutes", string (OperationLifetime.WindowMilliseconds / 60000L) ])
+            (Map.ofList [ "minutes", formatNumber (OperationLifetime.WindowMilliseconds / 60000L) ])
 
     let private overview language =
         let meaning =
@@ -119,12 +129,13 @@ module internal MessageCatalogs =
         + "\n"
 
     // This total HelpTopic-to-text table has no nested decisions; keep every topic compiler-checked.
-    let private helpBody language =
+    let private helpBody formatNumber language =
         function
         | HelpTopic.Call -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Session -> renderCli language (CliMessage.HelpCall)
         | HelpTopic.Configuration -> renderCli language (CliMessage.HelpConfiguration)
-        | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(window language))
+        | HelpTopic.Delivery ->
+            renderCli language (CliMessage.HelpDelivery(window formatNumber language))
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp
         | HelpTopic.Schema -> renderCli language CliMessage.HelpSchema
@@ -154,18 +165,24 @@ module internal MessageCatalogs =
             |> String.concat "\n"
             |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 
-    let private guidanceBody language =
+    let private guidanceBody formatNumber language =
         function
         | CliGuidance.ProtocolGuidance -> renderCli language (CliMessage.HelpCall)
-        | CliGuidance.ConfigurationIssue -> helpBody language HelpTopic.Configuration
+        | CliGuidance.ConfigurationIssue -> helpBody formatNumber language HelpTopic.Configuration
 
-    let help language topic =
+    let helpWithNumber formatNumber language topic =
         let body =
             match topic with
-            | CliTopic.Help help -> helpBody language help
-            | CliTopic.Diagnostic guidance -> guidanceBody language guidance
+            | CliTopic.Help help -> helpBody formatNumber language help
+            | CliTopic.Diagnostic guidance -> guidanceBody formatNumber language guidance
 
         match topic with
         | CliTopic.Help(HelpTopic.Overview | HelpTopic.Verbs) -> body
         | CliTopic.Help _
         | CliTopic.Diagnostic _ -> renderCli language (CliMessage.HelpLayout body)
+
+    let help language topic =
+        helpWithNumber
+            (fun (value: int64) -> value.ToString(Globalization.CultureInfo.InvariantCulture))
+            language
+            topic

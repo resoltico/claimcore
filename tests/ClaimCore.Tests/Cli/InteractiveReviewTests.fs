@@ -419,7 +419,8 @@ let tests =
                 "OPEN previews without a lookup and confirms its exact authored input"
                 (fun () ->
                     for answer, executed in [ Some "yes", true; Some "no", false; None, false ] do
-                        let h = harness "en" answer Scenario.Accepted
+                        let h =
+                            harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
 
                         let arguments =
                             [ "case"; "open"; "x" ]
@@ -466,7 +467,9 @@ let tests =
             testCase
                 "accept freezes one id and fetched revision across preview and execute"
                 (fun () ->
-                    let h = harness "en" (Some "yes") Scenario.Accepted
+                    let h =
+                        harness (RenderingContext.forLanguage "en") (Some "yes") Scenario.Accepted
+
                     Expect.equal (run [ "case"; "close"; "x" ] h) 0 "Accepted execution"
 
                     Expect.equal
@@ -495,7 +498,7 @@ let tests =
             testCase "erasure requires the authored reference rather than yes" (fun () ->
                 for answer, executed in
                     [ Some "yes", false; Some "x ", false; None, false; Some "x", true ] do
-                    let h = harness "en" answer Scenario.Accepted
+                    let h = harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
                     Expect.equal (run [ "case"; "erase"; "x" ] h) 0 "Human completion"
 
                     Expect.equal
@@ -508,7 +511,7 @@ let tests =
                         "Type x to confirm: "
                         "Typed target prompt")
             testCase "decline never dispatches execute" (fun () ->
-                let h = harness "en" (Some "n") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
 
                 Expect.equal
                     (run [ "case"; "close"; "x" ] h)
@@ -530,11 +533,11 @@ let tests =
                     "Unchanged lifecycle values do not obscure the actual changes")
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
-                    let h = harness "en" answer Scenario.Accepted
+                    let h = harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
                     run [ "case"; "close"; "x" ] h |> ignore
                     Expect.equal h.Calls.Count 3 "Only an explicit affirmative answer can execute")
             testCase "a stale revision stays a definite refusal without retry" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Stale
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Stale
 
                 Expect.equal
                     (run [ "case"; "close"; "x" ] h)
@@ -551,7 +554,7 @@ let tests =
                     7L
                     "Execute retains the reviewed revision")
             testCase "a refused read stops before id allocation preview or confirmation" (fun () ->
-                let h = harness "en" (Some "y") Scenario.ReadRefused
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.ReadRefused
                 Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Read refusal is preserved"
 
                 Expect.equal
@@ -562,12 +565,14 @@ let tests =
                 Expect.equal (h.Generated()) 0 "No reviewed operation was created"
                 Expect.equal (h.ReadCount()) 0 "A refusal cannot invite consent")
             testCase "a refused preview stops before confirmation or execute" (fun () ->
-                let h = harness "en" (Some "y") Scenario.PreviewRefused
+                let h =
+                    harness (RenderingContext.forLanguage "en") (Some "y") Scenario.PreviewRefused
+
                 Expect.equal (run [ "case"; "close"; "x" ] h) 2 "Preview refusal is preserved"
                 Expect.equal h.Calls.Count 3 "No execute follows a refused review"
                 Expect.equal (h.ReadCount()) 0 "No confirmation follows refusal")
             testCase "nonterminal omission remains a usage error" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
                 unavailable { h.Console with IsInteractive = false } [ "case"; "close"; "x" ]
 
                 match Grammar.prepare (fun () -> string identity) [ "case"; "close"; "x" ] with
@@ -580,7 +585,7 @@ let tests =
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "JSON and CSV formats never enter interactive review" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
 
                 for format in [ "json"; "csv" ] do
                     unavailable h.Console [ "case"; "close"; "x"; "--format"; format ]
@@ -596,7 +601,9 @@ let tests =
             testCase
                 "omitted correction groups mean KEEP and one unchanged summary replaces repeated KEEP lines"
                 (fun () ->
-                    let h = harness "en" (Some "n") Scenario.Accepted
+                    let h =
+                        harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
+
                     run [ "case"; "correct"; "x" ] h |> ignore
 
                     let values = (caseInput h.Calls[2] |> Submissions.command).Inputs.Values
@@ -626,7 +633,11 @@ let tests =
                         "lv", "JĀ", "Reģistrēt šīs izmaiņas? [j/N] "
                         "ar", "نعم", "هل تريد تسجيل هذه التغييرات؟ [نعم/لا] "
                     ] do
-                    let h = harness language (Some answer) Scenario.Accepted
+                    let h =
+                        harness
+                            (RenderingContext.forLanguage language)
+                            (Some answer)
+                            Scenario.Accepted
 
                     Expect.equal
                         (run [ "case"; "close"; "x"; "--language=" + language ] h)
@@ -661,12 +672,12 @@ let tests =
                             (CliConfirmation.confirmed language refusal)
                             "Missing or negative answers cannot dispatch")
             testCase "explicit preview remains preview-only without asking to execute" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
                 Expect.equal (run [ "case"; "close"; "x"; "--preview" ] h) 0 "Preview completed"
                 Expect.equal h.Calls.Count 3 "Preview does not execute"
                 Expect.equal (h.ReadCount()) 0 "Preview does not request mutation consent")
             testCase "offline dry-run and explicit revisions keep their normal paths" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
                 unavailable h.Console [ "case"; "close"; "x"; "--dry-run" ]
                 unavailable h.Console [ "case"; "close"; "x"; "--expected-revision"; "7" ]
 
@@ -683,7 +694,7 @@ let tests =
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->
-                let h = harness "en" (Some "y") Scenario.Accepted
+                let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
                 let supplied = Guid.Parse "80000000-0000-7000-8000-000000000099"
                 run [ "case"; "close"; "x"; "--operation-id"; string supplied ] h |> ignore
                 Expect.equal (h.Generated()) 0 "An explicit id is not silently replaced"

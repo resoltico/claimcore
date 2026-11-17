@@ -44,12 +44,20 @@ let tests =
                     ]
 
                 Expect.equal
-                    (TextTable.rows "en" (options 20 false) columns values)
+                    (TextTable.rows
+                        (RenderingContext.forLanguage "en")
+                        (options 20 false)
+                        columns
+                        values)
                     [ "PRIMARY   SECOND" ]
                     "Detail goes first while Secondary still fits"
 
                 Expect.equal
-                    (TextTable.rows "en" (options 12 false) columns values)
+                    (TextTable.rows
+                        (RenderingContext.forLanguage "en")
+                        (options 12 false)
+                        columns
+                        values)
                     [ "PRIMARY" ]
                     "Secondary goes next and Primary remains")
             testCase "money is aligned by typed value rather than string shape" (fun () ->
@@ -57,7 +65,7 @@ let tests =
 
                 let rows =
                     TextTable.rows
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (options 50 false)
                         columns
                         [ [ PresentedValue.money (DomainInputs.money "1" "EUR") ] ]
@@ -69,7 +77,7 @@ let tests =
 
                 Expect.equal
                     (TextTable.rows
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (options 50 false)
                         columns
                         [ [ PresentedValue.Text "1.00 EUR" ] ])
@@ -81,14 +89,24 @@ let tests =
                 let value =
                     PresentedValue.money (DomainInputs.money "999999999999999999.9999" "EUR")
 
-                let output = TextTable.rows "en" (options 5 false) columns [ [ value ] ]
+                let output =
+                    TextTable.rows
+                        (RenderingContext.forLanguage "en")
+                        (options 5 false)
+                        columns
+                        [ [ value ] ]
 
                 Expect.equal
                     output
                     [ "Clai…"; "999,999,999,999,999,999.9999 EUR" ]
                     "Narrow cards preserve every monetary digit for terminal wrapping"
 
-                let wide = TextTable.rows "en" (options 50 false) columns [ [ value ] ]
+                let wide =
+                    TextTable.rows
+                        (RenderingContext.forLanguage "en")
+                        (options 50 false)
+                        columns
+                        [ [ value ] ]
 
                 Expect.equal
                     wide
@@ -117,12 +135,15 @@ let tests =
                 let columns = [ column "action" "label.action" Prominence.Primary 0 ]
 
                 Expect.equal
-                    (TextTable.header "en" (options 30 false) columns)
+                    (TextTable.header
+                        (RenderingContext.forLanguage "en")
+                        (options 30 false)
+                        columns)
                     "Action"
                     "Redirected and NO_COLOR output has no ANSI style"
 
                 Expect.equal
-                    (TextTable.header "en" (options 30 true) columns)
+                    (TextTable.header (RenderingContext.forLanguage "en") (options 30 true) columns)
                     "\u001b[1mAction\u001b[0m"
                     "Only the permitted header receives trusted ANSI")
             testCase "narrow layouts retain every primary field as a labelled card" (fun () ->
@@ -134,7 +155,7 @@ let tests =
 
                 let output =
                     TextTable.rows
-                        "en"
+                        (RenderingContext.forLanguage "en")
                         (options 5 false)
                         columns
                         [ [ PresentedValue.Text "ONE"; PresentedValue.Text "TWO" ] ]
@@ -215,7 +236,11 @@ let terminalCells =
 
                     for language in [ "en"; "lv"; "ar" ] do
                         Expect.equal
-                            (TextTable.rows language (options 100 false) columns rows)
+                            (TextTable.rows
+                                (RenderingContext.forLanguage language)
+                                (options 100 false)
+                                columns
+                                rows)
                             [ "山田太…   END"; "Ann       END" ]
                             "Literal rows place END at terminal cell eleven for both names")
             testCase
@@ -229,18 +254,24 @@ let terminalCells =
                             "zh-Hant", "2026年11月6日"
                         ] do
                         Expect.equal
-                            (ReplyTextFormat.calendarDate language (System.DateOnly(2026, 11, 6)))
+                            (ReplyTextFormat.calendarDate
+                                (RenderingContext.forLanguage language)
+                                (System.DateOnly(2026, 11, 6)))
                             expected
                             "Culture-appropriate Gregorian order"
 
                         Expect.equal
-                            (ReplyTextFormat.money language (DomainInputs.money "12345.6789" "EUR"))
+                            (ReplyTextFormat.money
+                                (RenderingContext.forLanguage language)
+                                (DomainInputs.money "12345.6789" "EUR"))
                             "12,345.6789 EUR"
                             "Canonical fractional text is exact"
 
                     for language in [ "de"; "es" ] do
                         Expect.equal
-                            (ReplyTextFormat.money language (DomainInputs.money "12345.6789" "EUR"))
+                            (ReplyTextFormat.money
+                                (RenderingContext.forLanguage language)
+                                (DomainInputs.money "12345.6789" "EUR"))
                             "12.345,6789 EUR"
                             "Grouping does not change the amount"
 

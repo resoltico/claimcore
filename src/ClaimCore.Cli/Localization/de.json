@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "Öffentliche Verbindungs- und Spracheinstellungen im Profil speichern.\n`claimcore configure --show` zeigt wirksame Werte und Quellen.\nGeheimnisse kommen aus Dateien und werden nie im Profil gespeichert.\nSiehe docs/integrating.md#cli-use.",
-    "source": "2e791425e501"
+    "text": "Speichern Sie öffentliche Verbindungs-, Sprach- und Anzeigegebietsschema-Einstellungen im Profil.\\nDie Sprache bestimmt den Wortlaut; --display-locale bestimmt Datums- und Zahlenformate. Vorrang: Option, CLAIMCORE_DISPLAY_LOCALE, Profil, Sprachstandard.\\n`claimcore configure --show` zeigt wirksame Werte und Quellen.\\nGeben Sie Geheimnisse über Dateien an; sie werden nie im Profil gespeichert.\\nSiehe docs/integrating.md#cli-use.",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "Bei unbestätigter Übermittlung gibt Exitcode 4 die genaue Anfrage zum erneuten Senden aus.\nErneutes Senden kann sie nicht doppelt erfassen.\nPrüfen Sie mit `claimcore recovery list` und `claimcore recovery check`; die Antwort wird innerhalb von {window} endgültig.",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "Verwenden Sie help [topic | family [verb]] mit --format text|json und optional --language.",
-    "source": "b8af016df835"
+    "text": "Verwenden Sie help [topic | family [verb]] mit --format text|json sowie optional --language und --display-locale.",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "Unbekanntes Hilfethema.",
@@ -422,5 +422,9 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "Die Anmeldung wurde nicht innerhalb von zwei Minuten abgeschlossen. Führen Sie den Befehl erneut aus und schließen Sie die Anmeldung im Browser ab.",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "Die Antwort des Befehls wurde nicht bestätigt. Eine Wiederholung kann einen neueren Zustand beeinflussen.",
+    "source": "36c6a1c8ce7e"
   }
 }

@@ -29,7 +29,9 @@ let tests =
                         "1", "BHD", "1.000 BHD"
                     ] do
                     Expect.equal
-                        (ReplyTextFormat.money "en" (DomainInputs.money amount currency))
+                        (ReplyTextFormat.money
+                            (RenderingContext.forLanguage "en")
+                            (DomainInputs.money amount currency))
                         expected
                         "Independent literal human-output golden")
             testCase
@@ -39,7 +41,12 @@ let tests =
                         for amount in [ "0"; "0.0001"; "10.0100"; "999999999999999999.9999" ] do
                             for currency in [ "EUR"; "JPY"; "BHD"; "XOF"; "XCG" ] do
                                 let value = DomainInputs.money amount currency
-                                let rendered = ReplyTextFormat.money language value
+
+                                let rendered =
+                                    ReplyTextFormat.money
+                                        (RenderingContext.forLanguage language)
+                                        value
+
                                 let number = rendered.Substring(0, rendered.Length - 4)
 
                                 Expect.equal

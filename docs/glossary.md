@@ -136,3 +136,6 @@ sequence and 32-byte entry hash; an independently retained checkpoint supplies e
 
 The new payment-correction wording is agent-translated in all offered languages and awaits fluent
 review. Moving the existing assignment label to shared Presentation preserves its prior translations.
+
+CLI display-locale guidance and operational delivery wording were agent-translated in all offered
+languages and await fluent review.

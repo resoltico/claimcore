@@ -141,7 +141,7 @@ let internal failurePhases () =
 
             let expected =
                 if
-                    ((Api.executesLedger endpoint)
+                    ((Api.effect endpoint <> EndpointEffect.Read)
                      && ClaimCore.Wire.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
@@ -152,7 +152,7 @@ let internal failurePhases () =
             Expect.equal
                 (send handler (frame (Api.id endpoint))).ExitCode
                 expected
-                "Phase and durable mutation determine uncertainty"
+                "Phase and actual mutation determine uncertainty"
 
 let internal invalidReplies () =
     for endpoint in [ "case.get"; "operation.execute"; "operation.execute" ] do

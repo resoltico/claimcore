@@ -49,17 +49,17 @@ module ContractDiscovery =
         else
             ""
 
-    let helpTopic language topic =
+    let helpTopic (rendering: RenderingContext) topic =
         (if topic = CliTopic.Help HelpTopic.Overview then
              LegalNotice.summary + "\n"
          else
              "")
-        + MessageCatalogs.help language topic
+        + MessageCatalogs.helpWithNumber (ReplyTextFormat.number rendering) rendering.Language topic
         + "\n"
         + (CliCommands.topicSynopses topic
            |> List.map (fun value -> CliIdentity.programName + " " + value + "\n")
            |> String.concat "")
-        + supportedCodes language topic
+        + supportedCodes rendering.Language topic
         + (if topic = CliTopic.Help HelpTopic.Schema then
                String.concat "\n" CliSchemas.names + "\n"
            else

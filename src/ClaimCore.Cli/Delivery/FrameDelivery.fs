@@ -31,6 +31,11 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         lock gate (fun () ->
             match pending with
             | None -> ()
+            | Some frame when Api.effect (Frames.endpoint frame) = EndpointEffect.OperationalWrite ->
+                let message =
+                    MessageCatalogs.renderCli currentLanguage CliMessage.OperationalUnresolved
+
+                errors.Write(System.Text.Encoding.UTF8.GetBytes(message + "\n"))
             | Some frame ->
                 errors.Write(
                     System.Text.Encoding.UTF8.GetBytes(
@@ -64,7 +69,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
         let uncertainChange =
             reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown
-            && Frames.isLedgerExecution reply.Frame
+            && Frames.mayChange reply.Frame
 
         if uncertainChange then
             retryFrame ()
@@ -96,8 +101,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <-
-                Api.effect (Frames.endpoint frame) = EndpointEffect.LedgerExecution
+            potentiallyChanged <- Api.effect (Frames.endpoint frame) <> EndpointEffect.Read
 
             if Frames.reportsIdentity frame && not dispatched then
                 Frames.operationId frame

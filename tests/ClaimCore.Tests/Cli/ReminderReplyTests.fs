@@ -77,7 +77,7 @@ let tests =
 
                 let output =
                     ReminderScreen.view { Basis = basis; Item = value }
-                    |> ViewText.render "en"
+                    |> ViewText.render (RenderingContext.forLanguage "en")
                     |> String.concat "\n"
 
                 Expect.stringContains
@@ -133,7 +133,7 @@ let tests =
 
                             for text in
                                 render
-                                    language
+                                    (RenderingContext.forLanguage language)
                                     observed
                                     (item true ReminderState.Pending (Some timing)) do
                                 Expect.stringContains text expected "Exact localized server timing"
@@ -162,7 +162,11 @@ let tests =
                             ] do
                             for active in [ true; false ] do
                                 if state <> ReminderState.Pending || not active then
-                                    let outputs = render language basis (item active state None)
+                                    let outputs =
+                                        render
+                                            (RenderingContext.forLanguage language)
+                                            basis
+                                            (item active state None)
 
                                     for text in outputs do
                                         Expect.equal
@@ -175,10 +179,17 @@ let tests =
                                                 (text.Contains label)
                                                 "No timing is invented for absent server timing"
 
-                        let active = render language basis (item true ReminderState.Completed None)
+                        let active =
+                            render
+                                (RenderingContext.forLanguage language)
+                                basis
+                                (item true ReminderState.Completed None)
 
                         let dormant =
-                            render language basis (item false ReminderState.Completed None)
+                            render
+                                (RenderingContext.forLanguage language)
+                                basis
+                                (item false ReminderState.Completed None)
 
                         Expect.notEqual
                             dormant
@@ -213,7 +224,9 @@ let tests =
                             }
 
                         let text =
-                            ViewText.render language (ReceiptScreen.view receipt)
+                            ViewText.render
+                                (RenderingContext.forLanguage language)
+                                (ReceiptScreen.view receipt)
                             |> String.concat "\n"
 
                         for label in inactive :: labels do

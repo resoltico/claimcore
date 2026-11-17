@@ -39,6 +39,17 @@ type private RemoteSessionHolder(configuration: RemoteConfiguration option) =
             session |> Option.iter (fun value -> (value :> IDisposable).Dispose())
             session <- None
 
+/// Already-authenticated transport inputs; tests can replace HTTP without bypassing routing/recovery.
+[<NoEquality; NoComparison>]
+type internal AuthenticatedFrameAccess =
+    {
+        Configuration: RemoteConfiguration
+        Client: System.Net.Http.HttpClient
+        IsCurrent: AccessToken -> bool
+        Clock: TimeProvider
+        JournalDirectory: unit -> Result<string, unit>
+    }
+
 module private FrameInvocation =
     let private definitive (reply: CliReply) =
         match reply.Frame.Result with
@@ -50,8 +61,8 @@ module private FrameInvocation =
             | _ -> false
         | _ -> false
 
-    let rec private prepared
-        (access: RemoteAccessSession)
+    let rec prepared
+        (access: AuthenticatedFrameAccess)
         (token: AccessToken)
         frame
         beforeSend
@@ -66,7 +77,11 @@ module private FrameInvocation =
                     Authorization = token.Authorization
                 }
 
-            if not (Api.requiresInstallation (Frames.endpoint frame)) then
+            if
+                not (Api.requiresInstallation (Frames.endpoint frame))
+                && (Frames.endpoint frame).Id
+                   <> EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
+            then
                 return!
                     RemoteServiceCall.send
                         access.Client
@@ -90,22 +105,37 @@ module private FrameInvocation =
                         return
                             CliReply.local ClientFailure.Cancelled
                             |> CliReply.forAttempt frame DeliveryState.NotSent
-                    | Ok bound when Api.effect (Frames.endpoint bound) = EndpointEffect.Read ->
-                        return!
-                            RemoteServiceCall.send
-                                access.Client
-                                { target with
-                                    InstallationId = Some context.InstallationId
-                                }
-                                bound
-                                (fun () -> beforeSend bound)
-                                cancelled
                     | Ok bound ->
-                        return! handoff access token target context bound beforeSend cancelled
+                        let bound =
+                            if
+                                (Frames.endpoint bound).Id =
+                                    EndpointId.Actor(
+                                        ActorEndpoint.Operation OperationEndpoint.Preview
+                                    )
+                            then
+                                Frames.freeze bound
+                            else
+                                bound
+
+                        match Api.effect (Frames.endpoint bound) with
+                        | EndpointEffect.Read
+                        | EndpointEffect.OperationalWrite ->
+                            return!
+                                RemoteServiceCall.send
+                                    access.Client
+                                    { target with
+                                        InstallationId = Some context.InstallationId
+                                    }
+                                    bound
+                                    (fun () -> beforeSend bound)
+                                    cancelled
+                        | EndpointEffect.LedgerExecution ->
+                            return! handoff access token target context bound beforeSend cancelled
+
         }
 
     and private handoff
-        (access: RemoteAccessSession)
+        (access: AuthenticatedFrameAccess)
         (token: AccessToken)
         (target: RemoteServiceCall.Access)
         (context: ActorContext)
@@ -114,7 +144,7 @@ module private FrameInvocation =
         (cancelled: CancellationToken)
         =
         task {
-            let frame = Frames.refreshProvisional frame
+            let frame = Frames.refreshProvisional access.Clock Guid.CreateVersion7 frame
 
             let current () =
                 not cancelled.IsCancellationRequested && access.IsCurrent token
@@ -136,9 +166,7 @@ module private FrameInvocation =
                     Refused = false
                 }
 
-            let directory =
-                RecoveryJournal.location (fun name ->
-                    Environment.GetEnvironmentVariable name |> Option.ofObj)
+            let directory = access.JournalDirectory()
 
             if not (current ()) then
                 return
@@ -222,7 +250,20 @@ module private FrameInvocation =
                     | Error AccessFailure.OidcInteractionTimeout ->
                         return CliReply.local ClientFailure.AuthenticationTimeout
                     | Error _ -> return CliReply.local ClientFailure.Authentication
-                    | Ok token -> return! prepared access token frame beforeSend consent cancelled
+                    | Ok token ->
+                        let transport =
+                            {
+                                Configuration = access.Configuration
+                                Client = access.Client
+                                IsCurrent = access.IsCurrent
+                                Clock = TimeProvider.System
+                                JournalDirectory =
+                                    fun () ->
+                                        RecoveryJournal.location (fun name ->
+                                            Environment.GetEnvironmentVariable name |> Option.ofObj)
+                            }
+
+                        return! prepared transport token frame beforeSend consent cancelled
         }
 
 [<NoEquality; NoComparison>]
@@ -265,7 +306,7 @@ type RemoteFrameProcessor
 
     let invoke = transport.Invoke
 
-    let exchange frame consent stopped =
+    let exchangePrepared frame consent stopped =
         delivery.Prepare frame
 
         task {
@@ -281,8 +322,11 @@ type RemoteFrameProcessor
                     consent
                     stopped
 
-            return CliReply.forAttempt dispatched reply.Frame.Delivery reply
+            return dispatched, CliReply.forAttempt dispatched reply.Frame.Delivery reply
         }
+
+    let exchange frame consent stopped =
+        task { let! _, reply = exchangePrepared frame consent stopped in return reply }
 
     let interpret frame stopped =
         match frame with
@@ -352,6 +396,25 @@ type RemoteFrameProcessor
             }
         )
 
+    static member internal ForAuthenticatedTest
+        (streams, access: AuthenticatedFrameAccess, token: AccessToken)
+        =
+        new RemoteFrameProcessor(
+            streams,
+            "en",
+            (fun reply -> reply.Bytes),
+            {
+                Invoke =
+                    fun frame beforeSend consent cancelled ->
+                        FrameInvocation.prepared access token frame beforeSend consent cancelled
+                Discard = fun _ -> Task.FromResult()
+                Owned =
+                    { new IDisposable with
+                        member _.Dispose() = ()
+                    }
+            }
+        )
+
     member internal _.BeginCommand(language) = delivery.BeginCommand(language)
     member internal _.DiscardAuthentication(cancelled) = transport.Discard cancelled
 
@@ -359,6 +422,10 @@ type RemoteFrameProcessor
     member internal _.Exchange(frame, stopped) =
         delivery.BeginFrame()
         exchange frame None stopped
+
+    member internal _.ExchangePrepared(frame, stopped) =
+        delivery.BeginFrame()
+        exchangePrepared frame None stopped
 
     member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
     member internal _.Failure(error) = delivery.Failure error

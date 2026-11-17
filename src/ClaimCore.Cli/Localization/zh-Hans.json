@@ -132,8 +132,8 @@
     "source": "e26ea3ad2660"
   },
   "cli.help.configure": {
-    "text": "将公开连接和语言设置保存到个人资料。\n运行 `claimcore configure --show` 查看生效值及其来源。\n通过文件提供机密；不会将其保存在个人资料中。\n参见 docs/integrating.md#cli-use。",
-    "source": "2e791425e501"
+    "text": "在配置文件中保存公开连接、语言和显示区域设置。\\n语言决定措辞；--display-locale 决定日期和数字格式。优先级：选项、CLAIMCORE_DISPLAY_LOCALE、配置文件、语言默认值。\\n使用 `claimcore configure --show` 查看有效值及其来源。\\n通过文件提供机密信息；它们不会保存在配置文件中。\\n参阅 docs/integrating.md#cli-use。",
+    "source": "08119fe9649d"
   },
   "cli.help.delivery": {
     "text": "传送未确认时，退出码 4 会输出可重新发送的准确请求。\n重新发送不会重复记录。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 检查；回答将在 {window} 内确定。",
@@ -264,8 +264,8 @@
     "source": "f345f28f8de2"
   },
   "cli.usage.helpOptions": {
-    "text": "使用 help [topic | family [verb]]，配合 --format text|json，并可选用 --language。",
-    "source": "b8af016df835"
+    "text": "使用 help [topic | family [verb]]，并指定 --format text|json，以及可选的 --language 和 --display-locale。",
+    "source": "fee254477993"
   },
   "cli.usage.helpTopic": {
     "text": "未知的帮助主题。",
@@ -422,5 +422,9 @@
   "cli.failure.AUTHENTICATION_TIMEOUT": {
     "text": "未能在两分钟内完成登录。请重新运行命令，并在浏览器中完成登录。",
     "source": "fc5087e49e05"
+  },
+  "cli.text.operationalUnresolved": {
+    "text": "未确认命令的响应。重复执行可能影响更新的状态。",
+    "source": "36c6a1c8ce7e"
   }
 }

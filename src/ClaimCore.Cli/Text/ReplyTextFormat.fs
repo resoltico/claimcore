@@ -11,42 +11,56 @@ open ClaimCore.Json
 
 module internal ReplyTextFormat =
 
-    // The CLI has language selection, not a separate display-locale preference.
+    // Display cultures are immutable and independent of message language.
     // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.
     let private displayCultures =
-        LocalizationPolicy.languageOptions
+        LocalizationPolicy.displayOptions
         |> List.map (fun option ->
-            let culture =
-                CultureInfo.GetCultureInfo(option.displayLocale).Clone() :?> CultureInfo
+            let culture = CultureInfo.GetCultureInfo(option.value).Clone() :?> CultureInfo
 
             culture.DateTimeFormat.Calendar <- GregorianCalendar()
             option.value, CultureInfo.ReadOnly culture)
         |> Map.ofList
 
-    let displayCulture language = Map.find language displayCultures
+    let displayCulture (rendering: RenderingContext) =
+        Map.find rendering.DisplayLocale displayCultures
 
-    let label language key =
-        MessageCatalogs.render language key Map.empty
+    // .NET supplies grouping/separators but does not substitute NativeDigits when formatting.
+    // Apply its finite culture digit data only to freshly formatted numeric/date text, never inputs.
+    let private digits rendering (value: string) =
+        let native = (displayCulture rendering).NumberFormat.NativeDigits
+        let result = StringBuilder(value.Length)
 
-    let actorName language actor =
-        ActorPresentation.displayName (MessageCatalogs.render language) actor
+        for character in value do
+            if character >= '0' && character <= '9' then
+                result.Append(native[int character - int '0']) |> ignore
+            else
+                result.Append(character) |> ignore
 
-    let term language vocabulary value =
+        result.ToString()
+
+    let number (rendering: RenderingContext) (value: int64) =
+        value.ToString("N0", displayCulture rendering) |> digits rendering
+
+    let label (rendering: RenderingContext) key =
+        MessageCatalogs.renderWithNumber (number rendering) rendering.Language key Map.empty
+
+    let actorName (rendering: RenderingContext) actor =
+        ActorPresentation.displayName (MessageCatalogs.render rendering.Language) actor
+
+    let term (rendering: RenderingContext) vocabulary value =
         label
-            language
+            rendering
             (PresentationKeys.code (Vocabulary.name vocabulary) (Vocabulary.token vocabulary value))
 
-    let principalKind language value =
-        term language PrincipalKind.vocabulary value
+    let principalKind (rendering: RenderingContext) value =
+        term rendering PrincipalKind.vocabulary value
 
-    let line language key value = label language key + ": " + value
+    let line (rendering: RenderingContext) key value = label rendering key + ": " + value
 
-    let number (value: int64) =
-        value.ToString(CultureInfo.InvariantCulture)
-
-    let private exactMoney (language: string) canonical code scale =
+    let private exactMoney (rendering: RenderingContext) canonical code scale =
         let parts = (canonical: string).Split '.'
-        let culture = displayCulture language
+        let culture = displayCulture rendering
 
         let whole =
             BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
@@ -54,46 +68,48 @@ module internal ReplyTextFormat =
         let fraction = if parts.Length = 1 then "" else parts[1]
         let padded = fraction.PadRight(scale, '0')
 
-        whole
-        + (if padded = "" then
-               ""
-           else
-               culture.NumberFormat.NumberDecimalSeparator + padded)
+        (whole
+         + (if padded = "" then
+                ""
+            else
+                culture.NumberFormat.NumberDecimalSeparator + padded)
+         |> digits rendering)
         + " "
         + code
 
-    let moneyWithScale language value scale =
-        exactMoney language (Money.format value) (Money.currency value) scale
+    let moneyWithScale (rendering: RenderingContext) value scale =
+        exactMoney rendering (Money.format value) (Money.currency value) scale
 
-    let money language value =
-        moneyWithScale language value (Money.displayScale value)
+    let money (rendering: RenderingContext) value =
+        moneyWithScale rendering value (Money.displayScale value)
 
-    let moneyTotalWithScale language currency total scale =
-        exactMoney language (DecimalTotal.format total) (Currency.format currency) scale
+    let moneyTotalWithScale (rendering: RenderingContext) currency total scale =
+        exactMoney rendering (DecimalTotal.format total) (Currency.format currency) scale
 
-    let moneyTotal language currency total =
-        moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
+    let moneyTotal (rendering: RenderingContext) currency total =
+        moneyTotalWithScale rendering currency total (DecimalTotal.displayScale currency total)
 
     // These are .NET format strings, owned by the terminal renderer rather than the browser policy.
-    let calendarDate language (value: DateOnly) =
+    let calendarDate (rendering: RenderingContext) (value: DateOnly) =
         let pattern =
-            match language with
-            | "ko" -> "yyyy년 M월 d일"
-            | "zh-Hans"
-            | "zh-Hant"
-            | "ja" -> "yyyy年M月d日"
-            | "es" -> "d 'de' MMM 'de' yyyy"
-            | "de" -> "d. MMM yyyy"
+            match rendering.DisplayLocale with
+            | "ko-KR" -> "yyyy년 M월 d일"
+            | "zh-CN"
+            | "zh-TW"
+            | "ja-JP" -> "yyyy年M月d日"
+            | "es-ES" -> "d 'de' MMM 'de' yyyy"
+            | "de-DE" -> "d. MMM yyyy"
+            | "en-US" -> "MMM d, yyyy"
             | _ -> "d MMM yyyy"
 
-        value.ToString(pattern, displayCulture language)
+        value.ToString(pattern, displayCulture rendering) |> digits rendering
 
-    let date language value =
-        CalendarDate.value value |> calendarDate language
+    let date (rendering: RenderingContext) value =
+        CalendarDate.value value |> calendarDate rendering
 
-    let country (language: string) code =
+    let country (rendering: RenderingContext) code =
         try
-            let name = RegionInfo(language + "-" + code).NativeName
+            let name = RegionInfo(rendering.Language + "-" + code).NativeName
             if name = code then code else name + " (" + code + ")"
         with :? ArgumentException ->
             code
@@ -103,14 +119,20 @@ module internal ReplyTextFormat =
     let instant (value: DateTimeOffset) =
         value.ToUniversalTime().ToString(JsonFormats.InstantFormat, CultureInfo.InvariantCulture)
 
-    let instantIn language timeZone (value: DateTimeOffset) =
+    let instantIn (rendering: RenderingContext) timeZone (value: DateTimeOffset) =
         let local =
             TimeZoneInfo.ConvertTime(value, TimeZoneInfo.FindSystemTimeZoneById timeZone)
 
-        calendarDate language (DateOnly.FromDateTime local.DateTime)
-        + local.ToString(" HH:mm zzz", CultureInfo.InvariantCulture)
+        let time =
+            local.ToString(
+                " " + (displayCulture rendering).DateTimeFormat.ShortTimePattern + " zzz",
+                displayCulture rendering
+            )
+            |> digits rendering
 
-    let displayed language =
+        calendarDate rendering (DateOnly.FromDateTime local.DateTime) + time
+
+    let displayed (rendering: RenderingContext) =
         function
         | None -> "—"
         | Some text ->
@@ -126,10 +148,10 @@ module internal ReplyTextFormat =
 
                 text
                 + " ["
-                + MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
+                + MessageCatalogs.renderCli rendering.Language (CliMessage.CharacterWarning points)
                 + "]"
 
-    let narrative language (value: string option) =
+    let narrative (rendering: RenderingContext) (value: string option) =
         match value with
         | None -> "—"
         | Some text ->
@@ -146,15 +168,15 @@ module internal ReplyTextFormat =
 
                 rendered
                 + " ["
-                + MessageCatalogs.renderCli language (CliMessage.CharacterWarning points)
+                + MessageCatalogs.renderCli rendering.Language (CliMessage.CharacterWarning points)
                 + "]"
 
-    let fieldValue language field value =
+    let fieldValue (rendering: RenderingContext) field value =
         match FieldPresentation.descriptor field with
-        | ScalarRule.PlainText { AllowsLineFeed = true } -> narrative language value
-        | _ -> displayed language value
+        | ScalarRule.PlainText { AllowsLineFeed = true } -> narrative rendering value
+        | _ -> displayed rendering value
 
-    let nextLines language =
+    let nextLines (rendering: RenderingContext) =
         function
         | None -> []
-        | Some value -> [ line language (CliMessages.key CliMessage.NextLabel) value ]
+        | Some value -> [ line rendering (CliMessages.key CliMessage.NextLabel) value ]

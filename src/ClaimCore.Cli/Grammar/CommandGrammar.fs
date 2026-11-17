@@ -221,6 +221,7 @@ module CommandGrammar =
         [
             "--format", String.concat "|" (formats operation)
             "--language", String.concat "|" LocalizationPolicy.languages
+            "--display-locale", String.concat "|" LocalizationPolicy.displayLocales
             "--dry-run", ""
             "--details", ""
             if TaskRouting.consequence operation = Consequence.Irreversible then

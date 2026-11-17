@@ -6,6 +6,8 @@
 
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.
+- CLI wording and display locale are independent; --display-locale, CLAIMCORE_DISPLAY_LOCALE and profile displayLocale control dates, numbers, money and counts.
+- Long CLI reviews preserve the previewed identity and installation; operational uncertainty has no ledger journal or automatic retry, and copied hints retain all filters and update choices.
 - Correct erroneous payment entries atomically on open cases, including fully paid cases; receipts retain removed and replacement entry identities.
 - Browser response decoding rejects malformed structures before recovery or date observation; uncertain delivery keeps its recovery identity.
 - CLI case selectors accept explicit IDs; ID-based erasure confirms the previewed reference, and grant/revoke IDs select case scope.

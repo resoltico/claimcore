@@ -24,6 +24,7 @@ type CliSetting =
     | OidcTrustRoot
     | ServiceTrustRoot
     | Language
+    | DisplayLocale
 
 [<RequireQualifiedAccess>]
 type ConfigurationIssue =
@@ -59,6 +60,7 @@ module InputDiagnostics =
         | CliSetting.OidcTrustRoot -> "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
         | CliSetting.ServiceTrustRoot -> "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
         | CliSetting.Language -> "CLAIMCORE_LANGUAGE"
+        | CliSetting.DisplayLocale -> "CLAIMCORE_DISPLAY_LOCALE"
 
     let settings =
         Vocabulary.all CliSetting.vocabulary

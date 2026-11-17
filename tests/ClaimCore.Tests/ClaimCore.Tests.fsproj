@@ -211,6 +211,7 @@
     <Compile Include="Cli/PresentationCodecTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
+    <Compile Include="Cli/ReviewedTransportTests.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
     <Compile Include="Cli/TransportBodyScenarios.fs" />
     <Compile Include="Cli/CliTransportTests.fs" />
@@ -254,6 +255,7 @@
     <Compile Include="Cli/TimelineCommandTests.fs" />
     <Compile Include="Cli/MoneyDisplayTests.fs" />
     <Compile Include="Cli/CliDisplayCultureTests.fs" />
+    <Compile Include="Cli/CliDisplayLocaleTests.fs" />
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
     <Compile Include="Contract/CsvExportTests.fs" />

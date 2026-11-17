@@ -31,7 +31,7 @@ let private aliases () =
         for alias in [ "--help"; "-h" ] do
             Expect.equal
                 (CliInvocations.admit [ command; alias ])
-                (Ok(CliInvocation.Help(topic, "en", false)))
+                (Ok(CliInvocation.Help(topic, (RenderingContext.forLanguage "en"), false)))
                 "Offline exact aliases"
 
             Expect.isError
@@ -42,11 +42,14 @@ let private aliases () =
         for topic in CliTopic.all do
             Expect.equal
                 (CliInvocations.admit [ "help"; CliTopic.token topic; "--language"; language ])
-                (Ok(CliInvocation.Help(topic, language, false)))
+                (Ok(CliInvocation.Help(topic, (RenderingContext.forLanguage language), false)))
                 "Canonical localized help"
 
             Expect.isGreaterThan
-                (ClaimCore.Cli.ContractDiscovery.helpTopic language topic).Length
+                (ClaimCore.Cli.ContractDiscovery.helpTopic
+                    (RenderingContext.forLanguage language)
+                    topic)
+                    .Length
                 20
                 "Useful guidance"
 
@@ -73,7 +76,13 @@ let private options () =
 
     Expect.equal
         (CliInvocations.admit [ "help"; "case"; "open"; "--format"; "text"; "--language"; "ar" ])
-        (Ok(CliInvocation.CommandHelp([ "case"; "open" ], "ar", false)))
+        (Ok(
+            CliInvocation.CommandHelp(
+                [ "case"; "open" ],
+                (RenderingContext.forLanguage "ar"),
+                false
+            )
+        ))
         "Explicit human format"
 
     Expect.isOk
@@ -304,7 +313,8 @@ let private localizedReplyRendering () =
 
             for language in LocalizationPolicy.languages do
                 let rendered =
-                    ClaimCore.Cli.ReplyText.bytes language frame |> Encoding.UTF8.GetString
+                    ClaimCore.Cli.ReplyText.bytes (RenderingContext.forLanguage language) frame
+                    |> Encoding.UTF8.GetString
 
                 Expect.isTrue
                     (rendered.EndsWith("\n", StringComparison.Ordinal))
@@ -527,7 +537,10 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
 
     for language in LocalizationPolicy.languages do
         let rendered =
-            ClaimCore.Cli.ReplyText.bytesFor language (Some invocation) frame
+            ClaimCore.Cli.ReplyText.bytesFor
+                (RenderingContext.forLanguage language)
+                (Some invocation)
+                frame
             |> Encoding.UTF8.GetString
 
         let labels, human, reader, installation =
@@ -601,7 +614,11 @@ let private peoplePreviewText verb enabledBefore enabledAfter grantBefore grantA
 
         if verb = "register" then
             let details =
-                ReplyText.bytesForWithDetails true language (Some invocation) frame
+                ReplyText.bytesForWithDetails
+                    true
+                    (RenderingContext.forLanguage language)
+                    (Some invocation)
+                    frame
                 |> Encoding.UTF8.GetString
 
             for expected in [ human; "https://issuer.example/"; "synthetic-subject" ] do

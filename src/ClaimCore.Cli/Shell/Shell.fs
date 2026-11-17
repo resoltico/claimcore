@@ -106,11 +106,11 @@ type internal ShellSession
             Review = reviewConsole
         }
 
-    let dispatch words (token: CancellationToken) =
+    let dispatch words admitted (token: CancellationToken) =
         task {
             token.ThrowIfCancellationRequested()
 
-            match CliInvocations.admitConfigured words with
+            match admitted with
             | Ok(CliInvocation.Verb arguments) ->
                 return! VerbRunner.run verbConsole processor arguments token
             | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
@@ -134,7 +134,15 @@ type internal ShellSession
     let execute words =
         task {
             use cancellation = new CancellationTokenSource()
-            let language = CliInvocations.usageLanguage words
+            let admitted = CliInvocations.admitConfigured words
+
+            let language =
+                match admitted with
+                | Ok(CliInvocation.Verb arguments) -> CliInvocations.usageLanguage arguments
+                | Ok(CliInvocation.Help(_, rendering, _) | CliInvocation.CommandHelp(_, rendering, _)) ->
+                    rendering.Language
+                | Ok(CliInvocation.Recovery selected) -> selected.Language
+                | _ -> CliInvocations.usageLanguage words
 
             lock gate (fun () ->
                 processor.BeginCommand language
@@ -150,14 +158,15 @@ type internal ShellSession
 
             try
                 try
-                    let! code = dispatch words cancellation.Token
+                    let! code = dispatch words admitted cancellation.Token
 
                     if cancellation.IsCancellationRequested then
-                        return interruptionCode |> Option.defaultWith processor.Interrupt
+                        return
+                            (interruptionCode |> Option.defaultWith processor.Interrupt), language
                     else
-                        return code
+                        return code, language
                 with error ->
-                    return processor.Failure error
+                    return processor.Failure error, language
             finally
                 lock gate (fun () -> active <- None)
                 lastActivity <- clock.GetTimestamp()
@@ -175,9 +184,9 @@ type internal ShellSession
             | Ok [] -> return None
             | Ok [ "exit" ] -> return Some 0
             | Ok words ->
-                let! code = execute words
+                let! code, language = execute words
                 emptyInterrupt <- commandInterrupted
-                status (CliInvocations.usageLanguage words) code
+                status language code
                 return None
             | Error _ ->
                 let language = CliLanguage.effective ()

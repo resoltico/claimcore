@@ -333,7 +333,10 @@ let tests =
                         CliReply.result frame (Api.operationPreview.Output.Write reply) |> required
 
                     let text =
-                        ReplyText.bytesFor "en" (Some frame) admitted.Frame
+                        ReplyText.bytesFor
+                            (RenderingContext.forLanguage "en")
+                            (Some frame)
+                            admitted.Frame
                         |> Encoding.UTF8.GetString
 
                     Expect.stringContains

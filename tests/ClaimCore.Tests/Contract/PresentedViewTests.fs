@@ -77,7 +77,8 @@ let tests =
                         "The literal owns the expected screen"
 
                     Expect.stringContains
-                        (ViewText.render "en" expected |> String.concat "\n")
+                        (ViewText.render (RenderingContext.forLanguage "en") expected
+                         |> String.concat "\n")
                         "CASE-1"
                         "CLI consumes the supplied value"
 
@@ -231,12 +232,15 @@ let tests =
                         }
 
                     Expect.isFalse
-                        ((ViewText.render "en" screen |> String.concat "\n").Contains
+                        ((ViewText.render (RenderingContext.forLanguage "en") screen
+                          |> String.concat "\n")
+                            .Contains
                             "TECHNICAL-VERSION")
                         "Default text stays human"
 
                     Expect.stringContains
-                        (ViewText.renderSelected true "en" screen |> String.concat "\n")
+                        (ViewText.renderSelected true (RenderingContext.forLanguage "en") screen
+                         |> String.concat "\n")
                         "TECHNICAL-VERSION"
                         "Details are opt-in")
         ]
