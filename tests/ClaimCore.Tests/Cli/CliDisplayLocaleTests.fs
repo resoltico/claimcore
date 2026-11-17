@@ -527,3 +527,60 @@ let tests =
                             (offline "en-GB")
                             "Offline grammar carries no presentation state")
         ]
+
+
+[<Tests>]
+let pendingDeadline =
+    testCase
+        "CLI pending lookup renders supplied semantic deadline with explicit independent locale"
+        (fun () ->
+            let finalAt = DateTimeOffset(2026, 11, 7, 10, 10, 0, TimeSpan.Zero)
+
+            let document =
+                { HumanDocument.empty HumanDisclosure.None with
+                    Screen = OperationScreen.pending finalAt
+                }
+
+            let reply =
+                RepresentationReply.Human
+                    {
+                        HumanOperationReply.OperationId =
+                            Guid.Parse "10000000-0000-7000-8000-000000000001"
+                        Outcome = HumanLookupResult.Pending(finalAt, document)
+                    }
+
+            let output language locale =
+                OperationText.getLines (context language locale) reply |> String.concat "\n"
+
+            let arabic = output "ar" "ar-EG"
+
+            Expect.stringContains
+                arabic
+                "جارٍ التحقق"
+                "Pending wording comes from the shared Arabic message"
+
+            Expect.stringContains
+                arabic
+                "٢٠٢٦"
+                "The canonical instant is rendered using explicit native digits"
+
+            let british = output "ar" "en-GB"
+
+            Expect.stringContains
+                british
+                "جارٍ التحقق"
+                "Changing display locale does not change wording"
+
+            Expect.stringContains
+                british
+                "7 Nov 2026 10:10 +00:00"
+                "Display locale controls the pending deadline"
+
+            Expect.stringContains
+                (output "en" "en-US")
+                "Nov 7, 2026"
+                "US date order is distinct from British date order"
+
+            Expect.isFalse
+                (british.Contains("operationPending", StringComparison.Ordinal))
+                "No message key leaks")
