@@ -108,25 +108,28 @@ module TaskAffordances =
             []
             Map.empty
 
-    let paymentRemove id revision currency (item: CasePaymentItem) =
+    let paymentCorrectionEntry id revision currency entry =
+        let task = ClientCompositions.paymentCorrection
+
+        offered
+            task
+            (Some(
+                binding
+                    task
+                    (Some(CaseSelector.Id id))
+                    (Some revision)
+                    (Some(OperationId.value (PaymentEntry.id entry)))
+                    None
+            ))
+            (Map.ofList [ field BusinessField.PaidCurrency, text currency ])
+            (authored task)
+            Map.empty
+
+    let paymentEntryActions id revision currency (item: CasePaymentItem) =
         if item.CanRemove then
             [
                 paymentRemoveEntry id revision item.Entry
-                let task = ClientCompositions.paymentCorrection
-
-                offered
-                    task
-                    (Some(
-                        binding
-                            task
-                            (Some(CaseSelector.Id id))
-                            (Some revision)
-                            (Some(OperationId.value (PaymentEntry.id item.Entry)))
-                            None
-                    ))
-                    (Map.ofList [ field BusinessField.PaidCurrency, text currency ])
-                    (authored task)
-                    Map.empty
+                paymentCorrectionEntry id revision currency item.Entry
             ]
         else
             []

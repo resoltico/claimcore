@@ -34,7 +34,7 @@ test("corrects selected payment atomically with both identities in receipt timel
   if (old === undefined) {
     throw new Error("Original accepted payment required");
   }
-  const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
+  const payments = page.locator('.case-detail .case-payments[data-region="PAYMENTS"]');
   let writes = 0;
   page.on("request", (request) => {
     if (new URL(request.url()).pathname === "/api/operation.execute") {

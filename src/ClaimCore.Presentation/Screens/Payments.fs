@@ -196,7 +196,7 @@ module PaymentsScreen =
                                 (fun (item: CasePaymentItem) -> item.Entry)
                                 (fun item ->
                                     None,
-                                    TaskAffordances.paymentRemove
+                                    TaskAffordances.paymentEntryActions
                                         value.CaseId
                                         value.Revision
                                         (position.Decision

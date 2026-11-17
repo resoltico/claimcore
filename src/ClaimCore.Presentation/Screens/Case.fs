@@ -340,24 +340,38 @@ module CaseScreen =
                                         id
                                         (fun entry ->
                                             None,
-                                            (if
-                                                 reply.Advice.Acts
-                                                 |> List.exists (fun id ->
-                                                     ClaimCore.Domain.Tasks
-                                                         .Registry.findDeclaration
-                                                         id
-                                                     |> Option.exists (fun declaration ->
-                                                         TaskDeclaration.bindingShape declaration =
-                                                             BindingShape.CasePayment))
-                                             then
-                                                 [
-                                                     TaskAffordances.paymentRemoveEntry
-                                                         reply.Snapshot.CaseId
-                                                         reply.Snapshot.Revision
-                                                         entry
-                                                 ]
-                                             else
-                                                 []))
+                                            [
+                                                if
+                                                    List.contains
+                                                        ClientCompositions.paymentRemoval
+                                                        reply.Advice.Acts
+                                                then
+                                                    yield
+                                                        TaskAffordances.paymentRemoveEntry
+                                                            reply.Snapshot.CaseId
+                                                            reply.Snapshot.Revision
+                                                            entry
+                                                if
+                                                    List.contains
+                                                        ClientCompositions.paymentCorrection
+                                                        reply.Advice.Acts
+                                                then
+                                                    let currency =
+                                                        fields.Finance.Decision
+                                                        |> Option.map (
+                                                            Decision.payable >> Money.currency
+                                                        )
+                                                        |> Option.defaultWith (fun () ->
+                                                            invalidOp
+                                                                "A payment requires a decision.")
+
+                                                    yield
+                                                        TaskAffordances.paymentCorrectionEntry
+                                                            reply.Snapshot.CaseId
+                                                            reply.Snapshot.Revision
+                                                            currency
+                                                            entry
+                                            ])
                                         fields.Finance
                                         reply.LatestPayments
                                 ))
