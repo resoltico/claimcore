@@ -288,8 +288,8 @@ let private openApi () =
 
     Expect.equal
         (paths.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq)
-        (Api.all |> List.map Api.path |> Set.ofList)
-        "Exactly the current registry paths are emitted"
+        (ExportTransport.path :: (Api.all |> List.map Api.path) |> Set.ofList)
+        "Exactly the published JSON registry and dedicated CSV paths are emitted"
 
     for endpoint in Api.all do
         let operation =

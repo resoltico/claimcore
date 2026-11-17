@@ -175,9 +175,7 @@ module OpenApi =
         let response =
             object
                 [
-                    "description",
-                    text
-                        "A complete bounded CSV document, or a typed JSON failure. No successful partial export is sent."
+                    "description", text "HTTP 200"
                     "headers",
                     object
                         [
@@ -197,13 +195,13 @@ module OpenApi =
                             "Content-Encoding",
                             object
                                 [
-                                    "description", text "CSV success only"
+                                    "x-claimcore-csv-success-only", JsonValue.Boolean true
                                     "schema", object [ "const", text "identity" ]
                                 ]
                             "Content-Disposition",
                             object
                                 [
-                                    "description", text "CSV success only"
+                                    "x-claimcore-csv-success-only", JsonValue.Boolean true
                                     "schema", object [ "type", text "string" ]
                                 ]
                         ]
