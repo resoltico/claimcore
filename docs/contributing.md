@@ -221,6 +221,14 @@ commit: PRs run Linux x64 and two Chromium shards; main pushes, merge groups and
 Linux musl, macOS ARM64 and all three engines. Use the automatic full main-push result for a release candidate; do not dispatch a duplicate matrix.
 Deployment, schema and database-host changes also run `bash eng/compose-restart-smoke.sh` in the separate
 [Compose restart workflow](../.github/workflows/compose.yml) (weekly as well); it is outside the Gate, so check it.
+
+Locale goldens keep exact dates, times, offsets and surrounding wording while admitting only verified
+locale-data variants. Full ICU data can still vary by version: [ICU 77](https://github.com/unicode-org/icu/blob/release-77-1/icu4c/source/i18n/dtfmtsym.cpp#L2228)
+loads Korean wide day periods (`오전`/`오후`), while [ICU 78](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/dtfmtsym.cpp#L2331)
+loads the abbreviated set (`AM`/`PM`). The pinned Alpine SDK image already includes full ICU data;
+adding the same package does not change that distinction. Do not normalize output or alter production
+formatting to hide a locale-data difference; keep wrong-locale and wrong-date negative controls.
+
 Each native platform publishes and runs the CLI apphost offline and qualifies its dependency closure, notices and source archive. Complete
 published service/client integration runs on Linux x64.
 Docs-only PRs run configuration, lint and unit. All changed paths must be under `docs/` or be Markdown
