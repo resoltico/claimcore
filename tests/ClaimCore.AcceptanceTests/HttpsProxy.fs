@@ -121,13 +121,19 @@ let private relay
 
                 match transform with
                 | None ->
+                    // Content-Length is end-to-end metadata for the unchanged streamed body.
+                    // Preserve absence as well: the relay must not invent a completeness claim.
+                    context.Response.ContentLength <- response.Content.Headers.ContentLength
                     do! response.Content.CopyToAsync(context.Response.Body, context.RequestAborted)
                 | Some rewrite ->
                     let! bytes = response.Content.ReadAsByteArrayAsync(context.RequestAborted)
 
+                    let rewritten = rewrite bytes
+                    context.Response.ContentLength <- Nullable(int64 rewritten.Length)
+
                     do!
                         context.Response.Body
-                            .WriteAsync(ReadOnlyMemory(rewrite bytes), context.RequestAborted)
+                            .WriteAsync(ReadOnlyMemory rewritten, context.RequestAborted)
                             .AsTask()
     }
 
