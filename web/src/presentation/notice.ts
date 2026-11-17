@@ -7,6 +7,8 @@ import type { Preferences } from "./preferences";
 
 const localMessageKey = (reason: Extract<Notice, { kind: "local" }>["reason"]): MessageKey => {
   switch (reason) {
+    case "downloadFailed":
+      return "ui.downloadFailed";
     case "resourceUnavailable":
       return "ui.resourceUnavailable";
     case "recoveryCleanupUnavailable":

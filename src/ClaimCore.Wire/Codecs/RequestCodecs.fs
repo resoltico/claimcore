@@ -227,20 +227,29 @@ module RequestCodecs =
     let caseSummaryRequest =
         filterFields |> finishRead RequestSchemas.CaseSummaryRequest
 
-    let timelineRequest =
-        let fields =
-            (record (fun target filter cursor limit ->
-                {
-                    CaseTimelineRequest.Target = target
-                    Filter = filter
-                    AfterCursor = cursor
-                    Limit = defaultArg limit Paging.DefaultPageSize
-                })
-            : Fields<CaseTimelineRequest, _>)
-            |> caseOperand _.Target
-
-        fields
+    /// Shared selection fields omit traversal state; export and page requests consume this owner.
+    let timelineSelectionFields =
+        (record (fun target filter ->
+            {
+                CaseTimelineRequest.Target = target
+                Filter = filter
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
+            })
+        : Fields<CaseTimelineRequest, _>)
+        |> caseOperand _.Target
         |> optionalField "filter" _.Filter (VocabularyCodec.create TimelineFilter.vocabulary)
+
+    let timelineSelection = timelineSelectionFields |> build
+
+    let timelineRequest =
+        (record (fun (selection: CaseTimelineRequest) cursor limit ->
+            { selection with
+                AfterCursor = cursor
+                Limit = defaultArg limit Paging.DefaultPageSize
+            })
+        : Fields<CaseTimelineRequest, _>)
+        |> flatten id timelineSelectionFields
         |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumActorCursorCharacters)
         |> optionalField
             "limit"
@@ -271,20 +280,31 @@ module RequestCodecs =
 
     let empty = record () |> finishRead RequestSchemas.Empty
 
-    let peopleHistoryRequest =
-        (record (fun actor cursor limit ->
+    let peopleHistorySelectionFields =
+        (record (fun actor ->
             {
                 PeopleHistoryRequest.TargetActorId = actor
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
+            })
+        : Fields<PeopleHistoryRequest, _>)
+        |> actorFilter _.TargetActorId
+
+    let peopleHistorySelection = peopleHistorySelectionFields |> build
+
+    let peopleHistoryRequest =
+        (record (fun (selection: PeopleHistoryRequest) cursor limit ->
+            { selection with
                 AfterCursor = cursor
                 Limit = limit
             })
         : Fields<PeopleHistoryRequest, _>)
-        |> actorFilter _.TargetActorId
+        |> flatten id peopleHistorySelectionFields
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.PeopleHistoryRequest
 
-    let reminderListRequest =
-        (record (fun target state view due assignment search cursor limit inactive ->
+    let reminderSelectionFields =
+        (record (fun target state view due assignment search inactive ->
             {
                 ReminderListRequest.Target = target
                 View = view
@@ -292,8 +312,8 @@ module RequestCodecs =
                 Due = due
                 Assignment = assignment
                 Text = search
-                AfterCursor = cursor
-                Limit = limit
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
                 IncludeInactive = inactive
             })
         : Fields<ReminderListRequest, _>)
@@ -306,9 +326,20 @@ module RequestCodecs =
             _.Assignment
             (VocabularyCodec.create CaseAssignment.vocabulary)
         |> optionalField "text" _.Text text
+        |> optionalField "includeInactive" _.IncludeInactive boolean
+
+    let reminderSelection = reminderSelectionFields |> build
+
+    let reminderListRequest =
+        (record (fun (selection: ReminderListRequest) cursor limit ->
+            { selection with
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : Fields<ReminderListRequest, _>)
+        |> flatten id reminderSelectionFields
         |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
         |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        |> optionalField "includeInactive" _.IncludeInactive boolean
         |> build
         |> named "ReminderListRequest"
 

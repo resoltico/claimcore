@@ -5,7 +5,11 @@ import {
 } from "../support/case-document.fixtures";
 import { operationAffordance } from "../support/affordances.fixtures";
 
-import { requestAddress, endpointResponse } from "../support/transport-response.fixtures";
+import {
+  requestAddress,
+  endpointResponse,
+  operationRequest,
+} from "../support/transport-response.fixtures";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
@@ -191,4 +195,164 @@ it("editable reminder seeds remain available for explicit review through the rea
     "input:reminderAction": "Call claimant",
     "input:reminderDueDate": "2026-11-20",
   });
+});
+it("closed-case summary succeeds without reauthoring its unavailable assignee", async () => {
+  const action = operationAffordance(
+    "work.update",
+    {
+      kind: "WORK",
+      target: { kind: "ID", caseId: readable.subject.caseId },
+      expectedRevision: readable.subject.workRevision,
+    },
+    {
+      "field:responsibleActor": "30000000-0000-4000-8000-000000000003",
+      "field:handlingSummary": "Saved closed-case summary",
+    },
+    ["field:handlingSummary"],
+  );
+  const closed = caseDocumentInput(
+    { ...readable, actions: [action] },
+    {
+      regions: [
+        {
+          role: "IDENTITY",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "status",
+                labelId: "field.status.label",
+                prominence: "PRIMARY",
+                value: { kind: "CODE", vocabulary: "status", token: "CLOSED" },
+              },
+            ],
+          },
+        },
+        {
+          role: "WORK",
+          content: {
+            kind: "ENTRIES",
+            entries: [
+              {
+                key: "assignee",
+                labelId: "field.responsibleActor.label",
+                prominence: "PRIMARY",
+                value: {
+                  kind: "ACTOR",
+                  value: {
+                    actorId: "30000000-0000-4000-8000-000000000003",
+                    displayName: { kind: "NAMED", value: "Unavailable assignee" },
+                    principalKind: "HUMAN",
+                    availability: "DISABLED",
+                  },
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  );
+  const accepted = vi.fn();
+  const submitted: unknown[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>().mockImplementation((url, options) => {
+      const reply = (endpoint: string, value: unknown) =>
+        Promise.resolve(endpointResponse(endpoint, value));
+      if (requestAddress(url) === "/api/case.get") {
+        return reply("case.get", {
+          representation: "HUMAN",
+          outcome: { kind: "SUCCEEDED", document: closed },
+        });
+      }
+      const request = operationRequest(options?.body);
+      if (request.task !== "work.update") {
+        throw new Error("Work update request required");
+      }
+      submitted.push(request.inputs);
+      if (Object.hasOwn(request.inputs, "field:responsibleActor")) {
+        return reply("operation.preview", {
+          representation: "HUMAN",
+          operationId: request.operationId,
+          outcome: {
+            kind: "REJECTED",
+            rejection: {
+              kind: "REFUSED",
+              advice: {
+                message: { messageId: "diagnostic.RESOURCE_UNAVAILABLE", arguments: [] },
+                action: "ASK_FOR_ACCESS",
+              },
+            },
+          },
+        });
+      }
+      const document = {
+        screen: { regions: [] },
+        subject: {
+          kind: "REVIEW",
+          confirmation: { kind: "CASE_REFERENCE", reference: "CLOSED-SUMMARY" },
+          consequence: "ROUTINE",
+        },
+        actions: [],
+        links: [],
+        history: null,
+        nextCursor: null,
+        basis: closed.basis,
+        disclosure: "CURRENT",
+      };
+      if (requestAddress(url) === "/api/operation.preview") {
+        return reply("operation.preview", {
+          representation: "HUMAN",
+          operationId: request.operationId,
+          outcome: {
+            kind: "REVIEWED",
+            review: { document, presentation: { changes: [], unchanged: [] } },
+          },
+        });
+      }
+      return reply("operation.execute", {
+        representation: "HUMAN",
+        operationId: request.operationId,
+        outcome: {
+          kind: "ACCEPTED",
+          document: { ...document, subject: { kind: "RECEIPT", operationId: request.operationId } },
+        },
+      });
+    }),
+  );
+  render(
+    <TestSession>
+      <WorkOperation
+        current={closed}
+        subject="WORK"
+        kind="work.update"
+        affordance={action}
+        prefill={{ "field:handlingSummary": "Saved closed-case summary" }}
+        disclosureAvailable
+        onClose={vi.fn()}
+        onRecorded={accepted}
+        onLockChange={vi.fn()}
+        onDisclosureRefused={vi.fn()}
+      />
+    </TestSession>,
+  );
+  const summary = await screen.findByRole("textbox", { name: "Handling summary" });
+  expect(submitted).toHaveLength(0);
+  await userEvent.clear(summary);
+  await userEvent.type(summary, "Only the summary changes");
+  await userEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  const confirm = await waitFor(() => {
+    const value = document.querySelector<HTMLButtonElement>("[data-confirm-operation]");
+    expect(value).not.toBeNull();
+    return value!;
+  });
+  await userEvent.click(confirm);
+  await waitFor(() => {
+    expect(accepted).toHaveBeenCalledOnce();
+  });
+  expect(submitted).toEqual([
+    { "field:handlingSummary": "Only the summary changes" },
+    { "field:handlingSummary": "Only the summary changes" },
+  ]);
 });

@@ -173,5 +173,6 @@
   "ui.rolesPartial": "Only some roles are shown.",
   "ui.addRole": "Add role",
   "ui.removeRole": "Remove role",
-  "ui.roleNumber": "Role {number}"
+  "ui.roleNumber": "Role {number}",
+  "ui.downloadFailed": "The browser could not save the download. Try again."
 }

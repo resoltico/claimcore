@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "요청이 확인되지 않았습니다. ClaimCore 브라우저 세션이 종료되었을 수 있습니다. 반복하면 새 세션도 종료될 수 있습니다.",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "내보내기가 다운로드 크기 제한을 초과합니다. 선택 범위를 좁히거나 CLI 페이지 탐색을 사용하세요.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "처리 제한 시간 내에 내보내기를 마치지 못했습니다. 다시 시도하거나 선택 범위를 좁히세요.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "내보내기에서 잘못된 연속 정보가 발견되었습니다. CSV를 다운로드하지 않았습니다.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "CSV 다운로드",
+    "source": "a4023b89022f"
   }
 }

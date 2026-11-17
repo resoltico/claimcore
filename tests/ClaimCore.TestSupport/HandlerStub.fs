@@ -357,7 +357,11 @@ type Stub() =
                                                         return
                                                             {
                                                                 Response =
-                                                                    Endpoint.reply endpoint reply
+                                                                    ClaimCore.Server.RouteBody.Json(
+                                                                        Endpoint.reply
+                                                                            endpoint
+                                                                            reply
+                                                                    )
                                                                 RecordedBy = None
                                                                 ExpireBrowserSession = false
                                                             }

@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "要求未獲確認。它可能已結束 ClaimCore 瀏覽器工作階段。重複要求也可能結束較新的工作階段。",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "匯出超過下載大小限制。請縮小選取範圍或使用 CLI 逐頁讀取。",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "匯出未能在處理時限內完成。請重試或縮小選取範圍。",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "匯出遇到無效的後續頁資訊。未下載 CSV。",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "下載 CSV",
+    "source": "a4023b89022f"
   }
 }

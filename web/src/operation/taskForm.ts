@@ -64,8 +64,9 @@ export const assembleTask = (
 ): TaskSubmission => {
   const declaration = operationTask(task);
   if (control !== undefined) {
-    if (control.task !== task)
-      {throw new Error("The selected task does not match its Core control.");}
+    if (control.task !== task) {
+      throw new Error("The selected task does not match its Core control.");
+    }
     const editable = new Set<string>(control.editable);
     const merged: Record<string, FormValues[string]> = Object.fromEntries(
       Object.entries(grantFields(values)).filter(
@@ -77,7 +78,10 @@ export const assembleTask = (
       ),
     );
     for (const [key, value] of Object.entries(control.seeds)) {
-      if (!editable.has(key)) {merged[key] = value;}
+      const input = declaration.inputs.find((candidate) => candidate.id === key);
+      if (!editable.has(key) && input?.mode !== "UPDATE") {
+        merged[key] = value;
+      }
     }
     values = merged;
   }

@@ -186,3 +186,7 @@ in the decision currency. A fully paid open case can be corrected; reopen a clos
 accepted operation removes the old assertion, records a fresh entry and updates the case once.
 The receipt shows both entry identities and their removed/recorded directions. This does not refund
 or execute a transfer, and the original assertion remains in history until erasure.
+
+Use **Download CSV** on the case list, case timeline or reminder queue to download the selected
+filters from their first page. Downloads are bounded and complete only after every authorized page
+succeeds. A refusal or resource limit returns an explanation instead of a partial CSV.

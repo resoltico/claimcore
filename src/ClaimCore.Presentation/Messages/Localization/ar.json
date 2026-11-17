@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "لم يتم تأكيد الطلب. ربما أنهى جلسات متصفح ClaimCore. قد يؤدي تكراره أيضًا إلى إنهاء جلسات أحدث.",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "يتجاوز التصدير حد حجم التنزيل. ضيّق نطاق الاختيار أو استخدم التصفح عبر سطر الأوامر.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "لم يكتمل التصدير ضمن حد وقت المعالجة. حاول مجددًا أو ضيّق نطاق الاختيار.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "واجه التصدير متابعة غير صالحة. لم يتم تنزيل ملف CSV.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "تنزيل CSV",
+    "source": "a4023b89022f"
   }
 }

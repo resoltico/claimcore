@@ -239,3 +239,24 @@ it("fixed Core inputs win while the explicit reviewed binding stays unchanged", 
   });
   expect(value.command.inputs).not.toHaveProperty("field:caseReference");
 });
+it("a noneditable UPDATE seed remains dormant during a closed-case summary edit", () => {
+  const binding = { kind: "WORK" as const, target, expectedRevision: 4 };
+  const action = operationAffordance(
+    "work.update",
+    binding,
+    {
+      "field:responsibleActor": "10000000-0000-4000-8000-000000000099",
+      "field:handlingSummary": "Saved summary",
+    },
+    ["field:handlingSummary"],
+  );
+  expect(initialAffordanceValues(action)).not.toHaveProperty("field:responsibleActor");
+  const submission = assembleTask(
+    "work.update",
+    { "field:handlingSummary": "Updated summary" },
+    binding,
+    operationId,
+    action,
+  );
+  expect(submission.command.inputs).toEqual({ "field:handlingSummary": "Updated summary" });
+});

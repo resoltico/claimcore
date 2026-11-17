@@ -127,3 +127,5 @@ claimcore people terminate-sessions ACTOR-ID --dry-run
 
 These examples prepare without sending. Omit `--dry-run` to execute a deliberate request. The commands
 have no preview endpoint, ledger operation ID or recovery lookup.
+The people-history view offers **Download CSV** for the current actor selection. The download starts
+at the first page and retains the existing history disclosure rules on every page.

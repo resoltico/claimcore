@@ -146,3 +146,5 @@ canonical principal includes kind, issuer and subject, independently of registra
 Ending these sessions removes the selected principal's tickets; it does not revoke identity-provider
 sessions, credentials or independent bearer tokens. The new session-termination wording in all eight
 translated languages is agent-produced and awaits fluent review.
+The bounded CSV resource advice and browser download chrome are agent-translated in all offered languages;
+these additions await fluent review.

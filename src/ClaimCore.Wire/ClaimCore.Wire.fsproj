@@ -63,6 +63,7 @@
     <Compile Include="Api/Endpoints.fs" />
     <Compile Include="Codecs/HostFailures.fs" />
     <Compile Include="Codecs/HostFailureCodecs.fs" />
+    <Compile Include="Export/ExportTransport.fs" />
     <Compile Include="Api/OpenApi.fs" />
     <Compile Include="Api/ContractIdentity.fs" />
     <Compile Include="Catalog/Catalog.fs" />

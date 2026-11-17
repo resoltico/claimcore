@@ -7,6 +7,8 @@ open Microsoft.AspNetCore.Http
 module HttpHeaders =
     let private publicAssetKey = obj ()
     let private catalogKey = obj ()
+    let private csvKey = obj ()
+    let internal csv (context: HttpContext) = context.Items[csvKey] <- box true
     let internal catalog (context: HttpContext) = context.Items[catalogKey] <- box true
 
     let internal publicAsset (context: HttpContext) =
@@ -59,6 +61,10 @@ module HttpHeaders =
                     context.Response.Headers.Remove "Expires" |> ignore
                 else
                     noStore context
+
+                    if context.Items.ContainsKey csvKey then
+                        context.Response.Headers.CacheControl <-
+                            "no-store, no-transform, max-age=0"
 
                 Task.CompletedTask)
         )

@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "Pieprasījums netika apstiprināts. Iespējams, ClaimCore pārlūka sesijas tika beigtas. Atkārtojot to, var beigt arī jaunākas sesijas.",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "Eksports pārsniedz lejupielādes lieluma ierobežojumu. Sašauriniet atlasi vai izmantojiet CLI lapošanu.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "Eksports netika pabeigts apstrādes laikā. Mēģiniet vēlreiz vai sašauriniet atlasi.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "Eksportā konstatēts nederīgs turpinājums. CSV netika lejupielādēts.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "Lejupielādēt CSV",
+    "source": "a4023b89022f"
   }
 }

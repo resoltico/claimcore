@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "要求は確認されていません。ClaimCoreブラウザーセッションが終了した可能性があります。繰り返すと、新しいセッションも終了する場合があります。",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "エクスポートがダウンロードのサイズ制限を超えています。選択範囲を絞るか、CLIでページを順に取得してください。",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "処理時間の制限内にエクスポートが完了しませんでした。再試行するか選択範囲を絞ってください。",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "エクスポートで無効な継続情報が見つかりました。CSVはダウンロードされませんでした。",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "CSVをダウンロード",
+    "source": "a4023b89022f"
   }
 }

@@ -1,3 +1,4 @@
+import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints, type CurrentCase, isCurrentCase } from "../../api/service";
 import type { BoundOperationAffordance, OperationAffordance } from "../../operation/affordances";
 
@@ -101,7 +102,7 @@ const SelectedReminder = ({
 };
 /** A queue action owns one selected reminder and one explicit parent read, never per-row reads. */
 type QueueProps = {
-  filter: Omit<ReminderListRequest, "target" | "cursor" | "limit">;
+  filter: Omit<ReminderListRequest, "cursor" | "limit">;
   onLockChange: MutationLockChange;
   disclosureAvailable: boolean;
 };
@@ -122,6 +123,10 @@ const AvailableReminderQueueWork = ({ filter, onLockChange, disclosureAvailable 
   };
   return (
     <>
+      <CsvExportButton
+        selection={{ query: apiEndpoints.reminderList, selection: filter }}
+        available={disclosureAvailable && !masked}
+      />
       {done.operationId === null || !disclosureAvailable || masked ? null : (
         <ObservedReceipt key={done.operationId} operationId={done.operationId} />
       )}

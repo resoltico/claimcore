@@ -19,6 +19,7 @@ type internal RequestLogEntry =
     {
         Endpoint: string
         MetricEndpoint: EndpointId option
+        CsvExport: bool
         mutable MetricResult: RequestMetricResult
         mutable Outcome: string
         mutable ActorId: ActorId option
@@ -29,10 +30,17 @@ module internal RequestLog =
     let private key = obj ()
 
     let start endpoint (context: HttpContext) =
+        let csvExport = Option.ofObj context.Request.Path.Value = Some ExportTransport.path
+
         let entry =
             {
-                Endpoint = endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown"
+                Endpoint =
+                    if csvExport then
+                        ExportTransport.token
+                    else
+                        endpoint |> Option.map EndpointIds.token |> Option.defaultValue "unknown"
                 MetricEndpoint = endpoint
+                CsvExport = csvExport
                 MetricResult = RequestMetricResult.HostFailure
                 Outcome = "HOST_FAILURE"
                 ActorId = None
@@ -119,7 +127,11 @@ module internal RequestLog =
                 finally
                     let elapsed = Stopwatch.GetElapsedTime started
                     let duration = elapsed.TotalMilliseconds
-                    WebMetrics.request value.MetricEndpoint value.MetricResult elapsed
+
+                    if value.CsvExport then
+                        WebMetrics.csvExport value.MetricResult elapsed
+                    else
+                        WebMetrics.request value.MetricEndpoint value.MetricResult elapsed
 
                     let line =
                         JsonSerializer.Serialize

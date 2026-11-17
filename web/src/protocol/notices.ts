@@ -1,5 +1,6 @@
 import type { HostFailure, HumanAdvice, HumanInputIssue, Screen } from "@contracts/client";
 export type LocalNoticeReason =
+  | "downloadFailed"
   | "responseTimeout"
   | "unreachable"
   | "incomplete"

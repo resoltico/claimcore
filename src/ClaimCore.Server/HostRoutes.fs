@@ -176,6 +176,12 @@ module HostRoutes =
         application.UseDefaultFiles() |> ignore
         application.UseStaticFiles files |> ignore
 
+        application.MapPost(
+            ExportTransport.path,
+            Func<HttpContext, Task<IResult>>(ExportRoutes.handle configuration withActor)
+        )
+        |> ignore
+
         for endpoint in Api.all do
             let handler =
                 match Api.identity endpoint with

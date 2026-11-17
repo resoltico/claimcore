@@ -122,19 +122,28 @@ module internal ApiRoutes =
 
     let ingress (context: HttpContext) (next: RequestDelegate) : Task =
         task {
-            match
-                Api.all
-                |> List.tryFind (fun endpoint ->
-                    Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
-            with
-            | Some endpoint when context.Request.Method <> (Api.method endpoint).Method ->
+            if
+                Option.ofObj context.Request.Path.Value = Some ExportTransport.path
+                && context.Request.Method <> "POST"
+            then
                 do!
                     (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
                         context
-            | _ -> do! next.Invoke context
+            else
+                match
+                    Api.all
+                    |> List.tryFind (fun endpoint ->
+                        Some(Api.path endpoint) = Option.ofObj context.Request.Path.Value)
+                with
+                | Some endpoint when context.Request.Method <> (Api.method endpoint).Method ->
+                    do!
+                        (RouteSupport.hostFailure context HostFailureReason.MethodRejected)
+                            .ExecuteAsync
+                            context
+                | _ -> do! next.Invoke context
         }
 
-    let private admit (configuration: WebConfiguration) (context: HttpContext) =
+    let internal admit (configuration: WebConfiguration) (context: HttpContext) =
         task {
             let budget = context.RequestServices.GetRequiredService<AuthenticationAdmission>()
 
@@ -187,7 +196,7 @@ module internal ApiRoutes =
                     | Ok prepared -> return Ok prepared
         }
 
-    let private installationBinding (context: HttpContext) =
+    let internal installationBinding (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Installation" with
         | true, values when values.Count = 1 ->
             Codec.uuid.Read "$.installation" (JsonValue.String(string values[0]))

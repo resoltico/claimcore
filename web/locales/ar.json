@@ -698,5 +698,9 @@
   "ui.roleNumber": {
     "text": "الدور {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "تعذّر على المتصفح حفظ التنزيل. حاول مجددًا.",
+    "source": "e3c4b2089bc4"
   }
 }

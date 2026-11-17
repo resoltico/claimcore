@@ -698,5 +698,9 @@
   "ui.roleNumber": {
     "text": "役割{number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "ブラウザーでダウンロードを保存できませんでした。再試行してください。",
+    "source": "e3c4b2089bc4"
   }
 }

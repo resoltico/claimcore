@@ -95,6 +95,9 @@ module ResponseDecoders =
         + "const responseRoots: Readonly<Record<EndpointId,ResponseSchema>> = {"
         + roots
         + "};\n"
+        + "const exportFailureRoot:ResponseSchema = "
+        + schema ExportTransport.failure.Schema
+        + ";\n"
         + """
 // Structural admission preserves exact strings. Interpretation/correlation/ownership remain consumer checks.
 // JSON.parse has already lost duplicate-member and numeric-lexeme evidence.
@@ -317,6 +320,7 @@ const responseStructure = (
       return responseCompound(schema, value, admit, child);
   }
 };
+export const isCsvExportFailure = (value:unknown):value is ExportFailureReply => responseStructure(exportFailureRoot,value);
 export const isEndpointResponse = <E extends EndpointId>(
   endpoint: E,
   value: unknown,

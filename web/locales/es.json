@@ -698,5 +698,9 @@
   "ui.roleNumber": {
     "text": "Rol {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "El navegador no pudo guardar la descarga. Inténtelo de nuevo.",
+    "source": "e3c4b2089bc4"
   }
 }

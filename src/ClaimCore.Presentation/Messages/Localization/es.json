@@ -2838,5 +2838,21 @@
   "label.sessionTerminationUnknown": {
     "text": "La solicitud no se confirmó. Puede haber finalizado las sesiones de navegador de ClaimCore. Repetirla también puede finalizar sesiones más recientes.",
     "source": "1ef989edf86f"
+  },
+  "label.exportLimitExceeded": {
+    "text": "La exportación supera el límite de tamaño de descarga. Reduzca la selección o recorra las páginas con la CLI.",
+    "source": "b139f6f90e4f"
+  },
+  "label.exportProcessingTimeout": {
+    "text": "La exportación no finalizó dentro del límite de procesamiento. Inténtelo de nuevo o reduzca la selección.",
+    "source": "20181e95d0d9"
+  },
+  "label.exportInvalidContinuation": {
+    "text": "La exportación encontró una continuación no válida. No se descargó ningún CSV.",
+    "source": "2cfe661e5f65"
+  },
+  "label.exportCsv": {
+    "text": "Descargar CSV",
+    "source": "a4023b89022f"
   }
 }

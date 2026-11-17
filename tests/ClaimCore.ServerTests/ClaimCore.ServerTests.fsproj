@@ -38,6 +38,7 @@
     <Compile Include="FrameworkExceptionLogTests.fs" />
     <Compile Include="ReadinessTests.fs" />
     <Compile Include="RequestLogTests.fs" />
+    <Compile Include="CsvExportTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />

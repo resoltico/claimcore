@@ -1,3 +1,4 @@
+import { CsvExportButton } from "../components/CsvExportButton";
 import { apiEndpoints, type ServiceResponse } from "../api/service";
 import { type BoundOperationAffordance, hasOperationBinding } from "../operation/affordances";
 import { caseLinkId, caseLinkTarget } from "../routing/coreLinks";
@@ -254,6 +255,10 @@ const ReadyCaseList = ({
         </div>
       </div>
       <WorkspaceViewsStatus area="cases" />
+      <CsvExportButton
+        selection={{ query: apiEndpoints.caseList, selection: page.query }}
+        available={!page.loading && page.page !== null}
+      />
       <ViewTabs
         items={
           views.data?.items.map(({ view, label, count }) => ({

@@ -55,7 +55,12 @@ module internal RouteSupport =
         result.RecordedBy
         |> Option.iter (fun actor -> RequestLog.actor (ActorId.value actor) context)
 
-        let response = reply result.Response context
+        let response =
+            match result.Response with
+            | RouteBody.Json value -> reply value context
+            | RouteBody.Csv(bytes, filename, installation) ->
+                RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
+                WebWire.csv bytes filename installation
 
         if result.ExpireBrowserSession then
             { new IResult with

@@ -282,3 +282,25 @@ HUMAN task controls now form a closed, task-discriminated union. Each operation 
 shape; each command carries its complete validated request and empty seeds/editable/choices. Dismissal
 retains distinct HUMAN/SERVICE principals with bounded issuer/subject fields and fallible decoding.
 Mismatched task/command bindings fail structural admission instead of reaching a seed-map cast.
+### Bounded CSV download
+
+`POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
+`case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
+without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
+authentication/origin/antiforgery and installation headers. CSV is not a representation token.
+
+A success is complete UTF-8 `text/csv` with identity content encoding, exact `Content-Length`, a fixed
+safe attachment filename and the confirmed `ClaimCore-Installation`. JSON failures retain typed
+Core refusal/fault meaning or bounded-export resource advice. OpenAPI describes both media bodies.
+The complete CSV is buffered before success delivery, bounded by the shared response-byte limit.
+The Server cancels processing after 15 seconds, independently of the browser's response deadline;
+request abort and host shutdown also cancel it. Read admission remains held through actual cleanup
+and delivery. A later-page refusal, storage failure, impossible continuation or size overflow does
+not produce a successful partial file. Narrow the selection or use existing CLI traversal when the
+bounded download is insufficient.
+
+Every page reauthorizes through the existing Core query in a fresh snapshot. An export is not a
+cross-page database snapshot and does not promise retroactive withdrawal of bytes authorized in
+an earlier snapshot. CSV scalar formatting is canonical; shared fallback account captions use the
+source English catalog. Browser downloads validate media, identity encoding, complete declared byte
+length and owner/installation scope before creating a Blob, then release temporary object URLs.

@@ -708,5 +708,9 @@
   "endpoint.people.terminateSessions.meaning": "End all ClaimCore browser sessions for this person. Identity-provider sessions, credentials and independent bearer tokens remain valid. New sessions created after completion may survive, and admitted work may finish.",
   "label.sessionsTerminated": "ClaimCore browser sessions ended.",
   "label.browserSessionsEnded": "Browser sessions ended",
-  "label.sessionTerminationUnknown": "The request was not confirmed. It may have ended the ClaimCore browser sessions. Repeating it can also end newer sessions."
+  "label.sessionTerminationUnknown": "The request was not confirmed. It may have ended the ClaimCore browser sessions. Repeating it can also end newer sessions.",
+  "label.exportLimitExceeded": "The export exceeds the download size limit. Narrow the selection or use the CLI traversal.",
+  "label.exportProcessingTimeout": "The export did not finish within its processing limit. Try again or narrow the selection.",
+  "label.exportInvalidContinuation": "The export encountered an invalid continuation. No CSV was downloaded.",
+  "label.exportCsv": "Download CSV"
 }

@@ -1,5 +1,7 @@
+import { CsvExportButton } from "../../components/CsvExportButton";
 import { apiEndpoints } from "../../api/service";
 import {
+  type ExportRequest,
   taskChoices,
   type CaseTimelineRequest,
   type HistoryDisclosure,
@@ -62,6 +64,27 @@ const filterOptions = taskChoices.timelineFilter;
 export type TimelineFilter = "ALL" | NonNullable<CaseTimelineRequest["filter"]>;
 const selectorValue = (target: CaseSelector): string =>
   target.kind === "ID" ? target.caseId : target.caseReference;
+const TimelineCsvExport = ({
+  target,
+  filter,
+  page,
+  suppressed,
+  loading,
+}: {
+  target: CaseSelector;
+  filter: TimelineFilter;
+  page: TimelinePage | null;
+  suppressed: boolean;
+  loading: boolean;
+}) => {
+  const selection: ExportRequest = {
+    query: apiEndpoints.caseTimeline,
+    selection: { target, ...(filter === "ALL" ? {} : { filter }) },
+  };
+  return (
+    <CsvExportButton selection={selection} available={page !== null && !suppressed && !loading} />
+  );
+};
 export const CaseTimeline = ({
   target,
   onDisclosureChanged,
@@ -105,6 +128,13 @@ export const CaseTimeline = ({
     >
       <div className="section-heading">
         <h2 id="timeline-title">{p.text("ui.timeline.title")}</h2>
+        <TimelineCsvExport
+          target={target}
+          filter={filter}
+          page={result.page}
+          suppressed={suppressed}
+          loading={result.loading}
+        />
       </div>
       <ViewTabs
         items={[

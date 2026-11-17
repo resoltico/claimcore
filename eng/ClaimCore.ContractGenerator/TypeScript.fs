@@ -190,6 +190,17 @@ module TypeScript =
             yield! presentationConstants ()
             "export const consumerContractIdentity = " + quote identity + ";"
             "export const strictByteProfile = " + profile () + " as const;"
+            "export const csvExportTransport = "
+            + JsonSerializer.Serialize(
+                {|
+                    path = ExportTransport.path
+                    method = "POST"
+                    mediaType = ExportTransport.successMediaType
+                    filenames = ExportTransport.filenamesByQuery
+                    maximumResponseBytes = Limits.MaximumResponseBytes
+                |}
+            )
+            + " as const;"
             ResponseDecoders.source ()
             "export const limits = { maximumPageSize: "
             + string Paging.MaximumPageSize

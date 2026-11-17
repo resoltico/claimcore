@@ -5,6 +5,10 @@
 - Ordinary case reads and selected child operations acquire bounded live facts and write projection deltas; full verification and rebuild still reconstruct complete history.
 - Clear actor profiles only with current accepted erasure evidence; older erasures cannot clear replacement profiles.
 - End all of your ClaimCore browser sessions or, as an owner, a person's sessions; identity-provider sessions and bearer tokens remain valid. Unconfirmed deletion is never retried automatically.
+- Invalid or duplicate reminder URL filters show a recoverable error without losing the signed-in workspace or dispatching a broader reminder query.
+- Summary-only edits omit dormant assignee values, including when assignments are unavailable on a closed case.
+
+- Download complete bounded CSV for case lists, timelines, reminders and people history; each page rechecks rights, and late failure produces no successful partial file.
 
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.

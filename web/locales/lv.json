@@ -698,5 +698,9 @@
   "ui.roleNumber": {
     "text": "Loma {number}",
     "source": "00fa69a81cab"
+  },
+  "ui.downloadFailed": {
+    "text": "Pārlūks nevarēja saglabāt lejupielādi. Mēģiniet vēlreiz.",
+    "source": "e3c4b2089bc4"
   }
 }

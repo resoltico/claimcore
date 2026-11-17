@@ -1,3 +1,4 @@
+import { NoticeView } from "../../presentation/Message";
 import { apiEndpoints } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../../components/PresentedValue";
@@ -144,8 +145,11 @@ const ReminderFilters = ({
         ]}
         onChange={(value) => {
           const { assignment: _assignment, ...rest } = query;
-          if (value === "") {change(rest);}
-          else if (isTerm("assignment", value)) {change({ ...rest, assignment: value });}
+          if (value === "") {
+            change(rest);
+          } else if (isTerm("assignment", value)) {
+            change({ ...rest, assignment: value });
+          }
         }}
       />
       <label className="field-toggle">
@@ -260,11 +264,34 @@ const ReadyReminderQueue = ({
 };
 export const ReminderQueue = (props: QueueProps) => {
   const route = useContentRoute();
-  const { query, manual } = useMemo(
-    () => parseReminderPageQuery(route.screen === "reminders" ? route.query : ""),
+  const p = usePresentation();
+  const parsed = useMemo(
+    () =>
+      route.screen === "reminders" && route.invalidSelection === true
+        ? null
+        : parseReminderPageQuery(route.screen === "reminders" ? route.query : ""),
     [route],
   );
   const views = useWorkspaceViews().reminders;
+  if (parsed === null) {
+    return (
+      <section aria-labelledby="reminder-queue-title">
+        <h1 id="reminder-queue-title">{p.text("label.reminders")}</h1>
+        <p role="alert">
+          <NoticeView value={{ kind: "local", reason: "invalidInput" }} />
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            navigate(reminderPagePath({}, true), true);
+          }}
+        >
+          {p.text("ui.clearFilters")}
+        </button>
+      </section>
+    );
+  }
+  const { query, manual } = parsed;
   if (query.view === undefined && !manual) {
     const first = views.data?.items[0];
     if (first !== undefined) {

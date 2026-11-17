@@ -20,9 +20,9 @@ module ReminderCsv =
                 "active"
             ]
 
-    let csvRows render rows =
+    let csvChunks render rows =
         rows
-        |> List.map (fun (row: ReminderReadModel) ->
+        |> Seq.map (fun (row: ReminderReadModel) ->
             let value = row.Reminder
 
             Csv.row
@@ -39,4 +39,6 @@ module ReminderCsv =
                     Csv.actorName render row.RecordedBy
                     Csv.boolean row.Active
                 ])
-        |> Array.concat
+
+    let csvRows render rows =
+        csvChunks render rows |> Seq.toArray |> Array.concat

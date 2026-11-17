@@ -10,16 +10,29 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Json
 
+/// The host writes one explicit media body; CSV success never enters a JSON codec.
+[<RequireQualifiedAccess>]
+type RouteBody =
+    | Json of ClassifiedReply
+    | Csv of bytes: byte array * filename: string * installation: System.Guid
+
 /// Audit identity is taken from the confirmed use-case result, independently of representation.
 type RouteReply =
     {
-        Response: ClassifiedReply
+        Response: RouteBody
         RecordedBy: ActorId option
         ExpireBrowserSession: bool
     }
 
-    member this.Wire = this.Response.Wire
-    member this.Class = this.Response.Class
+    member this.Wire =
+        match this.Response with
+        | RouteBody.Json value -> value.Wire
+        | RouteBody.Csv _ -> invalidOp "CSV has no JSON representation."
+
+    member this.Class =
+        match this.Response with
+        | RouteBody.Json value -> value.Class
+        | RouteBody.Csv _ -> ReplyKind.Succeeded
 
 [<NoEquality; NoComparison>]
 type PreparedRoute =
@@ -64,9 +77,11 @@ module Route =
                                             return
                                                 {
                                                     Response =
-                                                        Endpoint.reply
-                                                            endpoint
-                                                            (endpoint.Unavailable input)
+                                                        RouteBody.Json(
+                                                            Endpoint.reply
+                                                                endpoint
+                                                                (endpoint.Unavailable input)
+                                                        )
                                                     RecordedBy = None
                                                     ExpireBrowserSession = false
                                                 }
@@ -76,7 +91,10 @@ module Route =
 
                                             return
                                                 {
-                                                    Response = Endpoint.reply endpoint reply
+                                                    Response =
+                                                        RouteBody.Json(
+                                                            Endpoint.reply endpoint reply
+                                                        )
                                                     RecordedBy = None
                                                     ExpireBrowserSession = false
                                                 }
@@ -130,7 +148,8 @@ module Route =
 
                                         return
                                             {
-                                                Response = Endpoint.reply endpoint reply
+                                                Response =
+                                                    RouteBody.Json(Endpoint.reply endpoint reply)
                                                 RecordedBy = recordedBy outcome
                                                 ExpireBrowserSession = expireBrowserSession outcome
                                             }
