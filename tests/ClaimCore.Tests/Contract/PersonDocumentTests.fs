@@ -60,6 +60,7 @@ let private document offers seed =
             Actor = ActorReviewItem.ofActor [] actor
             Offers = offers
             ProfileSeed = seed
+            CanTerminateSessions = false
             Items = []
             NextCursor = Some "person-next"
         }
@@ -185,6 +186,7 @@ let tests =
                                     |> List.map (fun task ->
                                         Inputs.offeredTask (TaskId.token task) binding Map.empty)
                                 ProfileSeed = None
+                                CanTerminateSessions = false
                                 Items = [ { grant with Controls = rowOffers } ]
                                 NextCursor = None
                             }

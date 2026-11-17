@@ -64,6 +64,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
       kind: "CASE",
       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
       expectedRevision: 1,
+      ...(kind === "case.erase" ? { expectedFamilySequence: 1 } : {}),
       ...(kind === "case.removePayment"
         ? { paymentId: "10000000-0000-7000-8000-000000000003" }
         : {}),
@@ -245,9 +246,8 @@ const caseReview = (request: CaseInput) => {
           request.task === "case.open"
             ? { kind: "CASE", expectedRevision: 0 }
             : {
-                kind: "CASE",
+                ...request.binding,
                 target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
-                expectedRevision: request.binding.expectedRevision,
               },
           {},
           [],

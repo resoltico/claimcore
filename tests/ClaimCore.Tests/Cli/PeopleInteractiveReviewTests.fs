@@ -114,6 +114,7 @@ let private run words (answer: string option) =
                                                         (TaskId.ofLiteral "people.disable")
                                                         (TaskId.ofLiteral "people.eraseProfile")
                                                     ]
+                                                CanTerminateSessions = false
                                                 ProfileSeed =
                                                     Some
                                                         {

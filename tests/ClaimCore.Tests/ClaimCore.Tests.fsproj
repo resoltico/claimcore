@@ -107,6 +107,7 @@
     <Compile Include="Domain/NotesTests.fs" />
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Architecture/DomainApiTests.fs" />
+    <Compile Include="Architecture/CommandApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
     <Compile Include="Domain/CaseStageTests.fs" />
@@ -148,6 +149,7 @@
     <Compile Include="Contract/NavigationDocumentTests.fs" />
     <Compile Include="Contract/RepresentationCoverageTests.fs" />
     <Compile Include="Contract/AccessRequestDocumentTests.fs" />
+    <Compile Include="Contract/OperationalCommandTests.fs" />
     <Compile Include="Contract/PersonDocumentTests.fs" />
     <Compile Include="Contract/NoteDocumentTests.fs" />
     <Compile Include="Contract/HistoryControlDocumentTests.fs" />

@@ -53,6 +53,7 @@ module SessionKeys =
 
     let configure
         (directory: DirectoryInfo)
+        issuer
         idle
         (sessions: ISessionStore)
         (services: IServiceCollection)
@@ -72,6 +73,7 @@ module SessionKeys =
                 fun options ->
                     options.SessionStore <-
                         OidcTicketStore(
+                            issuer,
                             idle,
                             options.ExpireTimeSpan,
                             sessions,

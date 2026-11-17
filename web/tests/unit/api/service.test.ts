@@ -382,3 +382,63 @@ it.each(["2024-02-29T23:59:59.123456Z", "2024-02-29T23:59:59.1234567Z"])(
     expect(result.kind).toBe(observedAt.endsWith("123456Z") ? "outcome" : "deliveryFailure");
   },
 );
+
+it("admits complete dismissal controls but rejects impossible task associations and malformed principal fields", async () => {
+  const action = {
+    task: "people.requests.dismiss",
+    labelId: "endpoint.people.requests.dismiss.label",
+    binding: {
+      kind: "COMMAND",
+      request: {
+        command: "people.requests.dismiss",
+        "input:principal.kind": "HUMAN",
+        "input:principal.issuer": "https://issuer.example/",
+        "input:principal.subject": "synthetic",
+      },
+    },
+    seeds: {},
+    editable: [],
+    choices: {},
+    blocked: null,
+  };
+  const sample = {
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      document: { ...current, subject: { kind: "LIST" }, history: null, actions: [action] },
+    },
+  };
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(sample)));
+  expect((await requestEndpoint("people.requests", "csrf", { limit: 20 })).kind).toBe("outcome");
+  for (const invalid of [
+    { ...action, task: "session.terminateOwn" },
+    {
+      ...action,
+      binding: {
+        ...action.binding,
+        request: { ...action.binding.request, "input:principal.issuer": "" },
+      },
+    },
+    {
+      ...action,
+      binding: {
+        ...action.binding,
+        request: { ...action.binding.request, "input:principal.subject": "" },
+      },
+    },
+  ]) {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      reply({
+        ...sample,
+        outcome: {
+          ...sample.outcome,
+          document: { ...sample.outcome.document, actions: [invalid] },
+        },
+      }),
+    );
+    expect((await requestEndpoint("people.requests", "csrf", { limit: 20 })).kind).toBe(
+      "deliveryFailure",
+    );
+  }
+  expect(fetch).toHaveBeenCalledTimes(4);
+});

@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "未确认命令的响应。重复执行可能影响更新的状态。",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore 浏览器会话",
+    "source": "afe6f30a2564"
   }
 }

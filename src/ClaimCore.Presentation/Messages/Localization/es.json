@@ -2810,5 +2810,33 @@
   "label.assignmentAction": {
     "text": "Reasignar",
     "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "Finalizar mis sesiones de navegador de ClaimCore",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "Finalice todas sus sesiones de navegador de ClaimCore, incluida esta. Las sesiones del proveedor de identidad, las credenciales y los tokens de portador independientes siguen siendo válidos. Las sesiones creadas después de finalizar pueden permanecer, y el trabajo ya admitido puede completarse.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "Finalizar las sesiones de navegador de ClaimCore de esta persona",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "Finalice todas las sesiones de navegador de ClaimCore de esta persona. Las sesiones del proveedor de identidad, las credenciales y los tokens de portador independientes siguen siendo válidos. Las sesiones creadas después de finalizar pueden permanecer, y el trabajo ya admitido puede completarse.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "Sesiones de navegador de ClaimCore finalizadas.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "Sesiones de navegador finalizadas",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "La solicitud no se confirmó. Puede haber finalizado las sesiones de navegador de ClaimCore. Repetirla también puede finalizar sesiones más recientes.",
+    "source": "1ef989edf86f"
   }
 }

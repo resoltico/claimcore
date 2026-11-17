@@ -98,6 +98,7 @@ module internal MessageCatalogs =
             | "payment" -> CliMessage.PaymentCommands
             | "work" -> CliMessage.WorkCommands
             | "reminder" -> CliMessage.ReminderCommands
+            | "session" -> CliMessage.BrowserSessions
             | "people" -> CliMessage.PeopleFamily
             | "operation" -> CliMessage.OperationFamily
             | "context" -> CliMessage.ContextFamily

@@ -106,6 +106,7 @@ let private services (builder: WebApplicationBuilder) sessions =
                     fun options ->
                         options.SessionStore <-
                             OidcTicketStore(
+                                oidc.Issuer,
                                 TimeSpan.FromMinutes 30.,
                                 TimeSpan.FromHours 8.,
                                 storage,

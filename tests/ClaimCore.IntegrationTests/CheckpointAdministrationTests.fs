@@ -121,7 +121,7 @@ let private checkpoints () =
 
         let addSession () =
             sql
-                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions SELECT repeat('a',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600 FROM observed"
+                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT repeat('a',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600,repeat('b',64) FROM observed"
 
         let mutable maintenanceRefused = false
 

@@ -575,7 +575,7 @@ module HumanReadDocuments =
         HumanDocument.create
             (DocumentSubject.Requester identity)
             (ContextScreen.view value)
-            actions
+            (actions @ [ Affordance.command CommandRequest.TerminateOwnSessions ])
             links
             None
             basis
@@ -700,7 +700,12 @@ module HumanReadDocuments =
     let grants (value: PeopleGrantPage) =
         let actor = value.Actor.Actor.ActorId
 
-        let actions = value.Controls |> List.choose TaskAffordances.fromOffer
+        let actions =
+            (value.Controls |> List.choose TaskAffordances.fromOffer)
+            @ (if value.CanTerminateSessions then
+                   [ Affordance.command (CommandRequest.TerminatePersonSessions actor) ]
+               else
+                   [])
 
         let links =
             value.Actor.ResponsibleCases
@@ -744,9 +749,61 @@ module HumanReadDocuments =
             Screen = AccessRequestsScreen.dismissed ()
         }
 
+    let terminated (value: SessionTermination) =
+        { HumanDocument.empty HumanDisclosure.Current with
+            Screen =
+                Screen.create
+                    [
+                        ScreenEntries.region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice
+                                {
+                                    MessageId = "label.sessionsTerminated"
+                                    Reason = None
+                                    Tone = NoticeTone.Info
+                                })
+                        ScreenEntries.entryRegion
+                            RegionRole.Details
+                            None
+                            [
+                                ScreenEntries.value
+                                    "count"
+                                    "label.browserSessionsEnded"
+                                    Prominence.Primary
+                                    (PresentedValue.Count value.Count)
+                            ]
+                    ]
+        }
+
+    let terminationUnknown () =
+        { HumanDocument.empty HumanDisclosure.Current with
+            Screen =
+                Screen.create
+                    [
+                        ScreenEntries.region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice
+                                {
+                                    MessageId = "label.sessionTerminationUnknown"
+                                    Reason = None
+                                    Tone = NoticeTone.Warning
+                                })
+                    ]
+        }
+
 module HumanReadReply =
     let classify (reply: HumanReadReply) =
         match reply.Outcome with
         | HumanReadOutcome.Succeeded _ -> ReplyKind.Succeeded
         | HumanReadOutcome.Rejected _ -> ReplyKind.Rejected
         | HumanReadOutcome.Failed _ -> ReplyKind.Failed
+
+/// Operational uncertainty has no ledger identity or automatic retry meaning.
+[<RequireQualifiedAccess>]
+type HumanSessionTerminationResult =
+    | Succeeded of self: bool * HumanDocument
+    | Rejected of HumanRejection
+    | Failed of CoreFault
+    | OutcomeUnknown of HumanDocument

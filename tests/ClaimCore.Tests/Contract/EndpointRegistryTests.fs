@@ -44,6 +44,8 @@ let private registry () =
             match endpoint.Token with
             | "operation.execute" -> EndpointEffect.LedgerExecution
             | "session.logout"
+            | "session.terminateOwn"
+            | "people.terminateSessions"
             | "people.requests.dismiss" -> EndpointEffect.OperationalWrite
             | _ -> EndpointEffect.Read
 

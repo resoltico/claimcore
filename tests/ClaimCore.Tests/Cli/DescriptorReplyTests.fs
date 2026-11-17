@@ -190,6 +190,7 @@ let tests =
                                                 Offers = []
                                                 Controls = []
                                                 ProfileSeed = None
+                                                CanTerminateSessions = false
                                                 Items =
                                                     [
                                                         {
@@ -646,6 +647,7 @@ let emptyGrantPageDetails =
                 Offers = []
                 Controls = []
                 ProfileSeed = None
+                CanTerminateSessions = false
                 Items = []
                 NextCursor = None
             }

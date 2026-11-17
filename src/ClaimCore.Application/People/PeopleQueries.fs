@@ -442,6 +442,15 @@ module internal PeopleQueries =
                                                                                     controls
                                                                                 ProfileSeed =
                                                                                     profileSeed
+                                                                                CanTerminateSessions =
+                                                                                    Access.can
+                                                                                        services
+                                                                                            .Principal
+                                                                                        viewer
+                                                                                        Capability
+                                                                                            .ManageAccess
+                                                                                        Scope
+                                                                                            .Installation
                                                                                 Items = items
                                                                                 NextCursor =
                                                                                     page.Next

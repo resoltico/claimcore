@@ -184,6 +184,10 @@ module internal ControlHints =
                     ],
                     [ "--dry-run" ]
 
+                | ActionControl.Command CommandRequest.TerminateOwnSessions -> [], [ "--dry-run" ]
+                | ActionControl.Command(CommandRequest.TerminatePersonSessions actor) ->
+                    [ TaskInputId.ActorId, ActorId.format actor ], [ "--dry-run" ]
+
             [ label + ": " + command task values suffix ]
 
     let link (value: Link) =

@@ -69,7 +69,12 @@ afterEach(() => {
 });
 const sessionView = (state: SessionState) => (
   <SessionContext
-    value={{ state, logout: () => Promise.resolve(), refresh: () => Promise.resolve() }}
+    value={{
+      state,
+      logout: () => Promise.resolve(),
+      endedBrowserSessions: vi.fn(),
+      refresh: () => Promise.resolve(),
+    }}
   >
     <Dashboard />
   </SessionContext>

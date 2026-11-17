@@ -2810,5 +2810,33 @@
   "label.assignmentAction": {
     "text": "重新分配",
     "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "结束我的 ClaimCore 浏览器会话",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "结束您的所有 ClaimCore 浏览器会话，包括当前会话。身份提供商会话、凭据和独立的持有者令牌仍然有效。完成后创建的会话可能保留，已获准的工作可能完成。",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "结束此人的 ClaimCore 浏览器会话",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "结束此人的所有 ClaimCore 浏览器会话。身份提供商会话、凭据和独立的持有者令牌仍然有效。完成后创建的会话可能保留，已获准的工作可能完成。",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore 浏览器会话已结束。",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "已结束的浏览器会话",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "请求未得到确认。它可能已结束 ClaimCore 浏览器会话。重复请求也可能结束更新的会话。",
+    "source": "1ef989edf86f"
   }
 }

@@ -105,5 +105,6 @@
   "cli.text.recoveryRefusedAttempt": "Refused, awaiting final confirmation — attempt {attemptId}: {subject} {act}; operation {operationId}.",
   "cli.usage.invalidRange": "{flag} must be between {minimum} and {maximum}; received {value}.",
   "cli.failure.AUTHENTICATION_TIMEOUT": "Sign-in was not completed within two minutes. Run the command again and complete sign-in in the browser.",
-  "cli.text.operationalUnresolved": "The command's answer was not confirmed. Repeating it may affect newer state."
+  "cli.text.operationalUnresolved": "The command's answer was not confirmed. Repeating it may affect newer state.",
+  "cli.family.browserSessions": "ClaimCore browser sessions"
 }

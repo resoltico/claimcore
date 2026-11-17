@@ -250,12 +250,19 @@ let private actionState (database: PostgresFixture.Database) =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! session =
-            sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+            sessions.Create(
+                SessionResults.principal,
+                [| 1uy |],
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
 
         let! ticket = sessions.Retrieve(session.Value, token)
 
         Expect.equal
-            ticket.Value
+            (ticket.Value |> Option.map _.Payload)
             (Some [| 1uy |])
             "Operational authentication storage remains available"
 
@@ -333,12 +340,19 @@ let private pruning (database: PostgresFixture.Database) =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! live =
-            sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+            sessions.Create(
+                SessionResults.principal,
+                [| 1uy |],
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
 
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800 FROM generate_series(1,7) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,7) n"
                 [||]
 
         let! before = InstallationStatus.read database.OwnerSource token
@@ -354,7 +368,12 @@ let private pruning (database: PostgresFixture.Database) =
         Expect.equal report.AccessRequestsDeleted 0L "No access hints were expired"
 
         let! returned = sessions.Retrieve(live.Value, token)
-        Expect.equal returned.Value (Some [| 1uy |]) "Live ticket remains available"
+
+        Expect.equal
+            (returned.Value |> Option.map _.Payload)
+            (Some [| 1uy |])
+            "Live ticket remains available"
+
         let! after = InstallationStatus.read database.OwnerSource token
 
         Expect.equal
@@ -472,17 +491,27 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
             SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
         let! live =
-            sessions.Create([| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+            sessions.Create(
+                SessionResults.principal,
+                [| 1uy |],
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
 
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800 FROM generate_series(1,8) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,8) n"
                 [||]
 
         let first = Housekeeping.prune database.OwnerSource database.Installation 4 token
         let second = Housekeeping.prune database.OwnerSource database.Installation 4 token
-        let renewal = sessions.Renew(live.Value, [| 2uy |], token)
+
+        let renewal =
+            sessions.Renew(live.Value, SessionResults.principal, [| 2uy |], (fun _ -> true), token)
+
         let logout = sessions.Remove(live.Value, SessionEndReason.Logout, token)
         let! batches = Task.WhenAll(first, second)
         do! Task.WhenAll(renewal :> Task, logout :> Task)

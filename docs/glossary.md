@@ -139,3 +139,10 @@ review. Moving the existing assignment label to shared Presentation preserves it
 
 CLI display-locale guidance and operational delivery wording were agent-translated in all offered
 languages and await fluent review.
+## ClaimCore browser session
+
+A ClaimCore browser session is one protected browser authentication ticket stored by ClaimCore. Its
+canonical principal includes kind, issuer and subject, independently of registration/profile hints.
+Ending these sessions removes the selected principal's tickets; it does not revoke identity-provider
+sessions, credentials or independent bearer tokens. The new session-termination wording in all eight
+translated languages is agent-produced and awaits fluent review.

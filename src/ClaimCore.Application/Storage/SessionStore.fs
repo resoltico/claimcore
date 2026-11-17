@@ -1,10 +1,7 @@
 namespace ClaimCore.Application.Storage
 
-open ClaimCore.Application.Verification
 
-open ClaimCore.Application.Reads
 
-open ClaimCore.Application.Execution
 
 open ClaimCore.Application
 
@@ -13,6 +10,7 @@ open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
+open ClaimCore.Domain
 
 module internal SessionRows =
     let maximumPayload = 1048576
@@ -37,10 +35,17 @@ module internal SessionRows =
             [| box key |]
             token
 
+    let terminate connection principal token =
+        DatabaseSession.execute
+            connection
+            "DELETE FROM claimcore.sessions WHERE principal_key=$1"
+            [| box (PrincipalKey.naturalKey principal) |]
+            token
+
     let lockRow connection key token =
         DatabaseSession.rows
             connection
-            "SELECT protected_ticket,payload_version,absolute_expiry,last_activity,idle_seconds FROM claimcore.sessions WHERE session_key=$1 FOR UPDATE"
+            "SELECT protected_ticket,payload_version,absolute_expiry,last_activity,idle_seconds,principal_key FROM claimcore.sessions WHERE session_key=$1 FOR UPDATE"
             [| box key |]
             token
 
@@ -87,10 +92,7 @@ module internal SessionRows =
                     let! result =
                         match rows with
                         | [ row ] when valid instant row ->
-                            task {
-                                let! value = action connection instant row
-                                return SessionChanges.unchanged value
-                            }
+                            task { return! action connection instant row }
                         | [ row ] ->
                             task {
                                 let! removed = remove connection key token
@@ -122,7 +124,7 @@ module internal SessionRows =
 [<Sealed>]
 type internal SessionStore(source: NpgsqlDataSource, installation: Installation) =
     interface ISessionStore with
-        member _.Create(payload, expiry, idle, absolute, token) =
+        member _.Create(principal, payload, expiry, idle, absolute, token) =
             SessionRows.admitPayload payload
 
             if idle <= TimeSpan.Zero || absolute < idle then
@@ -137,6 +139,7 @@ type internal SessionStore(source: NpgsqlDataSource, installation: Installation)
                         let! _ = Transactions.configure connection Transactions.timeouts token
                         do! Baseline.requireExpected installation connection token
                         FailureDiagnostics.phase FailurePhase.Session
+                        let! _ = PrincipalLock.acquire connection principal token
 
                         let! _ =
                             DatabaseSession.execute
@@ -174,13 +177,14 @@ type internal SessionStore(source: NpgsqlDataSource, installation: Installation)
                         let! _ =
                             DatabaseSession.execute
                                 connection
-                                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds) VALUES($1,$2,1,$3,$4,$3,$5)"
+                                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) VALUES($1,$2,1,$3,$4,$3,$5,$6)"
                                 [|
                                     box key
                                     box payload
                                     box instant
                                     box deadline
                                     box idle.TotalSeconds
+                                    box (PrincipalKey.naturalKey principal)
                                 |]
                                 token
 
@@ -205,24 +209,44 @@ type internal SessionStore(source: NpgsqlDataSource, installation: Installation)
                             [| box key; box instant |]
                             token
 
-                    return Some(DatabaseSession.value<byte array> 0 row)
+                    return
+                        SessionChanges.unchanged (
+                            Some
+                                {
+                                    PrincipalKey = DatabaseSession.value<string> 5 row
+                                    Payload = DatabaseSession.value<byte array> 0 row
+                                }
+                        )
                 })
 
-        member _.Renew(key, payload, token) =
+        member _.Renew(key, principal, payload, validateExisting, token) =
             task {
                 SessionRows.admitPayload payload
 
                 let! changes =
-                    SessionRows.withRow source installation key token (fun connection _ _ ->
+                    SessionRows.withRow source installation key token (fun connection _ row ->
                         task {
-                            let! _ =
-                                DatabaseSession.execute
-                                    connection
-                                    "UPDATE claimcore.sessions SET protected_ticket=$2 WHERE session_key=$1"
-                                    [| box key; box payload |]
-                                    token
+                            if
+                                DatabaseSession.value<string> 5 row
+                                <> PrincipalKey.naturalKey principal
+                                || not (validateExisting (DatabaseSession.value<byte array> 0 row))
+                            then
+                                let! removed = SessionRows.remove connection key token
 
-                            return Some()
+                                return
+                                    {
+                                        Value = None
+                                        Ended = List.replicate removed SessionEndReason.Invalid
+                                    }
+                            else
+                                let! _ =
+                                    DatabaseSession.execute
+                                        connection
+                                        "UPDATE claimcore.sessions SET protected_ticket=$2 WHERE session_key=$1"
+                                        [| box key; box payload |]
+                                        token
+
+                                return SessionChanges.unchanged (Some())
                         })
 
                 return { Value = (); Ended = changes.Ended }

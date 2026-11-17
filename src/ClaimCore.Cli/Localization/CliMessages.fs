@@ -32,6 +32,7 @@ type CliMessage =
     | [<MessageKey("cli.family.note")>] NoteCommands
     | [<MessageKey("cli.family.payment")>] PaymentCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
+    | [<MessageKey("cli.family.browserSessions")>] BrowserSessions
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
     | [<MessageKey("cli.text.operationalUnresolved")>] OperationalUnresolved
     | [<MessageKey("cli.next.correctInput")>] NextCorrectInput

@@ -49,13 +49,21 @@ module QueryTaskId =
 
 
 [<RequireQualifiedAccess>]
-type CommandTaskId = | DismissAccessRequest
+type CommandTaskId =
+    | DismissAccessRequest
+    | TerminateOwnSessions
+    | TerminatePersonSessions
 
 module CommandTaskId =
+    let private cases =
+        Vocabulary.ofUnion<CommandTaskId> "commandTaskCase" TokenCasing.CamelCase None
+        |> Vocabulary.all
+
     let vocabulary =
-        Vocabulary.ofEntries
-            "commandTask"
-            [ CommandTaskId.DismissAccessRequest, "people.requests.dismiss" ]
+        Vocabulary.define "commandTask" cases (function
+            | CommandTaskId.DismissAccessRequest -> "people.requests.dismiss"
+            | CommandTaskId.TerminateOwnSessions -> "session.terminateOwn"
+            | CommandTaskId.TerminatePersonSessions -> "people.terminateSessions")
 
     let all = Vocabulary.all vocabulary
     let key = Vocabulary.token vocabulary
@@ -63,9 +71,14 @@ module CommandTaskId =
 
 /// Operational requests are complete at the control boundary; they have no ledger identity.
 [<RequireQualifiedAccess>]
-type CommandRequest = DismissAccessRequest of PrincipalKey
+type CommandRequest =
+    | DismissAccessRequest of PrincipalKey
+    | TerminateOwnSessions
+    | TerminatePersonSessions of ActorId
 
 module CommandRequest =
     let task =
         function
         | CommandRequest.DismissAccessRequest _ -> CommandTaskId.DismissAccessRequest
+        | CommandRequest.TerminateOwnSessions -> CommandTaskId.TerminateOwnSessions
+        | CommandRequest.TerminatePersonSessions _ -> CommandTaskId.TerminatePersonSessions

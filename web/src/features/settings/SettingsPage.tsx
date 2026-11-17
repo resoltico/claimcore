@@ -1,3 +1,4 @@
+import { OwnBrowserSessions } from "./BrowserSessions";
 import { Button } from "../../ui/Button";
 import { SettingsPanel } from "./SettingsPanel";
 import { usePresentation } from "../../presentation/context";
@@ -10,6 +11,7 @@ export const SettingsPage = () => {
     <section>
       <h1 tabIndex={-1}>{p.text("ui.settings")}</h1>
       <SettingsPanel />
+      <OwnBrowserSessions />
       <Button
         variant="secondary"
         onPress={() => {

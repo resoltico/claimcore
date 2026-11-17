@@ -2810,5 +2810,33 @@
   "label.assignmentAction": {
     "text": "담당자 변경",
     "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "내 ClaimCore 브라우저 세션 종료",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "이 세션을 포함한 모든 내 ClaimCore 브라우저 세션을 종료합니다. ID 공급자 세션, 자격 증명 및 독립적인 전달자 토큰은 계속 유효합니다. 완료 후 생성된 세션은 유지될 수 있으며 이미 허용된 작업은 완료될 수 있습니다.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "이 사람의 ClaimCore 브라우저 세션 종료",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "이 사람의 모든 ClaimCore 브라우저 세션을 종료합니다. ID 공급자 세션, 자격 증명 및 독립적인 전달자 토큰은 계속 유효합니다. 완료 후 생성된 세션은 유지될 수 있으며 이미 허용된 작업은 완료될 수 있습니다.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore 브라우저 세션이 종료되었습니다.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "종료된 브라우저 세션",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "요청이 확인되지 않았습니다. ClaimCore 브라우저 세션이 종료되었을 수 있습니다. 반복하면 새 세션도 종료될 수 있습니다.",
+    "source": "1ef989edf86f"
   }
 }

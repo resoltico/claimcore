@@ -242,6 +242,7 @@ type Stub() =
                 Api.operationPreviewUnavailable
                 HumanReplies.previewSubmission
                 (fun _ -> None)
+                (fun _ -> false)
                 (fun _ input _ ->
                     let outcome =
                         match input.Operation with
@@ -276,6 +277,7 @@ type Stub() =
                     match reply.Outcome with
                     | ExecuteResult.Accepted receipt -> Some receipt.RecordedBy.ActorId
                     | _ -> None)
+                (fun _ -> false)
                 (fun _ input token ->
                     task {
                         match this.Error with
@@ -357,6 +359,7 @@ type Stub() =
                                                                 Response =
                                                                     Endpoint.reply endpoint reply
                                                                 RecordedBy = None
+                                                                ExpireBrowserSession = false
                                                             }
                                                     }
                                         })

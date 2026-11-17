@@ -62,6 +62,7 @@ type PeopleGrantPage =
         Offers: TaskId list
         Controls: TaskOffer list
         ProfileSeed: ActorProfileInput option
+        CanTerminateSessions: bool
         Items: GrantReadModel list
         NextCursor: string option
     }

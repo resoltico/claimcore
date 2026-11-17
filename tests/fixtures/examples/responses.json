@@ -35,7 +35,8 @@
             },
             "offers": [],
             "profileSeed": null,
-            "revision": 1
+            "revision": 1,
+            "canTerminateSessions": false
           }
         },
         "representation": "DATA"
@@ -2850,6 +2851,59 @@
             "nextCursor": null,
             "workRevision": 0
           }
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-confirmed",
+      "endpoint": "session.terminateOwn",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "count": 2,
+            "self": true
+          }
+        }
+      }
+    },
+    {
+      "name": "people.terminateSessions-confirmed",
+      "endpoint": "people.terminateSessions",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "count": 0,
+            "self": false
+          }
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-unknown",
+      "endpoint": "session.terminateOwn",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "OUTCOME_UNKNOWN"
+        }
+      }
+    },
+    {
+      "name": "session.terminateOwn-unknown-cannot-report-count",
+      "endpoint": "session.terminateOwn",
+      "valid": false,
+      "value": {
+        "representation": "DATA",
+        "outcome": {
+          "kind": "OUTCOME_UNKNOWN",
+          "count": 2
         }
       }
     }

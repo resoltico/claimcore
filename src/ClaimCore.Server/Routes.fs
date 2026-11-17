@@ -15,6 +15,7 @@ type RouteReply =
     {
         Response: ClassifiedReply
         RecordedBy: ActorId option
+        ExpireBrowserSession: bool
     }
 
     member this.Wire = this.Response.Wire
@@ -67,6 +68,7 @@ module Route =
                                                             endpoint
                                                             (endpoint.Unavailable input)
                                                     RecordedBy = None
+                                                    ExpireBrowserSession = false
                                                 }
                                         | Some context ->
                                             let! reply = invoke context input cancellation
@@ -76,6 +78,7 @@ module Route =
                                                 {
                                                     Response = Endpoint.reply endpoint reply
                                                     RecordedBy = None
+                                                    ExpireBrowserSession = false
                                                 }
                                     }
                         })
@@ -94,6 +97,7 @@ module Route =
         (unavailable: 'input -> 'data)
         (describe: 'input -> 'data -> 'human)
         (recordedBy: 'data -> ActorId option)
+        (expireBrowserSession: 'data -> bool)
         (invoke: ServiceContext -> 'input -> CancellationToken -> Task<'data>)
         =
         {
@@ -128,6 +132,7 @@ module Route =
                                             {
                                                 Response = Endpoint.reply endpoint reply
                                                 RecordedBy = recordedBy outcome
+                                                ExpireBrowserSession = expireBrowserSession outcome
                                             }
                                     }
                         })
@@ -139,4 +144,5 @@ module Route =
             (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
             (fun _ outcome -> HumanReplies.read describe outcome)
             (fun _ -> None)
+            (fun _ -> false)
             invoke

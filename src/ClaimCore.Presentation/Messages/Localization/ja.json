@@ -2810,5 +2810,33 @@
   "label.assignmentAction": {
     "text": "担当を変更",
     "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "自分のClaimCoreブラウザーセッションを終了",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "このセッションを含む、自分のすべてのClaimCoreブラウザーセッションを終了します。IDプロバイダーのセッション、認証情報、独立したベアラートークンは引き続き有効です。完了後に作成されたセッションは残る場合があり、すでに許可された処理は完了する場合があります。",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "この人物のClaimCoreブラウザーセッションを終了",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "この人物のすべてのClaimCoreブラウザーセッションを終了します。IDプロバイダーのセッション、認証情報、独立したベアラートークンは引き続き有効です。完了後に作成されたセッションは残る場合があり、すでに許可された処理は完了する場合があります。",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCoreブラウザーセッションを終了しました。",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "終了したブラウザーセッション",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "要求は確認されていません。ClaimCoreブラウザーセッションが終了した可能性があります。繰り返すと、新しいセッションも終了する場合があります。",
+    "source": "1ef989edf86f"
   }
 }

@@ -102,3 +102,28 @@ review more history. A case-specific role does not provide access-history access
 If a change cannot be confirmed, keep its identifier and use [delivery recovery](integrating.md#recover-an-uncertain-change).
 Checking a result does not record it again. Retrying an in-memory reviewed change sends its identical
 bytes; starting a different change requires a new identifier and a fresh review.
+
+## End browser sessions
+
+In Settings, **End my ClaimCore browser sessions** ends all of your ClaimCore browser sessions,
+including the current one. This is available to an authenticated person before registration and
+without roles. Ordinary **Sign out** still ends only the current browser session.
+
+An owner can select a person and choose **End this person’s ClaimCore browser sessions**. Permission
+is checked again when deletion runs. A confirmed result reports the number of stored session tickets
+removed; an unconfirmed result reports no count. Do not repeat an unconfirmed request automatically:
+a later attempt can also end newer sessions.
+
+Identity-provider sessions, credentials and independent bearer tokens remain valid. Previously
+admitted work can finish; new sessions created after deletion commits may survive. Disabling and
+re-enabling an account never restores deleted tickets. See the [session lock and commit contract](operating.md#access-review-and-sessions).
+
+The CLI exposes the same nonledger commands:
+
+```sh
+claimcore session terminate-own --dry-run
+claimcore people terminate-sessions ACTOR-ID --dry-run
+```
+
+These examples prepare without sending. Omit `--dry-run` to execute a deliberate request. The commands
+have no preview endpoint, ledger operation ID or recovery lookup.

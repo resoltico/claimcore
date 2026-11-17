@@ -102,5 +102,23 @@ export const useSession = () => {
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   };
 
-  return { state, logout, refresh };
+  const endedBrowserSessions = (expectedEpoch: number): void => {
+    if (epoch.current !== expectedEpoch) {
+      return;
+    }
+    requestSerial.current += 1;
+    read.current?.abort();
+    setState(
+      stateFor(
+        {
+          authenticated: false,
+          antiforgeryToken: null,
+          contractIdentity: consumerContractIdentity,
+        },
+        null,
+        nextEpoch(epoch),
+      ),
+    );
+  };
+  return { state, logout, refresh, endedBrowserSessions };
 };

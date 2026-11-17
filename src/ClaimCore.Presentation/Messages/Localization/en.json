@@ -701,5 +701,12 @@
   "task.case.correctPayment.label": "Correct payment entry",
   "task.case.correctPayment.meaning": "Replace a payment entry recorded in error with the correct date and amount. This does not refund or execute a transfer. Earlier history remains.",
   "task.case.correctPayment.done": "Payment entry corrected.",
-  "label.assignmentAction": "Reassign"
+  "label.assignmentAction": "Reassign",
+  "endpoint.session.terminateOwn.label": "End my ClaimCore browser sessions",
+  "endpoint.session.terminateOwn.meaning": "End all your ClaimCore browser sessions, including this one. Identity-provider sessions, credentials and independent bearer tokens remain valid. New sessions created after completion may survive, and admitted work may finish.",
+  "endpoint.people.terminateSessions.label": "End this person’s ClaimCore browser sessions",
+  "endpoint.people.terminateSessions.meaning": "End all ClaimCore browser sessions for this person. Identity-provider sessions, credentials and independent bearer tokens remain valid. New sessions created after completion may survive, and admitted work may finish.",
+  "label.sessionsTerminated": "ClaimCore browser sessions ended.",
+  "label.browserSessionsEnded": "Browser sessions ended",
+  "label.sessionTerminationUnknown": "The request was not confirmed. It may have ended the ClaimCore browser sessions. Repeating it can also end newer sessions."
 }

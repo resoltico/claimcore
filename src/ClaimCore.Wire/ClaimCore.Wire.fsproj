@@ -33,6 +33,7 @@
     <Compile Include="Codecs/CaseStateCodecs.fs" />
     <Compile Include="Codecs/TimelineCodecs.fs" />
     <Compile Include="Codecs/PresentationStructure.fs" />
+    <Compile Include="Codecs/CommandControlCodecs.fs" />
     <Compile Include="Codecs/PresentationCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCode.fs" />
@@ -42,6 +43,7 @@
     <Compile Include="Codecs/PaymentPageCodecs.fs" />
     <Compile Include="Codecs/HumanDocumentCodecs.fs" />
     <Compile Include="Codecs/HumanReplies.fs" />
+    <Compile Include="Codecs/SessionTerminationCodecs.fs" />
     <Compile Include="Codecs/PartDescriptionCodecs.fs" />
     <Compile Include="Codecs/PeopleHistoryCodecs.fs" />
     <Compile Include="Codecs/CaseTotalsCodecs.fs" />

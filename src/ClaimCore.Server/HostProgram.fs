@@ -96,8 +96,8 @@ let private configureKestrel (configuration: WebConfiguration) (builder: WebAppl
         ))
     |> ignore
 
-let private configureAntiforgery directory idle sessions (services: IServiceCollection) =
-    SessionKeys.configure directory idle sessions services
+let private configureAntiforgery directory issuer idle sessions (services: IServiceCollection) =
+    SessionKeys.configure directory issuer idle sessions services
 
     services.AddAntiforgery(fun options ->
         options.HeaderName <- "X-ClaimCore-Antiforgery"
@@ -150,7 +150,12 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
         | Error reason -> return WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
     }
 
-let private configuredBuilder assets (configuration: WebConfiguration) oidc (runtime: IRuntime) =
+let private configuredBuilder
+    assets
+    (configuration: WebConfiguration)
+    (oidc: OidcConfiguration)
+    (runtime: IRuntime)
+    =
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
@@ -160,6 +165,7 @@ let private configuredBuilder assets (configuration: WebConfiguration) oidc (run
 
     configureAntiforgery
         configuration.KeyRingDirectory
+        oidc.Issuer
         configuration.SessionIdle
         runtime.Sessions
         builder.Services

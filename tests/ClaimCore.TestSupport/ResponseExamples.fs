@@ -436,6 +436,7 @@ let internal replies () : IEndpointOutput list =
                         Controls = []
                         Offers = []
                         ProfileSeed = None
+                        CanTerminateSessions = false
                         Items = []
                         NextCursor = None
                     })
@@ -517,6 +518,28 @@ let internal replies () : IEndpointOutput list =
                 EndpointValues.output
                     Api.operationGet
                     (RepresentationReply.Human(HumanReplies.lookup reply))
+
+        for outcome in
+            [
+                SessionTerminationResult.Succeeded { Count = 2L; Self = true }
+                SessionTerminationResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                SessionTerminationResult.Failed CoreFault.StoreUnavailable
+                SessionTerminationResult.OutcomeUnknown
+            ] do
+            yield EndpointValues.output Api.terminateOwnSessions (RepresentationReply.Data outcome)
+
+            yield
+                EndpointValues.output
+                    Api.terminateOwnSessions
+                    (RepresentationReply.Human(HumanReplies.sessionTermination outcome))
+
+            yield
+                EndpointValues.output Api.terminatePersonSessions (RepresentationReply.Data outcome)
+
+            yield
+                EndpointValues.output
+                    Api.terminatePersonSessions
+                    (RepresentationReply.Human(HumanReplies.sessionTermination outcome))
 
     ]
 

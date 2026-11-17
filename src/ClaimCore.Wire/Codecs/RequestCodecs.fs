@@ -139,6 +139,16 @@ module RequestCodecs =
             text
         |> finishRead RequestSchemas.AccessRequestDismissRequest
 
+    let terminatePersonSessionsRequest =
+        (record (fun actor ->
+            {
+                PersonSessionTerminationRequest.ActorId = actor
+            })
+        : Fields<PersonSessionTerminationRequest, _>)
+        |> field (TaskInputId.token TaskInputId.ActorId) _.ActorId uuid
+        |> build
+        |> named "PersonSessionTerminationRequest"
+
     let private optionalChoices name get vocabulary fields =
         fields
         |> optionalField

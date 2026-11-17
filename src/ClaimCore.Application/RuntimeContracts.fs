@@ -93,14 +93,26 @@ type SessionChanges<'value> =
 module internal SessionChanges =
     let unchanged value = { Value = value; Ended = [] }
 
+/// Principal metadata is checked against the protected ticket by the cookie adapter.
+type StoredSessionTicket =
+    {
+        PrincipalKey: string
+        Payload: byte array
+    }
+
 /// Operational authentication storage, independent of ledger ordering and access decisions.
 type ISessionStore =
     abstract Create:
-        byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken ->
+        PrincipalKey * byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken ->
             Task<SessionChanges<string>>
 
-    abstract Retrieve: string * CancellationToken -> Task<SessionChanges<byte array option>>
-    abstract Renew: string * byte array * CancellationToken -> Task<SessionChanges<unit>>
+    abstract Retrieve:
+        string * CancellationToken -> Task<SessionChanges<StoredSessionTicket option>>
+
+    abstract Renew:
+        string * PrincipalKey * byte array * (byte array -> bool) * CancellationToken ->
+            Task<SessionChanges<unit>>
+
     abstract Remove: string * SessionEndReason * CancellationToken -> Task<SessionChanges<unit>>
 
 type InitialOwner =

@@ -37,6 +37,7 @@
     <Compile Include="Reads/PaymentStorage.fs" />
     <Compile Include="Storage/Ledger/Transactions.fs" />
     <Compile Include="Storage/RegisterMaintenanceStore.fs" />
+    <Compile Include="Storage/SessionStore.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
     <Compile Include="Reads/ResponsibilityCountStorage.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />
@@ -75,6 +76,7 @@
     <Compile Include="Reads/Advice.fs" />
     <Compile Include="People/PeopleQueries.fs" />
     <Compile Include="People/AccessRequestQueries.fs" />
+    <Compile Include="People/SessionTerminationQueries.fs" />
     <Compile Include="Notes/NoteQueries.fs" />
     <Compile Include="Cases/PaymentQueries.fs" />
     <Compile Include="Cases/Queries.fs" />
@@ -91,7 +93,6 @@
     <Compile Include="Verification/Verification.fs" />
     <Compile Include="Verification/ProjectionRebuild.fs" />
     <Compile Include="Storage/RestoreAdmission.fs" />
-    <Compile Include="Storage/SessionStore.fs" />
     <Compile Include="Storage/Housekeeping.fs" />
     <Compile Include="Storage/InstallationStatus.fs" />
     <Compile Include="Runtime.fs" />

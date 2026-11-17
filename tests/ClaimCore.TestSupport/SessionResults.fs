@@ -13,3 +13,20 @@ let value (pending: Task<SessionChanges<'value>>) =
         let! changes = pending
         return changes.Value
     }
+
+let principal =
+    ClaimCore.Domain.PrincipalKey.human "https://issuer.example/" "synthetic"
+    |> Result.toOption
+    |> Option.get
+
+let stored payload =
+    {
+        StoredSessionTicket.PrincipalKey = ClaimCore.Domain.PrincipalKey.naturalKey principal
+        Payload = payload
+    }
+
+let payload (pending: Task<SessionChanges<StoredSessionTicket option>>) =
+    task {
+        let! changes = pending
+        return changes.Value |> Option.map _.Payload
+    }

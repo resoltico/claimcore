@@ -9,6 +9,7 @@
     <Compile Include="OperatorFaults.fs" />
     <Compile Include="Outcome.fs" />
     <Compile Include="ReplyKind.fs" />
+    <Compile Include="SessionTermination.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="TaskOffer.fs" />
     <Compile Include="Advice.fs" />

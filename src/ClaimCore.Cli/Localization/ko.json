@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "명령의 응답을 확인하지 못했습니다. 반복하면 더 최신 상태에 영향을 줄 수 있습니다.",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore 브라우저 세션",
+    "source": "afe6f30a2564"
   }
 }

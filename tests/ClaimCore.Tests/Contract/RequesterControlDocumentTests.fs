@@ -55,7 +55,10 @@ let tests =
                     [ QueryTaskId.PeopleList; QueryTaskId.OperationGet; QueryTaskId.PeopleHistory ]
                     "Advertised destinations"
 
-                Expect.isEmpty value.Actions "Read-only requester"
+                Expect.equal
+                    (value.Actions |> List.map _.Control)
+                    [ ActionControl.Command CommandRequest.TerminateOwnSessions ]
+                    "Read-only requester may still end browser sessions"
 
                 Expect.isOk
                     (Codec.encode HumanDocumentCodecs.document value
@@ -73,9 +76,17 @@ let tests =
                     }
 
                 let current = document manager
-                Expect.equal current.Actions.Length 2 "Creation controls"
 
-                for action in current.Actions do
+                let creation =
+                    current.Actions
+                    |> List.filter (fun action ->
+                        match action.Control with
+                        | ActionControl.Operation _ -> true
+                        | _ -> false)
+
+                Expect.equal creation.Length 2 "Creation controls"
+
+                for action in creation do
                     Expect.equal
                         (Map.tryFind
                             (TaskAffordances.input InputTarget.PrincipalIssuer)
@@ -92,7 +103,10 @@ let tests =
                                     (Some(System.Guid.Parse "10000000-0000-4000-8000-000000000099"))
                         }
 
-                Expect.isEmpty paused.Actions "No authoring during maintenance"
+                Expect.equal
+                    (paused.Actions |> List.map _.Control)
+                    [ ActionControl.Command CommandRequest.TerminateOwnSessions ]
+                    "Maintenance retains independent browser-session termination"
 
                 Expect.isTrue
                     (paused.Screen.Regions
@@ -197,7 +211,11 @@ let tests =
                         "Only bindings with no selected existing actor are offered here"
 
                     let value = document { actor with Offers = offers }
-                    Expect.equal value.Actions.Length 3 "Every real offer constructs"
+
+                    Expect.equal
+                        value.Actions.Length
+                        4
+                        "Every real offer and own-session command constructs"
 
                     Expect.isOk
                         (Codec.encode HumanDocumentCodecs.document value

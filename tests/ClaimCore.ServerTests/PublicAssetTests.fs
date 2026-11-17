@@ -146,27 +146,33 @@ let private independentAdmission () =
 
 let private cookieStorageIsolation () =
     task {
-        let mutable payload = [||]
+        let mutable payload = ClaimCore.TestSupport.SessionResults.stored [||]
         let mutable reads = 0
         let mutable refuse = false
 
         let storage =
             { new ISessionStore with
-                member _.Create(bytes, _, _, _, _) =
-                    payload <- bytes
+                member _.Create(principal, bytes, _, _, _, _) =
+                    payload <-
+                        {
+                            StoredSessionTicket.PrincipalKey =
+                                ClaimCore.Domain.PrincipalKey.naturalKey principal
+                            Payload = bytes
+                        }
+
                     Task.FromResult(SessionChanges.unchanged (String.replicate 64 "a"))
 
                 member _.Retrieve(_, _) =
                     reads <- reads + 1
 
                     if refuse then
-                        Task.FromException<SessionChanges<byte array option>>(
+                        Task.FromException<SessionChanges<StoredSessionTicket option>>(
                             AdmissionRejectedException()
                         )
                     else
                         Task.FromResult(SessionChanges.unchanged (Some payload))
 
-                member _.Renew(_, _, _) =
+                member _.Renew(_, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged ())
 
                 member _.Remove(_, _, _) =

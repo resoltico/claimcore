@@ -9,6 +9,9 @@ open ClaimCore.Json
 open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Authentication.Cookies
+open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
 module internal RouteSupport =
@@ -48,11 +51,24 @@ module internal RouteSupport =
         RequestLog.reply reply.Class context
         WebWire.reply reply.Wire
 
-    let actorReply (result: RouteReply) context =
+    let actorReply (result: RouteReply) (context: HttpContext) =
         result.RecordedBy
         |> Option.iter (fun actor -> RequestLog.actor (ActorId.value actor) context)
 
-        reply result.Response context
+        let response = reply result.Response context
+
+        if result.ExpireBrowserSession then
+            { new IResult with
+                member _.ExecuteAsync context =
+                    task {
+                        BrowserSessionTermination.mark context
+                        do! context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme)
+                        do! response.ExecuteAsync context
+                    }
+                    :> Task
+            }
+        else
+            response
 
     let handleFailures (sink: TextWriter) (context: HttpContext) (next: RequestDelegate) : Task =
         task {

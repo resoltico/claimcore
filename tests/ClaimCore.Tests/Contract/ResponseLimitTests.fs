@@ -133,6 +133,7 @@ let private boundedPeople () =
                         Offers = []
                         Controls = []
                         ProfileSeed = None
+                        CanTerminateSessions = false
                         Items =
                             List.replicate
                                 count

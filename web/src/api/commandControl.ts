@@ -3,10 +3,14 @@ import type { Affordance } from "@contracts/client";
 
 /** Core supplies the complete validated operational request. */
 export const assembleCommand = (action: Affordance) => {
-  if (action.binding.kind !== "COMMAND") {return null;}
+  if (action.binding.kind !== "COMMAND") {
+    return null;
+  }
   const { command, ...input } = action.binding.request;
   switch (command) {
     case apiEndpoints.peopleRequestsDismiss:
+    case apiEndpoints.terminateOwnSessions:
+    case apiEndpoints.terminatePersonSessions:
       return { endpoint: command, input };
   }
 };

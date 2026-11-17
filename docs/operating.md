@@ -138,6 +138,33 @@ Hosts sharing the database, key ring and application identity can share sessions
 across hosts, though previously admitted work may finish. Session deadlines survive restart. Storage
 or key failures close authentication; inspect sanitized diagnostics.
 
+**End my ClaimCore browser sessions** in Settings deletes every stored browser ticket for the
+currently authenticated principal, including before registration or without roles. An Owner can use
+**End this person’s ClaimCore browser sessions** on the selected person's page. The application
+rechecks ManageAccess against its locked action state; a displayed control does not authorize a later
+request. Ordinary Sign out still ends only the current session.
+
+These actions do not end identity-provider sessions, revoke credentials or independent bearer tokens,
+or create ledger operations. Confirmed counts report deleted stored tickets, including expired ones
+that had not yet been pruned. An unconfirmed acknowledgement reports no count and is not retried
+automatically: repeating deletion could also end sessions created since the original attempt. Inspect
+the outcome before deliberately starting another request; there is no operation.get recovery record.
+
+Session creation and deletion serialize on the canonical principal index, including principal kind,
+issuer and subject. The index is derived from the validated protected ticket, not names or sign-in
+hints. Retrieval checks the decrypted ticket against this index. Renewal checks both the index and
+previous protected ticket under its row lock, updates only an existing row and preserves its original
+deadlines. Runtime writers cannot retarget a session's principal or rewrite its original deadlines.
+
+The lock order is: owner action ledger/head serialization and current access; principal lock; session
+rows. Creation needs no head lock and takes principal, global capacity, then cleanup/insert row locks.
+Cleanup skips locked rows. Retrieve, renew and current-session logout take only their single row and
+never acquire head, principal or capacity locks afterward. This avoids a reverse lock dependency.
+The successful deletion commit is the cut: earlier tickets cannot be retrieved afterward; work whose
+retrieval was admitted before it may finish. A callback that started earlier but creates its ticket
+after that commit can survive. Self success expires the current cookie and clears private browser
+workspace ownership; it does not erase durable recovery identities belonging to the principal.
+
 Access requests contain unverified hints, grant no rights and expire after 30 days. The cache retains
 at most 1,000 requests. Admission removes a matching request; dismissal grants nothing. A later sign-in
 can create another request. Names become profiles only after an owner enters and confirms them.

@@ -142,6 +142,40 @@ const replies: Replies = {
       contractIdentity: consumerContractIdentity,
       antiforgeryToken: "csrf",
     }),
+  "session.terminateOwn": () => ({
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      self: true,
+      document: {
+        subject: { kind: "LIST" },
+        screen: { regions: [] },
+        actions: [],
+        links: [],
+        nextCursor: null,
+        basis: { kind: "UNAVAILABLE" },
+        disclosure: "CURRENT",
+        history: null,
+      },
+    },
+  }),
+  "people.terminateSessions": () => ({
+    representation: "HUMAN",
+    outcome: {
+      kind: "SUCCEEDED",
+      self: false,
+      document: {
+        subject: { kind: "LIST" },
+        screen: { regions: [] },
+        actions: [],
+        links: [],
+        nextCursor: null,
+        basis: { kind: "UNAVAILABLE" },
+        disclosure: "CURRENT",
+        history: null,
+      },
+    },
+  }),
   "session.logout": () => succeeded(null),
   context: () => ({
     representation: "HUMAN",

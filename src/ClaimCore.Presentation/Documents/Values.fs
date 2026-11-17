@@ -118,6 +118,9 @@ module Affordance =
             | Some definition, ActionControl.Command command ->
                 definition.Kind = ClientTaskKind.Command
                 && definition.Id = CommandTaskId.key (CommandRequest.task command)
+                && value.Seeds.IsEmpty
+                && value.Editable.IsEmpty
+                && value.Choices.IsEmpty
             | _ -> false
 
         match definition with

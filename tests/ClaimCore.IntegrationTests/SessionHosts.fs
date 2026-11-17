@@ -34,9 +34,7 @@ open Microsoft.Extensions.Logging
 let private issue (context: HttpContext) =
     task {
         let principal =
-            ClaimsPrincipal(
-                ClaimsIdentity([ Claim(ClaimTypes.NameIdentifier, "synthetic-human") ], "Cookies")
-            )
+            ClaimsPrincipal(ClaimsIdentity([ Claim("sub", "synthetic-human") ], "Cookies"))
 
         context.User <- principal
         do! context.SignInAsync("Cookies", principal)
@@ -76,7 +74,7 @@ let private routes (app: WebApplication) =
     app.MapPost("/check", Func<HttpContext, Task>(check)) |> ignore
 
 
-let private host directory (database: PostgresFixture.Database) =
+let host directory (database: PostgresFixture.Database) extraRoutes =
     task {
         let builder = WebApplication.CreateBuilder()
         builder.Logging.ClearProviders() |> ignore
@@ -84,6 +82,7 @@ let private host directory (database: PostgresFixture.Database) =
 
         SessionKeys.configure
             (SessionKeys.admit directory)
+            (Uri "https://issuer.example/")
             (TimeSpan.FromMinutes 30.)
             (SessionStore(database.RuntimeSource, database.Installation))
             builder.Services
@@ -108,12 +107,13 @@ let private host directory (database: PostgresFixture.Database) =
         app.UseAuthentication() |> ignore
 
         routes app
+        extraRoutes app
 
         do! app.StartAsync()
         return app
     }
 
-let private request (client: HttpClient) (cookie: string) method path =
+let request (client: HttpClient) (cookie: string) method path =
     task {
         use message = new HttpRequestMessage(method, "https://localhost" + path)
         message.Headers.Add("Cookie", cookie)
@@ -134,7 +134,7 @@ let private verifyAntiforgery (client: HttpClient) (cookie: string) (token: stri
             "Antiforgery proof survives host replacement with the same key ring"
     }
 
-let private directory () =
+let directory () =
     let temporary = Path.GetTempPath()
 
     let physical =
@@ -163,7 +163,7 @@ let run (database: PostgresFixture.Database) =
         let directory = directory ()
 
         try
-            use! first = host directory database
+            use! first = host directory database (fun _ -> ())
             use firstClient = first.GetTestClient()
             use! issued = firstClient.GetAsync "https://localhost/issue"
             issued.EnsureSuccessStatusCode() |> ignore
@@ -174,7 +174,7 @@ let run (database: PostgresFixture.Database) =
                 |> String.concat "; "
 
             let! token = issued.Content.ReadAsStringAsync()
-            use! second = host directory database
+            use! second = host directory database (fun _ -> ())
             use secondClient = second.GetTestClient()
             let! shared = request secondClient cookie HttpMethod.Get "/state"
 
@@ -187,7 +187,7 @@ let run (database: PostgresFixture.Database) =
             Expect.equal rejected HttpStatusCode.BadRequest "Missing antiforgery proof refuses"
             do! verifyAntiforgery secondClient cookie token
             do! first.StopAsync()
-            use! restarted = host directory database
+            use! restarted = host directory database (fun _ -> ())
             use restartedClient = restarted.GetTestClient()
             let! restored = request restartedClient cookie HttpMethod.Get "/state"
 
@@ -270,7 +270,7 @@ let run (database: PostgresFixture.Database) =
                 |> Result.defaultWith (fun failure -> failtestf "Restore admission: %A" failure)
 
             Expect.equal admitted.InvalidatedSessions 1L "Admission invalidates the one new session"
-            use! admittedHost = host directory database
+            use! admittedHost = host directory database (fun _ -> ())
             use admittedClient = admittedHost.GetTestClient()
             let! invalidated = request admittedClient restoredCookie HttpMethod.Get "/state"
 
@@ -305,7 +305,7 @@ let run (database: PostgresFixture.Database) =
                     |]
 
             // Deliberately exercise the omitted-admission failure in this isolated fixture only.
-            use! unsafeRestoredHost = host directory database
+            use! unsafeRestoredHost = host directory database (fun _ -> ())
             use unsafeRestoredClient = unsafeRestoredHost.GetTestClient()
 
             let! resurrected =
@@ -337,7 +337,7 @@ let run (database: PostgresFixture.Database) =
                 1L
                 "The restored session is invalidated atomically"
 
-            use! restoredHost = host directory database
+            use! restoredHost = host directory database (fun _ -> ())
             use restoredClient = restoredHost.GetTestClient()
             let! refusedRestore = request restoredClient restoredCookie HttpMethod.Get "/state"
 

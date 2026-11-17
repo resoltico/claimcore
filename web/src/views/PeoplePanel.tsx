@@ -303,7 +303,14 @@ const PeopleWorkspace = ({
           <PeopleDirectory
             selectedActorId={selectedActorId}
             open={!editor.active && model.pendingDiscard === null}
-            actions={<ActorActions target={target} busy={model.busy} onOpen={editor.open} />}
+            actions={
+              <ActorActions
+                target={target}
+                busy={model.busy}
+                onOpen={editor.open}
+                onDisclosureRefused={disclosure.refused}
+              />
+            }
             onRevoke={(action) => {
               target.begin(action);
               editor.open();

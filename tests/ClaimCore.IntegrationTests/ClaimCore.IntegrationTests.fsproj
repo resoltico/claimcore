@@ -119,6 +119,7 @@
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="CheckpointCommandTests.fs" />
     <Compile Include="CommitProxy.fs" />
+    <Compile Include="SessionTerminationTests.fs" />
     <Compile Include="OperatorFaultProcessTests.fs" />
     <Compile Include="AdministrationSignalTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />

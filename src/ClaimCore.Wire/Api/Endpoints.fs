@@ -554,6 +554,70 @@ module Api =
             Effect = EndpointEffect.OperationalWrite
         }
 
+    let private termination endpoint input name =
+        {
+            Id = EndpointId.Actor(ActorEndpoint.Command endpoint)
+            Method = HttpMethod.Post
+            Effect = EndpointEffect.OperationalWrite
+            Input = EndpointInputs.check (CommandTaskId.key endpoint) input
+            Output =
+                RepresentationCodecs.reply
+                    name
+                    SessionTerminationCodecs.human
+                    SessionTerminationCodecs.data
+            Classify = SessionTerminationCodecs.classify
+            ReadReply =
+                function
+                | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded(_, document)) ->
+                    Some(
+                        RepresentationReply.Human
+                            {
+                                Outcome = HumanReadOutcome.Succeeded document
+                            }
+                    )
+                | RepresentationReply.Human(HumanSessionTerminationResult.Rejected rejection) ->
+                    Some(
+                        RepresentationReply.Human
+                            {
+                                Outcome = HumanReadOutcome.Rejected rejection
+                            }
+                    )
+                | RepresentationReply.Human(HumanSessionTerminationResult.Failed fault) ->
+                    Some(
+                        RepresentationReply.Human
+                            {
+                                Outcome = HumanReadOutcome.Failed fault
+                            }
+                    )
+                | RepresentationReply.Data(SessionTerminationResult.Succeeded _) ->
+                    Some(RepresentationReply.Data(Outcome.Succeeded()))
+                | RepresentationReply.Data(SessionTerminationResult.Rejected refusal) ->
+                    Some(RepresentationReply.Data(Outcome.Rejected refusal))
+                | RepresentationReply.Data(SessionTerminationResult.Failed fault) ->
+                    Some(RepresentationReply.Data(Outcome.Failed fault))
+                | RepresentationReply.Human(HumanSessionTerminationResult.OutcomeUnknown _)
+                | RepresentationReply.Data SessionTerminationResult.OutcomeUnknown -> None
+            Csv = None
+            Correlation = None
+            Unavailable =
+                fun _ ->
+                    RepresentationReply.Data(
+                        SessionTerminationResult.Failed CoreFault.StoreUnavailable
+                    )
+        }
+
+    let terminateOwnSessions =
+        termination
+            CommandTaskId.TerminateOwnSessions
+            RequestCodecs.empty
+            "OwnSessionTerminationReply"
+
+    let terminatePersonSessions =
+        termination
+            CommandTaskId.TerminatePersonSessions
+            RequestCodecs.terminatePersonSessionsRequest
+            "PersonSessionTerminationReply"
+
     let private defineHost =
         function
         | HostEndpoint.Session -> EndpointDefinition.create session
@@ -585,6 +649,10 @@ module Api =
             EndpointDefinition.create peopleRequests
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             EndpointDefinition.create peopleRequestsDismiss
+        | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->
+            EndpointDefinition.create terminateOwnSessions
+        | ActorEndpoint.Command CommandTaskId.TerminatePersonSessions ->
+            EndpointDefinition.create terminatePersonSessions
 
     let definitions =
         ((HostEndpoint.all |> List.map defineHost)

@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "未確認命令的回應。重複執行可能影響更新的狀態。",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore 瀏覽器工作階段",
+    "source": "afe6f30a2564"
   }
 }

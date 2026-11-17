@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "コマンドの応答を確認できませんでした。繰り返すと、より新しい状態に影響する可能性があります。",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore のブラウザーセッション",
+    "source": "afe6f30a2564"
   }
 }

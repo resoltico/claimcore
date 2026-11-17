@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Ordinary case reads and selected child operations acquire bounded live facts and write projection deltas; full verification and rebuild still reconstruct complete history.
+- End all of your ClaimCore browser sessions or, as an owner, a person's sessions; identity-provider sessions and bearer tokens remain valid. Unconfirmed deletion is never retried automatically.
 
 - Use a fresh installation for format 6; maintenance uses generation/pause handles, and rebuild/restore require the exact active handle. No migration or older-format reader is provided.
 - Regenerate clients for ordered receipt payments, shared action labels and complete typed command bindings; the singular receipt payment member is removed.

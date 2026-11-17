@@ -42,6 +42,30 @@ module internal ReplyText =
             presenter Api.operationGet (fun details rendering _ reply ->
                 OperationText.getLinesWithDetails details rendering reply)
             |> snd
+        | EndpointId.Actor(ActorEndpoint.Command(CommandTaskId.TerminateOwnSessions | CommandTaskId.TerminatePersonSessions)) ->
+            fun details rendering _request (reply: ServiceReply) ->
+                let render =
+                    function
+                    | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded(_, document))
+                    | RepresentationReply.Human(HumanSessionTerminationResult.OutcomeUnknown document) ->
+                        ViewText.renderDocument details rendering document
+                    | RepresentationReply.Human(HumanSessionTerminationResult.Rejected rejection) ->
+                        HumanText.rejection details rendering rejection
+                    | RepresentationReply.Human(HumanSessionTerminationResult.Failed fault) ->
+                        HumanText.fault rendering fault
+                    | RepresentationReply.Data _ ->
+                        invalidOp "Human text requires a HUMAN response."
+
+                match reply.Route.Id with
+                | EndpointId.Actor(ActorEndpoint.Command CommandTaskId.TerminateOwnSessions) ->
+                    ServiceReply.value Api.terminateOwnSessions reply
+                    |> Option.map render
+                    |> Option.get
+                | EndpointId.Actor(ActorEndpoint.Command CommandTaskId.TerminatePersonSessions) ->
+                    ServiceReply.value Api.terminatePersonSessions reply
+                    |> Option.map render
+                    |> Option.get
+                | _ -> invalidOp "A session command is required."
         | EndpointId.Actor(ActorEndpoint.Query _ | ActorEndpoint.Command _) ->
             fun details rendering request (reply: ServiceReply) ->
                 match EndpointValues.readReply reply.Typed with
@@ -110,23 +134,31 @@ module internal ReplyText =
     let bytesForWithDetails details (rendering: RenderingContext) request (frame: FrameReply) =
         let lines = resultLinesWithDetails details rendering request frame.Result
 
-        let warning =
-            label
-                rendering
-                (CliMessages.key (
-                    if Frames.isLedgerExecution frame then
-                        CliMessage.UncertainDelivery
-                    else
-                        CliMessage.OperationalUnresolved
-                ))
+        let sessionCommand =
+            match frame.Endpoint with
+            | Some(EndpointId.Actor(ActorEndpoint.Command(CommandTaskId.TerminateOwnSessions | CommandTaskId.TerminatePersonSessions))) ->
+                true
+            | _ -> false
+
+        let warnings =
+            if sessionCommand then
+                ViewText.renderDocument details rendering (HumanReadDocuments.terminationUnknown ())
+            else
+                [
+                    label
+                        rendering
+                        (CliMessages.key (
+                            if Frames.isLedgerExecution frame then
+                                CliMessage.UncertainDelivery
+                            else
+                                CliMessage.OperationalUnresolved
+                        ))
+                ]
 
         let lines =
-            if
-                frame.Delivery = DeliveryState.Uncertain
-                && Frames.mayChange frame
-                && not (List.contains warning lines)
-            then
-                lines @ [ warning ]
+            if frame.Delivery = DeliveryState.Uncertain && Frames.mayChange frame then
+                lines
+                @ (warnings |> List.filter (fun warning -> not (List.contains warning lines)))
             else
                 lines
 

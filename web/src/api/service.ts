@@ -44,6 +44,8 @@ export const apiEndpoints = {
   peopleRequests: "people.requests",
   context: "context",
   peopleRequestsDismiss: "people.requests.dismiss",
+  terminateOwnSessions: "session.terminateOwn",
+  terminatePersonSessions: "people.terminateSessions",
 } as const satisfies Readonly<Record<string, EndpointId>>;
 const businessDateScope = (id: EndpointId): BusinessDateScope =>
   id === apiEndpoints.context ? "REQUESTER" : "RESOURCE";

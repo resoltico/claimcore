@@ -264,3 +264,21 @@ A ledger request's identity and installation are frozen at its first preview. A 
 cannot silently allocate another operation or switch installations. Expiry requires an explicit new
 review. Operational commands do not acquire ledger recovery identities; uncertain delivery is
 reported without a journal retry frame or automatic repeat.
+### Browser-session termination transport
+
+`session.terminateOwn` accepts `{}`. `people.terminateSessions` accepts the selected registered person
+as `{"input:actorId":"UUID"}` and requires current ManageAccess. Both are authenticated operational
+writes, with the existing origin/antiforgery/contract/body gates. They do not require an installation
+header, but any supplied `ClaimCore-Installation` header must be one valid matching UUID. The same
+optional binding rule applies to preview and other actor routes; absent optional preview bindings
+remain valid. OpenAPI declares required versus optional installation headers.
+
+DATA returns `SUCCEEDED` with `data.count` and `data.self`, or typed `REJECTED`, `FAILED` or
+`OUTCOME_UNKNOWN`. HUMAN carries the supplied completion/uncertainty document; confirmed success also
+has a required boolean `self` so clients clear the right current browser ownership. Unknown results
+have no count or operation identity. They are not safe automatic retries relative to later sessions.
+
+HUMAN task controls now form a closed, task-discriminated union. Each operation carries its own binding
+shape; each command carries its complete validated request and empty seeds/editable/choices. Dismissal
+retains distinct HUMAN/SERVICE principals with bounded issuer/subject fields and fallible decoding.
+Mismatched task/command bindings fail structural admission instead of reaching a seed-map cast.

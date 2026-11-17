@@ -267,7 +267,7 @@ let private commandPath () =
 
             ClaimCore.Application.Storage.DatabaseSession.execute
                 blocker
-                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions SELECT repeat('b',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600 FROM observed"
+                "WITH observed AS MATERIALIZED(SELECT clock_timestamp() AS instant) INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT repeat('b',64),decode('01','hex'),1,instant,instant+interval '1 hour',instant,3600,repeat('b',64) FROM observed"
                 [||]
                 CancellationToken.None
             |> _.GetAwaiter().GetResult()

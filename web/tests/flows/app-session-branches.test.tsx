@@ -8,7 +8,7 @@ const useSession = vi.hoisted(() => vi.fn());
 
 vi.mock("../../src/session/useSession", () => ({ useSession }));
 
-const actions = () => ({ logout: vi.fn(), refresh: vi.fn() });
+const actions = () => ({ logout: vi.fn(), endedBrowserSessions: vi.fn(), refresh: vi.fn() });
 
 it("renders the loading shell before local session discovery completes", () => {
   useSession.mockReturnValue({ state: { kind: "loading", epoch: 0 }, ...actions() });

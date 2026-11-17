@@ -2810,5 +2810,33 @@
   "label.assignmentAction": {
     "text": "Mainīt atbildīgo",
     "source": "4591c339cfa6"
+  },
+  "endpoint.session.terminateOwn.label": {
+    "text": "Beigt manas ClaimCore pārlūka sesijas",
+    "source": "dc0452a1ddfe"
+  },
+  "endpoint.session.terminateOwn.meaning": {
+    "text": "Beidziet visas savas ClaimCore pārlūka sesijas, ieskaitot šo. Identitātes nodrošinātāja sesijas, akreditācijas dati un neatkarīgi piekļuves marķieri paliek derīgi. Pēc pabeigšanas izveidotās sesijas var saglabāties, un jau atļautais darbs var tikt pabeigts.",
+    "source": "ea8522212fcf"
+  },
+  "endpoint.people.terminateSessions.label": {
+    "text": "Beigt šīs personas ClaimCore pārlūka sesijas",
+    "source": "ae1df620470c"
+  },
+  "endpoint.people.terminateSessions.meaning": {
+    "text": "Beidziet visas šīs personas ClaimCore pārlūka sesijas. Identitātes nodrošinātāja sesijas, akreditācijas dati un neatkarīgi piekļuves marķieri paliek derīgi. Pēc pabeigšanas izveidotās sesijas var saglabāties, un jau atļautais darbs var tikt pabeigts.",
+    "source": "c04853b26aaf"
+  },
+  "label.sessionsTerminated": {
+    "text": "ClaimCore pārlūka sesijas beigtas.",
+    "source": "e75ab2941cf7"
+  },
+  "label.browserSessionsEnded": {
+    "text": "Beigtās pārlūka sesijas",
+    "source": "fbb28e68f709"
+  },
+  "label.sessionTerminationUnknown": {
+    "text": "Pieprasījums netika apstiprināts. Iespējams, ClaimCore pārlūka sesijas tika beigtas. Atkārtojot to, var beigt arī jaunākas sesijas.",
+    "source": "1ef989edf86f"
   }
 }

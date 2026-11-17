@@ -498,6 +498,7 @@ CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 
 CREATE TABLE claimcore.sessions (
     session_key text PRIMARY KEY CHECK (session_key COLLATE "C" ~ '^[0-9a-f]{64}$'),
+    principal_key text COLLATE "C" NOT NULL CHECK (principal_key ~ '^[0-9a-f]{64}$'),
     protected_ticket bytea NOT NULL CHECK (octet_length(protected_ticket) BETWEEN 1 AND 1048576),
     payload_version integer NOT NULL CHECK (payload_version = 1),
     created_at timestamptz NOT NULL CHECK (isfinite(created_at)),
@@ -507,6 +508,7 @@ CREATE TABLE claimcore.sessions (
     CHECK (absolute_expiry > created_at AND last_activity >= created_at)
 );
 CREATE INDEX sessions_expiry ON claimcore.sessions (absolute_expiry);
+CREATE INDEX sessions_principal ON claimcore.sessions (principal_key,session_key);
 
 -- Deferred structural erasure safeguards check the final transaction, including every owned projection.
 -- Ordinary note removal is covered by its accepted note effect; rebuilding projections is allowed.
@@ -590,4 +592,6 @@ GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.sessions TO claimcore_runtime;
+GRANT SELECT, INSERT, DELETE ON claimcore.sessions TO claimcore_runtime;
+-- Session identity and original deadlines are immutable for runtime writers.
+GRANT UPDATE(protected_ticket,last_activity) ON claimcore.sessions TO claimcore_runtime;

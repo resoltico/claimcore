@@ -129,10 +129,16 @@ module OpenApi =
                 @ [ header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema ]
 
         let parameters =
-            if Api.requiresInstallation endpoint then
-                parameters @ [ header "ClaimCore-Installation" true Codec.uuid.Schema ]
-            else
+            match endpoint.Id with
+            | EndpointId.Actor _ ->
                 parameters
+                @ [
+                    header
+                        "ClaimCore-Installation"
+                        (Api.requiresInstallation endpoint)
+                        Codec.uuid.Schema
+                ]
+            | EndpointId.Host _ -> parameters
 
         let parameters =
             if Api.requiresRepresentation endpoint then

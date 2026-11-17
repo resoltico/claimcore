@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "لم يتم تأكيد نتيجة الأمر. قد يؤثر تكراره في حالة أحدث.",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "جلسات متصفح ClaimCore",
+    "source": "afe6f30a2564"
   }
 }

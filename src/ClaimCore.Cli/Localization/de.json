@@ -426,5 +426,9 @@
   "cli.text.operationalUnresolved": {
     "text": "Die Antwort des Befehls wurde nicht bestätigt. Eine Wiederholung kann einen neueren Zustand beeinflussen.",
     "source": "36c6a1c8ce7e"
+  },
+  "cli.family.browserSessions": {
+    "text": "ClaimCore-Browsersitzungen",
+    "source": "afe6f30a2564"
   }
 }
