@@ -242,6 +242,11 @@ module internal PeopleQueries =
                                                                 viewer
                                                                 maintenance
 
+                                                        let! requester =
+                                                            ExecutionEnvironment.requester
+                                                                tx
+                                                                services.Principal
+
                                                         let mutable controls = []
 
                                                         for id in offers do
@@ -257,6 +262,7 @@ module internal PeopleQueries =
                                                                 ExecutionEnvironment.fromStorage
                                                                     tx
                                                                     services.Principal
+                                                                    requester
                                                                     maintenance.Active
                                                                     selected
                                                                     binding

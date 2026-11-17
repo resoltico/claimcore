@@ -103,7 +103,8 @@ let task =
     Task.Person
         {
             Declaration = declaration
-            Authorize = fun environment _ _ -> PersonRules.permission declaration environment
+            Authorize =
+                fun principal access _ -> PersonRules.permissionFor declaration principal access
             Check = check
             Availability = availability
             Decide = decide

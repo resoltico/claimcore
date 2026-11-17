@@ -102,6 +102,11 @@ action state. It checks consumed projections against those roots. Queried identi
 unacquired children, and authoring facts are tied to their operation identity. Core admission rejects
 reuse outside that explicit scope. No ordinary loader falls back to
 complete family acquisition. Pages acquire the bounded child rows whose controls they present.
+Accepted retries check fresh requester authority and the supplied target before comparing immutable
+operation intent; they do not reacquire decision facts. Receipt disclosure reads bounded accepted
+case/child revisions, independently of rebuildable payment and reminder projections. Current child
+projection damage must remain detectable by decisions and verification without hiding an already
+accepted operation. Current rights, revision visibility and erasure still govern disclosure.
 
 Materialized rows, roots and round trips are bounded by the selected scope rather than unrelated child
 counts. Aggregate SQL may scan many rows; this is not constant SQL effort or a latency budget. Scalar

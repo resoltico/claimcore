@@ -185,8 +185,8 @@ let task =
         {
             Declaration = declaration
             Authorize =
-                fun environment _ _ ->
-                    FamilyRules.permission environment Scope.Installation capability
+                fun principal access _ _ ->
+                    FamilyRules.permissionFor principal access Scope.Installation capability
             Check = check
             Availability = availability
             Decide = decide

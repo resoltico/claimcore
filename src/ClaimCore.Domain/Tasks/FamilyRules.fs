@@ -8,20 +8,19 @@ open ClaimCore.Domain.Changes
 module internal FamilyRules =
     let unavailable = Refusal.Access AccessRefusal.ResourceUnavailable
 
-    let permission (environment: FamilyEnvironment) scope capability =
-        if Access.can environment.RequesterPrincipal environment.Requester capability scope then
+    let permissionFor principal access scope capability =
+        if Access.can principal access capability scope then
             Ok()
         elif
             scope <> Scope.Installation
-            && Access.can
-                environment.RequesterPrincipal
-                environment.Requester
-                Capability.ReadCase
-                scope
+            && Access.can principal access Capability.ReadCase scope
         then
             Error(Refusal.Access(AccessRefusal.NotAuthorized capability))
         else
             Error unavailable
+
+    let permission (environment: FamilyEnvironment) scope capability =
+        permissionFor environment.RequesterPrincipal environment.Requester scope capability
 
     let notOffered (state: DecisionFacts) =
         match state.Case.Value.Lifecycle with

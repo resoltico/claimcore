@@ -42,6 +42,23 @@ module internal AggregateStorage =
             Shape: AcquisitionShape
         }
 
+    type private FamilyRootAcquisition =
+        {
+            Reference: CaseReference
+            Sequence: Sequence
+            Parts: PartChange list
+            Origins: Map<PartKind * Guid, SubjectStamp>
+            Projected: StoredCase
+            Shape: AcquisitionShape
+        }
+
+    /// Receipt visibility consumes accepted revisions, never current child decision projections.
+    type FamilyDisclosureState =
+        {
+            Snapshot: CaseSnapshot
+            Revisions: Map<PartKind * Guid, Revision>
+        }
+
     type private Selection =
         {
             Payments: OperationId list
@@ -69,7 +86,7 @@ module internal AggregateStorage =
             |> Option.defaultWith (fun () -> corrupt "Projected payment extrema are unordered.")
         | _ -> corrupt "Projected payment extrema are incomplete."
 
-    let private readFamily (selection: Selection) (tx: ReadTx) id =
+    let private readFamilyRoots (selection: Selection) (tx: ReadTx) id =
         task {
             let mutable materialized = 0
             let mutable roundTrips = 0
@@ -82,17 +99,6 @@ module internal AggregateStorage =
 
                     let! values =
                         DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
-
-                    materialized <- materialized + values.Length
-                    return values
-                }
-
-            let namedRows sql parameters =
-                task {
-                    roundTrips <- roundTrips + 1
-
-                    let! values =
-                        DatabaseSession.namedRows tx.Connection sql parameters tx.CancellationToken
 
                     materialized <- materialized + values.Length
                     return values
@@ -232,6 +238,80 @@ module internal AggregateStorage =
                 let sequence =
                     DatabaseSession.value<int64> 7 located.Head
                     |> DatabaseSession.admitted Sequence.create
+
+                return
+                    Some
+                        {
+                            Reference = reference
+                            Sequence = sequence
+                            Parts = parts
+                            Origins = origins
+                            Projected = projected
+                            Shape =
+                                {
+                                    MaterializedRows = materialized
+                                    RootReads = rootReads
+                                    PrivateRootReads = privateRoots
+                                    RoundTrips = roundTrips
+                                }
+                        }
+        }
+
+    let private readFamily (selection: Selection) (tx: ReadTx) id =
+        task {
+            let! loaded = readFamilyRoots selection tx id
+
+            match loaded with
+            | None -> return None
+            | Some roots ->
+                let mutable materialized = roots.Shape.MaterializedRows
+                let mutable roundTrips = roots.Shape.RoundTrips
+                let rootReads = roots.Shape.RootReads
+                let privateRoots = roots.Shape.PrivateRootReads
+                let reference = roots.Reference
+                let sequence = roots.Sequence
+                let parts = roots.Parts
+                let origins = roots.Origins
+                let projected = roots.Projected
+
+                let rows sql parameters =
+                    task {
+                        roundTrips <- roundTrips + 1
+
+                        let! values =
+                            DatabaseSession.rows tx.Connection sql parameters tx.CancellationToken
+
+                        materialized <- materialized + values.Length
+                        return values
+                    }
+
+                let namedRows sql parameters =
+                    task {
+                        roundTrips <- roundTrips + 1
+
+                        let! values =
+                            DatabaseSession.namedRows
+                                tx.Connection
+                                sql
+                                parameters
+                                tx.CancellationToken
+
+                        materialized <- materialized + values.Length
+                        return values
+                    }
+
+                let paymentIds =
+                    selection.Payments @ (selection.Operation |> Option.toList) |> List.distinct
+
+                let reminderIds =
+                    selection.Reminders
+                    @ (selection.Operation |> Option.map ReminderId.ofOperationId |> Option.toList)
+                    |> List.distinct
+
+                let noteIds =
+                    selection.Notes
+                    @ (selection.Operation |> Option.map NoteId.ofOperationId |> Option.toList)
+                    |> List.distinct
 
                 let! aggregate =
                     namedRows
@@ -495,39 +575,57 @@ module internal AggregateStorage =
             tx
             id
 
-    let familyForParts tx id parts =
-        let payments =
-            parts
-            |> List.choose (fun (part: PartChange) ->
-                if part.Kind = PartKind.Payment then
-                    OperationId.create part.PartId
-                else
-                    None)
+    let familyForReceipt (tx: ReadTx) id (changes: PartChange list) =
+        task {
+            let selected kind =
+                changes
+                |> List.filter (fun change -> change.Kind = kind)
+                |> List.map _.PartId
+                |> List.distinct
 
-        let reminders =
-            parts
-            |> List.choose (fun (part: PartChange) ->
-                if part.Kind = PartKind.Reminder then
-                    ReminderId.create part.PartId
-                else
-                    None)
+            let reminders = selected PartKind.Reminder
+            let notes = selected PartKind.Note
 
-        let notes =
-            parts
-            |> List.choose (fun (part: PartChange) ->
-                if part.Kind = PartKind.Note then
-                    NoteId.create part.PartId
-                else
-                    None)
+            let selection =
+                { emptySelection with
+                    Reminders = reminders |> List.map (DatabaseSession.admitted ReminderId.create)
+                    Notes = notes |> List.map (DatabaseSession.admitted NoteId.create)
+                }
 
-        readFamily
-            { emptySelection with
-                Payments = payments
-                Reminders = reminders
-                Notes = notes
-            }
-            tx
-            id
+            let! loaded = readFamilyRoots selection tx id
+
+            return
+                loaded
+                |> Option.map (fun roots ->
+                    let revisions =
+                        roots.Parts
+                        |> List.map (fun part -> (part.Kind, part.PartId), part.Revision)
+                        |> Map.ofList
+
+                    for kind, ids in [ PartKind.Reminder, reminders; PartKind.Note, notes ] do
+                        if
+                            ids
+                            |> List.exists (fun part ->
+                                not (Map.containsKey (kind, part) revisions))
+                        then
+                            corrupt "A receipt's selected accepted part revision is absent."
+
+                    let snapshot =
+                        roots.Parts
+                        |> List.tryFind (fun part ->
+                            part.Kind = PartKind.Case && part.PartId = CaseId.value id)
+                        |> Option.bind (PartChange.caseSnapshot roots.Reference)
+                        |> Option.defaultWith (fun () ->
+                            corrupt "A receipt's current case root is absent.")
+
+                    if snapshot <> roots.Projected.Snapshot then
+                        corrupt "Receipt visibility disagrees with its accepted case root."
+
+                    {
+                        Snapshot = snapshot
+                        Revisions = revisions
+                    })
+        }
 
     let familyForDecision tx id binding operation =
         let selected =

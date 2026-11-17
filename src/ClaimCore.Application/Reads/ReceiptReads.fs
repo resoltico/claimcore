@@ -138,13 +138,13 @@ module internal ReceiptReads =
                                     )
                         | AggregateReference.Family id ->
                             let! projected = FamilyReads.findCase tx id
-                            let! current = AggregateStorage.familyForParts tx id record.Changes
+                            let! current = AggregateStorage.familyForReceipt tx id record.Changes
 
                             match projected, current with
-                            | Some projected, Some { Facts = current } when
-                                DecisionFacts.snapshot current = Some projected.Snapshot
+                            | Some projected, Some current when
+                                current.Snapshot = projected.Snapshot
                                 ->
-                                let erased = current.Case.Value.Lifecycle = Lifecycle.Erased
+                                let erased = current.Snapshot.State = CaseState.Erased
 
                                 let available =
                                     root.Structure.Compartments
@@ -171,7 +171,9 @@ module internal ReceiptReads =
                                         let accepted =
                                             record.Changes
                                             |> List.tryPick (fun change ->
-                                                PartChange.caseSnapshot current.Reference change
+                                                PartChange.caseSnapshot
+                                                    current.Snapshot.Reference
+                                                    change
                                                 |> Option.map (fun snapshot -> change, snapshot))
 
                                         if erased then
@@ -190,7 +192,8 @@ module internal ReceiptReads =
                                                         ReceiptSubject.Case
                                                             {
                                                                 CaseId = id
-                                                                Reference = current.Reference
+                                                                Reference =
+                                                                    current.Snapshot.Reference
                                                                 Revision = revision
                                                                 Act = declaration.Id
                                                                 Snapshot = SnapshotDisclosure.Erased
@@ -206,7 +209,7 @@ module internal ReceiptReads =
                                                             not (
                                                                 canRead
                                                                     snapshot.Revision
-                                                                    current.Case.Revision
+                                                                    current.Snapshot.Revision
                                                             )
                                                         then
                                                             return Ok SnapshotDisclosure.Withheld
@@ -221,7 +224,7 @@ module internal ReceiptReads =
                                                             match
                                                                 LiveCase.ofState snapshot.State,
                                                                 CaseDescription.fromChanges
-                                                                    current.Reference
+                                                                    current.Snapshot.Reference
                                                                     before
                                                                     change
                                                             with
@@ -259,7 +262,8 @@ module internal ReceiptReads =
                                                         ReceiptSubject.Case
                                                             {
                                                                 CaseId = id
-                                                                Reference = current.Reference
+                                                                Reference =
+                                                                    current.Snapshot.Reference
                                                                 Revision = snapshot.Revision
                                                                 Act = declaration.Id
                                                                 Snapshot = shown
@@ -271,8 +275,8 @@ module internal ReceiptReads =
                                         | None -> return fault
                                         | Some change ->
                                             let currentRevision =
-                                                current.Work
-                                                |> Option.map _.Revision
+                                                current.Revisions
+                                                |> Map.tryFind (PartKind.Work, CaseId.value id)
                                                 |> Option.defaultValue Revision.zero
 
                                             let! shown =
@@ -331,7 +335,7 @@ module internal ReceiptReads =
                                                     ReceiptSubject.Work
                                                         {
                                                             CaseId = id
-                                                            Reference = current.Reference
+                                                            Reference = current.Snapshot.Reference
                                                             Revision = change.Revision
                                                             Act = declaration.Id
                                                             Snapshot = shown
@@ -344,9 +348,11 @@ module internal ReceiptReads =
                                                 | None -> fault
                                                 | Some reminder ->
                                                     let revision =
-                                                        current.Reminders
-                                                        |> Map.tryFind reminder
-                                                        |> Option.map _.Revision
+                                                        current.Revisions
+                                                        |> Map.tryFind (
+                                                            PartKind.Reminder,
+                                                            ReminderId.value reminder
+                                                        )
 
                                                     let shown =
                                                         if erased then
@@ -381,7 +387,7 @@ module internal ReceiptReads =
                                                     ReceiptSubject.Reminder
                                                         {
                                                             CaseId = id
-                                                            Reference = current.Reference
+                                                            Reference = current.Snapshot.Reference
                                                             Act = declaration.Id
                                                             Effects =
                                                                 ReminderReceiptEffects.Single
@@ -394,7 +400,7 @@ module internal ReceiptReads =
                                                     ReceiptSubject.Reminder
                                                         {
                                                             CaseId = id
-                                                            Reference = current.Reference
+                                                            Reference = current.Snapshot.Reference
                                                             Act = declaration.Id
                                                             Effects =
                                                                 ReminderReceiptEffects
@@ -413,9 +419,11 @@ module internal ReceiptReads =
                                             | None -> return fault
                                             | Some note ->
                                                 let currentRevision =
-                                                    current.Notes
-                                                    |> Map.tryFind note
-                                                    |> Option.map _.Revision
+                                                    current.Revisions
+                                                    |> Map.tryFind (
+                                                        PartKind.Note,
+                                                        NoteId.value note
+                                                    )
 
                                                 let shown =
                                                     if erased then
@@ -439,7 +447,8 @@ module internal ReceiptReads =
                                                         ReceiptSubject.Note
                                                             {
                                                                 CaseId = id
-                                                                Reference = current.Reference
+                                                                Reference =
+                                                                    current.Snapshot.Reference
                                                                 NoteId = note
                                                                 Act = declaration.Id
                                                                 Snapshot = shown

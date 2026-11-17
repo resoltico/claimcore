@@ -114,7 +114,7 @@ type FamilyTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
-        Authorize: FamilyEnvironment -> DecisionFacts option -> InputMap -> Result<unit, Refusal>
+        Authorize: PrincipalKey -> AccessView -> CaseId option -> InputMap -> Result<unit, Refusal>
         Availability: FamilyEnvironment -> DecisionFacts option -> Binding -> Availability
         DecisionFactsAvailable: DecisionFacts option -> Binding -> bool
         Describe:
@@ -143,7 +143,7 @@ type PersonTask =
     {
         Declaration: TaskDeclaration
         Check: InputMap -> TaskInputIssue list
-        Authorize: PersonEnvironment -> Person option -> InputMap -> Result<unit, Refusal>
+        Authorize: PrincipalKey -> AccessView -> InputMap -> Result<unit, Refusal>
         Availability: PersonEnvironment -> Person option -> Binding -> Availability
         DecisionFactsAvailable: Person option -> Binding -> bool
         Describe: Person option -> PartChange list -> Result<DescribedPart list, RecordViolation>

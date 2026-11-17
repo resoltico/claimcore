@@ -22,7 +22,6 @@ type internal DecisionSnapshot =
         State: AggregateState
         Decide: TaskContext -> Binding -> InputMap -> Result<PartChange list, Rejection>
         DecideRetained: TaskContext -> Binding -> InputMap -> Result<PartChange list, Rejection>
-        Authorize: InputMap -> Result<unit, Refusal>
         Availability: Binding -> Availability
         FactsAvailable: Binding -> bool
         Describe: PartChange list -> Result<DescribedPart list, RecordViolation>
@@ -41,7 +40,6 @@ module internal DecisionSnapshot =
             DecideRetained =
                 fun context binding inputs ->
                     task.DecideRetained context environment state binding inputs
-            Authorize = task.Authorize environment state
             Availability = task.Availability environment state
             FactsAvailable = task.DecisionFactsAvailable state
             Describe = task.Describe state (PartDescriptions.notes parts)
@@ -59,7 +57,6 @@ module internal DecisionSnapshot =
             DecideRetained =
                 fun context binding inputs ->
                     task.DecideRetained context environment state binding inputs
-            Authorize = task.Authorize environment state
             Availability = task.Availability environment state
             FactsAvailable = task.DecisionFactsAvailable state
             Describe = task.Describe state
