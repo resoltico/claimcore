@@ -263,6 +263,7 @@
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
     <Compile Include="Contract/CsvExportTests.fs" />
+    <Compile Include="Contract/PaymentCorrectionAcceptanceTests.fs" />
     <Compile Include="Contract/ExportTransportTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />
