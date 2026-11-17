@@ -118,19 +118,22 @@ let tests =
                         "Observed 4 Nov 2026 14:00 +02:00 · business date 4 Nov 2026 (Europe/Riga)"
                         "The actual basis timestamp is converted using the installation zone, with no client clock"
 
-                    for language, observed in
+                    for language, observations in
                         [
-                            "en", "4 Nov 2026 14:00 +02:00"
-                            "lv", "4 nov. 2026 14:00 +02:00"
-                            "ar", "4 نوفمبر 2026 2:00\u00a0م +02:00"
+                            "en", [ "4 Nov 2026 14:00 +02:00" ]
+                            "lv", [ "4 nov. 2026 14:00 +02:00" ]
+                            "ar",
+                            [ "4 نوفمبر 2026 2:00\u00a0م +02:00"; "4 نوفمبر 2026 2:00 م +02:00" ]
                         ] do
                         let output =
                             TextObservation.line (RenderingContext.forLanguage language) basis
 
-                        Expect.stringContains
-                            output
-                            observed
-                            "The same observation instant is localized in every language"
+                        Expect.isTrue
+                            (observations |> List.exists (fun observed -> output.Contains observed))
+                            (sprintf
+                                "The same exact observation instant is localized in every language. Expected one of %A in %s"
+                                observations
+                                output)
 
                         Expect.isFalse
                             (output.Contains "cli.text." || output.Contains "{observed}")

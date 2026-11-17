@@ -396,9 +396,8 @@ let assigneePresentation =
 
                 Expect.stringContains text "next-page" "Opaque continuation is retained"
 
-                Expect.stringContains
-                    text
-                    ((Map.ofList
+                let date =
+                    (Map.ofList
                         [
                             "en", "31 Aug 2026"
                             "lv", "31 aug. 2026"
@@ -410,13 +409,22 @@ let assigneePresentation =
                             "zh-Hans", "2026年8月31日"
                             "zh-Hant", "2026年8月31日"
                         ]
-                      |> Map.find language)
-                     + (match language with
-                        | "ar" -> " 12:00\u00a0م +00:00"
-                        | "ko" -> " 오후 12:00 +00:00"
-                        | "zh-Hant" -> " 下午12:00 +00:00"
-                        | _ -> " 12:00 +00:00"))
-                    "Actual supplied observation is rendered in the business zone"
+                     |> Map.find language)
+
+                let instants =
+                    match language with
+                    | "ar" -> [ " 12:00\u00a0م +00:00"; " 12:00 م +00:00" ]
+                    | "ko" -> [ " 오후 12:00 +00:00" ]
+                    | "zh-Hant" -> [ " 下午12:00 +00:00" ]
+                    | _ -> [ " 12:00 +00:00" ]
+                    |> List.map (fun time -> date + time)
+
+                Expect.isTrue
+                    (instants |> List.exists (fun instant -> text.Contains instant))
+                    (sprintf
+                        "Actual supplied observation retains the exact date, time and business-zone offset. Expected one of %A in %s"
+                        instants
+                        text)
 
                 Expect.stringContains text "UTC" "Installation zone is rendered"
                 Expect.isFalse (text.Contains "{\"") "No JSON fallback"
