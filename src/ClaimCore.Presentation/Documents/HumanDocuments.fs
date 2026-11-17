@@ -381,7 +381,21 @@ module HumanCaseDocument =
             ))
             screen
             actions
-            []
+            (if disclosed then
+                 [
+                     {
+                         NamedLink.Relation = LinkRelation.View
+                         LabelId = "label.caseReminders"
+                         Link =
+                             Link.remindersForCase (
+                                 CaseSelector.Reference(
+                                     CaseReference.format value.Snapshot.Reference
+                                 )
+                             )
+                     }
+                 ]
+             else
+                 [])
             None
             (ObservationBasis.Snapshot value.Work.Basis)
             (if disclosed then

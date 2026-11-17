@@ -2854,5 +2854,17 @@
   "label.exportCsv": {
     "text": "下载 CSV",
     "source": "a4023b89022f"
+  },
+  "label.caseReminders": {
+    "text": "此案件的提醒",
+    "source": "faacc37040ae"
+  },
+  "label.remindersForCaseReference": {
+    "text": "案件 {case} 的提醒",
+    "source": "a6e15367a09d"
+  },
+  "label.remindersForCaseId": {
+    "text": "案件 ID {case} 的提醒",
+    "source": "f8c19ce78013"
   }
 }

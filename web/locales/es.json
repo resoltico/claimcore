@@ -702,5 +702,9 @@
   "ui.downloadFailed": {
     "text": "El navegador no pudo guardar la descarga. Inténtelo de nuevo.",
     "source": "e3c4b2089bc4"
+  },
+  "ui.clearCaseRestriction": {
+    "text": "Quitar restricción de expediente",
+    "source": "76ab14deda9c"
   }
 }

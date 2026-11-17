@@ -8,7 +8,7 @@ import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
 import { queryInput } from "../../protocol/taskCatalog";
-import { renderCatalogKey } from "../../presentation/messages";
+import { renderCatalogKey, renderIsolatedValues } from "../../presentation/messages";
 import { isTerm } from "../../presentation/terms";
 import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
@@ -71,6 +71,50 @@ const ReminderSearch = ({
       </label>
       <Button type="submit">{p.text("ui.search")}</Button>
     </form>
+  );
+};
+const ReminderCaseTarget = ({
+  query,
+  change,
+}: {
+  query: ReminderQuery;
+  change: (value: ReminderQuery) => void;
+}) => {
+  const p = usePresentation();
+  const { target } = query;
+  if (target === undefined) {
+    return null;
+  }
+  const value = target.kind === "ID" ? target.caseId : target.caseReference;
+  const label =
+    target.kind === "ID" ? "label.remindersForCaseId" : "label.remindersForCaseReference";
+  return (
+    <div className="reminder-case-target">
+      <p>
+        {renderIsolatedValues(
+          p,
+          label,
+          { case: value },
+          {
+            case: (
+              <bdi key="case" dir={target.kind === "ID" ? "ltr" : "auto"}>
+                {value}
+              </bdi>
+            ),
+          },
+        )}
+      </p>
+      <Button
+        variant="secondary"
+        onPress={() => {
+          const { target: _target, ...rest } = query;
+          change(rest);
+          document.getElementById("reminder-queue-title")?.focus();
+        }}
+      >
+        {p.text("ui.clearCaseRestriction")}
+      </Button>
+    </div>
   );
 };
 type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boolean };
@@ -220,6 +264,7 @@ const ReadyReminderQueue = ({
         {p.text("label.reminders")}
       </h1>
       <WorkspaceViewsStatus area="reminders" />
+      <ReminderCaseTarget query={query} change={change} />
       <Button
         variant="secondary"
         aria-pressed={manual}

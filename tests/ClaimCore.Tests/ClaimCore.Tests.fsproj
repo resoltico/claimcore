@@ -141,6 +141,7 @@
     <Compile Include="RecordFormat/RetainedOperationPropertyTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
     <Compile Include="Contract/HumanReadBoundaryTests.fs" />
+    <Compile Include="Contract/ReminderTargetPresentationTests.fs" />
     <Compile Include="Contract/AssigneeDocumentTests.fs" />
     <Compile Include="Contract/PartReviewPresentationTests.fs" />
     <Compile Include="Contract/AffordanceTests.fs" />

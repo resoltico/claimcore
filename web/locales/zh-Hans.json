@@ -702,5 +702,9 @@
   "ui.downloadFailed": {
     "text": "浏览器无法保存下载文件。请重试。",
     "source": "e3c4b2089bc4"
+  },
+  "ui.clearCaseRestriction": {
+    "text": "清除案件限制",
+    "source": "76ab14deda9c"
   }
 }

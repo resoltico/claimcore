@@ -87,7 +87,7 @@ it("maps every reachable standalone Core destination and preserves its selection
 it("leaves embedded-only reads without a fabricated standalone destination", () => {
   const target: CaseSelector = { kind: "REFERENCE", caseReference: "A" };
   expect(coreLinkPath({ endpoint: "reminder.list", input: { target, limit: 20 } })).toBe(
-    "/reminders?caseReference=A",
+    "/reminders?caseReference=A&filters=manual",
   );
   // These queries belong to their parent workspace or discovery, not independent screens.
   const embedded = [

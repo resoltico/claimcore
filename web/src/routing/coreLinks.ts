@@ -3,7 +3,7 @@ import { isObject } from "../protocol/client";
 import { isTerm } from "../presentation/terms";
 import { casePath, referencePath } from "./routes";
 import { parseWorklistQuery, worklistPath } from "./worklistQuery";
-import { parseReminderQuery, remindersPath } from "./reminderQuery";
+import { parseReminderQuery, reminderPagePath } from "./reminderQuery";
 const targetInput = (link: Link): CaseSelector | undefined => {
   const { target } = link.input;
   if (!isObject(target)) {
@@ -97,7 +97,10 @@ const routes: Partial<Record<Link["endpoint"], (link: Link) => string | undefine
     const target = targetInput(link);
     const { target: _target, cursor: _cursor, limit: _limit, ...filters } = link.input;
     const query = parseReminderQuery(filterQuery(filters));
-    return remindersPath({ ...query, ...(target === undefined ? {} : { target }) });
+    return reminderPagePath(
+      { ...query, ...(target === undefined ? {} : { target }) },
+      query.view === undefined,
+    );
   },
 };
 export const coreLinkPath = (link: Link): string | undefined => routes[link.endpoint]?.(link);

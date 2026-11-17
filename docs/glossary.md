@@ -148,3 +148,5 @@ sessions, credentials or independent bearer tokens. The new session-termination 
 translated languages is agent-produced and awaits fluent review.
 The bounded CSV resource advice and browser download chrome are agent-translated in all offered languages;
 these additions await fluent review.
+
+The case-targeted reminder captions and case-restriction reset control are agent-translated in all offered languages and await fluent review.

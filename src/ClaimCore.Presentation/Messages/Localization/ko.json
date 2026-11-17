@@ -2854,5 +2854,17 @@
   "label.exportCsv": {
     "text": "CSV 다운로드",
     "source": "a4023b89022f"
+  },
+  "label.caseReminders": {
+    "text": "이 청구 건의 후속 조치",
+    "source": "faacc37040ae"
+  },
+  "label.remindersForCaseReference": {
+    "text": "청구 건 {case}의 후속 조치",
+    "source": "a6e15367a09d"
+  },
+  "label.remindersForCaseId": {
+    "text": "청구 건 ID {case}의 후속 조치",
+    "source": "f8c19ce78013"
   }
 }

@@ -712,5 +712,8 @@
   "label.exportLimitExceeded": "The export exceeds the download size limit. Narrow the selection or use the CLI traversal.",
   "label.exportProcessingTimeout": "The export did not finish within its processing limit. Try again or narrow the selection.",
   "label.exportInvalidContinuation": "The export encountered an invalid continuation. No CSV was downloaded.",
-  "label.exportCsv": "Download CSV"
+  "label.exportCsv": "Download CSV",
+  "label.caseReminders": "Reminders for this case",
+  "label.remindersForCaseReference": "Reminders for case {case}",
+  "label.remindersForCaseId": "Reminders for case ID {case}"
 }

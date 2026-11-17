@@ -48,6 +48,20 @@ module Link =
     let caseById id =
         Link.CaseGet { Target = CaseSelector.Id id }
 
+    let remindersForCase target =
+        Link.ReminderList
+            {
+                View = None
+                Target = Some target
+                State = None
+                Due = None
+                Assignment = None
+                Text = None
+                AfterCursor = None
+                Limit = Paging.DefaultPageSize
+                IncludeInactive = Some true
+            }
+
     let person id =
         Link.PeopleGrants
             {
