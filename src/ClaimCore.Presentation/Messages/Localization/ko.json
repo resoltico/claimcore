@@ -2866,5 +2866,9 @@
   "label.remindersForCaseId": {
     "text": "청구 건 ID {case}의 후속 조치",
     "source": "f8c19ce78013"
+  },
+  "reminderStateSelection.ANY.label": {
+    "text": "전체",
+    "source": "2b505597daa7"
   }
 }

@@ -26,6 +26,55 @@ module ReminderState =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+/// Query selection is distinct from the stored state: Any imposes no state constraint.
+[<RequireQualifiedAccess>]
+type ReminderStateSelection =
+    | Any
+    | State of ReminderState
+
+module ReminderStateSelection =
+    let vocabulary =
+        Vocabulary.define
+            "reminderStateSelection"
+            (ReminderStateSelection.Any
+             :: (ReminderState.all |> List.map ReminderStateSelection.State))
+            (function
+             | ReminderStateSelection.Any -> "ANY"
+             | ReminderStateSelection.State state -> ReminderState.token state)
+
+    let token = Vocabulary.token vocabulary
+
+    let state =
+        function
+        | ReminderStateSelection.Any -> None
+        | ReminderStateSelection.State state -> Some state
+
+type ResolvedReminderSelection =
+    {
+        State: ReminderStateSelection
+        IncludeInactive: bool
+    }
+
+/// Omission retains the public query default; explicit Any and false remain explicit inputs.
+module ReminderSelection =
+    let defaults hasView =
+        {
+            State =
+                if hasView then
+                    ReminderStateSelection.Any
+                else
+                    ReminderStateSelection.State ReminderState.Pending
+            IncludeInactive = hasView
+        }
+
+    let resolve hasView state includeInactive =
+        let basis = defaults hasView
+
+        {
+            State = Option.defaultValue basis.State state
+            IncludeInactive = Option.defaultValue basis.IncludeInactive includeInactive
+        }
+
 /// Each accepted version is bounded independently of the number of other reminders.
 /// Completion attribution belongs to the accepting ledger event, never caller input.
 type Reminder =

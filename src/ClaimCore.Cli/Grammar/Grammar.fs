@@ -45,9 +45,6 @@ type PreparedVerb =
 module Grammar =
     open VerbOptions
 
-    let private flag name =
-        "--" + CommandGrammar.kebab (CommandGrammar.inputName name)
-
     let private errorKey =
         function
         | UsageError.UnknownOption(flag, _)
@@ -133,46 +130,14 @@ module Grammar =
                 ]
         | Some(entry, arguments) ->
             let problems = ResizeArray<UsageError>()
-            let inputs = CommandGrammar.inputs entry
-
-            let named =
-                inputs |> List.filter (fun input -> input.Argument = CommandArgument.Named)
-
-            let clearFlags =
-                named
-                |> List.choose (fun input ->
-                    if CommandGrammar.canClear entry input then
-                        Some(
-                            "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
-                        )
-                    else
-                        None)
-
-            let collectionFlags =
-                CommandGrammar.collections entry |> List.map CommandGrammar.collectionFlag
-
-            let flags =
-                (named |> List.map (fun input -> flag input.Name))
-                @ clearFlags
-                @ collectionFlags
-
-            let switches = clearFlags
-
-            let repeated =
-                named
-                |> List.choose (fun input ->
-                    match input.Atom with
-                    | CommandAtom.Choices _ -> Some(flag input.Name)
-                    | _ -> None)
-
-            let repeated = repeated @ collectionFlags
+            let syntax = CommandGrammar.optionGrammar entry
 
             let options, operands =
                 tokenize
-                    (CommandGrammar.globalFlags @ flags)
-                    ((CommandGrammar.globalOptions entry |> List.map fst) @ flags)
-                    (CommandGrammar.globalSwitches @ switches)
-                    repeated
+                    syntax.Known
+                    syntax.Available
+                    syntax.Switches
+                    syntax.Repeated
                     arguments
                     problems
 

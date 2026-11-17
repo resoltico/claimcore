@@ -73,3 +73,37 @@ it("round trips an explicit case selector and refuses conflicting or duplicate s
     expect(() => parseReminderQuery(query)).toThrow();
   }
 });
+
+it.each([undefined, false, true] as const)(
+  "preserves inactive selection %s through URL and manual reset serialization",
+  (includeInactive) => {
+    const selected = {
+      view: "COMPLETED" as const,
+      ...(includeInactive === undefined ? {} : { includeInactive }),
+    };
+    const path = remindersPath(selected);
+    expect(parseReminderQuery(new URL(path, location.origin).search)).toEqual(selected);
+    expect(new URL(path, location.origin).searchParams.get("includeInactive")).toBe(
+      includeInactive === undefined ? null : String(includeInactive),
+    );
+    const manual = reminderPagePath(
+      { ...selected, state: "ANY", target: { kind: "REFERENCE", caseReference: "EXACT-TARGET" } },
+      true,
+    );
+    expect(parseReminderPageQuery(new URL(manual, location.origin).search)).toEqual({
+      manual: true,
+      query: {
+        state: "ANY",
+        target: { kind: "REFERENCE", caseReference: "EXACT-TARGET" },
+        ...(includeInactive === undefined ? {} : { includeInactive }),
+      },
+    });
+  },
+);
+it("represents explicit Any separately from the omitted ordinary Pending default", () => {
+  expect(parseReminderQuery("?filters=manual")).toEqual({});
+  expect(parseReminderQuery("?filters=manual&state=ANY")).toEqual({ state: "ANY" });
+  expect(remindersPath({ state: "ANY", includeInactive: false })).toBe(
+    "/reminders?state=ANY&includeInactive=false",
+  );
+});

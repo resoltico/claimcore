@@ -46,7 +46,7 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> vocabularyTokens CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> vocabularyTokens CaseAssignment.vocabulary
         | TaskChoiceId.Due -> vocabularyTokens CaseDue.vocabulary
-        | TaskChoiceId.ReminderState -> vocabularyTokens ReminderState.vocabulary
+        | TaskChoiceId.ReminderState -> vocabularyTokens ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> vocabularyTokens ReminderDue.vocabulary
         | TaskChoiceId.RegistrationCorrection ->
             CorrectionGroupAction.actions RecordGroup.Registration
@@ -70,7 +70,7 @@ module TaskChoiceId =
         | TaskChoiceId.Order -> Vocabulary.name CaseListOrder.vocabulary
         | TaskChoiceId.Assignment -> Vocabulary.name CaseAssignment.vocabulary
         | TaskChoiceId.Due -> Vocabulary.name CaseDue.vocabulary
-        | TaskChoiceId.ReminderState -> Vocabulary.name ReminderState.vocabulary
+        | TaskChoiceId.ReminderState -> Vocabulary.name ReminderStateSelection.vocabulary
         | TaskChoiceId.ReminderDue -> Vocabulary.name ReminderDue.vocabulary
         | TaskChoiceId.RegistrationCorrection
         | TaskChoiceId.DecisionCorrection -> Vocabulary.name CorrectionGroupAction.vocabulary

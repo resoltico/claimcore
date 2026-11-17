@@ -715,5 +715,6 @@
   "label.exportCsv": "Download CSV",
   "label.caseReminders": "Reminders for this case",
   "label.remindersForCaseReference": "Reminders for case {case}",
-  "label.remindersForCaseId": "Reminders for case ID {case}"
+  "label.remindersForCaseId": "Reminders for case ID {case}",
+  "reminderStateSelection.ANY.label": "Any"
 }

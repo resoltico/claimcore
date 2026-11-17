@@ -77,6 +77,7 @@
     <Compile Include="ViewCountQueryTests.fs" />
     <Compile Include="ActorResponsibilityTests.fs" />
     <Compile Include="ReminderViewQueryTests.fs" />
+    <Compile Include="ReminderSelectionResultTests.fs" />
     <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="TimelineStorageTests.fs" />

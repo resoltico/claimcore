@@ -217,7 +217,7 @@ let private qualify () =
                 {
                     ReminderListRequest.Target = Some target
                     View = None
-                    State = Some ReminderState.Pending
+                    State = Some(ReminderStateSelection.State ReminderState.Pending)
                     Due = None
                     Assignment = None
                     Text = None

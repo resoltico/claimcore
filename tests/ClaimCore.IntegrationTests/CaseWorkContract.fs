@@ -302,7 +302,7 @@ let internal assignmentAndDisclosure fixture =
         let scopedQueue: ReminderListRequest =
             {
                 Target = Some(CaseSelector.Id caseId)
-                State = Some ReminderState.Pending
+                State = Some(ReminderStateSelection.State ReminderState.Pending)
                 Due = None
                 Assignment = None
                 Text = None
@@ -659,7 +659,7 @@ let internal dueFiltersAndOrder fixture =
         let request: ReminderListRequest =
             {
                 Target = None
-                State = Some ReminderState.Pending
+                State = Some(ReminderStateSelection.State ReminderState.Pending)
                 Due = Some ReminderDue.Today
                 Assignment = None
                 Text = None
@@ -942,7 +942,11 @@ let internal reminderTiming fixture =
         let! _ = checkPage { request with Target = None } pendingExpected
 
         for state, operation in [ ReminderState.Completed, 704; ReminderState.Cancelled, 705 ] do
-            let explicitState = { request with State = Some state }
+            let explicitState =
+                { request with
+                    State = Some(ReminderStateSelection.State state)
+                }
+
             let! _ = checkPage explicitState [ operation, None ]
             let! _ = checkPage { explicitState with Target = None } [ operation, None ]
             ()
@@ -950,7 +954,7 @@ let internal reminderTiming fixture =
         let! first =
             checkPage
                 { request with
-                    State = Some ReminderState.Pending
+                    State = Some(ReminderStateSelection.State ReminderState.Pending)
                     Due = Some ReminderDue.Today
                     Limit = 1
                 }
@@ -999,7 +1003,7 @@ let internal reminderTiming fixture =
         let! _ =
             checkPage
                 { request with
-                    State = Some ReminderState.Pending
+                    State = Some(ReminderStateSelection.State ReminderState.Pending)
                     Due = Some ReminderDue.Today
                 }
                 [ 703, Some ReminderDue.Today ]
@@ -1038,7 +1042,7 @@ let internal reminderTiming fixture =
             checkPage
                 { request with
                     IncludeInactive = Some true
-                    State = Some ReminderState.Completed
+                    State = Some(ReminderStateSelection.State ReminderState.Completed)
                     Due = Some ReminderDue.Overdue
                 }
                 [ 704, None ]
@@ -1646,7 +1650,7 @@ let internal finiteDateRange fixture =
         let request: ReminderListRequest =
             {
                 Target = Some(CaseSelector.Reference "DATE-MIN")
-                State = Some ReminderState.Pending
+                State = Some(ReminderStateSelection.State ReminderState.Pending)
                 Due = None
                 Assignment = None
                 Text = None

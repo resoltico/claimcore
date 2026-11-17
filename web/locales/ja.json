@@ -611,10 +611,6 @@
     "text": "手動フィルター",
     "source": "8184694f3ff6"
   },
-  "ui.manualFiltersHint": {
-    "text": "対象外の業務を含めるには、手動フィルターを使用してください。",
-    "source": "dc4f2d354574"
-  },
   "ui.changeResponsible": {
     "text": "変更",
     "source": "c0bf75bd78bf"

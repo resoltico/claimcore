@@ -611,10 +611,6 @@
     "text": "手动筛选",
     "source": "8184694f3ff6"
   },
-  "ui.manualFiltersHint": {
-    "text": "使用手动筛选以包括非活动工作。",
-    "source": "dc4f2d354574"
-  },
   "ui.changeResponsible": {
     "text": "更改",
     "source": "c0bf75bd78bf"

@@ -82,19 +82,19 @@ export const CaseNextActions = ({
         }}
       >
         <summary>
-          {p.text("input.reminderState.label")} · {p.term("reminderState", state)}
+          {p.text("input.reminderState.label")} · {p.term("reminderStateSelection", state)}
         </summary>
         <Select
           label={renderCatalogKey(p, stateChoice.labelId)}
           value={state}
           options={stateChoice.choices
-            .filter((value) => isTerm("reminderState", value))
+            .filter((value) => isTerm("reminderStateSelection", value))
             .map((value) => ({
               value,
-              label: p.term("reminderState", value),
+              label: p.term("reminderStateSelection", value),
             }))}
           onChange={(value) => {
-            if (isTerm("reminderState", value) && stateChoice.choices.includes(value)) {
+            if (isTerm("reminderStateSelection", value) && stateChoice.choices.includes(value)) {
               setState(value);
             }
           }}

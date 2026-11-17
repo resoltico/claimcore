@@ -116,8 +116,11 @@ Notes are independent changes and do not require a case or work revision.
 ## Work attention and queues
 
 Open **Reminders** for actions across readable cases. Standard views select pending, overdue, today,
-upcoming, completed or cancelled work. **Manual filters** enables **Include inactive work** without
-changing other filters; returning to standard views restores their boundaries.
+upcoming, completed or cancelled work. Additional state, due, assignment and text filters intersect
+with the selected view. In **Manual filters**, the initial state is **Pending**; choose **Any** to
+include completed and cancelled reminders too. **Include inactive work** can be selected explicitly
+in either mode and includes closed or voided parent cases where the selected view permits them.
+The controls show their effective defaults, including the standard view's inactive-parent choice.
 
 An overdue plan still counts as a plan. A case can appear in both overdue and today action queues.
 Counts and loaded pages can change as others work; refresh for current results.
@@ -194,8 +197,8 @@ succeeds. A refusal or resource limit returns an explanation instead of a partia
 ### Case reminder queue
 
 The case workspace supplies a **Case reminders** link for a readable case that has not been erased.
-It opens the queue with that case reference and includes inactive cases, so closed or voided case
-reminders remain reachable. The queue visibly identifies whether the restriction uses a case
+It opens the queue with that case reference, an explicit **Any** state selection and inactive cases
+included, so pending, completed and cancelled reminders on closed or voided cases remain reachable. The queue visibly identifies whether the restriction uses a case
 reference or ID. State, due, assignment and text selections compose with it and survive reload.
 **Clear case restriction** removes only the case target, preserving the remaining filters and
 starting from the first page. The query still checks current access; the caption does not establish

@@ -2866,5 +2866,9 @@
   "label.remindersForCaseId": {
     "text": "تذكيرات معرّف الملف {case}",
     "source": "f8c19ce78013"
+  },
+  "reminderStateSelection.ANY.label": {
+    "text": "الكل",
+    "source": "2b505597daa7"
   }
 }

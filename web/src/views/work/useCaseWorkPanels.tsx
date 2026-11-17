@@ -1,3 +1,4 @@
+import { effectiveReminderSelection } from "../../routing/reminderQuery";
 import { clientCompositions } from "@contracts/client";
 import { operationTask } from "../../protocol/taskCatalog";
 import { isNarrativeCreationId, narrativeCreationInput } from "../../operation/metadata";
@@ -12,7 +13,7 @@ import { useAcceptedOperation } from "../../hooks/useAcceptedOperation";
 import { ObservedReceipt } from "../operation/ObservedReceipt";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { useMemo, useRef, useState, useEffect } from "react";
-import type { TaskId, OperationBinding } from "@contracts/client";
+import type { TaskId, OperationBinding, ReminderListRequest } from "@contracts/client";
 import type { OperationReceipt, CurrentCase } from "../../protocol/types";
 import type { ReminderActHandler } from "./reminderActions";
 
@@ -22,7 +23,7 @@ import { WorkOperation } from "./WorkOperation";
 import { CaseNotes } from "../case/CaseNotes";
 import { CaseWork } from "../case/CaseWork";
 
-type ReminderState = "PENDING" | "COMPLETED" | "CANCELLED";
+type ReminderStateFilter = ReminderListRequest["state"];
 type Editor = {
   noteIntent?: NoteIntent;
   action: OperationAffordance;
@@ -52,7 +53,7 @@ export const useCaseWorkPanels = ({
 }) => {
   const noteDraft = useInlineNoteDraft();
   const [browsing, setBrowsing] = useState(false);
-  const [state, setState] = useState<ReminderState>("PENDING");
+  const [state, setState] = useState<ReminderStateFilter>(undefined);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
   const recorded = useAcceptedOperation();
@@ -70,7 +71,10 @@ export const useCaseWorkPanels = ({
     () => ({ kind: "ID" as const, caseId: current.subject.caseId }),
     [current.subject.caseId],
   );
-  const filter = useMemo(() => ({ state, includeInactive: true }), [state]);
+  const filter = useMemo(
+    () => ({ ...(state === undefined ? {} : { state }), includeInactive: true }),
+    [state],
+  );
   const open = (next: Editor) => {
     returnFocus.current = editorOrigin(next);
     recorded.clear();
@@ -199,7 +203,7 @@ export const useCaseWorkPanels = ({
             }
           }}
           onReminder={onReminder}
-          state={state}
+          state={effectiveReminderSelection(filter).state}
           setState={setState}
           browsing={browsing}
           setBrowsing={setBrowsing}

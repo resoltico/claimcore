@@ -23,6 +23,7 @@ test("discovers a case reminder queue, retains visible context through filters a
   await entry.click();
   expect((await first).request().postDataJSON()).toEqual({
     target: { kind: "REFERENCE", caseReference: reference },
+    state: "ANY",
     includeInactive: true,
     limit: 50,
   });
@@ -48,6 +49,7 @@ test("discovers a case reminder queue, retains visible context through filters a
     due: "TODAY",
     assignment: "MINE",
     text: "synthetic targeted action",
+    state: "ANY",
     includeInactive: true,
     limit: 50,
   };
@@ -63,6 +65,7 @@ test("discovers a case reminder queue, retains visible context through filters a
     due: "TODAY",
     assignment: "MINE",
     text: "synthetic targeted action",
+    state: "ANY",
     includeInactive: true,
     limit: 50,
   });

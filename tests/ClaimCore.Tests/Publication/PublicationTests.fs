@@ -150,6 +150,78 @@ let private nativePublication () =
             "\"operationId\""
             "The mutation schema retains its identity contract"
 
+        let reminderHelp =
+            run executable [ "help"; "reminder"; "list" ] |> Encoding.UTF8.GetString
+
+        Expect.stringContains
+            reminderHelp
+            "[--case-id "
+            "Published reminder syntax retains its optional named ID selector"
+
+        use reminderJson =
+            JsonDocument.Parse(
+                (run executable [ "help"; "reminder"; "list"; "--format=json" ]).AsMemory()
+            )
+
+        let reminderOperation = reminderJson.RootElement.GetProperty("operations")[0]
+
+        Expect.stringContains
+            (reminderOperation.GetProperty("synopsis").GetString() |> nonNull)
+            "[--case-id "
+            "Published machine help includes the same selector"
+
+        let reminderSchema =
+            run executable [ "schema"; "reminder.list"; "request" ]
+            |> Encoding.UTF8.GetString
+
+        Expect.stringContains
+            reminderSchema
+            "\"caseId\""
+            "Published request discovery still exposes the typed selector"
+
+        for arguments, expected in
+            [
+                [ "--text"; "-h" ], "-h"
+                [ "--text=-h" ], "-h"
+                [ "--text=--help" ], "--help"
+            ] do
+            use literal =
+                JsonDocument.Parse(
+                    (run executable ([ "people"; "list"; "--dry-run" ] @ arguments)).AsMemory()
+                )
+
+            Expect.equal
+                (literal.RootElement.GetProperty("endpoint").GetString())
+                "people.list"
+                "Published executable help detection does not steal named values"
+
+            Expect.equal
+                (literal.RootElement.GetProperty("input").GetProperty("text").GetString())
+                expected
+                "The published actual command retains acquired data"
+
+        for alias in [ "-h"; "--help" ] do
+            let help = run executable [ "people"; "list"; alias ] |> Encoding.UTF8.GetString
+
+            Expect.stringContains
+                help
+                "claimcore people list"
+                "Standalone help aliases remain offline discovery"
+
+            use literal =
+                JsonDocument.Parse(
+                    (run executable [ "case"; "get"; "--dry-run"; "--"; alias ]).AsMemory()
+                )
+
+            Expect.equal
+                (literal.RootElement
+                    .GetProperty("input")
+                    .GetProperty("target")
+                    .GetProperty("caseReference")
+                    .GetString())
+                alias
+                "The published terminator keeps a help-like operand literal"
+
         use selected =
             JsonDocument.Parse(
                 (run executable [ "case"; "get"; "--dry-run"; "--"; "--claim" ]).AsMemory()

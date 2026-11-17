@@ -900,7 +900,8 @@ test("published reminder rows show server timing in case and queue views across 
   const inactive = page.getByRole("checkbox", {
     name: ui("ar", "input.includeInactive.label"),
   });
-  await expect(inactive).toBeDisabled();
+  await expect(inactive).toBeEnabled();
+  await expect(inactive).toBeChecked();
   await page
     .getByRole("button", {
       name: ui("ar", "ui.manualFilters"),

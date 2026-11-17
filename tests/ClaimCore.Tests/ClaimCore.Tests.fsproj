@@ -110,6 +110,7 @@
     <Compile Include="Architecture/CommandApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
+    <Compile Include="Domain/ReminderSelectionTests.fs" />
     <Compile Include="Domain/CaseStageTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Contract/DecimalTotalCodecTests.fs" />
@@ -254,6 +255,7 @@
     <Compile Include="Cli/CliOfflineLanguageTests.fs" />
     <Compile Include="Cli/CliHelpTests.fs" />
     <Compile Include="Cli/CliInvocationTests.fs" />
+    <Compile Include="Cli/CliOwnedHelpTests.fs" />
     <Compile Include="Cli/CliAdmissionTests.fs" />
     <Compile Include="Cli/CliDiscoveryTests.fs" />
     <Compile Include="Cli/WorklistGrammarTests.fs" />
@@ -266,6 +268,7 @@
     <Compile Include="Cli/TextTableTests.fs" />
     <Compile Include="Cli/PeopleHistoryTests.fs" />
     <Compile Include="Contract/CsvExportTests.fs" />
+    <Compile Include="Contract/ReminderSelectionAdapterTests.fs" />
     <Compile Include="Contract/PaymentCorrectionAcceptanceTests.fs" />
     <Compile Include="Contract/PaymentRowControlTests.fs" />
     <Compile Include="Contract/ExportTransportTests.fs" />

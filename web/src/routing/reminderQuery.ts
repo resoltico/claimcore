@@ -1,3 +1,4 @@
+import { reminderSelectionDefaults } from "@contracts/client";
 import type { CaseSelector, ReminderListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 export type ReminderQuery = Omit<ReminderListRequest, "cursor" | "limit">;
@@ -66,7 +67,7 @@ const queryChoices = (
 ): ReminderQuery => ({
   ...result,
   ...(values.view !== null && isTerm("reminderView", values.view) ? { view: values.view } : {}),
-  ...(values.state !== null && isTerm("reminderState", values.state)
+  ...(values.state !== null && isTerm("reminderStateSelection", values.state)
     ? { state: values.state }
     : {}),
   ...(values.due !== null && isTerm("reminderDue", values.due) ? { due: values.due } : {}),
@@ -79,7 +80,7 @@ export const parseReminderQuery = (search: string): ReminderQuery => {
   const params = selectionParameters(search);
   for (const [key, vocabulary] of [
     ["view", "reminderView"],
-    ["state", "reminderState"],
+    ["state", "reminderStateSelection"],
     ["due", "reminderDue"],
     ["assignment", "assignment"],
   ] as const) {
@@ -97,7 +98,9 @@ export const parseReminderQuery = (search: string): ReminderQuery => {
   const result: ReminderQuery = {
     ...(target === undefined ? {} : { target }),
     ...(text === null || text === "" ? {} : { text }),
-    ...(params.get("includeInactive") === "true" ? { includeInactive: true } : {}),
+    ...(params.has("includeInactive")
+      ? { includeInactive: params.get("includeInactive") === "true" }
+      : {}),
   };
   return queryChoices(result, { view, state, due, assignment });
 };
@@ -112,8 +115,8 @@ export const remindersPath = (query: ReminderQuery): string => {
   if (query.text !== undefined && query.text !== "") {
     params.set("q", query.text);
   }
-  if (query.includeInactive === true) {
-    params.set("includeInactive", "true");
+  if (query.includeInactive !== undefined) {
+    params.set("includeInactive", String(query.includeInactive));
   }
   if (query.target !== undefined) {
     params.set(
@@ -141,4 +144,17 @@ export const reminderPagePath = (query: ReminderQuery, manual: boolean): string 
   const { view: _view, ...filters } = query;
   const path = remindersPath(filters);
   return `${path}${path.includes("?") ? "&" : "?"}filters=manual`;
+};
+
+export const effectiveReminderSelection = (query: ReminderQuery) => {
+  const defaults = reminderSelectionDefaults.find(
+    (row) => row.hasView === (query.view !== undefined),
+  );
+  if (defaults === undefined) {
+    throw new Error("The Core reminder defaults are missing.");
+  }
+  return {
+    state: query.state ?? defaults.state,
+    includeInactive: query.includeInactive ?? defaults.includeInactive,
+  };
 };

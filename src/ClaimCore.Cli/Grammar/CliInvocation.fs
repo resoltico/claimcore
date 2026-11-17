@@ -198,9 +198,21 @@ module CliInvocations =
             | CliCommand.Session -> noArguments CliInvocation.Session tail
 
     let private wantsCommandHelp (arguments: string list) =
+        let switches =
+            CommandGrammar.tryOperation arguments
+            |> Option.map (fun operation ->
+                (CommandGrammar.optionGrammar operation).Switches
+                @ CommandGrammar.textSourceSwitches operation)
+            |> Option.defaultValue CommandGrammar.globalSwitches
+
         let helpRequested =
             VerbOptions.beforeTerminator arguments
-            |> List.exists (fun argument -> List.contains argument CliCommands.aliases)
+            |> VerbOptions.classify (switches @ CliCommands.aliases)
+            |> List.exists (function
+                | VerbOptions.Argument.Option(name, VerbOptions.OptionValue.Switch) ->
+                    List.contains name CliCommands.aliases
+                | VerbOptions.Argument.Operand value -> List.contains value CliCommands.aliases
+                | _ -> false)
 
         let commandPath =
             arguments

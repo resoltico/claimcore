@@ -40,7 +40,7 @@ it("selects the first core view and changes views without adding hidden state pr
   expect(location.pathname + location.search).toBe("/reminders?view=COMPLETED&q=literal");
 });
 
-it("requires explicit manual filters for inactive work and never sends interface mode to Core", async () => {
+it("changes only the selected view when switching mode and shows owner defaults without sending interface mode", async () => {
   const reads = mockEndpoint("reminder.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
@@ -63,8 +63,8 @@ it("requires explicit manual filters for inactive work and never sends interface
     expect(reads).toHaveBeenCalledOnce();
   });
   const inactive = () => screen.getByRole("checkbox", { name: "Include inactive case work" });
-  expect(inactive()).toBeDisabled();
-  expect(inactive()).toHaveAccessibleDescription("Use manual filters to include inactive work.");
+  expect(inactive()).toBeEnabled();
+  expect(inactive()).toBeChecked();
   const mode = screen.getByRole("button", { name: "Manual filters" });
   expect(mode).toHaveAttribute("aria-pressed", "false");
   const user = userEvent.setup();
@@ -75,7 +75,8 @@ it("requires explicit manual filters for inactive work and never sends interface
   expect(reads.mock.calls[1]?.[1]).toEqual({ text: "literal", limit: 50 });
   expect(location.pathname + location.search).toBe("/reminders?q=literal&filters=manual");
   expect(screen.queryByRole("tab")).toBeNull();
-  expect(inactive()).not.toBeDisabled();
+  expect(inactive()).toBeEnabled();
+  expect(inactive()).not.toBeChecked();
   expect(mode).toHaveAttribute("aria-pressed", "true");
   await user.click(inactive());
   await waitFor(() => {
@@ -92,7 +93,7 @@ it("requires explicit manual filters for inactive work and never sends interface
     includeInactive: true,
     limit: 50,
   });
-  expect(inactive()).toBeDisabled();
+  expect(inactive()).toBeEnabled();
   expect(inactive()).toBeChecked();
   expect(mode).toHaveAttribute("aria-pressed", "false");
   expect(screen.getByRole("tab", { name: "Pending 0" })).toHaveAttribute("aria-selected", "true");

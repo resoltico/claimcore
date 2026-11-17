@@ -43,7 +43,12 @@ let tests =
                             "Reference remains explicitly tagged, not guessed from its shape"
 
                         Expect.isNone query.View "No standard-view predicate is silently attached"
-                        Expect.isNone query.State "All reminder states can be browsed"
+
+                        Expect.equal
+                            query.State
+                            (Some ReminderStateSelection.Any)
+                            "All reminder states are explicitly selected"
+
                         Expect.isNone query.AfterCursor "Fresh traversal"
 
                         Expect.equal

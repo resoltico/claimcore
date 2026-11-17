@@ -611,10 +611,6 @@
     "text": "Manuelle Filter",
     "source": "8184694f3ff6"
   },
-  "ui.manualFiltersHint": {
-    "text": "Verwenden Sie manuelle Filter, um inaktive Bearbeitung einzuschließen.",
-    "source": "dc4f2d354574"
-  },
   "ui.changeResponsible": {
     "text": "Ändern",
     "source": "c0bf75bd78bf"

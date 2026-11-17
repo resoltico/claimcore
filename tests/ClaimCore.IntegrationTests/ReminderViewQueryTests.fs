@@ -242,7 +242,7 @@ let private qualify fixture =
             walk
                 fixture
                 { request (Some ReminderView.Completed) with
-                    State = Some ReminderState.Pending
+                    State = Some(ReminderStateSelection.State ReminderState.Pending)
                 }
                 []
 
@@ -277,7 +277,7 @@ let private qualify fixture =
             [
                 request (Some ReminderView.Today)
                 { request (Some ReminderView.Pending) with
-                    State = Some ReminderState.Pending
+                    State = Some(ReminderStateSelection.State ReminderState.Pending)
                 }
                 { request (Some ReminderView.Pending) with
                     IncludeInactive = Some false
