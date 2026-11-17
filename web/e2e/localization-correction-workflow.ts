@@ -196,6 +196,7 @@ const acceptSetup = async (
   })();
   expect(receipt.subject.snapshot).toEqual({
     kind: "DISCLOSED",
+    disposition: null,
     recordedFields,
     state: {
       kind: "ACTIVE",

@@ -231,6 +231,9 @@ module internal ReceiptReads =
                                                                         SnapshotDisclosure.Disclosed
                                                                             {
                                                                                 State = live
+                                                                                Disposition =
+                                                                                    description
+                                                                                        .Disposition
                                                                                 RecordedFields =
                                                                                     fields
                                                                                         declaration

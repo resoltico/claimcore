@@ -347,6 +347,7 @@ module PartDescriptions =
                 PartKind.Case,
                 Ok(
                     lifecycle
+                    @ (value.Disposition |> Option.map TimelineChange.Disposition |> Option.toList)
                     @ (value.Fields |> List.map TimelineChange.CaseField)
                     @ (value.Money |> List.map TimelineChange.CaseMoney)
                 )

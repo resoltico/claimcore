@@ -177,7 +177,7 @@ module PartDescriptionCodecs =
             "money"
             _.Money
             (list CaseFields.declarations.Length TimelineCodecs.moneyDifference)
-        |> field "disposition" _.Disposition (nullable ResponseCodecs.disposition)
+        |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
         |> build
         |> named "CasePartDescription"
 

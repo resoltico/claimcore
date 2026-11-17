@@ -50,6 +50,7 @@ let receipt: OperationReceipt =
                         SnapshotDisclosure.Disclosed
                             {
                                 State = LiveCase.ofState snapshot.State |> Option.get
+                                Disposition = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payment = None
                             }

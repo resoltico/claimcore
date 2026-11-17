@@ -85,6 +85,7 @@ type TimelineChange =
     | CaseField of CaseFieldDifference
     | CaseMoney of CaseMoneyDifference
     | Lifecycle of LifecycleChange
+    | Disposition of CaseDisposition
     | Responsibility of ValueChange<ActorRef>
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference

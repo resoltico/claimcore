@@ -95,6 +95,13 @@ module TimelineCodecs =
                     | _ -> None)
                     (record id |> field "change" id moneyDifference)
                 variant
+                    "DISPOSITION"
+                    TimelineChange.Disposition
+                    (function
+                    | TimelineChange.Disposition value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id CaseStateCodecs.disposition)
+                variant
                     "LIFECYCLE"
                     TimelineChange.Lifecycle
                     (function

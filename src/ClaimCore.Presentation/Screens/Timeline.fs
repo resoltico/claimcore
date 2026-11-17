@@ -169,6 +169,20 @@ module TimelineScreen =
                     PresentedValue.money
                     change.Change
             ]
+        | TimelineChange.Disposition disposition ->
+            [
+                section
+                    "field.reason.label"
+                    [
+                        value
+                            "reason"
+                            "field.reason.label"
+                            Prominence.Primary
+                            (PresentedValue.Narrative(
+                                Reason.format (CaseDisposition.reason disposition)
+                            ))
+                    ]
+            ]
         | TimelineChange.Lifecycle change ->
             [
                 difference

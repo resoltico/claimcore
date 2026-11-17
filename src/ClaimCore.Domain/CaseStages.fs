@@ -33,6 +33,12 @@ type CaseDisposition =
     | Voided of Reason
     | Reinstated of Reason
 
+module CaseDisposition =
+    let reason =
+        function
+        | CaseDisposition.Voided reason
+        | CaseDisposition.Reinstated reason -> reason
+
 [<RequireQualifiedAccess>]
 type CaseStageDisplay =
     | Tracker of current: CaseStageKind * steps: CaseStageEntry list

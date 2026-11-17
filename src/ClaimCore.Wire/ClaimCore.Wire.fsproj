@@ -30,12 +30,12 @@
     <Compile Include="Codecs/ActorCodecs.fs" />
     <Compile Include="Codecs/LedgerCodecs.fs" />
     <Compile Include="Codecs/ValueChangeCodecs.fs" />
+    <Compile Include="Codecs/CaseStateCodecs.fs" />
     <Compile Include="Codecs/TimelineCodecs.fs" />
     <Compile Include="Codecs/PresentationStructure.fs" />
     <Compile Include="Codecs/PresentationCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCodecs.fs" />
     <Compile Include="Codecs/DiagnosticCode.fs" />
-    <Compile Include="Codecs/CaseStateCodecs.fs" />
     <Compile Include="Codecs/WorkCodecs.fs" />
     <Compile Include="Codecs/ReadRowCodecs.fs" />
     <Compile Include="Codecs/ResponseCodecs.fs" />

@@ -18819,6 +18819,16 @@
           "state": {
             "$ref": "#/components/schemas/LiveCase"
           },
+          "disposition": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "recordedFields": {
             "type": "array",
             "items": {
@@ -18862,6 +18872,7 @@
         "required": [
           "kind",
           "state",
+          "disposition",
           "recordedFields",
           "payment"
         ]
@@ -18995,6 +19006,9 @@
             "$ref": "#/components/schemas/TimelineChange.CASE_MONEY"
           },
           {
+            "$ref": "#/components/schemas/TimelineChange.DISPOSITION"
+          },
+          {
             "$ref": "#/components/schemas/TimelineChange.LIFECYCLE"
           },
           {
@@ -19016,6 +19030,7 @@
             "PAYMENTS": "#/components/schemas/TimelineChange.PAYMENTS",
             "CASE_FIELD": "#/components/schemas/TimelineChange.CASE_FIELD",
             "CASE_MONEY": "#/components/schemas/TimelineChange.CASE_MONEY",
+            "DISPOSITION": "#/components/schemas/TimelineChange.DISPOSITION",
             "LIFECYCLE": "#/components/schemas/TimelineChange.LIFECYCLE",
             "RESPONSIBILITY": "#/components/schemas/TimelineChange.RESPONSIBILITY",
             "HANDLING_SUMMARY": "#/components/schemas/TimelineChange.HANDLING_SUMMARY",
@@ -19049,6 +19064,22 @@
           },
           "change": {
             "$ref": "#/components/schemas/CaseMoneyDifference"
+          }
+        },
+        "required": [
+          "kind",
+          "change"
+        ]
+      },
+      "TimelineChange.DISPOSITION": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISPOSITION"
+          },
+          "change": {
+            "$ref": "#/components/schemas/CaseDisposition"
           }
         },
         "required": [

@@ -1198,6 +1198,7 @@
                   }
                 },
                 "payment": null,
+                "disposition": null,
                 "recordedFields": [
                   "incidentDate",
                   "incidentNotificationDate",
@@ -1281,6 +1282,7 @@
                     }
                   },
                   "payment": null,
+                  "disposition": null,
                   "recordedFields": [
                     "incidentDate",
                     "incidentNotificationDate",

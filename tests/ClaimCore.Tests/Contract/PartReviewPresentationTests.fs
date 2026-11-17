@@ -39,7 +39,7 @@ let tests =
         "shared part review facts"
         [
             testCase
-                "stewardship reasons survive the shared review receipt and timeline description"
+                "the shared case-part review adapter retains the accepted stewardship reason"
                 (fun () ->
                     let before = caseValue CaseStatus.Opened fields.Finance
 

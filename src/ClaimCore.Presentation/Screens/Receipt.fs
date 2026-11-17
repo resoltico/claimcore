@@ -87,13 +87,27 @@ module ReceiptScreen =
         ]
         @ (match item.Snapshot with
            | SnapshotDisclosure.Disclosed live ->
-               caseFacts
+               (caseFacts
                    {
                        CaseId = item.CaseId
                        Reference = item.Reference
                        Revision = item.Revision
                        State = LiveCase.toState live.State
-                   }
+                   })
+               @ (live.Disposition
+                  |> Option.map (fun disposition ->
+                      section
+                          "field.reason.label"
+                          [
+                              value
+                                  "reason"
+                                  "field.reason.label"
+                                  Prominence.Primary
+                                  (PresentedValue.Narrative(
+                                      Reason.format (CaseDisposition.reason disposition)
+                                  ))
+                          ])
+                  |> Option.toList)
            | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
            | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
         []
@@ -273,7 +287,8 @@ module ReceiptScreen =
             | _ -> None
 
         let isRecorded label =
-            selected |> Option.map (Set.contains label) |> Option.defaultValue true
+            label = "field.reason.label"
+            || (selected |> Option.map (Set.contains label) |> Option.defaultValue true)
 
         let markEntry (entry: Entry) =
             { entry with

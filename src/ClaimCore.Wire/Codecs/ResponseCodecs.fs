@@ -243,39 +243,6 @@ module ResponseCodecs =
             "act"
         |> named "CaseAdvice"
 
-    let internal disposition =
-        let reason =
-            text
-            |> interpret
-                (fun path raw ->
-                    Reason.parse raw
-                    |> Result.mapError (fun _ ->
-                        {
-                            Path = path
-                            Reason = "Invalid disposition reason."
-                        }))
-                Reason.format
-
-        tagged
-            "CaseDisposition"
-            [
-                variant
-                    "case.void"
-                    CaseDisposition.Voided
-                    (function
-                    | CaseDisposition.Voided reason -> Some reason
-                    | _ -> None)
-                    (record id |> field "reason" id reason)
-                variant
-                    "case.reinstate"
-                    CaseDisposition.Reinstated
-                    (function
-                    | CaseDisposition.Reinstated reason -> Some reason
-                    | _ -> None)
-                    (record id |> field "reason" id reason)
-            ]
-        |> Codec.vocabulary "task"
-
     let caseView =
         (record
             (fun
@@ -332,7 +299,7 @@ module ResponseCodecs =
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> field "stages" _.Stages CaseStageCodecs.display
-        |> field "disposition" _.Disposition (nullable disposition)
+        |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
         |> field "nextActions" _.NextActions (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field "notes" _.Notes WorkCodecs.notes
         |> field

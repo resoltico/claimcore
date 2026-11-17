@@ -137,6 +137,11 @@ Optional updates distinguish omission from an explicit clear. Use the task's dec
 help rather than treating blank text, null and absence as interchangeable. Collection issues identify
 the input token and submitted row ordinal; correlate that ordinal with the immutable submitted rows.
 
+Disclosed case receipts include nullable `disposition` from that accepted operation. DATA timeline
+changes use `DISPOSITION` for the same typed void/reinstate reason. Later case updates do not replace
+historical reasons; current permissions and owner erasure still control disclosure. Regenerate typed
+DATA clients for these members/variants. This output correction does not change installation format.
+
 Successful payloads vary by endpoint. Rejections use the shared representation-specific rejection
 shape, and failures use the common fault shape with a Core message ID. Input issues target declared
 input tokens. Use structured codes and actions for automation; do not parse translated prose.

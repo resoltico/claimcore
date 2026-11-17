@@ -104,14 +104,14 @@ module ReviewScreen =
 
             let reason =
                 value.Disposition
-                |> Option.map (function
-                    | CaseDisposition.Voided reason
-                    | CaseDisposition.Reinstated reason ->
-                        changed
-                            (prefix + "reason")
-                            "field.reason.label"
-                            (Reason.format >> PresentedValue.Narrative)
-                            { Before = None; After = Some reason })
+                |> Option.map (fun disposition ->
+                    let reason = CaseDisposition.reason disposition
+
+                    changed
+                        (prefix + "reason")
+                        "field.reason.label"
+                        (Reason.format >> PresentedValue.Narrative)
+                        { Before = None; After = Some reason })
                 |> Option.toList
 
             removals @ lifecycle @ reason, unchanged

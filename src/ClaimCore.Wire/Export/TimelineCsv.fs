@@ -30,6 +30,8 @@ module TimelineCsv =
                     (fun money -> Money.format money + " " + Money.currency money)
                     change.Change
             ]
+        | TimelineChange.Disposition disposition ->
+            [ "reason", "", (CaseDisposition.reason disposition |> Reason.format) ]
         | TimelineChange.Lifecycle change ->
             [
                 difference

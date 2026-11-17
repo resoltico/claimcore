@@ -50,6 +50,7 @@
     <Compile Include="NamedRowTests.fs" />
     <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />
+    <Compile Include="StewardshipReasonConsumerTests.fs" />
     <Compile Include="NotesPostgresTests.fs" />
     <Compile Include="HandoverPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />

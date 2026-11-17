@@ -544,6 +544,7 @@ let receiptStatusAndProgress =
         SnapshotDisclosure.Disclosed
             {
                 State = state
+                Disposition = None
                 RecordedFields = recorded
                 Payment = None
             }
