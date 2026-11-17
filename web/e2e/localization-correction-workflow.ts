@@ -202,17 +202,19 @@ const acceptSetup = async (
       kind: "ACTIVE",
       fields,
     },
-    payment:
+    payments:
       request.task === "case.recordPayment"
-        ? {
-            kind: "RECORDED",
-            entry: {
-              paymentId: request.operationId,
-              paymentDate: "2026-09-05",
-              paidAmount: "300.25",
+        ? [
+            {
+              kind: "RECORDED",
+              entry: {
+                paymentId: request.operationId,
+                paymentDate: "2026-09-05",
+                paidAmount: "300.25",
+              },
             },
-          }
-        : null,
+          ]
+        : [],
   });
   return receipt;
 };
