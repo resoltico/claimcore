@@ -37,11 +37,12 @@ test("discovers a case reminder queue, retains visible context through filters a
   const assignment = reminderResponse(page);
   await page.getByRole("option", { name: "Mine", exact: true }).click();
   await assignment;
-  await page
+  const search = page.getByRole("search", { name: "Reminders", exact: true });
+  await search
     .getByRole("searchbox", { name: "Search", exact: true })
     .fill("synthetic targeted action");
   const searched = reminderResponse(page);
-  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await search.getByRole("button", { name: "Search", exact: true }).click();
   const selected = {
     target: { kind: "REFERENCE", caseReference: reference },
     due: "TODAY",
