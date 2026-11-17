@@ -56,6 +56,7 @@ it("navigates from the supplied case workspace link into a visible targeted queu
               input: {
                 target: { kind: "REFERENCE", caseReference: reference },
                 includeInactive: true,
+                state: "ANY",
               },
             },
           },
@@ -78,7 +79,7 @@ it("navigates from the supplied case workspace link into a visible targeted queu
   const link = await screen.findByRole("link", { name: "Reminders for this case" });
   expect(link).toHaveAttribute(
     "href",
-    `/reminders?includeInactive=true&caseReference=${reference}&filters=manual`,
+    `/reminders?state=ANY&includeInactive=true&caseReference=${reference}&filters=manual`,
   );
   await userEvent.click(link);
   expect(await screen.findByRole("heading", { name: "Reminders" })).toBeVisible();
@@ -88,6 +89,7 @@ it("navigates from the supplied case workspace link into a visible targeted queu
     expect(reads.mock.calls.at(-1)?.[1]).toEqual({
       target: { kind: "REFERENCE", caseReference: reference },
       includeInactive: true,
+      state: "ANY",
       limit: 50,
     });
   });

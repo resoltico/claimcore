@@ -2866,5 +2866,9 @@
   "label.remindersForCaseId": {
     "text": "案件 ID {case} のリマインダー",
     "source": "f8c19ce78013"
+  },
+  "reminderStateSelection.ANY.label": {
+    "text": "すべて",
+    "source": "2b505597daa7"
   }
 }

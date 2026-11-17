@@ -611,10 +611,6 @@
     "text": "수동 필터",
     "source": "8184694f3ff6"
   },
-  "ui.manualFiltersHint": {
-    "text": "비활성 업무를 포함하려면 수동 필터를 사용하세요.",
-    "source": "dc4f2d354574"
-  },
   "ui.changeResponsible": {
     "text": "변경",
     "source": "c0bf75bd78bf"

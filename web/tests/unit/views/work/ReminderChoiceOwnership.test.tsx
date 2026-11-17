@@ -74,8 +74,8 @@ it("uses the core query selection, order, input label and shared wording in the 
   expect(await screen.findByRole("heading", { name: "Core reminder canopy Ω" })).toBeVisible();
   const user = userEvent.setup();
   await user.click(screen.getByRole("combobox", { name: "Details" }));
+  // Any is a real Core selection now, never an extra interface-injected empty option.
   expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
-    "Any",
     "Cancelled",
     "Pending",
   ]);

@@ -69,7 +69,6 @@
   "ui.loginInstructions": "Sign in with your organization’s account.",
   "ui.lookingUp": "Looking up…",
   "ui.manualFilters": "Manual filters",
-  "ui.manualFiltersHint": "Use manual filters to include inactive work.",
   "ui.modeSet": "Colour mode set to {value}.",
   "ui.moreActors": "More people",
   "ui.moreCaseActions": "More actions",

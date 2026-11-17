@@ -279,10 +279,6 @@
     "text": "Manuālie filtri",
     "source": "8184694f3ff6"
   },
-  "ui.manualFiltersHint": {
-    "text": "Izmantojiet manuālos filtrus, lai iekļautu neaktīvu lietu apstrādi.",
-    "source": "dc4f2d354574"
-  },
   "ui.modeSet": {
     "text": "Krāsu režīms iestatīts: {value}.",
     "source": "b525fa9e5b37"

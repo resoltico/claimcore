@@ -3,7 +3,7 @@ import { apiEndpoints } from "../../api/service";
 import type { MutationLockChange } from "../../hooks/useWorkspaceMutationLock";
 import { PresentedValue } from "../../components/PresentedValue";
 import { ViewTabs } from "../../ui/ViewTabs";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
@@ -14,6 +14,7 @@ import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
 import {
   parseReminderPageQuery,
+  effectiveReminderSelection,
   reminderPagePath,
   remindersPath,
   type ReminderQuery,
@@ -121,39 +122,28 @@ type QueueProps = { onLockChange?: MutationLockChange; disclosureAvailable?: boo
 const noLockChange = () => undefined;
 const ReminderFilters = ({
   query,
-  manual,
   change,
   draft,
   onDraft,
 }: {
   query: ReminderQuery;
-  manual: boolean;
   change: (value: ReminderQuery) => void;
   draft: string;
   onDraft: (value: string) => void;
 }) => {
   const p = usePresentation();
-  const inactiveHint = useId();
+  const effective = effectiveReminderSelection(query);
   return (
     <div className="work-queue-filters">
       <Select
         label={renderCatalogKey(p, stateChoice.labelId)}
-        value={query.state ?? ""}
-        options={[
-          { value: "", label: p.text("ui.anyFilter") },
-          ...stateChoice.choices
-            .filter((value) => isTerm("reminderState", value))
-            .map((value) => ({
-              value,
-              label: p.term("reminderState", value),
-            })),
-        ]}
+        value={effective.state}
+        options={stateChoice.choices
+          .filter((value) => isTerm("reminderStateSelection", value))
+          .map((value) => ({ value, label: p.term("reminderStateSelection", value) }))}
         onChange={(value) => {
-          const { state: _state, ...rest } = query;
-          if (value === "") {
-            change(rest);
-          } else if (isTerm("reminderState", value)) {
-            change({ ...rest, state: value });
+          if (isTerm("reminderStateSelection", value)) {
+            change({ ...query, state: value });
           }
         }}
       />
@@ -199,17 +189,13 @@ const ReminderFilters = ({
       <label className="field-toggle">
         <input
           type="checkbox"
-          checked={query.includeInactive === true}
-          disabled={!manual}
-          aria-describedby={manual ? undefined : inactiveHint}
+          checked={effective.includeInactive}
           onChange={(event) => {
-            const { includeInactive: _inactive, ...rest } = query;
-            change(event.target.checked ? { ...rest, includeInactive: true } : rest);
+            change({ ...query, includeInactive: event.target.checked });
           }}
         />
         {p.text("input.includeInactive.label")}
       </label>
-      {manual ? null : <p id={inactiveHint}>{p.text("ui.manualFiltersHint")}</p>}
       <ReminderSearch query={query} change={change} draft={draft} onDraft={onDraft} />
     </div>
   );
@@ -243,7 +229,6 @@ const ReadyReminderQueue = ({
   const filters = (
     <ReminderFilters
       query={query}
-      manual={manual}
       change={change}
       draft={draft.value}
       onDraft={(value) => {

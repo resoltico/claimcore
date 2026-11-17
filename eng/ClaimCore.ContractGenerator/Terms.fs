@@ -87,6 +87,21 @@ module Terms =
                 |> List.map (fun token -> token, WorkViewsScreen.labelId token)
         }
 
+    let private reminderStateSelection =
+        {
+            Name = Vocabulary.name ReminderStateSelection.vocabulary
+            Labels =
+                Vocabulary.entries ReminderStateSelection.vocabulary
+                |> List.map (fun (selection, token) ->
+                    token,
+                    match ReminderStateSelection.state selection with
+                    | Some state ->
+                        PresentationKeys.code
+                            (Vocabulary.name ReminderState.vocabulary)
+                            (ReminderState.token state)
+                    | None -> "reminderStateSelection.ANY.label")
+        }
+
     let all =
         [
             rendered PresentedBoolean.vocabulary
@@ -110,6 +125,7 @@ module Terms =
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered ReminderState.vocabulary
+            reminderStateSelection
             rendered ReminderDue.vocabulary
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary

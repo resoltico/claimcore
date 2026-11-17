@@ -103,3 +103,18 @@ it("leaves embedded-only reads without a fabricated standalone destination", () 
     expect(coreLinkPath(link)).toBeUndefined();
   }
 });
+
+it.each([undefined, false, true] as const)(
+  "preserves the supplied Core view's inactive override %s",
+  (includeInactive) => {
+    const input = {
+      view: "COMPLETED",
+      ...(includeInactive === undefined ? {} : { includeInactive }),
+      limit: 50,
+    };
+    const path = coreLinkPath({ endpoint: "reminder.list", input });
+    expect(path).toBe(
+      `/reminders?view=COMPLETED${includeInactive === undefined ? "" : `&includeInactive=${String(includeInactive)}`}`,
+    );
+  },
+);
