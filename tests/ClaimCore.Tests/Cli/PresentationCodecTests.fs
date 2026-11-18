@@ -28,6 +28,27 @@ let tests =
     testList
         "review presentation transport"
         [
+            testCase "presented party roles round-trip with their closed vocabulary" (fun () ->
+                let wire token =
+                    JsonValue.Object
+                        [
+                            "vocabulary", JsonValue.String "partyRole"
+                            "kind", JsonValue.String "CODE"
+                            "token", JsonValue.String token
+                        ]
+
+                let role = PresentedValue.Code("partyRole", "CLAIMANT")
+
+                Expect.equal
+                    (PresentationCodecs.value.Write role)
+                    (wire "CLAIMANT")
+                    "A case party role has an encoded human representation"
+
+                Expect.equal (read (wire "CLAIMANT")) (Ok role) "The same role is admitted"
+
+                Expect.isError
+                    (read (wire "OWNER"))
+                    "Account roles are outside the party vocabulary")
             testCase "provided scale survives admission reencoding and human rendering" (fun () ->
                 let provided = money "1" (JsonValue.Integer 4L)
                 let value = read provided |> CaseBuilders.accepted

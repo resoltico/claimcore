@@ -121,6 +121,7 @@ module PresentationCodecs =
             codeVariant many MissingCaseGroup.vocabulary
             codeVariant many CaseProgress.vocabulary
             codeVariant many PaymentDirection.vocabulary
+            codeVariant many PartyRole.vocabulary
             codeVariant many CaseAssignment.vocabulary
             codeVariant many Role.vocabulary
             codeVariant many ScopeKind.vocabulary
