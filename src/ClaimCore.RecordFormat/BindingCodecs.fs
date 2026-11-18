@@ -356,20 +356,4 @@ module BindingCodecs =
             with :? System.ArgumentException ->
                 false
 
-    let binding =
-        choice
-            "Binding"
-            ([
-                BindingShape.CaseNew
-                BindingShape.Case
-                BindingShape.CasePayment
-                BindingShape.CaseErase
-                BindingShape.Work
-                BindingShape.ReminderNew
-                BindingShape.Reminder
-                BindingShape.NoteNew
-                BindingShape.Note
-                BindingShape.PeopleNew
-                BindingShape.People
-             ]
-             |> List.map select)
+    let binding = choice "Binding" (BindingShape.all |> List.map select)

@@ -61,6 +61,10 @@ type BindingShape =
     | People
 
 module BindingShape =
+    let all =
+        Vocabulary.ofUnion<BindingShape> "bindingShape" TokenCasing.ScreamingSnake None
+        |> Vocabulary.all
+
     let ofValue =
         function
         | Binding.CaseNew _ -> BindingShape.CaseNew
