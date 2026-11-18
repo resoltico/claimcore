@@ -534,10 +534,10 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "Each machine frame decodes the exact LF value"
 
     reminder "reopen" (expected first 2 @ [ "--due"; "2027-12-31" ]) |> ignore
-    fact "close" 6 [] |> ignore
+    fact "close" 6 [ "--outcome"; "settled" ] |> ignore
     work 1 [ "--handling-summary"; "Closed handling context" ] |> ignore
     reminder "complete" (expected first 3) |> ignore
-    fact "reopen" 7 [] |> ignore
+    fact "reopen" 7 [ "--reason"; "New synthetic evidence" ] |> ignore
     let final = current ()
 
     Expect.equal
@@ -707,7 +707,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "Terminal reminder has no current timing"
 
     assertCurrent true
-    fact "close" 8 [] |> ignore
+    fact "close" 8 [ "--outcome"; "other" ] |> ignore
     assertCurrent false
 
     let activeOnly = verb fixture environment listArguments 0 |> require "SUCCEEDED"
