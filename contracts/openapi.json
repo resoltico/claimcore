@@ -28913,6 +28913,9 @@
               }
             ]
           },
+          "reopenReason": {
+            "type": "string"
+          },
           "recordedFields": {
             "type": "array",
             "items": {
