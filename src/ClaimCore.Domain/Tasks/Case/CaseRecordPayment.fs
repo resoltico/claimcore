@@ -77,7 +77,18 @@ let availability environment state binding =
     let offered =
         CaseRules.availability declaration environment state binding capability gate
 
-    { offered with Recommendation = Some 0 }
+    let recommendation =
+        state
+        |> Option.bind (fun (state: DecisionFacts) -> state.Case.Value.Content)
+        |> Option.bind (fun content ->
+            match CaseProgress.ofFinancial content.Finance with
+            | CaseProgress.Decided
+            | CaseProgress.PartlyPaid -> Some 0
+            | _ -> None)
+
+    { offered with
+        Recommendation = recommendation
+    }
 
 let internal admitPayee (state: DecisionFacts) payment =
     let valid =

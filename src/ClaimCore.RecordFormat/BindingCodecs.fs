@@ -337,8 +337,6 @@ module BindingCodecs =
         | [ shape ] -> forShape shape
         | shapes -> choice "Binding.PEOPLE.recover" (List.map select shapes)
 
-    let forValue value = forShape (Binding.shape value)
-
     let forValue = BindingShape.ofValue >> forShape
 
     let matches declaration value =
