@@ -311,7 +311,9 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   await ready(page, route);
   if (route.id === "editor-work") {
     await page.locator("#case-work-summary").click();
-    await expect(page.getByRole("dialog").locator(".operation-form-card")).toBeInViewport();
+    const summary = page.getByRole("dialog").locator('textarea[name="field:handlingSummary"]');
+    await summary.scrollIntoViewIfNeeded();
+    await expect(summary).toBeInViewport({ ratio: 1 });
   }
   if (route.summaryExpanded === true) {
     await expect(page.locator(".summary-band")).toBeVisible();
