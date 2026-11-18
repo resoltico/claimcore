@@ -24,7 +24,7 @@ test("corrects selected payment atomically with both identities in receipt timel
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-04",
     "Paid amount": "100",
-    "Paid currency": "EUR",
+    "Payment currency": "EUR",
   });
   const target = { kind: "REFERENCE" as const, caseReference: reference };
   const before = await workRequest(page, "case.get", { target });

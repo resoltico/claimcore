@@ -25,7 +25,7 @@ test("records instalments and removes the selected entry through one reviewed co
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-04",
     "Paid amount": "40",
-    "Paid currency": "EUR",
+    "Payment currency": "EUR",
   });
   const payments = page.locator('.case-detail [data-region="PAYMENTS"]').first();
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("40.00 EUR");
@@ -41,7 +41,7 @@ test("records instalments and removes the selected entry through one reviewed co
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "20",
-    "Paid currency": "EUR",
+    "Payment currency": "EUR",
   });
   await expect(payments.locator('[data-entry="netPaid.EUR"]')).toContainText("60.00 EUR");
   const read = await workRequest(page, "case.get", {

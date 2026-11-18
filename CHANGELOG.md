@@ -4,6 +4,7 @@
 
 - Use a fresh installation for format 7. Older databases are refused. Maintenance rebuild and restore require the exact active pause handle.
 - Regenerate clients for optional registration, Received dates, party and link parts, typed closure and authority, signed payment totals and reminder completion dates.
+- Case receipts carry ordered `payments` differences. Payment-page consumers use supplied `actions` in place of `canRemove`.
 - Open a case with a reference. Clear unknown registration facts, record multiple parties, and search their names or contact details.
 - Record payments and returns in their own currencies at any point in handling. Correct entries atomically and review overpayments or negative net totals.
 - Record a decision basis, choose a closure outcome, and give a reason on reopening. The tracker shows the current closure outcome.

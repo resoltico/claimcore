@@ -80,7 +80,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   const payment = await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "300.25",
-    "Paid currency": "EUR",
+    "Payment currency": "EUR",
   });
   await page
     .locator('.case-detail [data-region="PAYMENTS"]')
