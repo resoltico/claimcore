@@ -229,7 +229,20 @@ let completeByteGoldens =
                             {
                                 Fields =
                                     CaseSummaryFields.values CaseSummaryFields.declarations fields
-                                Parties = Map.empty
+                                Parties =
+                                    Map.ofList
+                                        [
+                                            PartyRole.Claimant,
+                                            [
+                                                PartyName.parse "=CSV, α \"quoted\""
+                                                |> Result.defaultWith (string >> failtest)
+                                            ]
+                                            PartyRole.Insurer,
+                                            [
+                                                PartyName.parse "Insurer"
+                                                |> Result.defaultWith (string >> failtest)
+                                            ]
+                                        ]
                             }
                     Headline = CaseHeadline.Undecided
                     Attention = [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
@@ -250,7 +263,7 @@ let completeByteGoldens =
             Expect.equal
                 caseBytes
                 (expected
-                    "caseReference,revision,workRevision,state.kind,headline,attention,state.fields.policyNumber,state.fields.insurerClaimReference,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,paidAmount,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
+                    "caseReference,revision,workRevision,state.kind,headline,attention,claimants,insurers,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,netPaid,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
                     [
                         "CSV-GOLDEN"
                         "7"

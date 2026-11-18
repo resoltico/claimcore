@@ -265,13 +265,7 @@ let tests =
 
                         Expect.equal
                             (entries |> List.map _.Key)
-                            [
-                                "paymentCount"
-                                "paymentDecisionDate"
-                                "payable"
-                                "paid"
-                                "remaining"
-                            ]
+                            [ "paymentCount"; "paymentDecisionDate"; "payable"; "decisionBasis" ]
                             "Authored summary order"
 
                         Expect.equal
@@ -279,7 +273,7 @@ let tests =
                             (PresentedValue.Count 0L)
                             "Known zero count"
                     | _ -> failtest "Financial summary table required")
-            matches "case totals" [ RegionRole.Totals ] (fun () ->
+            matches "case totals" [ RegionRole.Notice; RegionRole.Totals ] (fun () ->
                 data Api.caseSummary |> CaseTotalsScreen.view)
             matches
                 "reminder"

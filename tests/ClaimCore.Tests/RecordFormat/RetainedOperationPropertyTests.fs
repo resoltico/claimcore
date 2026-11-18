@@ -18,7 +18,7 @@ module Tasks = ClaimCore.Tests.TaskBuilders
 
 let private variedCase =
     property {
-        let! count = Gen.int32 (Range.constant 1 200)
+        let! count = Gen.int32 (Range.constant 1 80)
         let! glyph = Gen.item [ "a"; "Ā"; "ش"; "😀" ]
         let! amount = Gen.item [ "1"; "10.0000"; "999999999999999999.9999" ]
         let! sequence = Gen.item [ 1L; 2L; 1000L; Sequence.Maximum ]

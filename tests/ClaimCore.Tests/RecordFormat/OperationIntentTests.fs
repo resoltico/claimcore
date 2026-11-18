@@ -70,12 +70,13 @@ let tests =
                         (Tasks.decisionInputs "2026-01-02" "10" "EUR"))
                     "Reviewed version is intent")
             testCase
-                "recording metadata and private result erasure do not erase a known public close input"
+                "recording metadata and private result erasure do not erase a known public reference change input"
                 (fun () ->
                     let state = Tasks.family ()
                     let binding = Tasks.caseBinding state
-                    let record = family "case.close" 2 state binding InputMap.empty
-                    let expected = Some(hash "case.close" binding InputMap.empty)
+                    let input = Tasks.inputs [ Tasks.text InputTarget.NewCaseReference "NEXT-REF" ]
+                    let record = family "case.changeReference" 2 state binding input
+                    let expected = Some(hash "case.changeReference" binding input)
                     Expect.equal (OperationIntent.accepted record resolve) expected "Known input"
 
                     Expect.equal
@@ -109,7 +110,7 @@ let tests =
                             header
                             record.Root.Structure.Task
                             binding
-                            InputMap.empty
+                            input
                             changes
                             (fun () -> Array.create 32 99uy)
                         |> required
@@ -125,8 +126,8 @@ let tests =
                         "Intent excludes that context"
 
                     Expect.notEqual
-                        (hash "case.close" binding InputMap.empty)
-                        (hash "case.reopen" binding InputMap.empty)
+                        (hash "case.changeReference" binding input)
+                        (hash "case.close" binding input)
                         "Task identity remains explicit")
             testCase
                 "erased authored inputs stay unavailable rather than receiving a fabricated fingerprint"

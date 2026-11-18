@@ -304,7 +304,6 @@ let tests =
                             "Payment entry removed."
                             "Payment recorded."
                             "40.00 EUR"
-                            "960.00 EUR"
                             String.replicate 32 "ab"
                         ] do
                         Expect.stringContains
@@ -480,7 +479,7 @@ let tests =
                         Array.append TimelineCsv.csvHeader (TimelineCsv.csvRows page) |> csvRows
 
                     let field id =
-                        "payment." + OperationId.format (operation id) + ".paidAmount"
+                        "payment." + OperationId.format (operation id) + ".amount"
 
                     let removed = rows |> List.find (fun row -> row["field"] = field 3)
                     let recorded = rows |> List.find (fun row -> row["field"] = field 4)

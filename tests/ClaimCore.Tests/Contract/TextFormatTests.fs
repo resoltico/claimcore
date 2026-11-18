@@ -51,24 +51,24 @@ let private format name =
     | issues -> Error issues
 
 let private formatBoundaries () =
-    for value in [ String('a', 1024); String.replicate 256 "😀"; String('\u0001', 1024) ] do
+    for value in [ String('a', 320); String.replicate 80 "😀"; String('\u0001', 320) ] do
         Expect.isOk
             (restored value)
             "Accepted history is judged by format, independently of admission"
 
         Expect.isOk (format value) "Request format uses the same permanent byte bound"
 
-    for value in [ String('a', 1025); String.replicate 257 "😀"; String('\u0001', 1025) ] do
+    for value in [ String('a', 321); String.replicate 81 "😀"; String('\u0001', 321) ] do
         Expect.isError (restored value) "History cannot exceed the byte grammar"
         Expect.isError (format value) "New requests cannot exceed the byte grammar"
 
 let private admissionInsideFormat () =
     Expect.isLessThanOrEqual
-        (4 * PartyName.MaximumCharacters)
-        PartyName.MaximumBytes
+        (4 * Identifier.MaximumCharacters)
+        Identifier.MaximumBytes
         "Every admitted scalar sequence fits the permanent byte bound"
 
-    let name = String.replicate 200 "😀"
+    let name = String.replicate 80 "😀"
 
     let decide value =
         ClaimCore.Domain.Tasks.Case.Open.decide
@@ -78,9 +78,9 @@ let private admissionInsideFormat () =
             (Binding.CaseNew Revision.zero)
             (authored value)
 
-    Expect.isOk (decide name) "800 UTF-8 bytes admit"
-    Expect.isOk (format (name + "😀")) "Format still admits"
-    Expect.isError (decide (name + "😀")) "Admission refuses"
+    Expect.isOk (decide name) "320 UTF-8 bytes admit"
+    Expect.isOk (format (String.replicate 81 "a")) "Format still admits"
+    Expect.isError (decide (String.replicate 81 "a")) "Admission refuses"
 
 let private stewardshipBoundaries () =
     for check in
@@ -105,7 +105,9 @@ let tests =
     testList
         "permanent text byte bounds"
         [
-            testCase "names use UTF-8 byte boundaries on requests and restoration" formatBoundaries
+            testCase
+                "identifiers use UTF-8 byte boundaries on requests and restoration"
+                formatBoundaries
             testCase
                 "new assertions retain the scalar admission limit inside format"
                 admissionInsideFormat

@@ -35,6 +35,9 @@ let private acts =
         (TaskId.ofLiteral "people.setProfile"), Consequence.Routine
         (TaskId.ofLiteral "people.changeSignInIdentity"), Consequence.Routine
         (TaskId.ofLiteral "people.eraseProfile"), Consequence.Irreversible
+        (TaskId.ofLiteral "party.add"), Consequence.Routine
+        (TaskId.ofLiteral "party.update"), Consequence.Routine
+        (TaskId.ofLiteral "party.remove"), Consequence.Routine
         (TaskId.ofLiteral "note.add"), Consequence.Routine
         (TaskId.ofLiteral "note.remove"), Consequence.Routine
         (TaskId.ofLiteral "link.add"), Consequence.Routine

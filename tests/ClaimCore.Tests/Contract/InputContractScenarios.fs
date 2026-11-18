@@ -234,7 +234,7 @@ let internal policyHints () =
 
     Expect.equal
         (claimant.GetProperty("scalar").GetProperty("maximumCharacters").GetInt32())
-        200
+        80
         "Current policy is a nonvalidating hint"
 
 let internal peopleFieldPresentation () =

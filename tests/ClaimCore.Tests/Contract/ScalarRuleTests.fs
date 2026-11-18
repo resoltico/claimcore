@@ -39,14 +39,12 @@ let listPresentation =
              |> Set.ofList)
             (Set.ofList
                 [
-                    BusinessField.PolicyNumber
-                    BusinessField.InsurerClaimReference
                     BusinessField.ClaimedAmount
                     BusinessField.ClaimedCurrency
                     BusinessField.PayableAmount
                     BusinessField.PayableCurrency
                 ])
-            "The adopted list contains parties and both complete money pairs"
+            "Financial facts include both complete money pairs"
 
         for amount, currency in
             [
@@ -62,7 +60,7 @@ let listPresentation =
 
         Expect.equal
             (FieldPresentation.prominence BusinessField.InsurerClaimReference)
-            Prominence.Secondary
+            Prominence.Detail
             "Insurer is supplementary list context"
 
         Expect.equal
@@ -84,8 +82,8 @@ let private textAndDateRuleTests =
         "text and date scalar catalog"
         [
             testCase "text rules retain permanent syntax and input bounds" (fun () ->
-                expectText BusinessField.PolicyNumber 200
-                expectText BusinessField.InsurerClaimReference 200
+                expectText BusinessField.PolicyNumber 80
+                expectText BusinessField.InsurerClaimReference 80
 
                 for name, expected in
                     [

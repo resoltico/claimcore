@@ -33,7 +33,7 @@ let tests =
                     ] do
                     let raw =
                         sprintf
-                            """{"policyNumber":"Ann","insurerClaimReference":"Ins","claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
+                            """{"claimedAmount":"1000","claimedCurrency":"EUR","payableAmount":%s,"payableCurrency":%s}"""
                             amount
                             currency
 
@@ -47,7 +47,7 @@ let tests =
                     Expect.equal
                         variants.Length
                         2
-                        "The generated client receives complete-or-absent alternatives"
+                        "Each grouped amount-and-currency pair has complete-or-absent alternatives"
                 | other -> failtestf "Expected presence alternatives, got %A" other)
             testCase "query money selection cannot orphan a currency" (fun () ->
                 for removed in
