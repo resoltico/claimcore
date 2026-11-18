@@ -142,6 +142,64 @@ let private deadlineKinds database =
         let! missed = queue None (Some DeadlineOutcome.Missed)
         Expect.isEmpty (ids missed) "The completion date is not evaluated as the recording date"
 
+        let! steward =
+            grant
+                actor
+                (id database.Fixture 920000)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople steward
+
+        let! voided =
+            Service.executeSubmission
+                actor
+                (request
+                    database.Fixture
+                    704
+                    "synthetic-a"
+                    1L
+                    "case.void"
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.Reason,
+                            SubmissionValue.Text "Synthetic record"
+                        ]))
+                token
+
+        accepted voided |> ignore
+
+        let! erased =
+            Service.executeSubmission
+                actor
+                (request database.Fixture 705 "synthetic-a" 2L "case.erase" Map.empty)
+                token
+
+        accepted erased |> ignore
+
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+
+        let! shape =
+            DatabaseSession.rows
+                connection
+                "SELECT count(*),count(*) FILTER (WHERE kind IS NOT NULL OR done_on IS NOT NULL) FROM claimcore.reminders WHERE case_id=$1"
+                [| box (id database.Fixture 10) |]
+                token
+
+        Expect.equal
+            (DatabaseSession.value<int64> 0 shape.Head)
+            2L
+            "Erasure kept both reminder identities"
+
+        Expect.equal
+            (DatabaseSession.value<int64> 1 shape.Head)
+            0L
+            "Erasure cleared the private columns in PostgreSQL"
+
         let! _ = verified database
         return ()
     }

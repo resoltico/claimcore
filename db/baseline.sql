@@ -585,7 +585,7 @@ BEGIN
             OR EXISTS(SELECT 1 FROM claimcore.case_payments WHERE case_id=family_id AND payment_date IS NOT NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_payment_totals WHERE case_id=family_id)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL))
-            OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL))
+            OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR kind IS NOT NULL OR done_on IS NOT NULL OR search_text IS NOT NULL))
             OR EXISTS(SELECT 1 FROM claimcore.notes WHERE case_id=family_id AND text IS NOT NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NOT NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND (target_case_id IS NOT NULL OR note IS NOT NULL))

@@ -305,7 +305,7 @@ module internal PartProjections =
                 for sql in
                     [
                         "UPDATE claimcore.case_payments SET payment_date=NULL,paid_amount=NULL,currency=NULL,direction=NULL,reference=NULL,payee_id=NULL WHERE case_id=$1"
-                        "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=$1"
+                        "UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,kind=NULL,done_on=NULL,search_text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.notes SET text=NULL WHERE case_id=$1"
                         "UPDATE claimcore.case_parties SET role=NULL,name=NULL,details=NULL WHERE case_id=$1"
                         "UPDATE claimcore.case_links SET target_case_id=NULL,note=NULL WHERE source_case_id=$1"
