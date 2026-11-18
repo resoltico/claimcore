@@ -96,26 +96,27 @@ module internal CaseLinkReads =
                             | CaseSelector.Reference _ -> None
                     }
 
+                let available id binding =
+                    match Registry.find id with
+                    | Some(Task.Family task) ->
+                        (task.Availability environment facts binding).Blocked.IsNone
+                    | _ -> invalidOp "A related case operation requires a family task."
+
                 return
                     {
                         RelatedCaseLinks.Outgoing =
                             outgoing
                             |> List.rev
                             |> List.map (fun item ->
-                                let offer =
-                                    Link.Remove.availability
-                                        environment
-                                        facts
-                                        (Binding.Link(target, item.Id))
-
                                 { item with
-                                    CanRemove = offer.Blocked.IsNone
+                                    CanRemove =
+                                        available
+                                            ClientCompositions.linkRemoval
+                                            (Binding.Link(target, item.Id))
                                 })
                         Incoming = incoming
                         IncomingCount = count
-                        CanAdd =
-                            (Link.Add.availability environment facts (Binding.LinkNew target))
-                                .Blocked.IsNone
+                        CanAdd = available ClientCompositions.linkEntry (Binding.LinkNew target)
                     }
             | _ -> return RelatedCaseLinks.empty
         }

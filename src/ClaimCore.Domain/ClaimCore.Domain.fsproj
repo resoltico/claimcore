@@ -70,6 +70,7 @@
     <Compile Include="Tasks/Task.fs" />
     <Compile Include="Tasks/Declarations.fs" />
     <Compile Include="Inputs/Parsing.fs" />
+    <Compile Include="Inputs/RelatedCaseInput.fs" />
     <Compile Include="Tasks/FamilyRules.fs" />
     <Compile Include="Tasks/Party/PartyTasks.fs" />
     <Compile Include="Tasks/Note/NoteAdd.fs" />

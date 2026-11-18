@@ -102,7 +102,11 @@ let model =
 
         let current = CaseAdvice.duringMaintenance maintenance advice
         Expect.isEmpty current.Acts "Maintenance offers no new writes"
-        Expect.equal current.Blocked.Length 13 "Every unavailable act still has one reason"
+
+        Expect.equal
+            current.Blocked.Length
+            kinds.Length
+            "Every unavailable act still has one reason"
 
         Expect.equal
             (current.Blocked

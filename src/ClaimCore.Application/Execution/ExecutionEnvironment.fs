@@ -100,7 +100,10 @@ module internal ExecutionEnvironment =
                 let relatedSelector =
                     match binding, family with
                     | Binding.LinkNew _, _ ->
-                        inputs |> Option.bind ClaimCore.Domain.Tasks.Link.Add.selector
+                        inputs
+                        |> Option.bind (
+                            ClaimCore.Domain.Inputs.RelatedCaseInput.selector >> Result.toOption
+                        )
                     | Binding.Link(_, id), Some acquired ->
                         Map.tryFind id acquired.Facts.Links
                         |> Option.bind _.Value.Content

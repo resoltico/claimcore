@@ -25,30 +25,6 @@ let declaration =
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-let private parse inputs =
-    Admission.map2
-        (fun reference id -> reference, id)
-        (Parsing.optionalText InputTarget.LinkTargetReference inputs)
-        (Parsing.optionalText InputTarget.LinkTargetId inputs)
-    |> Result.bind (fun (reference, id) ->
-        match reference, id with
-        | Some value, None ->
-            CaseReference.parse value
-            |> Parsing.at InputTarget.LinkTargetReference
-            |> Result.map (CaseReference.format >> CaseSelector.Reference)
-        | None, Some raw ->
-            match System.Guid.TryParseExact(raw, "D") with
-            | true, value ->
-                CaseId.create value
-                |> Option.map (CaseSelector.Id >> Ok)
-                |> Option.defaultValue (
-                    Error(Parsing.issue InputTarget.LinkTargetId Violation.CaseIdRequired)
-                )
-            | _ -> Error(Parsing.issue InputTarget.LinkTargetId Violation.CaseIdRequired)
-        | _ -> Error(Parsing.issue InputTarget.LinkTargetReference Violation.CaseSelectionInvalid))
-
-let selector inputs = parse inputs |> Result.toOption
-
 let private note inputs =
     Parsing.optionalText InputTarget.LinkNote inputs
     |> Result.bind (function
@@ -58,7 +34,10 @@ let private note inputs =
 let check inputs =
     Parsing.check
         (fun inputs ->
-            Admission.map2 (fun target note -> target, note) (parse inputs) (note inputs))
+            Admission.map2
+                (fun target note -> target, note)
+                (RelatedCaseInput.selector inputs)
+                (note inputs))
         inputs
 
 let private current (state: DecisionFacts) =
@@ -94,7 +73,7 @@ let decide context (environment: FamilyEnvironment) (state: DecisionFacts option
     match state, binding with
     | Some state, Binding.LinkNew _ ->
         FamilyRules.admit context environment state binding capability gate
-        |> Result.bind (fun () -> parse inputs)
+        |> Result.bind (fun () -> RelatedCaseInput.selector inputs)
         |> Result.bind (fun target ->
             match environment.RelatedCase target with
             | Some(id, lifecycle) when lifecycle <> Lifecycle.Erased ->
