@@ -308,10 +308,41 @@ jobs:
         if: needs.configuration.outputs.full == 'true'
         run: bash eng/verify.sh advisories
 
+  release_artifacts:
+    name: Build release artifacts without publishing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+      - name: Validate production configuration
+        run: |
+          set -euo pipefail
+          actual="$(docker compose --env-file deployment/production/production.env.example \
+            -f deployment/production/compose.yaml --profile administration config --format json | jq -er '.services.postgres.image')"
+          expected="$(jq -er '.supportedMajors[0].containerImage' db/postgresql-baseline.json)"
+          test "$actual" = "$expected"
+      - name: Build and verify the distribution
+        env:
+          RELEASE_ARTIFACTS: ${{ runner.temp }}/claimcore-release
+        run: |
+          set -euo pipefail
+          bash eng/build-release-artifacts.sh "$RELEASE_ARTIFACTS" claimcore-server:ci
+          cd "$RELEASE_ARTIFACTS"
+          shasum -a 256 -c SHA256SUMS
+          for rid in linux-x64 linux-musl-x64 osx-arm64; do
+            test -f "claimcore-cli-$rid.tar.gz"
+          done
+          docker image inspect claimcore-server:ci >/dev/null
+
   gate:
     name: Gate
     if: always()
-    needs: [configuration, lint, unit, integration, server, frontend, acceptance_native, acceptance, advisories]
+    needs: [configuration, lint, unit, integration, server, frontend, acceptance_native, acceptance, advisories, release_artifacts]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -327,7 +358,7 @@ jobs:
           for name, job in jobs.items():
               result = job["result"]
               print(name + ": " + result)
-              allowed = {"success", "skipped"} if docs_only and name not in {"configuration", "lint", "unit"} else {"success"}
+              allowed = {"success", "skipped"} if docs_only and name not in {"configuration", "lint", "unit", "release_artifacts"} else {"success"}
               if result not in allowed:
                   raise SystemExit(1)
           PYTHON

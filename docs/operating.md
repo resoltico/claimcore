@@ -1,8 +1,8 @@
 # Operating an installation
 
-The supplied Compose setup is for local evaluation. Operators choose and validate their HTTPS,
-identity provider, storage, key custody, backups and monitoring. Start with
-[Getting started](getting-started.md) for a separate synthetic installation.
+The production Compose template uses the released server image and operator-provided HTTPS,
+identity provider and credentials. Operators manage storage, key custody, backups and monitoring.
+For a separate synthetic installation, see [Getting started](getting-started.md).
 
 `claimcore-server serve` starts the HTTPS host. The same executable supplies owner administration
 subcommands; it requires a subcommand and returns usage status 64 when none is supplied. Use
@@ -10,10 +10,66 @@ subcommands; it requires a subcommand and returns usage status 64 when none is s
 Owner credentials belong only in the administration environment. The runtime image contains the
 server and its assets; the human CLI is distributed separately.
 
+## Install from release artifacts
+
+Choose one version from [GitHub Releases](https://github.com/resoltico/claimcore/releases). Use the
+server image digest from its notes and download `SOURCE.tar.gz` and the CLI archive for your platform.
+Check each download against its entry in the release's `SHA256SUMS` before extracting it.
+
+| Platform | CLI archive |
+| --- | --- |
+| Linux x64 (glibc) | `claimcore-cli-linux-x64.tar.gz` |
+| Linux x64 (musl, including Alpine) | `claimcore-cli-linux-musl-x64.tar.gz` |
+| macOS ARM64 | `claimcore-cli-osx-arm64.tar.gz` |
+
+Extract the CLI archive into its own directory, keep the apphost and supporting files together, and
+run `./claimcore help` there. Install the matching .NET runtime for the framework-dependent CLI. See
+[global.json](../global.json) for the SDK baseline and [CLI use](integrating.md#cli-use) for configuration.
+
+From the extracted source, use [compose.yaml](../deployment/production/compose.yaml) and copy
+[production.env.example](../deployment/production/production.env.example) to a private
+operator-controlled path. Set `CLAIMCORE_SERVER_SHA256` to the 64 hexadecimal digits after
+`sha256:` in the release notes. The published server image runs on Linux x64. The template joins
+PostgreSQL and the server on a private network and publishes the server's HTTPS port.
+
+Set the public web origin and OIDC client settings for your issuer. Register the confidential
+browser client's redirect URI at the web origin plus `/signin-oidc`. Configure the native client
+and API audience for CLI access. See [CLI use](integrating.md#cli-use).
+
+Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
+
+| Path | Contents |
+| --- | --- |
+| `postgres/owner.password`, `postgres/runtime.password` | Separate passwords for `claimcore_owner` and `claimcore_runtime`. Use 64 lowercase hexadecimal characters for the runtime password. |
+| `postgres/server.pem`, `postgres/server.key` | PostgreSQL TLS certificate for the `postgres` hostname and its private key. Make them readable by the PostgreSQL service and restrict the key to that service. |
+| `web/server.pfx`, `web/client.secret` | A passwordless PFX with the private key and publicly trusted HTTPS certificate for the web origin, and the OIDC client secret. |
+| `web/runtime.connection`, `web/ca.pem` | Runtime connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/runtime/ca.pem`. |
+| `administration/owner.connection`, `administration/ca.pem` | Owner connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/administration/ca.pem`. |
+| `key-ring/` | Persistent Web key ring directory with mode 0700. |
+
+Use `Host=postgres;Database=claimcore;SSL Mode=VerifyFull` in both connections, with the username and
+password for that connection. Make the web and administration files readable by the configured UID
+and GID, and give the key ring directory to that UID. See [Private configuration](#private-configuration).
+
+Start PostgreSQL, initialize through the administration profile, and then start the web host.
+Substitute your business zone, issuer, owner subject and owner name. Run these from the extracted
+source directory with your environment file path.
+
+```sh
+docker compose --env-file /PRIVATE/production.env -f deployment/production/compose.yaml up -d --wait postgres
+docker compose --env-file /PRIVATE/production.env -f deployment/production/compose.yaml \
+  --profile administration run --rm administration initialize ZONE \
+  --owner-issuer URL --owner-subject SUBJECT --owner-name "OWNER NAME"
+docker compose --env-file /PRIVATE/production.env -f deployment/production/compose.yaml up -d --wait web
+```
+
+Use the same administration profile to run later owner commands. The web host works with the
+runtime connection, and the owner connection is mounted only by the administration service.
+
 ## Install a fresh register
 
-Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql); durable changes require a fresh installation.
+Use matching service, browser and CLI builds. Before 1.0, each installation-format change requires
+a fresh installation. Initialize an empty database with the current [SQL baseline](../db/baseline.sql).
 [InstallationFormat](../src/ClaimCore.RecordFormat/InstallationFormat.fs) owns the single installation format.
 Use installation format 6 and CLI recovery journal format 4 with matching builds. Initialization
 requires an empty database; the runtime refuses unsupported baseline identities and formats without
@@ -21,7 +77,7 @@ converting them. Migration and cross-format reconstruction are unsupported. Prot
 and recovery records rather than attempting to initialize or convert them in place.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
-and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
+and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
 image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json). Framework-dependent CLI
 distributions require the .NET runtime matching the SDK baseline in [global.json](../global.json);
@@ -204,8 +260,16 @@ Session pruning never deletes keys.
 
 ## Backups and restore
 
-Retain checkpoints independently of PostgreSQL and before a loss. `head` emits the canonical JSON
-object accepted by `--checkpoint FILE`; save it in an absolute private path with restricted permissions:
+Take PostgreSQL physical base backups with continuous WAL archiving. Configure and test WAL
+archiving before the first base backup. Retain each usable base backup and its continuous WAL
+sequence from the start of the backup through the intended recovery point. Protect the archive
+and retain PostgreSQL configuration, identity state and the key ring with the recovery material.
+See the PostgreSQL documentation on [base backups](https://www.postgresql.org/docs/18/app-pgbasebackup.html)
+and [continuous archiving](https://www.postgresql.org/docs/18/continuous-archiving.html).
+
+Capture trusted ClaimCore checkpoints before a loss and retain them independently of PostgreSQL
+and its backups. `head` emits the JSON object accepted by `--checkpoint FILE`. Save it in an
+absolute private path with restricted permissions.
 
 ```sh
 umask 077
@@ -214,17 +278,17 @@ claimcore-server head > /PRIVATE/checkpoint.json
 
 The checkpoint binds the installation, an accepted operation prefix/hash and `expiredBefore`. An older
 trusted prefix is valid in newer matching history when the current frontier is at least the trusted
-frontier. Restore requires the current installation format. Protect backups and retain identity state
-and the key ring with recovery material. Capture evidence while traffic is isolated or account for activity after capture. Observations
-newer than every independently retained trusted checkpoint cannot be recovered from that evidence.
+frontier. Capture evidence while traffic is isolated or account for activity after capture.
+Observations newer than every independently retained trusted checkpoint cannot be recovered from
+that evidence.
 
-Restore into an empty database using a full backup containing the `pg_trgm` declaration and dependent
-indexes. Data-only restore into an initialized schema is unsupported. Isolate **all** traffic before
-restore admission: stop or block application servers, cookies, bearer/CLI clients and automation.
-Maintenance blocks register writes but does not prove that external traffic is isolated.
+Restore the base backup and replay archived WAL into an isolated PostgreSQL cluster with the
+matching PostgreSQL version and the `pg_trgm` extension available. Restore requires the current
+ClaimCore installation format. Keep application servers and all client traffic isolated, including
+browser, bearer/CLI and automation traffic, throughout restore admission and verification.
 
-With traffic still isolated, use the independently retained checkpoint, not a replacement captured from
-the restored database:
+With traffic still isolated, use the independently retained checkpoint to admit and verify the restored
+installation:
 
 ```sh
 claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
@@ -311,7 +375,8 @@ There is no tenancy isolation or deployment orchestrator.
 Bearer verification checks issuer, audience and JWT type. Human subjects and service-client identities
 are immutable, kind-aware identities; blank, repeated or conflicting claims refuse.
 Connection, origin, credentials, media type, byte limits and antiforgery gates apply before business work.
-Keep the [deployment](../deployment/compose.yaml) issuer, audience, client and TLS restrictions intact.
+Keep the issuer, audience, client and TLS restrictions in the
+[production template](../deployment/production/compose.yaml) intact.
 
 ## Private configuration
 

@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType><AssemblyName>claimcore</AssemblyName></PropertyGroup>
+  <PropertyGroup>
+    <RuntimeIdentifiers>linux-x64;linux-musl-x64;osx-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(ClaimCoreCliReleaseRid)' != ''">$(ClaimCoreCliReleaseRid)</RuntimeIdentifier>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.CommandLine/ClaimCore.CommandLine.fsproj" />
     <ProjectReference Include="../ClaimCore.Application.Contracts/ClaimCore.Application.Contracts.fsproj" />

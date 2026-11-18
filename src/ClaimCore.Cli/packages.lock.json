@@ -90,6 +90,9 @@
           "FSharp.Core": "[11.0.101, )"
         }
       }
-    }
+    },
+    "net11.0/linux-musl-x64": {},
+    "net11.0/linux-x64": {},
+    "net11.0/osx-arm64": {}
   }
 }

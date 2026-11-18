@@ -1,0 +1,119 @@
+name: claimcore
+
+services:
+  postgres:
+    image: postgres:18.7@sha256:2ea8630df176ad090ec92136dee850397c5af8781e4bcf2e4162593691c61bbc
+    environment:
+      POSTGRES_DB: claimcore
+      POSTGRES_USER: claimcore_owner
+      POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/owner.password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key]
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
+        target: /etc/claimcore-postgres
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../postgres-roles.sh
+        target: /docker-entrypoint-initdb.d/10-claimcore-roles.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [database]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+      - /var/run/postgresql:rw,noexec,nosuid,nodev,size=16m
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, claimcore_owner, -d, claimcore]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  administration:
+    profiles: [administration]
+    image: ghcr.io/resoltico/claimcore-server@sha256:${CLAIMCORE_SERVER_SHA256:?}
+    command: [status]
+    user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
+    environment:
+      CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/owner.connection
+    volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/administration
+        target: /etc/claimcore/administration
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [database]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: ghcr.io/resoltico/claimcore-server@sha256:${CLAIMCORE_SERVER_SHA256:?}
+    command: [serve]
+    user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
+    environment:
+      CLAIMCORE_CONNECTION_FILE: /etc/claimcore/runtime/runtime.connection
+      CLAIMCORE_WEB_CERTIFICATE_PATH: /etc/claimcore/runtime/server.pfx
+      CLAIMCORE_WEB_KEY_RING_DIRECTORY: /var/lib/claimcore/key-ring
+      CLAIMCORE_WEB_ORIGIN: ${CLAIMCORE_WEB_ORIGIN:?}
+      CLAIMCORE_WEB_LISTEN_ADDRESS: 0.0.0.0
+      CLAIMCORE_WEB_LISTEN_PORT: "5443"
+      CLAIMCORE_OIDC_ISSUER: ${CLAIMCORE_OIDC_ISSUER:?}
+      CLAIMCORE_OIDC_CLIENT_ID: ${CLAIMCORE_OIDC_CLIENT_ID:?}
+      CLAIMCORE_OIDC_CLIENT_SECRET_FILE: /etc/claimcore/runtime/client.secret
+      CLAIMCORE_OIDC_API_AUDIENCE: ${CLAIMCORE_OIDC_API_AUDIENCE:?}
+      CLAIMCORE_OIDC_CLI_CLIENT_ID: ${CLAIMCORE_OIDC_CLI_CLIENT_ID:?}
+    ports:
+      - target: 5443
+        published: "${CLAIMCORE_HOST_PORT:-443}"
+        host_ip: ${CLAIMCORE_BIND_ADDRESS:-0.0.0.0}
+    volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/web
+        target: /etc/claimcore/runtime
+        read_only: true
+        bind:
+          create_host_path: false
+      - web-key-ring:/var/lib/claimcore/key-ring
+    networks: [default, database]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, dotnet, claimcore-server.dll, probe, ready]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 45s
+    restart: unless-stopped
+
+networks:
+  database:
+    internal: true
+
+volumes:
+  postgres-data:
+  web-key-ring:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CLAIMCORE_CONFIG_DIR:?}/key-ring
