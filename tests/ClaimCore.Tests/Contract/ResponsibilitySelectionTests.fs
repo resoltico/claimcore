@@ -65,8 +65,8 @@ let tests =
 
                 Expect.equal
                     (JsonValue.tryMember "v" raw)
-                    (Some(JsonValue.Integer 6L))
-                    "Unreleased format six is retained")
+                    (Some(JsonValue.Integer 7L))
+                    "Format 7 binds the complete worklist selection")
             testCase "case list and summary flags use the executable typed selection" (fun () ->
                 for verb in [ "list"; "summary" ] do
                     let prepared =
@@ -89,7 +89,7 @@ let tests =
                         if verb = "list" then
                             (Frames.value Api.caseList frame |> Option.get).Filter
                         else
-                            Frames.value Api.caseSummary frame |> Option.get
+                            (Frames.value Api.caseSummary frame |> Option.get).Filter
 
                     Expect.equal
                         filter.ResponsibleActor

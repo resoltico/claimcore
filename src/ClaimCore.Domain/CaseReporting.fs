@@ -109,13 +109,13 @@ module DaysOpenBand =
     let vocabulary =
         Vocabulary.define
             "daysOpenBand"
-            [ DaysOpenBand.Through30; DaysOpenBand.Through90; DaysOpenBand.Through180; DaysOpenBand.Through365; DaysOpenBand.Over365 ]
+            ((bounds |> List.map fst) @ [ DaysOpenBand.Over365 ])
             (function
-            | DaysOpenBand.Through30 -> "0-30"
-            | DaysOpenBand.Through90 -> "31-90"
-            | DaysOpenBand.Through180 -> "91-180"
-            | DaysOpenBand.Through365 -> "181-365"
-            | DaysOpenBand.Over365 -> "366+")
+             | DaysOpenBand.Through30 -> "0-30"
+             | DaysOpenBand.Through90 -> "31-90"
+             | DaysOpenBand.Through180 -> "91-180"
+             | DaysOpenBand.Through365 -> "181-365"
+             | DaysOpenBand.Over365 -> "366+")
 
     let ofDays days =
         bounds
@@ -124,7 +124,9 @@ module DaysOpenBand =
 
     let daysOpen today (dates: CaseReportDates) =
         let finalDate = dates.Closed |> Option.defaultValue today
-        (CalendarDate.value finalDate).DayNumber - (CalendarDate.value dates.Registered).DayNumber
+
+        (CalendarDate.value finalDate).DayNumber
+        - (CalendarDate.value dates.Registered).DayNumber
 
 [<RequireQualifiedAccess>]
 type MissingCaseGroup =
@@ -152,4 +154,5 @@ module CaseMonth =
     let parse (raw: string) =
         CalendarDate.parse (raw + "-01") |> Result.map CaseMonth
 
-    let format (CaseMonth date) = (CalendarDate.format date).Substring(0, 7)
+    let format (CaseMonth date) =
+        (CalendarDate.format date).Substring(0, 7)

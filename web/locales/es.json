@@ -1,4 +1,8 @@
 {
+  "ui.reportingDates": {
+    "text": "Fechas del informe",
+    "source": "274bd4f0d808"
+  },
   "ui.about": {
     "text": "Acerca de",
     "source": "4efca0d10c5f"

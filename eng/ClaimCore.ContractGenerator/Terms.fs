@@ -107,6 +107,10 @@ module Terms =
             rendered PresentedBoolean.vocabulary
             rendered View.vocabulary
             rendered CaseStatus.vocabulary
+            rendered CaseGrouping.vocabulary
+            rendered DaysOpenBand.vocabulary
+            rendered MissingCaseGroup.vocabulary
+            rendered ClosureOutcome.vocabulary
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary
             rendered Role.vocabulary
@@ -147,7 +151,6 @@ module Terms =
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
             rendered PaymentDirection.vocabulary
-            rendered ClosureOutcome.vocabulary
             rendered CaseStageKind.vocabulary
             rendered CaseHeadline.vocabulary
             rendered CaseAttention.vocabulary

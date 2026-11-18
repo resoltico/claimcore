@@ -116,9 +116,11 @@ module PresentationCodecs =
         [
             codeVariant many Lifecycle.vocabulary
             codeVariant many CaseStatus.vocabulary
+            codeVariant many ClosureOutcome.vocabulary
+            codeVariant many DaysOpenBand.vocabulary
+            codeVariant many MissingCaseGroup.vocabulary
             codeVariant many CaseProgress.vocabulary
             codeVariant many PaymentDirection.vocabulary
-            codeVariant many ClosureOutcome.vocabulary
             codeVariant many CaseAssignment.vocabulary
             codeVariant many Role.vocabulary
             codeVariant many ScopeKind.vocabulary

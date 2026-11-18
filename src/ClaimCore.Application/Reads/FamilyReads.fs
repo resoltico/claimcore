@@ -54,7 +54,7 @@ module internal FamilyReads =
         let token = tx.CancellationToken
         TransactionPages.cases connection installation query token
 
-    let caseSummary (tx: ReadTx) query =
+    let caseSummary (tx: ReadTx) query groupBy =
         let connection = tx.Connection
         let token = tx.CancellationToken
-        CaseSummaryQuery.read connection query token
+        CaseSummaryQuery.read connection query groupBy token

@@ -85,8 +85,6 @@ module ResponseScalars =
     let private amountMaximumCharacters =
         Money.MaximumIntegerDigits + 1 + Money.MaximumFractionalDigits
 
-    let private dateCharacters = CalendarDate.ExactFormat.Length
-
     let private grammar minimum maximum pattern format =
         let anchored = "^(?:" + pattern + ")(?![\\s\\S])"
         patternedText minimum (defaultArg maximum Int32.MaxValue) anchored format
@@ -109,27 +107,7 @@ module ResponseScalars =
 
     let digest = grammar 64 (Some 64) "[0-9a-f]{64}" None
 
-    let date =
-        grammar dateCharacters (Some dateCharacters) CalendarDate.Grammar (Some "date")
-        |> restrict
-            (Schema.String(
-                Some("^" + CalendarDate.Grammar + "(?![\\s\\S])"),
-                Some "date",
-                Some dateCharacters,
-                Some dateCharacters,
-                None
-            ))
-            (fun path value ->
-                text.Read path value
-                |> Result.bind (fun raw ->
-                    if CalendarDate.parse raw |> Result.isOk then
-                        Ok()
-                    else
-                        Error
-                            {
-                                Path = path
-                                Reason = "Expected a Gregorian date."
-                            }))
+    let date = CalendarDateCodecs.text
 
     let private parsed parse format codec =
         codec
@@ -146,7 +124,7 @@ module ResponseScalars =
     let noteText =
         parsed NoteText.parse NoteText.format (boundedUtf8Text 1 NoteText.MaximumBytes)
 
-    let calendarDate = parsed CalendarDate.parse CalendarDate.format date
+    let calendarDate = CalendarDateCodecs.value
     let caseReference = parsed CaseReference.parse CaseReference.format reference
     let countryCode = parsed CountryCode.parse CountryCode.format country
 

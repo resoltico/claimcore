@@ -150,9 +150,12 @@ module WorkSelection =
                 |> Option.exists (fun (_, progress) -> progress = value)
             | WorkPredicate.CaseDate(filter, bound) ->
                 let field, _ = CaseDateFilter.bound filter
+
                 let date =
                     facts.ReportDates
-                    |> Option.bind (fun (dates, received) -> CaseReportDates.value dates received field)
+                    |> Option.bind (fun (dates, received) ->
+                        CaseReportDates.value dates received field)
+
                 CaseDateFilter.matches filter bound date
             | WorkPredicate.Mine ->
                 facts.Responsible |> Option.exists (fun (actor, _) -> Some actor = requester)

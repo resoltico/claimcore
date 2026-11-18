@@ -98,6 +98,7 @@ module internal CaseSelectionSql =
                 equal "c.progress" ("progress:" + CaseProgress.token value)
             | WorkPredicate.CaseDate(filter, _) ->
                 let date, bound = CaseDateFilter.bound filter
+
                 let column =
                     match date with
                     | CaseReportDate.Registered -> "c.registered_on"

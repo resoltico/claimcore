@@ -10,7 +10,7 @@ type Link =
     | CaseGet of CaseGetRequest
     | CaseAssignees of AssigneeRequest
     | CaseList of CaseListRequest
-    | CaseSummary of CaseListFilter<string>
+    | CaseSummary of CaseSummaryRequest
     | CaseTimeline of CaseTimelineRequest
     | CaseNotes of CaseNotesRequest
     | CasePayments of CasePaymentsRequest

@@ -26,6 +26,7 @@ people grants 11111111-2222-7333-8444-555555555555
 context
 people history --limit 1
 case summary
+case summary --group-by RECEIVED_MONTH --registered-from 2026-11-01 --registered-through 2026-11-30
 operation get 11111111-2222-7333-8444-555555555555
 case amend-registration R-1 --expected-revision 4 --claimant-name Selected --operation-id 11111111-2222-7333-8444-555555555555
 case correct R-1 --expected-revision 4 --registration keep --decision update --payable-amount 650 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555

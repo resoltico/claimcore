@@ -8,7 +8,12 @@ open ClaimCore.RecordFormat
 
 /// The sole SQL writer for aggregate-derived projection rows.
 module internal PartProjections =
-    let private caseParameters id (snapshot: CaseSnapshot) (index: CaseIndex) (dates: CaseReportDates) =
+    let private caseParameters
+        id
+        (snapshot: CaseSnapshot)
+        (index: CaseIndex)
+        (dates: CaseReportDates)
+        =
         [|
             box (CaseId.value id)
             box (CaseReference.format snapshot.Reference)
@@ -147,13 +152,16 @@ module internal PartProjections =
 
     let reportDates row =
         let date name =
-            DatabaseSession.namedOptionalCalendarDate name row |> Option.map CalendarDate.ofDate
+            DatabaseSession.namedOptionalCalendarDate name row
+            |> Option.map CalendarDate.ofDate
 
         match date "registered_on", date "last_activity_on" with
         | Some registered, Some lastActivity ->
-            { CaseReportDates.Registered = registered
-              Closed = date "closed_on"
-              LastActivity = lastActivity }
+            {
+                CaseReportDates.Registered = registered
+                Closed = date "closed_on"
+                LastActivity = lastActivity
+            }
         | _ -> raise (RecordCorruptException "Missing case reporting dates.")
 
     let previousReportDates connection id token =
@@ -168,7 +176,8 @@ module internal PartProjections =
             match rows with
             | [] -> return None
             | [ row ] -> return Some(reportDates row)
-            | _ -> return raise (RecordCorruptException "A case has multiple reporting projections.")
+            | _ ->
+                return raise (RecordCorruptException "A case has multiple reporting projections.")
         }
 
     let family connection (row: FamilyProjectionDelta) token =

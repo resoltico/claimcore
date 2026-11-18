@@ -1,4 +1,8 @@
 {
+  "ui.reportingDates": {
+    "text": "보고 날짜",
+    "source": "274bd4f0d808"
+  },
   "ui.about": {
     "text": "정보",
     "source": "4efca0d10c5f"

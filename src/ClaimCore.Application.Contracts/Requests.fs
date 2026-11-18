@@ -42,6 +42,15 @@ type CaseListRequest =
         Filter: CaseListFilter<string>
     }
 
+type CaseSummaryRequest =
+    {
+        Filter: CaseListFilter<string>
+        GroupBy: CaseGrouping option
+    }
+
+module CaseSummaryRequest =
+    let ungrouped filter = { Filter = filter; GroupBy = None }
+
 type AssigneeRequest =
     {
         Target: CaseSelector

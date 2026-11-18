@@ -327,7 +327,10 @@ module internal Engine =
                                 plan.Changes
 
                         let! reportDates =
-                            PartProjections.previousReportDates tx.Connection family.Id tx.CancellationToken
+                            PartProjections.previousReportDates
+                                tx.Connection
+                                family.Id
+                                tx.CancellationToken
 
                         match
                             ProjectionRows.decision

@@ -1,4 +1,8 @@
 {
+  "ui.reportingDates": {
+    "text": "報表日期",
+    "source": "274bd4f0d808"
+  },
   "ui.about": {
     "text": "關於",
     "source": "4efca0d10c5f"

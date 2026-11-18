@@ -140,7 +140,12 @@ let private qualify () =
                     pageDate
                     "List basis is independently valid for its separate observation"
 
-                let! summary = Service.caseSummary actor CaseListFilter.empty token
+                let! summary =
+                    Service.caseSummary
+                        actor
+                        (CaseSummaryRequest.ungrouped CaseListFilter.empty)
+                        token
+
                 let summary = read summary
                 let! summaryDate, _ = dates database summary.Basis
 

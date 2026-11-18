@@ -333,6 +333,8 @@ let internal replies () : IEndpointOutput list =
                         Claimed = []
                         Payable = []
                         NetPaid = []
+                        GroupBy = None
+                        Groups = []
                         Counts =
                             {
                                 Total = 0L

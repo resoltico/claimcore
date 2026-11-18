@@ -188,7 +188,7 @@ let internal lifecycle fixture =
             (List.contains CaseAttention.ReadyToClose euro.Attention)
             "Partial payment is not ready to close"
 
-        let! totals = Service.caseSummary owner selected token
+        let! totals = Service.caseSummary owner (CaseSummaryRequest.ungrouped selected) token
         let totals = read totals
 
         Expect.equal
@@ -260,7 +260,11 @@ let internal lifecycle fixture =
             CaseState.Erased
             "Erasure removes payment facts"
 
-        let! after = Service.caseSummary owner CaseListFilter.empty<string> token
+        let! after =
+            Service.caseSummary
+                owner
+                (CaseSummaryRequest.ungrouped CaseListFilter.empty<string>)
+                token
 
         Expect.equal
             ((read after).NetPaid

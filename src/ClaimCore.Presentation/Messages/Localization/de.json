@@ -3542,5 +3542,233 @@
   "input.deadlineOutcome.rule": {
     "text": "Filtern Sie die Liste nach Fristergebnis.",
     "source": "fe701387e12a"
+  },
+  "caseGrouping.REGISTERED_MONTH.meaning": {
+    "text": "Fälle werden nach ihrem Registrierungsmonat gruppiert.",
+    "source": "ae3d6f1c8ffc"
+  },
+  "caseGrouping.REGISTERED_MONTH.short": {
+    "text": "Registrierungsmonat",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.meaning": {
+    "text": "Fälle werden nach ihrem Eingangsmonat gruppiert.",
+    "source": "b288e3155277"
+  },
+  "caseGrouping.RECEIVED_MONTH.short": {
+    "text": "Eingangsmonat",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.meaning": {
+    "text": "Fälle werden nach ihrem Abschlussmonat gruppiert.",
+    "source": "c5d5dceb580f"
+  },
+  "caseGrouping.CLOSED_MONTH.short": {
+    "text": "Abschlussmonat",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.meaning": {
+    "text": "Fälle werden nach ihrem erfassten Abschlussgrund gruppiert.",
+    "source": "a21f9b310b0b"
+  },
+  "caseGrouping.OUTCOME.short": {
+    "text": "Abschlussergebnis",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.meaning": {
+    "text": "Fälle werden nach dem zuständigen Konto gruppiert.",
+    "source": "8e9fa169feb4"
+  },
+  "caseGrouping.RESPONSIBLE.short": {
+    "text": "Zuständiges Konto",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.meaning": {
+    "text": "Fälle werden nach den Tagen von der Registrierung bis zum Abschluss oder bis heute gruppiert.",
+    "source": "b652cc66dd22"
+  },
+  "caseGrouping.DAYS_OPEN.short": {
+    "text": "Tage seit Eröffnung",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.meaning": {
+    "text": "Das Eingangsdatum wurde bisher nicht erfasst.",
+    "source": "b27951f8eab1"
+  },
+  "missingCaseGroup.NOT_RECORDED.short": {
+    "text": "Nicht erfasst",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.meaning": {
+    "text": "Der Fall ist derzeit offen.",
+    "source": "76849d9b138b"
+  },
+  "missingCaseGroup.NOT_CLOSED.short": {
+    "text": "Nicht geschlossen",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.meaning": {
+    "text": "Dem Fall ist kein zuständiges Konto zugewiesen.",
+    "source": "f723e9ebc74f"
+  },
+  "missingCaseGroup.UNASSIGNED.short": {
+    "text": "Nicht zugewiesen",
+    "source": "14d33bd014e6"
+  },
+  "daysOpenBand.0-30.short": {
+    "text": "0–30 Tage",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.short": {
+    "text": "31–90 Tage",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.short": {
+    "text": "91–180 Tage",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.short": {
+    "text": "181–365 Tage",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.short": {
+    "text": "366 Tage oder mehr",
+    "source": "1741020c66e0"
+  },
+  "daysOpenBand.0-30.meaning": {
+    "text": "Fälle, die 0–30 Tage offen waren.",
+    "source": "d3c631833478"
+  },
+  "daysOpenBand.31-90.meaning": {
+    "text": "Fälle, die 31–90 Tage offen waren.",
+    "source": "5d2ccee1f1bd"
+  },
+  "daysOpenBand.91-180.meaning": {
+    "text": "Fälle, die 91–180 Tage offen waren.",
+    "source": "2089667c657c"
+  },
+  "daysOpenBand.181-365.meaning": {
+    "text": "Fälle, die 181–365 Tage offen waren.",
+    "source": "5819d0c5a152"
+  },
+  "daysOpenBand.366+.meaning": {
+    "text": "Fälle, die 366 Tage oder mehr offen waren.",
+    "source": "837d5938f0ed"
+  },
+  "input.groupBy.rule": {
+    "text": "Wählen Sie, wie die Fälle in dieser Übersicht gruppiert werden.",
+    "source": "b0fc5523db39"
+  },
+  "input.registeredFrom.label": {
+    "text": "Registriert ab",
+    "source": "f4ae8ee9fe45"
+  },
+  "input.registeredThrough.label": {
+    "text": "Registriert bis",
+    "source": "cee2eeb23c85"
+  },
+  "input.receivedFrom.label": {
+    "text": "Eingegangen ab",
+    "source": "08849d7d137f"
+  },
+  "input.receivedThrough.label": {
+    "text": "Eingegangen bis",
+    "source": "58fdde20b93f"
+  },
+  "input.closedFrom.label": {
+    "text": "Geschlossen ab",
+    "source": "e88f7e0a99b1"
+  },
+  "input.closedThrough.label": {
+    "text": "Geschlossen bis",
+    "source": "ee2948c8580d"
+  },
+  "input.inactiveSince.label": {
+    "text": "Keine Aktivität seit",
+    "source": "a590f2135807"
+  },
+  "input.groupBy.label": {
+    "text": "Gruppieren nach",
+    "source": "956a51f6b098"
+  },
+  "caseGrouping.REGISTERED_MONTH.label": {
+    "text": "Registrierungsmonat",
+    "source": "dd554f0973f8"
+  },
+  "caseGrouping.RECEIVED_MONTH.label": {
+    "text": "Eingangsmonat",
+    "source": "00ffd9e08922"
+  },
+  "caseGrouping.CLOSED_MONTH.label": {
+    "text": "Abschlussmonat",
+    "source": "93bb1e4268d2"
+  },
+  "caseGrouping.OUTCOME.label": {
+    "text": "Abschlussergebnis",
+    "source": "f6ddfa19a83e"
+  },
+  "caseGrouping.RESPONSIBLE.label": {
+    "text": "Zuständiges Konto",
+    "source": "0d7bbaffe6c2"
+  },
+  "caseGrouping.DAYS_OPEN.label": {
+    "text": "Tage seit Eröffnung",
+    "source": "ae44008a27ba"
+  },
+  "missingCaseGroup.NOT_RECORDED.label": {
+    "text": "Nicht erfasst",
+    "source": "b37c7879f6c3"
+  },
+  "missingCaseGroup.NOT_CLOSED.label": {
+    "text": "Nicht geschlossen",
+    "source": "b7cbf1a8527f"
+  },
+  "missingCaseGroup.UNASSIGNED.label": {
+    "text": "Nicht zugewiesen",
+    "source": "14d33bd014e6"
+  },
+  "label.summaryGroups": {
+    "text": "Fallgruppen",
+    "source": "c295f65dce5d"
+  },
+  "label.reportingCurrency": {
+    "text": "Währung",
+    "source": "3ac1a9ec4fa7"
+  },
+  "label.claimedCases": {
+    "text": "Fälle mit Forderungsbetrag",
+    "source": "55cbe9265b02"
+  },
+  "label.payableCases": {
+    "text": "Fälle mit Zahlbetrag",
+    "source": "fab41a03a6d4"
+  },
+  "label.netPaidCases": {
+    "text": "Fälle mit Zahlungen",
+    "source": "18df4bc8ea1d"
+  },
+  "notice.summaryCurrentFacts": {
+    "text": "Diese Übersicht zeigt den Stand der Falldaten zum Zeitpunkt ihrer Erstellung.",
+    "source": "c980016168ba"
+  },
+  "daysOpenBand.0-30.label": {
+    "text": "0–30 Tage",
+    "source": "fd1c2f2bf857"
+  },
+  "daysOpenBand.31-90.label": {
+    "text": "31–90 Tage",
+    "source": "87125a3b4d35"
+  },
+  "daysOpenBand.91-180.label": {
+    "text": "91–180 Tage",
+    "source": "646a622b89ab"
+  },
+  "daysOpenBand.181-365.label": {
+    "text": "181–365 Tage",
+    "source": "3c50241e5503"
+  },
+  "daysOpenBand.366+.label": {
+    "text": "366 Tage oder mehr",
+    "source": "1741020c66e0"
   }
 }

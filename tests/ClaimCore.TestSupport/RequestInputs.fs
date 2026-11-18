@@ -38,7 +38,8 @@ let all () : IEndpointInput list =
                     Page = page
                     Filter = CaseListFilter.empty
                 }
-        yield EndpointValues.input Api.caseSummary CaseListFilter.empty
+        yield
+            EndpointValues.input Api.caseSummary (CaseSummaryRequest.ungrouped CaseListFilter.empty)
         yield
             EndpointValues.input
                 Api.caseAssignees

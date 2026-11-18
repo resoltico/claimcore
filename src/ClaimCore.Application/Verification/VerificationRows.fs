@@ -224,8 +224,7 @@ module internal VerificationRows =
                                     let column finding get =
                                         ProjectionVerification.column finding get expectedRow record
 
-                                    do!
-                                        column VerificationFinding.CaseProjection _.ReportDates
+                                    do! column VerificationFinding.CaseProjection _.ReportDates
 
                                     do!
                                         column VerificationFinding.CaseStatusProjection (fun row ->

@@ -153,3 +153,31 @@ it("offers an explicit retry for read pressure without changing its query", asyn
     expect(request?.body).toBe(JSON.stringify({ view: "ALL", text: "same query" }));
   }
 });
+
+it("submits the selected grouping with the existing dates and offers its CSV", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(response("case.summary", summary))
+    .mockResolvedValueOnce(response("case.summary", summary));
+  vi.stubGlobal("fetch", fetch);
+  render(
+    <SummaryBand filter={{ registeredFrom: "2026-11-01", registeredThrough: "2026-11-30" }} />,
+  );
+  await screen.findByText("2", { exact: true });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("combobox", { name: "Group by" }));
+  await user.click(screen.getByRole("option", { name: "Received month" }));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenLastCalledWith(
+      "/api/case.summary",
+      expect.objectContaining({
+        body: JSON.stringify({
+          registeredFrom: "2026-11-01",
+          registeredThrough: "2026-11-30",
+          groupBy: "RECEIVED_MONTH",
+        }),
+      }),
+    );
+  });
+  expect(await screen.findByRole("button", { name: "Download CSV" })).toBeVisible();
+});

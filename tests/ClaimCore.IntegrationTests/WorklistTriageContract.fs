@@ -207,7 +207,7 @@ let private setup fixture =
 
 let private summary actor filter =
     task {
-        let! result = Service.caseSummary actor filter token
+        let! result = Service.caseSummary actor (CaseSummaryRequest.ungrouped filter) token
 
         match result with
         | Outcome.Succeeded result -> return result
@@ -527,7 +527,9 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 false
 
         acceptedPeople revoked
-        let! deniedSummary = Service.caseSummary viewer opened token
+
+        let! deniedSummary =
+            Service.caseSummary viewer (CaseSummaryRequest.ungrouped opened) token
 
         Expect.equal
             deniedSummary

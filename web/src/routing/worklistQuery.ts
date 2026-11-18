@@ -1,6 +1,15 @@
 import type { CaseListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit">;
+export const reportDateFields = [
+  "registeredFrom",
+  "registeredThrough",
+  "receivedFrom",
+  "receivedThrough",
+  "closedFrom",
+  "closedThrough",
+  "inactiveSince",
+] as const;
 const unique = <T>(values: ReadonlyArray<T>): T[] => [...new Set(values)];
 const responsibilityQuery = (
   assignment: string | null,
@@ -35,6 +44,12 @@ export const parseWorklistQuery = (query: string): WorklistQuery => {
     ...(order === undefined ? {} : { order }),
     ...responsibilityQuery(assignment, params.get("responsibleActor")),
     ...dueQuery(rawDue),
+    ...Object.fromEntries(
+      reportDateFields.flatMap((field) => {
+        const value = params.get(field);
+        return value === null || !/^\d{4}-\d{2}-\d{2}$/u.test(value) ? [] : [[field, value]];
+      }),
+    ),
   };
 };
 export const worklistPath = (query: WorklistQuery): string => {
@@ -50,17 +65,18 @@ export const worklistPath = (query: WorklistQuery): string => {
   if (query.text !== undefined && query.text !== "") {
     params.set("q", query.text);
   }
-  if (query.order !== undefined) {
-    params.set("order", query.order);
-  }
-  if (query.assignment !== undefined) {
-    params.set("assignment", query.assignment);
-  }
-  if (query.responsibleActor !== undefined) {
-    params.set("responsibleActor", query.responsibleActor);
-  }
-  if (query.due !== undefined) {
-    params.set("due", query.due);
+  const scalarFields = [
+    "order",
+    "assignment",
+    "responsibleActor",
+    "due",
+    ...reportDateFields,
+  ] as const;
+  for (const field of scalarFields) {
+    const value = query[field];
+    if (value !== undefined) {
+      params.set(field, value);
+    }
   }
   const suffix = params.toString();
   return suffix === "" ? "/cases" : `/cases?${suffix}`;

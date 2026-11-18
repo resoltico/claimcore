@@ -251,7 +251,8 @@ module internal ProjectionRows =
         |> Result.bind (fun (_, index) ->
             match CaseFamily.snapshot state with
             | None -> Error RecordViolation.InvalidSubjectState
-            | Some snapshot -> familyDelta snapshot index reportDates state.Id state.Work parts origins summary)
+            | Some snapshot ->
+                familyDelta snapshot index reportDates state.Id state.Work parts origins summary)
 
     let decision (state: DecisionFacts) parts origins summary date previous =
         DecisionFacts.rows state parts

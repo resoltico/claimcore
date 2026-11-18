@@ -35,6 +35,65 @@ type CaseWorklistCounts =
         Progress: ValueCount<CaseProgress> list
     }
 
+[<RequireQualifiedAccess>]
+type CaseGroupKey =
+    | Month of CaseMonth
+    | Outcome of ClosureOutcome
+    | Responsible of ActorRef
+    | DaysOpen of DaysOpenBand
+    | Missing of MissingCaseGroup
+
+module CaseGroupKey =
+    let token =
+        function
+        | CaseGroupKey.Month month -> CaseMonth.format month
+        | CaseGroupKey.Outcome outcome -> Vocabulary.token ClosureOutcome.vocabulary outcome
+        | CaseGroupKey.Responsible account -> ActorId.format account.ActorId
+        | CaseGroupKey.DaysOpen band -> Vocabulary.token DaysOpenBand.vocabulary band
+        | CaseGroupKey.Missing group -> Vocabulary.token MissingCaseGroup.vocabulary group
+
+type CaseMoneyGroup =
+    {
+        Group: CaseGroupKey
+        Count: int64
+        Claimed: CurrencyTotal list
+        Payable: CurrencyTotal list
+        NetPaid: CurrencyTotal list
+    }
+
+type CaseMoneyRow =
+    {
+        Currency: Currency option
+        Claimed: CurrencyTotal option
+        Payable: CurrencyTotal option
+        NetPaid: CurrencyTotal option
+    }
+
+module CaseMoneyRow =
+    let rows claimed payable netPaid =
+        let map (totals: CurrencyTotal list) =
+            totals |> List.map (fun total -> total.Currency, total) |> Map.ofList
+
+        let claimed, payable, netPaid = map claimed, map payable, map netPaid
+
+        let currencies =
+            [ claimed; payable; netPaid ]
+            |> List.collect (Map.keys >> Seq.toList)
+            |> List.distinct
+            |> List.sortBy Currency.format
+
+        (if currencies.IsEmpty then
+             [ None ]
+         else
+             List.map Some currencies)
+        |> List.map (fun key ->
+            {
+                CaseMoneyRow.Currency = key
+                Claimed = key |> Option.bind (fun currency -> Map.tryFind currency claimed)
+                Payable = key |> Option.bind (fun currency -> Map.tryFind currency payable)
+                NetPaid = key |> Option.bind (fun currency -> Map.tryFind currency netPaid)
+            })
+
 type CaseWorklistSummary =
     {
         Basis: WorkDateBasis
@@ -42,6 +101,8 @@ type CaseWorklistSummary =
         Claimed: CurrencyTotal list
         Payable: CurrencyTotal list
         NetPaid: CurrencyTotal list
+        GroupBy: CaseGrouping option
+        Groups: CaseMoneyGroup list
     }
 
 module CaseWorklistSummary =
@@ -56,9 +117,8 @@ module CaseWorklistSummary =
                         if select group = Some value then group.Count else 0L)
             })
 
-    let private totals select (groups: CaseCountGroup list) =
-        groups
-        |> List.choose select
+    let combineTotals (entries: CurrencyTotal list) =
+        entries
         |> List.groupBy _.Currency
         |> List.sortBy (fst >> Currency.format)
         |> List.fold
@@ -76,6 +136,9 @@ module CaseWorklistSummary =
                         :: collected)))
             (Ok [])
         |> Result.map List.rev
+
+    let private totals select (groups: CaseCountGroup list) =
+        groups |> List.choose select |> combineTotals
 
     let private valid (group: CaseCountGroup) =
         group.Count >= 0L
@@ -132,4 +195,6 @@ module CaseWorklistSummary =
                         Claimed = claimed
                         Payable = payable
                         NetPaid = netPaid
+                        GroupBy = None
+                        Groups = []
                     }))

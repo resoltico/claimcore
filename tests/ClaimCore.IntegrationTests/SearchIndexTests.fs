@@ -342,7 +342,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             [ "GIN-FACTS"; "GIN-WORK" ]
             "Both independent text owners match literal normalized input; the plain case does not"
 
-        let! totals = Service.caseSummary actor filter token
+        let! totals = Service.caseSummary actor (CaseSummaryRequest.ungrouped filter) token
         let totals = read totals
         Expect.equal totals.Counts.Total 2L "Search selects each financial parent once"
 

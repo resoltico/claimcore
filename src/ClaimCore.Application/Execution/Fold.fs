@@ -573,12 +573,20 @@ module internal Fold =
                                                 let status =
                                                     next.Families[id]
                                                     |> CaseFamily.snapshot
-                                                    |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+                                                    |> Option.bind (fun snapshot ->
+                                                        CaseState.fields snapshot.State)
                                                     |> Option.map _.Status
 
-                                                let date = CalendarDate.ofDate header.BusinessDate.Value
+                                                let date =
+                                                    CalendarDate.ofDate
+                                                        header.BusinessDate.Value
+
                                                 let previous = Map.tryFind id next.ReportDates
-                                                Map.add id (CaseReportDates.record date status previous) next.ReportDates
+
+                                                Map.add
+                                                    id
+                                                    (CaseReportDates.record date status previous)
+                                                    next.ReportDates
 
                                         { next with
                                             ReportDates = dates

@@ -114,6 +114,7 @@
     <Compile Include="Architecture/CommandApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
+    <Compile Include="Domain/CaseReportingTests.fs" />
     <Compile Include="Domain/ReminderSelectionTests.fs" />
     <Compile Include="Domain/CaseStageTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />

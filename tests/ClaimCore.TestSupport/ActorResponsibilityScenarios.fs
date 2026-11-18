@@ -254,7 +254,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 references
                 "The core link selection is executable with the identical visibility boundary"
 
-            let! summary = Service.caseSummary services filter token
+            let! summary =
+                Service.caseSummary services (CaseSummaryRequest.ungrouped filter) token
 
             Expect.equal
                 (read summary).Counts.Total

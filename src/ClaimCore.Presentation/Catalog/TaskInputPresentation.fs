@@ -13,6 +13,7 @@ module TaskInputPresentation =
     // This total semantic-input to message-namespace table contains no nested decisions.
     let messageKey input part =
         match input with
+        | TaskInputId.CaseDate _ when part = "rule" -> "scalar.calendarDate.guidance"
         | TaskInputId.Target(InputTarget.Field field) ->
             if part = "rule" then
                 FieldPresentation.ruleId field

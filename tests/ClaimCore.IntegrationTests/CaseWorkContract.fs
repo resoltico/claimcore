@@ -707,7 +707,10 @@ let internal dueFiltersAndOrder fixture =
             "Stable tie identities"
 
         Expect.isNone second.NextCursor "Exactly two individual today actions"
-        let! summary = Service.caseSummary owner CaseListFilter.empty token
+
+        let! summary =
+            Service.caseSummary owner (CaseSummaryRequest.ungrouped CaseListFilter.empty) token
+
         let summary = read summary
         Expect.equal summary.Counts.Total 4L "Reminder fanout cannot duplicate cases"
 

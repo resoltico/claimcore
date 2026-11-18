@@ -683,7 +683,7 @@ module internal Queries =
                 return readResult result
         }
 
-    let caseSummary (services: ServiceContext) (filter: CaseListFilter<string>) token =
+    let caseSummary (services: ServiceContext) (summary: CaseSummaryRequest) token =
         task {
             let! result =
                 services.Store.Read
@@ -696,7 +696,7 @@ module internal Queries =
                                     let request =
                                         {
                                             CaseListRequest.Page = { Limit = 1; AfterCursor = None }
-                                            Filter = filter
+                                            Filter = summary.Filter
                                         }
 
                                     match
@@ -710,7 +710,10 @@ module internal Queries =
                                     | Error refusal -> return Outcome.Rejected refusal
                                     | Ok selection ->
                                         let! summary =
-                                            FamilyReads.caseSummary tx selection.Selection
+                                            FamilyReads.caseSummary
+                                                tx
+                                                selection.Selection
+                                                summary.GroupBy
 
                                         return Outcome.Succeeded summary
                                 }
